@@ -251,7 +251,7 @@ public final class DocExpirationUpdateProcessorFactory
       } catch (SolrException e) {
         throw confErr(DEL_CHAIN_NAME_CONF + " does not exist: " + deleteChainName, e);
       }
-      // schedule recuring deletion
+      // schedule recurring deletion
       initDeleteExpiredDocsScheduler(core);
     }
   }
@@ -335,9 +335,9 @@ public final class DocExpirationUpdateProcessorFactory
           final DateMathParser dmp = new DateMathParser();
           // TODO: should we try to accept things like "1DAY" as well as "+1DAY" ?
           // How? 
-          // 'startsWith("+")' is a bad idea because it would cause porblems with
+          // 'startsWith("+")' is a bad idea because it would cause problems with
           // things like "/DAY+1YEAR"
-          // Maybe catch ParseException and rety with "+" prepended?
+          // Maybe catch ParseException and retry with "+" prepended?
           doc.addField(expireField, dmp.parseMath(math));
         } catch (ParseException pe) {
           throw new SolrException(BAD_REQUEST, "Can't parse ttl as date math: " + math, pe);
@@ -423,11 +423,11 @@ public final class DocExpirationUpdateProcessorFactory
         } catch (IOException ioe) {
           log.error("IOException in periodic deletion of expired docs: " +
                     ioe.getMessage(), ioe);
-          // DO NOT RETHROW: ScheduledExecutor will supress subsequent executions
+          // DO NOT RETHROW: ScheduledExecutor will suppress subsequent executions
         } catch (RuntimeException re) {
           log.error("Runtime error in periodic deletion of expired docs: " + 
                     re.getMessage(), re);
-          // DO NOT RETHROW: ScheduledExecutor will supress subsequent executions
+          // DO NOT RETHROW: ScheduledExecutor will suppress subsequent executions
         } finally {
           SolrRequestInfo.clearRequestInfo();
         }
@@ -440,12 +440,12 @@ public final class DocExpirationUpdateProcessorFactory
   /**
    * <p>
    * Helper method that returns true if the Runnable managed by this factory 
-   * should be responseible of doing periodica deletes.
+   * should be responsible of doing periodical deletes.
    * </p>
    * <p>
-   * In simple standalone instalations this method always returns true, 
+   * In simple standalone installations this method always returns true, 
    * but in cloud mode it will be true if and only if we are currently the leader 
-   * of the (active) slice with the first name (lexigraphically).
+   * of the (active) slice with the first name (lexicographically).
    * </p>
    * <p>
    * If this method returns false, it may have also logged a message letting the user 

@@ -29,6 +29,7 @@ import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -71,7 +72,8 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     "w1 xx w2 yy w3",
     "w1 w3 xx w2 yy w3 zz",
     "t1 t2 t2 t1",
-    "g x x g g x x x g g x x g"
+    "g x x g g x x x g g x x g",
+      "go to webpage"
   };
 
   protected SpanNearQuery makeQuery(String s1, String s2, String s3,
@@ -291,6 +293,23 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     assertFinished(spans);
   }
 
+  public void testNestedGaps() throws Exception {
+    SpanQuery q = SpanNearQuery.newOrderedNearQuery(FIELD)
+        .addClause(new SpanOrQuery(
+            new SpanTermQuery(new Term(FIELD, "open")),
+            SpanNearQuery.newOrderedNearQuery(FIELD)
+                .addClause(new SpanTermQuery(new Term(FIELD, "go")))
+                .addGap(1)
+                .build()
+        ))
+        .addClause(new SpanTermQuery(new Term(FIELD, "webpage")))
+        .build();
+
+    TopDocs topDocs = searcher.search(q, 1);
+    assertEquals(6, topDocs.scoreDocs[0].doc);
+
+  }
+
   /*
     protected String[] docFields = {
     "w1 w2 w3 w4 w5",
@@ -298,7 +317,8 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     "w1 xx w2 yy w3",
     "w1 w3 xx w2 yy w3 zz",
     "t1 t2 t2 t1",
-    "g x x g g x x x g g x x g"
+    "g x x g g x x x g g x x g",
+    "go to webpage"
   };
    */
 }

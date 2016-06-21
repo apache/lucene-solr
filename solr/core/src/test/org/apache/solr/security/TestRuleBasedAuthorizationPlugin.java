@@ -27,6 +27,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
 
@@ -162,13 +163,13 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     ((Map)rules.get("user-role")).put("cio","su");
     ((List)rules.get("permissions")).add( makeMap("name", "all", "role", "su"));
 
-    checkRules(makeMap("resource", "/replication",
+    checkRules(makeMap("resource", ReplicationHandler.PATH,
         "httpMethod", "POST",
         "userPrincipal", "tim",
         "collectionRequests", singletonList(new CollectionRequest("mycoll")) )
         , FORBIDDEN, rules);
 
-    checkRules(makeMap("resource", "/replication",
+    checkRules(makeMap("resource", ReplicationHandler.PATH,
         "httpMethod", "POST",
         "userPrincipal", "cio",
         "collectionRequests", singletonList(new CollectionRequest("mycoll")) )

@@ -181,9 +181,9 @@ public class IndexFetcher {
     if (masterUrl == null)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "'masterUrl' is required for a slave");
-    if (masterUrl.endsWith("/replication")) {
+    if (masterUrl.endsWith(ReplicationHandler.PATH)) {
       masterUrl = masterUrl.substring(0, masterUrl.length()-12);
-      LOG.warn("'masterUrl' must be specified without the /replication suffix");
+      LOG.warn("'masterUrl' must be specified without the "+ReplicationHandler.PATH+" suffix");
     }
     this.masterUrl = masterUrl;
     
@@ -206,7 +206,7 @@ public class IndexFetcher {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_INDEX_VERSION);
     params.set(CommonParams.WT, JAVABIN);
-    params.set(CommonParams.QT, "/replication");
+    params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
@@ -228,7 +228,7 @@ public class IndexFetcher {
     params.set(COMMAND,  CMD_GET_FILE_LIST);
     params.set(GENERATION, String.valueOf(gen));
     params.set(CommonParams.WT, JAVABIN);
-    params.set(CommonParams.QT, "/replication");
+    params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
@@ -538,7 +538,10 @@ public class IndexFetcher {
         }
       }
 
-      core.getUpdateHandler().getSolrCoreState().setLastReplicateIndexSuccess(successfulInstall);
+      if (core.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+        // we only track replication success in SolrCloud mode
+        core.getUpdateHandler().getSolrCoreState().setLastReplicateIndexSuccess(successfulInstall);
+      }
 
       filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = null;
       markReplicationStop();
@@ -1444,7 +1447,7 @@ public class IndexFetcher {
 //    //the method is command=filecontent
       params.set(COMMAND, CMD_GET_FILE);
       params.set(GENERATION, Long.toString(indexGen));
-      params.set(CommonParams.QT, "/replication");
+      params.set(CommonParams.QT, ReplicationHandler.PATH);
       //add the version to download. This is used to reserve the download
       if (isConf) {
         //set cf instead of file for config file
@@ -1578,7 +1581,7 @@ public class IndexFetcher {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_DETAILS);
     params.set("slave", false);
-    params.set(CommonParams.QT, "/replication");
+    params.set(CommonParams.QT, ReplicationHandler.PATH);
 
     // TODO use shardhandler
     try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {

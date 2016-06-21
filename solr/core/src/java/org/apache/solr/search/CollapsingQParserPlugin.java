@@ -2532,7 +2532,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
     
-    // LUCENE-6808 workarround
+    // LUCENE-6808 workaround
     private static Object cloneIfBytesRef(Object val) {
       if (val instanceof BytesRef) {
         return BytesRef.deepCopyOf((BytesRef) val);
@@ -2633,7 +2633,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (0 <= lastCompare) {
-        // we're either not competitive, or we're completley tied with another doc that's already group head
+        // we're either not competitive, or we're completely tied with another doc that's already group head
         // that's already been selected
         return false;
       } // else...

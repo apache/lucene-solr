@@ -73,8 +73,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   public static class Resolver implements JavaBinCodec.ObjectResolver , JavaBinCodec.WritableDocFields {
     protected final SolrQueryRequest solrQueryRequest;
     protected IndexSchema schema;
-    protected SolrIndexSearcher searcher;
-    protected final ReturnFields returnFields;
+    protected ReturnFields returnFields;
 
     public Resolver(SolrQueryRequest req, ReturnFields returnFields) {
       solrQueryRequest = req;
@@ -125,7 +124,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         codec.writeSolrDocument(doc);
       }
     }
-    
+
     public void writeResults(ResultContext ctx, JavaBinCodec codec) throws IOException {
       codec.writeTag(JavaBinCodec.SOLRDOCLST);
       boolean wantsScores = returnFields.wantsScore() && ctx.docs.hasScores();

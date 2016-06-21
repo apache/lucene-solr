@@ -40,6 +40,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.ngram.NGramTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -93,6 +94,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
+import org.junit.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -1561,6 +1563,32 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       }
     };
     helper.start();
+  }
+
+  @Test
+  public void testHighlighterWithPhraseQuery() throws IOException, InvalidTokenOffsetsException {
+
+    final Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new NGramTokenizer(4, 4));
+      }
+    };
+    final String fieldName = "substring";
+
+    final List<BytesRef> list = new ArrayList<>();
+    list.add(new BytesRef("uchu"));
+    final PhraseQuery query = new PhraseQuery(fieldName, list.toArray(new BytesRef[list.size()]));
+
+    final QueryScorer fragmentScorer = new QueryScorer(query, fieldName);
+    final SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
+
+    final Highlighter highlighter = new Highlighter(formatter, fragmentScorer);
+    highlighter.setTextFragmenter(new SimpleFragmenter(100));
+    final String fragment = highlighter.getBestFragment(analyzer, fieldName, "Buchung");
+
+    assertEquals("B<b>uchu</b>ng",fragment);
+
   }
 
   public void testUnRewrittenQuery() throws Exception {

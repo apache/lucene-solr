@@ -116,24 +116,29 @@ public class WeightedSpanTermExtractor {
     } else if (query instanceof PhraseQuery) {
       PhraseQuery phraseQuery = ((PhraseQuery) query);
       Term[] phraseQueryTerms = phraseQuery.getTerms();
-      SpanQuery[] clauses = new SpanQuery[phraseQueryTerms.length];
-      for (int i = 0; i < phraseQueryTerms.length; i++) {
-        clauses[i] = new SpanTermQuery(phraseQueryTerms[i]);
+      if (phraseQueryTerms.length == 1) {
+        extractWeightedSpanTerms(terms, new SpanTermQuery(phraseQueryTerms[0]), boost);
       }
+      else {
+        SpanQuery[] clauses = new SpanQuery[phraseQueryTerms.length];
+        for (int i = 0; i < phraseQueryTerms.length; i++) {
+          clauses[i] = new SpanTermQuery(phraseQueryTerms[i]);
+        }
 
-      // sum position increments beyond 1
-      int positionGaps = 0;
-      int[] positions = phraseQuery.getPositions();
-      if (positions.length >= 2) {
-        // positions are in increasing order.   max(0,...) is just a safeguard.
-        positionGaps = Math.max(0, positions[positions.length-1] - positions[0] - positions.length + 1);
+        // sum position increments beyond 1
+        int positionGaps = 0;
+        int[] positions = phraseQuery.getPositions();
+        if (positions.length >= 2) {
+          // positions are in increasing order.   max(0,...) is just a safeguard.
+          positionGaps = Math.max(0, positions[positions.length - 1] - positions[0] - positions.length + 1);
+        }
+
+        //if original slop is 0 then require inOrder
+        boolean inorder = (phraseQuery.getSlop() == 0);
+
+        SpanNearQuery sp = new SpanNearQuery(clauses, phraseQuery.getSlop() + positionGaps, inorder);
+        extractWeightedSpanTerms(terms, sp, boost);
       }
-
-      //if original slop is 0 then require inOrder
-      boolean inorder = (phraseQuery.getSlop() == 0);
-
-      SpanNearQuery sp = new SpanNearQuery(clauses, phraseQuery.getSlop() + positionGaps, inorder);
-      extractWeightedSpanTerms(terms, sp, boost);
     } else if (query instanceof TermQuery) {
       extractWeightedTerms(terms, query, boost);
     } else if (query instanceof SpanQuery) {

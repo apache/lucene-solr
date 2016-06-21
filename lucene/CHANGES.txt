@@ -4,7 +4,48 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 5.5.2 =======================
-(No Changes)
+
+Bug Fixes
+
+* LUCENE-7065: Fix the explain for the global ordinals join query. Before the
+  explain would also indicate that non matching documents would match.
+  On top of that with score mode average, the explain would fail with a NPE.
+  (Martijn van Groningen)
+
+* LUCENE-7111: DocValuesRangeQuery.newLongRange behaves incorrectly for
+  Long.MAX_VALUE and Long.MIN_VALUE (Ishan Chattopadhyaya via Steve Rowe)
+
+* LUCENE-7139: Fix bugs in geo3d's Vincenty surface distance
+  implementation (Karl Wright via Mike McCandless)
+
+* LUCENE-7187: Block join queries' Weight#extractTerms(...) implementations
+  should delegate to the wrapped weight. (Martijn van Groningen)
+
+* LUCENE-7279: JapaneseTokenizer throws ArrayIndexOutOfBoundsException
+  on some valid inputs (Mike McCandless)
+
+* LUCENE-7219: Make queryparser/xml (Point|LegacyNumeric)RangeQuery builders
+  match the underlying queries' (lower|upper)Term optionality logic.
+  (Kaneshanathan Srivisagan, Christine Poerschke)
+
+* LUCENE-7284: GapSpans needs to implement positionsCost(). (Daniel Bigham, Alan
+  Woodward)
+
+* LUCENE-7231: WeightedSpanTermExtractor didn't deal correctly with single-term
+  phrase queries. (Eva Popenda, Alan Woodward)
+
+* LUCENE-7301: Multiple doc values updates to the same document within
+  one update batch could be applied in the wrong order resulting in
+  the wrong updated value (Ishan Chattopadhyaya, hossman, Mike McCandless)
+
+* LUCENE-7132: BooleanQuery sometimes assigned too-low scores in cases
+  where ranges of documents had only a single clause matching while
+  other ranges had more than one clause matching (Ahmet Arslan,
+  hossman, Mike McCandless)
+
+* LUCENE-7291: Spatial heatmap faceting could mis-count when the heatmap crosses the
+  dateline and indexed non-point shapes are much bigger than the heatmap region.
+  (David Smiley)
 
 ======================= Lucene 5.5.1 =======================
 
@@ -18,7 +59,6 @@ Bug fixes
   (David Smiley, yonik)  
 
 * LUCENE-7209: Fixed explanations of FunctionScoreQuery. (Adrien Grand)
-
 
 ======================= Lucene 5.5.0 =======================
 
@@ -251,11 +291,11 @@ Bug Fixes
 New Features
 
 * LUCENE-6747: FingerprintFilter is a TokenFilter that outputs a single
-  token which is a concatenation of the sorted and de-duplicated set of 
-  input tokens. Useful for normalizing short text in clustering/linking 
+  token which is a concatenation of the sorted and de-duplicated set of
+  input tokens. Useful for normalizing short text in clustering/linking
   tasks. (Mark Harwood, Adrien Grand)
 
-* LUCENE-6875: New Serbian Filter. (Nikola Smolenski via Robert Muir, 
+* LUCENE-6875: New Serbian Filter. (Nikola Smolenski via Robert Muir,
   Dawid Weiss)
 
 * LUCENE-6720: New FunctionRangeQuery wrapper around ValueSourceScorer

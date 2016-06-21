@@ -282,7 +282,7 @@ public class RealTimeGetComponent extends SearchComponent
         if (docid < 0) return null;
         Document luceneDocument = searcher.doc(docid);
         sid = toSolrInputDocument(luceneDocument, core.getLatestSchema());
-        searcher.decorateDocValueFields(sid, docid, searcher.getNonStoredDVs(false));
+        searcher.decorateDocValueFields(sid, docid, searcher.getNonStoredDVsWithoutCopyTargets());
       }
     } finally {
       if (searcherHolder != null) {

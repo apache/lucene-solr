@@ -61,8 +61,12 @@ def getGitRev():
   status = os.popen('git status').read().strip()
   if 'nothing to commit, working directory clean' not in status:
     raise RuntimeError('git clone is dirty:\n\n%s' % status)
+  branch = os.popen('git rev-parse --abbrev-ref HEAD').read().strip()
+  command = 'git log origin/%s..' % branch
+  unpushedCommits = os.popen(command).read().strip()
+  if len(unpushedCommits) > 0:
+    raise RuntimeError('There are unpushed commits - "%s" output is:\n\n%s' % (command, unpushedCommits))
 
-  # TODO: we should also detect unpushed changes here?  Something like "git cherry -v origin/branch_5_5"?
   print('  git clone is clean')
   return os.popen('git rev-parse HEAD').read().strip()
 
@@ -73,8 +77,8 @@ def prepare(root, version, gpgKeyID, gpgPassword):
     os.remove(LOG)
 
   os.chdir(root)
-  print('  svn up...')
-  run('svn up')
+  print('  git pull...')
+  run('git pull')
 
   rev = getGitRev()
   print('  git rev: %s' % rev)
@@ -114,47 +118,6 @@ def prepare(root, version, gpgKeyID, gpgPassword):
   print('  done!')
   print()
   return rev
-
-def push(version, root, rev, rcNum, username):
-  print('Push...')
-  dir = 'lucene-solr-%s-RC%d-rev%s' % (version, rcNum, rev)
-  s = os.popen('ssh %s@people.apache.org "ls -ld public_html/staging_area/%s" 2>&1' % (username, dir)).read()
-  if 'no such file or directory' not in s.lower():
-    print('  Remove old dir...')
-    run('ssh %s@people.apache.org "chmod -R u+rwX public_html/staging_area/%s; rm -rf public_html/staging_area/%s"' % 
-        (username, dir, dir))
-  run('ssh %s@people.apache.org "mkdir -p public_html/staging_area/%s/lucene public_html/staging_area/%s/solr"' % \
-      (username, dir, dir))
-  print('  Lucene')
-  os.chdir('%s/lucene/dist' % root)
-  print('    zip...')
-  if os.path.exists('lucene.tar.bz2'):
-    os.remove('lucene.tar.bz2')
-  run('tar cjf lucene.tar.bz2 *')
-  print('    copy...')
-  run('scp lucene.tar.bz2 %s@people.apache.org:public_html/staging_area/%s/lucene' % (username, dir))
-  print('    unzip...')
-  run('ssh %s@people.apache.org "cd public_html/staging_area/%s/lucene; tar xjf lucene.tar.bz2; rm -f lucene.tar.bz2"' % (username, dir))
-  os.remove('lucene.tar.bz2')
-
-  print('  Solr')
-  os.chdir('%s/solr/package' % root)
-  print('    zip...')
-  if os.path.exists('solr.tar.bz2'):
-    os.remove('solr.tar.bz2')
-  run('tar cjf solr.tar.bz2 *')
-  print('    copy...')
-  run('scp solr.tar.bz2 %s@people.apache.org:public_html/staging_area/%s/solr' % (username, dir))
-  print('    unzip...')
-  run('ssh %s@people.apache.org "cd public_html/staging_area/%s/solr; tar xjf solr.tar.bz2; rm -f solr.tar.bz2"' % (username, dir))
-  os.remove('solr.tar.bz2')
-
-  print('  chmod...')
-  run('ssh %s@people.apache.org "chmod -R a+rX-w public_html/staging_area/%s"' % (username, dir))
-
-  print('  done!')
-  url = 'http://people.apache.org/~%s/staging_area/%s' % (username, dir)
-  return url
 
 def pushLocal(version, root, rev, rcNum, localDir):
   print('Push local [%s]...' % localDir)
@@ -206,29 +169,23 @@ def read_version(path):
 def parse_config():
   epilogue = textwrap.dedent('''
     Example usage for a Release Manager:
-    python3.2 -u buildAndPushRelease.py --push-remote mikemccand --sign 6E68DA61 --rc-num 1 /path/to/lucene_solr_4_7
+    python3 -u dev-tools/scripts/buildAndPushRelease.py --push-local /tmp/releases/6.0.1 --sign 6E68DA61 --rc-num 1
   ''')
   description = 'Utility to build, push, and test a release.'
   parser = argparse.ArgumentParser(description=description, epilog=epilogue,
                                    formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument('--no-prepare', dest='prepare', default=True, action='store_false',
                       help='Use the already built release in the provided checkout')
-  parser.add_argument('--push-remote', metavar='USERNAME',
-                      help='Push the release to people.apache.org for the given user')
   parser.add_argument('--push-local', metavar='PATH',
                       help='Push the release to the local path')
   parser.add_argument('--sign', metavar='KEYID',
                       help='Sign the release with the given gpg key')
   parser.add_argument('--rc-num', metavar='NUM', type=int, default=1,
-                      help='Release Candidate number, required')
-  parser.add_argument('--smoke-test', metavar='PATH', 
-                      help='Run the smoker tester on the release in the given directory')
-  parser.add_argument('root', metavar='checkout_path',
-                      help='Root of SVN checkout for lucene-solr')
+                      help='Release Candidate number.  Default: 1')
+  parser.add_argument('--root', metavar='PATH', default='.',
+                      help='Root of Git working tree for lucene-solr.  Default: "." (the current directory)')
   config = parser.parse_args()
 
-  if config.push_remote is not None and config.push_local is not None:
-    parser.error('Cannot specify --push-remote and --push-local together')
   if not config.prepare and config.sign:
     parser.error('Cannot sign already built release')
   if config.push_local is not None and os.path.exists(config.push_local):
@@ -236,8 +193,13 @@ def parse_config():
   if config.rc_num <= 0:
     parser.error('Release Candidate number must be a positive integer')
   if not os.path.isdir(config.root):
-    # TODO: add additional svn check to ensure dir is a real lucene-solr checkout
-    parser.error('Root path is not a valid lucene-solr checkout')
+    parser.error('Root path "%s" is not a directory' % config.root)
+  cwd = os.getcwd()
+  os.chdir(config.root)
+  config.root = os.getcwd() # Absolutize root dir
+  if os.system('git rev-parse') or 3 != len([d for d in ('dev-tools','lucene','solr') if os.path.isdir(d)]):
+    parser.error('Root path "%s" is not a valid lucene-solr checkout' % config.root)
+  os.chdir(cwd)
 
   config.version = read_version(config.root)
   print('Building version: %s' % config.version)
@@ -251,8 +213,17 @@ def parse_config():
     config.gpg_password = None
 
   return config
+
+def check_cmdline_tools():  # Fail fast if there are cmdline tool problems
+  if os.system('git --version >/dev/null 2>/dev/null'):
+    raise RuntimeError('"git --version" returned a non-zero exit code.')
+  antVersion = os.popen('ant -version').read().strip()
+  if not antVersion.startswith('Apache Ant(TM) version 1.8'):
+    raise RuntimeError('ant version is not 1.8.X: "%s"' % antVersion)
   
 def main():
+  check_cmdline_tools()
+
   c = parse_config()
 
   if c.prepare:
@@ -261,19 +232,17 @@ def main():
     os.chdir(root)
     rev = open('rev.txt', encoding='UTF-8').read()
 
-  if c.push_remote:
-    url = push(c.version, c.root, rev, c.rc_num, c.push_remote)
-  elif c.push_local:
+  if c.push_local:
     url = pushLocal(c.version, c.root, rev, c.rc_num, c.push_local)
   else:
     url = None
 
   if url is not None:
     print('  URL: %s' % url)
-    print('Next set the PYTHON_EXEC env var and you can run the smoker tester:')
-    p = re.compile("(.*)\/")
+    print('Next run the smoker tester:')
+    p = re.compile(".*/")
     m = p.match(sys.argv[0])
-    print(' $PYTHON_EXEC %ssmokeTestRelease.py %s' % (m.group(), url))
+    print('%s -u %ssmokeTestRelease.py %s' % (sys.executable, m.group(), url))
 
 if __name__ == '__main__':
   try:

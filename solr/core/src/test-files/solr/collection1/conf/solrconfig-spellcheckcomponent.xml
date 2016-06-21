@@ -20,7 +20,8 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <indexConfig>
-    <mergePolicy class="${solr.tests.mergePolicy:org.apache.solr.util.RandomMergePolicy}" />  
+    <mergePolicy enable="${solr.tests.useMergePolicy:true}" class="${solr.tests.mergePolicy:org.apache.solr.util.RandomMergePolicy}" />
+    <mergePolicyFactory enable="${solr.tests.useMergePolicyFactory:true}" class="${solr.tests.mergePolicyFactory:org.apache.solr.util.RandomMergePolicyFactory}" />
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <maxBufferedDocs>${solr.tests.maxBufferedDocs}</maxBufferedDocs>
     <ramBufferSizeMB>${solr.tests.ramBufferSizeMB}</ramBufferSizeMB>

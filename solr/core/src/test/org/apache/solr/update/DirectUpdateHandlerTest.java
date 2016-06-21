@@ -32,6 +32,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
+import org.apache.solr.index.TieredMergePolicyFactory;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -56,12 +57,15 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-    System.setProperty("solr.tests.mergePolicy", TieredMergePolicy.class.getName());
+    systemSetPropertySolrTestsMergePolicy(TieredMergePolicy.class.getName());
+    systemSetPropertySolrTestsMergePolicyFactory(TieredMergePolicyFactory.class.getName());
     initCore("solrconfig.xml", "schema12.xml");
   }
   
   @AfterClass
   public static void afterClass() {
+    systemClearPropertySolrTestsMergePolicy();
+    systemClearPropertySolrTestsMergePolicyFactory();
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {

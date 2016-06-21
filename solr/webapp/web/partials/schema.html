@@ -315,7 +315,7 @@ limitations under the License.
                 <li class="clearfix" ng-repeat="countGroup in termInfo.topTerms">
                     <p><span>{{countGroup.count}}</span></p>
                     <ul>
-                        <li ng-repeat="term in countGroup.terms" ng-class="{odd:$odd}"><a href="#/{{core}}/query?q={{name}}:{{term}}">{{term}}</a></li>
+                        <li ng-repeat="term in countGroup.terms" ng-class="{odd:$odd}"><a ng-href="#/{{core}}/query?q=%7B!term+f%3D{{name | uriencode}}%7D{{term | uriencode}}">{{term}}</a></li>
                     </ul>
                 </li>
 

@@ -44,6 +44,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
+import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.MockStreamingSolrClients.Exp;
 import org.apache.solr.update.SolrCmdDistributor.Error;
@@ -51,6 +52,7 @@ import org.apache.solr.update.SolrCmdDistributor.Node;
 import org.apache.solr.update.SolrCmdDistributor.RetryNode;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xml.sax.SAXException;
@@ -63,8 +65,16 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   public static void beforeClass() throws Exception {
     // we can't use the Randomized merge policy because the test depends on
     // being able to call optimize to have all deletes expunged.
-    System.setProperty("solr.tests.mergePolicy", LogDocMergePolicy.class.getName());
+    systemSetPropertySolrTestsMergePolicy(LogDocMergePolicy.class.getName());
+    systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
   }
+
+  @AfterClass
+  public static void afterClass() {
+    systemClearPropertySolrTestsMergePolicy();
+    systemClearPropertySolrTestsMergePolicyFactory();
+  }
+
   private UpdateShardHandler updateShardHandler;
   
   public SolrCmdDistributorTest() throws ParserConfigurationException, IOException, SAXException {

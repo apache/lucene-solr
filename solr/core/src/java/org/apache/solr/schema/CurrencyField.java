@@ -556,7 +556,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
         @Override
         public long longVal(int doc) {
           long amount = amounts.longVal(doc);
-          // bail fast using whatever ammounts defaults to if no value
+          // bail fast using whatever amounts defaults to if no value
           // (if we don't do this early, currencyOrd may be < 0, 
           // causing index bounds exception
           if ( ! exists(doc) ) {

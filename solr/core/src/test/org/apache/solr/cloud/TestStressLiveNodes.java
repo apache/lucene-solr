@@ -147,17 +147,17 @@ public class TestStressLiveNodes extends AbstractSolrTestCase {
                    actualLiveNodes, cachedLiveNodes);
       
       
-      // start spining up some threads to add some live_node children in parallel
+      // start spinning up some threads to add some live_node children in parallel
 
       // we don't need a lot of threads or nodes (we don't want to swamp the CPUs
-      // just bursts of conccurent adds) but we do want to randomize it a bit so we increase the
+      // just bursts of concurrent adds) but we do want to randomize it a bit so we increase the
       // odds of concurrent watchers firing regardless of the num CPUs or load on the machine running
       // the test (but we deliberately don't look at availableProcessors() since we want randomization
       // consistency across all machines for a given seed)
       final int numThreads = TestUtil.nextInt(random(), 2, 5);
       
       // use same num for all thrashers, to increase likely hood of them all competing
-      // (diff random number would mean heavy concurency only for ~ the first N=lowest num requetss)
+      // (diff random number would mean heavy concurrency only for ~ the first N=lowest num requests)
       //
       // this does not need to be a large number -- in fact, the higher it is, the more
       // likely we are to see a mistake in early watcher triggers get "corrected" by a later one
@@ -218,7 +218,7 @@ public class TestStressLiveNodes extends AbstractSolrTestCase {
     private boolean running = false;;
     private int numAdded = 0;
     
-    /** ID should ideally be unique amonst any other instances */
+    /** ID should ideally be unique amongst any other instances */
     public LiveNodeTrasher(String id, int numNodesToAdd) {
       this.id = id;
       this.numNodesToAdd = numNodesToAdd;

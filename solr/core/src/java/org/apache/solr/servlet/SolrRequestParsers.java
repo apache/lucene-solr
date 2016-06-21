@@ -17,6 +17,7 @@
 package org.apache.solr.servlet;
 
 import javax.servlet.http.HttpServletRequest;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +42,7 @@ import java.util.Map;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -55,7 +57,6 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
-import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RTimerTree;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
@@ -484,7 +485,8 @@ public class SolrRequestParsers
 
     @Override
     public InputStream getStream() throws IOException {
-      return req.getInputStream();
+      // Protect container owned streams from being closed by us, see SOLR-8933
+      return new CloseShieldInputStream(req.getInputStream());
     }
   }
 
@@ -561,21 +563,18 @@ public class SolrRequestParsers
       upload.setSizeMax( ((long) uploadLimitKB) * 1024L );
 
       // Parse the request
-      List items = upload.parseRequest(req);
-      Iterator iter = items.iterator();
-      while (iter.hasNext()) {
-          FileItem item = (FileItem) iter.next();
-
-          // If it's a form field, put it in our parameter map
-          if (item.isFormField()) {
-            MultiMapSolrParams.addParam( 
-              item.getFieldName().trim(),
-              item.getString(), params.getMap() );
-          }
-          // Add the stream
-          else { 
-            streams.add( new FileItemContentStream( item ) );
-          }
+      List<FileItem> items = upload.parseRequest(req);
+      for (FileItem item : items) {
+        // If it's a form field, put it in our parameter map
+        if (item.isFormField()) {
+          MultiMapSolrParams.addParam(
+            item.getFieldName().trim(),
+            item.getString(), params.getMap() );
+        }
+        // Add the stream
+        else {
+          streams.add( new FileItemContentStream( item ) );
+        }
       }
       return params;
     }
@@ -618,7 +617,8 @@ public class SolrRequestParsers
       final Charset charset = (cs == null) ? StandardCharsets.UTF_8 : Charset.forName(cs);
 
       try {
-        in = FastInputStream.wrap( in == null ? req.getInputStream() : in);
+        // Protect container owned streams from being closed by us, see SOLR-8933
+        in = FastInputStream.wrap( in == null ? new CloseShieldInputStream(req.getInputStream()) : in );
 
         final long bytesRead = parseFormDataContent(in, maxLength, charset, map, false);
         if (bytesRead == 0L && totalLength > 0L) {
@@ -737,7 +737,9 @@ public class SolrRequestParsers
       if (formdata.isFormData(req)) {
         String userAgent = req.getHeader("User-Agent");
         boolean isCurl = userAgent != null && userAgent.startsWith("curl/");
-        FastInputStream input = FastInputStream.wrap( req.getInputStream() );
+
+        // Protect container owned streams from being closed by us, see SOLR-8933
+        FastInputStream input = FastInputStream.wrap( new CloseShieldInputStream(req.getInputStream()) );
 
         if (isCurl) {
           SolrParams params = autodetect(req, streams, input);

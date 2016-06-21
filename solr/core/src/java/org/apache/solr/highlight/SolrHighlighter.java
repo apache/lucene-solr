@@ -44,7 +44,7 @@ public abstract class SolrHighlighter
 
   /**
    * Return a String array of the fields to be highlighted.
-   * Falls back to the programatic defaults, or the default search field if the list of fields
+   * Falls back to the programmatic defaults, or the default search field if the list of fields
    * is not specified in either the handler configuration or the request.
    * @param query The current Query
    * @param request The current SolrQueryRequest

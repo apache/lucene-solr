@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -34,8 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
-
-import java.lang.invoke.MethodHandles;
 
 /**
  * ZkStateWriter is responsible for writing updates to the cluster state stored in ZooKeeper for
@@ -84,6 +83,7 @@ public class ZkStateWriter {
 
     this.reader = zkStateReader;
     this.stats = stats;
+    this.clusterState = zkStateReader.getClusterState();
   }
 
   /**
@@ -227,8 +227,8 @@ public class ZkStateWriter {
           } else if (c.getStateFormat() > 1) {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
             if (reader.getZkClient().exists(path, true)) {
-              assert c.getZNodeVersion() >= 0;
               log.info("going to update_collection {} version: {}", path, c.getZNodeVersion());
+              assert c.getZNodeVersion() >= 0;
               Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
               DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion(), path);
               clusterState = clusterState.copyWith(name, newCollection);

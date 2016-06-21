@@ -17,9 +17,9 @@
 package org.apache.solr.servlet;
 
 import javax.servlet.ServletInputStream;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,6 +40,8 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.CloseShieldInputStream;
+import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
@@ -531,7 +533,8 @@ public class HttpSolrCall {
       } else if (isPostOrPutRequest) {
         HttpEntityEnclosingRequestBase entityRequest =
             "POST".equals(req.getMethod()) ? new HttpPost(urlstr) : new HttpPut(urlstr);
-        HttpEntity entity = new InputStreamEntity(req.getInputStream(), req.getContentLength());
+        InputStream in = new CloseShieldInputStream(req.getInputStream()); // Prevent close of container streams
+        HttpEntity entity = new InputStreamEntity(in, req.getContentLength());
         entityRequest.setEntity(entity);
         method = entityRequest;
       } else if ("DELETE".equals(req.getMethod())) {
@@ -721,7 +724,8 @@ public class HttpSolrCall {
       }
 
       if (Method.HEAD != reqMethod) {
-        QueryResponseWriterUtil.writeQueryResponse(response.getOutputStream(), responseWriter, solrReq, solrRsp, ct);
+        OutputStream out = new CloseShieldOutputStream(response.getOutputStream()); // Prevent close of container streams, see SOLR-8933
+        QueryResponseWriterUtil.writeQueryResponse(out, responseWriter, solrReq, solrRsp, ct);
       }
       //else http HEAD request, nothing to write out, waited this long just to get ContentType
     } catch (EOFException e) {

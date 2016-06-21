@@ -415,56 +415,28 @@ public class SimpleFacets {
 
     // determine what type of faceting method to use
     final String methodStr = params.getFieldParam(field, FacetParams.FACET_METHOD);
-    FacetMethod method = null;
+    final FacetMethod requestedMethod;
     if (FacetParams.FACET_METHOD_enum.equals(methodStr)) {
-      method = FacetMethod.ENUM;
+      requestedMethod = FacetMethod.ENUM;
     } else if (FacetParams.FACET_METHOD_fcs.equals(methodStr)) {
-      method = FacetMethod.FCS;
+      requestedMethod = FacetMethod.FCS;
     } else if (FacetParams.FACET_METHOD_fc.equals(methodStr)) {
-      method = FacetMethod.FC;
+      requestedMethod = FacetMethod.FC;
     } else if(FacetParams.FACET_METHOD_uif.equals(methodStr)) {
-      method = FacetMethod.UIF;
-    }
-
-    if (method == FacetMethod.ENUM && TrieField.getMainValuePrefix(ft) != null) {
-      // enum can't deal with trie fields that index several terms per value
-      method = sf.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
-    }
-
-    if (method == null && ft instanceof BoolField) {
-      // Always use filters for booleans... we know the number of values is very small.
-      method = FacetMethod.ENUM;
+      requestedMethod = FacetMethod.UIF;
+    }else{
+      requestedMethod=null;
     }
 
     final boolean multiToken = sf.multiValued() || ft.multiValuedFieldCache();
-    
-    if (ft.getNumericType() != null && !sf.multiValued()) {
-      // the per-segment approach is optimal for numeric field types since there
-      // are no global ords to merge and no need to create an expensive
-      // top-level reader
-      method = FacetMethod.FCS;
-    }
 
-    if (method == null) {
-      // TODO: default to per-segment or not?
-      method = FacetMethod.FC;
-    }
-
-    if (method == FacetMethod.FCS && multiToken) {
-      // only fc knows how to deal with multi-token fields
-      method = FacetMethod.FC;
-    }
-    
-    if (method == FacetMethod.ENUM && sf.hasDocValues()) {
-      // only fc can handle docvalues types
-      method = FacetMethod.FC;
-    }
+    FacetMethod appliedFacetMethod = selectFacetMethod(sf, requestedMethod, mincount);
 
     if (params.getFieldBool(field, GroupParams.GROUP_FACET, false)) {
       counts = getGroupedCounts(searcher, docs, field, multiToken, offset,limit, mincount, missing, sort, prefix, contains, ignoreCase);
     } else {
-      assert method != null;
-      switch (method) {
+      assert appliedFacetMethod != null;
+      switch (appliedFacetMethod) {
         case ENUM:
           assert TrieField.getMainValuePrefix(ft) == null;
           counts = getFacetTermEnumCounts(searcher, docs, field, offset, limit, mincount,missing,sort,prefix, contains, ignoreCase, params);
@@ -488,7 +460,6 @@ public class SimpleFacets {
           }
           break;
         case UIF:
-
             //Emulate the JSON Faceting structure so we can use the same parsing classes
             Map<String, Object> jsonFacet = new HashMap<>(13);
             jsonFacet.put("type", "terms");
@@ -553,6 +524,66 @@ public class SimpleFacets {
     }
 
     return counts;
+  }
+
+  /**
+   * This method will force the appropriate facet method even if the user provided a different one as a request parameter
+   *
+   * N.B. this method could overwrite what you passed as request parameter. Be Extra careful
+   *
+   * @param field field we are faceting
+   * @param method the facet method passed as a request parameter
+   * @param mincount the minimum value a facet should have to be returned
+   * @return the FacetMethod to use
+   */
+   static FacetMethod selectFacetMethod(SchemaField field, FacetMethod method, Integer mincount) {
+
+     FieldType type = field.getType();
+
+     /*The user did not specify any preference*/
+     if (method == null) {
+      /* Always use filters for booleans... we know the number of values is very small. */
+       if (type instanceof BoolField) {
+         method = FacetMethod.ENUM;
+       } else if (type.getNumericType() != null && !field.multiValued()) {
+        /* the per-segment approach is optimal for numeric field types since there
+           are no global ords to merge and no need to create an expensive
+           top-level reader */
+         method = FacetMethod.FCS;
+       } else {
+         // TODO: default to per-segment or not?
+         method = FacetMethod.FC;
+       }
+     }
+
+     /* FC without docValues does not support single valued numeric facets */
+     if (method == FacetMethod.FC
+         && type.getNumericType() != null && !field.multiValued()) {
+       method = FacetMethod.FCS;
+     }
+
+     /* UIF without DocValues can't deal with mincount=0, the reason is because
+         we create the buckets based on the values present in the result set.
+         So we are not going to see facet values which are not in the result set */
+     if (method == FacetMethod.UIF
+         && !field.hasDocValues() && mincount == 0) {
+       method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
+     }
+
+     /* ENUM can't deal with trie fields that index several terms per value */
+     if (method == FacetMethod.ENUM
+         && TrieField.getMainValuePrefix(type) != null) {
+       method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
+     }
+
+     /* FCS can't deal with multi token fields */
+     final boolean multiToken = field.multiValued() || type.multiValuedFieldCache();
+     if (method == FacetMethod.FCS
+         && multiToken) {
+       method = FacetMethod.FC;
+     }
+
+     return method;
   }
 
   public NamedList<Integer> getGroupedCounts(SolrIndexSearcher searcher,

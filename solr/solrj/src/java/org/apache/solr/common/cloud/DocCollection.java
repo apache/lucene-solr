@@ -41,7 +41,8 @@ public class DocCollection extends ZkNodeProps {
   public static final String STATE_FORMAT = "stateFormat";
   public static final String RULE = "rule";
   public static final String SNITCH = "snitch";
-  private int znodeVersion = -1; // sentinel
+
+  private final int znodeVersion;
 
   private final String name;
   private final Map<String, Slice> slices;
@@ -55,7 +56,7 @@ public class DocCollection extends ZkNodeProps {
 
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    this(name, slices, props, router, -1, ZkStateReader.CLUSTER_STATE);
+    this(name, slices, props, router, Integer.MAX_VALUE, ZkStateReader.CLUSTER_STATE);
   }
 
   /**
@@ -64,8 +65,9 @@ public class DocCollection extends ZkNodeProps {
    * @param props  The properties of the slice.  This is used directly and a copy is not made.
    */
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion, String znode) {
-    super(props==null ? props = new HashMap<String,Object>() : props);
-    this.znodeVersion = zkVersion;
+    super(props==null ? props = new HashMap<>() : props);
+    // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental overwrites
+    this.znodeVersion = zkVersion == -1 ? Integer.MAX_VALUE : zkVersion;
     this.name = name;
 
     this.slices = slices;

@@ -50,14 +50,14 @@ import java.io.IOException;
  * <tr>
  * <td>lowerTerm</td>
  * <td>Specified by <tt>type</tt></td>
- * <td>Yes</td>
- * <td>N/A</td>
+ * <td>No</td>
+ * <td>Null</td>
  * </tr>
  * <tr>
  * <td>upperTerm</td>
  * <td>Specified by <tt>type</tt></td>
- * <td>Yes</td>
- * <td>N/A</td>
+ * <td>No</td>
+ * <td>Null</td>
  * </tr>
  * <tr>
  * <td>type</td>
@@ -114,8 +114,8 @@ public class NumericRangeFilterBuilder implements FilterBuilder {
   @Override
   public Filter getFilter(Element e) throws ParserException {
     String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
-    String lowerTerm = DOMUtils.getAttributeOrFail(e, "lowerTerm");
-    String upperTerm = DOMUtils.getAttributeOrFail(e, "upperTerm");
+    final String lowerTerm = DOMUtils.getAttribute(e, "lowerTerm", null);
+    final String upperTerm = DOMUtils.getAttribute(e, "upperTerm", null);
     boolean lowerInclusive = DOMUtils.getAttribute(e, "includeLower", true);
     boolean upperInclusive = DOMUtils.getAttribute(e, "includeUpper", true);
     int precisionStep = DOMUtils.getAttribute(e, "precisionStep", NumericUtils.PRECISION_STEP_DEFAULT);
@@ -124,20 +124,28 @@ public class NumericRangeFilterBuilder implements FilterBuilder {
     try {
       Filter filter;
       if (type.equalsIgnoreCase("int")) {
-        filter = NumericRangeFilter.newIntRange(field, precisionStep, Integer
-            .valueOf(lowerTerm), Integer.valueOf(upperTerm), lowerInclusive,
+        filter = NumericRangeFilter.newIntRange(field, precisionStep,
+            (lowerTerm == null ? null : Integer.valueOf(lowerTerm)),
+            (upperTerm == null ? null : Integer.valueOf(upperTerm)),
+            lowerInclusive,
             upperInclusive);
       } else if (type.equalsIgnoreCase("long")) {
-        filter = NumericRangeFilter.newLongRange(field, precisionStep, Long
-            .valueOf(lowerTerm), Long.valueOf(upperTerm), lowerInclusive,
+        filter = NumericRangeFilter.newLongRange(field, precisionStep,
+            (lowerTerm == null ? null : Long.valueOf(lowerTerm)),
+            (upperTerm == null ? null : Long.valueOf(upperTerm)),
+            lowerInclusive,
             upperInclusive);
       } else if (type.equalsIgnoreCase("double")) {
-        filter = NumericRangeFilter.newDoubleRange(field, precisionStep, Double
-            .valueOf(lowerTerm), Double.valueOf(upperTerm), lowerInclusive,
+        filter = NumericRangeFilter.newDoubleRange(field, precisionStep,
+            (lowerTerm == null ? null : Double.valueOf(lowerTerm)),
+            (upperTerm == null ? null : Double.valueOf(upperTerm)),
+            lowerInclusive,
             upperInclusive);
       } else if (type.equalsIgnoreCase("float")) {
-        filter = NumericRangeFilter.newFloatRange(field, precisionStep, Float
-            .valueOf(lowerTerm), Float.valueOf(upperTerm), lowerInclusive,
+        filter = NumericRangeFilter.newFloatRange(field, precisionStep,
+            (lowerTerm == null ? null : Float.valueOf(lowerTerm)),
+            (upperTerm == null ? null : Float.valueOf(upperTerm)),
+            lowerInclusive,
             upperInclusive);
       } else {
         throw new ParserException("type attribute must be one of: [long, int, double, float]");

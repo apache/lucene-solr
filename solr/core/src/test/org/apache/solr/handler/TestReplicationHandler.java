@@ -57,6 +57,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -208,7 +209,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command","details");
     params.set("_trace","getDetails");
-    params.set("qt","/replication");
+    params.set("qt",ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
 
     NamedList<Object> res = s.request(req);
@@ -229,7 +230,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command","commits");
     params.set("_trace","getCommits");
-    params.set("qt","/replication");
+    params.set("qt",ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
 
     NamedList<Object> res = s.request(req);
@@ -245,7 +246,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command","indexversion");
     params.set("_trace","getIndexVersion");
-    params.set("qt","/replication");
+    params.set("qt",ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
 
     NamedList<Object> res = s.request(req);
@@ -275,6 +276,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   private HttpSolrClient adminClient(SolrClient client) {
     String adminUrl = ((HttpSolrClient)client).getBaseURL().replace("/collection1", "");
     return new HttpSolrClient(adminUrl);
+  }
+
+  @Test
+  public void doTestHandlerPathUnchanged() throws Exception {
+    assertEquals("/replication", ReplicationHandler.PATH);
   }
 
   @Test
@@ -449,7 +455,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   //jetty servers.
   private void invokeReplicationCommand(int pJettyPort, String pCommand) throws IOException
   {
-    String masterUrl = buildUrl(pJettyPort) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=" + pCommand;
+    String masterUrl = buildUrl(pJettyPort) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH+"?command=" + pCommand;
     URL u = new URL(masterUrl);
     InputStream stream = u.openStream();
     stream.close();
@@ -579,6 +585,82 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs+1, numFound(rQuery(nDocs+1, "*:*", slaveClient)));
   }
 
+  /**
+   * We assert that if master is down for more than poll interval,
+   * the slave doesn't re-fetch the whole index from master again if
+   * the index hasn't changed. See SOLR-9036
+   */
+  @Test
+  public void doTestIndexFetchOnMasterRestart() throws Exception  {
+    useFactory(null);
+    try {
+      clearIndexWithReplication();
+      // change solrconfig having 'replicateAfter startup' option on master
+      master.copyConfigFile(CONF_DIR + "solrconfig-master2.xml",
+          "solrconfig.xml");
+
+      masterJetty.stop();
+      masterJetty.start();
+
+      nDocs--;
+      for (int i = 0; i < nDocs; i++)
+        index(masterClient, "id", i, "name", "name = " + i);
+
+      masterClient.commit();
+
+      NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
+      SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+      assertEquals(nDocs, numFound(masterQueryRsp));
+
+      //get docs from slave and check if number is equal to master
+      NamedList slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
+      SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+      assertEquals(nDocs, numFound(slaveQueryRsp));
+
+      //compare results
+      String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
+      assertEquals(null, cmp);
+
+      assertEquals(1, Integer.parseInt(getSlaveDetails("timesIndexReplicated")));
+      String timesFailed = getSlaveDetails("timesFailed");
+      assertEquals(0, Integer.parseInt(timesFailed != null ?  timesFailed : "0"));
+
+      masterJetty.stop();
+
+      // poll interval on slave is 1 second, so we just sleep for a few seconds
+      Thread.sleep(2000);
+
+      masterJetty.start();
+
+      // poll interval on slave is 1 second, so we just sleep for a few seconds
+      Thread.sleep(2000);
+
+      //get docs from slave and assert that they are still the same as before
+      slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
+      slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+      assertEquals(nDocs, numFound(slaveQueryRsp));
+
+      int failed = Integer.parseInt(getSlaveDetails("timesFailed"));
+      assertTrue(failed > 0);
+      assertEquals(1, Integer.parseInt(getSlaveDetails("timesIndexReplicated")) - failed);
+    } finally {
+      resetFactory();
+    }
+  }
+
+  private String getSlaveDetails(String keyName) throws SolrServerException, IOException {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(CommonParams.QT, "/replication");
+    params.set("command", "details");
+    QueryResponse response = slaveClient.query(params);
+    System.out.println("SHALIN: " + response.getResponse());
+    // details/slave/timesIndexReplicated
+    NamedList<Object> details = (NamedList<Object>) response.getResponse().get("details");
+    NamedList<Object> slave = (NamedList<Object>) details.get("slave");
+    Object o = slave.get(keyName);
+    return o != null ? o.toString() : null;
+  }
+
   @Test
   public void doTestIndexFetchWithMasterUrl() throws Exception {
     //change solrconfig on slave
@@ -608,8 +690,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, masterQueryResult.getNumFound());
 
     // index fetch
-    String masterUrl = buildUrl(slaveJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=fetchindex&masterUrl=";
-    masterUrl += buildUrl(masterJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + "/replication";
+    String masterUrl = buildUrl(slaveJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH+"?command=fetchindex&masterUrl=";
+    masterUrl += buildUrl(masterJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH;
     URL url = new URL(masterUrl);
     InputStream stream = url.openStream();
     stream.close();
@@ -923,7 +1005,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     
     // check vs /replication?command=indexversion call
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/replication");
+    params.set("qt", ReplicationHandler.PATH);
     params.set("_trace", "assertVersions");
     params.set("command", "indexversion");
     QueryRequest req = new QueryRequest(params);
@@ -962,9 +1044,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     InputStream stream;
     masterUrl = buildUrl(to.getLocalPort())
         + "/" + DEFAULT_TEST_CORENAME
-        + "/replication?wait=true&command=fetchindex&masterUrl="
+        + ReplicationHandler.PATH+"?wait=true&command=fetchindex&masterUrl="
         + buildUrl(from.getLocalPort())
-        + "/" + DEFAULT_TEST_CORENAME + "/replication";
+        + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH;
     url = new URL(masterUrl);
     stream = url.openStream();
     stream.close();

@@ -115,6 +115,8 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  */
 public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAware {
 
+  public static final String PATH = "/replication";
+
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   SolrCore core;
   
@@ -142,7 +144,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           try {
             version = Long.parseLong(commitTime);
           } catch (NumberFormatException e) {
-            LOG.warn("Version in commitData was not formated correctly: " + commitTime, e);
+            LOG.warn("Version in commitData was not formatted correctly: " + commitTime, e);
           }
         }
       } catch (IOException e) {

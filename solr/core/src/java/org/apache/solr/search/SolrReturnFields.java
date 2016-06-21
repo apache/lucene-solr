@@ -51,6 +51,7 @@ public class SolrReturnFields extends ReturnFields {
   private final List<String> globs = new ArrayList<>(1);
 
   // The lucene field names to request from the SolrIndexSearcher
+  // This *may* include fields that will not be in the final response
   private final Set<String> fields = new HashSet<>();
 
   // Field names that are OK to include in the response.
@@ -129,16 +130,12 @@ public class SolrReturnFields extends ReturnFields {
       }
       augmenters.addTransformer( new RenameFieldTransformer( from, to, copy ) );
     }
-
-    if( !_wantsAllFields ) {
-      if( !globs.isEmpty() ) {
-        // TODO??? need to fill up the fields with matching field names in the index
-        // and add them to okFieldNames?
-        // maybe just get all fields?
-        // this would disable field selection optimization... i think thatis OK
-        fields.clear(); // this will get all fields, and use wantsField to limit
-      }
-      okFieldNames.addAll( fields );
+    if( !_wantsAllFields && !globs.isEmpty() ) {
+      // TODO??? need to fill up the fields with matching field names in the index
+      // and add them to okFieldNames?
+      // maybe just get all fields?
+      // this would disable field selection optimization... i think that is OK
+      fields.clear(); // this will get all fields, and use wantsField to limit
     }
 
     if( augmenters.size() == 1 ) {

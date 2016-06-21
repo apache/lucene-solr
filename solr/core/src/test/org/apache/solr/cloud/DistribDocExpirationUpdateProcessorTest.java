@@ -20,6 +20,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
@@ -124,7 +125,7 @@ public class DistribDocExpirationUpdateProcessorTest extends AbstractFullDistrib
     // TODO: above logic verifies that deleteByQuery happens on all nodes, and ...
     // doesn't affect searcher re-open on shards w/o expired docs ... can we also verify 
     // that *only* one node is sending the deletes ?
-    // (ie: no flood of redundent deletes?)
+    // (ie: no flood of redundant deletes?)
 
   }
 
@@ -140,7 +141,7 @@ public class DistribDocExpirationUpdateProcessorTest extends AbstractFullDistrib
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("command","indexversion");
         params.set("_trace","getIndexVersion");
-        params.set("qt","/replication");
+        params.set("qt",ReplicationHandler.PATH);
         QueryRequest req = new QueryRequest(params);
     
         NamedList<Object> res = replicaRunner.client.solrClient.request(req);
@@ -167,7 +168,7 @@ public class DistribDocExpirationUpdateProcessorTest extends AbstractFullDistrib
   /**
    * Executes a query over and over against the cloudClient every 5 seconds 
    * until the numFound is 0 or the maxTimeLimitSeconds is exceeded. 
-   * Query is garunteed to be executed at least once.
+   * Query is guaranteed to be executed at least once.
    */
   private void waitForNoResults(int maxTimeLimitSeconds,
                                 SolrParams params)

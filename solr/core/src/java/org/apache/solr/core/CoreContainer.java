@@ -812,7 +812,6 @@ public class CoreContainer {
       ConfigSet coreConfig = coreConfigService.getConfig(dcore);
       log.info("Creating SolrCore '{}' using configuration from {}", dcore.getName(), coreConfig.getName());
       core = new SolrCore(dcore, coreConfig);
-      solrCores.addCreated(core);
 
       // always kick off recovery if we are in non-Cloud mode
       if (!isZooKeeperAware() && core.getUpdateHandler().getUpdateLog() != null) {
@@ -1059,7 +1058,7 @@ public class CoreContainer {
     CoreDescriptor desc = solrCores.getDynamicDescriptor(name);
     if (desc == null) { //Nope, no transient core with this name
 
-      // if there was an error initalizing this core, throw a 500
+      // if there was an error initializing this core, throw a 500
       // error with the details for clients attempting to access it.
       CoreLoadFailure loadFailure = getCoreInitFailures().get(name);
       if (null != loadFailure) {

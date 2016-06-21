@@ -305,8 +305,7 @@ public class ZkStateReader implements Closeable {
             
             @Override
             public void process(WatchedEvent event) {
-              // session events are not change events,
-              // and do not remove the watcher
+              // session events are not change events, and do not remove the watcher
               if (EventType.None.equals(event.getType())) {
                 return;
               }
@@ -358,8 +357,7 @@ public class ZkStateReader implements Closeable {
 
           @Override
           public void process(WatchedEvent event) {
-            // session events are not change events,
-            // and do not remove the watcher
+            // session events are not change events, and do not remove the watcher
             if (EventType.None.equals(event.getType())) {
               return;
             }
@@ -833,15 +831,14 @@ public class ZkStateReader implements Closeable {
 
     @Override
     public void process(WatchedEvent event) {
-      if (!interestingCollections.contains(coll)) {
-        // This collection is no longer interesting, stop watching.
-        LOG.info("Uninteresting collection [{}]", coll);
+      // session events are not change events, and do not remove the watcher
+      if (EventType.None.equals(event.getType())) {
         return;
       }
 
-      // session events are not change events,
-      // and do not remove the watcher
-      if (EventType.None.equals(event.getType())) {
+      if (!interestingCollections.contains(coll)) {
+        // This collection is no longer interesting, stop watching.
+        LOG.info("Uninteresting collection {}", coll);
         return;
       }
 
@@ -888,8 +885,7 @@ public class ZkStateReader implements Closeable {
 
     @Override
     public void process(WatchedEvent event) {
-      // session events are not change events,
-      // and do not remove the watcher
+      // session events are not change events, and do not remove the watcher
       if (EventType.None.equals(event.getType())) {
         return;
       }
@@ -926,8 +922,7 @@ public class ZkStateReader implements Closeable {
 
     @Override
     public void process(WatchedEvent event) {
-      // session events are not change events,
-      // and do not remove the watcher
+      // session events are not change events, and do not remove the watcher
       if (EventType.None.equals(event.getType())) {
         return;
       }
@@ -960,8 +955,7 @@ public class ZkStateReader implements Closeable {
 
     @Override
     public void process(WatchedEvent event) {
-      // session events are not change events,
-      // and do not remove the watcher
+      // session events are not change events, and do not remove the watcher
       if (EventType.None.equals(event.getType())) {
         return;
       }

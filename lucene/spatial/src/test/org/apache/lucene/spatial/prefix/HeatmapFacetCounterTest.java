@@ -83,6 +83,15 @@ public class HeatmapFacetCounterTest extends StrategyTestCase {
   }
 
   @Test
+  public void testLucene7291Dateline() throws IOException {
+    grid = new QuadPrefixTree(ctx, 2); // only 2, and we wind up with some big leaf cells
+    strategy = new RecursivePrefixTreeStrategy(grid, getTestClass().getSimpleName());
+    adoc("0", ctx.makeRectangle(-102, -83, 43, 52));
+    commit();
+    validateHeatmapResultLoop(ctx.makeRectangle(179, -179, 62, 63), 2, 100);// HM crosses dateline
+  }
+
+  @Test
   public void testQueryCircle() throws IOException {
     //overwrite setUp; non-geo bounds is more straight-forward; otherwise 88,88 would actually be practically north,
     final SpatialContextFactory spatialContextFactory = new SpatialContextFactory();

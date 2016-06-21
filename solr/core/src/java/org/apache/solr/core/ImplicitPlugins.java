@@ -71,7 +71,7 @@ public class ImplicitPlugins {
     }
     implicits.add(schema);
     //register replicationhandler always for SolrCloud
-    implicits.add(getReqHandlerInfo("/replication", ReplicationHandler.class, null));
+    implicits.add(getReqHandlerInfo(ReplicationHandler.PATH, ReplicationHandler.class, null));
 
     implicits.add(getReqHandlerInfo("/get", RealTimeGetHandler.class,
         makeMap(

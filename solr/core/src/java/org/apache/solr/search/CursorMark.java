@@ -56,15 +56,10 @@ public final class CursorMark {
    * The raw, unmarshalled, sort values (that corrispond with the SortField's in the 
    * SortSpec) for knowing which docs this cursor should "search after".  If this 
    * list is null, then we have no specific values to "search after" and we 
-   * should start from the very begining of the sorted list of documents matching 
+   * should start from the very beginning of the sorted list of documents matching 
    * the query.
    */
   private List<Object> values = null;
-
-  /**
-   * for serializing this CursorMark as a String
-   */
-  private final JavaBinCodec codec = new JavaBinCodec();
 
   /**
    * Generates an empty CursorMark bound for use with the 
@@ -190,7 +185,7 @@ public final class CursorMark {
       final byte[] rawData = Base64.base64ToByteArray(serialized);
       ByteArrayInputStream in = new ByteArrayInputStream(rawData);
       try {
-        pieces = (List<Object>) codec.unmarshal(in);
+        pieces = (List<Object>) new JavaBinCodec().unmarshal(in);
         boolean b = false;
         for (Object o : pieces) {
           if (o instanceof BytesRefBuilder || o instanceof BytesRef || o instanceof String) {
@@ -199,7 +194,7 @@ public final class CursorMark {
         }
         if (b) {
           in.reset();
-          pieces = (List<Object>) codec.unmarshal(in);
+          pieces = (List<Object>) new JavaBinCodec().unmarshal(in);
         }
       } finally {
         in.close();
@@ -267,7 +262,7 @@ public final class CursorMark {
     try {
       ByteArrayOutputStream out = new ByteArrayOutputStream(256);
       try {
-        codec.marshal(marshalledValues, out);
+        new JavaBinCodec().marshal(marshalledValues, out);
         byte[] rawData = out.toByteArray();
         return Base64.byteArrayToBase64(rawData, 0, rawData.length);
       } finally {

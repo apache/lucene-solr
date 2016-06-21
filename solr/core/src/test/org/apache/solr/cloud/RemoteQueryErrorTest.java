@@ -60,7 +60,7 @@ public class RemoteQueryErrorTest extends AbstractFullDistribZkTestBase {
       try {
         SolrInputDocument emptyDoc = new SolrInputDocument();
         solrClient.add(emptyDoc);
-        fail("Expected unique key exceptoin");
+        fail("Expected unique key exception");
       } catch (SolrException ex) {
         assertThat(ex.getMessage(), containsString("Document is missing mandatory uniqueKey field: id"));
       } catch(Exception ex) {

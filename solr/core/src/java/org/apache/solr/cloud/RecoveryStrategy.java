@@ -73,8 +73,6 @@ public class RecoveryStrategy extends Thread implements Closeable {
   private static final int WAIT_FOR_UPDATES_WITH_STALE_STATE_PAUSE = Integer.getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 7000);
   private static final int MAX_RETRIES = 500;
   private static final int STARTING_RECOVERY_DELAY = 5000;
-  
-  private static final String REPLICATION_HANDLER = "/replication";
 
   public static interface RecoveryListener {
     public void recovered();
@@ -144,12 +142,12 @@ public class RecoveryStrategy extends Thread implements Closeable {
     commitOnLeader(leaderUrl);
     
     // use rep handler directly, so we can do this sync rather than async
-    SolrRequestHandler handler = core.getRequestHandler(REPLICATION_HANDLER);
+    SolrRequestHandler handler = core.getRequestHandler(ReplicationHandler.PATH);
     ReplicationHandler replicationHandler = (ReplicationHandler) handler;
     
     if (replicationHandler == null) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-          "Skipping recovery, no " + REPLICATION_HANDLER + " handler found");
+          "Skipping recovery, no " + ReplicationHandler.PATH + " handler found");
     }
     
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
