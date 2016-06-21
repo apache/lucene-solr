@@ -141,7 +141,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
             "  }\n" +
             "}";
     JsonRecordReader streamer = JsonRecordReader.getInst("/", Arrays.asList("id:/id"));
-    RecordingJSONParser parser = new RecordingJSONParser(new StringReader(json + json2));
+    final RecordingJSONParser parser = new RecordingJSONParser(new StringReader(json + json2));
 
 
     streamer.streamRecords(parser, new JsonRecordReader.Handler() {
