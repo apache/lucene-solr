@@ -55,11 +55,7 @@ public class TestMatchNoDocsQuery extends LuceneTestCase {
     hits = is.search(new MatchNoDocsQuery(), 1000).scoreDocs;
     assertEquals(0, hits.length);
 
-    // A MatchNoDocsQuery rewrites to an empty BooleanQuery
     MatchNoDocsQuery mndq = new MatchNoDocsQuery();
-    Query rewritten = mndq.rewrite(ir);
-    assertTrue(rewritten instanceof BooleanQuery);
-    assertEquals(0, ((BooleanQuery) rewritten).clauses().size());
     hits = is.search(mndq, 1000).scoreDocs;
     assertEquals(0, hits.length);
 

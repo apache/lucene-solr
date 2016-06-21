@@ -28,7 +28,6 @@ import org.apache.lucene.classification.ClassificationResult;
 import org.apache.lucene.classification.KNearestNeighborClassifier;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;

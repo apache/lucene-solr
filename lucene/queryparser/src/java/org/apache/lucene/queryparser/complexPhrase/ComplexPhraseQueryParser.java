@@ -31,6 +31,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -295,6 +296,12 @@ public class ComplexPhraseQueryParser extends QueryParser {
             allSpanClauses[i] = new SpanTermQuery(new Term(field,
                 "Dummy clause because no terms found - must match nothing"));
           }
+        } else if (qc instanceof MatchNoDocsQuery) {
+          // Insert fake term e.g. phrase query was for "Fred Smithe*" and
+          // there were no "Smithe*" terms - need to
+          // prevent match on just "Fred".
+          allSpanClauses[i] = new SpanTermQuery(new Term(field,
+                                                         "Dummy clause because no terms found - must match nothing"));
         } else {
           if (qc instanceof TermQuery) {
             TermQuery tq = (TermQuery) qc;

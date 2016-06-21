@@ -228,6 +228,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (clauses.size() == 0) {
+      return new MatchNoDocsQuery();
+    }
+    
     // optimize 1-clause queries
     if (clauses.size() == 1) {
       BooleanClause c = clauses.get(0);
