@@ -76,6 +76,9 @@ Bug Fixes
 * SOLR-9161: Change SolrPluginUtils.invokeSetters implementation to accommodate setter variants.
   (Christine Poerschke, Steve Rowe, Uwe Schindler)
 
+* SOLR-9234: srcField parameter works only when all fields are captured in the /update/json/docs
+  endpoint (noble)
+
 Other Changes
 ----------------------
 

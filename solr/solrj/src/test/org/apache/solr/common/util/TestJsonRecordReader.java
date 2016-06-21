@@ -18,9 +18,12 @@ package org.apache.solr.common.util;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.RecordingJSONParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,6 +33,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 
 public class TestJsonRecordReader extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public void testOneLevelSplit() throws IOException {
     String json = "{\n" +
         " \"a\":\"A\" ,\n" +
@@ -112,6 +117,53 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     assertNull(((Map) records.get(1)).get("s"));
     assertNull(((Map) records.get(2)).get("s"));
 
+
+  }
+
+  public void testSrcField() throws Exception {
+    String json = "{\n" +
+        "  \"id\" : \"123\",\n" +
+        "  \"description\": \"Testing /json/docs srcField 1\",\n" +
+        "\n" +
+        "  \"nested_data\" : {\n" +
+        "    \"nested_inside\" : \"check check check 1\"\n" +
+        "  }\n" +
+        "}";
+    String json2 =
+        " {\n" +
+            "  \"id\" : \"345\",\n" +
+            "  \"description\": \"Testing /json/docs srcField 2\",\n" +
+            "\n" +
+            "  \"nested_data\" : {\n" +
+            "    \"nested_inside\" : \"check check check 2\"\n" +
+            "  }\n" +
+            "}";
+    JsonRecordReader streamer = JsonRecordReader.getInst("/", Arrays.asList("id:/id"));
+    RecordingJSONParser parser = new RecordingJSONParser(new StringReader(json + json2));
+
+
+    streamer.streamRecords(parser, new JsonRecordReader.Handler() {
+      int count = 0;
+
+      @Override
+      public void handle(Map<String, Object> record, String path) {
+        count++;
+        String buf = parser.getBuf();
+        parser.resetBuf();
+
+        Map m = (Map) Utils.fromJSONString(buf);
+        if (count == 1) {
+          assertEquals(m.get("id"), "123");
+          assertEquals(m.get("description"), "Testing /json/docs srcField 1");
+          assertEquals(((Map) m.get("nested_data")).get("nested_inside"), "check check check 1");
+        }
+        if (count++ == 2) {
+          assertEquals(m.get("id"), "345");
+          assertEquals(m.get("description"), "Testing /json/docs srcField 2");
+          assertEquals(((Map) m.get("nested_data")).get("nested_inside"), "check check check 2");
+        }
+      }
+    });
 
   }
 
