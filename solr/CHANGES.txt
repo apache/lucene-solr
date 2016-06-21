@@ -79,6 +79,11 @@ Bug Fixes
 * SOLR-9234: srcField parameter works only when all fields are captured in the /update/json/docs
   endpoint (noble)
 
+Optimizations
+----------------------
+
+* SOLR-9219: Make hdfs blockcache read buffer sizes configurable and improve cache concurrency. (Mark Miller)
+
 Other Changes
 ----------------------
 
