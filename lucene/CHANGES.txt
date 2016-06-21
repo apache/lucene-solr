@@ -19,6 +19,10 @@ New Features
   recording key/values from a provided iterable based on when the
   commit actually takes place (Mike McCandless)
 
+* LUCENE-7287: UkrainianMorfologikAnalyzer is a new dictionary-based
+  analyzer for the Ukrainian language (Andriy Rysin via Mike
+  McCandless)
+
 Improvements
 
 * LUCENE-7323: Compound file writing now verifies the incoming
