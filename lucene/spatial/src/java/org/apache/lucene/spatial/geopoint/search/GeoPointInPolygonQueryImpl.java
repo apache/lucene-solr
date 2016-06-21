@@ -57,18 +57,8 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
     }
 
     @Override
-    protected boolean cellCrosses(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return polygons.relate(minLat, maxLat, minLon, maxLon) == Relation.CELL_CROSSES_QUERY;
-    }
-
-    @Override
-    protected boolean cellWithin(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return polygons.relate(minLat, maxLat, minLon, maxLon) == Relation.CELL_INSIDE_QUERY;
-    }
-
-    @Override
-    protected boolean cellIntersectsShape(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return polygons.relate(minLat, maxLat, minLon, maxLon) != Relation.CELL_OUTSIDE_QUERY;
+    protected Relation relate(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+      return polygons.relate(minLat, maxLat, minLon, maxLon);
     }
 
     /**

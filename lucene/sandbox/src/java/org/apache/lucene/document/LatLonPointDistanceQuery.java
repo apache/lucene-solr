@@ -96,7 +96,7 @@ final class LatLonPointDistanceQuery extends Query {
     }
 
     // compute exact sort key: avoid any asin() computations
-    final double sortKey = sortKey(radiusMeters);
+    final double sortKey = GeoUtils.distanceQuerySortKey(radiusMeters);
 
     final double axisLat = Rectangle.axisLat(latitude, radiusMeters);
 
@@ -213,39 +213,6 @@ final class LatLonPointDistanceQuery extends Query {
         return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
     };
-  }
-
-  /**
-   * binary search to find the exact sortKey needed to match the specified radius
-   * any sort key <= this is a query match.
-   */
-  static double sortKey(double radius) {
-    // effectively infinite
-    if (radius >= SloppyMath.haversinMeters(Double.MAX_VALUE)) {
-      return SloppyMath.haversinMeters(Double.MAX_VALUE);
-    }
-
-    // this is a search through non-negative long space only
-    long lo = 0;
-    long hi = Double.doubleToRawLongBits(Double.MAX_VALUE);
-    while (lo <= hi) {
-      long mid = (lo + hi) >>> 1;
-      double sortKey = Double.longBitsToDouble(mid);
-      double midRadius = SloppyMath.haversinMeters(sortKey);
-      if (midRadius == radius) {
-        return sortKey;
-      } else if (midRadius > radius) {
-        hi = mid - 1;
-      } else {
-        lo = mid + 1;
-      }
-    }
-
-    // not found: this is because a user can supply an arbitrary radius, one that we will never
-    // calculate exactly via our haversin method.
-    double ceil = Double.longBitsToDouble(lo);
-    assert SloppyMath.haversinMeters(ceil) > radius;
-    return ceil;
   }
 
   public String getField() {

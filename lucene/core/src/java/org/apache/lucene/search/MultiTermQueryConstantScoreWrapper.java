@@ -122,10 +122,6 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
             return true;
           }
           TermState state = termsEnum.termState();
-          if (state.isRealTerm() == false) {
-            // TermQuery does not accept fake terms for now
-            return false;
-          }
           terms.add(new TermAndState(BytesRef.deepCopyOf(term), state, termsEnum.docFreq(), termsEnum.totalTermFreq()));
         }
         return termsEnum.next() == null;
