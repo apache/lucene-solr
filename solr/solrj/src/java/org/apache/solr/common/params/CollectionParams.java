@@ -16,7 +16,13 @@
  */
 package org.apache.solr.common.params;
 
+import java.util.Collections;
 import java.util.Locale;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toMap;
 
 public interface CollectionParams {
   /**
@@ -93,31 +99,32 @@ public interface CollectionParams {
     MOCK_REPLICA_TASK(false, LockLevel.REPLICA)
     ;
     public final boolean isWrite;
+
+    public final String lowerName;
     public final LockLevel lockLevel;
 
     CollectionAction(boolean isWrite, LockLevel level) {
       this.isWrite = isWrite;
       this.lockLevel = level;
+      lowerName = toString().toLowerCase(Locale.ROOT);
     }
 
     public static CollectionAction get(String p) {
-      if (p != null) {
-        try {
-          return CollectionAction.valueOf(p.toUpperCase(Locale.ROOT));
-        } catch (Exception ex) {
-        }
-      }
-      return null;
+      return actions.get(p == null ? null : p.toLowerCase(Locale.ROOT));
     }
 
     public boolean isEqual(String s) {
-      if (s == null) return false;
-      return toString().equals(s.toUpperCase(Locale.ROOT));
+      return s != null && lowerName.equals(s.toLowerCase(Locale.ROOT));
     }
 
     public String toLower() {
-      return toString().toLowerCase(Locale.ROOT);
+      return lowerName;
     }
-
   }
+
+  Map<String, CollectionAction> actions = Collections.unmodifiableMap(
+      Stream.of(
+          CollectionAction.values())
+          .collect(toMap(CollectionAction::toLower, Function.<CollectionAction>identity())));
+
 }
