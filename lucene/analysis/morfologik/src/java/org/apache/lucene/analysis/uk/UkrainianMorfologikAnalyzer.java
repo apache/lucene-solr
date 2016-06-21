@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.morfologik.MorfologikFilter;
-import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.util.IOUtils;
@@ -47,13 +46,13 @@ public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
   
   /** File containing default Ukrainian stopwords. */
-  public final static String DEFAULT_STOPWORD_FILE = "/org/apache/lucene/analysis/uk/stopwords.txt";
+  public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
   
   /**
    * Returns an unmodifiable instance of the default stop words set.
    * @return default stop words set.
    */
-  public static CharArraySet getDefaultStopSet(){
+  public static CharArraySet getDefaultStopSet() {
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
   
@@ -66,7 +65,7 @@ public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
 
     static {
       try {
-        DEFAULT_STOP_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
+        DEFAULT_STOP_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(UkrainianMorfologikAnalyzer.class, 
             DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
       } catch (IOException ex) {
         // default set should always be present as it is part of the
@@ -146,7 +145,7 @@ public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
 
   private static Dictionary getDictionary() {
     try {
-      return Dictionary.read(UkrainianMorfologikAnalyzer.class.getResource("/org/apache/lucene/analysis/uk/ukrainian.dict"));
+      return Dictionary.read(UkrainianMorfologikAnalyzer.class.getResource("ukrainian.dict"));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
