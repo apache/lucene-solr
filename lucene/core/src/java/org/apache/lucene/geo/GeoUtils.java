@@ -2,6 +2,7 @@ package org.apache.lucene.geo;
 
 import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
 import static org.apache.lucene.util.SloppyMath.cos;
+import static org.apache.lucene.util.SloppyMath.haversinMeters;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -90,5 +91,38 @@ public final class GeoUtils {
   // TODO: deprecate/remove this? at least its no longer public.
   public static double sloppySin(double a) {
     return cos(a - PIO2);
+  }
+
+  /**
+   * binary search to find the exact sortKey needed to match the specified radius
+   * any sort key lte this is a query match.
+   */
+  public static double distanceQuerySortKey(double radius) {
+    // effectively infinite
+    if (radius >= haversinMeters(Double.MAX_VALUE)) {
+      return haversinMeters(Double.MAX_VALUE);
+    }
+
+    // this is a search through non-negative long space only
+    long lo = 0;
+    long hi = Double.doubleToRawLongBits(Double.MAX_VALUE);
+    while (lo <= hi) {
+      long mid = (lo + hi) >>> 1;
+      double sortKey = Double.longBitsToDouble(mid);
+      double midRadius = haversinMeters(sortKey);
+      if (midRadius == radius) {
+        return sortKey;
+      } else if (midRadius > radius) {
+        hi = mid - 1;
+      } else {
+        lo = mid + 1;
+      }
+    }
+
+    // not found: this is because a user can supply an arbitrary radius, one that we will never
+    // calculate exactly via our haversin method.
+    double ceil = Double.longBitsToDouble(lo);
+    assert haversinMeters(ceil) > radius;
+    return ceil;
   }
 }

@@ -32,10 +32,9 @@ import org.apache.lucene.spatial.geopoint.search.GeoPointMultiTermQuery.CellComp
 abstract class GeoPointTermsEnum extends FilteredTermsEnum {
   protected final short maxShift;
 
-  protected BaseRange currentRange;
+  protected Range currentRange;
   protected BytesRef currentCell;
   protected final BytesRefBuilder currentCellBRB = new BytesRefBuilder();
-  protected final BytesRefBuilder nextSubRangeBRB = new BytesRefBuilder();
 
   protected final CellComparator relationImpl;
 
@@ -61,42 +60,7 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
     return currentRange.boundary;
   }
 
-  protected BytesRef peek() {
-    return nextSubRangeBRB.get();
-  }
-
   abstract protected boolean hasNext();
-
-  protected void nextRange() {
-    currentRange.fillBytesRef(currentCellBRB);
-    currentCell = currentCellBRB.get();
-  }
-
-  /**
-   * The two-phase query approach. {@link #nextSeekTerm} is called to obtain the next term that matches a numeric
-   * range of the bounding box. Those terms that pass the initial range filter are then compared against the
-   * decoded min/max latitude and longitude values of the bounding box only if the range is not a "boundary" range
-   * (e.g., a range that straddles the boundary of the bbox).
-   * @param term term for candidate document
-   * @return match status
-   */
-  @Override
-  protected AcceptStatus accept(BytesRef term) {
-    // validate value is in range
-    while (currentCell == null || term.compareTo(currentCell) > 0) {
-      if (hasNext() == false) {
-        return AcceptStatus.END;
-      }
-      // peek next sub-range, only seek if the current term is smaller than next lower bound
-      if (term.compareTo(peek()) < 0) {
-        return AcceptStatus.NO_AND_SEEK;
-      }
-      // step forward to next range without seeking, as next range is less or equal current term
-      nextRange();
-    }
-
-    return AcceptStatus.YES;
-  }
 
   protected boolean postFilter(final double lat, final double lon) {
     return relationImpl.postFilter(lat, lon);
@@ -105,25 +69,19 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
   /**
    * Internal class to represent a range along the space filling curve
    */
-  abstract class BaseRange implements Comparable<BaseRange> {
+  class Range implements Comparable<Range> {
     protected short shift;
     protected long start;
     protected boolean boundary;
 
-    BaseRange(final long lower, final short shift, boolean boundary) {
+    Range(final long lower, final short shift, boolean boundary) {
       this.boundary = boundary;
       this.start = lower;
       this.shift = shift;
     }
 
-    /**
-     * Encode as a BytesRef using a reusable object. This allows us to lazily create the BytesRef (which is
-     * quite expensive), only when we need it.
-     */
-    abstract protected void fillBytesRef(BytesRefBuilder result);
-
     @Override
-    public int compareTo(BaseRange other) {
+    public int compareTo(Range other) {
       final int result = Short.compare(this.shift, other.shift);
       if (result == 0) {
         return Long.compare(this.start, other.start);
@@ -131,10 +89,18 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
       return result;
     }
 
-    protected void set(BaseRange other) {
+    protected void set(Range other) {
       this.start = other.start;
       this.shift = other.shift;
       this.boundary = other.boundary;
+    }
+
+    protected int compare(long encoded, short shift) {
+      final int result = Long.compare(this.start, encoded);
+      if (result == 0) {
+        return Short.compare(shift, this.shift);
+      }
+      return result;
     }
   }
 }

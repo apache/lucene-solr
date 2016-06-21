@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.spatial.geopoint.search;
 
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
@@ -94,6 +95,19 @@ class GeoPointInBBoxQueryImpl extends GeoPointMultiTermQuery {
     @Override
     protected boolean cellIntersectsShape(final double minLat, final double maxLat, final double minLon, final double maxLon) {
       return cellIntersectsMBR(minLat, maxLat, minLon, maxLon);
+    }
+
+    @Override
+    protected Relation relate(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+      if (GeoRelationUtils.rectCrosses(minLat, maxLat, minLon, maxLon, GeoPointInBBoxQueryImpl.this.minLat,
+          GeoPointInBBoxQueryImpl.this.maxLat, GeoPointInBBoxQueryImpl.this.minLon, GeoPointInBBoxQueryImpl.this.maxLon)) {
+        return Relation.CELL_CROSSES_QUERY;
+      } else if (GeoRelationUtils.rectWithin(minLat, maxLat, minLon, maxLon, GeoPointInBBoxQueryImpl.this.minLat,
+          GeoPointInBBoxQueryImpl.this.maxLat,
+          GeoPointInBBoxQueryImpl.this.minLon, GeoPointInBBoxQueryImpl.this.maxLon)) {
+        return Relation.CELL_INSIDE_QUERY;
+      }
+      return Relation.CELL_OUTSIDE_QUERY;
     }
 
     @Override

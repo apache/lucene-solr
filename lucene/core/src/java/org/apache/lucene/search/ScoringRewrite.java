@@ -115,7 +115,7 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
       for (int i = 0; i < size; i++) {
         final int pos = sort[i];
         final Term term = new Term(query.getField(), col.terms.get(pos, new BytesRef()));
-        assert termStates[pos].hasOnlyRealTerms() == false || reader.docFreq(term) == termStates[pos].docFreq();
+        assert reader.docFreq(term) == termStates[pos].docFreq();
         addClause(builder, term, termStates[pos].docFreq(), boost[pos], termStates[pos]);
       }
     }

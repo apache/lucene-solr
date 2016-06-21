@@ -1,5 +1,3 @@
-package org.apache.lucene.spatial.geopoint.search;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.spatial.geopoint.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.spatial.geopoint.search;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -41,6 +40,7 @@ import static org.apache.lucene.spatial.geopoint.document.GeoPointField.BITS;
 @Deprecated
 final class GeoPointNumericTermsEnum extends GeoPointTermsEnum {
   private final List<Range> rangeBounds = new LinkedList<>();
+  private final BytesRefBuilder nextSubRangeBRB = new BytesRefBuilder();
 
   // detail level should be a factor of PRECISION_STEP limiting the depth of recursion (and number of ranges)
   private final short DETAIL_LEVEL;
@@ -102,16 +102,16 @@ final class GeoPointNumericTermsEnum extends GeoPointTermsEnum {
     }
   }
 
-  @Override
   protected final BytesRef peek() {
-    rangeBounds.get(0).fillBytesRef(this.nextSubRangeBRB);
+    Range range = rangeBounds.get(0);
+    LegacyNumericUtils.longToPrefixCoded(range.start, range.shift, this.nextSubRangeBRB);
     return nextSubRangeBRB.get();
   }
 
-  @Override
   protected void nextRange() {
     currentRange = rangeBounds.remove(0);
-    super.nextRange();
+    LegacyNumericUtils.longToPrefixCoded(currentRange.start, currentRange.shift, currentCellBRB);
+    currentCell = currentCellBRB.get();
   }
 
   @Override
@@ -136,27 +136,33 @@ final class GeoPointNumericTermsEnum extends GeoPointTermsEnum {
     return null;
   }
 
+  /**
+   * The two-phase query approach. {@link #nextSeekTerm} is called to obtain the next term that matches a numeric
+   * range of the bounding box. Those terms that pass the initial range filter are then compared against the
+   * decoded min/max latitude and longitude values of the bounding box only if the range is not a "boundary" range
+   * (e.g., a range that straddles the boundary of the bbox).
+   * @param term term for candidate document
+   * @return match status
+   */
+  @Override
+  protected AcceptStatus accept(BytesRef term) {
+    // validate value is in range
+    while (currentCell == null || term.compareTo(currentCell) > 0) {
+      if (hasNext() == false) {
+        return AcceptStatus.END;
+      }
+      // peek next sub-range, only seek if the current term is smaller than next lower bound
+      if (term.compareTo(peek()) < 0) {
+        return AcceptStatus.NO_AND_SEEK;
+      }
+      nextRange();
+    }
+
+    return AcceptStatus.YES;
+  }
+
   @Override
   protected final boolean hasNext() {
     return rangeBounds.isEmpty() == false;
-  }
-
-  /**
-   * Internal class to represent a range along the space filling curve
-   */
-  protected final class Range extends BaseRange {
-    Range(final long lower, final short shift, boolean boundary) {
-      super(lower, shift, boundary);
-    }
-
-    /**
-     * Encode as a BytesRef using a reusable object. This allows us to lazily create the BytesRef (which is
-     * quite expensive), only when we need it.
-     */
-    @Override
-    protected void fillBytesRef(BytesRefBuilder result) {
-      assert result != null;
-      LegacyNumericUtils.longToPrefixCoded(start, shift, result);
-    }
   }
 }
