@@ -88,6 +88,9 @@ Bug Fixes
 * SOLR-9176: facet method ENUM was sometimes unnecessarily being rewritten to
   FCS, causing slowdowns (Alessandro Benedetti, Jesse McLaughlin, Alan Woodward)
 
+* SOLR-9234: srcField works only when all fields are captured in the /update/json/docs
+  endpoint (noble)
+
 Other Changes
 ----------------------
 
