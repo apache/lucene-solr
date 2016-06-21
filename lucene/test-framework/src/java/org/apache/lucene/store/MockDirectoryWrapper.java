@@ -292,6 +292,17 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   public synchronized void corruptFiles(Collection<String> files) throws IOException {
+    boolean disabled = TestUtil.disableVirusChecker(in);
+    try {
+      _corruptFiles(files);
+    } finally {
+      if (disabled) {
+        TestUtil.enableVirusChecker(in);
+      }
+    }
+  }
+    
+  private synchronized void _corruptFiles(Collection<String> files) throws IOException {
     // Must make a copy because we change the incoming unsyncedFiles
     // when we create temp files, delete, etc., below:
     final List<String> filesToCorrupt = new ArrayList<>(files);
