@@ -46,9 +46,9 @@ public class BoostingQueryTest extends LuceneTestCase {
 
   public void testRewrite() throws IOException {
     IndexReader reader = new MultiReader();
-    BoostingQuery q = new BoostingQuery(new MatchNoDocsQuery(), new MatchAllDocsQuery(), 3);
+    BoostingQuery q = new BoostingQuery(new BooleanQuery.Builder().build(), new MatchAllDocsQuery(), 3);
     Query rewritten = new IndexSearcher(reader).rewrite(q);
-    Query expectedRewritten = new BoostingQuery(new BooleanQuery.Builder().build(), new MatchAllDocsQuery(), 3);
+    Query expectedRewritten = new BoostingQuery(new MatchNoDocsQuery(), new MatchAllDocsQuery(), 3);
     assertEquals(expectedRewritten, rewritten);
     assertSame(rewritten, rewritten.rewrite(reader));
   }
