@@ -308,12 +308,6 @@ public class HdfsUpdateLog extends UpdateLog {
       HdfsTransactionLog ntlog = new HdfsTransactionLog(fs, new Path(tlogDir, newLogName),
           globalStrings, tlogDfsReplication);
       tlog = ntlog;
-      
-      if (tlog != ntlog) {
-        ntlog.deleteOnClose = false;
-        ntlog.decref();
-        ntlog.forceClose();
-      }
     }
   }
   
