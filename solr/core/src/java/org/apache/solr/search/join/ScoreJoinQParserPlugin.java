@@ -322,69 +322,90 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
   private static String findLocalReplicaForFromIndex(ZkController zkController, String fromIndex, CloudDescriptor cloudDescriptor, SolrQueryRequest req) {
     String fromReplica = null;
-    String toShardId = cloudDescriptor.getShardId();
+    
+    String rangeCheck = req.getParams().get(SearchParams.RANGE_CHECK, SearchParams.RANGE_CHECK_SINGLE);
+    if(SearchParams.RANGE_CHECK_EXACT.equals(rangeCheck)){
+      //In-case of exact range match option, find a shard of fromCollection which resides on this node and whose range matches
+      //toShard range exactly.
+      fromReplica = findExactMatchShard(zkController,fromIndex, cloudDescriptor, req);
+    }else{
+      //In-case fromReplica is singly sharded, find its replica on this node
+      fromReplica = findLocalReplica(zkController,fromIndex);
+    }
+    
+    if (fromReplica == null){
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "SolrCloud join: No active replicas for "+fromIndex+
+              " found in node " + zkController.getNodeName());
+    }
+    
+    return fromReplica;
+  }
+  
+  private static String findLocalReplica(ZkController zkController, String fromIndex){
+    String fromReplica = null;
+
     String nodeName = zkController.getNodeName();
-    
-    CoreDescriptor containerDesc = req.getCore().getCoreDescriptor();
-    //CloudDescriptor cloudDescriptor = req.getCore().getCoreDescriptor().getCloudDescriptor();
-    
-    
-    
-    //Get collection information of to_shard or shard on which query is applied
-    DocCollection toCollection = zkController.getClusterState().getCollection(containerDesc.getCollectionName());
-    Slice toShardSlice = toCollection.getActiveSlicesMap().get(req.getCore().getCoreDescriptor().getCoreProperty(CoreDescriptor.CORE_SHARD, null));
-    
-    DocRouter.Range toRange = toShardSlice.getRange();
-    String toRouteField = getRouterField(toCollection);
-    
-    String fromRouteField = getRouterField(zkController.getClusterState().getCollection(fromIndex));
-    
-    System.out.println("toRouteField = " + toRouteField + " fromRouteField = " + fromRouteField);
-    
     for (Slice slice : zkController.getClusterState().getActiveSlices(fromIndex)) {
-      System.out.println(" Slice: " + slice.toString());
-      
-      if(req.getParams().getBool(SearchParams.STRICT_JOIN, false)){
-        if(!toRange.overlaps(slice.getRange())){
-          continue;
-        }
-      }
-      //get replica on this node
-      fromReplica = findReplica(fromIndex, fromReplica, toShardId, nodeName, toRange, slice);
-      
+      if (fromReplica != null)
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "SolrCloud join: for multiple shards specify rangeCheck 'exact' option " + fromIndex);
+
+      fromReplica = findReplica(fromIndex, nodeName, slice);
     }
 
     if (fromReplica == null)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "SolrCloud join: No active replicas for "+fromIndex+
-              " found in node " + nodeName + " Shard: " + toShardId);
+              " found in node " + nodeName);
 
     return fromReplica;
   }
 
-  private static String findReplica(String fromIndex, String fromReplica, String toShardId, String nodeName,
-      DocRouter.Range toRange, Slice slice) {
+  private static String findReplica(String fromIndex, String nodeName, Slice slice) {
+    String fromReplica = null;
     for (Replica replica : slice.getReplicas()) {
-      System.out.println(" ToShardId: " + toShardId + " Replica : " + replica.getNodeName() + " Slice Name: " + slice.getName() + " Overlaps: " + toRange.overlaps(slice.getRange()));
-      
-      //Get slice hash range and match it with 'to' range, 
-      //If it is not matching get the available replica
-      //If no matching range and multiple shards -> throw error
-      if (replica.getNodeName().equals(nodeName) && replica.getState() == Replica.State.ACTIVE) {
-        if(!toShardId.equals(slice.getName())){
-          System.out.println(" shardId not equal to slice name:: " + slice.getName());
-        }
-        if (fromReplica == null) {
-          fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-        } else {
+      if (replica.getNodeName().equals(nodeName)) {
+        fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+        // found local replica, but is it Active?
+        if (replica.getState() != Replica.State.ACTIVE)
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "SolrCloud join: multiple shards not yet supported " + fromIndex);
-        }
+              "SolrCloud join: "+fromIndex+" has a local replica ("+fromReplica+
+                  ") on "+nodeName+", but it is "+replica.getState());
+
+        break;
       }
     }
     return fromReplica;
   }
   
+  private static String findExactMatchShard(ZkController zkController, String fromIndex, CloudDescriptor cloudDescriptor, SolrQueryRequest req){
+    String fromReplica = null;
+    
+    CoreDescriptor containerDesc = req.getCore().getCoreDescriptor();
+    String nodeName = zkController.getNodeName();
+    
+    //Get collection information of to_shard or shard on which query is applied
+    DocCollection toCollection = zkController.getClusterState().getCollection(containerDesc.getCollectionName());
+    Slice toShardSlice = toCollection.getActiveSlicesMap().get(req.getCore().getCoreDescriptor().getCoreProperty(CoreDescriptor.CORE_SHARD, null));
+    
+    
+    DocRouter.Range toRange = toShardSlice.getRange();
+    String toRouteField = getRouterField(toCollection);
+    
+    for (Slice slice : zkController.getClusterState().getActiveSlices(fromIndex)) {
+      
+      if(toRange.equals(slice.getRange())){
+     
+        return findReplica(fromIndex, nodeName, slice);
+      }
+    }
+    
+   
+    
+    return fromReplica;
+  }
+
   private static String getRouterField(DocCollection docCollection){
     Map routerMap  = (Map)docCollection.get(DocCollection.DOC_ROUTER);
     String routerField = null;
@@ -395,6 +416,3 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     return routerField;
   }
 }
-
-
-

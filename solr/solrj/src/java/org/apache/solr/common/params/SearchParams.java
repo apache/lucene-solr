@@ -23,7 +23,13 @@ package org.apache.solr.common.params;
  * Parameters used when dealing with Search queries.
  */
 public interface SearchParams {
+  
+  /** The range check. */
+  String RANGE_CHECK = "rangeCheck";
 
-  /** The Constant STRICT_JOIN. */
-  public static final String STRICT_JOIN = "strict.join";
+  /** The range check exact. */
+  String RANGE_CHECK_EXACT = "exact";
+  
+  /** The range check single. */
+  String RANGE_CHECK_SINGLE = "single";
 }

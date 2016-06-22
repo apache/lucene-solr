@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.SearchParams;
 import org.junit.After;
 import org.junit.Before;
 import org.apache.commons.lang.StringUtils;
@@ -189,6 +190,7 @@ public class DistribJoinFromCollectionTest extends AbstractFullDistribZkTestBase
    *        from_2x2
    *
    * Query:  {!join from =join_s fromIndex =from_2x2 to =join_s}
+   *         {!join from =id to =id fromIndex = product}(*:*)
    * FQ:     *:*
    * Params: distrib=true
    * @throws Exception the exception
@@ -201,14 +203,25 @@ public class DistribJoinFromCollectionTest extends AbstractFullDistribZkTestBase
     createCollection(toJoinColl, 2, 2, 2);
     ensureAllReplicasAreActive(toJoinColl, "shard1", 2, 2, 30);
     ensureAllReplicasAreActive(toJoinColl, "shard2", 2, 2, 30);
+    
+    Set<String> toCollectionNodeSet = new HashSet<>();
+    ClusterState cs = cloudClient.getZkStateReader().getClusterState();
+    for (Slice slice : cs.getActiveSlices(toJoinColl)){
+      for (Replica replica : slice.getReplicas()){
+        toCollectionNodeSet.add(replica.getNodeName());
+      }
+    }
+    
     indexDoc(toJoinColl, 1001, "a", null, "b");
     //Using Integer.MAX ensures that document is on shard2
     indexDoc(toJoinColl, Integer.MAX_VALUE,  "a", null, "b");
     
     String fromJoinColl = "from_2x2";
-    createCollection(fromJoinColl, 2, 2, 2);
-    ensureAllReplicasAreActive(fromJoinColl, "shard1", 2, 2, 30);
-    ensureAllReplicasAreActive(fromJoinColl, "shard2", 2, 2, 30);
+    
+    createCollection(null, fromJoinColl, 2, toCollectionNodeSet.size(), 2,  null, StringUtils.join(toCollectionNodeSet,","));
+    ensureAllReplicasAreActive(fromJoinColl, "shard1", 2, toCollectionNodeSet.size(), 30);
+    ensureAllReplicasAreActive(fromJoinColl, "shard2", 2, toCollectionNodeSet.size(), 30);
+    
     //Using Integer.MAX ensures that document is on shard2
     indexDoc(fromJoinColl, Integer.MAX_VALUE,"a", null, "b");
     indexDoc(fromJoinColl, 2001, "a", null, "b");
@@ -217,7 +230,8 @@ public class DistribJoinFromCollectionTest extends AbstractFullDistribZkTestBase
     Thread.sleep(2000); 
     
     //Join query with distrib=true so the query goes on all shards
-    QueryRequest qr = new QueryRequest(params("collection", toJoinColl, "q", joinQ, "distrib", "true"));
+    QueryRequest qr = new QueryRequest(params("collection", toJoinColl, "q", joinQ, "distrib", "true", SearchParams.RANGE_CHECK, SearchParams.RANGE_CHECK_EXACT));
+    
     QueryResponse rsp = new QueryResponse(cloudClient.request(qr), cloudClient);
     
     SolrDocumentList hits = rsp.getResults();
