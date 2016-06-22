@@ -96,6 +96,9 @@ Other Changes
 * SOLR-8981: Upgraded Extraction module to Apache Tika 1.13.
   (Tim Allison, Lewis John McGibbney via Uwe Schindler)
 
+* SOLR-9076: Update to Hadoop 2.7.2
+  (Mark Miller, Gregory Chanan)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
