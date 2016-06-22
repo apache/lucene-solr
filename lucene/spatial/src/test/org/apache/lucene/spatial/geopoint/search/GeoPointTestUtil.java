@@ -22,6 +22,7 @@ import java.util.Random;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.util.SloppyMath;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 
@@ -212,8 +213,8 @@ final class GeoPointTestUtil {
         }
         double len = radius * (1.0 - radiusDelta + radiusDelta * random().nextDouble());
         //System.out.println("    len=" + len);
-        double lat = centerLat + len * Math.cos(Math.toRadians(angle));
-        double lon = centerLon + len * Math.sin(Math.toRadians(angle));
+        double lat = centerLat + len * Math.cos(SloppyMath.toRadians(angle));
+        double lon = centerLon + len * Math.sin(SloppyMath.toRadians(angle));
         if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL) {
           // cannot cross dateline: try again!
           continue newPoly;
