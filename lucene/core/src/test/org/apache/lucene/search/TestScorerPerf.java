@@ -53,6 +53,7 @@ public class TestScorerPerf extends LuceneTestCase {
     iw.close();
     r = DirectoryReader.open(d);
     s = newSearcher(r);
+    s.setQueryCache(null);
   }
 
   public void createRandomTerms(int nDocs, int nTerms, double power, Directory dir) throws Exception {
