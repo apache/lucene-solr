@@ -19,11 +19,15 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitSet;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.CollectionUtil;
 
 /** A conjunction of DocIdSetIterators.
@@ -47,11 +51,7 @@ public final class ConjunctionDISI extends DocIdSetIterator {
       addScorer(scorer, allIterators, twoPhaseIterators);
     }
 
-    DocIdSetIterator iterator = new ConjunctionDISI(allIterators);
-    if (twoPhaseIterators.isEmpty() == false) {
-      iterator = TwoPhaseIterator.asDocIdSetIterator(new ConjunctionTwoPhaseIterator(iterator, twoPhaseIterators));
-    }
-    return iterator;
+    return createConjunction(allIterators, twoPhaseIterators);
   }
 
   /** Create a conjunction over the provided DocIdSetIterators. Note that the
@@ -68,11 +68,7 @@ public final class ConjunctionDISI extends DocIdSetIterator {
       addIterator(iterator, allIterators, twoPhaseIterators);
     }
 
-    DocIdSetIterator iterator = new ConjunctionDISI(allIterators);
-    if (twoPhaseIterators.isEmpty() == false) {
-      iterator = TwoPhaseIterator.asDocIdSetIterator(new ConjunctionTwoPhaseIterator(iterator, twoPhaseIterators));
-    }
-    return iterator;
+    return createConjunction(allIterators, twoPhaseIterators);
   }
 
   /** Create a conjunction over the provided {@link Spans}. Note that the
@@ -89,11 +85,7 @@ public final class ConjunctionDISI extends DocIdSetIterator {
       addSpans(spans, allIterators, twoPhaseIterators);
     }
 
-    DocIdSetIterator iterator = new ConjunctionDISI(allIterators);
-    if (twoPhaseIterators.isEmpty() == false) {
-      iterator = TwoPhaseIterator.asDocIdSetIterator(new ConjunctionTwoPhaseIterator(iterator, twoPhaseIterators));
-    }
-    return iterator;
+    return createConjunction(allIterators, twoPhaseIterators);
   }
 
   /** Adds the scorer, possibly splitting up into two phases or collapsing if it is another conjunction */
@@ -127,6 +119,10 @@ public final class ConjunctionDISI extends DocIdSetIterator {
       allIterators.add(conjunction.lead1);
       allIterators.add(conjunction.lead2);
       Collections.addAll(allIterators, conjunction.others);
+    } else if (disi.getClass() == BitSetConjunctionDISI.class) {
+      BitSetConjunctionDISI conjunction = (BitSetConjunctionDISI) disi;
+      allIterators.add(conjunction.lead);
+      Collections.addAll(allIterators, conjunction.bitSetIterators);
     } else {
       allIterators.add(disi);
     }
@@ -139,6 +135,41 @@ public final class ConjunctionDISI extends DocIdSetIterator {
     } else {
       twoPhaseIterators.add(twoPhaseIter);
     }
+  }
+
+  private static DocIdSetIterator createConjunction(
+      List<DocIdSetIterator> allIterators,
+      List<TwoPhaseIterator> twoPhaseIterators) {
+    long minCost = allIterators.stream().mapToLong(DocIdSetIterator::cost).min().getAsLong();
+    List<BitSetIterator> bitSetIterators = new ArrayList<>();
+    List<DocIdSetIterator> iterators = new ArrayList<>();
+    for (DocIdSetIterator iterator : allIterators) {
+      if (iterator.cost() > minCost && iterator instanceof BitSetIterator) {
+        // we put all bitset iterators into bitSetIterators
+        // except if they have the minimum cost, since we need
+        // them to lead the iteration in that case
+        bitSetIterators.add((BitSetIterator) iterator);
+      } else {
+        iterators.add(iterator);
+      }
+    }
+
+    DocIdSetIterator disi;
+    if (iterators.size() == 1) {
+      disi = iterators.get(0);
+    } else {
+      disi = new ConjunctionDISI(iterators);
+    }
+
+    if (bitSetIterators.size() > 0) {
+      disi = new BitSetConjunctionDISI(disi, bitSetIterators);
+    }
+
+    if (twoPhaseIterators.isEmpty() == false) {
+      disi = TwoPhaseIterator.asDocIdSetIterator(new ConjunctionTwoPhaseIterator(disi, twoPhaseIterators));
+    }
+
+    return disi;
   }
 
   final DocIdSetIterator lead1, lead2;
@@ -212,6 +243,69 @@ public final class ConjunctionDISI extends DocIdSetIterator {
   @Override
   public long cost() {
     return lead1.cost(); // overestimate
+  }
+
+  /** Conjunction between a {@link DocIdSetIterator} and one or more {@link BitSetIterator}s. */
+  private static class BitSetConjunctionDISI extends DocIdSetIterator {
+
+    private final DocIdSetIterator lead;
+    private final BitSetIterator[] bitSetIterators;
+    private final BitSet[] bitSets;
+    private final int minLength;
+
+    BitSetConjunctionDISI(DocIdSetIterator lead, Collection<BitSetIterator> bitSetIterators) {
+      this.lead = lead;
+      assert bitSetIterators.size() > 0;
+      this.bitSetIterators = bitSetIterators.toArray(new BitSetIterator[0]);
+      // Put the least costly iterators first so that we exit as soon as possible
+      ArrayUtil.timSort(this.bitSetIterators, (a, b) -> Long.compare(a.cost(), b.cost()));
+      this.bitSets = new BitSet[this.bitSetIterators.length];
+      int minLen = Integer.MAX_VALUE;
+      for (int i = 0; i < this.bitSetIterators.length; ++i) {
+        BitSet bitSet = this.bitSetIterators[i].getBitSet();
+        this.bitSets[i] = bitSet;
+        minLen = Math.min(minLen, bitSet.length());
+      }
+      this.minLength = minLen;
+    }
+
+    @Override
+    public int docID() {
+      return lead.docID();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return doNext(lead.nextDoc());
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return doNext(lead.advance(target));
+    }
+
+    private int doNext(int doc) throws IOException {
+      advanceLead: for (;; doc = lead.nextDoc()) {
+        if (doc >= minLength) {
+          return NO_MORE_DOCS;
+        }
+        for (BitSet bitSet : bitSets) {
+          if (bitSet.get(doc) == false) {
+            continue advanceLead;
+          }
+        }
+        for (BitSetIterator iterator : bitSetIterators) {
+          iterator.setDocId(doc);
+        }
+        return doc;
+      }
+    }
+
+    @Override
+    public long cost() {
+      return lead.cost();
+    }
+
   }
 
   /**
