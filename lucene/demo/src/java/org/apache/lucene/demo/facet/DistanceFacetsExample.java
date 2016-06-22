@@ -46,6 +46,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.SloppyMath;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -148,8 +149,8 @@ public class DistanceFacetsExample implements Closeable {
     // since it's a 2D trie...
 
     // Degrees -> Radians:
-    double originLatRadians = Math.toRadians(originLat);
-    double originLngRadians = Math.toRadians(originLng);
+    double originLatRadians = SloppyMath.toRadians(originLat);
+    double originLngRadians = SloppyMath.toRadians(originLng);
 
     double angle = maxDistanceKM / EARTH_RADIUS_KM;
 
@@ -158,28 +159,28 @@ public class DistanceFacetsExample implements Closeable {
 
     double minLng;
     double maxLng;
-    if (minLat > Math.toRadians(-90) && maxLat < Math.toRadians(90)) {
+    if (minLat > SloppyMath.toRadians(-90) && maxLat < SloppyMath.toRadians(90)) {
       double delta = Math.asin(Math.sin(angle)/Math.cos(originLatRadians));
       minLng = originLngRadians - delta;
-      if (minLng < Math.toRadians(-180)) {
+      if (minLng < SloppyMath.toRadians(-180)) {
         minLng += 2 * Math.PI;
       }
       maxLng = originLngRadians + delta;
-      if (maxLng > Math.toRadians(180)) {
+      if (maxLng > SloppyMath.toRadians(180)) {
         maxLng -= 2 * Math.PI;
       }
     } else {
       // The query includes a pole!
-      minLat = Math.max(minLat, Math.toRadians(-90));
-      maxLat = Math.min(maxLat, Math.toRadians(90));
-      minLng = Math.toRadians(-180);
-      maxLng = Math.toRadians(180);
+      minLat = Math.max(minLat, SloppyMath.toRadians(-90));
+      maxLat = Math.min(maxLat, SloppyMath.toRadians(90));
+      minLng = SloppyMath.toRadians(-180);
+      maxLng = SloppyMath.toRadians(180);
     }
 
     BooleanQuery.Builder f = new BooleanQuery.Builder();
 
     // Add latitude range filter:
-    f.add(DoublePoint.newRangeQuery("latitude", Math.toDegrees(minLat), Math.toDegrees(maxLat)),
+    f.add(DoublePoint.newRangeQuery("latitude", SloppyMath.toDegrees(minLat), SloppyMath.toDegrees(maxLat)),
           BooleanClause.Occur.FILTER);
 
     // Add longitude range filter:
@@ -187,13 +188,13 @@ public class DistanceFacetsExample implements Closeable {
       // The bounding box crosses the international date
       // line:
       BooleanQuery.Builder lonF = new BooleanQuery.Builder();
-      lonF.add(DoublePoint.newRangeQuery("longitude", Math.toDegrees(minLng), Double.POSITIVE_INFINITY),
+      lonF.add(DoublePoint.newRangeQuery("longitude", SloppyMath.toDegrees(minLng), Double.POSITIVE_INFINITY),
                BooleanClause.Occur.SHOULD);
-      lonF.add(DoublePoint.newRangeQuery("longitude", Double.NEGATIVE_INFINITY, Math.toDegrees(maxLng)),
+      lonF.add(DoublePoint.newRangeQuery("longitude", Double.NEGATIVE_INFINITY, SloppyMath.toDegrees(maxLng)),
                BooleanClause.Occur.SHOULD);
       f.add(lonF.build(), BooleanClause.Occur.MUST);
     } else {
-      f.add(DoublePoint.newRangeQuery("longitude", Math.toDegrees(minLng), Math.toDegrees(maxLng)),
+      f.add(DoublePoint.newRangeQuery("longitude", SloppyMath.toDegrees(minLng), SloppyMath.toDegrees(maxLng)),
             BooleanClause.Occur.FILTER);
     }
 

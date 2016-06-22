@@ -18,7 +18,7 @@ package org.apache.lucene.spatial3d.geom;
 
 import org.junit.Test;
 
-import static java.lang.Math.toRadians;
+import static org.apache.lucene.util.SloppyMath.toRadians;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
