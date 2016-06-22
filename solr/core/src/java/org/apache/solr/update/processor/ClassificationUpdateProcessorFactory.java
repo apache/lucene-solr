@@ -1,6 +1,6 @@
 package org.apache.solr.update.processor;
 
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -55,7 +55,7 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
 
   private int minDf; // knn specific - the minimum Document Frequency for considering a term
 
-  private int k; // knn specific - thw window of top results to evaluate, when assgning the class
+  private int k; // knn specific - thw window of top results to evaluate, when assigning the class
 
   @Override
   public void init(final NamedList args) {
@@ -109,8 +109,8 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     IndexSchema schema = req.getSchema();
-    LeafReader leafReader = req.getSearcher().getLeafReader();
-    return new ClassificationUpdateProcessor(inputFieldNames, classFieldName, minDf, minTf, k, algorithm, next, leafReader, schema);
+    IndexReader indexReader = req.getSearcher().getIndexReader();
+    return new ClassificationUpdateProcessor(inputFieldNames, classFieldName, minDf, minTf, k, algorithm, next, indexReader, schema);
   }
 
   /**

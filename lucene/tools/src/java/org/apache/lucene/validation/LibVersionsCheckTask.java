@@ -111,9 +111,9 @@ public class LibVersionsCheckTask extends Task {
   private File ignoreConflictsFile;
 
   /**
-   * Ivy settings file: ivy-settings.xml
+   * Ivy settings file: top-level-ivy-settings.xml
    */
-  private File ivySettingsFile;
+  private File topLevelIvySettingsFile;
 
   /**
    * Location of common build dir: lucene/build/
@@ -180,10 +180,10 @@ public class LibVersionsCheckTask extends Task {
     centralizedVersionsFile = file;
   }
 
-  public void setIvySettingsFile(File file) {
-    ivySettingsFile = file;
+  public void setTopLevelIvySettingsFile(File file) {
+    topLevelIvySettingsFile = file;
   }
-  
+
   public void setIvyResolutionCacheDir(File dir) {
     ivyResolutionCacheDir = dir;
   }
@@ -692,12 +692,13 @@ public class LibVersionsCheckTask extends Task {
       ivySettings.setVariable("ivy.exclude.types", "source|javadoc");
       ivySettings.setVariable("ivy.resolution-cache.dir", ivyResolutionCacheDir.getAbsolutePath());
       ivySettings.setVariable("ivy.lock-strategy", ivyLockStrategy);
+      ivySettings.setVariable("ivysettings.xml", getProject().getProperty("ivysettings.xml")); // nested settings file
       ivySettings.setBaseDir(commonBuildDir);
       ivySettings.setDefaultConflictManager(new NoConflictManager());
       ivy = Ivy.newInstance(ivySettings);
-      ivy.configure(ivySettingsFile);
+      ivy.configure(topLevelIvySettingsFile);
     } catch (Exception e) {
-      throw new BuildException("Exception reading " + ivySettingsFile.getPath() + ": " + e.toString(), e);
+      throw new BuildException("Exception reading " + topLevelIvySettingsFile.getPath() + ": " + e.toString(), e);
     }
   }
 

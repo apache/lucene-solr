@@ -21,6 +21,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /** Wraps a span query with asserts */
 public class AssertingSpanQuery extends SpanQuery {
@@ -64,22 +65,17 @@ public class AssertingSpanQuery extends SpanQuery {
   }
 
   @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + ((in == null) ? 0 : in.hashCode());
-    return result;
+  public boolean equals(Object o) {
+    return sameClassAs(o) &&
+           equalsTo(getClass().cast(o));
+  }
+
+  private boolean equalsTo(AssertingSpanQuery other) {
+    return Objects.equals(in, other.in);
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
-    AssertingSpanQuery other = (AssertingSpanQuery) obj;
-    if (in == null) {
-      if (other.in != null) return false;
-    } else if (!in.equals(other.in)) return false;
-    return true;
+  public int hashCode() {
+    return (in == null) ? 0 : in.hashCode();
   }
 }

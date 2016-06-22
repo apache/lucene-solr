@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.solr.common.cloud.ClusterState;
@@ -49,14 +48,13 @@ public class NodeMutator {
 
     log.info("DownNode state invoked for node: " + nodeName);
 
-    Set<String> collections = clusterState.getCollections();
-    for (String collection : collections) {
-      DocCollection docCollection = clusterState.getCollection(collection);
+    Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+    for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+      DocCollection docCollection = entry.getValue();
       Map<String,Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
 
-      Set<Entry<String,Slice>> entries = slicesCopy.entrySet();
-      for (Entry<String,Slice> entry : entries) {
-        Slice slice = docCollection.getSlice(entry.getKey());
+      for (Entry<String,Slice> sliceEntry : slicesCopy.entrySet()) {
+        Slice slice = docCollection.getSlice(sliceEntry.getKey());
         Map<String,Replica> newReplicas = new HashMap<String,Replica>();
 
         Collection<Replica> replicas = slice.getReplicas();
@@ -77,7 +75,7 @@ public class NodeMutator {
 
       }
 
-      zkWriteCommands.add(new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy)));
+      zkWriteCommands.add(new ZkWriteCommand(entry.getKey(), docCollection.copyWithSlices(slicesCopy)));
     }
 
     return zkWriteCommands;

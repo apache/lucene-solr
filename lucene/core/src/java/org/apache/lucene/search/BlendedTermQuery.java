@@ -28,7 +28,6 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
 
 /**
@@ -224,20 +223,21 @@ public final class BlendedTermQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (super.equals(obj) == false) {
-      return false;
-    }
-    BlendedTermQuery that = (BlendedTermQuery) obj;
-    return Arrays.equals(terms, that.terms)
-        && Arrays.equals(contexts, that.contexts)
-        && Arrays.equals(boosts, that.boosts)
-        && rewriteMethod.equals(that.rewriteMethod);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(BlendedTermQuery other) {
+    return Arrays.equals(terms, other.terms) && 
+           Arrays.equals(contexts, other.contexts) && 
+           Arrays.equals(boosts, other.boosts) && 
+           rewriteMethod.equals(other.rewriteMethod);
   }
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = classHash();
     h = 31 * h + Arrays.hashCode(terms);
     h = 31 * h + Arrays.hashCode(contexts);
     h = 31 * h + Arrays.hashCode(boosts);

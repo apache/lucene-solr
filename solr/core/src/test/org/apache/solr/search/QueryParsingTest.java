@@ -16,18 +16,10 @@
  */
 package org.apache.solr.search;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
-import org.junit.Test;
-
-import java.util.LinkedHashMap;
-import java.util.List;
 
 /**
  *

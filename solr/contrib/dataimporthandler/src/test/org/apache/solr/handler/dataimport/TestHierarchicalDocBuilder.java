@@ -17,7 +17,6 @@
 package org.apache.solr.handler.dataimport;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;

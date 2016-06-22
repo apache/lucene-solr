@@ -16,67 +16,115 @@
  */
 package org.apache.solr.common.params;
 
+import java.util.Collections;
 import java.util.Locale;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
-public interface CollectionParams 
-{
-  /** What action **/
-  public final static String ACTION = "action";
-  public final static String NAME = "name";
-  
+import static java.util.stream.Collectors.toMap;
+
+public interface CollectionParams {
+  /**
+   * What action
+   **/
+  String ACTION = "action";
+  String NAME = "name";
 
 
-  public enum CollectionAction {
-    CREATE(true),
-    DELETE(true),
-    RELOAD(true),
-    SYNCSHARD(true),
-    CREATEALIAS(true),
-    DELETEALIAS(true),
-    SPLITSHARD(true),
-    DELETESHARD(true),
-    CREATESHARD(true),
-    DELETEREPLICA(true),
-    FORCELEADER(true),
-    MIGRATE(true),
-    ADDROLE(true),
-    REMOVEROLE(true),
-    CLUSTERPROP(true),
-    REQUESTSTATUS(false),
-    DELETESTATUS(false),
-    ADDREPLICA(true),
-    OVERSEERSTATUS(false),
-    LIST(false),
-    CLUSTERSTATUS(false),
-    ADDREPLICAPROP(true),
-    DELETEREPLICAPROP(true),
-    BALANCESHARDUNIQUE(true),
-    REBALANCELEADERS(true),
-    MODIFYCOLLECTION(true),
-    MIGRATESTATEFORMAT(true);
-    
-    public final boolean isWrite;
+  enum LockLevel {
+    CLUSTER(0),
+    COLLECTION(1),
+    SHARD(2),
+    REPLICA(3),
+    NONE(10);
 
-    CollectionAction(boolean isWrite) {
-      this.isWrite = isWrite;
+    public final int level;
+
+    LockLevel(int i) {
+      this.level = i;
     }
 
-    public static CollectionAction get(String p) {
-      if( p != null ) {
-        try {
-          return CollectionAction.valueOf( p.toUpperCase(Locale.ROOT) );
-        }
-        catch( Exception ex ) {}
+    public LockLevel getChild() {
+      return getLevel(level + 1);
+    }
+
+    public static LockLevel getLevel(int i) {
+      for (LockLevel v : values()) {
+        if (v.level == i) return v;
       }
       return null;
     }
-    public boolean isEqual(String s){
-      if(s == null) return false;
-      return toString().equals(s.toUpperCase(Locale.ROOT));
+
+    public boolean isHigherOrEqual(LockLevel that) {
+      return that.level <= level;
     }
-    public String toLower(){
-      return toString().toLowerCase(Locale.ROOT);
+  }
+
+  enum CollectionAction {
+    CREATE(true, LockLevel.COLLECTION),
+    DELETE(true, LockLevel.COLLECTION),
+    RELOAD(true, LockLevel.COLLECTION),
+    SYNCSHARD(true, LockLevel.SHARD),
+    CREATEALIAS(true, LockLevel.COLLECTION),
+    DELETEALIAS(true, LockLevel.COLLECTION),
+    SPLITSHARD(true, LockLevel.SHARD),
+    DELETESHARD(true, LockLevel.SHARD),
+    CREATESHARD(true, LockLevel.COLLECTION),
+    DELETEREPLICA(true, LockLevel.SHARD),
+    FORCELEADER(true, LockLevel.SHARD),
+    MIGRATE(true, LockLevel.SHARD),
+    ADDROLE(true, LockLevel.NONE),
+    REMOVEROLE(true, LockLevel.NONE),
+    CLUSTERPROP(true, LockLevel.NONE),
+    REQUESTSTATUS(false, LockLevel.NONE),
+    DELETESTATUS(false, LockLevel.NONE),
+    ADDREPLICA(true, LockLevel.SHARD),
+    OVERSEERSTATUS(false, LockLevel.NONE),
+    LIST(false, LockLevel.NONE),
+    CLUSTERSTATUS(false, LockLevel.NONE),
+    ADDREPLICAPROP(true, LockLevel.REPLICA),
+    DELETEREPLICAPROP(true, LockLevel.REPLICA),
+    BALANCESHARDUNIQUE(true, LockLevel.SHARD),
+    REBALANCELEADERS(true, LockLevel.COLLECTION),
+    MODIFYCOLLECTION(true, LockLevel.COLLECTION),
+    MIGRATESTATEFORMAT(true, LockLevel.CLUSTER),
+    BACKUP(true, LockLevel.COLLECTION),
+    RESTORE(true, LockLevel.COLLECTION),
+    //only for testing. it just waits for specified time
+    // these are not exposed via collection API commands
+    // but the overseer is aware of these tasks
+    MOCK_COLL_TASK(false, LockLevel.COLLECTION),
+    MOCK_SHARD_TASK(false, LockLevel.SHARD),
+    MOCK_REPLICA_TASK(false, LockLevel.REPLICA)
+    ;
+    public final boolean isWrite;
+
+    public final String lowerName;
+    public final LockLevel lockLevel;
+
+    CollectionAction(boolean isWrite, LockLevel level) {
+      this.isWrite = isWrite;
+      this.lockLevel = level;
+      lowerName = toString().toLowerCase(Locale.ROOT);
     }
 
+    public static CollectionAction get(String p) {
+      return actions.get(p == null ? null : p.toLowerCase(Locale.ROOT));
+    }
+
+    public boolean isEqual(String s) {
+      return s != null && lowerName.equals(s.toLowerCase(Locale.ROOT));
+    }
+
+    public String toLower() {
+      return lowerName;
+    }
   }
+
+  Map<String, CollectionAction> actions = Collections.unmodifiableMap(
+      Stream.of(
+          CollectionAction.values())
+          .collect(toMap(CollectionAction::toLower, Function.<CollectionAction>identity())));
+
 }

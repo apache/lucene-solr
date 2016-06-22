@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldType.LegacyNumericType;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.LegacyFloatField;
 import org.apache.lucene.document.LegacyIntField;
@@ -47,7 +47,6 @@ import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
@@ -61,6 +60,7 @@ import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.FunctionRangeQuery;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.apache.solr.util.DateMathParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -309,7 +309,7 @@ public class TrieField extends PrimitiveFieldType {
    * field is not supported for this field type
    *
    * @param choice the selector Type to use, will never be null
-   * @param field the field to use, garunteed to be multivalued.
+   * @param field the field to use, guaranteed to be multivalued.
    * @see #getSingleValueSource(MultiValueSelector,SchemaField,QParser) 
    */
   protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField field) {

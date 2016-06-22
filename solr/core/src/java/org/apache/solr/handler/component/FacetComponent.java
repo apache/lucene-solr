@@ -22,7 +22,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -50,6 +49,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.facet.FacetDebugInfo;
+import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -252,7 +253,16 @@ public class FacetComponent extends SearchComponent {
       SolrParams params = rb.req.getParams();
       SimpleFacets f = new SimpleFacets(rb.req, rb.getResults().docSet, params, rb);
 
-      NamedList<Object> counts = FacetComponent.getFacetCounts(f);
+      RTimer timer = null;
+      FacetDebugInfo fdebug = null;
+
+      if (rb.isDebug()) {
+        fdebug = new FacetDebugInfo();
+        rb.req.getContext().put("FacetDebugInfo-nonJson", fdebug);
+        timer = new RTimer();
+      }
+
+      NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
       if (!ArrayUtils.isEmpty(pivots)) {
         PivotFacetProcessor pivotProcessor 
@@ -264,8 +274,17 @@ public class FacetComponent extends SearchComponent {
         }
       }
 
+      if (fdebug != null) {
+        long timeElapsed = (long) timer.getTime();
+        fdebug.setElapse(timeElapsed);
+      }
+
       rb.rsp.add("facet_counts", counts);
     }
+  }
+
+  public static NamedList<Object> getFacetCounts(SimpleFacets simpleFacets) {
+    return getFacetCounts(simpleFacets, null);
   }
 
   /**
@@ -279,7 +298,7 @@ public class FacetComponent extends SearchComponent {
    * @see FacetParams#FACET
    * @return a NamedList of Facet Count info or null
    */
-  public static NamedList<Object> getFacetCounts(SimpleFacets simpleFacets) {
+  public static NamedList<Object> getFacetCounts(SimpleFacets simpleFacets, FacetDebugInfo fdebug) {
     // if someone called this method, benefit of the doubt: assume true
     if (!simpleFacets.getGlobalParams().getBool(FacetParams.FACET, true))
       return null;
@@ -288,7 +307,19 @@ public class FacetComponent extends SearchComponent {
     NamedList<Object> counts = new SimpleOrderedMap<>();
     try {
       counts.add(FACET_QUERY_KEY, simpleFacets.getFacetQueryCounts());
-      counts.add(FACET_FIELD_KEY, simpleFacets.getFacetFieldCounts());
+      if (fdebug != null) {
+        FacetDebugInfo fd = new FacetDebugInfo();
+        fd.putInfoItem("action", "field facet");
+        fd.setProcessor(simpleFacets.getClass().getSimpleName());
+        fdebug.addChild(fd);
+        simpleFacets.setFacetDebugInfo(fd);
+        final RTimer timer = new RTimer();
+        counts.add(FACET_FIELD_KEY, simpleFacets.getFacetFieldCounts());
+        long timeElapsed = (long) timer.getTime();
+        fd.setElapse(timeElapsed);
+      } else {
+        counts.add(FACET_FIELD_KEY, simpleFacets.getFacetFieldCounts());
+      }
       counts.add(FACET_RANGES_KEY, rangeFacetProcessor.getFacetRangeCounts());
       counts.add(FACET_INTERVALS_KEY, simpleFacets.getFacetIntervalCounts());
       counts.add(SpatialHeatmapFacets.RESPONSE_KEY, simpleFacets.getHeatmapCounts());
@@ -532,9 +563,16 @@ public class FacetComponent extends SearchComponent {
           // set the initial limit higher to increase accuracy
           dff.initialLimit = doOverRequestMath(dff.initialLimit, dff.overrequestRatio, 
                                                dff.overrequestCount);
-          dff.initialMincount = 0; // TODO: we could change this to 1, but would
-                                   // then need more refinement for small facet
-                                   // result sets?
+          
+          // If option FACET_DISTRIB_MCO is turned on then we will use 1 as the initial 
+          // minCount (unless the user explicitly set it to something less than 1). If 
+          // option FACET_DISTRIB_MCO is turned off then we will use 0 as the initial 
+          // minCount regardless of what the user might have provided (prior to the
+          // addition of the FACET_DISTRIB_MCO option the default logic was to use 0).
+          // As described in issues SOLR-8559 and SOLR-8988 the use of 1 provides a 
+          // significant performance boost.
+          dff.initialMincount = dff.mco ? Math.min(dff.minCount, 1) : 0;
+                                   
         } else {
           // if limit==-1, then no need to artificially lower mincount to 0 if
           // it's 1
@@ -1384,6 +1422,7 @@ public class FacetComponent extends SearchComponent {
     
     public int initialLimit; // how many terms requested in first phase
     public int initialMincount; // mincount param sent to each shard
+    public boolean mco;
     public double overrequestRatio;
     public int overrequestCount;
     public boolean needRefinements;
@@ -1402,7 +1441,9 @@ public class FacetComponent extends SearchComponent {
         = params.getFieldDouble(field, FacetParams.FACET_OVERREQUEST_RATIO, 1.5);
       this.overrequestCount 
         = params.getFieldInt(field, FacetParams.FACET_OVERREQUEST_COUNT, 10);
-                             
+      
+      this.mco 
+      = params.getFieldBool(field, FacetParams.FACET_DISTRIB_MCO, false);
     }
     
     void add(int shardNum, NamedList shardCounts, int numRequested) {

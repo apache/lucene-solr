@@ -18,11 +18,9 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.HashMap;
 import java.util.Map;
 
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.jts.JtsGeometry;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -36,6 +34,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrCache;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.jts.JtsGeometry;
 
 /** A Solr Spatial FieldType based on {@link CompositeSpatialStrategy}.
  * @lucene.experimental */
@@ -48,7 +49,8 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
-    // Do NOT call super.init(); instead we delegate to an RPT field. Admittedly this is error prone.
+    Map<String, String> origArgs = new HashMap<>(args); // clone so we can feed it to an aggregated field type
+    super.init(schema, origArgs);
 
     //TODO Move this check to a call from AbstractSpatialFieldType.createFields() so the type can declare
     // if it supports multi-valued or not. It's insufficient here; we can't see if you set multiValued on the field.
@@ -65,6 +67,7 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
     rptFieldType.setTypeName(getTypeName());
     rptFieldType.properties = properties;
     rptFieldType.init(schema, args);
+
     rptFieldType.argsParser = argsParser = newSpatialArgsParser();
     this.ctx = rptFieldType.ctx;
     this.distanceUnits = rptFieldType.distanceUnits;

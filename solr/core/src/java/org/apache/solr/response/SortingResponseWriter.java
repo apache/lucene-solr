@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -44,10 +45,12 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
+import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieDoubleField;
 import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
@@ -99,14 +102,24 @@ public class SortingResponseWriter implements QueryResponseWriter {
       exception = new IOException(new SyntaxError("Scoring is not currently supported with xsort."));
     }
 
-    FixedBitSet[] sets = (FixedBitSet[])req.getContext().get("export");
-    Integer th = (Integer)req.getContext().get("totalHits");
-
-    if(sets == null) {
-      exception = new IOException(new SyntaxError("xport RankQuery is required for xsort: rq={!xport}"));
+    // There is a bailout in SolrIndexSearcher.getDocListNC when there are _no_ docs in the index at all.
+    // if (lastDocRequested <= 0) {
+    // That causes the totalHits and export entries in the context to _not_ get set.
+    // The only time that really matters is when we search against an _empty_ set. That's too obscure
+    // a condition to handle as part of this patch, if someone wants to pursue it it can be reproduced with:
+    // ant test  -Dtestcase=StreamingTest -Dtests.method=testAllValidExportTypes -Dtests.seed=10F13879D0D1D6AD -Dtests.slow=true -Dtests.locale=es-PA -Dtests.timezone=America/Bahia_Banderas -Dtests.asserts=true -Dtests.file.encoding=ISO-8859-1
+    // You'll have to uncomment the if below to hit the null pointer exception.
+    // This is such an unusual case (i.e. an empty index) that catching this concdition here is probably OK.
+    // This came to light in the very artifical case of indexing a single doc to Cloud.
+    int totalHits = 0;
+    FixedBitSet[] sets = null;
+    if (req.getContext().get("totalHits") != null) {
+      totalHits = ((Integer)req.getContext().get("totalHits")).intValue();
+      sets = (FixedBitSet[]) req.getContext().get("export");
+      if (sets == null) {
+        exception = new IOException(new SyntaxError("xport RankQuery is required for xsort: rq={!xport}"));
+      }
     }
-
-    int totalHits = th.intValue();
     SolrParams params = req.getParams();
     String fl = params.get("fl");
 
@@ -132,7 +145,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
 
     try {
       fieldWriters = getFieldWriters(fields, req.getSearcher());
-    }catch(Exception e) {
+    } catch (Exception e) {
       exception = e;
     }
 
@@ -309,8 +322,21 @@ public class SortingResponseWriter implements QueryResponseWriter {
         } else {
           writers[i] = new StringFieldWriter(field, fieldType);
         }
-      } else {
-        throw new IOException("Export fields must either be one of the following types: int,float,long,double,string");
+      } else if (fieldType instanceof TrieDateField) {
+        if (multiValued) {
+          writers[i] = new MultiFieldWriter(field, fieldType, false);
+        } else {
+          writers[i] = new DateFieldWriter(field);
+        }
+      } else if(fieldType instanceof BoolField) {
+        if(multiValued) {
+          writers[i] = new MultiFieldWriter(field, fieldType, true);
+        } else {
+          writers[i] = new BoolFieldWriter(field, fieldType);
+        }
+      }
+      else {
+        throw new IOException("Export fields must either be one of the following types: int,float,long,double,string,date,boolean");
       }
     }
     return writers;
@@ -362,8 +388,25 @@ public class SortingResponseWriter implements QueryResponseWriter {
         } else {
           sortValues[i] = new StringValue(vals, field, new IntAsc());
         }
+      } else if (ft instanceof TrieDateField) {
+        if (reverse) {
+          sortValues[i] = new LongValue(field, new LongDesc());
+        } else {
+          sortValues[i] = new LongValue(field, new LongAsc());
+        }
+      } else if (ft instanceof BoolField) {
+        // This is a bit of a hack, but since the boolean field stores ByteRefs, just like Strings
+        // _and_ since "F" happens to sort before "T" (thus false sorts "less" than true)
+        // we can just use the existing StringValue here.
+        LeafReader reader = searcher.getLeafReader();
+        SortedDocValues vals =  reader.getSortedDocValues(field);
+        if(reverse) {
+          sortValues[i] = new StringValue(vals, field, new IntDesc());
+        } else {
+          sortValues[i] = new StringValue(vals, field, new IntAsc());
+        }
       } else {
-        throw new IOException("Sort fields must be one of the following types: int,float,long,double,string");
+        throw new IOException("Sort fields must be one of the following types: int,float,long,double,string,date,boolean");
       }
     }
 
@@ -1292,6 +1335,65 @@ public class SortingResponseWriter implements QueryResponseWriter {
       out.write('"');
       out.write(':');
       out.write(Long.toString(val));
+      return true;
+    }
+  }
+
+  class DateFieldWriter extends FieldWriter {
+    private String field;
+
+    public DateFieldWriter(String field) {
+      this.field = field;
+    }
+
+    public boolean write(int docId, LeafReader reader, Writer out, int fieldIndex) throws IOException {
+      NumericDocValues vals = DocValues.getNumeric(reader, this.field);
+      long val = vals.get(docId);
+
+      if (fieldIndex > 0) {
+        out.write(',');
+      }
+      out.write('"');
+      out.write(this.field);
+      out.write('"');
+      out.write(':');
+      out.write('"');
+      writeStr(new Date(val).toInstant().toString(), out);
+      out.write('"');
+      return true;
+    }
+  }
+
+  class BoolFieldWriter extends FieldWriter {
+    private String field;
+    private FieldType fieldType;
+    private CharsRefBuilder cref = new CharsRefBuilder();
+
+    public BoolFieldWriter(String field, FieldType fieldType) {
+      this.field = field;
+      this.fieldType = fieldType;
+    }
+
+    public boolean write(int docId, LeafReader reader, Writer out, int fieldIndex) throws IOException {
+      SortedDocValues vals = DocValues.getSorted(reader, this.field);
+      int ord = vals.getOrd(docId);
+      if(ord == -1) {
+        return false;
+      }
+
+      BytesRef ref = vals.lookupOrd(ord);
+      fieldType.indexedToReadable(ref, cref);
+
+      if (fieldIndex > 0) {
+        out.write(',');
+      }
+      out.write('"');
+      out.write(this.field);
+      out.write('"');
+      out.write(':');
+      //out.write('"');
+      writeStr(cref.toString(), out);
+      //out.write('"');
       return true;
     }
   }

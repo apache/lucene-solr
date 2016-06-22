@@ -22,16 +22,16 @@ import java.util.Objects;
 import java.util.function.IntPredicate;
 import java.util.function.IntUnaryOperator;
 
+import org.apache.lucene.analysis.CharacterUtils.CharacterBuffer;
+import org.apache.lucene.analysis.CharacterUtils;
+import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LetterTokenizer;
-import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.analysis.util.CharacterUtils;
-import org.apache.lucene.analysis.util.CharacterUtils.CharacterBuffer;
 
 /**
  * An abstract base class for simple, character-oriented tokenizers.
@@ -199,7 +199,6 @@ public abstract class CharTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
-  private final CharacterUtils charUtils = CharacterUtils.getInstance();
   private final CharacterBuffer ioBuffer = CharacterUtils.newCharacterBuffer(IO_BUFFER_SIZE);
   
   /**
@@ -229,7 +228,7 @@ public abstract class CharTokenizer extends Tokenizer {
     while (true) {
       if (bufferIndex >= dataLen) {
         offset += dataLen;
-        charUtils.fill(ioBuffer, input); // read supplementary char aware with CharacterUtils
+        CharacterUtils.fill(ioBuffer, input); // read supplementary char aware with CharacterUtils
         if (ioBuffer.getLength() == 0) {
           dataLen = 0; // so next offset += dataLen won't decrement offset
           if (length > 0) {
@@ -243,7 +242,7 @@ public abstract class CharTokenizer extends Tokenizer {
         bufferIndex = 0;
       }
       // use CharacterUtils here to support < 3.1 UTF-16 code unit behavior if the char based methods are gone
-      final int c = charUtils.codePointAt(ioBuffer.getBuffer(), bufferIndex, ioBuffer.getLength());
+      final int c = Character.codePointAt(ioBuffer.getBuffer(), bufferIndex, ioBuffer.getLength());
       final int charCount = Character.charCount(c);
       bufferIndex += charCount;
 

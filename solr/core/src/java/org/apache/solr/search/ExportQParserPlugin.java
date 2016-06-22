@@ -19,15 +19,15 @@ package org.apache.solr.search;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.request.SolrRequestInfo;
+
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.*;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.common.params.SolrParams;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 
 public class ExportQParserPlugin extends QParserPlugin {
 
@@ -53,7 +53,6 @@ public class ExportQParserPlugin extends QParserPlugin {
   }
 
   public class ExportQuery extends RankQuery {
-    
     private Query mainQuery;
     private Object id;
 
@@ -94,17 +93,21 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
 
     public int hashCode() {
-      return 31 * super.hashCode() + id.hashCode();
+      return classHash() + 
+          31 * id.hashCode() +
+          31 * Objects.hash(mainQuery);
+    }
+
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
     }
     
-    public boolean equals(Object o) {
-      if (super.equals(o) == false) {
-        return false;
-      }
-      ExportQuery q = (ExportQuery)o;
-      return id == q.id;
+    private boolean equalsTo(ExportQuery other) {
+      return Objects.equals(id, other.id) &&
+             Objects.equals(mainQuery, other.mainQuery);
     }
-    
+
     public String toString(String s) {
       return s;
     }

@@ -523,7 +523,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     final Map<String,String> commitData = new HashMap<>();
     commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY,
         String.valueOf(System.currentTimeMillis()));
-    iw.setCommitData(commitData);
+    iw.setLiveCommitData(commitData.entrySet());
   }
 
   public void prepareCommit(CommitUpdateCommand cmd) throws IOException {

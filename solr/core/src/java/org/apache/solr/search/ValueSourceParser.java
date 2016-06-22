@@ -91,25 +91,29 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
    */
   public abstract ValueSource parse(FunctionQParser fp) throws SyntaxError;
 
-  /* standard functions */
-  public static Map<String, ValueSourceParser> standardValueSourceParsers = new HashMap<>();
+  /** standard functions supported by default, filled in static class initialization */
+  private static final Map<String, ValueSourceParser> standardVSParsers = new HashMap<>();
+  
+  /** standard functions supported by default */
+  public static final Map<String, ValueSourceParser> standardValueSourceParsers
+    = Collections.unmodifiableMap(standardVSParsers);
 
-  /** Adds a new parser for the name and returns any existing one that was overriden.
+  /** Adds a new parser for the name and returns any existing one that was overridden.
    *  This is not thread safe.
    */
-  public static ValueSourceParser addParser(String name, ValueSourceParser p) {
-    return standardValueSourceParsers.put(name, p);
+  private static ValueSourceParser addParser(String name, ValueSourceParser p) {
+    return standardVSParsers.put(name, p);
   }
 
-  /** Adds a new parser for the name and returns any existing one that was overriden.
+  /** Adds a new parser for the name and returns any existing one that was overridden.
    *  This is not thread safe.
    */
-  public static ValueSourceParser addParser(NamedParser p) {
-    return standardValueSourceParsers.put(p.name(), p);
+  private static ValueSourceParser addParser(NamedParser p) {
+    return standardVSParsers.put(p.name(), p);
   }
 
   private static void alias(String source, String dest) {
-    standardValueSourceParsers.put(dest, standardValueSourceParsers.get(source));
+    standardVSParsers.put(dest, standardVSParsers.get(source));
   }
 
   static {
@@ -419,7 +423,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           FieldType.MultiValueSelector selector = FieldType.MultiValueSelector.lookup(s);
           if (null == selector) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                    "Multi-Valued field selector '"+s+"' not spported");
+                                    "Multi-Valued field selector '"+s+"' not supported");
           }
           return f.getType().getSingleValueSource(selector, f, fp);
         }

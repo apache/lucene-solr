@@ -17,6 +17,7 @@
 package org.apache.lucene.util.automaton;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -205,8 +206,8 @@ public class AutomatonTestUtil {
     }
 
     public int[] getRandomAcceptedString(Random r) {
-
-      final List<Integer> soFar = new ArrayList<>();
+      int[] codePoints = new int[0];
+      int codepointCount = 0;
 
       int s = 0;
 
@@ -248,11 +249,12 @@ public class AutomatonTestUtil {
         } else {
           t = transitions[s][r.nextInt(transitions[s].length)];
         }
-        soFar.add(getRandomCodePoint(r, t.min, t.max));
+        codePoints = ArrayUtil.grow(codePoints, codepointCount + 1);
+        codePoints[codepointCount++] = getRandomCodePoint(r, t.min, t.max);
         s = t.dest;
       }
 
-      return ArrayUtil.toIntArray(soFar);
+      return Arrays.copyOf(codePoints, codepointCount);
     }
   }
 

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.codecs;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,12 +23,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.apache.lucene.index.DocIDMerger;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.Bits;
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /** 
  * Abstract API that consumes normalization values.  
@@ -98,6 +98,30 @@ public abstract class NormsConsumer implements Closeable {
     }
   }
   
+  /** Tracks state of one numeric sub-reader that we are merging */
+  private static class NumericDocValuesSub extends DocIDMerger.Sub {
+
+    private final NumericDocValues values;
+    private int docID = -1;
+    private final int maxDoc;
+
+    public NumericDocValuesSub(MergeState.DocMap docMap, NumericDocValues values, int maxDoc) {
+      super(docMap);
+      this.values = values;
+      this.maxDoc = maxDoc;
+    }
+
+    @Override
+    public int nextDoc() {
+      docID++;
+      if (docID == maxDoc) {
+        return NO_MORE_DOCS;
+      } else {
+        return docID;
+      }
+    }
+  }
+
   /**
    * Merges the norms from <code>toMerge</code>.
    * <p>
@@ -111,13 +135,18 @@ public abstract class NormsConsumer implements Closeable {
                     new Iterable<Number>() {
                       @Override
                       public Iterator<Number> iterator() {
+
+                        // We must make a new DocIDMerger for each iterator:
+                        List<NumericDocValuesSub> subs = new ArrayList<>();
+                        assert mergeState.docMaps.length == toMerge.size();
+                        for(int i=0;i<toMerge.size();i++) {
+                          subs.add(new NumericDocValuesSub(mergeState.docMaps[i], toMerge.get(i), mergeState.maxDocs[i]));
+                        }
+
+                        final DocIDMerger<NumericDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
+
                         return new Iterator<Number>() {
-                          int readerUpto = -1;
-                          int docIDUpto;
                           long nextValue;
-                          int maxDoc;
-                          NumericDocValues currentValues;
-                          Bits currentLiveDocs;
                           boolean nextIsSet;
 
                           @Override
@@ -141,31 +170,13 @@ public abstract class NormsConsumer implements Closeable {
                           }
 
                           private boolean setNext() {
-                            while (true) {
-                              if (readerUpto == toMerge.size()) {
-                                return false;
-                              }
-
-                              if (currentValues == null || docIDUpto == maxDoc) {
-                                readerUpto++;
-                                if (readerUpto < toMerge.size()) {
-                                  currentValues = toMerge.get(readerUpto);
-                                  currentLiveDocs = mergeState.liveDocs[readerUpto];
-                                  maxDoc = mergeState.maxDocs[readerUpto];
-                                }
-                                docIDUpto = 0;
-                                continue;
-                              }
-
-                              if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
-                                nextIsSet = true;
-                                nextValue = currentValues.get(docIDUpto);
-                                docIDUpto++;
-                                return true;
-                              }
-
-                              docIDUpto++;
+                            NumericDocValuesSub sub = docIDMerger.next();
+                            if (sub == null) {
+                              return false;
                             }
+                            nextIsSet = true;
+                            nextValue = sub.values.get(sub.docID);
+                            return true;
                           }
                         };
                       }

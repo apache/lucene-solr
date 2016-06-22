@@ -22,7 +22,6 @@ import java.text.Collator;
 import java.text.RuleBasedCollator;
 import java.util.Locale;
 
-import org.apache.lucene.util.TestUtil;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;

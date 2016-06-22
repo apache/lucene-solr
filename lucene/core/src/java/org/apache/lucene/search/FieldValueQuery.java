@@ -43,17 +43,14 @@ public final class FieldValueQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (super.equals(obj) == false) {
-      return false;
-    }
-    final FieldValueQuery that = (FieldValueQuery) obj;
-    return field.equals(that.field);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           field.equals(((FieldValueQuery) other).field);
   }
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + field.hashCode();
+    return 31 * classHash() + field.hashCode();
   }
 
   @Override

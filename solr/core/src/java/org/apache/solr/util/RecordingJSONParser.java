@@ -19,59 +19,75 @@ package org.apache.solr.util;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.noggit.CharArr;
 import org.noggit.JSONParser;
 
-public class RecordingJSONParser extends JSONParser{
-  public RecordingJSONParser(Reader in) { super(in); }
+public class RecordingJSONParser extends JSONParser {
+  static ThreadLocal<char[]> buf = new ThreadLocal<>();
+  private final char[] bufCopy;
+  //global position is the global position at the beginning of my buffer
+  private long globalPosition = 0;
 
-  private StringBuilder sb = new StringBuilder() ;
-  private long position;
-  private boolean objectStarted =false;
+  private StringBuilder sb = new StringBuilder();
+  private boolean objectStarted = false;
+  public long lastMarkedPosition = 0;
 
 
+  public RecordingJSONParser(Reader in) {
+    super(in, getChars());
+    bufCopy = buf.get();
+    buf.remove();
+  }
 
-  @Override
-  protected int getChar() throws IOException {
-    int aChar = super.getChar();
-    if(aChar == '{') objectStarted =true;
-    if(getPosition() >position) recordChar((char) aChar); // check before adding if a pushback happened ignore
-    position= getPosition();
-    return aChar;
+  static char[] getChars() {
+    buf.set(new char[8192]);
+    return buf.get();
   }
 
   private void recordChar(int aChar) {
-    if(objectStarted)
+    if (objectStarted) {
       sb.append((char) aChar);
+    } else if (aChar == '{') {
+      sb.append((char) aChar);
+      objectStarted = true;
+    }
   }
-  private void recordStr(String s) {
-    if(objectStarted) sb.append(s);
+
+  public void resetBuf() {
+    sb = new StringBuilder();
+    objectStarted = false;
   }
 
   @Override
-  public CharArr getStringChars() throws IOException {
-    CharArr chars = super.getStringChars();
-    recordStr(chars.toString());
-    position = getPosition();
-    // if reading a String , the getStringChars do not return the closing single quote or double quote
-    //so, try to capture that
-    if(chars.getArray().length >chars.getStart()+chars.size()) {
-      char next = chars.getArray()[chars.getStart() + chars.size()];
-      if(next =='"' || next == '\'') {
-        recordChar(next);
+  public int nextEvent() throws IOException {
+    captureMissing();
+    return super.nextEvent();
+  }
+
+  private void captureMissing() {
+    long currPosition = getPosition() - globalPosition;
+    if(currPosition < 0){
+      System.out.println("ERROR");
+    }
+    if (currPosition > lastMarkedPosition) {
+      for (long i = lastMarkedPosition; i < currPosition; i++) {
+        recordChar(bufCopy[(int) i]);
       }
     }
-    return chars;
+    lastMarkedPosition = currPosition;
   }
 
-  public void resetBuf(){
-    sb = new StringBuilder();
-    objectStarted=false;
-  }
 
+  @Override
+  protected void fill() throws IOException {
+    captureMissing();
+    super.fill();
+    this.globalPosition = getPosition();
+
+  }
 
   public String getBuf() {
-    if(sb != null) return sb.toString();
+    captureMissing();
+    if (sb != null) return sb.toString();
     return null;
   }
 

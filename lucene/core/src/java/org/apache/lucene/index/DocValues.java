@@ -210,7 +210,7 @@ public final class DocValues {
                                         (expected.length == 1 
                                         ? "(expected=" + expected[0]
                                         : "(expected one of " + Arrays.toString(expected)) + "). " +
-                                        "Use UninvertingReader or index with docvalues.");
+                                        "Re-index with correct docvalues type.");
     }
   }
   

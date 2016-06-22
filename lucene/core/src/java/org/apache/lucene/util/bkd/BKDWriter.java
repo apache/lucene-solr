@@ -25,7 +25,6 @@ import java.util.List;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -33,10 +32,11 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefComparator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.IntroSorter;
 import org.apache.lucene.util.LongBitSet;
+import org.apache.lucene.util.MSBRadixSorter;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.PriorityQueue;
@@ -299,9 +299,6 @@ public class BKDWriter implements Closeable {
     final BKDReader.IntersectState state;
     final MergeState.DocMap docMap;
 
-    /** Base offset for all our docIDs */
-    final int docIDBase;
-
     /** Current doc ID */
     public int docID;
 
@@ -314,7 +311,7 @@ public class BKDWriter implements Closeable {
     /** Which leaf block we are up to */
     private int blockID;
 
-    public MergeReader(BKDReader bkd, MergeState.DocMap docMap, int docIDBase) throws IOException {
+    public MergeReader(BKDReader bkd, MergeState.DocMap docMap) throws IOException {
       this.bkd = bkd;
       state = new BKDReader.IntersectState(bkd.in.clone(),
                                            bkd.numDims,
@@ -322,7 +319,6 @@ public class BKDWriter implements Closeable {
                                            bkd.maxPointsInLeafNode,
                                            null);
       this.docMap = docMap;
-      this.docIDBase = docIDBase;
       long minFP = Long.MAX_VALUE;
       //System.out.println("MR.init " + this + " bkdreader=" + bkd + " leafBlockFPs.length=" + bkd.leafBlockFPs.length);
       for(long fp : bkd.leafBlockFPs) {
@@ -396,22 +392,20 @@ public class BKDWriter implements Closeable {
       }
 
       // Tie break by sorting smaller docIDs earlier:
-      return a.docIDBase < b.docIDBase;
+      return a.docID < b.docID;
     }
   }
 
   /** More efficient bulk-add for incoming {@link BKDReader}s.  This does a merge sort of the already
    *  sorted values and currently only works when numDims==1.  This returns -1 if all documents containing
    *  dimensional values were deleted. */
-  public long merge(IndexOutput out, List<MergeState.DocMap> docMaps, List<BKDReader> readers, List<Integer> docIDBases) throws IOException {
+  public long merge(IndexOutput out, List<MergeState.DocMap> docMaps, List<BKDReader> readers) throws IOException {
     if (numDims != 1) {
       throw new UnsupportedOperationException("numDims must be 1 but got " + numDims);
     }
     if (pointCount != 0) {
       throw new IllegalStateException("cannot mix add and merge");
     }
-
-    //System.out.println("BKDW.merge segs=" + readers.size());
 
     // Catch user silliness:
     if (heapPointWriter == null && tempInput == null) {
@@ -433,7 +427,7 @@ public class BKDWriter implements Closeable {
       } else {
         docMap = docMaps.get(i);
       }
-      MergeReader reader = new MergeReader(bkd, docMap, docIDBases.get(i));
+      MergeReader reader = new MergeReader(bkd, docMap);
       if (reader.next()) {
         queue.add(reader);
       }
@@ -468,7 +462,7 @@ public class BKDWriter implements Closeable {
       // System.out.println("iter reader=" + reader);
 
       // NOTE: doesn't work with subclasses (e.g. SimpleText!)
-      int docID = reader.docIDBase + reader.docID;
+      int docID = reader.docID;
       leafBlockDocIDs[leafCount] = docID;
       System.arraycopy(reader.state.scratchPackedValue, 0, leafBlockPackedValues[leafCount], 0, packedBytesLength);
       docsSeen.set(docID);
@@ -604,39 +598,26 @@ public class BKDWriter implements Closeable {
 
   /** Sort the heap writer by the specified dim */
   private void sortHeapPointWriter(final HeapPointWriter writer, int dim) {
+    final int pointCount = Math.toIntExact(this.pointCount);
+    // Tie-break by docID:
 
-    assert pointCount < Integer.MAX_VALUE;
-    //int[] swapCount = new int[1];
-    //int[] cmpCount = new int[1];
-
-    // System.out.println("SORT length=" + length);
-
-    // All buffered points are still in heap; just do in-place sort:
-    new IntroSorter() {
-      private final byte[] pivotPackedValue = new byte[bytesPerDim];
-      private int pivotDocID;
+    // No need to tie break on ord, for the case where the same doc has the same value in a given dimension indexed more than once: it
+    // can't matter at search time since we don't write ords into the index:
+    new MSBRadixSorter(bytesPerDim + Integer.BYTES) {
 
       @Override
-      protected void setPivot(int i) {
-        pivotDocID = writer.docIDs[i];
-        int block = i / writer.valuesPerBlock;
-        int index = i % writer.valuesPerBlock;
-        System.arraycopy(writer.blocks.get(block), index*packedBytesLength+dim*bytesPerDim, pivotPackedValue, 0, bytesPerDim);
-      }
-
-      @Override
-      protected int comparePivot(int j) {
-        //cmpCount[0]++;
-        int block = j / writer.valuesPerBlock;
-        int index = j % writer.valuesPerBlock;
-        assert index >= 0: "index=" + index + " j=" + j;
-        int cmp = StringHelper.compare(bytesPerDim, pivotPackedValue, 0, writer.blocks.get(block), bytesPerDim*(index*numDims+dim));
-        if (cmp != 0) {
-          return cmp;
+      protected int byteAt(int i, int k) {
+        assert k >= 0;
+        if (k < bytesPerDim) {
+          // dim bytes
+          int block = i / writer.valuesPerBlock;
+          int index = i % writer.valuesPerBlock;
+          return writer.blocks.get(block)[index * packedBytesLength + dim * bytesPerDim + k] & 0xff;
+        } else {
+          // doc id
+          int s = 3 - (k - bytesPerDim);
+          return (writer.docIDs[i] >>> (s * 8)) & 0xff;
         }
-
-        // Tie-break
-        return Integer.compare(pivotDocID, writer.docIDs[j]);
       }
 
       @Override
@@ -670,26 +651,7 @@ public class BKDWriter implements Closeable {
         System.arraycopy(scratch1, 0, blockJ, indexJ, packedBytesLength);
       }
 
-      @Override
-      protected int compare(int i, int j) {
-        //cmpCount[0]++;
-        int blockI = i / writer.valuesPerBlock;
-        int dimI = i % writer.valuesPerBlock;
-        int blockJ = j / writer.valuesPerBlock;
-        int dimJ = j % writer.valuesPerBlock;
-        int cmp = StringHelper.compare(bytesPerDim, writer.blocks.get(blockI), bytesPerDim*(dimI*numDims+dim), writer.blocks.get(blockJ), bytesPerDim*(dimJ*numDims+dim));
-        if (cmp != 0) {
-          return cmp;
-        }
-
-        // Tie-break by docID:
-
-        // No need to tie break on ord, for the case where the same doc has the same value in a given dimension indexed more than once: it
-        // can't matter at search time since we don't write ords into the index:
-        return Integer.compare(writer.docIDs[i], writer.docIDs[j]);
-      }
-    }.sort(0, Math.toIntExact(pointCount));
-    //System.out.println("LEN=" + length + " SWAP=" + swapCount[0] + " CMP=" + cmpCount[0]);
+    }.sort(0, pointCount);
   }
 
   private PointWriter sort(int dim) throws IOException {
@@ -724,28 +686,28 @@ public class BKDWriter implements Closeable {
 
       final int offset = bytesPerDim * dim;
 
-      Comparator<BytesRef> cmp = new Comparator<BytesRef>() {
- 
-        final ByteArrayDataInput reader = new ByteArrayDataInput();
-
-        @Override
-        public int compare(BytesRef a, BytesRef b) {
-          // First compare by the requested dimension we are sorting by:
-          int cmp = StringHelper.compare(bytesPerDim, a.bytes, a.offset + offset, b.bytes, b.offset + offset);
-
-          if (cmp != 0) {
-            return cmp;
+      Comparator<BytesRef> cmp;
+      if (dim == numDims - 1) {
+        // in that case the bytes for the dimension and for the doc id are contiguous,
+        // so we don't need a branch
+        cmp = new BytesRefComparator(bytesPerDim + Integer.BYTES) {
+          @Override
+          protected int byteAt(BytesRef ref, int i) {
+            return ref.bytes[ref.offset + offset + i] & 0xff;
           }
-
-          // Tie-break by docID ... no need to tie break on ord, for the case where the same doc has
-          // the same value in a given dimension indexed more than once: it can't matter at search
-          // time since we don't write ords into the index:
-
-          return StringHelper.compare(Integer.BYTES,
-                                      a.bytes, a.offset + packedBytesLength,
-                                      b.bytes, b.offset + packedBytesLength);
-        }
-      };
+        };
+      } else {
+        cmp = new BytesRefComparator(bytesPerDim + Integer.BYTES) {
+          @Override
+          protected int byteAt(BytesRef ref, int i) {
+            if (i < bytesPerDim) {
+              return ref.bytes[ref.offset + offset + i] & 0xff;
+            } else {
+              return ref.bytes[ref.offset + packedBytesLength + i - bytesPerDim] & 0xff;
+            }
+          }
+        };
+      }
 
       OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, offlineSorterBufferMB, offlineSorterMaxTempFiles, bytesPerDoc) {
 
@@ -1272,4 +1234,5 @@ public class BKDWriter implements Closeable {
       return new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, longOrds, desc, count, singleValuePerDoc);
     }
   }
+
 }

@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -67,6 +68,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  */
+@SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
 public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -278,10 +280,10 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
         Thread.sleep(200);
       }
 
-      // check the index contents against our expecationts
+      // check the index contents against our expectations
       final BitSet actualDocIds = allDocs(CLOUD_CLIENT, maxDocId);
       if ( expectedDocIds.cardinality() != actualDocIds.cardinality() ) {
-        log.error("cardinality missmatch: expected {} BUT actual {}",
+        log.error("cardinality mismatch: expected {} BUT actual {}",
                   expectedDocIds.cardinality(),
                   actualDocIds.cardinality());
       }
@@ -325,7 +327,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     
     assertEquals("wrong nextBit at end of all iters", -1,
                  randomUnsetBit(random(), bits, max));
-    assertEquals("wrong nextBit at redundent end of all iters", -1,
+    assertEquals("wrong nextBit at redundant end of all iters", -1,
                  randomUnsetBit(random(), bits, max));
   }
   

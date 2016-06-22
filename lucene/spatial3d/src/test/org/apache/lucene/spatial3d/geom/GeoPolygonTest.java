@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.BitSet;
 
 import org.junit.Test;
-import org.junit.Ignore;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -143,6 +141,50 @@ public class GeoPolygonTest {
   }
 
   @Test
+  public void testPolygonIntersects() {
+    GeoPolygon c;
+    List<GeoPoint> points;
+    List<GeoPolygonFactory.PolygonDescription> shapes;
+    XYZBounds xyzBounds;
+    XYZSolid xyzSolid;
+    
+    points = new ArrayList<GeoPoint>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
+
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
+
+    xyzBounds = new XYZBounds();
+    c.getBounds(xyzBounds);
+    xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumX(), xyzBounds.getMaximumX(), xyzBounds.getMinimumY(), xyzBounds.getMaximumY(), xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ());
+    assertEquals(GeoArea.WITHIN, xyzSolid.getRelationship(c));
+    xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumY(), xyzBounds.getMaximumY(), xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ(), xyzBounds.getMinimumX(), xyzBounds.getMaximumX());
+    assertEquals(GeoArea.DISJOINT, xyzSolid.getRelationship(c));
+
+    shapes = new ArrayList<>();
+    shapes.add(new GeoPolygonFactory.PolygonDescription(points));
+    
+    c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
+
+    // Same bounds should work
+    xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumX(), xyzBounds.getMaximumX(), xyzBounds.getMinimumY(), xyzBounds.getMaximumY(), xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ());
+    assertEquals(GeoArea.WITHIN, xyzSolid.getRelationship(c));
+    xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumY(), xyzBounds.getMaximumY(), xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ(), xyzBounds.getMinimumX(), xyzBounds.getMaximumX());
+    assertEquals(GeoArea.DISJOINT, xyzSolid.getRelationship(c));
+
+    // Bounds we obtain from the large polygon also should work.
+    xyzBounds = new XYZBounds();
+    c.getBounds(xyzBounds);
+    xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumX(), xyzBounds.getMaximumX(), xyzBounds.getMinimumY(), xyzBounds.getMaximumY(), xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ());
+    assertEquals(GeoArea.WITHIN, xyzSolid.getRelationship(c));
+    xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumY(), xyzBounds.getMaximumY(), xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ(), xyzBounds.getMinimumX(), xyzBounds.getMaximumX());
+    assertEquals(GeoArea.DISJOINT, xyzSolid.getRelationship(c));
+
+  }
+  
+  @Test
   public void testPolygonPointWithin() {
     GeoPolygon c;
     GeoPoint gp;
@@ -189,6 +231,7 @@ public class GeoPolygonTest {
     shapes.add(new GeoPolygonFactory.PolygonDescription(points));
     
     c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
+    
     // Sample some points within
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.45);
     assertTrue(c.isWithin(gp));
@@ -589,6 +632,278 @@ shape:
       new SidedPlane(p1, p3, p2), new ArrayList<GeoPolygon>(), null);
     
     assertFalse(mutableBoolean.value);
+    
+  }
+  
+  @Test
+  public void testPolygonFactoryCase4() {
+    // [[lat=0.897812132711355, lon=0.0025364171887532795([X=0.6227358672251874, Y=0.0015795213449218714, Z=0.7812318690127594])],
+    // [lat=0.897812132711355, lon=0.0025363997354607595([X=0.6227358672527552, Y=0.001579510476130618, Z=0.7812318690127594])],
+    // [lat=0.8978120628981849, lon=0.0025362601091206([X=0.6227359221556139, Y=0.0015794236644894651, Z=0.7812318257158789])]]
+    
+    final GeoPoint p1 = new GeoPoint(PlanetModel.WGS84, 0.897812132711355, 0.0025364171887532795);
+    final GeoPoint p2 = new GeoPoint(PlanetModel.WGS84, 0.897812132711355, 0.0025363997354607595);
+    final GeoPoint p3 = new GeoPoint(PlanetModel.WGS84, 0.8978120628981849, 0.0025362601091206);
+    
+    final List<GeoPoint> points = new ArrayList<>();
+    points.add(p1);
+    points.add(p2);
+    points.add(p3);
+    
+    final List<GeoPolygonFactory.PolygonDescription> shapeList = new ArrayList<>();
+    final GeoPolygonFactory.PolygonDescription desc = new GeoPolygonFactory.PolygonDescription(points, new ArrayList<GeoPolygonFactory.PolygonDescription>());
+    
+    shapeList.add(desc);
+    
+    GeoPolygon p = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.WGS84, shapeList);
+    
+  }
+  
+  @Test
+  public void testPolygonFactoryCase5() {
+    /*
+   [junit4]   1> points=[[lat=0.0425265613312593, lon=0.0([X=1.0002076326868337, Y=0.0, Z=0.042561051669501374])], 
+    [lat=0.8894380320379947, lon=-2.8993466885897496([X=-0.6109015457368775, Y=-0.1509528453728308, Z=0.7760109675775679])], 
+    [lat=-0.8298163536994994, lon=-0.1462586594666574([X=0.6673285226073522, Y=-0.09830454048435874, Z=-0.7372817203741138])], 
+    [lat=0.0, lon=-1.7156310907312492E-12([X=1.0011188539924791, Y=-1.7175506314267352E-12, Z=0.0])], 
+    [lat=-0.7766317703682181, lon=3.141592653589793([X=-0.7128972529667801, Y=8.730473389667082E-17, Z=-0.7005064828988063])]]
+
+   {[GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=
+   [[lat=0.0425265613312593, lon=0.0([X=1.0002076326868337, Y=0.0, Z=0.042561051669501374])], 
+   [lat=0.8894380320379947, lon=-2.8993466885897496([X=-0.6109015457368775, Y=-0.1509528453728308, Z=0.7760109675775679])], 
+   [lat=-0.8298163536994994, lon=-0.1462586594666574([X=0.6673285226073522, Y=-0.09830454048435874, Z=-0.7372817203741138])], 
+   [lat=0.0, lon=-1.7156310907312492E-12([X=1.0011188539924791, Y=-1.7175506314267352E-12, Z=0.0])]], internalEdges={3}}, 
+   GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=
+   [[lat=0.0425265613312593, lon=0.0([X=1.0002076326868337, Y=0.0, Z=0.042561051669501374])], 
+   [lat=0.0, lon=-1.7156310907312492E-12([X=1.0011188539924791, Y=-1.7175506314267352E-12, Z=0.0])], 
+   [lat=-0.7766317703682181, lon=3.141592653589793([X=-0.7128972529667801, Y=8.730473389667082E-17, Z=-0.7005064828988063])]], internalEdges={0}}]}
+    */
+    final GeoPoint p1 = new GeoPoint(PlanetModel.WGS84, 0.0425265613312593, 0.0);
+    final GeoPoint p2 = new GeoPoint(PlanetModel.WGS84, 0.8894380320379947, -2.8993466885897496);
+    final GeoPoint p3 = new GeoPoint(PlanetModel.WGS84, -0.8298163536994994, -0.1462586594666574);
+    final GeoPoint p4 = new GeoPoint(PlanetModel.WGS84, 0.0, -1.7156310907312492E-12);
+    final GeoPoint p5 = new GeoPoint(PlanetModel.WGS84, -0.7766317703682181, 3.141592653589793);
+
+    final List<GeoPoint> polyList = new ArrayList<>();
+    polyList.add(p1);
+    polyList.add(p2);
+    polyList.add(p3);
+    polyList.add(p4);
+    polyList.add(p5);
+    
+    GeoPolygon p = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, polyList);
+    System.out.println("p = "+p);
+
+    XYZBounds bounds = new XYZBounds();
+    p.getBounds(bounds);
+    XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, bounds.getMinimumX(), bounds.getMaximumX(),
+      bounds.getMinimumY(), bounds.getMaximumY(),
+      bounds.getMinimumZ(), bounds.getMaximumZ());
+
+    //final List<GeoPoint> p1List = new ArrayList<>();
+    //p1List.add(p1);
+    //p1List.add(p2);
+    //p1List.add(p3);
+    //p1List.add(p4);
+    //final BitSet p1Internal = new BitSet();
+    //final GeoConvexPolygon poly1 = new GeoConvexPolygon(PlanetModel.WGS84, p1List, p1Internal, false);
+    
+    /*
+    final List<GeoPoint> p2List = new ArrayList<>();
+    p2List.add(p1);
+    p2List.add(p4);
+    p2List.add(p5);
+    final BitSet p2Internal = new BitSet();
+    final GeoConvexPolygon poly2 = new GeoConvexPolygon(PlanetModel.WGS84, p2List, p2Internal, false);
+    */
+    
+    //XYZBounds bounds1 = new XYZBounds();
+    //poly1.getBounds(bounds1);
+    //XYZSolid solid1 = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, bounds1.getMinimumX(), bounds1.getMaximumX(),
+    //  bounds1.getMinimumY(), bounds1.getMaximumY(),
+    //  bounds1.getMinimumZ(), bounds1.getMaximumZ());
+    
+    /*
+    XYZBounds bounds2 = new XYZBounds();
+    poly2.getBounds(bounds2);
+    XYZSolid solid2 = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, bounds2.getMinimumX(), bounds2.getMaximumX(),
+      bounds2.getMinimumY(), bounds2.getMaximumY(),
+      bounds2.getMinimumZ(), bounds2.getMaximumZ());
+    */
+    
+    final GeoPoint point = new GeoPoint(PlanetModel.WGS84, -0.41518838180529244, 3.141592653589793);
+    final GeoPoint encodedPoint = new GeoPoint(-0.9155623168963972, 2.3309121299774915E-10, -0.40359240449795253);
+    System.out.println("point = "+point);
+    System.out.println("encodedPoint = "+encodedPoint);
+    
+    assertTrue(p.isWithin(point));
+    assertTrue(solid.isWithin(point));
+    
+    //System.out.println("bounds1 = "+bounds1);
+    //System.out.println("bounds2 = "+bounds2);
+    //assertTrue(poly1.isWithin(point));
+    //assertTrue(poly2.isWithin(point));
+    //assertTrue(solid2.isWithin(point));
+    
+    //assertTrue(poly2.isWithin(encodedPoint));
+  }
+  
+  @Test
+  public void testLargePolygonFailureCase1() {
+    /*
+   [junit4]    >   shape=GeoComplexPolygon: {planetmodel=PlanetModel.WGS84, number of shapes=1, address=65f193fc, 
+    testPoint=[lat=1.3005550159098878, lon=-2.4043250791032897([X=-0.1972404544647752, Y=-0.17911237095124333, Z=0.9617794725902562])], 
+    testPointInSet=false,
+    shapes={ 
+     {[lat=0.972005250702484, lon=-1.9776473855435277([X=-0.22278290030997686, Y=-0.5170266140533727, Z=0.8250470449472769])],
+    [lat=0.5530477484903267, lon=2.5300578442038137([X=-0.6968439858923609, Y=0.4886310878468911, Z=0.5253825248638686])],
+    [lat=1.5185372097372358, lon=-0.33848566616392867([X=0.04916162127975167, Y=-0.01730656055596007, Z=0.9964092501726799])]}}
+   [junit4]    >   bounds=XYZBounds: [xmin=-1.0011188544924792 xmax=0.04916162177975167 ymin=-1.0011188544924792 ymax=1.0011188544924792 zmin=-5.0E-10 zmax=0.99766957331525]
+   [junit4]    >   world bounds=( minX=-1.0011188539924791 maxX=1.0011188539924791 minY=-1.0011188539924791 maxY=1.0011188539924791 minZ=-0.9977622920221051 maxZ=0.9977622920221051
+   [junit4]    >   quantized point=[X=0.32866145093230836, Y=0.21519085912590594, Z=0.9177348472123349] within shape? true within bounds? false
+   [junit4]    >   unquantized point=[lat=1.166339260547107, lon=0.5797066870374205([X=0.3286614507856878, Y=0.21519085911319938, Z=0.9177348470779726])] within shape? true within bounds? false
+   [junit4]    >   docID=10 deleted?=false
+   [junit4]    >   query=PointInGeo3DShapeQuery: field=point: Shape: GeoComplexPolygon: {planetmodel=PlanetModel.WGS84, number of shapes=1, address=65f193fc, testPoint=[lat=1.3005550159098878, lon=-2.4043250791032897([X=-0.1972404544647752, Y=-0.17911237095124333, Z=0.9617794725902562])], testPointInSet=false, shapes={ {[lat=0.972005250702484, lon=-1.9776473855435277([X=-0.22278290030997686, Y=-0.5170266140533727, Z=0.8250470449472769])], [lat=0.5530477484903267, lon=2.5300578442038137([X=-0.6968439858923609, Y=0.4886310878468911, Z=0.5253825248638686])], [lat=1.5185372097372358, lon=-0.33848566616392867([X=0.04916162127975167, Y=-0.01730656055596007, Z=0.9964092501726799])]}}
+   [junit4]    >   explanation:
+   [junit4]    >     target is in leaf _0(7.0.0):c13 of full reader StandardDirectoryReader(segments:3:nrt _0(7.0.0):c13)
+   [junit4]    >     full BKD path to target doc:
+   [junit4]    >       Cell(x=-0.9060562472023252 TO 1.0010658113048514 y=-0.5681445384324596 TO 0.7613281936331098 z=-0.43144274682272304 TO 0.9977622920582089); Shape relationship = OVERLAPS; Quantized point within cell = true; Unquantized point within cell = true
+   [junit4]    >     on cell Cell(x=-0.9060562472023252 TO 1.0010658113048514 y=-0.5681445384324596 TO 0.7613281936331098 z=-0.43144274682272304 TO 0.9977622920582089); Shape relationship = OVERLAPS; Quantized point within cell = true; Unquantized point within cell = true, wrapped visitor returned CELL_CROSSES_QUERY
+   [junit4]    >   leaf visit docID=10 x=0.32866145093230836 y=0.21519085912590594 z=0.9177348472123349
+    */
+    final GeoPoint testPoint = new GeoPoint(PlanetModel.WGS84, 1.3005550159098878, -2.4043250791032897);
+    final boolean testPointInSet = false;
+    final List<GeoPoint> pointList = new ArrayList<>();
+    pointList.add(new GeoPoint(PlanetModel.WGS84, 0.972005250702484, -1.9776473855435277));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, 0.5530477484903267, 2.5300578442038137));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, 1.5185372097372358, -0.33848566616392867));
+    
+    final GeoPolygon pSanity = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pointList);
+    
+    assertTrue(pSanity.isWithin(testPoint) == testPointInSet);
+    
+    final List<List<GeoPoint>> shapeList = new ArrayList<>();
+    shapeList.add(pointList);
+    final GeoPolygon p = new GeoComplexPolygon(PlanetModel.WGS84, shapeList, testPoint, testPointInSet);
+    
+    final GeoPoint intersectionPoint = new GeoPoint(0.26643017529034996, 0.0, 0.9617794725902564);
+    assertTrue(pSanity.isWithin(intersectionPoint) == p.isWithin(intersectionPoint));
+    assertTrue(p.isWithin(intersectionPoint));
+    
+    final GeoPoint maxXPoint = new GeoPoint(PlanetModel.WGS84, 0.0, 0.0);
+    
+    assertTrue(pSanity.isWithin(maxXPoint) == p.isWithin(maxXPoint));
+    
+    final GeoPoint checkPoint = new GeoPoint(PlanetModel.WGS84, 1.166339260547107, 0.5797066870374205);
+    
+    // Given the choice of test point, does this all make sense?
+    assertTrue(pSanity.isWithin(checkPoint) == p.isWithin(checkPoint));
+    
+    final XYZBounds referenceBounds = new XYZBounds();
+    pSanity.getBounds(referenceBounds);
+    
+    final XYZBounds actualBounds = new XYZBounds();
+    p.getBounds(actualBounds);
+    
+    assertEquals(referenceBounds.getMinimumX(), actualBounds.getMinimumX(), 0.0000001);
+    assertEquals(referenceBounds.getMaximumX(), actualBounds.getMaximumX(), 0.0000001);
+    assertEquals(referenceBounds.getMinimumY(), actualBounds.getMinimumY(), 0.0000001);
+    assertEquals(referenceBounds.getMaximumY(), actualBounds.getMaximumY(), 0.0000001);
+    assertEquals(referenceBounds.getMinimumZ(), actualBounds.getMinimumZ(), 0.0000001);
+    assertEquals(referenceBounds.getMaximumZ(), actualBounds.getMaximumZ(), 0.0000001);
+
+  }
+  
+  @Test
+  public void testLargePolygonFailureCase2() {
+    /*
+   [junit4]    > Throwable #1: java.lang.AssertionError: FAIL: id=2 should have matched but did not
+   [junit4]    >   shape=GeoComplexPolygon: {planetmodel=PlanetModel.WGS84, number of shapes=1, address=6eccd33b, 
+   testPoint=[lat=0.03170690566178683, lon=1.0862414976732029([X=0.46609969117964495, Y=0.8854242006628827, Z=0.0317369552646047])], 
+   testPointInSet=false, 
+   shapes={ {
+   [lat=1.0774842300167298, lon=-0.11534121538553185([X=0.46969930266058374, Y=-0.054417217622152375, Z=0.8794587218580684])], 
+   [lat=0.05101544777239065, lon=1.031558236908661([X=0.5133835679471972, Y=0.8579350866926241, Z=0.051049928818862174])], 
+   [lat=-0.011222928649880962, lon=1.5851249038356199([X=-0.01434320835886277, Y=1.0009526216234983, Z=-0.011235244842183226])], 
+   [lat=-0.02571365137215876, lon=0.5627875521419741([X=0.8464356149277266, Y=0.5339650936800929, Z=-0.025739527171261035])], 
+   [lat=0.03833766792865358, lon=1.0082901344798614([X=0.5335096521470836, Y=0.8462411929752105, Z=0.03837097111317845])], 
+   [lat=0.1719054969347345, lon=0.9024290407832926([X=0.6111941952395734, Y=0.7740553755547761, Z=0.17123457719021212])], 
+   [lat=0.08180947807010808, lon=1.0107147265848113([X=0.5300590148023426, Y=0.8453039531721928, Z=0.08180784289673602])]}}
+   [junit4]    >   bounds=XYZBounds: [xmin=-1.0011188544924792 xmax=1.0011188544924792 
+    ymin=-1.0011188544924792 ymax=1.0011188544924792 
+    zmin=-0.025739527671261034 zmax=0.9977622925221051]
+   [junit4]    >   world bounds=( minX=-1.0011188539924791 maxX=1.0011188539924791 minY=-1.0011188539924791 maxY=1.0011188539924791 minZ=-0.9977622920221051 maxZ=0.9977622920221051
+   [junit4]    >   quantized point=[X=-0.477874179571219, Y=0.5908091335156603, Z=-0.6495967142221521] within shape? true within bounds? false
+   [junit4]    >   unquantized point=[lat=-0.7073124559987376, lon=2.2509085326629887([X=-0.47787417938801546, Y=0.5908091336704123, Z=-0.6495967140640758])] within shape? true within bounds? false
+   [junit4]    >   docID=2 deleted?=false
+   [junit4]    >   query=PointInGeo3DShapeQuery: field=point: Shape: GeoComplexPolygon: {planetmodel=PlanetModel.WGS84, number of shapes=1, address=6eccd33b, testPoint=[lat=0.03170690566178683, lon=1.0862414976732029([X=0.46609969117964495, Y=0.8854242006628827, Z=0.0317369552646047])], testPointInSet=false, shapes={ {[lat=1.0774842300167298, lon=-0.11534121538553185([X=0.46969930266058374, Y=-0.054417217622152375, Z=0.8794587218580684])], [lat=0.05101544777239065, lon=1.031558236908661([X=0.5133835679471972, Y=0.8579350866926241, Z=0.051049928818862174])], [lat=-0.011222928649880962, lon=1.5851249038356199([X=-0.01434320835886277, Y=1.0009526216234983, Z=-0.011235244842183226])], [lat=-0.02571365137215876, lon=0.5627875521419741([X=0.8464356149277266, Y=0.5339650936800929, Z=-0.025739527171261035])], [lat=0.03833766792865358, lon=1.0082901344798614([X=0.5335096521470836, Y=0.8462411929752105, Z=0.03837097111317845])], [lat=0.1719054969347345, lon=0.9024290407832926([X=0.6111941952395734, Y=0.7740553755547761, Z=0.17123457719021212])], [lat=0.08180947807010808, lon=1.0107147265848113([X=0.5300590148023426, Y=0.8453039531721928, Z=0.08180784289673602])]}}
+   [junit4]    >   explanation:
+   [junit4]    >     target is in leaf _0(7.0.0):C11 of full reader StandardDirectoryReader(segments:3:nrt _0(7.0.0):C11)
+   [junit4]    >     full BKD path to target doc:
+   [junit4]    >       Cell(x=-0.8906255176936849 TO 1.0005089994430834 y=-0.6808995306272861 TO 0.9675171153117977 z=-0.997762292058209 TO 0.9939318087373729); Shape relationship = OVERLAPS; Quantized point within cell = true; Unquantized point within cell = true
+   [junit4]    >     on cell Cell(x=-0.8906255176936849 TO 1.0005089994430834 y=-0.6808995306272861 TO 0.9675171153117977 z=-0.997762292058209 TO 0.9939318087373729); Shape relationship = OVERLAPS; Quantized point within cell = true; Unquantized point within cell = true, wrapped visitor returned CELL_CROSSES_QUERY
+   [junit4]    >   leaf visit docID=2 x=-0.477874179571219 y=0.5908091335156603 z=-0.6495967142221521
+    */
+    final GeoPoint testPoint = new GeoPoint(PlanetModel.WGS84, 0.03170690566178683, 1.0862414976732029);
+    final boolean testPointInSet = false;
+    final List<GeoPoint> pointList = new ArrayList<>();
+    // If the 1.07748... line is at the top, the bounds are correct and the test succeeds. 
+    // If this line is at the bottom, though, the bounds are wrong and the test fails.
+    //pointList.add(new GeoPoint(PlanetModel.WGS84, 1.0774842300167298, -0.11534121538553185));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, 0.05101544777239065, 1.031558236908661));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, -0.011222928649880962, 1.5851249038356199));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, -0.02571365137215876, 0.5627875521419741));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, 0.03833766792865358, 1.0082901344798614));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, 0.1719054969347345, 0.9024290407832926));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, 0.08180947807010808, 1.0107147265848113));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, 1.0774842300167298, -0.11534121538553185));
+    
+    final GeoPolygon pSanity = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pointList);
+    
+    assertTrue(pSanity.isWithin(testPoint) == testPointInSet);
+    
+    final List<List<GeoPoint>> shapeList = new ArrayList<>();
+    shapeList.add(pointList);
+    final GeoPolygon p = new GeoComplexPolygon(PlanetModel.WGS84, shapeList, testPoint, testPointInSet);
+    
+    //System.err.println(p);
+    /*
+   [junit4]   2> GeoComplexPolygon: {planetmodel=PlanetModel.WGS84, number of shapes=1, address=dcf3e99, 
+   testPoint=[lat=0.03170690566178683, lon=1.0862414976732029([X=0.46609969117964506, Y=0.8854242006628825, Z=0.0317369552646047])], 
+   testPointInSet=false, 
+   shapes={ {
+   [lat=1.0774842300167298, lon=-0.11534121538553185([X=0.46969930266058374, Y=-0.054417217622152375, Z=0.8794587218580684])], 
+   [lat=0.05101544777239065, lon=1.031558236908661([X=0.5133835679471972, Y=0.8579350866926241, Z=0.051049928818862174])], 
+   [lat=-0.011222928649880962, lon=1.5851249038356199([X=-0.01434320835886277, Y=1.0009526216234983, Z=-0.011235244842183226])], 
+   [lat=-0.02571365137215876, lon=0.5627875521419741([X=0.8464356149277266, Y=0.5339650936800929, Z=-0.025739527171261035])], 
+   [lat=0.03833766792865358, lon=1.0082901344798614([X=0.5335096521470836, Y=0.8462411929752105, Z=0.03837097111317845])], 
+   [lat=0.1719054969347345, lon=0.9024290407832926([X=0.6111941952395734, Y=0.7740553755547761, Z=0.17123457719021212])]}}
+   [lat=0.08180947807010808, lon=1.0107147265848113([X=0.5300590148023426, Y=0.8453039531721928, Z=0.08180784289673602])], 
+    */
+    final XYZBounds referenceBounds = new XYZBounds();
+    pSanity.getBounds(referenceBounds);
+    
+    final XYZBounds actualBounds = new XYZBounds();
+    p.getBounds(actualBounds);
+    
+    assertEquals(referenceBounds.getMinimumX(), actualBounds.getMinimumX(), 0.0000001);
+    assertEquals(referenceBounds.getMaximumX(), actualBounds.getMaximumX(), 0.0000001);
+    assertEquals(referenceBounds.getMinimumY(), actualBounds.getMinimumY(), 0.0000001);
+    assertEquals(referenceBounds.getMaximumY(), actualBounds.getMaximumY(), 0.0000001);
+    assertEquals(referenceBounds.getMinimumZ(), actualBounds.getMinimumZ(), 0.0000001);
+    assertEquals(referenceBounds.getMaximumZ(), actualBounds.getMaximumZ(), 0.0000001);
+
+    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84,
+      actualBounds.getMinimumX(), actualBounds.getMaximumX(),
+      actualBounds.getMinimumY(), actualBounds.getMaximumY(),
+      actualBounds.getMinimumZ(), actualBounds.getMaximumZ());
+
+    final GeoPoint checkPoint = new GeoPoint(PlanetModel.WGS84, -0.7073124559987376, 2.2509085326629887);
+    
+    // Given the choice of test point, does this all make sense?
+    assertTrue(pSanity.isWithin(checkPoint) == p.isWithin(checkPoint));
+    assertTrue(p.isWithin(checkPoint));
+    assertTrue(solid.isWithin(checkPoint));
     
   }
   

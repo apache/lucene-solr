@@ -17,17 +17,15 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.junit.Test;
 
 

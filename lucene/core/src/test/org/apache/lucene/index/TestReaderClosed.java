@@ -17,7 +17,6 @@
 package org.apache.lucene.index;
 
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.lucene.analysis.MockAnalyzer;

@@ -89,20 +89,22 @@ public class ClusterStatus {
     byte[] bytes = Utils.toJSON(clusterState);
     Map<String, Object> stateMap = (Map<String,Object>) Utils.fromJSON(bytes);
 
-    Set<String> collections;
     String routeKey = message.getStr(ShardParams._ROUTE_);
     String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
+
+    Map<String, DocCollection> collectionsMap = null;
     if (collection == null) {
-      collections = new HashSet<>(clusterState.getCollections());
+      collectionsMap = clusterState.getCollectionsMap();
     } else  {
-      collections = Collections.singleton(collection);
+      collectionsMap = Collections.singletonMap(collection, clusterState.getCollectionOrNull(collection));
     }
 
     NamedList<Object> collectionProps = new SimpleOrderedMap<>();
 
-    for (String name : collections) {
+    for (Map.Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
       Map<String, Object> collectionStatus;
-      DocCollection clusterStateCollection = clusterState.getCollectionOrNull(name);
+      String name = entry.getKey();
+      DocCollection clusterStateCollection = entry.getValue();
       if (clusterStateCollection == null) {
         if (collection != null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
@@ -150,7 +152,7 @@ public class ClusterStatus {
     clusterStatus.add("collections", collectionProps);
 
     // read cluster properties
-    Map clusterProps = zkStateReader.getClusterProps();
+    Map clusterProps = zkStateReader.getClusterProperties();
     if (clusterProps != null && !clusterProps.isEmpty())  {
       clusterStatus.add("properties", clusterProps);
     }

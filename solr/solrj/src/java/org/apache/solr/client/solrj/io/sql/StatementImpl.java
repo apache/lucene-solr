@@ -26,8 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Random;
 
 import org.apache.solr.client.solrj.io.stream.SolrStream;
@@ -37,6 +35,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 
 class StatementImpl implements Statement {
 
@@ -96,11 +95,11 @@ class StatementImpl implements Statement {
 
       Collections.shuffle(shuffler, new Random());
 
-      Map<String, String> params = new HashMap<>();
-      params.put(CommonParams.QT, "/sql");
-      params.put("stmt", sql);
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(CommonParams.QT, "/sql");
+      params.set("stmt", sql);
       for(String propertyName : this.connection.getProperties().stringPropertyNames()) {
-        params.put(propertyName, this.connection.getProperties().getProperty(propertyName));
+        params.set(propertyName, this.connection.getProperties().getProperty(propertyName));
       }
 
       Replica rep = shuffler.get(0);

@@ -46,7 +46,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.request.SolrQueryRequest;
@@ -110,14 +109,15 @@ public class ReRankQParserPlugin extends QParserPlugin {
     private Map<BytesRef, Integer> boostedPriority;
 
     public int hashCode() {
-      return 31 * super.hashCode() + mainQuery.hashCode()+reRankQuery.hashCode()+(int)reRankWeight+reRankDocs;
+      return 31 * classHash() + mainQuery.hashCode()+reRankQuery.hashCode()+(int)reRankWeight+reRankDocs;
     }
 
-    public boolean equals(Object o) {
-      if (super.equals(o) == false) {
-        return false;
-      }
-      ReRankQuery rrq = (ReRankQuery)o;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+
+    private boolean equalsTo(ReRankQuery rrq) {
       return mainQuery.equals(rrq.mainQuery) &&
              reRankQuery.equals(rrq.reRankQuery) &&
              reRankWeight == rrq.reRankWeight &&

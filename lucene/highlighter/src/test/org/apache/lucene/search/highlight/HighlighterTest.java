@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.search.highlight;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,9 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CachingTokenFilter;
@@ -41,13 +40,14 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.ngram.NGramTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
@@ -71,6 +71,7 @@ import org.apache.lucene.search.PhraseQuery.Builder;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
+import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
@@ -93,6 +94,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
+import org.junit.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -221,8 +223,26 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     fragment = highlighter.getBestFragment(stream, storedField);
     assertEquals("This piece of text refers to Kennedy at the beginning then has a longer piece of text that is <B>very</B>", fragment);
   }
-  
-  public void testHighlightUnknowQueryAfterRewrite() throws IOException, InvalidTokenOffsetsException {
+
+  public void testHighlightingSynonymQuery() throws Exception {
+    searcher = newSearcher(reader);
+    Query query = new SynonymQuery(new Term(FIELD_NAME, "jfk"), new Term(FIELD_NAME, "kennedy"));
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(scorer);
+    TokenStream stream = getAnyTokenStream(FIELD_NAME, 2);
+    Fragmenter fragmenter = new SimpleSpanFragmenter(scorer);
+    highlighter.setTextFragmenter(fragmenter);
+    String storedField = searcher.doc(2).get(FIELD_NAME);
+    String fragment = highlighter.getBestFragment(stream, storedField);
+    assertEquals("<B>JFK</B> has been shot", fragment);
+
+    stream = getAnyTokenStream(FIELD_NAME, 3);
+    storedField = searcher.doc(3).get(FIELD_NAME);
+    fragment = highlighter.getBestFragment(stream, storedField);
+    assertEquals("John <B>Kennedy</B> has been shot", fragment);
+  }
+
+  public void testHighlightUnknownQueryAfterRewrite() throws IOException, InvalidTokenOffsetsException {
     Query query = new Query() {
       
       @Override
@@ -241,12 +261,12 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       @Override
       public int hashCode() {
-        return 31 * super.hashCode();
+        return System.identityHashCode(this);
       }
 
       @Override
       public boolean equals(Object obj) {
-        return super.equals(obj);
+        return obj == this;
       }
     };
 
@@ -1560,6 +1580,32 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     helper.start();
   }
 
+  @Test
+  public void testHighlighterWithPhraseQuery() throws IOException, InvalidTokenOffsetsException {
+
+    final Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new NGramTokenizer(4, 4));
+      }
+    };
+    final String fieldName = "substring";
+
+    final List<BytesRef> list = new ArrayList<>();
+    list.add(new BytesRef("uchu"));
+    final PhraseQuery query = new PhraseQuery(fieldName, list.toArray(new BytesRef[list.size()]));
+
+    final QueryScorer fragmentScorer = new QueryScorer(query, fieldName);
+    final SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
+
+    final Highlighter highlighter = new Highlighter(formatter, fragmentScorer);
+    highlighter.setTextFragmenter(new SimpleFragmenter(100));
+    final String fragment = highlighter.getBestFragment(analyzer, fieldName, "Buchung");
+
+    assertEquals("B<b>uchu</b>ng",fragment);
+
+  }
+
   public void testUnRewrittenQuery() throws Exception {
     final TestHighlightRunner helper = new TestHighlightRunner() {
 
@@ -2066,7 +2112,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
     ramDir = newDirectory();
     fieldType = random().nextBoolean() ? FIELD_TYPE_TV : TextField.TYPE_STORED;
-    IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(analyzer));
+    IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(analyzer).setMergePolicy(newLogMergePolicy()));
 
     for (String text : texts) {
       writer.addDocument(doc(FIELD_NAME, text));

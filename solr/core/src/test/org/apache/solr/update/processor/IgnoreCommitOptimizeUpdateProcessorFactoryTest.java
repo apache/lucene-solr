@@ -17,21 +17,16 @@
 package org.apache.solr.update.processor;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
-import java.util.Date;
-import java.util.UUID;
 
 public class IgnoreCommitOptimizeUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 

@@ -19,6 +19,9 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
@@ -122,11 +125,14 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
       DocIdSetBuilder builder = new DocIdSetBuilder(maxDoc);
       for (j = 0; j < array.length; ) {
         final int l = TestUtil.nextInt(random(), 1, array.length - j);
-        if (rarely()) {
-          builder.grow(l);
-        }
-        for (int k = 0; k < l; ++k) {
-          builder.add(array[j++]);
+        DocIdSetBuilder.BulkAdder adder = null;
+        for (int k = 0, budget = 0; k < l; ++k) {
+          if (budget == 0 || rarely()) {
+            budget = TestUtil.nextInt(random(), 1, l - k + 5);
+            adder = builder.grow(budget);
+          }
+          adder.add(array[j++]);
+          budget--;
         }
       }
 
@@ -153,6 +159,188 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
     }
 
     assertEquals(new BitDocIdSet(expected), builder.build());
+  }
+
+  public void testEmptyPoints() throws IOException {
+    PointValues values = new DummyPointValues(0, 0);
+    DocIdSetBuilder builder = new DocIdSetBuilder(1, values, "foo");
+    assertEquals(1d, builder.numValuesPerDoc, 0d);
+  }
+
+  public void testLeverageStats() throws IOException {
+    // single-valued points
+    PointValues values = new DummyPointValues(42, 42);
+    DocIdSetBuilder builder = new DocIdSetBuilder(100, values, "foo");
+    assertEquals(1d, builder.numValuesPerDoc, 0d);
+    assertFalse(builder.multivalued);
+    DocIdSetBuilder.BulkAdder adder = builder.grow(2);
+    adder.add(5);
+    adder.add(7);
+    DocIdSet set = builder.build();
+    assertTrue(set instanceof BitDocIdSet);
+    assertEquals(2, set.iterator().cost());
+
+    // multi-valued points
+    values = new DummyPointValues(42, 63);
+    builder = new DocIdSetBuilder(100, values, "foo");
+    assertEquals(1.5, builder.numValuesPerDoc, 0d);
+    assertTrue(builder.multivalued);
+    adder = builder.grow(2);
+    adder.add(5);
+    adder.add(7);
+    set = builder.build();
+    assertTrue(set instanceof BitDocIdSet);
+    assertEquals(1, set.iterator().cost()); // it thinks the same doc was added twice
+
+    // incomplete stats
+    values = new DummyPointValues(42, -1);
+    builder = new DocIdSetBuilder(100, values, "foo");
+    assertEquals(1d, builder.numValuesPerDoc, 0d);
+    assertTrue(builder.multivalued);
+
+    values = new DummyPointValues(-1, 84);
+    builder = new DocIdSetBuilder(100, values, "foo");
+    assertEquals(1d, builder.numValuesPerDoc, 0d);
+    assertTrue(builder.multivalued);
+
+    // single-valued terms
+    Terms terms = new DummyTerms(42, 42);
+    builder = new DocIdSetBuilder(100, terms);
+    assertEquals(1d, builder.numValuesPerDoc, 0d);
+    assertFalse(builder.multivalued);
+    adder = builder.grow(2);
+    adder.add(5);
+    adder.add(7);
+    set = builder.build();
+    assertTrue(set instanceof BitDocIdSet);
+    assertEquals(2, set.iterator().cost());
+
+    // multi-valued terms
+    terms = new DummyTerms(42, 63);
+    builder = new DocIdSetBuilder(100, terms);
+    assertEquals(1.5, builder.numValuesPerDoc, 0d);
+    assertTrue(builder.multivalued);
+    adder = builder.grow(2);
+    adder.add(5);
+    adder.add(7);
+    set = builder.build();
+    assertTrue(set instanceof BitDocIdSet);
+    assertEquals(1, set.iterator().cost()); // it thinks the same doc was added twice
+
+    // incomplete stats
+    terms = new DummyTerms(42, -1);
+    builder = new DocIdSetBuilder(100, terms);
+    assertEquals(1d, builder.numValuesPerDoc, 0d);
+    assertTrue(builder.multivalued);
+
+    terms = new DummyTerms(-1, 84);
+    builder = new DocIdSetBuilder(100, terms);
+    assertEquals(1d, builder.numValuesPerDoc, 0d);
+    assertTrue(builder.multivalued);
+  }
+
+  private static class DummyTerms extends Terms {
+
+    private final int docCount;
+    private final long numValues;
+
+    DummyTerms(int docCount, long numValues) {
+      this.docCount = docCount;
+      this.numValues = numValues;
+    }
+
+    @Override
+    public TermsEnum iterator() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long size() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long getSumTotalTermFreq() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long getSumDocFreq() throws IOException {
+      return numValues;
+    }
+
+    @Override
+    public int getDocCount() throws IOException {
+      return docCount;
+    }
+
+    @Override
+    public boolean hasFreqs() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean hasOffsets() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean hasPositions() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean hasPayloads() {
+      throw new UnsupportedOperationException();
+    }
+
+  }
+
+  private static class DummyPointValues extends PointValues {
+
+    private final int docCount;
+    private final long numPoints;
+
+    DummyPointValues(int docCount, long numPoints) {
+      this.docCount = docCount;
+      this.numPoints = numPoints;
+    }
+
+    @Override
+    public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public byte[] getMinPackedValue(String fieldName) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public byte[] getMaxPackedValue(String fieldName) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getNumDimensions(String fieldName) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getBytesPerDimension(String fieldName) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long size(String fieldName) {
+      return numPoints;
+    }
+
+    @Override
+    public int getDocCount(String fieldName) {
+      return docCount;
+    }
+
   }
 
 }

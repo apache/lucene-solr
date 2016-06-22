@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -157,7 +156,7 @@ public class Assign {
     if (createNodeList == null) { // We only care if we haven't been told to put new replicas on specific nodes.
       int availableSlots = 0;
       for (Map.Entry<String, ReplicaCount> ent : nodeNameVsShardCount.entrySet()) {
-        //ADDREPLICA can put more than maxShardsPerNode on an instnace, so this test is necessary.
+        //ADDREPLICA can put more than maxShardsPerNode on an instance, so this test is necessary.
         if (maxShardsPerNode > ent.getValue().thisCollectionNodes) {
           availableSlots += (maxShardsPerNode - ent.getValue().thisCollectionNodes);
         }
@@ -233,8 +232,9 @@ public class Assign {
     }
     DocCollection coll = clusterState.getCollection(collectionName);
     Integer maxShardsPerNode = coll.getInt(MAX_SHARDS_PER_NODE, 1);
-    for (String s : clusterState.getCollections()) {
-      DocCollection c = clusterState.getCollection(s);
+    Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+    for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+      DocCollection c = entry.getValue();
       //identify suitable nodes  by checking the no:of cores in each of them
       for (Slice slice : c.getSlices()) {
         Collection<Replica> replicas = slice.getReplicas();
@@ -242,7 +242,7 @@ public class Assign {
           ReplicaCount count = nodeNameVsShardCount.get(replica.getNodeName());
           if (count != null) {
             count.totalNodes++; // Used ot "weigh" whether this node should be used later.
-            if (s.equals(collectionName)) {
+            if (entry.getKey().equals(collectionName)) {
               count.thisCollectionNodes++;
               if (count.thisCollectionNodes >= maxShardsPerNode) nodeNameVsShardCount.remove(replica.getNodeName());
             }

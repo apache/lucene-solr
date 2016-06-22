@@ -337,11 +337,17 @@ public class ExtendedDismaxQParser extends QParser {
     if(query == null) {
       return null;
     }
-
-    // For correct lucene queries, turn off mm processing if there
-    // were explicit operators (except for AND).
+    // For correct lucene queries, turn off mm processing if no explicit mm spec was provided
+    // and there were explicit operators (except for AND).
     if (query instanceof BooleanQuery) {
-      query = SolrPluginUtils.setMinShouldMatch((BooleanQuery)query, config.minShouldMatch, config.mmAutoRelax);
+      // config.minShouldMatch holds the value of mm which MIGHT have come from the user,
+      // but could also have been derived from q.op.
+      String mmSpec = config.minShouldMatch;
+
+      if (foundOperators(clauses, config.lowercaseOperators)) {
+        mmSpec = params.get(DisMaxParams.MM, "0%"); // Use provided mm spec if present, otherwise turn off mm processing
+      }
+      query = SolrPluginUtils.setMinShouldMatch((BooleanQuery)query, mmSpec, config.mmAutoRelax);
     }
     return query;
   }
@@ -391,7 +397,28 @@ public class ExtendedDismaxQParser extends QParser {
     }
     return sb.toString();
   }
-  
+
+  /**
+   * Returns true if at least one of the clauses is/has an explicit operator (except for AND)
+   */
+  private boolean foundOperators(List<Clause> clauses, boolean lowercaseOperators) {
+    for (Clause clause : clauses) {
+      if (clause.must == '+') return true;
+      if (clause.must == '-') return true;
+      if (clause.isBareWord()) {
+        String s = clause.val;
+        if ("OR".equals(s)) {
+          return true;
+        } else if ("NOT".equals(s)) {
+          return true;
+        } else if (lowercaseOperators && "or".equals(s)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   /**
    * Generates a query string from the raw clauses, uppercasing 
    * 'and' and 'or' as needed.

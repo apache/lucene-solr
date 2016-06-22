@@ -77,4 +77,14 @@ public class PrefixCompletionQuery extends CompletionQuery {
   public Analyzer getAnalyzer() {
     return analyzer;
   }
+
+  @Override
+  public boolean equals(Object o) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int hashCode() {
+    throw new UnsupportedOperationException();
+  }
 }

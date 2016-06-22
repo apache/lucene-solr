@@ -24,8 +24,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.apache.solr.util.CommandOperation;
 import org.slf4j.Logger;
@@ -129,12 +129,9 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
           continue;
         }
         if (permission.params != null) {
-          for (Map.Entry<String, Object> e : permission.params.entrySet()) {
-            String paramVal = context.getParams().get(e.getKey());
-            Object val = e.getValue();
-            if (val instanceof List) {
-              if (!((List) val).contains(paramVal)) continue loopPermissions;
-            } else if (!Objects.equals(val, paramVal)) continue loopPermissions;
+          for (Map.Entry<String, Function<String[], Boolean>> e : permission.params.entrySet()) {
+            String[] paramVal = context.getParams().getParams(e.getKey());
+            if(!e.getValue().apply(paramVal)) continue loopPermissions;
           }
         }
       }

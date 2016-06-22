@@ -18,7 +18,9 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -26,6 +28,7 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.packed.PackedInts;
@@ -35,6 +38,12 @@ import org.apache.lucene.util.packed.PackedLongValues;
  *
  * @lucene.experimental */
 public class MergeState {
+
+  /** Maps document IDs from old segments to document IDs in the new segment */
+  public final DocMap[] docMaps;
+
+  // Only used by IW when it must remap deletes that arrived against the merging segmetns while a merge was running:
+  final DocMap[] leafDocMaps;
 
   /** {@link SegmentInfo} of the newly merged segment. */
   public final SegmentInfo segmentInfo;
@@ -60,17 +69,11 @@ public class MergeState {
   /** Live docs for each reader */
   public final Bits[] liveDocs;
 
-  /** Maps docIDs around deletions. */
-  public final DocMap[] docMaps;
-
   /** Postings to merge */
   public final FieldsProducer[] fieldsProducers;
 
   /** Point readers to merge */
   public final PointsReader[] pointsReaders;
-
-  /** New docID base per reader. */
-  public final int[] docBase;
 
   /** Max docs per reader */
   public final int[] maxDocs;
@@ -79,11 +82,15 @@ public class MergeState {
   public final InfoStream infoStream;
 
   /** Sole constructor. */
-  MergeState(List<CodecReader> readers, SegmentInfo segmentInfo, InfoStream infoStream) throws IOException {
+  MergeState(List<CodecReader> originalReaders, SegmentInfo segmentInfo, InfoStream infoStream) throws IOException {
 
-    int numReaders = readers.size();
-    docMaps = new DocMap[numReaders];
-    docBase = new int[numReaders];
+    this.infoStream = infoStream;
+
+    final Sort indexSort = segmentInfo.getIndexSort();
+    int numReaders = originalReaders.size();
+    leafDocMaps = new DocMap[numReaders];
+    List<CodecReader> readers = maybeSortReaders(originalReaders, segmentInfo);
+
     maxDocs = new int[numReaders];
     fieldsProducers = new FieldsProducer[numReaders];
     normsProducers = new NormsProducer[numReaders];
@@ -94,6 +101,7 @@ public class MergeState {
     fieldInfos = new FieldInfos[numReaders];
     liveDocs = new Bits[numReaders];
 
+    int numDocs = 0;
     for(int i=0;i<numReaders;i++) {
       final CodecReader reader = readers.get(i);
 
@@ -126,126 +134,152 @@ public class MergeState {
       if (pointsReaders[i] != null) {
         pointsReaders[i] = pointsReaders[i].getMergeInstance();
       }
+      numDocs += reader.numDocs();
     }
+
+    segmentInfo.setMaxDoc(numDocs);
 
     this.segmentInfo = segmentInfo;
-    this.infoStream = infoStream;
-
-    setDocMaps(readers);
+    this.docMaps = buildDocMaps(readers, indexSort);
   }
 
-  // NOTE: removes any "all deleted" readers from mergeState.readers
-  private void setDocMaps(List<CodecReader> readers) throws IOException {
-    final int numReaders = maxDocs.length;
+  private DocMap[] buildDocMaps(List<CodecReader> readers, Sort indexSort) throws IOException {
 
-    // Remap docIDs
-    int docBase = 0;
-    for(int i=0;i<numReaders;i++) {
-      final CodecReader reader = readers.get(i);
-      this.docBase[i] = docBase;
-      final DocMap docMap = DocMap.build(reader);
-      docMaps[i] = docMap;
-      docBase += docMap.numDocs();
-    }
+    int numReaders = readers.size();
 
-    segmentInfo.setMaxDoc(docBase);
-  }
+    if (indexSort == null) {
+      // no index sort ... we only must map around deletions, and rebase to the merged segment's docID space
 
-  /**
-   * Remaps docids around deletes during merge
-   */
-  public static abstract class DocMap {
+      int totalDocs = 0;
+      DocMap[] docMaps = new DocMap[numReaders];
 
-    DocMap() {}
+      // Remap docIDs around deletions:
+      for (int i = 0; i < numReaders; i++) {
+        LeafReader reader = readers.get(i);
+        Bits liveDocs = reader.getLiveDocs();
 
-    /** Returns the mapped docID corresponding to the provided one. */
-    public abstract int get(int docID);
-
-    /** Returns the total number of documents, ignoring
-     *  deletions. */
-    public abstract int maxDoc();
-
-    /** Returns the number of not-deleted documents. */
-    public final int numDocs() {
-      return maxDoc() - numDeletedDocs();
-    }
-
-    /** Returns the number of deleted documents. */
-    public abstract int numDeletedDocs();
-
-    /** Returns true if there are any deletions. */
-    public boolean hasDeletions() {
-      return numDeletedDocs() > 0;
-    }
-
-    /** Creates a {@link DocMap} instance appropriate for
-     *  this reader. */
-    public static DocMap build(CodecReader reader) {
-      final int maxDoc = reader.maxDoc();
-      if (!reader.hasDeletions()) {
-        return new NoDelDocMap(maxDoc);
-      }
-      final Bits liveDocs = reader.getLiveDocs();
-      return build(maxDoc, liveDocs);
-    }
-
-    static DocMap build(final int maxDoc, final Bits liveDocs) {
-      assert liveDocs != null;
-      final PackedLongValues.Builder docMapBuilder = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
-      int del = 0;
-      for (int i = 0; i < maxDoc; ++i) {
-        docMapBuilder.add(i - del);
-        if (!liveDocs.get(i)) {
-          ++del;
+        final PackedLongValues delDocMap;
+        if (liveDocs != null) {
+          delDocMap = removeDeletes(reader.maxDoc(), liveDocs);
+        } else {
+          delDocMap = null;
         }
-      }
-      final PackedLongValues docMap = docMapBuilder.build();
-      final int numDeletedDocs = del;
-      assert docMap.size() == maxDoc;
-      return new DocMap() {
 
-        @Override
-        public int get(int docID) {
-          if (!liveDocs.get(docID)) {
-            return -1;
+        final int docBase = totalDocs;
+        docMaps[i] = new DocMap() {
+          @Override
+          public int get(int docID) {
+            if (liveDocs == null) {
+              return docBase + docID;
+            } else if (liveDocs.get(docID)) {
+              return docBase + (int) delDocMap.get(docID);
+            } else {
+              return -1;
+            }
           }
-          return (int) docMap.get(docID);
-        }
+        };
+        totalDocs += reader.numDocs();
+      }
 
-        @Override
-        public int maxDoc() {
-          return maxDoc;
-        }
+      return docMaps;
 
-        @Override
-        public int numDeletedDocs() {
-          return numDeletedDocs;
-        }
-      };
+    } else {
+      // do a merge sort of the incoming leaves:
+      long t0 = System.nanoTime();
+      DocMap[] result = MultiSorter.sort(indexSort, readers);
+      long t1 = System.nanoTime();
+      if (infoStream.isEnabled("SM")) {
+        infoStream.message("SM", String.format(Locale.ROOT, "%.2f msec to build merge sorted DocMaps", (t1-t0)/1000000.0));
+      }
+      return result;
     }
   }
 
-  private static final class NoDelDocMap extends DocMap {
+  private List<CodecReader> maybeSortReaders(List<CodecReader> originalReaders, SegmentInfo segmentInfo) throws IOException {
 
-    private final int maxDoc;
-
-    NoDelDocMap(int maxDoc) {
-      this.maxDoc = maxDoc;
+    // Default to identity:
+    for(int i=0;i<originalReaders.size();i++) {
+      leafDocMaps[i] = new DocMap() {
+          @Override
+          public int get(int docID) {
+            return docID;
+          }
+        };
     }
 
-    @Override
-    public int get(int docID) {
-      return docID;
+    Sort indexSort = segmentInfo.getIndexSort();
+    if (indexSort == null) {
+      return originalReaders;
     }
 
-    @Override
-    public int maxDoc() {
-      return maxDoc;
+    // If an incoming reader is not sorted, because it was flushed by IW, we sort it here:
+    final Sorter sorter = new Sorter(indexSort);
+    List<CodecReader> readers = new ArrayList<>(originalReaders.size());
+
+    for (CodecReader leaf : originalReaders) {
+      Sort segmentSort = leaf.getIndexSort();
+
+      if (segmentSort == null) {
+        // TODO: fix IW to also sort when flushing?  It's somewhat tricky because of stored fields and term vectors, which write "live"
+        // to their index files on each indexed document:
+
+        // This segment was written by flush, so documents are not yet sorted, so we sort them now:
+        long t0 = System.nanoTime();
+        Sorter.DocMap sortDocMap = sorter.sort(leaf);
+        long t1 = System.nanoTime();
+        double msec = (t1-t0)/1000000.0;
+        
+        if (sortDocMap != null) {
+          if (infoStream.isEnabled("SM")) {
+            infoStream.message("SM", String.format(Locale.ROOT, "segment %s is not sorted; wrapping for sort %s now (%.2f msec to sort)", leaf, indexSort, msec));
+          }
+          leaf = SlowCodecReaderWrapper.wrap(SortingLeafReader.wrap(new MergeReaderWrapper(leaf), sortDocMap));
+          leafDocMaps[readers.size()] = new DocMap() {
+              @Override
+              public int get(int docID) {
+                return sortDocMap.oldToNew(docID);
+              }
+            };
+        } else {
+          if (infoStream.isEnabled("SM")) {
+            infoStream.message("SM", String.format(Locale.ROOT, "segment %s is not sorted, but is already accidentally in sort %s order (%.2f msec to sort)", leaf, indexSort, msec));
+          }
+        }
+
+      } else {
+        if (segmentSort.equals(indexSort) == false) {
+          throw new IllegalArgumentException("index sort mismatch: merged segment has sort=" + indexSort + " but to-be-merged segment has sort=" + segmentSort);
+        }
+        if (infoStream.isEnabled("SM")) {
+          infoStream.message("SM", "segment " + leaf + " already sorted");
+        }
+      }
+
+      readers.add(leaf);
     }
 
-    @Override
-    public int numDeletedDocs() {
-      return 0;
+    return readers;
+  }
+
+  /** A map of doc IDs. */
+  public static abstract class DocMap {
+    /** Sole constructor */
+    public DocMap() {
     }
+
+    /** Return the mapped docID or -1 if the given doc is not mapped. */
+    public abstract int get(int docID);
+  }
+
+  static PackedLongValues removeDeletes(final int maxDoc, final Bits liveDocs) {
+    final PackedLongValues.Builder docMapBuilder = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
+    int del = 0;
+    for (int i = 0; i < maxDoc; ++i) {
+      docMapBuilder.add(i - del);
+      if (liveDocs.get(i) == false) {
+        ++del;
+      }
+    }
+    return docMapBuilder.build();
   }
 }

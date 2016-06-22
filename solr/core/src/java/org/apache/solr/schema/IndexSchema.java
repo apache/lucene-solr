@@ -51,7 +51,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.uninverting.UninvertingReader;
+import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -1493,10 +1493,10 @@ public class IndexSchema {
       return Stream.of(Handler.values())
           .filter(it -> name == null || it.nameLower.equals(name))
           .map(it -> new Pair<>(it.realName, it.fun.apply(this)))
-          .filter(it->it.getValue() != null)
+          .filter(it->it.second() != null)
           .collect(Collectors.toMap(
-              Pair::getKey,
-              Pair::getValue,
+              Pair::first,
+              Pair::second,
               (v1, v2) -> v2,
               LinkedHashMap::new));
     }

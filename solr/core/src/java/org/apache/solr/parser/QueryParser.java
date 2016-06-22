@@ -4,14 +4,8 @@ package org.apache.solr.parser;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.DateTools;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.Version;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.QParser;

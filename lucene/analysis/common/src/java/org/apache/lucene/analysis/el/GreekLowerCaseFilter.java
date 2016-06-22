@@ -21,7 +21,6 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.util.CharacterUtils;
 
 /**
  * Normalizes token text to lower case, removes some Greek diacritics,
@@ -29,7 +28,6 @@ import org.apache.lucene.analysis.util.CharacterUtils;
  */
 public final class GreekLowerCaseFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final CharacterUtils charUtils = CharacterUtils.getInstance();
 
   /**
    * Create a GreekLowerCaseFilter that normalizes Greek token text.
@@ -47,7 +45,7 @@ public final class GreekLowerCaseFilter extends TokenFilter {
       int chLen = termAtt.length();
       for (int i = 0; i < chLen;) {
         i += Character.toChars(
-            lowerCase(charUtils.codePointAt(chArray, i, chLen)), chArray, i);
+            lowerCase(Character.codePointAt(chArray, i, chLen)), chArray, i);
        }
       return true;
     } else {

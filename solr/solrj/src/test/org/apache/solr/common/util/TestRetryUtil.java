@@ -21,21 +21,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.RetryUtil.RetryCmd;
 
 
 public class TestRetryUtil extends SolrTestCaseJ4 {
 
   public void testRetryOnThrowable() throws Throwable {
     final AtomicInteger executes = new AtomicInteger();
-    RetryUtil.retryOnThrowable(SolrException.class, 10000, 10, new RetryCmd() {
-      
-      @Override
-      public void execute() throws Throwable {
-        int calls = executes.incrementAndGet();
-        if (calls <= 2) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Bad Stuff Happened");
-        }
+    RetryUtil.retryOnThrowable(SolrException.class, 10000, 10, () -> {
+      int calls = executes.incrementAndGet();
+      if (calls <= 2) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Bad Stuff Happened");
       }
     });
     
@@ -45,15 +40,11 @@ public class TestRetryUtil extends SolrTestCaseJ4 {
     boolean caughtSolrException = false;
     try {
       RetryUtil.retryOnThrowable(IllegalStateException.class, 10000, 10,
-          new RetryCmd() {
-            
-            @Override
-            public void execute() throws Throwable {
-              int calls = executes2.incrementAndGet();
-              if (calls <= 2) {
-                throw new SolrException(ErrorCode.SERVER_ERROR,
-                    "Bad Stuff Happened");
-              }
+          () -> {
+            int calls = executes2.incrementAndGet();
+            if (calls <= 2) {
+              throw new SolrException(ErrorCode.SERVER_ERROR,
+                  "Bad Stuff Happened");
             }
           });
     } catch (SolrException e) {
@@ -65,13 +56,9 @@ public class TestRetryUtil extends SolrTestCaseJ4 {
     final AtomicInteger executes3 = new AtomicInteger();
     caughtSolrException = false;
     try {
-      RetryUtil.retryOnThrowable(SolrException.class, 1000, 10, new RetryCmd() {
-        
-        @Override
-        public void execute() throws Throwable {
-          executes3.incrementAndGet();
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Bad Stuff Happened");
-        }
+      RetryUtil.retryOnThrowable(SolrException.class, 1000, 10, () -> {
+        executes3.incrementAndGet();
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Bad Stuff Happened");
       });
     } catch (SolrException e) {
       caughtSolrException = true;

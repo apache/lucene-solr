@@ -346,6 +346,10 @@ public class CheckHits {
     if (expl.getDescription().endsWith("computed from:")) {
       return; // something more complicated.
     }
+    String descr = expl.getDescription().toLowerCase(Locale.ROOT);
+    if (descr.startsWith("score based on ") && descr.contains("child docs in range")) {
+      Assert.assertTrue("Child doc explanations are missing", detail.length > 0);
+    }
     if (detail.length > 0) {
       if (detail.length==1) {
         // simple containment, unless it's a freq of: (which lets a query explain how the freq is calculated), 
@@ -357,7 +361,6 @@ public class CheckHits {
         // - end with one of: "product of:", "sum of:", "max of:", or
         // - have "max plus <x> times others" (where <x> is float).
         float x = 0;
-        String descr = expl.getDescription().toLowerCase(Locale.ROOT);
         boolean productOf = descr.endsWith("product of:");
         boolean sumOf = descr.endsWith("sum of:");
         boolean maxOf = descr.endsWith("max of:");

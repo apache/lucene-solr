@@ -17,12 +17,9 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import java.util.Map;
-
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeTrigger;
-import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentInfos;
 
 /**

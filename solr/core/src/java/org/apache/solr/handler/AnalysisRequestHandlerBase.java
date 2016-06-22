@@ -222,7 +222,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     final FieldType fieldType = context.getFieldType();
     final AttributeSource[] tokens = tokenList.toArray(new AttributeSource[tokenList.size()]);
     
-    // sort the tokens by absoulte position
+    // sort the tokens by absolute position
     ArrayUtil.timSort(tokens, new Comparator<AttributeSource>() {
       @Override
       public int compare(AttributeSource a, AttributeSource b) {
@@ -481,7 +481,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     /**
      * Constructs a new AnalysisContext with a given field tpe, analyzer and
      * termsToMatch. During the analysis processs, The produced tokens will be 
-     * compaired to the termes in the {@code termsToMatch} set. When found, 
+     * compared to the terms in the {@code termsToMatch} set. When found, 
      * these tokens will be marked as a match.
      *
      * @param fieldName    The name of the field the analysis is performed on 

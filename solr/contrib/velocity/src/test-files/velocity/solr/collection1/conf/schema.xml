@@ -17,20 +17,15 @@
 -->
 
 <schema name="minimal-velocity" version="1.6">
-  <types>
-    <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
- </types>
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
+  <field name="id" type="string" indexed="true" stored="true" required="true"/>
+  <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
 
- <fields>
-   <field name="id" type="string" indexed="true" stored="true" required="true" />
-   <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
- </fields>
+  <uniqueKey>id</uniqueKey>
 
- <uniqueKey>id</uniqueKey>
+  <defaultSearchField>id</defaultSearchField>
 
- <defaultSearchField>id</defaultSearchField>
-
- <solrQueryParser defaultOperator="OR"/>
+  <solrQueryParser defaultOperator="OR"/>
 
 </schema>

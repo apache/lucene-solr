@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -84,6 +85,7 @@ public class TermsQuery extends Query implements Accountable {
   // Same threshold as MultiTermQueryConstantScoreWrapper
   static final int BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD = 16;
 
+  private final boolean singleField; // whether all terms are from the same field
   private final PrefixCodedTerms termData;
   private final int termDataHashCode; // cached hashcode of termData
 
@@ -99,13 +101,16 @@ public class TermsQuery extends Query implements Accountable {
       ArrayUtil.timSort(sortedTerms);
     }
     PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
+    Set<String> fields = new HashSet<>();
     Term previous = null;
     for (Term term : sortedTerms) {
       if (term.equals(previous) == false) {
+        fields.add(term.field());
         builder.add(term);
       }
       previous = term;
     }
+    singleField = fields.size() == 1;
     termData = builder.finish();
     termDataHashCode = termData.hashCode();
   }
@@ -132,6 +137,7 @@ public class TermsQuery extends Query implements Accountable {
       builder.add(field, term);
       previous.copyBytes(term);
     }
+    singleField = true;
     termData = builder.finish();
     termDataHashCode = termData.hashCode();
   }
@@ -167,22 +173,20 @@ public class TermsQuery extends Query implements Accountable {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (!super.equals(obj)) {
-      return false;
-    }
-    TermsQuery that = (TermsQuery) obj;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(TermsQuery other) {
     // termData might be heavy to compare so check the hash code first
-    return termDataHashCode == that.termDataHashCode
-        && termData.equals(that.termData);
+    return termDataHashCode == other.termDataHashCode && 
+           termData.equals(other.termData);
   }
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + termDataHashCode;
+    return 31 * classHash() + termDataHashCode;
   }
 
   /** Returns the terms wrapped in a PrefixCodedTerms. */
@@ -301,7 +305,15 @@ public class TermsQuery extends Query implements Accountable {
               matchingTerms.add(new TermAndState(field, termsEnum));
             } else {
               assert matchingTerms.size() == threshold;
-              builder = new DocIdSetBuilder(reader.maxDoc());
+              if (singleField) {
+                // common case: all terms are in the same field
+                // use an optimized builder that leverages terms stats to be more efficient
+                builder = new DocIdSetBuilder(reader.maxDoc(), terms);
+              } else {
+                // corner case: different fields
+                // don't make assumptions about the docs we will get
+                builder = new DocIdSetBuilder(reader.maxDoc());
+              }
               docs = termsEnum.postings(docs, PostingsEnum.NONE);
               builder.add(docs);
               for (TermAndState t : matchingTerms) {

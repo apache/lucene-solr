@@ -17,7 +17,6 @@
 package org.apache.solr.index;
 
 import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.SortingMergePolicy;
 import org.apache.lucene.search.Sort;
 
 import org.apache.solr.core.SolrResourceLoader;

@@ -17,7 +17,6 @@
 package org.apache.lucene.queryparser.flexible.standard.processors;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;

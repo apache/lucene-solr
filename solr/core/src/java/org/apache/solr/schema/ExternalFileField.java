@@ -16,17 +16,17 @@
  */
 package org.apache.solr.schema;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.FileFloatSource;
-
-import java.io.IOException;
-import java.util.Map;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /** Get values from an external file instead of the index.
  *

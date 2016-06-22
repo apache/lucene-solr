@@ -16,6 +16,24 @@
  */
 package org.apache.solr.request;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReader;
@@ -49,7 +67,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SpatialHeatmapFacets;
 import org.apache.solr.request.IntervalFacets.FacetInterval;
@@ -69,28 +86,12 @@ import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortedIntDocSet;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.search.facet.FacetProcessor;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.TimeUnit;
+import org.apache.solr.util.RTimer;
 
 /**
  * A class that generates simple Facet information for a request.
@@ -108,6 +109,9 @@ public class SimpleFacets {
   protected final SolrIndexSearcher searcher;
   protected final SolrQueryRequest req;
   protected final ResponseBuilder rb;
+
+  protected FacetDebugInfo fdebugParent;
+  protected FacetDebugInfo fdebug;
 
   // per-facet values
   protected final static class ParsedParams {
@@ -158,6 +162,10 @@ public class SimpleFacets {
     this.docsOrig = docs;
     this.global = params;
     this.rb = rb;
+  }
+
+  public void setFacetDebugInfo(FacetDebugInfo fdebugParent) {
+    this.fdebugParent = fdebugParent;
   }
 
   /**
@@ -405,56 +413,37 @@ public class SimpleFacets {
 
     // determine what type of faceting method to use
     final String methodStr = params.getFieldParam(field, FacetParams.FACET_METHOD);
-    FacetMethod method = null;
+    final FacetMethod requestedMethod;
     if (FacetParams.FACET_METHOD_enum.equals(methodStr)) {
-      method = FacetMethod.ENUM;
+      requestedMethod = FacetMethod.ENUM;
     } else if (FacetParams.FACET_METHOD_fcs.equals(methodStr)) {
-      method = FacetMethod.FCS;
+      requestedMethod = FacetMethod.FCS;
     } else if (FacetParams.FACET_METHOD_fc.equals(methodStr)) {
-      method = FacetMethod.FC;
+      requestedMethod = FacetMethod.FC;
     } else if(FacetParams.FACET_METHOD_uif.equals(methodStr)) {
-      method = FacetMethod.UIF;
-    }
-
-    if (method == FacetMethod.ENUM && TrieField.getMainValuePrefix(ft) != null) {
-      // enum can't deal with trie fields that index several terms per value
-      method = sf.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
-    }
-
-    if (method == null && ft instanceof BoolField) {
-      // Always use filters for booleans... we know the number of values is very small.
-      method = FacetMethod.ENUM;
+      requestedMethod = FacetMethod.UIF;
+    }else{
+      requestedMethod=null;
     }
 
     final boolean multiToken = sf.multiValued() || ft.multiValuedFieldCache();
-    
-    if (ft.getNumericType() != null && !sf.multiValued()) {
-      // the per-segment approach is optimal for numeric field types since there
-      // are no global ords to merge and no need to create an expensive
-      // top-level reader
-      method = FacetMethod.FCS;
-    }
 
-    if (method == null) {
-      // TODO: default to per-segment or not?
-      method = FacetMethod.FC;
-    }
+    FacetMethod appliedFacetMethod = selectFacetMethod(sf, requestedMethod, mincount);
 
-    if (method == FacetMethod.FCS && multiToken) {
-      // only fc knows how to deal with multi-token fields
-      method = FacetMethod.FC;
-    }
-    
-    if (method == FacetMethod.ENUM && sf.hasDocValues()) {
-      // only fc can handle docvalues types
-      method = FacetMethod.FC;
+    RTimer timer = null;
+    if (fdebug != null) {
+       fdebug.putInfoItem("requestedMethod", requestedMethod==null?"not specified":requestedMethod.name());
+       fdebug.putInfoItem("appliedMethod", appliedFacetMethod.name());
+       fdebug.putInfoItem("inputDocSetSize", docs.size());
+       fdebug.putInfoItem("field", field);
+       timer = new RTimer();
     }
 
     if (params.getFieldBool(field, GroupParams.GROUP_FACET, false)) {
       counts = getGroupedCounts(searcher, docs, field, multiToken, offset,limit, mincount, missing, sort, prefix, contains, ignoreCase);
     } else {
-      assert method != null;
-      switch (method) {
+      assert appliedFacetMethod != null;
+      switch (appliedFacetMethod) {
         case ENUM:
           assert TrieField.getMainValuePrefix(ft) == null;
           counts = getFacetTermEnumCounts(searcher, docs, field, offset, limit, mincount,missing,sort,prefix, contains, ignoreCase, params);
@@ -478,7 +467,6 @@ public class SimpleFacets {
           }
           break;
         case UIF:
-
             //Emulate the JSON Faceting structure so we can use the same parsing classes
             Map<String, Object> jsonFacet = new HashMap<>(13);
             jsonFacet.put("type", "terms");
@@ -535,14 +523,79 @@ public class SimpleFacets {
             }
           break;
         case FC:
-          counts = DocValuesFacets.getCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix, contains, ignoreCase);
+          counts = DocValuesFacets.getCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix, contains, ignoreCase, fdebug);
           break;
         default:
           throw new AssertionError();
       }
     }
 
+    if (fdebug != null) {
+      long timeElapsed = (long) timer.getTime();
+      fdebug.setElapse(timeElapsed);
+    }
+
     return counts;
+  }
+
+  /**
+   * This method will force the appropriate facet method even if the user provided a different one as a request parameter
+   *
+   * N.B. this method could overwrite what you passed as request parameter. Be Extra careful
+   *
+   * @param field field we are faceting
+   * @param method the facet method passed as a request parameter
+   * @param mincount the minimum value a facet should have to be returned
+   * @return the FacetMethod to use
+   */
+   static FacetMethod selectFacetMethod(SchemaField field, FacetMethod method, Integer mincount) {
+
+     FieldType type = field.getType();
+
+     /*The user did not specify any preference*/
+     if (method == null) {
+       /* Always use filters for booleans if not DocValues only... we know the number of values is very small. */
+       if (type instanceof BoolField && (field.indexed() == true || field.hasDocValues() == false)) {
+         method = FacetMethod.ENUM;
+       } else if (type.getNumericType() != null && !field.multiValued()) {
+        /* the per-segment approach is optimal for numeric field types since there
+           are no global ords to merge and no need to create an expensive
+           top-level reader */
+         method = FacetMethod.FCS;
+       } else {
+         // TODO: default to per-segment or not?
+         method = FacetMethod.FC;
+       }
+     }
+
+     /* FC without docValues does not support single valued numeric facets */
+     if (method == FacetMethod.FC
+         && type.getNumericType() != null && !field.multiValued()) {
+       method = FacetMethod.FCS;
+     }
+
+     /* UIF without DocValues can't deal with mincount=0, the reason is because
+         we create the buckets based on the values present in the result set.
+         So we are not going to see facet values which are not in the result set */
+     if (method == FacetMethod.UIF
+         && !field.hasDocValues() && mincount == 0) {
+       method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
+     }
+
+     /* ENUM can't deal with trie fields that index several terms per value */
+     if (method == FacetMethod.ENUM
+         && TrieField.getMainValuePrefix(type) != null) {
+       method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
+     }
+
+     /* FCS can't deal with multi token fields */
+     final boolean multiToken = field.multiValued() || type.multiValuedFieldCache();
+     if (method == FacetMethod.FCS
+         && multiToken) {
+       method = FacetMethod.FC;
+     }
+
+     return method;
   }
 
   public NamedList<Integer> getGroupedCounts(SolrIndexSearcher searcher,
@@ -654,9 +707,17 @@ public class SimpleFacets {
     final Semaphore semaphore = new Semaphore((maxThreads <= 0) ? Integer.MAX_VALUE : maxThreads);
     List<Future<NamedList>> futures = new ArrayList<>(facetFs.length);
 
+    if (fdebugParent != null) {
+      fdebugParent.putInfoItem("maxThreads", maxThreads);
+    }
+
     try {
       //Loop over fields; submit to executor, keeping the future
       for (String f : facetFs) {
+        if (fdebugParent != null) {
+          fdebug = new FacetDebugInfo();
+          fdebugParent.addChild(fdebug);
+        }
         final ParsedParams parsed = parseParams(FacetParams.FACET_FIELD, f);
         final SolrParams localParams = parsed.localParams;
         final String termList = localParams == null ? null : localParams.get(CommonParams.TERMS);

@@ -176,6 +176,24 @@ public class SloppyMath {
     }
   }
 
+  /**
+   * Convert to degrees.
+   * @param radians radians to convert to degrees
+   * @return degrees
+   */
+  public static double toDegrees(final double radians) {
+    return radians * TO_DEGREES;
+  }
+  
+  /**
+   * Convert to radians.
+   * @param degrees degrees to convert to radians
+   * @return radians
+   */
+  public static double toRadians(final double degrees) {
+    return degrees * TO_RADIANS;
+  }
+  
   // haversin
   // TODO: remove these for java 9, they fixed Math.toDegrees()/toRadians() to work just like this.
   public static final double TO_RADIANS = Math.PI / 180D;
@@ -209,7 +227,7 @@ public class SloppyMath {
     
   // Supposed to be >= sin(77.2deg), as fdlibm code is supposed to work with values > 0.975,
   // but seems to work well enough as long as value >= sin(25deg).
-  private static final double ASIN_MAX_VALUE_FOR_TABS = StrictMath.sin(Math.toRadians(73.0));
+  private static final double ASIN_MAX_VALUE_FOR_TABS = StrictMath.sin(toRadians(73.0));
   
   private static final int ASIN_TABS_SIZE = (1<<13) + 1;
   private static final double ASIN_DELTA = ASIN_MAX_VALUE_FOR_TABS/(ASIN_TABS_SIZE - 1);

@@ -19,8 +19,6 @@ package org.apache.solr.servlet.cache;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Collections;
-import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;

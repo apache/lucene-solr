@@ -177,18 +177,6 @@ public final class TermContext {
     return totalTermFreq;
   }
 
-  /** Returns true if all terms stored here are real (e.g., not auto-prefix terms).
-   *
-   *  @lucene.internal */
-  public boolean hasOnlyRealTerms() {
-    for (TermState termState : states) {
-      if (termState != null && termState.isRealTerm() == false) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();

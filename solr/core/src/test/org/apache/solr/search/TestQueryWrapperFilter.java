@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.document.Document;
@@ -49,8 +50,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
 
   // a filter for which other queries don't have special rewrite rules
   private static class FilterWrapper extends Filter {
-
-    private final Filter in;
+    final Filter in;
     
     FilterWrapper(Filter in) {
       this.in = in;
@@ -67,16 +67,14 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     }
     
     @Override
-    public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
-        return false;
-      }
-      return in.equals(((FilterWrapper) obj).in);
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             Objects.equals(in, getClass().cast(other).in);
     }
 
     @Override
     public int hashCode() {
-      return 31 * super.hashCode() + in.hashCode();
+      return 31 * classHash() + in.hashCode();
     }
   }
 

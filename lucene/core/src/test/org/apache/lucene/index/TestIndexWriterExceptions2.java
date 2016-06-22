@@ -65,7 +65,6 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
       ((MockDirectoryWrapper)dir).setUseSlowOpenClosers(false);
-      ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
     }
     
     // log all exceptions we hit, in case we fail (for debugging)

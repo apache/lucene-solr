@@ -100,8 +100,6 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
   private class GraphTermsQuery extends Query implements ExtendedQuery {
 
     private Term[] queryTerms;
-    private List<TermContext> finalContexts;
-    private List<Term> finalTerms;
     private String field;
     private int maxDocFreq;
     private Object id;
@@ -147,33 +145,16 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
 
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
-      this.finalContexts = new ArrayList();
-      this.finalTerms = new ArrayList();
-      List<LeafReaderContext> contexts = reader.leaves();
-      TermContext[] termContexts = new TermContext[this.queryTerms.length];
-      collectTermContext(reader, contexts, termContexts, this.queryTerms);
-      for(int i=0; i<termContexts.length; i++) {
-        TermContext termContext = termContexts[i];
-        if(termContext != null && termContext.docFreq() <= this.maxDocFreq) {
-          this.finalContexts.add(termContext);
-          this.finalTerms.add(queryTerms[i]);
-        }
-      }
-
       return this;
     }
 
     public int hashCode() {
-      return 31 * super.hashCode() + id.hashCode();
+      return 31 * classHash() + id.hashCode();
     }
 
-    public boolean equals(Object o) {
-      if (super.equals(o) == false) {
-        return false;
-      }
-
-      GraphTermsQuery q = (GraphTermsQuery)o;
-      return id == q.id;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             id == ((GraphTermsQuery) other).id;
     }
 
     public GraphTermsQuery clone() {
@@ -211,6 +192,20 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
 
     @Override
     public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+
+      List<TermContext> finalContexts = new ArrayList();
+      List<Term> finalTerms = new ArrayList();
+      List<LeafReaderContext> contexts = searcher.getTopReaderContext().leaves();
+      TermContext[] termContexts = new TermContext[this.queryTerms.length];
+      collectTermContext(searcher.getIndexReader(), contexts, termContexts, this.queryTerms);
+      for(int i=0; i<termContexts.length; i++) {
+        TermContext termContext = termContexts[i];
+        if(termContext != null && termContext.docFreq() <= this.maxDocFreq) {
+          finalContexts.add(termContext);
+          finalTerms.add(queryTerms[i]);
+        }
+      }
+
       return new ConstantScoreWeight(this) {
 
         @Override
@@ -227,7 +222,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           Terms terms = fields.terms(field);
           TermsEnum  termsEnum = terms.iterator();
           PostingsEnum docs = null;
-          DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc());
+          DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc(), terms);
           for (int i=0; i<finalContexts.size(); i++) {
             TermContext termContext = finalContexts.get(i);
             TermState termState = termContext.get(context.ord);
@@ -284,19 +279,21 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
                                     Term[] queryTerms) throws IOException {
       TermsEnum termsEnum = null;
       for (LeafReaderContext context : leaves) {
-        final Fields fields = context.reader().fields();
+
+        Terms terms = context.reader().terms(this.field);
+        if (terms == null) {
+          // field does not exist
+          continue;
+        }
+
+        termsEnum = terms.iterator();
+
+        if (termsEnum == TermsEnum.EMPTY) continue;
+
         for (int i = 0; i < queryTerms.length; i++) {
           Term term = queryTerms[i];
           TermContext termContext = contextArray[i];
-          final Terms terms = fields.terms(term.field());
-          if (terms == null) {
-            // field does not exist
-            continue;
-          }
-          termsEnum = terms.iterator();
-          assert termsEnum != null;
 
-          if (termsEnum == TermsEnum.EMPTY) continue;
           if (termsEnum.seekExact(term.bytes())) {
             if (termContext == null) {
               contextArray[i] = new TermContext(reader.getContext(),
@@ -306,7 +303,6 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
               termContext.register(termsEnum.termState(), context.ord,
                   termsEnum.docFreq(), termsEnum.totalTermFreq());
             }
-
           }
         }
       }

@@ -72,7 +72,6 @@ import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -1410,6 +1409,18 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private RefCounted<SolrIndexSearcher> realtimeSearcher;
   private Callable<DirectoryReader> newReaderCreator;
 
+  // For testing
+  boolean areAllSearcherReferencesEmpty() {
+    boolean isEmpty;
+    synchronized (searcherLock) {
+      isEmpty = _searchers.isEmpty();
+      isEmpty = isEmpty && _realtimeSearchers.isEmpty();
+      isEmpty = isEmpty && (_searcher == null);
+      isEmpty = isEmpty && (realtimeSearcher == null);
+    }
+    return isEmpty;
+  }
+
   /**
   * Return a registered {@link RefCounted}&lt;{@link SolrIndexSearcher}&gt; with
   * the reference count incremented.  It <b>must</b> be decremented when no longer needed.
@@ -1609,6 +1620,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       newSearcher.incref();
 
       synchronized (searcherLock) {
+        // Check if the core is closed again inside the lock in case this method is racing with a close. If the core is
+        // closed, clean up the new searcher and bail.
+        if (isClosed()) {
+          newSearcher.decref(); // once for caller since we're not returning it
+          newSearcher.decref(); // once for ourselves since it won't be "replaced"
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "openNewSearcher called on closed core");
+        }
+
         if (realtimeSearcher != null) {
           realtimeSearcher.decref();
         }
@@ -2111,6 +2130,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     m.put("standard", m.get("xml"));
     m.put(CommonParams.JSON, new JSONResponseWriter());
     m.put("geojson", new GeoJSONResponseWriter());
+    m.put("graphml", new GraphMLResponseWriter());
     m.put("python", new PythonResponseWriter());
     m.put("php", new PHPResponseWriter());
     m.put("phps", new PHPSerializedResponseWriter());

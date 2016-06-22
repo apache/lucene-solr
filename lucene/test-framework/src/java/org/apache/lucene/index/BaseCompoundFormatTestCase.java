@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
@@ -72,9 +73,9 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     for (int i=0; i<data.length; i++) {
       String testfile = "_" + i + ".test";
       Directory dir = newDirectory();
-      createSequenceFile(dir, testfile, (byte) 0, data[i]);
-      
       SegmentInfo si = newSegmentInfo(dir, "_" + i);
+      createSequenceFile(dir, testfile, (byte) 0, data[i], si.getId(), "suffix");
+      
       si.setFiles(Collections.singleton(testfile));
       si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
       Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
@@ -96,10 +97,10 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
   public void testTwoFiles() throws IOException {
     String files[] = { "_123.d1", "_123.d2" };
     Directory dir = newDirectory();
-    createSequenceFile(dir, files[0], (byte) 0, 15);
-    createSequenceFile(dir, files[1], (byte) 0, 114);
-    
     SegmentInfo si = newSegmentInfo(dir, "_123");
+    createSequenceFile(dir, files[0], (byte) 0, 15, si.getId(), "suffix");
+    createSequenceFile(dir, files[1], (byte) 0, 114, si.getId(), "suffix");
+    
     si.setFiles(Arrays.asList(files));
     si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
@@ -122,11 +123,13 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     final String testfile = "_123.test";
 
     Directory dir = newDirectory();
-    IndexOutput out = dir.createOutput(testfile, IOContext.DEFAULT);
-    out.writeInt(3);
-    out.close();
-    
     SegmentInfo si = newSegmentInfo(dir, "_123");
+    try (IndexOutput out = dir.createOutput(testfile, IOContext.DEFAULT)) {
+      CodecUtil.writeIndexHeader(out, "Foo", 0, si.getId(), "suffix");
+      out.writeInt(3);
+      CodecUtil.writeFooter(out);
+    }
+    
     si.setFiles(Collections.singleton(testfile));
     si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
@@ -148,11 +151,13 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
         return super.createOutput(name, context);
       }
     };
-    IndexOutput out = dir.createOutput(testfile, myContext);
-    out.writeInt(3);
-    out.close();
-    
     SegmentInfo si = newSegmentInfo(dir, "_123");
+    try (IndexOutput out = dir.createOutput(testfile, myContext)) {
+      CodecUtil.writeIndexHeader(out, "Foo", 0, si.getId(), "suffix");
+      out.writeInt(3);
+      CodecUtil.writeFooter(out);
+    }
+    
     si.setFiles(Collections.singleton(testfile));
     si.getCodec().compoundFormat().write(dir, si, myContext);
     dir.close();
@@ -165,14 +170,16 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
 
     Directory dir = new NRTCachingDirectory(newFSDirectory(createTempDir()), 2.0, 25.0);
 
-    IndexOutput out = dir.createOutput(testfile, context);
-    byte[] bytes = new byte[512];
-    for(int i=0;i<1024*1024;i++) {
-      out.writeBytes(bytes, 0, bytes.length);
-    }
-    out.close();
-    
     SegmentInfo si = newSegmentInfo(dir, "_123");
+    try (IndexOutput out = dir.createOutput(testfile, context)) {
+      CodecUtil.writeIndexHeader(out, "Foo", 0, si.getId(), "suffix");
+      byte[] bytes = new byte[512];
+      for(int i=0;i<1024*1024;i++) {
+        out.writeBytes(bytes, 0, bytes.length);
+      }
+      CodecUtil.writeFooter(out);
+    }
+    
     si.setFiles(Collections.singleton(testfile));
     si.getCodec().compoundFormat().write(dir, si, context);
 
@@ -326,17 +333,19 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     // Setup the test segment
     String segment = "_123";
     int chunk = 1024; // internal buffer size used by the stream
-    createRandomFile(dir, segment + ".zero", 0);
-    createRandomFile(dir, segment + ".one", 1);
-    createRandomFile(dir, segment + ".ten", 10);
-    createRandomFile(dir, segment + ".hundred", 100);
-    createRandomFile(dir, segment + ".big1", chunk);
-    createRandomFile(dir, segment + ".big2", chunk - 1);
-    createRandomFile(dir, segment + ".big3", chunk + 1);
-    createRandomFile(dir, segment + ".big4", 3 * chunk);
-    createRandomFile(dir, segment + ".big5", 3 * chunk - 1);
-    createRandomFile(dir, segment + ".big6", 3 * chunk + 1);
-    createRandomFile(dir, segment + ".big7", 1000 * chunk);
+    SegmentInfo si = newSegmentInfo(dir, "_123");
+    byte[] segId = si.getId();
+    createRandomFile(dir, segment + ".zero", 0, segId);
+    createRandomFile(dir, segment + ".one", 1, segId);
+    createRandomFile(dir, segment + ".ten", 10, segId);
+    createRandomFile(dir, segment + ".hundred", 100, segId);
+    createRandomFile(dir, segment + ".big1", chunk, segId);
+    createRandomFile(dir, segment + ".big2", chunk - 1, segId);
+    createRandomFile(dir, segment + ".big3", chunk + 1, segId);
+    createRandomFile(dir, segment + ".big4", 3 * chunk, segId);
+    createRandomFile(dir, segment + ".big5", 3 * chunk - 1, segId);
+    createRandomFile(dir, segment + ".big6", 3 * chunk + 1, segId);
+    createRandomFile(dir, segment + ".big7", 1000 * chunk, segId);
     
     List<String> files = new ArrayList<>();
     for (String file : dir.listAll()) {
@@ -345,7 +354,6 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
       }
     }
     
-    SegmentInfo si = newSegmentInfo(dir, "_123");
     si.setFiles(files);
     si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
@@ -370,17 +378,19 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     final int FILE_COUNT = atLeast(500);
     
     List<String> files = new ArrayList<>();
+    SegmentInfo si = newSegmentInfo(dir, "_123");
     for (int fileIdx = 0; fileIdx < FILE_COUNT; fileIdx++) {
       String file = "_123." + fileIdx;
       files.add(file);
-      IndexOutput out = dir.createOutput(file, newIOContext(random()));
-      out.writeByte((byte) fileIdx);
-      out.close();
+      try (IndexOutput out = dir.createOutput(file, newIOContext(random()))) {
+        CodecUtil.writeIndexHeader(out, "Foo", 0, si.getId(), "suffix");
+        out.writeByte((byte) fileIdx);
+        CodecUtil.writeFooter(out);
+      }
     }
     
     assertEquals(0, dir.getFileHandleCount());
     
-    SegmentInfo si = newSegmentInfo(dir, "_123");
     si.setFiles(files);
     si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
@@ -388,6 +398,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     final IndexInput[] ins = new IndexInput[FILE_COUNT];
     for (int fileIdx = 0; fileIdx < FILE_COUNT; fileIdx++) {
       ins[fileIdx] = cfs.openInput("_123." + fileIdx, newIOContext(random()));
+      CodecUtil.checkIndexHeader(ins[fileIdx], "Foo", 0, 0, si.getId(), "suffix");
     }
     
     assertEquals(1, dir.getFileHandleCount());
@@ -627,31 +638,35 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
   
   /** Returns a new fake segment */
   protected static SegmentInfo newSegmentInfo(Directory dir, String name) {
-    return new SegmentInfo(dir, Version.LATEST, name, 10000, false, Codec.getDefault(), Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
+    return new SegmentInfo(dir, Version.LATEST, name, 10000, false, Codec.getDefault(), Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
   }
   
   /** Creates a file of the specified size with random data. */
-  protected static void createRandomFile(Directory dir, String name, int size) throws IOException {
-    IndexOutput os = dir.createOutput(name, newIOContext(random()));
+  protected static void createRandomFile(Directory dir, String name, int size, byte[] segId) throws IOException {
     Random rnd = random();
-    for (int i=0; i<size; i++) {
-      byte b = (byte) rnd.nextInt(256);
-      os.writeByte(b);
+    try (IndexOutput os = dir.createOutput(name, newIOContext(random()))) {
+      CodecUtil.writeIndexHeader(os, "Foo", 0, segId, "suffix");
+      for (int i=0; i<size; i++) {
+        byte b = (byte) rnd.nextInt(256);
+        os.writeByte(b);
+      }
+      CodecUtil.writeFooter(os);
     }
-    os.close();
   }
   
   /** Creates a file of the specified size with sequential data. The first
    *  byte is written as the start byte provided. All subsequent bytes are
    *  computed as start + offset where offset is the number of the byte.
    */
-  protected static void createSequenceFile(Directory dir, String name, byte start, int size) throws IOException {
-    IndexOutput os = dir.createOutput(name, newIOContext(random()));
-    for (int i=0; i < size; i++) {
-      os.writeByte(start);
-      start ++;
+  protected static void createSequenceFile(Directory dir, String name, byte start, int size, byte[] segID, String segSuffix) throws IOException {
+    try (IndexOutput os = dir.createOutput(name, newIOContext(random()))) {
+      CodecUtil.writeIndexHeader(os, "Foo", 0, segID, segSuffix);
+      for (int i=0; i < size; i++) {
+        os.writeByte(start);
+        start ++;
+      }
+      CodecUtil.writeFooter(os);
     }
-    os.close();
   }
   
   protected static void assertSameStreams(String msg, IndexInput expected, IndexInput test) throws IOException {
@@ -724,12 +739,12 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
    */
   protected static Directory createLargeCFS(Directory dir) throws IOException {
     List<String> files = new ArrayList<>();
+    SegmentInfo si = newSegmentInfo(dir, "_123");
     for (int i = 0; i < 20; i++) {
-      createSequenceFile(dir, "_123.f" + i, (byte) 0, 2000);
+      createSequenceFile(dir, "_123.f" + i, (byte) 0, 2000, si.getId(), "suffix");
       files.add("_123.f" + i);
     }
     
-    SegmentInfo si = newSegmentInfo(dir, "_123");
     si.setFiles(files);
     si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
@@ -750,9 +765,9 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
   public void testResourceNameInsideCompoundFile() throws Exception {
     Directory dir = newDirectory();
     String subFile = "_123.xyz";
-    createSequenceFile(dir, subFile, (byte) 0, 10);
-    
     SegmentInfo si = newSegmentInfo(dir, "_123");
+    createSequenceFile(dir, subFile, (byte) 0, 10, si.getId(), "suffix");
+    
     si.setFiles(Collections.singletonList(subFile));
     si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT);
     Directory cfs = si.getCodec().compoundFormat().getCompoundReader(dir, si, IOContext.DEFAULT);
@@ -760,6 +775,50 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
     String desc = in.toString();
     assertTrue("resource description hides that it's inside a compound file: " + desc, desc.contains("[slice=" + subFile + "]"));
     cfs.close();
+    dir.close();
+  }
+
+  public void testMissingCodecHeadersAreCaught() throws Exception {
+    Directory dir = newDirectory();
+    String subFile = "_123.xyz";
+
+    // missing codec header
+    try (IndexOutput os = dir.createOutput(subFile, newIOContext(random()))) {
+      for (int i=0; i < 1024; i++) {
+        os.writeByte((byte) i);
+      }
+    }
+
+    SegmentInfo si = newSegmentInfo(dir, "_123");
+    si.setFiles(Collections.singletonList(subFile));
+    Exception e = expectThrows(CorruptIndexException.class, () -> si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT));
+    assertTrue(e.getMessage().contains("codec header mismatch"));
+    dir.close();
+  }
+
+  public void testCorruptFilesAreCaught() throws Exception {
+    Directory dir = newDirectory();
+    String subFile = "_123.xyz";
+
+    // wrong checksum
+    SegmentInfo si = newSegmentInfo(dir, "_123");
+    try (IndexOutput os = dir.createOutput(subFile, newIOContext(random()))) {
+      CodecUtil.writeIndexHeader(os, "Foo", 0, si.getId(), "suffix");
+      for (int i=0; i < 1024; i++) {
+        os.writeByte((byte) i);
+      }
+
+      // write footer w/ wrong checksum
+      os.writeInt(CodecUtil.FOOTER_MAGIC);
+      os.writeInt(0);
+
+      long checksum = os.getChecksum();
+      os.writeLong(checksum+1);
+    }
+
+    si.setFiles(Collections.singletonList(subFile));
+    Exception e = expectThrows(CorruptIndexException.class, () -> si.getCodec().compoundFormat().write(dir, si, IOContext.DEFAULT));
+    assertTrue(e.getMessage().contains("checksum failed (hardware problem?)"));
     dir.close();
   }
 }

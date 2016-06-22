@@ -44,7 +44,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
  * input tokens tokens ３ and ２千 and give outputs 3 and 2000 instead of 3200, which is
  * likely not the intended result. If you want to remove punctuation characters from your
  * index that are not part of normalized numbers, add a
- * {@link org.apache.lucene.analysis.core.StopFilter} with the punctuation you wish to
+ * {@link org.apache.lucene.analysis.StopFilter} with the punctuation you wish to
  * remove after {@link JapaneseNumberFilter} in your analyzer chain.
  * <p>
  * Below are some examples of normalizations this filter supports. The input is untokenized

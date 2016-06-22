@@ -130,14 +130,15 @@ public class RandomIndexWriter implements Closeable {
    * Adds a Document.
    * @see IndexWriter#addDocument(Iterable)
    */
-  public <T extends IndexableField> void addDocument(final Iterable<T> doc) throws IOException {
+  public <T extends IndexableField> long addDocument(final Iterable<T> doc) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
+    long seqNo;
     if (r.nextInt(5) == 3) {
       // TODO: maybe, we should simply buffer up added docs
       // (but we need to clone them), and only when
       // getReader, commit, etc. are called, we do an
       // addDocuments?  Would be better testing.
-      w.addDocuments(new Iterable<Iterable<T>>() {
+      seqNo = w.addDocuments(new Iterable<Iterable<T>>() {
 
         @Override
         public Iterator<Iterable<T>> iterator() {
@@ -167,10 +168,12 @@ public class RandomIndexWriter implements Closeable {
         }
         });
     } else {
-      w.addDocument(doc);
+      seqNo = w.addDocument(doc);
     }
     
     maybeFlushOrCommit();
+
+    return seqNo;
   }
 
   private void maybeFlushOrCommit() throws IOException {
@@ -195,26 +198,29 @@ public class RandomIndexWriter implements Closeable {
     }
   }
   
-  public void addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
+  public long addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    w.addDocuments(docs);
+    long seqNo = w.addDocuments(docs);
     maybeFlushOrCommit();
+    return seqNo;
   }
 
-  public void updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
+  public long updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    w.updateDocuments(delTerm, docs);
+    long seqNo = w.updateDocuments(delTerm, docs);
     maybeFlushOrCommit();
+    return seqNo;
   }
 
   /**
    * Updates a document.
    * @see IndexWriter#updateDocument(Term, Iterable)
    */
-  public <T extends IndexableField> void updateDocument(Term t, final Iterable<T> doc) throws IOException {
+  public <T extends IndexableField> long updateDocument(Term t, final Iterable<T> doc) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
+    long seqNo;
     if (r.nextInt(5) == 3) {
-      w.updateDocuments(t, new Iterable<Iterable<T>>() {
+      seqNo = w.updateDocuments(t, new Iterable<Iterable<T>>() {
 
         @Override
         public Iterator<Iterable<T>> iterator() {
@@ -243,49 +249,51 @@ public class RandomIndexWriter implements Closeable {
         }
         });
     } else {
-      w.updateDocument(t, doc);
+      seqNo = w.updateDocument(t, doc);
     }
     maybeFlushOrCommit();
+
+    return seqNo;
   }
   
-  public void addIndexes(Directory... dirs) throws IOException {
+  public long addIndexes(Directory... dirs) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    w.addIndexes(dirs);
+    return w.addIndexes(dirs);
   }
 
-  public void addIndexes(CodecReader... readers) throws IOException {
+  public long addIndexes(CodecReader... readers) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    w.addIndexes(readers);
+    return w.addIndexes(readers);
   }
   
-  public void updateNumericDocValue(Term term, String field, Long value) throws IOException {
+  public long updateNumericDocValue(Term term, String field, Long value) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    w.updateNumericDocValue(term, field, value);
+    return w.updateNumericDocValue(term, field, value);
   }
   
-  public void updateBinaryDocValue(Term term, String field, BytesRef value) throws IOException {
+  public long updateBinaryDocValue(Term term, String field, BytesRef value) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    w.updateBinaryDocValue(term, field, value);
+    return w.updateBinaryDocValue(term, field, value);
   }
   
-  public void updateDocValues(Term term, Field... updates) throws IOException {
+  public long updateDocValues(Term term, Field... updates) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    w.updateDocValues(term, updates);
+    return w.updateDocValues(term, updates);
   }
   
-  public void deleteDocuments(Term term) throws IOException {
+  public long deleteDocuments(Term term) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    w.deleteDocuments(term);
+    return w.deleteDocuments(term);
   }
 
-  public void deleteDocuments(Query q) throws IOException {
+  public long deleteDocuments(Query q) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    w.deleteDocuments(q);
+    return w.deleteDocuments(q);
   }
   
-  public void commit() throws IOException {
+  public long commit() throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    w.commit();
+    return w.commit();
   }
   
   public int numDocs() {
@@ -296,8 +304,8 @@ public class RandomIndexWriter implements Closeable {
     return w.maxDoc();
   }
 
-  public void deleteAll() throws IOException {
-    w.deleteAll();
+  public long deleteAll() throws IOException {
+    return w.deleteAll();
   }
 
   public DirectoryReader getReader() throws IOException {

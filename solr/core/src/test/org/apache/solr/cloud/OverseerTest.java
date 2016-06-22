@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -525,7 +524,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     int maxIterations = 100;
     while (0 < maxIterations--) {
       final ClusterState state = stateReader.getClusterState();
-      Set<String> availableCollections = state.getCollections();
+      Set<String> availableCollections = state.getCollectionsMap().keySet();
       int availableCount = 0;
       for(String requiredCollection: collections) {
         if(availableCollections.contains(requiredCollection)) {
@@ -911,8 +910,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
       ClusterState state = reader.getClusterState();
       
       int numFound = 0;
-      for (String  c : state.getCollections()) {
-        DocCollection collection = state.getCollection(c);
+      Map<String, DocCollection> collectionsMap = state.getCollectionsMap();
+      for (Map.Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
+        DocCollection collection = entry.getValue();
         for (Slice slice : collection.getSlices()) {
           if (slice.getReplicasMap().get("core_node1") != null) {
             numFound++;

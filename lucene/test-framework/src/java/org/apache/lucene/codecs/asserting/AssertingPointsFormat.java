@@ -17,7 +17,6 @@
 package org.apache.lucene.codecs.asserting;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.lucene.codecs.PointsFormat;
@@ -77,6 +76,7 @@ public final class AssertingPointsFormat extends PointsFormat {
     final byte[] lastMaxPackedValue;
     private Relation lastCompareResult;
     private int lastDocID = -1;
+    private int docBudget;
 
     public AssertingIntersectVisitor(int numDims, int bytesPerDim, IntersectVisitor in) {
       this.in = in;
@@ -93,6 +93,8 @@ public final class AssertingPointsFormat extends PointsFormat {
 
     @Override
     public void visit(int docID) throws IOException {
+      assert --docBudget >= 0 : "called add() more times than the last call to grow() reserved";
+
       // This method, not filtering each hit, should only be invoked when the cell is inside the query shape:
       assert lastCompareResult == Relation.CELL_INSIDE_QUERY;
       in.visit(docID);
@@ -100,6 +102,7 @@ public final class AssertingPointsFormat extends PointsFormat {
 
     @Override
     public void visit(int docID, byte[] packedValue) throws IOException {
+      assert --docBudget >= 0 : "called add() more times than the last call to grow() reserved";
 
       // This method, to filter each doc's value, should only be invoked when the cell crosses the query shape:
       assert lastCompareResult == PointValues.Relation.CELL_CROSSES_QUERY;
@@ -130,6 +133,7 @@ public final class AssertingPointsFormat extends PointsFormat {
     @Override
     public void grow(int count) {
       in.grow(count);
+      docBudget = count;
     }
 
     @Override

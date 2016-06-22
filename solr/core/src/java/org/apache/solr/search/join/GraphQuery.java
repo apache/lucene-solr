@@ -19,6 +19,7 @@ package org.apache.solr.search.join;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -26,7 +27,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.AutomatonQuery;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSet;
@@ -35,7 +35,6 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
@@ -43,7 +42,6 @@ import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
-import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Filter;
@@ -450,56 +448,33 @@ public class GraphQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + ((fromField == null) ? 0 : fromField.hashCode());
+    int result = classHash();
+    result = prime * result + Objects.hashCode(fromField);
     result = prime * result + maxDepth;
     result = prime * result + (onlyLeafNodes ? 1231 : 1237);
-    result = prime * result + ((q == null) ? 0 : q.hashCode());
+    result = prime * result + Objects.hashCode(q);
     result = prime * result + (returnRoot ? 1231 : 1237);
-    result = prime * result + ((toField == null) ? 0 : toField.hashCode());
-    result = prime * result + ((traversalFilter == null) ? 0 : traversalFilter.hashCode());
+    result = prime * result + Objects.hashCode(toField);
+    result = prime * result + Objects.hashCode(traversalFilter);
     result = prime * result + (useAutn ? 1231 : 1237);
     return result;
   }
-  
+
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (!super.equals(obj))
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    GraphQuery other = (GraphQuery) obj;
-    if (fromField == null) {
-      if (other.fromField != null)
-        return false;
-    } else if (!fromField.equals(other.fromField))
-      return false;
-    if (maxDepth != other.maxDepth)
-      return false;
-    if (onlyLeafNodes != other.onlyLeafNodes)
-      return false;
-    if (q == null) {
-      if (other.q != null)
-        return false;
-    } else if (!q.equals(other.q))
-      return false;
-    if (returnRoot != other.returnRoot)
-      return false;
-    if (toField == null) {
-      if (other.toField != null)
-        return false;
-    } else if (!toField.equals(other.toField))
-      return false;
-    if (traversalFilter == null) {
-      if (other.traversalFilter != null)
-        return false;
-    } else if (!traversalFilter.equals(other.traversalFilter))
-      return false;
-    if (useAutn != other.useAutn)
-      return false;
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(GraphQuery other) {
+    return Objects.equals(fromField, other.fromField) &&
+           maxDepth == other.maxDepth &&
+           onlyLeafNodes == other.onlyLeafNodes &&
+           returnRoot == other.returnRoot &&
+           useAutn == other.useAutn &&
+           Objects.equals(q, other.q) &&
+           Objects.equals(toField, other.toField) &&
+           Objects.equals(traversalFilter, other.traversalFilter);
   }
   
 }

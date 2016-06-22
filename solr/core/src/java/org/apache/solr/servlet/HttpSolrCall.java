@@ -16,7 +16,6 @@
  */
 package org.apache.solr.servlet;
 
-import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -35,12 +34,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
-import com.google.common.collect.ImmutableSet;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.CloseShieldInputStream;
@@ -91,7 +87,6 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriterUtil;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
@@ -815,15 +810,15 @@ public class HttpSolrCall {
   private void getSlicesForCollections(ClusterState clusterState,
                                        Collection<Slice> slices, boolean activeSlices) {
     if (activeSlices) {
-      for (String collection : clusterState.getCollections()) {
-        final Collection<Slice> activeCollectionSlices = clusterState.getActiveSlices(collection);
+      for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
+        final Collection<Slice> activeCollectionSlices = entry.getValue().getActiveSlices();
         if (activeCollectionSlices != null) {
           slices.addAll(activeCollectionSlices);
         }
       }
     } else {
-      for (String collection : clusterState.getCollections()) {
-        final Collection<Slice> collectionSlices = clusterState.getSlices(collection);
+      for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
+        final Collection<Slice> collectionSlices = entry.getValue().getSlices();
         if (collectionSlices != null) {
           slices.addAll(collectionSlices);
         }

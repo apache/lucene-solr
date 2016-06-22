@@ -137,25 +137,25 @@ public class CustomScoreQuery extends Query implements Cloneable {
 
   /** Returns true if <code>o</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (!super.equals(o))
-      return false;
-    CustomScoreQuery other = (CustomScoreQuery)o;
-    if (!this.subQuery.equals(other.subQuery) ||
-        this.strict != other.strict ||
-        this.scoringQueries.length != other.scoringQueries.length) {
-      return false;
-    }
-    return Arrays.equals(scoringQueries, other.scoringQueries);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(CustomScoreQuery other) {
+    return subQuery.equals(other.subQuery) &&
+           strict == other.strict &&
+           scoringQueries.length == other.scoringQueries.length &&
+           Arrays.equals(scoringQueries, other.scoringQueries);
   }
 
   /** Returns a hash code value for this object. */
   @Override
   public int hashCode() {
-    return (getClass().hashCode() + subQuery.hashCode() + Arrays.hashCode(scoringQueries))
-      ^ (strict ? 1234 : 4321);
+    // Didn't change this hashcode, but it looks suspicious.
+    return (classHash() + 
+        subQuery.hashCode() + 
+        Arrays.hashCode(scoringQueries)) ^ (strict ? 1234 : 4321);
   }
   
   /**

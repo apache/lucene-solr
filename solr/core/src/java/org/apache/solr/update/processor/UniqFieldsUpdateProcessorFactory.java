@@ -16,21 +16,12 @@
  */
 package org.apache.solr.update.processor;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Map;
-
 import org.apache.solr.core.SolrCore;
-
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.AddUpdateCommand;
 
 /**
  * Removes duplicate values found in fields matching the specified conditions.  

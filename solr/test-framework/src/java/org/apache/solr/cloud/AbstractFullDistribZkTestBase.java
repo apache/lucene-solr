@@ -338,7 +338,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   }
 
-  protected void waitForCollection(ZkStateReader reader, String collection, int slices) throws Exception {
+  protected static void waitForCollection(ZkStateReader reader, String collection, int slices) throws Exception {
     // wait until shards have started registering...
     int cnt = 30;
     while (!reader.getClusterState().hasCollection(collection)) {
@@ -737,8 +737,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
 
-  @SuppressWarnings("rawtypes")
   protected int sendDocsWithRetry(List<SolrInputDocument> batch, int minRf, int maxRetries, int waitBeforeRetry) throws Exception {
+    return sendDocsWithRetry(cloudClient, cloudClient.getDefaultCollection(), batch, minRf, maxRetries, waitBeforeRetry);
+  }
+
+  @SuppressWarnings("rawtypes")
+  protected static int sendDocsWithRetry(CloudSolrClient cloudClient, String collection, List<SolrInputDocument> batch, int minRf, int maxRetries, int waitBeforeRetry) throws Exception {
     UpdateRequest up = new UpdateRequest();
     up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
     up.add(batch);
@@ -746,7 +750,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     int numRetries = 0;
     while(true) {
       try {
-        resp = cloudClient.request(up);
+        resp = cloudClient.request(up, collection);
         return cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), resp);
       } catch (Exception exc) {
         Throwable rootCause = SolrException.getRootCause(exc);
@@ -1353,7 +1357,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     if (slices == null) {
       throw new RuntimeException("Could not find collection "
-          + DEFAULT_COLLECTION + " in " + clusterState.getCollections());
+          + DEFAULT_COLLECTION + " in " + clusterState.getCollectionsMap().keySet());
     }
 
     for (CloudJettyRunner cjetty : cloudJettys) {
@@ -1916,9 +1920,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (collection != null) {
       cs = clusterState.getCollection(collection).toString();
     } else {
-      Map<String,DocCollection> map = new HashMap<>();
-      for (String coll : clusterState.getCollections())
-        map.put(coll, clusterState.getCollection(coll));
+      Map<String,DocCollection> map = clusterState.getCollectionsMap();
       CharArr out = new CharArr();
       new JSONWriter(out, 2).write(map);
       cs = out.toString();
@@ -1986,12 +1988,16 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   static RequestStatusState getRequestState(String requestId, SolrClient client) throws IOException, SolrServerException {
-    CollectionAdminRequest.RequestStatus requestStatusRequest = new CollectionAdminRequest.RequestStatus();
-    requestStatusRequest.setRequestId(requestId);
-    CollectionAdminResponse response = requestStatusRequest.process(client);
+    CollectionAdminResponse response = getStatusResponse(requestId, client);
 
     NamedList innerResponse = (NamedList) response.getResponse().get("status");
     return RequestStatusState.fromKey((String) innerResponse.get("state"));
+  }
+
+  static CollectionAdminResponse getStatusResponse(String requestId, SolrClient client) throws SolrServerException, IOException {
+    CollectionAdminRequest.RequestStatus requestStatusRequest = new CollectionAdminRequest.RequestStatus();
+    requestStatusRequest.setRequestId(requestId);
+    return requestStatusRequest.process(client);
   }
 
 }

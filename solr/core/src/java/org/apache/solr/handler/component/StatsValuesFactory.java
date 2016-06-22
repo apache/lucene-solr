@@ -19,8 +19,6 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.util.*;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -33,7 +31,6 @@ import org.apache.solr.handler.component.StatsField.Stat;
 import org.apache.solr.schema.*;
 
 import com.tdunning.math.stats.AVLTreeDigest;
-import com.google.common.hash.Hashing;
 import com.google.common.hash.HashFunction;
 
 import org.apache.solr.util.hll.HLL;
@@ -547,7 +544,7 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
       if (null != min) {
         double minD = min.doubleValue();
         if (null == this.min || minD < this.minD) {
-          // Double for result & cached primitive doulbe to minimize unboxing in future comparisons
+          // Double for result & cached primitive double to minimize unboxing in future comparisons
           this.min = this.minD = minD;
         }
       }
@@ -556,7 +553,7 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
       if (null != max) {
         double maxD = max.doubleValue();
         if (null == this.max || this.maxD < maxD) {
-          // Double for result & cached primitive doulbe to minimize unboxing in future comparisons
+          // Double for result & cached primitive double to minimize unboxing in future comparisons
           this.max = this.maxD = maxD;
         }
       }

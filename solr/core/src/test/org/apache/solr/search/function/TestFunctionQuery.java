@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
@@ -86,7 +85,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  // replace \0 with the field name and create a parseable string 
+  // replace \0 with the field name and create a parsable string 
   public String func(String field, String template) {
     StringBuilder sb = new StringBuilder("{!func}");
     for (char ch : template.toCharArray()) {

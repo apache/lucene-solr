@@ -15,4 +15,3 @@
 
 org.apache.lucene.codecs.memory.MemoryDocValuesFormat
 org.apache.lucene.codecs.memory.DirectDocValuesFormat
-org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat

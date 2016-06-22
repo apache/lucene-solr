@@ -30,11 +30,10 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -367,8 +366,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     reader = writer.getReader();
     writer.close();
     searcher = newSearcher(reader);
-    LeafReader ar = SlowCompositeReaderWrapper.wrap(reader);
-    artistDocValues = ar.getSortedDocValues("artist");
+    artistDocValues = MultiDocValues.getSortedValues(reader, "artist");
 
     // All searches sort by song popularity 
     final Similarity base = searcher.getSimilarity(true);

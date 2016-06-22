@@ -30,12 +30,12 @@ import org.slf4j.LoggerFactory;
 public class RetryUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  public static interface RetryCmd {
-    public void execute() throws Throwable;
+  public interface RetryCmd {
+    void execute() throws Throwable;
   }
   
-  public static interface BooleanRetryCmd {
-    public boolean execute();
+  public interface BooleanRetryCmd {
+    boolean execute();
   }
   
   public static void retryOnThrowable(Class clazz, long timeoutms, long intervalms, RetryCmd cmd) throws Throwable {

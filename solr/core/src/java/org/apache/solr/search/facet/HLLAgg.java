@@ -17,11 +17,6 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.apache.solr.util.hll.HLL;
 import org.apache.solr.util.hll.HLLType;
 import org.apache.lucene.index.DocValues;

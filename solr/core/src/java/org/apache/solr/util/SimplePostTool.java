@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import javax.xml.bind.DatatypeConverter;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
@@ -45,6 +44,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -852,7 +852,7 @@ public class SimplePostTool {
       if(mockMode) return;
       HttpURLConnection urlc = (HttpURLConnection) url.openConnection();
       if (url.getUserInfo() != null) {
-        String encoding = DatatypeConverter.printBase64Binary(url.getUserInfo().getBytes(StandardCharsets.US_ASCII));
+        String encoding = Base64.getEncoder().encodeToString(url.getUserInfo().getBytes(StandardCharsets.US_ASCII));
         urlc.setRequestProperty("Authorization", "Basic " + encoding);
       }
       urlc.connect();
@@ -887,7 +887,7 @@ public class SimplePostTool {
         urlc.setAllowUserInteraction(false);
         urlc.setRequestProperty("Content-type", type);
         if (url.getUserInfo() != null) {
-          String encoding = DatatypeConverter.printBase64Binary(url.getUserInfo().getBytes(StandardCharsets.US_ASCII));
+          String encoding = Base64.getEncoder().encodeToString(url.getUserInfo().getBytes(StandardCharsets.US_ASCII));
           urlc.setRequestProperty("Authorization", "Basic " + encoding);
         }
         if (null != length) {

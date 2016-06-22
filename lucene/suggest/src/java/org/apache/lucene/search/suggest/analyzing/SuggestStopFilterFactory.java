@@ -16,16 +16,16 @@
  */
 package org.apache.lucene.search.suggest.analyzing;
 
+import java.io.IOException;
+import java.util.Map;
+
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WordlistLoader; // jdocs
 import org.apache.lucene.analysis.core.StopAnalyzer;
-import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.WordlistLoader; // jdocs
-
-import java.util.Map;
-import java.io.IOException;
 
 /**
  * Factory for {@link SuggestStopFilter}.

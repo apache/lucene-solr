@@ -96,8 +96,7 @@ public class TestWildcard extends LuceneTestCase {
     wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
     assertMatches(searcher, wq, 0);
     Query q = searcher.rewrite(wq);
-    assertTrue(q instanceof BooleanQuery);
-    assertEquals(0, ((BooleanQuery) q).clauses().size());
+    assertTrue(q instanceof MatchNoDocsQuery);
     reader.close();
     indexStore.close();
   }

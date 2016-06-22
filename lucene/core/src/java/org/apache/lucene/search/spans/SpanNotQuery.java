@@ -200,20 +200,21 @@ public final class SpanNotQuery extends SpanQuery {
   }
     /** Returns true iff <code>o</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (!super.equals(o))
-      return false;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  } 
 
-    SpanNotQuery other = (SpanNotQuery)o;
-    return this.include.equals(other.include)
-            && this.exclude.equals(other.exclude)
-            && this.pre == other.pre
-            && this.post == other.post;
+  private boolean equalsTo(SpanNotQuery other) { 
+    return include.equals(other.include) && 
+           exclude.equals(other.exclude) && 
+           pre == other.pre && 
+           post == other.post;
   }
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = classHash();
     h = Integer.rotateLeft(h, 1);
     h ^= include.hashCode();
     h = Integer.rotateLeft(h, 1);

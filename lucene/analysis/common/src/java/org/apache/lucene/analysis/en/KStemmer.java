@@ -55,7 +55,7 @@ the original shown below)
  */
 package org.apache.lucene.analysis.en;
 
-import org.apache.lucene.analysis.util.CharArrayMap;
+import org.apache.lucene.analysis.CharArrayMap;
 import org.apache.lucene.analysis.util.OpenStringBuilder;
 /**
  * <p>Title: Kstemmer</p>

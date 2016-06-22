@@ -1088,7 +1088,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       }
     } else {
       throw new IllegalArgumentException("Could not find collection in :"
-          + clusterState.getCollections());
+          + clusterState.getCollectionsMap());
     }
   }
 
@@ -1322,7 +1322,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     boolean changed = false;
     while(! timeout.hasTimedOut()){
       Thread.sleep(10);
-      changed = Objects.equals(val,client.getZkStateReader().getClusterProps().get(name));
+      changed = Objects.equals(val,client.getZkStateReader().getClusterProperty(name, (String) null));
       if(changed) break;
     }
     return changed;

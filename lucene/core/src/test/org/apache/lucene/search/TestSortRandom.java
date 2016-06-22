@@ -257,19 +257,21 @@ public class TestSortRandom extends LuceneTestCase {
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
-        return false;
-      }
-      RandomQuery other = (RandomQuery) obj;
-      return seed == other.seed && docValues == other.docValues;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+    
+    private boolean equalsTo(RandomQuery other) {
+      return seed == other.seed && 
+             docValues == other.docValues;
     }
 
     @Override
     public int hashCode() {
       int h = Objects.hash(seed, density);
       h = 31 * h + System.identityHashCode(docValues);
-      h = 31 * h + super.hashCode();
+      h = 31 * h + classHash();
       return h;
     }
   }

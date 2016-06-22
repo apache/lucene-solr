@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
@@ -55,11 +56,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
-import org.apache.lucene.spatial3d.geom.XYZSolid;
-import org.apache.lucene.spatial3d.geom.XYZSolidFactory;
 import org.apache.lucene.spatial3d.geom.GeoArea;
 import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
-import org.apache.lucene.spatial3d.geom.GeoBBox;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
 import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
 import org.apache.lucene.spatial3d.geom.GeoPathFactory;
@@ -71,6 +69,8 @@ import org.apache.lucene.spatial3d.geom.Plane;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.SidedPlane;
 import org.apache.lucene.spatial3d.geom.XYZBounds;
+import org.apache.lucene.spatial3d.geom.XYZSolid;
+import org.apache.lucene.spatial3d.geom.XYZSolidFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
@@ -85,14 +85,14 @@ import com.carrotsearch.randomizedtesting.generators.RandomInts;
 public class TestGeo3DPoint extends LuceneTestCase {
 
   private static Codec getCodec() {
-    if (Codec.getDefault().getName().equals("Lucene60")) {
+    if (Codec.getDefault().getName().equals("Lucene62")) {
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 16, 2048);
       double maxMBSortInHeap = 3.0 + (3*random().nextDouble());
       if (VERBOSE) {
         System.out.println("TEST: using Lucene60PointsFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
       }
 
-      return new FilterCodec("Lucene60", Codec.getDefault()) {
+      return new FilterCodec("Lucene62", Codec.getDefault()) {
         @Override
         public PointsFormat pointsFormat() {
           return new PointsFormat() {
@@ -132,7 +132,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
   }
 
   private static double toRadians(double degrees) {
-    return degrees * Geo3DPoint.RADIANS_PER_DEGREE;
+    return degrees * Geo3DUtil.RADIANS_PER_DEGREE;
   }
 
   private static class Cell {
@@ -235,6 +235,29 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
       if (VERBOSE) {
         log.println("  root cell: " + root);
+      }
+
+      // make sure the root cell (XYZBounds) does in fact contain all points that the shape contains
+      {
+        boolean fail = false;
+        for(int docID=0;docID<numDocs;docID++) {
+          if (root.contains(docs[docID]) == false) {
+            boolean expected = shape.isWithin(unquantizedDocs[docID]);
+            if (expected) {
+              log.println("    doc=" + docID + " is contained by shape but is outside the returned XYZBounds");
+              log.println("      unquantized=" + unquantizedDocs[docID]);
+              log.println("      quantized=" + docs[docID]);
+              fail = true;
+            }
+          }
+        }
+
+        if (fail) {
+          log.println("  shape=" + shape);
+          log.println("  bounds=" + bounds);
+          System.out.print(sw.toString());
+          fail("invalid bounds for shape=" + shape);
+        }
       }
 
       List<Cell> queue = new ArrayList<>();
@@ -430,7 +453,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
           } else {
             log.println("doc=" + docID + " should match but did not");
           }
-          log.println("  point=" + docs[docID]);
+          log.println("  point=" + point);
+          log.println("  mappedPoint=" + mappedPoint);
           fail = true;
         }
       }
@@ -538,8 +562,24 @@ public class TestGeo3DPoint extends LuceneTestCase {
   
   private static Query random3DQuery(final String field) {
     while (true) {
-      final int shapeType = random().nextInt(4);
+      final int shapeType = random().nextInt(5);
       switch (shapeType) {
+      case 4: {
+        // Large polygons
+        final boolean isClockwise = random().nextDouble() < 0.5;
+        try {
+          final Query q = Geo3DPoint.newLargePolygonQuery(field, makePoly(PlanetModel.WGS84,
+            new GeoPoint(PlanetModel.WGS84, toRadians(GeoTestUtil.nextLatitude()), toRadians(GeoTestUtil.nextLongitude())),
+            isClockwise,
+            true));
+          //System.err.println("Generated: "+q);
+          //assertTrue(false);
+          return q;
+        } catch (IllegalArgumentException e) {
+          continue;
+        }
+      }
+      
       case 0: {
         // Polygons
         final boolean isClockwise = random().nextDouble() < 0.5;
@@ -925,8 +965,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
           angles[i] = angle;
           accumulatedAngle += angle;
         }
-        // Pick the arc distance randomly
-        arcDistance[i] = random().nextDouble() * (Math.PI - MINIMUM_ARC_ANGLE) + MINIMUM_ARC_ANGLE;
+        // Pick the arc distance randomly; not quite the full range though
+        arcDistance[i] = random().nextDouble() * (Math.PI * 0.5 - MINIMUM_ARC_ANGLE) + MINIMUM_ARC_ANGLE;
       }
       if (clockwiseDesired) {
         // Reverse the signs
@@ -938,6 +978,15 @@ public class TestGeo3DPoint extends LuceneTestCase {
       // Now, use the pole's information plus angles and arcs to create GeoPoints in the right order.
       final List<GeoPoint> polyPoints = convertToPoints(pm, pole, angles, arcDistance);
       
+      // Next, do some holes.  No more than 2 of these.  The poles for holes must always be within the polygon, so we're
+      // going to use Geo3D to help us select those given the points we just made.
+      
+      final int holeCount = createHoles?TestUtil.nextInt(random(), 0, 2):0;
+      
+      final List<Polygon> holeList = new ArrayList<>();
+      
+      /* Hole logic is broken and needs rethinking
+      
       // Create the geo3d polygon, so we can test out our poles.
       final GeoPolygon poly;
       try {
@@ -946,14 +995,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
         // This is what happens when three adjacent points are colinear, so try again.
         continue;
       }
-      
-      // Next, do some holes.  No more than 2 of these.  The poles for holes must always be within the polygon, so we're
-      // going to use Geo3D to help us select those given the points we just made.
-      
-      final int holeCount = createHoles?TestUtil.nextInt(random(), 0, 2):0;
-      
-      final List<Polygon> holeList = new ArrayList<>();
-      
+            
       for (int i = 0; i < holeCount; i++) {
         // Choose a pole.  The poly has to be within the polygon, but it also cannot be on the polygon edge.
         // If we can't find a good pole we have to give it up and not do the hole.
@@ -979,7 +1021,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
           }
         }
       }
-
+      */
+      
       final Polygon[] holes = holeList.toArray(new Polygon[0]);
       
       // Finally, build the polygon and return it
@@ -1155,6 +1198,55 @@ public class TestGeo3DPoint extends LuceneTestCase {
         assertTrue(pointEnc.x <= point.x);
         assertTrue(pointEnc.y <= point.y);
         assertTrue(pointEnc.z <= point.z);
+      }
+    }
+  }
+
+  // poached from TestGeoEncodingUtils.testLatitudeQuantization:
+
+  /**
+   * step through some integers, ensuring they decode to their expected double values.
+   * double values start at -planetMax and increase by Geo3DUtil.DECODE for each integer.
+   * check edge cases within the double range and random doubles within the range too.
+   */
+  public void testQuantization() throws Exception {
+    Random random = random();
+    for (int i = 0; i < 10000; i++) {
+      int encoded = random.nextInt();
+      if (encoded < Geo3DUtil.MIN_ENCODED_VALUE) {
+        continue;
+      }
+      if (encoded > Geo3DUtil.MAX_ENCODED_VALUE) {
+        continue;
+      }
+      double min = encoded * Geo3DUtil.DECODE;
+      double decoded = Geo3DUtil.decodeValueFloor(encoded);
+      // should exactly equal expected value
+      assertEquals(min, decoded, 0.0D);
+      // should round-trip
+      assertEquals(encoded, Geo3DUtil.encodeValue(decoded));
+      // test within the range
+      if (encoded != Integer.MAX_VALUE) {
+        // this is the next representable value
+        // all double values between [min .. max) should encode to the current integer
+        double max = min + Geo3DUtil.DECODE;
+        assertEquals(max, Geo3DUtil.decodeValueFloor(encoded+1), 0.0D);
+        assertEquals(encoded+1, Geo3DUtil.encodeValue(max));
+
+        // first and last doubles in range that will be quantized
+        double minEdge = Math.nextUp(min);
+        double maxEdge = Math.nextDown(max);
+        assertEquals(encoded, Geo3DUtil.encodeValue(minEdge));
+        assertEquals(encoded, Geo3DUtil.encodeValue(maxEdge));
+
+        // check random values within the double range
+        long minBits = NumericUtils.doubleToSortableLong(minEdge);
+        long maxBits = NumericUtils.doubleToSortableLong(maxEdge);
+        for (int j = 0; j < 100; j++) {
+          double value = NumericUtils.sortableLongToDouble(TestUtil.nextLong(random, minBits, maxBits));
+          // round down
+          assertEquals(encoded,   Geo3DUtil.encodeValue(value));
+        }
       }
     }
   }

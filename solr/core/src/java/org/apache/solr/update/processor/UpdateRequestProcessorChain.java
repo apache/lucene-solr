@@ -30,7 +30,6 @@ import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -76,7 +75,7 @@ import java.util.Objects;
  * </ul>
  *
  * <p>
- * Allmost all processor chains should end with an instance of 
+ * Almost all processor chains should end with an instance of 
  * <code>RunUpdateProcessorFactory</code> unless the user is explicitly 
  * executing the update commands in an alternative custom 
  * <code>UpdateRequestProcessorFactory</code>.  If a chain includes 
@@ -266,17 +265,14 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
   static List<UpdateRequestProcessorFactory> getReqProcessors(String processor, SolrCore core) {
     if (processor == null) return Collections.EMPTY_LIST;
     List<UpdateRequestProcessorFactory> result = new ArrayList<>();
-    if (processor != null) {
-      List<String> names = StrUtils.splitSmart(processor, ',');
-      List<UpdateRequestProcessorFactory> l = new ArrayList<>(names.size());
-      for (String s : names) {
-        s = s.trim();
-        if (s.isEmpty()) continue;
-        UpdateRequestProcessorFactory p = core.getUpdateProcessors().get(s);
-        if (p == null)
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such processor " + s);
-        result.add(p);
-      }
+    List<String> names = StrUtils.splitSmart(processor, ',');
+    for (String s : names) {
+      s = s.trim();
+      if (s.isEmpty()) continue;
+      UpdateRequestProcessorFactory p = core.getUpdateProcessors().get(s);
+      if (p == null)
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such processor " + s);
+      result.add(p);
     }
     return result;
   }

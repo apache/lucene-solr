@@ -59,17 +59,14 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
     }
     
     @Override
-    public final boolean equals(final Object o) {
-      if (super.equals(o) == false) {
-        return false;
-      }
-      MultiTermQueryDocValuesWrapper that = (MultiTermQueryDocValuesWrapper) o;
-      return query.equals(that.query);
+    public final boolean equals(final Object other) {
+      return sameClassAs(other) &&
+             query.equals(((MultiTermQueryDocValuesWrapper) other).query);
     }
-    
+
     @Override
     public final int hashCode() {
-      return 31 * super.hashCode() + query.hashCode();
+      return 31 * classHash() + query.hashCode();
     }
     
     /** Returns the field name for this query */
@@ -169,14 +166,9 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
   }
   
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    return true;
+  public boolean equals(Object other) {
+    return other != null &&
+           getClass() == other.getClass();
   }
 
   @Override

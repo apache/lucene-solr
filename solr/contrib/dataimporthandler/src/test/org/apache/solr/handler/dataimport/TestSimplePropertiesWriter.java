@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -29,7 +28,6 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.solr.common.util.SuppressForbidden;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

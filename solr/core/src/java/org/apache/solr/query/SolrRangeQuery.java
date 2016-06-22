@@ -345,10 +345,6 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
           return -count - 1;
         }
         TermState state = termsEnum.termState();
-        if (state.isRealTerm() == false) {
-          // TermQuery does not accept fake terms for now
-          return count;
-        }
         int df = termsEnum.docFreq();
         count += df;
         terms.add(new TermAndState(BytesRef.deepCopyOf(term), state, df, termsEnum.totalTermFreq()));
@@ -433,7 +429,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       termsVisited += builder.add(termsEnum, base, liveDocs);
      */
 
-      DocIdSetBuilder builder = new DocIdSetBuilder(context.reader().maxDoc());
+      DocIdSetBuilder builder = new DocIdSetBuilder(context.reader().maxDoc(), terms);
       builder.grow((int)Math.min(Integer.MAX_VALUE,count));
       if (collectedTerms.isEmpty() == false) {
         TermsEnum termsEnum2 = terms.iterator();

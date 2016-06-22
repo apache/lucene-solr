@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 package org.apache.solr.search;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;

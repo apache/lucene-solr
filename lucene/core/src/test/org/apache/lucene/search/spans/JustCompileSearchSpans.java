@@ -48,7 +48,7 @@ final class JustCompileSearchSpans {
     public int advance(int target) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
     @Override
     public int startPosition() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
@@ -101,7 +101,17 @@ final class JustCompileSearchSpans {
     public String toString(String field) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
+    @Override
+    public boolean equals(Object o) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public int hashCode() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
   }
 
 }

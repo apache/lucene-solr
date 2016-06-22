@@ -16,8 +16,6 @@
  */
 package org.apache.solr.util;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -28,7 +26,6 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -56,6 +53,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.exec.DefaultExecuteResultHandler;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.Executor;
@@ -74,6 +72,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrClient;
@@ -88,7 +87,6 @@ import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -97,6 +95,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -104,11 +103,13 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.common.params.CommonParams.NAME;
 /**
  * Command-line utility for working with Solr.
  */
 public class SolrCLI {
-   
+
   /**
    * Defines the interface to a Solr tool that can be run from this command-line app.
    */
@@ -139,6 +140,7 @@ public class SolrCLI {
 
       int toolExitStatus = 0;
       try {
+        setBasicAuth(cli);
         runImpl(cli);
       } catch (Exception exc) {
         // since this is a CLI, spare the user the stacktrace
@@ -151,6 +153,21 @@ public class SolrCLI {
         }
       }
       return toolExitStatus;
+    }
+
+    private void setBasicAuth(CommandLine cli) throws Exception {
+      String basicauth = System.getProperty("basicauth", null);
+      if (basicauth != null) {
+        List<String> ss = StrUtils.splitSmart(basicauth, ':');
+        if (ss.size() != 2)
+          throw new Exception("Please provide 'basicauth' in the 'user:password' format");
+
+        HttpClientUtil.addRequestInterceptor((httpRequest, httpContext) -> {
+          String pair = ss.get(0) + ":" + ss.get(1);
+          byte[] encodedBytes = Base64.encodeBase64(pair.getBytes(UTF_8));
+          httpRequest.addHeader(new BasicHeader("Authorization", "Basic "+ new String(encodedBytes, UTF_8)));
+        });
+      }
     }
 
     protected abstract void runImpl(CommandLine cli) throws Exception;
@@ -1641,7 +1658,7 @@ public class SolrCLI {
       String systemInfoUrl = solrUrl+"admin/info/system";
       CloseableHttpClient httpClient = getHttpClient();
 
-      Tool tool = null;
+      ToolBase tool = null;
       try {
         Map<String, Object> systemInfo = getJson(httpClient, systemInfoUrl, 2, true);
         if ("solrcloud".equals(systemInfo.get("mode"))) {
@@ -1649,7 +1666,7 @@ public class SolrCLI {
         } else {
           tool = new CreateCoreTool(stdout);
         }
-        tool.runTool(cli);
+        tool.runImpl(cli);
       } finally {
         closeHttpClient(httpClient);
       }
@@ -1883,7 +1900,7 @@ public class SolrCLI {
           log.warn("Skipping safety checks, configuration directory "+configName+" will be deleted with impunity.");
         } else {
           // need to scan all Collections to see if any are using the config
-          Set<String> collections = zkStateReader.getClusterState().getCollections();
+          Set<String> collections = zkStateReader.getClusterState().getCollectionsMap().keySet();
 
           // give a little note to the user if there are many collections in case it takes a while
           if (collections.size() > 50)
@@ -2327,7 +2344,7 @@ public class SolrCLI {
       
       echo("\nWelcome to the SolrCloud example!\n");
 
-      Scanner readInput = prompt ? new Scanner(userInput, StandardCharsets.UTF_8.name()) : null;
+      Scanner readInput = prompt ? new Scanner(userInput, UTF_8.name()) : null;
       if (prompt) {
         echo("This interactive session will help you launch a SolrCloud cluster on your local workstation.");
 
@@ -2493,7 +2510,7 @@ public class SolrCLI {
       String solrHome = solrHomeDir.getAbsolutePath();
 
       // don't display a huge path for solr home if it is relative to the cwd
-      if (!isWindows && solrHome.startsWith(cwdPath))
+      if (!isWindows && cwdPath.length() > 1 && solrHome.startsWith(cwdPath))
         solrHome = solrHome.substring(cwdPath.length()+1);
 
       String startCmd =

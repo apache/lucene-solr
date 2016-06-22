@@ -83,10 +83,16 @@ public abstract class PrimaryNode extends Node {
 
       message("IWC:\n" + writer.getConfig());
       message("dir:\n" + writer.getDirectory());
-      message("commitData: " + writer.getCommitData());
+      message("commitData: " + writer.getLiveCommitData());
 
       // Record our primaryGen in the userData, and set initial version to 0:
-      Map<String,String> commitData = new HashMap<>(writer.getCommitData());
+      Map<String,String> commitData = new HashMap<>();
+      Iterable<Map.Entry<String,String>> iter = writer.getLiveCommitData();
+      if (iter != null) {
+        for(Map.Entry<String,String> ent : iter) {
+          commitData.put(ent.getKey(), ent.getValue());
+        }
+      }
       commitData.put(PRIMARY_GEN_KEY, Long.toString(primaryGen));
       if (commitData.get(VERSION_KEY) == null) {
         commitData.put(VERSION_KEY, "0");
@@ -94,7 +100,7 @@ public abstract class PrimaryNode extends Node {
       } else {
         message("keep current commitData version=" + commitData.get(VERSION_KEY));
       }
-      writer.setCommitData(commitData, false);
+      writer.setLiveCommitData(commitData.entrySet(), false);
 
       // We forcefully advance the SIS version to an unused future version.  This is necessary if the previous primary crashed and we are
       // starting up on an "older" index, else versions can be illegally reused but show different results:
@@ -153,10 +159,16 @@ public abstract class PrimaryNode extends Node {
   }
 
   public synchronized long getLastCommitVersion() {
-    String s = curInfos.getUserData().get(VERSION_KEY);
+    Iterable<Map.Entry<String,String>> iter = writer.getLiveCommitData();
+    assert iter != null;
+    for(Map.Entry<String,String> ent : iter) {
+      if (ent.getKey().equals(VERSION_KEY)) {
+        return Long.parseLong(ent.getValue());
+      }
+    }
+
     // In ctor we always install an initial version:
-    assert s != null;
-    return Long.parseLong(s);
+    throw new AssertionError("missing VERSION_KEY");
   }
 
   @Override
@@ -167,7 +179,7 @@ public abstract class PrimaryNode extends Node {
     // on xlog replay we are replaying more ops than necessary.
     commitData.put(VERSION_KEY, Long.toString(copyState.version));
     message("top: commit commitData=" + commitData);
-    writer.setCommitData(commitData, false);
+    writer.setLiveCommitData(commitData.entrySet(), false);
     writer.commit();
   }
 

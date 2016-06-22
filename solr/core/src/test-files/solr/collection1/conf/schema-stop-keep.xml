@@ -23,42 +23,37 @@
   -->
 
 <schema name="test" version="1.0">
-  <types>
+
+  <fieldType name="integer" class="solr.TrieIntField" precisionStep="0"/>
+
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  <fieldType name="stop-one" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.StopFilterFactory" ignoreCase="true"
+              words="stop-1.txt"/>
+
+    </analyzer>
+  </fieldType>
+  <fieldType name="stop-two" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.StopFilterFactory" ignoreCase="true"
+              words="stop-1.txt,stop-2.txt"/>
+
+    </analyzer>
+  </fieldType>
 
 
-    <fieldType name="integer" class="solr.TrieIntField" precisionStep="0"/>
-
-    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-    <fieldType name="stop-one" class="solr.TextField">
-      <analyzer>
-        <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.StopFilterFactory" ignoreCase="true"
-                words="stop-1.txt"/>
-
-      </analyzer>
-    </fieldType>
-    <fieldType name="stop-two" class="solr.TextField">
-      <analyzer>
-        <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.StopFilterFactory" ignoreCase="true"
-                words="stop-1.txt,stop-2.txt"/>
-
-      </analyzer>
-    </fieldType>
- </types>
+  <field name="id" type="integer" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="one" type="stop-one" indexed="true" stored="false"/>
+  <field name="two" type="stop-two" indexed="true" stored="false"/>
 
 
- <fields>
-   <field name="id" type="integer" indexed="true" stored="true" multiValued="false" required="false"/>
-   <field name="one" type="stop-one" indexed="true" stored="false"/>
-   <field name="two" type="stop-two" indexed="true" stored="false"/>
-
- </fields>
-
- <defaultSearchField>one</defaultSearchField>
- <uniqueKey>id</uniqueKey>
+  <defaultSearchField>one</defaultSearchField>
+  <uniqueKey>id</uniqueKey>
 
 
 </schema>

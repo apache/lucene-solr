@@ -20,7 +20,6 @@ import java.util.Iterator;
 
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
@@ -41,7 +40,7 @@ public abstract class ResultContext {
 
   public abstract Query getQuery();
 
-  // TODO: any reason to allow for retrievial of any filters as well?
+  // TODO: any reason to allow for retrieval of any filters as well?
 
   /** Note: do not use the request to get the searcher!  A cross-core request may have a different
    *  searcher (for the other core) than the original request.

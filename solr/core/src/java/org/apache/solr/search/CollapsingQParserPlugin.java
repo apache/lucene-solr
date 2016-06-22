@@ -25,15 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.carrotsearch.hppc.FloatArrayList;
-import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.IntIntHashMap;
-import com.carrotsearch.hppc.IntLongHashMap;
-import com.carrotsearch.hppc.cursors.IntIntCursor;
-import com.carrotsearch.hppc.cursors.IntLongCursor;
-
 import org.apache.commons.lang.StringUtils;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -49,13 +41,12 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
@@ -64,9 +55,8 @@ import org.apache.lucene.util.LongValues;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.QueryElevationComponent;
+import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -75,6 +65,14 @@ import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
+import org.apache.solr.uninverting.UninvertingReader;
+
+import com.carrotsearch.hppc.FloatArrayList;
+import com.carrotsearch.hppc.IntArrayList;
+import com.carrotsearch.hppc.IntIntHashMap;
+import com.carrotsearch.hppc.IntLongHashMap;
+import com.carrotsearch.hppc.cursors.IntIntCursor;
+import com.carrotsearch.hppc.cursors.IntLongCursor;
 
 /**
 
@@ -239,25 +237,25 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return false;
     }
 
+    // Only a subset of fields in hashCode/equals?
+
     public int hashCode() {
-      int hashCode = super.hashCode();
+      int hashCode = classHash();
       hashCode = 31 * hashCode + collapseField.hashCode();
       hashCode = 31 * hashCode + groupHeadSelector.hashCode();
       hashCode = 31 * hashCode + nullPolicy;
       return hashCode;
     }
 
-    public boolean equals(Object o) {
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
 
-      if(o instanceof CollapsingPostFilter) {
-        CollapsingPostFilter c = (CollapsingPostFilter)o;
-        if(this.collapseField.equals(c.collapseField) &&
-           this.groupHeadSelector.equals(c.groupHeadSelector) &&
-           this.nullPolicy == c.nullPolicy) {
-          return true;
-        }
-      }
-      return false;
+    private boolean equalsTo(CollapsingPostFilter other) {
+      return collapseField.equals(other.collapseField) &&
+             groupHeadSelector.equals(other.groupHeadSelector) &&
+             nullPolicy == other.nullPolicy;
     }
 
     public int getCost() {
@@ -2530,7 +2528,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
     
-    // LUCENE-6808 workarround
+    // LUCENE-6808 workaround
     private static Object cloneIfBytesRef(Object val) {
       if (val instanceof BytesRef) {
         return BytesRef.deepCopyOf((BytesRef) val);
@@ -2631,7 +2629,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (0 <= lastCompare) {
-        // we're either not competitive, or we're completley tied with another doc that's already group head
+        // we're either not competitive, or we're completely tied with another doc that's already group head
         // that's already been selected
         return false;
       } // else...

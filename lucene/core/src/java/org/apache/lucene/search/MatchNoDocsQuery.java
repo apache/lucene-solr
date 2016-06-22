@@ -18,22 +18,71 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.Set;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 
 /**
  * A query that matches no documents.
  */
+
 public class MatchNoDocsQuery extends Query {
+  @Override
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    return new Weight(this) {
+      @Override
+      public void extractTerms(Set<Term> terms) {
+      }
 
-    @Override
-    public Query rewrite(IndexReader reader) throws IOException {
-        // Rewrite to an empty BooleanQuery so no Scorer or Weight is required
-        return new BooleanQuery.Builder().build();
-    }
+      @Override
+      public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+        return Explanation.noMatch("");
+      }
 
-    @Override
-    public String toString(String field) {
-        return "";
-    }
+      @Override
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        return null;
+      }
+
+      @Override
+      public final float getValueForNormalization() throws IOException {
+        return 0;
+      }
+
+      @Override
+      public void normalize(float norm, float boost) {
+      }
+
+      /** Return the normalization factor for this weight. */
+      protected final float queryNorm() {
+        return 0;
+      }
+
+      /** Return the boost for this weight. */
+      protected final float boost() {
+        return 0;
+      }
+
+      /** Return the score produced by this {@link Weight}. */
+      protected final float score() {
+        return 0;
+      }
+    };
+  }
+
+  @Override
+  public String toString(String field) {
+    return "";
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return sameClassAs(o);
+  }
+
+  @Override
+  public int hashCode() {
+    return classHash();
+  }
 }

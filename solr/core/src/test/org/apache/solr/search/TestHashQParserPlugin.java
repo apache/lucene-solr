@@ -16,18 +16,13 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.lucene.util.BytesRef;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.Random;
 
@@ -199,7 +194,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!hash worker=0 workers=2 cost="+getCost(random)+"}");
-    params.add("partitionKeys", "a_s,a_i,a_l");
+    params.add("partitionKeys", "a_s,       a_i,      a_l");
     params.add("rows","50");
     set1 = new HashSet();
     response = h.query(req(params));
@@ -217,7 +212,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!hash worker=1 workers=2 cost="+getCost(random)+"}");
-    params.add("partitionKeys", "a_s,a_i,a_l");
+    params.add("partitionKeys", "a_s, a_i, a_l");
     params.add("rows","50");
     set2 = new HashSet();
     response = h.query(req(params));

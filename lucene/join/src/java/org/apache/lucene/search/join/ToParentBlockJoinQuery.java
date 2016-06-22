@@ -184,7 +184,7 @@ public class ToParentBlockJoinQuery extends Query {
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       BlockJoinScorer scorer = (BlockJoinScorer) scorer(context);
       if (scorer != null && scorer.iterator().advance(doc) == doc) {
-        return scorer.explain(context.docBase);
+        return scorer.explain(context, childWeight);
       }
       return Explanation.noMatch("Not a match");
     }
@@ -436,10 +436,24 @@ public class ToParentBlockJoinQuery extends Query {
       return parentFreq;
     }
 
-    public Explanation explain(int docBase) throws IOException {
-      int start = docBase + prevParentDoc + 1; // +1 b/c prevParentDoc is previous parent doc
-      int end = docBase + parentDoc - 1; // -1 b/c parentDoc is parent doc
-      return Explanation.match(score(), String.format(Locale.ROOT, "Score based on child doc range from %d to %d", start, end)
+    public Explanation explain(LeafReaderContext context, Weight childWeight) throws IOException {
+      int start = context.docBase + prevParentDoc + 1; // +1 b/c prevParentDoc is previous parent doc
+      int end = context.docBase + parentDoc - 1; // -1 b/c parentDoc is parent doc
+
+      Explanation bestChild = null;
+      int matches = 0;
+      for (int childDoc = start; childDoc <= end; childDoc++) {
+        Explanation child = childWeight.explain(context, childDoc - context.docBase);
+        if (child.isMatch()) {
+          matches++;
+          if (bestChild == null || child.getValue() > bestChild.getValue()) {
+            bestChild = child;
+          }
+        }
+      }
+
+      return Explanation.match(score(), String.format(Locale.ROOT,
+          "Score based on %d child docs in range from %d to %d, best match:", matches, start, end), bestChild
       );
     }
 
@@ -474,22 +488,21 @@ public class ToParentBlockJoinQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object _other) {
-    if (_other instanceof ToParentBlockJoinQuery) {
-      final ToParentBlockJoinQuery other = (ToParentBlockJoinQuery) _other;
-      return origChildQuery.equals(other.origChildQuery) &&
-        parentsFilter.equals(other.parentsFilter) &&
-        scoreMode == other.scoreMode && 
-        super.equals(other);
-    } else {
-      return false;
-    }
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(ToParentBlockJoinQuery other) {
+    return origChildQuery.equals(other.origChildQuery) &&
+           parentsFilter.equals(other.parentsFilter) &&
+           scoreMode == other.scoreMode;
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
-    int hash = super.hashCode();
+    int hash = classHash();
     hash = prime * hash + origChildQuery.hashCode();
     hash = prime * hash + scoreMode.hashCode();
     hash = prime * hash + parentsFilter.hashCode();

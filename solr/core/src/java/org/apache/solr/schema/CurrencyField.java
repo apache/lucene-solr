@@ -44,7 +44,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldValueQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;
@@ -556,7 +556,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
         @Override
         public long longVal(int doc) {
           long amount = amounts.longVal(doc);
-          // bail fast using whatever ammounts defaults to if no value
+          // bail fast using whatever amounts defaults to if no value
           // (if we don't do this early, currencyOrd may be < 0, 
           // causing index bounds exception
           if ( ! exists(doc) ) {

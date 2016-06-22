@@ -33,6 +33,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -556,14 +557,14 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
       writer.addDocument(doc);
       Map<String,String> data = new HashMap<>();
       data.put("index", i+"");
-      writer.setCommitData(data);
+      writer.setLiveCommitData(data.entrySet());
       writer.commit();
     }
     for(int i=0;i<4;i++) {
       writer.deleteDocuments(new Term("id", ""+i));
       Map<String,String> data = new HashMap<>();
       data.put("index", (4+i)+"");
-      writer.setCommitData(data);
+      writer.setLiveCommitData(data.entrySet());
       writer.commit();
     }
     writer.close();
@@ -772,4 +773,231 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     r.close();
     dir.close();
   }
+
+  /** test reopening backwards from a non-NRT reader (with document deletes) */
+  public void testNRTMdeletes() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    SnapshotDeletionPolicy snapshotter = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+    iwc.setIndexDeletionPolicy(snapshotter);
+    IndexWriter writer = new IndexWriter(dir, iwc);
+    writer.commit(); // make sure all index metadata is written out
+  
+    Document doc = new Document();
+    doc.add(new StringField("key", "value1", Field.Store.YES));
+    writer.addDocument(doc);
+ 
+    doc = new Document();
+    doc.add(new StringField("key", "value2", Field.Store.YES));
+    writer.addDocument(doc);
+    
+    writer.commit();
+    
+    IndexCommit ic1 = snapshotter.snapshot();
+    
+    doc = new Document();
+    doc.add(new StringField("key", "value3", Field.Store.YES));
+    writer.updateDocument(new Term("key", "value1"), doc);
+    
+    writer.commit();
+    
+    IndexCommit ic2 = snapshotter.snapshot();
+    DirectoryReader latest = DirectoryReader.open(ic2);
+    assertEquals(2, latest.leaves().size());
+    
+    // This reader will be used for searching against commit point 1
+    DirectoryReader oldest = DirectoryReader.openIfChanged(latest, ic1);
+    assertEquals(1, oldest.leaves().size());
+    
+    // sharing same core
+    assertSame(latest.leaves().get(0).reader().getCoreCacheKey(), oldest.leaves().get(0).reader().getCoreCacheKey());
+    
+    latest.close();
+    oldest.close();
+    
+    snapshotter.release(ic1);
+    snapshotter.release(ic2);
+    writer.close();
+    dir.close();
+  }
+  
+  /** test reopening backwards from an NRT reader (with document deletes) */
+  public void testNRTMdeletes2() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    SnapshotDeletionPolicy snapshotter = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+    iwc.setIndexDeletionPolicy(snapshotter);
+    IndexWriter writer = new IndexWriter(dir, iwc);
+    writer.commit(); // make sure all index metadata is written out
+  
+    Document doc = new Document();
+    doc.add(new StringField("key", "value1", Field.Store.YES));
+    writer.addDocument(doc);
+ 
+    doc = new Document();
+    doc.add(new StringField("key", "value2", Field.Store.YES));
+    writer.addDocument(doc);
+    
+    writer.commit();
+    
+    IndexCommit ic1 = snapshotter.snapshot();
+    
+    doc = new Document();
+    doc.add(new StringField("key", "value3", Field.Store.YES));
+    writer.updateDocument(new Term("key", "value1"), doc);
+    
+    DirectoryReader latest = DirectoryReader.open(writer);
+    assertEquals(2, latest.leaves().size());
+    
+    // This reader will be used for searching against commit point 1
+    DirectoryReader oldest = DirectoryReader.openIfChanged(latest, ic1);
+    
+    // This reader should not see the deletion:
+    assertEquals(2, oldest.numDocs());
+    assertFalse(oldest.hasDeletions());
+ 
+    snapshotter.release(ic1);
+    assertEquals(1, oldest.leaves().size());
+    
+    // sharing same core
+    assertSame(latest.leaves().get(0).reader().getCoreCacheKey(), oldest.leaves().get(0).reader().getCoreCacheKey());
+    
+    latest.close();
+    oldest.close();
+    
+    writer.close();
+    dir.close();
+  }
+ 
+  /** test reopening backwards from a non-NRT reader with DV updates */
+  public void testNRTMupdates() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    SnapshotDeletionPolicy snapshotter = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+    iwc.setIndexDeletionPolicy(snapshotter);
+    IndexWriter writer = new IndexWriter(dir, iwc);
+    writer.commit(); // make sure all index metadata is written out
+  
+    Document doc = new Document();
+    doc.add(new StringField("key", "value1", Field.Store.YES));
+    doc.add(new NumericDocValuesField("dv", 1));
+    writer.addDocument(doc);
+    
+    writer.commit();
+    
+    IndexCommit ic1 = snapshotter.snapshot();
+    
+    writer.updateNumericDocValue(new Term("key", "value1"), "dv", 2);
+    
+    writer.commit();
+    
+    IndexCommit ic2 = snapshotter.snapshot();
+    DirectoryReader latest = DirectoryReader.open(ic2);
+    assertEquals(1, latest.leaves().size());
+    
+    // This reader will be used for searching against commit point 1
+    DirectoryReader oldest = DirectoryReader.openIfChanged(latest, ic1);
+    assertEquals(1, oldest.leaves().size());
+    
+    // sharing same core
+    assertSame(latest.leaves().get(0).reader().getCoreCacheKey(), oldest.leaves().get(0).reader().getCoreCacheKey());
+    
+    assertEquals(1, getOnlyLeafReader(oldest).getNumericDocValues("dv").get(0));
+    assertEquals(2, getOnlyLeafReader(latest).getNumericDocValues("dv").get(0));
+    
+    latest.close();
+    oldest.close();
+    
+    snapshotter.release(ic1);
+    snapshotter.release(ic2);
+    writer.close();
+    dir.close();
+  }
+ 
+  /** test reopening backwards from an NRT reader with DV updates */
+  public void testNRTMupdates2() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    SnapshotDeletionPolicy snapshotter = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+    iwc.setIndexDeletionPolicy(snapshotter);
+    IndexWriter writer = new IndexWriter(dir, iwc);
+    writer.commit(); // make sure all index metadata is written out
+  
+    Document doc = new Document();
+    doc.add(new StringField("key", "value1", Field.Store.YES));
+    doc.add(new NumericDocValuesField("dv", 1));
+    writer.addDocument(doc);
+    
+    writer.commit();
+    
+    IndexCommit ic1 = snapshotter.snapshot();
+    
+    writer.updateNumericDocValue(new Term("key", "value1"), "dv", 2);
+    
+    DirectoryReader latest = DirectoryReader.open(writer);
+    assertEquals(1, latest.leaves().size());
+    
+    // This reader will be used for searching against commit point 1
+    DirectoryReader oldest = DirectoryReader.openIfChanged(latest, ic1);
+    assertEquals(1, oldest.leaves().size());
+    
+    // sharing same core
+    assertSame(latest.leaves().get(0).reader().getCoreCacheKey(), oldest.leaves().get(0).reader().getCoreCacheKey());
+    
+    assertEquals(1, getOnlyLeafReader(oldest).getNumericDocValues("dv").get(0));
+    assertEquals(2, getOnlyLeafReader(latest).getNumericDocValues("dv").get(0));
+    
+    latest.close();
+    oldest.close();
+    
+    snapshotter.release(ic1);
+    writer.close();
+    dir.close();
+  }
+  
+  // LUCENE-5931: we make a "best effort" to catch this abuse and throw a clear(er)
+  // exception than what would otherwise look like hard to explain index corruption during searching
+  public void testDeleteIndexFilesWhileReaderStillOpen() throws Exception {
+    RAMDirectory dir = new RAMDirectory();
+    IndexWriter w = new IndexWriter(dir,
+                                    new IndexWriterConfig(new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(newStringField("field", "value", Field.Store.NO));
+    w.addDocument(doc);
+    // Creates single segment index:
+    w.close();
+ 
+    DirectoryReader r = DirectoryReader.open(dir);
+ 
+    // Abuse: remove all files while reader is open; one is supposed to use IW.deleteAll, or open a new IW with OpenMode.CREATE instead:
+    for(String file : dir.listAll()) {
+      dir.deleteFile(file);
+    }
+ 
+    w = new IndexWriter(dir,
+                        new IndexWriterConfig(new MockAnalyzer(random())));
+    doc = new Document();
+    doc.add(newStringField("field", "value", Field.Store.NO));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(newStringField("field", "value2", Field.Store.NO));
+    w.addDocument(doc);
+
+    // Writes same segment, this time with two documents:
+    w.commit();
+
+    w.deleteDocuments(new Term("field", "value2"));
+
+    w.addDocument(doc);
+
+    // Writes another segments file, so openIfChanged sees that the index has in fact changed:
+    w.close();
+ 
+    expectThrows(IllegalStateException.class, () -> {
+      DirectoryReader.openIfChanged(r);
+    });
+  }
 }
+
+

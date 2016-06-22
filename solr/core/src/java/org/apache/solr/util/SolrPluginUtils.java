@@ -16,6 +16,10 @@
  */
 package org.apache.solr.util;
 
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.MethodDescriptor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
@@ -49,7 +53,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -1066,8 +1069,8 @@ public class SolrPluginUtils {
       String key = entry.getKey();
       String setterName = "set" + String.valueOf(Character.toUpperCase(key.charAt(0))) + key.substring(1);
       try {
-        final Method method = findSetter(clazz, setterName, key);
         final Object val = entry.getValue();
+        final Method method = findSetter(clazz, setterName, key, val.getClass());
         method.invoke(bean, val);
       } catch (InvocationTargetException | IllegalAccessException e1) {
         throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName(), e1);
@@ -1075,10 +1078,21 @@ public class SolrPluginUtils {
     }
   }
 
-  private static Method findSetter(Class<?> clazz, String setterName, String key) {
-    for (Method m : clazz.getMethods()) {
-      if (m.getName().equals(setterName) && m.getParameterTypes().length == 1) {
-        return m;
+  private static Method findSetter(Class<?> clazz, String setterName, String key, Class<?> paramClazz) {
+    BeanInfo beanInfo;
+    try {
+      beanInfo = Introspector.getBeanInfo(clazz);
+    } catch (IntrospectionException ie) {
+      throw new RuntimeException("Error getting bean info for class : " + clazz.getName(), ie);
+    }
+    for (final boolean matchParamClazz: new boolean[]{true, false}) {
+      for (final MethodDescriptor desc : beanInfo.getMethodDescriptors()) {
+        final Method m = desc.getMethod();
+        final Class<?> p[] = m.getParameterTypes();
+        if (m.getName().equals(setterName) && p.length == 1 &&
+            (!matchParamClazz || paramClazz.equals(p[0]))) {
+          return m;
+        }
       }
     }
     throw new RuntimeException("No setter corrresponding to '" + key + "' in " + clazz.getName());

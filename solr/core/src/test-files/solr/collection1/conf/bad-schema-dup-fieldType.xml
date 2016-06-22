@@ -17,28 +17,22 @@
 -->
 
 <schema name="bad-schema-dup-fieldType" version="1.0">
-  <types>
-    
-    <fieldType name="text" class="solr.TextField" />
-    <fieldType name="string" class="solr.StrField"/>
-    
-    <!-- BEGIN BAD STUFF -->
-    <fieldType name="ftAgain" class="solr.TrieIntField"/>
-    <fieldType name="ftAgain" class="solr.TrieIntField"/>
-    <!-- END BAD STUFF -->
-    
- </types>
+
+  <fieldType name="text" class="solr.TextField"/>
+  <fieldType name="string" class="solr.StrField"/>
+
+  <!-- BEGIN BAD STUFF -->
+  <fieldType name="ftAgain" class="solr.TrieIntField"/>
+  <fieldType name="ftAgain" class="solr.TrieIntField"/>
+  <!-- END BAD STUFF -->
+
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+
+  <field name="signatureField" type="string" indexed="true" stored="false"/>
+  <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
 
 
- <fields>
-   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-   
-   <field name="signatureField" type="string" indexed="true" stored="false"/>
-   <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
-
- </fields>
-
- <defaultSearchField>id</defaultSearchField>
- <uniqueKey>id</uniqueKey>
+  <defaultSearchField>id</defaultSearchField>
+  <uniqueKey>id</uniqueKey>
 
 </schema>

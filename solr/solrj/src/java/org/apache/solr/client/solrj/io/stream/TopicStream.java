@@ -56,6 +56,9 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.Logger;
@@ -75,6 +78,8 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
   private Map<String, Long> checkpoints = new HashMap<String, Long>();
   private String checkpointCollection;
 
+  // Use TopicStream that takes a SolrParams
+  @Deprecated
   public TopicStream(String zkHost,
                      String checkpointCollection,
                      String collection,
@@ -86,25 +91,42 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
          collection,
          id,
          checkpointEvery,
-         params);
+         new MapSolrParams(params));
   }
+
+  public TopicStream(String zkHost,
+                     String checkpointCollection,
+                     String collection,
+                     String id,
+                     long checkpointEvery,
+                     SolrParams params) {
+    init(zkHost,
+        checkpointCollection,
+        collection,
+        id,
+        checkpointEvery,
+        params);
+  }
+
 
   private void init(String zkHost,
                     String checkpointCollection,
                     String collection,
                     String id,
                     long checkpointEvery,
-                    Map<String, String> params) {
+                    SolrParams params) {
     this.zkHost  = zkHost;
-    this.params  = params;
+    ModifiableSolrParams mParams = new ModifiableSolrParams(params);
+    
+    if(mParams.getParams("rows") == null) {
+      mParams.set("rows", "500");
+    }
+    this.params  = mParams; 
     this.collection = collection;
     this.checkpointCollection = checkpointCollection;
     this.checkpointEvery = checkpointEvery;
     this.id = id;
     this.comp = new FieldComparator("_version_", ComparatorOrder.ASCENDING);
-    if(!params.containsKey("rows")) {
-      params.put("rows", "500");
-    }
   }
 
   public TopicStream(StreamExpression expression, StreamFactory factory) throws IOException{
@@ -147,12 +169,12 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
     }
 
-    Map<String,String> params = new HashMap<String,String>();
+    ModifiableSolrParams params = new ModifiableSolrParams();
     for(StreamExpressionNamedParameter namedParam : namedParams){
       if(!namedParam.getName().equals("zkHost") &&
           !namedParam.getName().equals("id") &&
           !namedParam.getName().equals("checkpointEvery")) {
-        params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
+        params.set(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
 
@@ -189,8 +211,9 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     // collection
     expression.addParameter(collection);
 
-    for(Entry<String,String> param : params.entrySet()) {
-      String value = param.getValue();
+    ModifiableSolrParams mParams = new ModifiableSolrParams(params);
+    for(Entry<String, String[]> param : mParams.getMap().entrySet()) {
+      String value = String.join(",", param.getValue());
 
       // SOLR-8409: This is a special case where the params contain a " character
       // Do note that in any other BASE streams with parameters where a " might come into play
@@ -226,8 +249,10 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
         // parallel stream.
       
       child.setImplementingClass("Solr/Lucene");
-      child.setExpressionType(ExpressionType.DATASTORE);    
-      child.setExpression(params.entrySet().stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue())).collect(Collectors.joining(",")));
+      child.setExpressionType(ExpressionType.DATASTORE);
+      
+      ModifiableSolrParams mParams = new ModifiableSolrParams(params);
+      child.setExpression(mParams.getMap().entrySet().stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue())).collect(Collectors.joining(",")));
       explanation.addChild(child);
     }
     
@@ -254,8 +279,8 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     this.solrStreams = new ArrayList();
     this.eofTuples = Collections.synchronizedMap(new HashMap());
 
-    if(cache != null) {
-      cloudSolrClient = cache.getCloudSolrClient(zkHost);
+    if(streamContext.getSolrClientCache() != null) {
+      cloudSolrClient = streamContext.getSolrClientCache().getCloudSolrClient(zkHost);
     } else {
       cloudSolrClient = new Builder()
           .withZkHost(zkHost)
@@ -313,7 +338,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
         }
       }
 
-      if (cache == null) {
+      if (streamContext.getSolrClientCache() == null) {
         cloudSolrClient.close();
       }
     }
@@ -369,11 +394,11 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
   private long getCheckpoint(Slice slice, Set<String> liveNodes) throws IOException {
     Collection<Replica> replicas = slice.getReplicas();
     long checkpoint = -1;
-    Map params = new HashMap();
-    params.put("q","*:*");
-    params.put("sort", "_version_ desc");
-    params.put("distrib", "false");
-    params.put("rows", 1);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("q","*:*");
+    params.set("sort", "_version_ desc");
+    params.set("distrib", "false");
+    params.set("rows", 1);
     for(Replica replica : replicas) {
       if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
         String coreUrl = replica.getCoreUrl();
@@ -432,7 +457,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
         if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())){
 
 
-          HttpSolrClient httpClient = cache.getHttpSolrClient(replica.getCoreUrl());
+          HttpSolrClient httpClient = streamContext.getSolrClientCache().getHttpSolrClient(replica.getCoreUrl());
           try {
 
             SolrDocument doc = httpClient.getById(id);
@@ -463,33 +488,33 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
       Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
 
-      if(slices == null) {
+      if (slices == null) {
         //Try case insensitive match
-        for(String col : clusterState.getCollections()) {
-          if(col.equalsIgnoreCase(collection)) {
-            slices = clusterState.getActiveSlices(col);
+        Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
+        for (Map.Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
+          if (entry.getKey().equalsIgnoreCase(collection)) {
+            slices = entry.getValue().getActiveSlices();
             break;
           }
         }
 
-        if(slices == null) {
+        if (slices == null) {
           throw new Exception("Collection not found:" + this.collection);
         }
       }
-
-      params.put("distrib", "false"); // We are the aggregator.
-      String fl = params.get("fl");
-      params.put("sort", "_version_ asc");
+      ModifiableSolrParams mParams = new ModifiableSolrParams(params);
+      mParams.set("distrib", "false"); // We are the aggregator.
+      String fl = mParams.get("fl");
+      mParams.set("sort", "_version_ asc");
       if(!fl.contains("_version_")) {
         fl += ",_version_";
       }
-      params.put("fl", fl);
+      mParams.set("fl", fl);
 
       Random random = new Random();
 
       for(Slice slice : slices) {
-        Map localParams = new HashMap();
-        localParams.putAll(params);
+        ModifiableSolrParams localParams = new ModifiableSolrParams(mParams);
         long checkpoint = checkpoints.get(slice.getName());
 
         Collection<Replica> replicas = slice.getReplicas();

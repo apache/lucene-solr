@@ -129,17 +129,19 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (! super.equals(o)) {
-      return false;
-    }
-    SpanContainQuery other = (SpanContainQuery)o;
-    return big.equals(other.big) && little.equals(other.little);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  } 
+  
+  private boolean equalsTo(SpanContainQuery other) {
+    return big.equals(other.big) && 
+           little.equals(other.little);
   }
 
   @Override
   public int hashCode() {
-    int h = Integer.rotateLeft(super.hashCode(), 1);
+    int h = Integer.rotateLeft(classHash(), 1);
     h ^= big.hashCode();
     h = Integer.rotateLeft(h, 1);
     h ^= little.hashCode();

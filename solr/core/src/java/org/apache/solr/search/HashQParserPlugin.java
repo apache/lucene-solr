@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReaderContext;
@@ -38,7 +39,6 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -69,6 +69,7 @@ public class HashQParserPlugin extends QParserPlugin {
       int workers = localParams.getInt("workers");
       int worker = localParams.getInt("worker");
       String keys = params.get("partitionKeys");
+      keys = keys.replace(" ", "");
       return new HashQuery(keys, workers, worker);
     }
   }
@@ -88,15 +89,21 @@ public class HashQParserPlugin extends QParserPlugin {
     }
 
     public int hashCode() {
-      return 31 * super.hashCode() + keysParam.hashCode()+workers+worker;
+      return classHash() + 
+          31 * keysParam.hashCode() + 
+          31 * workers + 
+          31 * worker;
     }
 
-    public boolean equals(Object o) {
-      if (super.equals(o) == false) {
-        return false;
-      }
-      HashQuery h = (HashQuery)o;
-      return keysParam.equals(h.keysParam) && workers == h.workers && worker == h.worker;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+
+    private boolean equalsTo(HashQuery other) {
+      return keysParam.equals(other.keysParam) && 
+             workers == other.workers && 
+             worker == other.worker;
     }
 
     public HashQuery(String keysParam, int workers, int worker) {
@@ -140,6 +147,21 @@ public class HashQParserPlugin extends QParserPlugin {
 
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits bits) {
         return BitsFilteredDocIdSet.wrap(new BitDocIdSet(bitSets[context.ord]), bits);
+      }
+
+      @Override
+      public boolean equals(Object other) {
+        return sameClassAs(other) &&
+               equalsTo(getClass().cast(other));
+      }
+
+      private boolean equalsTo(BitsFilter other) {
+        return Arrays.equals(bitSets, other.bitSets);
+      }
+
+      @Override
+      public int hashCode() {
+        return classHash() + Arrays.asList(bitSets).hashCode();
       }
     }
 

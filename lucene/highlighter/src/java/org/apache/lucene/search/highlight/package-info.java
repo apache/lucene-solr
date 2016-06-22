@@ -86,10 +86,10 @@
  * A subtle use of color can help emphasise the reasons for matching (useful when doing "MoreLikeThis" queries and
  * you want to see what the basis of the similarities are).</p>
  * 
- * <p>The QueryScorer class has a new constructor which can use an IndexReader to derive the IDF (inverse document frequency)
+ * <p>The QueryScorer class has constructors that use an IndexReader to derive the IDF (inverse document frequency)
  * for each term in order to influence the score. This is useful for helping to extracting the most significant sections
  * of a document and in supplying scores used by the new GradientFormatter to color significant words more strongly.
- * The QueryScorer.getMaxWeight method is useful when passed to the GradientFormatter constructor to define the top score
+ * The QueryScorer.getMaxTermWeight method is useful when passed to the GradientFormatter constructor to define the top score
  * which is associated with the top color.</p>
  */
 package org.apache.lucene.search.highlight;

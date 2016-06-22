@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -104,8 +103,9 @@ public class ReplicaAssigner {
     validateTags(nodeVsTags);
 
     if (clusterState != null) {
-      for (String s : clusterState.getCollections()) {
-        DocCollection coll = clusterState.getCollection(s);
+      Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+      for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+        DocCollection coll = entry.getValue();
         for (Slice slice : coll.getSlices()) {
           for (Replica replica : slice.getReplicas()) {
             AtomicInteger count = nodeVsCores.get(replica.getNodeName());

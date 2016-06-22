@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XML;
 import org.w3c.dom.Document;

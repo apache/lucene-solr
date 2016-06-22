@@ -18,9 +18,7 @@ package org.apache.solr.cloud.overseer;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.Overseer;
@@ -229,7 +227,6 @@ public class ZkStateWriter {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
             if (reader.getZkClient().exists(path, true)) {
               log.info("going to update_collection {} version: {}", path, c.getZNodeVersion());
-              assert c.getZNodeVersion() >= 0;
               Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
               DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion(), path);
               clusterState = clusterState.copyWith(name, newCollection);
@@ -251,13 +248,9 @@ public class ZkStateWriter {
         assert clusterState.getZkClusterStateVersion() >= 0;
         byte[] data = Utils.toJSON(clusterState);
         Stat stat = reader.getZkClient().setData(ZkStateReader.CLUSTER_STATE, data, clusterState.getZkClusterStateVersion(), true);
-        Set<String> collectionNames = clusterState.getCollections();
-        Map<String, DocCollection> collectionStates = new HashMap<>(collectionNames.size());
-        for (String c : collectionNames) {
-          collectionStates.put(c, clusterState.getCollection(c));
-        }
+        Map<String, DocCollection> collections = clusterState.getCollectionsMap();
         // use the reader's live nodes because our cluster state's live nodes may be stale
-        clusterState = new ClusterState(stat.getVersion(), reader.getClusterState().getLiveNodes(), collectionStates);
+        clusterState = new ClusterState(stat.getVersion(), reader.getClusterState().getLiveNodes(), collections);
         isClusterStateModified = false;
       }
       lastUpdatedTime = System.nanoTime();

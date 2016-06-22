@@ -151,7 +151,7 @@ public final class ZkController {
   private final int localHostPort;      // example: 54065
   private final String hostName;           // example: 127.0.0.1
   private final String nodeName;           // example: 127.0.0.1:54065_solr
-  private final String baseURL;            // example: http://127.0.0.1:54065/solr
+  private String baseURL;            // example: http://127.0.0.1:54065/solr
 
   private final CloudConfig cloudConfig;
 
@@ -385,8 +385,6 @@ public final class ZkController {
     zkStateReader = new ZkStateReader(zkClient, () -> {
       if (cc != null) cc.securityNodeChanged();
     });
-
-    this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
 
     init(registerOnReconnect);
   }
@@ -642,6 +640,7 @@ public final class ZkController {
     try {
       createClusterZkNodes(zkClient);
       zkStateReader.createClusterStateWatchersAndUpdate();
+      this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
 
       // start the overseer first as following code may need it's processing
       if (!zkRunOnly) {
@@ -683,20 +682,17 @@ public final class ZkController {
       InterruptedException {
 
     publishNodeAsDown(getNodeName());
-
     
     // now wait till the updates are in our state
     long now = System.nanoTime();
     long timeout = now + TimeUnit.NANOSECONDS.convert(WAIT_DOWN_STATES_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-    boolean foundStates = true;
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> collections = clusterState.getCollections();
-    
+
     while (System.nanoTime() < timeout) {
-      clusterState = zkStateReader.getClusterState();
-      collections = clusterState.getCollections();
-      for (String collectionName : collections) {
-        DocCollection collection = clusterState.getCollection(collectionName);
+      boolean foundStates = true;
+      ClusterState clusterState = zkStateReader.getClusterState();
+      Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+      for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+        DocCollection collection = entry.getValue();
         Collection<Slice> slices = collection.getSlices();
         for (Slice slice : slices) {
           Collection<Replica> replicas = slice.getReplicas();
@@ -708,16 +704,13 @@ public final class ZkController {
         }
       }
 
-      if (foundStates) {
-        Thread.sleep(1000);
-        break;
-      }
       Thread.sleep(1000);
-    }
-    if (!foundStates) {
-      log.warn("Timed out waiting to see all nodes published as DOWN in our cluster state.");
+      if (foundStates) {
+        return;
+      }
     }
 
+    log.warn("Timed out waiting to see all nodes published as DOWN in our cluster state.");
   }
 
   /**
@@ -1217,23 +1210,10 @@ public final class ZkController {
     if (context != null) {
       context.cancelElection();
     }
-    
-    final Collection<SolrCore> cores = cc.getCores();
-    
-    // if there is no SolrCore which is a member of this collection, remove the watch
+
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
-    boolean removeWatch = true;
-    for (SolrCore solrCore : cores) {
-      final CloudDescriptor cloudDesc = solrCore.getCoreDescriptor().getCloudDescriptor();
-      if (cloudDesc != null && cloudDescriptor.getCollectionName().equals(cloudDesc.getCollectionName())) {
-        removeWatch = false;
-        break;
-      }
-    }
-    
-    if (removeWatch) {
-      zkStateReader.removeZKWatch(collection);
-    }
+    zkStateReader.unregisterCore(cloudDescriptor.getCollectionName());
+
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
         OverseerAction.DELETECORE.toLower(), ZkStateReader.CORE_NAME_PROP, coreName,
         ZkStateReader.NODE_NAME_PROP, getNodeName(),
@@ -1483,7 +1463,7 @@ public final class ZkController {
               "Collection {} not visible yet, but flagging it so a watch is registered when it becomes visible" :
               "Registering watch for collection {}",
           collectionName);
-      zkStateReader.addCollectionWatch(collectionName);
+      zkStateReader.registerCore(collectionName);
     } catch (KeeperException e) {
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
@@ -1503,7 +1483,7 @@ public final class ZkController {
   }
 
   private void checkStateInZk(CoreDescriptor cd) throws InterruptedException {
-    if (!Overseer.isLegacy(zkStateReader.getClusterProps())) {
+    if (!Overseer.isLegacy(zkStateReader)) {
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
       String coreNodeName = cloudDesc.getCoreNodeName();
       assert coreNodeName != null : "SolrCore: " + cd.getName() + " has no coreNodeName";

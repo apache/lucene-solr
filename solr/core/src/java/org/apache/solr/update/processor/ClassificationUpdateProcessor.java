@@ -10,7 +10,7 @@ import org.apache.lucene.classification.document.DocumentClassifier;
 import org.apache.lucene.classification.document.KNearestNeighborDocumentClassifier;
 import org.apache.lucene.classification.document.SimpleNaiveBayesDocumentClassifier;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.IndexSchema;
@@ -60,7 +60,7 @@ class ClassificationUpdateProcessor
    * @param schema          schema
    */
   public ClassificationUpdateProcessor(String[] inputFieldNames, String classFieldName, int minDf, int minTf, int k, String algorithm,
-                                       UpdateRequestProcessor next, LeafReader indexReader, IndexSchema schema) {
+                                       UpdateRequestProcessor next, IndexReader indexReader, IndexSchema schema) {
     super(next);
     this.classFieldName = classFieldName;
     Map<String, Analyzer> field2analyzer = new HashMap<String, Analyzer>();
@@ -80,7 +80,7 @@ class ClassificationUpdateProcessor
   }
 
   /**
-   * @param cmd the update command in input conaining the Document to classify
+   * @param cmd the update command in input containing the Document to classify
    * @throws IOException If there is a low-level I/O error
    */
   @Override

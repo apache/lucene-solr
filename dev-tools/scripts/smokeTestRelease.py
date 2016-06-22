@@ -189,11 +189,11 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
       'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
       # Make sure 1.8 compiler was used to build release bits:
-      'X-Compile-Source-JDK: 1.8',
+      'X-Compile-Source-JDK: 8',
       # Make sure 1.8 ant was used to build release bits: (this will match 1.8+)
       'Ant-Version: Apache Ant 1.8',
       # Make sure .class files are 1.8 format:
-      'X-Compile-Target-JDK: 1.8',
+      'X-Compile-Target-JDK: 8',
       'Specification-Version: %s' % version,
       # Make sure the release was compiled with 1.8:
       'Created-By: 1.8'):
@@ -645,7 +645,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
     # TODO: clean this up to not be a list of modules that we must maintain
     extras = ('analysis', 'backward-codecs', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'expressions', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial', 'spatial-extras', 'spatial3d', 'suggest', 'test-framework', 'licenses')
     if isSrc:
-      extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'ivy-settings.xml', 'ivy-versions.properties', 'ivy-ignore-conflicts.properties', 'version.properties', 'tools', 'site')
+      extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'top-level-ivy-settings.xml', 'default-nested-ivy-settings.xml', 'ivy-versions.properties', 'ivy-ignore-conflicts.properties', 'version.properties', 'tools', 'site')
   else:
     extras = ()
 
@@ -1192,7 +1192,7 @@ revision_re = re.compile(r'rev([a-f\d]+)')
 def parse_config():
   epilogue = textwrap.dedent('''
     Example usage:
-    python3.2 -u dev-tools/scripts/smokeTestRelease.py http://people.apache.org/~whoever/staging_area/lucene-solr-4.3.0-RC1-rev1469340
+    python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC2-revc7510a0...
   ''')
   description = 'Utility to test a release.'
   parser = argparse.ArgumentParser(description=description, epilog=epilogue,
@@ -1352,8 +1352,25 @@ def confirmAllReleasesAreTestedForBackCompat(smokeVersion, unpackPath):
   else:
     print('    success!')
 
+def getScriptVersion():
+  topLevelDir = '../..'                       # Assumption: this script is in dev-tools/scripts/ of a checkout
+  m = re.compile(r'(.*)/').match(sys.argv[0]) # Get this script's directory
+  if m is not None and m.group(1) != '.':
+    origCwd = os.getcwd()
+    os.chdir(m.group(1))
+    os.chdir('../..')
+    topLevelDir = os.getcwd()
+    os.chdir(origCwd)
+  reBaseVersion = re.compile(r'version\.base\s*=\s*(\d+\.\d+)')
+  return reBaseVersion.search(open('%s/lucene/version.properties' % topLevelDir).read()).group(1)
+
 def main():
   c = parse_config()
+
+  scriptVersion = getScriptVersion()
+  if not c.version.startswith(scriptVersion + '.'):
+    raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
+
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
   smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, ' '.join(c.test_args))
 

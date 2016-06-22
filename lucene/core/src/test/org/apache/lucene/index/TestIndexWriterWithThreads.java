@@ -578,9 +578,6 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   // LUCENE-4147
   public void testRollbackAndCommitWithThreads() throws Exception {
     final BaseDirectoryWrapper d = newDirectory();
-    if (d instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)d).setPreventDoubleWrite(false);
-    }
 
     final int threadCount = TestUtil.nextInt(random(), 2, 6);
 

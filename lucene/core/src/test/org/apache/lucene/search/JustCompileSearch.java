@@ -28,7 +28,7 @@ import org.apache.lucene.util.PriorityQueue;
 
 /**
  * Holds all implementations of classes in the o.a.l.search package as a
- * back-compatibility test. It does not run any tests per-se, however if 
+ * back-compatibility test. It does not run any tests per-se, however if
  * someone adds a method to an interface or abstract method to an abstract
  * class, one of the implementations here will fail to compile and so we know
  * back-compat policy was violated.
@@ -59,7 +59,7 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }
-  
+
   static final class JustCompileDocIdSet extends DocIdSet {
 
     @Override
@@ -84,18 +84,18 @@ final class JustCompileSearch {
     public int nextDoc() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
     @Override
     public int advance(int target) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
     @Override
     public long cost() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }
-  
+
   static final class JustCompileFieldComparator extends FieldComparator<Object> {
 
     @Override
@@ -126,7 +126,7 @@ final class JustCompileSearch {
         int sortPos, boolean reversed) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
   }
 
   static final class JustCompileFilteredDocIdSetIterator extends FilteredDocIdSetIterator {
@@ -139,7 +139,7 @@ final class JustCompileSearch {
     protected boolean match(int doc) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
     @Override
     public long cost() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
@@ -152,9 +152,18 @@ final class JustCompileSearch {
     public String toString(String field) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
+    @Override
+    public boolean equals(Object obj) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public int hashCode() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
   }
-  
+
   static final class JustCompileScorer extends Scorer {
 
     protected JustCompileScorer(Weight weight) {
@@ -165,7 +174,7 @@ final class JustCompileSearch {
     public float score() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
     @Override
     public int freq() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
@@ -181,7 +190,7 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }
-  
+
   static final class JustCompileSimilarity extends Similarity {
 
     @Override
@@ -264,5 +273,5 @@ final class JustCompileSearch {
     }
 
   }
-  
+
 }

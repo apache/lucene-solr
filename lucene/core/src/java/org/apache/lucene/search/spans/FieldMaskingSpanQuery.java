@@ -95,8 +95,6 @@ public final class FieldMaskingSpanQuery extends SpanQuery {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    FieldMaskingSpanQuery clone = null;
-
     SpanQuery rewritten = (SpanQuery) maskedQuery.rewrite(reader);
     if (rewritten != maskedQuery) {
       return new FieldMaskingSpanQuery(rewritten, field);
@@ -117,20 +115,20 @@ public final class FieldMaskingSpanQuery extends SpanQuery {
   }
   
   @Override
-  public boolean equals(Object o) {
-    if (! super.equals(o)) {
-      return false;
-    }
-    FieldMaskingSpanQuery other = (FieldMaskingSpanQuery) o;
-    return (this.getField().equals(other.getField())
-            && this.getMaskedQuery().equals(other.getMaskedQuery()));
-
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
   }
   
+  private boolean equalsTo(FieldMaskingSpanQuery other) {
+    return getField().equals(other.getField()) && 
+           getMaskedQuery().equals(other.getMaskedQuery());
+  }
+
   @Override
   public int hashCode() {
-    return super.hashCode()
-          ^ getMaskedQuery().hashCode()
-          ^ getField().hashCode();
+    return classHash() ^ 
+           getMaskedQuery().hashCode() ^ 
+           getField().hashCode();
   }
 }

@@ -18,13 +18,13 @@ package org.apache.solr.search.join;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.JoinUtil;
 import org.apache.lucene.search.join.ScoreMode;
-import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -37,7 +37,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SearchParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -49,6 +48,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.RefCounted;
 
 /**
@@ -77,7 +77,6 @@ import org.apache.solr.util.RefCounted;
 public class ScoreJoinQParserPlugin extends QParserPlugin {
 
   public static final String SCORE = "score";
-  //private CloudDescriptor cloudDescriptor; 
 
   static class OtherCoreJoinQuery extends SameCoreJoinQuery {
     private final String fromIndex;
@@ -180,34 +179,25 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     @Override
     public int hashCode() {
       final int prime = 31;
-      int result = super.hashCode();
-      result = prime * result
-          + ((fromField == null) ? 0 : fromField.hashCode());
-      result = prime * result
-          + ((fromQuery == null) ? 0 : fromQuery.hashCode());
-      result = prime * result
-          + ((scoreMode == null) ? 0 : scoreMode.hashCode());
-      result = prime * result + ((toField == null) ? 0 : toField.hashCode());
+      int result = classHash();
+      result = prime * result + Objects.hashCode(fromField);
+      result = prime * result + Objects.hashCode(fromQuery);
+      result = prime * result + Objects.hashCode(scoreMode);
+      result = prime * result + Objects.hashCode(toField);
       return result;
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (this == obj) return true;
-      if (!super.equals(obj)) return false;
-      if (getClass() != obj.getClass()) return false;
-      SameCoreJoinQuery other = (SameCoreJoinQuery) obj;
-      if (fromField == null) {
-        if (other.fromField != null) return false;
-      } else if (!fromField.equals(other.fromField)) return false;
-      if (fromQuery == null) {
-        if (other.fromQuery != null) return false;
-      } else if (!fromQuery.equals(other.fromQuery)) return false;
-      if (scoreMode != other.scoreMode) return false;
-      if (toField == null) {
-        if (other.toField != null) return false;
-      } else if (!toField.equals(other.toField)) return false;
-      return true;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+
+    private boolean equalsTo(SameCoreJoinQuery other) {
+      return Objects.equals(fromField, other.fromField) &&
+             Objects.equals(fromQuery, other.fromQuery) &&
+             Objects.equals(scoreMode, other.scoreMode) &&
+             Objects.equals(toField, other.toField);
     }
   }
 
@@ -361,6 +351,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
     return fromReplica;
   }
+}
 
   private static String findReplica(String fromIndex, String nodeName, Slice slice) {
     String fromReplica = null;

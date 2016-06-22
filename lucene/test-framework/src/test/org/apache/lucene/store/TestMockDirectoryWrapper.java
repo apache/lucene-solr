@@ -16,15 +16,14 @@
  */
 package org.apache.lucene.store;
 
+import java.io.EOFException;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase.Nightly;
 
 public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
   
@@ -94,5 +93,82 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
     iw.commit();
     iw.close();
     dir.close();
-  }  
+  }
+
+  // just shields the wrapped directory from being closed
+  private static class PreventCloseDirectoryWrapper extends FilterDirectory {
+    public PreventCloseDirectoryWrapper(Directory in) {
+      super(in);
+    }
+
+    @Override
+    public void close() {
+    }
+  }
+
+  public void testCorruptOnCloseIsWorkingFSDir() throws Exception {
+    Path path = createTempDir();
+    try(Directory dir = newFSDirectory(path)) {
+      testCorruptOnCloseIsWorking(dir);
+    }
+  }
+
+  public void testCorruptOnCloseIsWorkingRAMDir() throws Exception {
+    try(Directory dir = new RAMDirectory()) {
+      testCorruptOnCloseIsWorking(dir);
+    }
+  }
+    
+  private void testCorruptOnCloseIsWorking(Directory dir) throws Exception {
+
+    dir = new PreventCloseDirectoryWrapper(dir);
+
+    try (MockDirectoryWrapper wrapped = new MockDirectoryWrapper(random(), dir)) {
+
+      // otherwise MDW sometimes randomly leaves the file intact and we'll see false test failures:
+      wrapped.alwaysCorrupt = true;
+
+      // MDW will only try to corrupt things if it sees an index:
+      RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+      iw.addDocument(new Document());
+      iw.close();
+      
+      // not sync'd!
+      try (IndexOutput out = wrapped.createOutput("foo", IOContext.DEFAULT)) {
+        for(int i=0;i<100;i++) {
+          out.writeInt(i);
+        }
+      }
+
+      // MDW.close now corrupts our unsync'd file (foo):
+    }
+
+    boolean changed = false;
+    IndexInput in = null;
+    try {
+      in = dir.openInput("foo", IOContext.DEFAULT);
+    } catch (NoSuchFileException | FileNotFoundException fnfe) {
+      // ok
+      changed = true;
+    }
+    if (in != null) {
+      for(int i=0;i<100;i++) {
+        int x;
+        try {
+          x = in.readInt();
+        } catch (EOFException eofe) {
+          changed = true;
+          break;
+        }
+        if (x != i) {
+          changed = true;
+          break;
+        }
+      }
+
+      in.close();
+    }
+
+    assertTrue("MockDirectoryWrapper on dir=" + dir + " failed to corrupt an unsync'd file", changed);
+  }
 }

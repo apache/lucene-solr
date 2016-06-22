@@ -264,7 +264,7 @@ public abstract class FSDirectory extends BaseDirectory {
           continue;
         }
         return new FSIndexOutput(name,
-                                 StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
+                                 StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
       } catch (FileAlreadyExistsException faee) {
         // Retry with next incremented name
       }
@@ -401,7 +401,7 @@ public abstract class FSDirectory extends BaseDirectory {
     static final int CHUNK_SIZE = 8192;
     
     public FSIndexOutput(String name) throws IOException {
-      this(name, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+      this(name, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
     }
 
     FSIndexOutput(String name, OpenOption... options) throws IOException {

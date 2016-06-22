@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Objects;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -77,45 +78,27 @@ public class FuzzyLikeThisQuery extends Query
 
     @Override
     public int hashCode() {
-      final int prime = 31;
-      int result = super.hashCode();
-      result = prime * result + ((analyzer == null) ? 0 : analyzer.hashCode());
-      result = prime * result
-          + ((fieldVals == null) ? 0 : fieldVals.hashCode());
+      int prime = 31;
+      int result = classHash();
+      result = prime * result + Objects.hashCode(analyzer);
+      result = prime * result + Objects.hashCode(fieldVals);
       result = prime * result + (ignoreTF ? 1231 : 1237);
       result = prime * result + maxNumTerms;
       return result;
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (obj == null)
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
-      if (!super.equals(obj)) {
-        return false;
-      }
-      FuzzyLikeThisQuery other = (FuzzyLikeThisQuery) obj;
-      if (analyzer == null) {
-        if (other.analyzer != null)
-          return false;
-      } else if (!analyzer.equals(other.analyzer))
-        return false;
-      if (fieldVals == null) {
-        if (other.fieldVals != null)
-          return false;
-      } else if (!fieldVals.equals(other.fieldVals))
-        return false;
-      if (ignoreTF != other.ignoreTF)
-        return false;
-      if (maxNumTerms != other.maxNumTerms)
-        return false;
-      return true;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
     }
 
+    private boolean equalsTo(FuzzyLikeThisQuery other) {
+      return Objects.equals(analyzer, other.analyzer) &&
+             Objects.equals(fieldVals, other.fieldVals) &&
+             ignoreTF == other.ignoreTF &&
+             maxNumTerms == other.maxNumTerms;
+    }
 
     /**
      * 

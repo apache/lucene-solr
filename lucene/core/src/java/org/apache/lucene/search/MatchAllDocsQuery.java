@@ -71,4 +71,14 @@ public final class MatchAllDocsQuery extends Query {
   public String toString(String field) {
     return "*:*";
   }
+
+  @Override
+  public boolean equals(Object o) {
+    return sameClassAs(o);
+  }
+
+  @Override
+  public int hashCode() {
+    return classHash();
+  }
 }

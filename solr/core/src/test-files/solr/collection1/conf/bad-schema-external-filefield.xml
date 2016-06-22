@@ -16,12 +16,10 @@
   -->
 
 <schema name="bad-schema-external-filefield" version="1.0">
-  <types>
-    <fieldType name="tint" class="solr.TrieIntField" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="tint" class="solr.TrieIntField" omitNorms="true" positionIncrementGap="0"/>
 
-    <fieldType name="eff_none" keyField="id" defVal="0"
-               stored="false" indexed="true"
-               class="solr.ExternalFileField" valType="tint"/>
+  <fieldType name="eff_none" keyField="id" defVal="0"
+             stored="false" indexed="true"
+             class="solr.ExternalFileField" valType="tint"/>
 
-  </types>
 </schema>

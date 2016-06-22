@@ -28,11 +28,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import static org.apache.solr.search.CollapsingQParserPlugin.NULL_IGNORE;
 import static org.apache.solr.search.CollapsingQParserPlugin.NULL_COLLAPSE;
 import static org.apache.solr.search.CollapsingQParserPlugin.NULL_EXPAND;
@@ -178,11 +175,11 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
                           NULL_IGNORE.equals(nullPolicy));
             }
             
-            // work arround for SOLR-8082...
+            // workaround for SOLR-8082...
             //
             // what's important is that we already did the collapsing on the *real* collapseField
             // to verify the groupHead returned is really the best our verification filter
-            // on docs with that value in a differnet ifeld containing the exact same values
+            // on docs with that value in a different field containing the exact same values
             final String checkField = collapseField.replace("float_dv", "float");
             
             final String checkFQ = ((null == collapseVal)

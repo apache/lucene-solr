@@ -16,23 +16,26 @@
  */
 package org.apache.lucene.codecs;
 
-
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
-import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.DocIDMerger;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.DataInput;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
  * Codec API for writing term vectors:
@@ -160,6 +163,28 @@ public abstract class TermVectorsWriter implements Closeable {
     }
   }
   
+  private static class TermVectorsMergeSub extends DocIDMerger.Sub {
+    private final TermVectorsReader reader;
+    private final int maxDoc;
+    int docID = -1;
+
+    public TermVectorsMergeSub(MergeState.DocMap docMap, TermVectorsReader reader, int maxDoc) {
+      super(docMap);
+      this.maxDoc = maxDoc;
+      this.reader = reader;
+    }
+
+    @Override
+    public int nextDoc() {
+      docID++;
+      if (docID == maxDoc) {
+        return NO_MORE_DOCS;
+      } else {
+        return docID;
+      }
+    }
+  }
+
   /** Merges in the term vectors from the readers in 
    *  <code>mergeState</code>. The default implementation skips
    *  over deleted documents, and uses {@link #startDocument(int)},
@@ -170,32 +195,35 @@ public abstract class TermVectorsWriter implements Closeable {
    *  Implementations can override this method for more sophisticated
    *  merging (bulk-byte copying, etc). */
   public int merge(MergeState mergeState) throws IOException {
+
+    List<TermVectorsMergeSub> subs = new ArrayList<>();
+    for(int i=0;i<mergeState.termVectorsReaders.length;i++) {
+      TermVectorsReader reader = mergeState.termVectorsReaders[i];
+      if (reader != null) {
+        reader.checkIntegrity();
+      }
+      subs.add(new TermVectorsMergeSub(mergeState.docMaps[i], reader, mergeState.maxDocs[i]));
+    }
+
+    final DocIDMerger<TermVectorsMergeSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
+
     int docCount = 0;
-    int numReaders = mergeState.maxDocs.length;
-    for (int i = 0; i < numReaders; i++) {
-      int maxDoc = mergeState.maxDocs[i];
-      Bits liveDocs = mergeState.liveDocs[i];
-      TermVectorsReader termVectorsReader = mergeState.termVectorsReaders[i];
-      if (termVectorsReader != null) {
-        termVectorsReader.checkIntegrity();
+    while (true) {
+      TermVectorsMergeSub sub = docIDMerger.next();
+      if (sub == null) {
+        break;
       }
 
-      for (int docID=0;docID<maxDoc;docID++) {
-        if (liveDocs != null && !liveDocs.get(docID)) {
-          // skip deleted docs
-          continue;
-        }
-        // NOTE: it's very important to first assign to vectors then pass it to
-        // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        Fields vectors;
-        if (termVectorsReader == null) {
-          vectors = null;
-        } else {
-          vectors = termVectorsReader.get(docID);
-        }
-        addAllDocVectors(vectors, mergeState);
-        docCount++;
+      // NOTE: it's very important to first assign to vectors then pass it to
+      // termVectorsWriter.addAllDocVectors; see LUCENE-1282
+      Fields vectors;
+      if (sub.reader == null) {
+        vectors = null;
+      } else {
+        vectors = sub.reader.get(sub.docID);
       }
+      addAllDocVectors(vectors, mergeState);
+      docCount++;
     }
     finish(mergeState.mergeFieldInfos, docCount);
     return docCount;

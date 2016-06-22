@@ -20,18 +20,22 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.index.DocIDMerger;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
  * Codec API for writing stored fields:
@@ -73,6 +77,30 @@ public abstract class StoredFieldsWriter implements Closeable {
    *  check that this is the case to detect the JRE bug described 
    *  in LUCENE-1282. */
   public abstract void finish(FieldInfos fis, int numDocs) throws IOException;
+
+  private static class StoredFieldsMergeSub extends DocIDMerger.Sub {
+    private final StoredFieldsReader reader;
+    private final int maxDoc;
+    private final MergeVisitor visitor;
+    int docID = -1;
+
+    public StoredFieldsMergeSub(MergeVisitor visitor, MergeState.DocMap docMap, StoredFieldsReader reader, int maxDoc) {
+      super(docMap);
+      this.maxDoc = maxDoc;
+      this.reader = reader;
+      this.visitor = visitor;
+    }
+
+    @Override
+    public int nextDoc() {
+      docID++;
+      if (docID == maxDoc) {
+        return NO_MORE_DOCS;
+      } else {
+        return docID;
+      }
+    }
+  }
   
   /** Merges in the stored fields from the readers in 
    *  <code>mergeState</code>. The default implementation skips
@@ -82,23 +110,26 @@ public abstract class StoredFieldsWriter implements Closeable {
    *  Implementations can override this method for more sophisticated
    *  merging (bulk-byte copying, etc). */
   public int merge(MergeState mergeState) throws IOException {
-    int docCount = 0;
-    for (int i=0;i<mergeState.storedFieldsReaders.length;i++) {
+    List<StoredFieldsMergeSub> subs = new ArrayList<>();
+    for(int i=0;i<mergeState.storedFieldsReaders.length;i++) {
       StoredFieldsReader storedFieldsReader = mergeState.storedFieldsReaders[i];
       storedFieldsReader.checkIntegrity();
-      MergeVisitor visitor = new MergeVisitor(mergeState, i);
-      int maxDoc = mergeState.maxDocs[i];
-      Bits liveDocs = mergeState.liveDocs[i];
-      for (int docID=0;docID<maxDoc;docID++) {
-        if (liveDocs != null && !liveDocs.get(docID)) {
-          // skip deleted docs
-          continue;
-        }
-        startDocument();
-        storedFieldsReader.visitDocument(docID, visitor);
-        finishDocument();
-        docCount++;
+      subs.add(new StoredFieldsMergeSub(new MergeVisitor(mergeState, i), mergeState.docMaps[i], storedFieldsReader, mergeState.maxDocs[i]));
+    }
+
+    final DocIDMerger<StoredFieldsMergeSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
+
+    int docCount = 0;
+    while (true) {
+      StoredFieldsMergeSub sub = docIDMerger.next();
+      if (sub == null) {
+        break;
       }
+      assert sub.mappedDocID == docCount;
+      startDocument();
+      sub.reader.visitDocument(sub.docID, sub.visitor);
+      finishDocument();
+      docCount++;
     }
     finish(mergeState.mergeFieldInfos, docCount);
     return docCount;

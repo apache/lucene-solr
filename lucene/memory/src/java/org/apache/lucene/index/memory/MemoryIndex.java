@@ -40,6 +40,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.*;
@@ -79,7 +80,7 @@ import org.apache.lucene.util.IntBlockPool.SliceWriter;
  * <a target="_blank" href="http://today.java.net/pub/a/today/2003/07/30/LuceneIntro.html">Lucene Analyzer Intro</a>.
  * <p>
  * Arbitrary Lucene queries can be run against this class - see <a target="_blank" 
- * href="{@docRoot}/../queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description">
+ * href="{@docRoot}/../queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package.description">
  * Lucene Query Syntax</a>
  * as well as <a target="_blank" 
  * href="http://today.java.net/pub/a/today/2003/11/07/QueryParserRules.html">Query Parser Rules</a>.
@@ -1606,6 +1607,10 @@ public class MemoryIndex {
       return info.getNormDocValues();
     }
 
+    @Override
+    public Sort getIndexSort() {
+      return null;
+    }
   }
 
   /**

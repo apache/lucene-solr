@@ -16,16 +16,8 @@
  */
 package org.apache.lucene.index;
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.FilterCodec;
-import org.apache.lucene.codecs.PointsFormat;
-import org.apache.lucene.codecs.PointsReader;
-import org.apache.lucene.codecs.PointsWriter;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.search.IndexSearcher;
@@ -143,6 +135,6 @@ public class Test2BPoints extends LuceneTestCase {
   }
 
   private static Codec getCodec() {
-    return Codec.forName("Lucene60");
+    return Codec.forName("Lucene62");
   }
 }

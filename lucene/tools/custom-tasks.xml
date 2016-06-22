@@ -88,7 +88,7 @@
   <macrodef name="lib-versions-check-macro">
     <attribute name="dir"/>
     <attribute name="centralized.versions.file"/>
-    <attribute name="ivy.settings.file"/>
+    <attribute name="top.level.ivy.settings.file"/>
     <attribute name="ivy.resolution-cache.dir"/>
     <attribute name="ivy.lock-strategy"/>
     <attribute name="common.build.dir"/>
@@ -101,7 +101,7 @@
         -->
       <echo>Lib versions check under: @{dir}</echo>
       <libversions centralizedVersionsFile="@{centralized.versions.file}"
-                   ivySettingsFile="@{ivy.settings.file}"
+                   topLevelIvySettingsFile="@{top.level.ivy.settings.file}"
                    ivyResolutionCacheDir="@{ivy.resolution-cache.dir}"
                    ivyLockStrategy="@{ivy.lock-strategy}"
                    commonBuildDir="@{common.build.dir}"

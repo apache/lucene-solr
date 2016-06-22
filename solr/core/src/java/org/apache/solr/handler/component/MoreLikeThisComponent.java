@@ -74,16 +74,17 @@ public class MoreLikeThisComponent extends SearchComponent {
   public void process(ResponseBuilder rb) throws IOException {
 
     SolrParams params = rb.req.getParams();
-    ReturnFields returnFields = new SolrReturnFields( rb.req );
-
-    int flags = 0;
-    if (returnFields.wantsScore()) {
-      flags |= SolrIndexSearcher.GET_SCORES;
-    }
-
-    rb.setFieldFlags(flags);
-
+    
     if (params.getBool(MoreLikeThisParams.MLT, false)) {
+      ReturnFields returnFields = new SolrReturnFields( rb.req );
+  
+      int flags = 0;
+      if (returnFields.wantsScore()) {
+        flags |= SolrIndexSearcher.GET_SCORES;
+      }
+  
+      rb.setFieldFlags(flags);
+
       log.debug("Starting MoreLikeThis.Process.  isShard: "
           + params.getBool(ShardParams.IS_SHARD));
       SolrIndexSearcher searcher = rb.req.getSearcher();

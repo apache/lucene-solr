@@ -78,7 +78,11 @@ def cleanHTML(s):
 
 reH3 = re.compile('^<h3>(.*?)</h3>', re.IGNORECASE | re.MULTILINE)
 reH4 = re.compile('^<h4>(.*?)</h4>', re.IGNORECASE | re.MULTILINE)
-  
+reDetailsDiv = re.compile('<div class="details">')
+reEndOfClassData = re.compile('<!--.*END OF CLASS DATA.*-->')
+reBlockList = re.compile('<ul class="blockList(?:Last)?">')
+reCloseUl = re.compile('</ul>')
+
 def checkClassDetails(fullPath):
   """
   Checks for invalid HTML in the full javadocs under each field/method.
@@ -86,59 +90,53 @@ def checkClassDetails(fullPath):
 
   # TODO: only works with java7 generated javadocs now!
   with open(fullPath, encoding='UTF-8') as f:
-    desc = None
+    desc = []
     cat = None
     item = None
     errors = []
+    inDetailsDiv = False
+    blockListDepth = 0
     for line in f.readlines():
+      # Skip content up until  <div class="details">
+      if not inDetailsDiv:
+        if reDetailsDiv.match(line) is not None:
+          inDetailsDiv = True
+        continue
 
-      m = reH3.search(line)
-      if m is not None:
-        if desc is not None:
-          desc = ''.join(desc)
-          if True or cat == 'Constructor Detail':
-            idx = desc.find('</div>')
-            if idx == -1:
-              # Ctor missing javadocs ... checkClassSummaries catches it
-              desc = None
-              continue
-            desc = desc[:idx+6]
-          else:
-            # Have to fake <ul> context because we pulled a fragment out "across" two <ul>s:
-            desc = '<ul>%s</ul>' % ''.join(desc)
-          #print('  VERIFY %s: %s: %s' % (cat, item, desc))
+      # Stop looking at content at closing details </div>, which is just before <!-- === END OF CLASS DATA === -->
+      if reEndOfClassData.match(line) is not None:
+        if len(desc) != 0:
           try:
-            verifyHTML(desc)
+            verifyHTML(''.join(desc))
           except RuntimeError as re:
             #print('    FAILED: %s' % re)
             errors.append((cat, item, str(re)))
-          desc = None
-        cat = m.group(1)
-        continue
+        break
 
-      m = reH4.search(line)
-      if m is not None:
-        if desc is not None:
-          # Have to fake <ul> context because we pulled a fragment out "across" two <ul>s:
-          if cat == 'Element Detail':
-            desc = ''.join(desc)
-            idx = desc.find('</dl>')
-            if idx != -1:
-              desc = desc[:idx+5]
-          else:
-            desc = '<ul>%s</ul>' % ''.join(desc)
-          #print('  VERIFY %s: %s: %s' % (cat, item, desc))
+      # <ul class="blockList(Last)"> is the boundary between items
+      if reBlockList.match(line) is not None:
+        blockListDepth += 1
+        if len(desc) != 0:
           try:
-            verifyHTML(desc)
+            verifyHTML(''.join(desc))
           except RuntimeError as re:
             #print('    FAILED: %s' % re)
             errors.append((cat, item, str(re)))
-        item = m.group(1)
-        desc = []
-        continue
+          del desc[:]
 
-      if desc is not None:
+      if blockListDepth == 3:
         desc.append(line)
+
+      if reCloseUl.match(line) is not None:
+        blockListDepth -= 1
+      else:
+        m = reH3.search(line)
+        if m is not None:
+          cat = m.group(1)
+        else:
+          m = reH4.search(line)
+          if m is not None:
+            item = m.group(1)
 
   if len(errors) != 0:
     print()

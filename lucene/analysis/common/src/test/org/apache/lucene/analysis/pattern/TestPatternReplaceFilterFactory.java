@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.pattern;
 
 
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 

@@ -228,6 +228,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    if (clauses.size() == 0) {
+      return new MatchNoDocsQuery();
+    }
+    
     // optimize 1-clause queries
     if (clauses.size() == 1) {
       BooleanClause c = clauses.get(0);
@@ -421,17 +425,18 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
    */
   @Override
   public boolean equals(Object o) {
-    if (super.equals(o) == false) {
-      return false;
-    }
-    BooleanQuery that = (BooleanQuery)o;
-    return this.getMinimumNumberShouldMatch() == that.getMinimumNumberShouldMatch()
-        && this.disableCoord == that.disableCoord
-        && clauseSets.equals(that.clauseSets);
+    return sameClassAs(o) &&
+           equalsTo(getClass().cast(o));
+  }
+
+  private boolean equalsTo(BooleanQuery other) {
+    return getMinimumNumberShouldMatch() == other.getMinimumNumberShouldMatch() && 
+           disableCoord == other.disableCoord &&
+           clauseSets.equals(other.clauseSets);
   }
 
   private int computeHashCode() {
-    int hashCode = 31 * super.hashCode() + Objects.hash(disableCoord, minimumNumberShouldMatch, clauseSets);
+    int hashCode = Objects.hash(disableCoord, minimumNumberShouldMatch, clauseSets);
     if (hashCode == 0) {
       hashCode = 1;
     }
@@ -443,8 +448,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
   @Override
   public int hashCode() {
+    // no need for synchronization, in the worst case we would just compute the hash several times.
     if (hashCode == 0) {
-      // no need for synchronization, in the worst case we would just compute the hash several times
       hashCode = computeHashCode();
       assert hashCode != 0;
     }

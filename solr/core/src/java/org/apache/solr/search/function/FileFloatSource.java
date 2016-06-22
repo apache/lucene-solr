@@ -22,7 +22,6 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -203,7 +202,7 @@ public class FileFloatSource extends ValueSource {
     
     public void resetCache(){
       synchronized(readerCache){
-        // Map.clear() is optional and can throw UnsipportedOperationException,
+        // Map.clear() is optional and can throw UnsupportedOperationException,
         // but readerCache is WeakHashMap and it supports clear().
         readerCache.clear();
       }

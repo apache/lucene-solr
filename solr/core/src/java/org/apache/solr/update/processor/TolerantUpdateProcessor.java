@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.lang.invoke.MethodHandles;
 
@@ -31,12 +30,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.ToleratedUpdateError;
 import org.apache.solr.common.ToleratedUpdateError.CmdType;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
@@ -202,8 +196,8 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
     try {
       super.processMergeIndexes(cmd);
     } catch (Throwable t) {
-      // we're not tolerante of errors from this type of command, but we
-      // do need to track it so we can annotate it with any other errors we were allready tolerant of
+      // we're not tolerant of errors from this type of command, but we
+      // do need to track it so we can annotate it with any other errors we were already tolerant of
       firstErrTracker.caught(t);
       throw t;
     }
@@ -214,8 +208,8 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
     try {
       super.processCommit(cmd);
     } catch (Throwable t) {
-      // we're not tolerante of errors from this type of command, but we
-      // do need to track it so we can annotate it with any other errors we were allready tolerant of
+      // we're not tolerant of errors from this type of command, but we
+      // do need to track it so we can annotate it with any other errors we were already tolerant of
       firstErrTracker.caught(t);
       throw t;
     }
@@ -226,8 +220,8 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
     try {
       super.processRollback(cmd);
     } catch (Throwable t) {
-      // we're not tolerante of errors from this type of command, but we
-      // do need to track it so we can annotate it with any other errors we were allready tolerant of
+      // we're not tolerant of errors from this type of command, but we
+      // do need to track it so we can annotate it with any other errors we were already tolerant of
       firstErrTracker.caught(t);
       throw t;
     }
@@ -298,7 +292,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
     // decide if we have hit a situation where we know an error needs to be thrown.
     
     if ((DistribPhase.TOLEADER.equals(distribPhase) ? 0 : maxErrors) < knownErrors.size()) {
-      // NOTE: even if maxErrors wasn't exceeeded, we need to throw an error when we have any errors if we're
+      // NOTE: even if maxErrors wasn't exceeded, we need to throw an error when we have any errors if we're
       // a leader that was forwarded to by another node so that the forwarding node knows we encountered some
       // problems and can aggregate the results
 
@@ -361,7 +355,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
      *
      * This method will keep a record that this update processor has already thrown the exception, and do 
      * nothing on future calls, so subsequent update processor methods can update the metadata but won't 
-     * inadvertantly re-throw this (or any other) cascading exception by mistake.
+     * inadvertently re-throw this (or any other) cascading exception by mistake.
      */
     public void throwFirst() throws SolrException {
       assert null != first : "caught was never called?";

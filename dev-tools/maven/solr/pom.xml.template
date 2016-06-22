@@ -117,13 +117,13 @@
           <execution>
             <id>solr-shared-check-forbidden-apis</id>
             <configuration>
-              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
-              <internalRuntimeForbidden>true</internalRuntimeForbidden>
               <!-- for simplicty with servlet-api and commons-io checks, disable this: -->
               <failOnUnresolvableSignatures>false</failOnUnresolvableSignatures>
               <bundledSignatures>
                 <bundledSignature>jdk-unsafe</bundledSignature>
                 <bundledSignature>jdk-deprecated</bundledSignature>
+                <bundledSignature>jdk-non-portable</bundledSignature>
+                <bundledSignature>jdk-reflection</bundledSignature>
                 <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
@@ -139,13 +139,13 @@
           <execution>
             <id>solr-shared-test-check-forbidden-apis</id>
             <configuration>
-              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
-              <internalRuntimeForbidden>true</internalRuntimeForbidden>
               <!-- for simplicty with servlet-api and commons-io checks, disable this: -->
               <failOnUnresolvableSignatures>false</failOnUnresolvableSignatures>
               <bundledSignatures>
                 <bundledSignature>jdk-unsafe</bundledSignature>
                 <bundledSignature>jdk-deprecated</bundledSignature>
+                <bundledSignature>jdk-non-portable</bundledSignature>
+                <bundledSignature>jdk-reflection</bundledSignature>
                 <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
