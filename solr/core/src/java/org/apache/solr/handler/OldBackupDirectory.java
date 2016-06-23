@@ -16,34 +16,55 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
+import java.net.URI;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-class OldBackupDirectory implements Comparable<OldBackupDirectory> {
-  File dir;
-  Date timestamp;
-  private  final Pattern dirNamePattern = Pattern.compile("^snapshot[.](.*)$");
+import com.google.common.base.Preconditions;
 
-  OldBackupDirectory(File dir) {
-    if(dir.isDirectory()) {
-      Matcher m = dirNamePattern.matcher(dir.getName());
-      if(m.find()) {
-        try {
-          this.dir = dir;
-          this.timestamp = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).parse(m.group(1));
-        } catch(Exception e) {
-          this.dir = null;
-          this.timestamp = null;
-        }
+class OldBackupDirectory implements Comparable<OldBackupDirectory> {
+  private static final Pattern dirNamePattern = Pattern.compile("^snapshot[.](.*)$");
+
+  private URI basePath;
+  private String dirName;
+  private Optional<Date> timestamp;
+
+  public OldBackupDirectory(URI basePath, String dirName) {
+    this.dirName = Preconditions.checkNotNull(dirName);
+    this.basePath = Preconditions.checkNotNull(basePath);
+    Matcher m = dirNamePattern.matcher(dirName);
+    if (m.find()) {
+      try {
+        this.timestamp = Optional.of(new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).parse(m.group(1)));
+      } catch (ParseException e) {
+        this.timestamp = Optional.empty();
       }
     }
   }
+
+  public URI getPath() {
+    return this.basePath.resolve(dirName);
+  }
+
+  public String getDirName() {
+    return dirName;
+  }
+
+  public Optional<Date> getTimestamp() {
+    return timestamp;
+  }
+
   @Override
   public int compareTo(OldBackupDirectory that) {
-    return that.timestamp.compareTo(this.timestamp);
+    if(this.timestamp.isPresent() && that.timestamp.isPresent()) {
+      return that.timestamp.get().compareTo(this.timestamp.get());
+    }
+    // Use absolute value of path in case the time-stamp is missing on either side.
+    return that.getPath().compareTo(this.getPath());
   }
 }

@@ -66,6 +66,9 @@ New Features
 
 * SOLR-8048: bin/solr script should support basic auth credentials provided in solr.in.sh (noble)
 
+* SOLR-7374: Core level Backup/Restore now supports specifying the directory implementation to use
+  via the "repository" parameter. (Hrishikesh Gadre, Varun Thacker, Mark Miller)
+
 Bug Fixes
 ----------------------
 
