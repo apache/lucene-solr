@@ -127,15 +127,11 @@ public class ShardedFromCollectionJoinTest extends SolrCloudTestCase {
     // so the commits fire
     Thread.sleep(2000); 
     
-    System.out.println("SHIKHA after inserting document!!!");
-    
     //Join query with distrib=true so the query goes on all shards
     QueryRequest qr = new QueryRequest(params("collection", shardedToColl, "q", joinQ, "distrib", "true", SearchParams.RANGE_CHECK, "true"));
     
     //QueryResponse rsp = new QueryResponse(cloudClient.request(qr), cloudClient);
     final QueryResponse  rsp = new QueryResponse(client.request(qr), client);
-    
-    System.out.println("SHIKHA rsp = " + rsp);
     
     SolrDocumentList hits = rsp.getResults();
     
