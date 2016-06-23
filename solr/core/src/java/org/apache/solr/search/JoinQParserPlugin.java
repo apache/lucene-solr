@@ -43,7 +43,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.StringHelper;
-import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -67,7 +66,6 @@ public class JoinQParserPlugin extends QParserPlugin {
       
       @Override
       public Query parse() throws SyntaxError {
-
         if(localParams!=null && localParams.get(ScoreJoinQParserPlugin.SCORE)!=null){
           return new ScoreJoinQParserPlugin().createParser(qstr, localParams, params, req).parse();
         }else{
