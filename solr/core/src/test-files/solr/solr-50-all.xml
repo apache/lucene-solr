@@ -56,4 +56,8 @@
     <int name="connTimeout">${connTimeout:110}</int>
   </shardHandlerFactory>
 
+  <backup>
+    <repository name="local" class="a.b.C" default="true"/>
+  </backup>
+
 </solr>

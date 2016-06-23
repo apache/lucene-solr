@@ -798,7 +798,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
         }
 
-        String location = req.getParams().get("location");
+        String location = req.getParams().get(ZkStateReader.BACKUP_LOCATION);
         if (location == null) {
           location = h.coreContainer.getZkController().getZkStateReader().getClusterProperty("location", (String) null);
         }
@@ -822,7 +822,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' exists, no action taken.");
         }
 
-        String location = req.getParams().get("location");
+        String location = req.getParams().get(ZkStateReader.BACKUP_LOCATION);
         if (location == null) {
           location = h.coreContainer.getZkController().getZkStateReader().getClusterProperty("location", (String) null);
         }

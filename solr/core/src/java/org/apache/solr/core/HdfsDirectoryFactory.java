@@ -331,7 +331,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     }
   }
   
-  private Configuration getConf() {
+  public Configuration getConf() {
     Configuration conf = new Configuration();
     confDir = getConfig(CONFIG_DIRECTORY, null);
     HdfsUtil.addHdfsResources(conf, confDir);
