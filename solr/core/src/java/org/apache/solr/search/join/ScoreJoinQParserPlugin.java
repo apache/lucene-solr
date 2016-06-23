@@ -229,7 +229,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         if (fromIndex != null && (!fromIndex.equals(myCore) || byPassShortCircutCheck)) {
           CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
           CloudDescriptor cloudDescriptor = req.getCore().getCoreDescriptor().getCloudDescriptor();
-          final String coreName = getCoreName(fromIndex, container, cloudDescriptor, req);
+          final String coreName = getCoreName(fromIndex, container, req);
           final SolrCore fromCore = container.getCore(coreName);
           RefCounted<SolrIndexSearcher> fromHolder = null;
 
@@ -276,7 +276,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
    * @param  container the core container for searching the core with fromIndex name or alias
    * @return      the string with name of core
    */
-  public static String getCoreName(final String fromIndex, CoreContainer container, CloudDescriptor cloudDescriptor, SolrQueryRequest req) {
+  public static String getCoreName(final String fromIndex, CoreContainer container, SolrQueryRequest req) {
     if (container.isZooKeeperAware()) {
       ZkController zkController = container.getZkController();
       final String resolved =
@@ -286,7 +286,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "SolrCloud join: Collection '" + fromIndex + "' not found!");
       }
-      return findLocalReplicaForFromIndex(zkController, resolved, cloudDescriptor, req);
+      return findLocalReplicaForFromIndex(zkController, resolved, req);
     }
     return fromIndex;
   }
@@ -310,14 +310,23 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     return null;
   }
 
-  private static String findLocalReplicaForFromIndex(ZkController zkController, String fromIndex, CloudDescriptor cloudDescriptor, SolrQueryRequest req) {
+  /**
+   * Find local replica for from index. Replica can be selected on 2 criteria rangeCheck or 
+   * if fromCollection is singly sharded.
+   *
+   * @param zkController the zk controller
+   * @param fromIndex the from index
+   * @param req the req
+   * @return the string
+   */
+  private static String findLocalReplicaForFromIndex(ZkController zkController, String fromIndex, SolrQueryRequest req) {
     String fromReplica = null;
     
-    String rangeCheck = req.getParams().get(SearchParams.RANGE_CHECK, SearchParams.RANGE_CHECK_SINGLE);
-    if(SearchParams.RANGE_CHECK_EXACT.equals(rangeCheck)){
+    boolean isRangeCheck = req.getParams().getBool(SearchParams.RANGE_CHECK, false);
+    if(isRangeCheck){
       //In-case of exact range match option, find a shard of fromCollection which resides on this node and whose range matches
       //toShard range exactly.
-      fromReplica = findExactMatchShard(zkController,fromIndex, cloudDescriptor, req);
+      fromReplica = findExactMatchShard(zkController,fromIndex, req);
     }else{
       //In-case fromReplica is singly sharded, find its replica on this node
       fromReplica = findLocalReplica(zkController,fromIndex);
@@ -332,28 +341,44 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     return fromReplica;
   }
   
-  private static String findLocalReplica(ZkController zkController, String fromIndex){
+  /**
+   * Find local replica. The fromCollection should be singly sharded and it should have a replica
+   * on this node. 
+   *
+   * @param zkController the zk controller
+   * @param fromIndex the from index
+   * @return the string
+   */
+  private static String findLocalReplica(ZkController zkController, String fromIndex) {
     String fromReplica = null;
 
     String nodeName = zkController.getNodeName();
-    for (Slice slice : zkController.getClusterState().getActiveSlices(fromIndex)) {
+    for (Slice slice : zkController.getClusterState().getCollection(fromIndex).getActiveSlices()) {
       if (fromReplica != null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "SolrCloud join: for multiple shards specify rangeCheck 'exact' option " + fromIndex);
+            "SolrCloud join: for multiple shards use rangeCheck option " + fromIndex);
 
-      fromReplica = findReplica(fromIndex, nodeName, slice);
+      fromReplica = findSliceReplica(fromIndex, nodeName, slice);
     }
 
     if (fromReplica == null)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "SolrCloud join: No active replicas for "+fromIndex+
+          "SolrCloud join: No active replicas for " + fromIndex +
               " found in node " + nodeName);
 
     return fromReplica;
   }
-}
 
-  private static String findReplica(String fromIndex, String nodeName, Slice slice) {
+
+  /**
+   * Find replica which is present on given shard.
+   *
+   * @param fromIndex the from index
+   * @param nodeName - node name for which replica should be found
+   * @param slice - slice for which replica has to be found
+   * @return replica name
+   */
+  private static String findSliceReplica(String fromIndex, String nodeName, Slice slice) {
     String fromReplica = null;
     for (Replica replica : slice.getReplicas()) {
       if (replica.getNodeName().equals(nodeName)) {
@@ -370,7 +395,16 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     return fromReplica;
   }
   
-  private static String findExactMatchShard(ZkController zkController, String fromIndex, CloudDescriptor cloudDescriptor, SolrQueryRequest req){
+  /**
+   * Find a shard whose range matches toShard range. Check if this shard has a replica on given node, if so
+   * return matching shard replica.
+   *
+   * @param zkController the zk controller
+   * @param fromIndex the from index
+   * @param req the req
+   * @return matching shard replica name, if no matching shard null is returned
+   */
+  private static String findExactMatchShard(ZkController zkController, String fromIndex, SolrQueryRequest req){
     String fromReplica = null;
     
     CoreDescriptor containerDesc = req.getCore().getCoreDescriptor();
@@ -382,28 +416,13 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     
     
     DocRouter.Range toRange = toShardSlice.getRange();
-    String toRouteField = getRouterField(toCollection);
     
-    for (Slice slice : zkController.getClusterState().getActiveSlices(fromIndex)) {
-      
+    for (Slice slice : zkController.getClusterState().getCollection(fromIndex).getActiveSlices()) {
       if(toRange.equals(slice.getRange())){
-     
-        return findReplica(fromIndex, nodeName, slice);
+        return findSliceReplica(fromIndex, nodeName, slice);
       }
     }
     
-   
-    
     return fromReplica;
-  }
-
-  private static String getRouterField(DocCollection docCollection){
-    Map routerMap  = (Map)docCollection.get(DocCollection.DOC_ROUTER);
-    String routerField = null;
-    if(routerMap != null){
-      routerField = (String)routerMap.get("field");
-    }
-    
-    return routerField;
   }
 }

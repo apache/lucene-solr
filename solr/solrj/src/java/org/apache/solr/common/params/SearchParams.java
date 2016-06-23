@@ -26,10 +26,4 @@ public interface SearchParams {
   
   /** The range check. */
   String RANGE_CHECK = "rangeCheck";
-
-  /** The range check exact. */
-  String RANGE_CHECK_EXACT = "exact";
-  
-  /** The range check single. */
-  String RANGE_CHECK_SINGLE = "single";
 }

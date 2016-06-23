@@ -67,7 +67,6 @@ public class JoinQParserPlugin extends QParserPlugin {
       
       @Override
       public Query parse() throws SyntaxError {
-        System.out.println(" Initialized JoinQParserPlugin !!!! ");
 
         if(localParams!=null && localParams.get(ScoreJoinQParserPlugin.SCORE)!=null){
           return new ScoreJoinQParserPlugin().createParser(qstr, localParams, params, req).parse();
@@ -88,11 +87,9 @@ public class JoinQParserPlugin extends QParserPlugin {
 
         if (fromIndex != null && !fromIndex.equals(req.getCore().getCoreDescriptor().getName()) ) {
           CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
-          System.out.println(" inside JoinQParserPlugin coreShard: " + req.getCore().getCoreDescriptor().getName());
-          CloudDescriptor cloudDescriptor = req.getCore().getCoreDescriptor().getCloudDescriptor();
 
           // if in SolrCloud mode, fromIndex should be the name of a single-sharded collection
-          coreName = ScoreJoinQParserPlugin.getCoreName(fromIndex, container, cloudDescriptor, req);
+          coreName = ScoreJoinQParserPlugin.getCoreName(fromIndex, container, req);
 
           final SolrCore fromCore = container.getCore(coreName);
           if (fromCore == null) {
