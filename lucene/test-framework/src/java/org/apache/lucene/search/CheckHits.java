@@ -354,8 +354,12 @@ public class CheckHits {
       if (detail.length==1) {
         // simple containment, unless it's a freq of: (which lets a query explain how the freq is calculated), 
         // just verify contained expl has same score
-        if (!expl.getDescription().endsWith("with freq of:"))
+        if (expl.getDescription().endsWith("with freq of:") == false
+            // with dismax, even if there is a single sub explanation, its
+            // score might be different if the score is negative
+            && (score >= 0 || expl.getDescription().endsWith("times others of:") == false)) {
           verifyExplanation(q,doc,score,deep,detail[0]);
+        }
       } else {
         // explanation must either:
         // - end with one of: "product of:", "sum of:", "max of:", or
