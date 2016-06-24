@@ -82,6 +82,8 @@ Bug Fixes
 * SOLR-9234: srcField parameter works only when all fields are captured in the /update/json/docs
   endpoint (noble)
 
+* SOLR-8546: SOLR-8546: TestLazyCores is failing a lot on the Jenkins cluster. (Erick Erickson)
+
 Optimizations
 ----------------------
 
