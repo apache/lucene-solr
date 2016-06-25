@@ -66,6 +66,11 @@ class Version(object):
            (self.bugfix > other.bugfix or self.bugfix == other.bugfix and
            self.prerelease >= other.prerelease)))
 
+  def is_back_compat_with(self, other):
+    if not self.on_or_after(other):
+      raise Exception('Back compat check disallowed for newer version: %s < %s' % (self, other))
+    return other.major + 1 >= self.major
+
 def run(cmd):
   try:
     output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
