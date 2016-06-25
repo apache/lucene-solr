@@ -179,9 +179,7 @@ def read_config():
   c = parser.parse_args()
 
   c.branch_type = find_branch_type()
-  c.matching_branch = c.version.is_bugfix_release() and c.branch_type == BranchType.release or \
-                      c.version.is_minor_release() and c.branch_type == BranchType.stable or \
-                      c.version.is_major_release() and c.branch_type == BranchType.unstable
+  c.is_latest_version = c.version.on_or_after(Version.parse(find_current_version()))
 
   print ("branch_type is %s " % c.branch_type)
 
@@ -217,9 +215,9 @@ def main():
   print('\nAdding new version %s' % c.version)
   update_changes('lucene/CHANGES.txt', c.version)
   update_changes('solr/CHANGES.txt', c.version, get_solr_init_changes())
-  add_constant(c.version, not c.matching_branch)
+  add_constant(c.version, not c.is_latest_version)
 
-  if c.matching_branch:
+  if c.is_latest_version:
     print('\nUpdating latest version')
     update_build_version(c.version)
     update_latest_constant(c.version)
