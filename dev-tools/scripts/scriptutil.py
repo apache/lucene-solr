@@ -119,7 +119,7 @@ def find_branch_type():
 
 version_prop_re = re.compile('version\.base=(.*)')
 def find_current_version():
-  return version_prop_re.search(open('lucene/version.properties').read()).group(1)
+  return version_prop_re.search(open('lucene/version.properties').read()).group(1).strip()
 
 if __name__ == '__main__':
   print('This is only a support module, it cannot be run')
