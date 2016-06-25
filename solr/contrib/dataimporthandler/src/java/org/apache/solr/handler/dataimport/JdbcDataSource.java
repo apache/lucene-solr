@@ -71,6 +71,7 @@ public class JdbcDataSource extends
 
   @Override
   public void init(Context context, Properties initProps) {
+    resolveVariables(context, initProps);
     initProps = decryptPwd(context, initProps);
     Object o = initProps.get(CONVERT_TYPE);
     if (o != null)
@@ -142,8 +143,6 @@ public class JdbcDataSource extends
 
   protected Callable<Connection> createConnectionFactory(final Context context,
                                        final Properties initProps) {
-//    final VariableResolver resolver = context.getVariableResolver();
-    resolveVariables(context, initProps);
     final String jndiName = initProps.getProperty(JNDI_NAME);
     final String url = initProps.getProperty(URL);
     final String driver = initProps.getProperty(DRIVER);
