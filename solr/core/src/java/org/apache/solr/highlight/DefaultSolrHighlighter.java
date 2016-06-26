@@ -389,7 +389,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       preFetchFieldNames.add(keyField.getName());
     }
 
-    FvhContainer fvhContainer = new FvhContainer(); // Lazy container for fvh and fieldQuery
+    FvhContainer fvhContainer = new FvhContainer(null, null); // Lazy container for fvh and fieldQuery
 
     IndexReader reader = new TermVectorReusingLeafReader(req.getSearcher().getLeafReader()); // SOLR-5855
 
@@ -422,7 +422,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     return fragments;
   }
 
-  private Object doHighlightingOfField(Document doc, int docId, SchemaField schemaField,
+  protected Object doHighlightingOfField(Document doc, int docId, SchemaField schemaField,
                                        FvhContainer fvhContainer, Query query, IndexReader reader, SolrQueryRequest req,
                                        SolrParams params) throws IOException {
     Object fieldHighlights;
@@ -740,9 +740,14 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
 
   // Wraps FVH to allow pass-by-reference
-  private class FvhContainer {
-    private FastVectorHighlighter fvh;
-    private FieldQuery fieldQuery;
+  protected class FvhContainer {
+    FastVectorHighlighter fvh;
+    FieldQuery fieldQuery;
+
+    FvhContainer(FastVectorHighlighter fvh, FieldQuery fieldQuery) {
+      this.fvh = fvh;
+      this.fieldQuery = fieldQuery;
+    }
   }
 }
 
