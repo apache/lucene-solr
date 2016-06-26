@@ -82,6 +82,8 @@ Bug Fixes
 
 * SOLR-8546: SOLR-8546: TestLazyCores is failing a lot on the Jenkins cluster. (Erick Erickson)
 
+* SOLR-9237: DefaultSolrHighlighter.doHighlightingByFastVectorHighlighter can't be overidden (janhoy)
+
 Optimizations
 ----------------------
 
