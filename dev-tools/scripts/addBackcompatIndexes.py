@@ -36,10 +36,7 @@ def create_and_add_index(source, indextype, index_version, current_version, temp
   else:
     dirname = indextype
   prefix = 'index' if current_version.is_back_compat_with(index_version) else 'unsupported'
-  filename = {
-    'cfs': '%s.%s-cfs.zip',
-    'nocfs': '%s.%s-nocfs.zip'
-  }[indextype] % (prefix, index_version)
+  filename = '%s.%s-%s.zip' % (prefix, index_version, indextype)
   print('  creating %s...' % filename, end='', flush=True)
   module = 'backward-codecs'
   index_dir = os.path.join('lucene', module, 'src/test/org/apache/lucene/index')
