@@ -24,9 +24,10 @@ import re
 # under the given version in the given CHANGES.txt file
 # and prints a regular expression that will match all of them
 #
-# Caveat: only works with modern CHANGES releases that use bullets
-# ('*' or '-') - other list item mechanisms (numbers or letters)
-# are not handled properly.
+# Caveat: In ancient versions (Lucene v1.9 and older; Solr v1.1 and older),
+# does not find Bugzilla bugs or JIRAs not mentioned at the beginning of
+# bullets or numbered entries.
+#
 def print_released_jiras_regex(version, filename):
   release_boundary_re = re.compile(r'\s*====*\s+(.*)\s+===')
   version_re = re.compile(r'%s(?:$|[^-])' % version)
