@@ -37,7 +37,7 @@ final class ExactPhraseScorer extends Scorer {
     }
   }
 
-  private final ConjunctionDISI conjunction;
+  private final DocIdSetIterator conjunction;
   private final PostingsAndPosition[] postings;
 
   private int freq;
@@ -60,6 +60,7 @@ final class ExactPhraseScorer extends Scorer {
       postingsAndPositions.add(new PostingsAndPosition(posting.postings, posting.position));
     }
     conjunction = ConjunctionDISI.intersectIterators(iterators);
+    assert TwoPhaseIterator.unwrap(conjunction) == null;
     this.postings = postingsAndPositions.toArray(new PostingsAndPosition[postingsAndPositions.size()]);
     this.matchCost = matchCost;
   }

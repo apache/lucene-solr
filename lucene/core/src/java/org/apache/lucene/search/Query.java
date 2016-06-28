@@ -74,15 +74,50 @@ public abstract class Query {
     return this;
   }
 
+  /**
+   * Override and implement query instance equivalence properly in a subclass. 
+   * This is required so that {@link QueryCache} works properly.
+   * 
+   * Typically a query will be equal to another only if it's an instance of 
+   * the same class and its document-filtering properties are identical that other
+   * instance. Utility methods are provided for certain repetitive code. 
+   * 
+   * @see #sameClassAs(Object)
+   * @see #classHash()
+   */
   @Override
-  public int hashCode() {
-    return getClass().hashCode();
+  public abstract boolean equals(Object obj);
+
+  /**
+   * Override and implement query hash code properly in a subclass. 
+   * This is required so that {@link QueryCache} works properly.
+   * 
+   * @see #equals(Object)
+   */
+  @Override
+  public abstract int hashCode();
+
+  /**
+   * Utility method to check whether <code>other</code> is not null and is exactly 
+   * of the same class as this object's class.
+   * 
+   * When this method is used in an implementation of {@link #equals(Object)},
+   * consider using {@link #classHash()} in the implementation
+   * of {@link #hashCode} to differentiate different class
+   */
+  protected final boolean sameClassAs(Object other) {
+    return other != null && getClass() == other.getClass();
   }
 
-  @Override
-  public boolean equals(Object obj) {
-    if (obj == null)
-      return false;
-    return getClass() == obj.getClass();
+  private final int CLASS_NAME_HASH = getClass().getName().hashCode();
+
+  /**
+   * Provides a constant integer for a given class, derived from the name of the class.
+   * The rationale for not using just {@link Class#hashCode()} is that classes may be
+   * assigned different hash codes for each execution and we want hashes to be possibly
+   * consistent to facilitate debugging.    
+   */
+  protected final int classHash() {
+    return CLASS_NAME_HASH;
   }
 }

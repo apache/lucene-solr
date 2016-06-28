@@ -17,10 +17,10 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -28,10 +28,12 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -80,20 +82,14 @@ public class DistributedQueue {
   private TreeSet<String> knownChildren = new TreeSet<>();
 
   /**
-   * Used to wait on a non-empty queue; you must hold {@link #updateLock} and verify that
-   * {@link #knownChildren} is empty before waiting on this condition.
+   * Used to wait on ZK changes to the child list; you must hold {@link #updateLock} before waiting on this condition.
    */
-  private final Condition notEmpty = updateLock.newCondition();
+  private final Condition changed = updateLock.newCondition();
 
   /**
-   * If non-null, the last watcher to listen for child changes.
+   * If non-null, the last watcher to listen for child changes.  If null, the in-memory contents are dirty.
    */
   private ChildWatcher lastWatcher = null;
-
-  /**
-   * If true, ZK's child list probably doesn't match what's in memory.
-   */
-  private boolean isDirty = true;
 
   public DistributedQueue(SolrZkClient zookeeper, String dir) {
     this(zookeeper, dir, new Overseer.Stats());
@@ -165,7 +161,7 @@ public class DistributedQueue {
         if (result != null) {
           return result;
         }
-        waitNanos = notEmpty.awaitNanos(waitNanos);
+        waitNanos = changed.awaitNanos(waitNanos);
       }
       return null;
     } finally {
@@ -222,7 +218,7 @@ public class DistributedQueue {
         if (result != null) {
           return result;
         }
-        notEmpty.await();
+        changed.await();
       }
     } finally {
       updateLock.unlock();
@@ -273,25 +269,19 @@ public class DistributedQueue {
   private String firstChild(boolean remove) throws KeeperException, InterruptedException {
     updateLock.lockInterruptibly();
     try {
-      // Try to fetch the first in-memory child.
-      if (!knownChildren.isEmpty()) {
+      // If we're not in a dirty state, and we have in-memory children, return from in-memory.
+      if (lastWatcher != null && !knownChildren.isEmpty()) {
         return remove ? knownChildren.pollFirst() : knownChildren.first();
-      }
-
-      if (lastWatcher != null && !isDirty) {
-        // No children, no known updates, and a watcher is already set; nothing we can do.
-        return null;
       }
 
       // Try to fetch an updated list of children from ZK.
       ChildWatcher newWatcher = new ChildWatcher();
       knownChildren = fetchZkChildren(newWatcher);
       lastWatcher = newWatcher; // only set after fetchZkChildren returns successfully
-      isDirty = false;
       if (knownChildren.isEmpty()) {
         return null;
       }
-      notEmpty.signalAll();
+      changed.signalAll();
       return remove ? knownChildren.pollFirst() : knownChildren.first();
     } finally {
       updateLock.unlock();
@@ -325,26 +315,63 @@ public class DistributedQueue {
   }
 
   /**
-   * Return the currently-known set of children from memory. If there are no children,
-   * waits up to {@code waitMillis} for at least one child to become available. May
-   * update the set of known children.
+   * Return the currently-known set of elements, using child names from memory. If no children are found, or no
+   * children pass {@code acceptFilter}, waits up to {@code waitMillis} for at least one child to become available.
+   * <p/>
+   * Package-private to support {@link OverseerTaskQueue} specifically.
    */
-  SortedSet<String> getChildren(long waitMillis) throws KeeperException, InterruptedException {
+  Collection<Pair<String, byte[]>> peekElements(int max, long waitMillis, Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
+    List<String> foundChildren = new ArrayList<>();
     long waitNanos = TimeUnit.MILLISECONDS.toNanos(waitMillis);
-    while (waitNanos > 0) {
+    while (true) {
       // Trigger a fetch if needed.
-      firstElement();
+      firstChild(false);
+
       updateLock.lockInterruptibly();
       try {
-        if (!knownChildren.isEmpty()) {
-          return new TreeSet<>(knownChildren);
+        for (String child : knownChildren) {
+          if (acceptFilter.apply(child)) {
+            foundChildren.add(child);
+          }
         }
-        waitNanos = notEmpty.awaitNanos(waitNanos);
+        if (!foundChildren.isEmpty()) {
+          break;
+        }
+        if (waitNanos <= 0) {
+          break;
+        }
+        waitNanos = changed.awaitNanos(waitNanos);
       } finally {
         updateLock.unlock();
       }
+
+      if (!foundChildren.isEmpty()) {
+        break;
+      }
     }
-    return Collections.emptySortedSet();
+
+    // Technically we could restart the method if we fail to actually obtain any valid children
+    // from ZK, but this is a super rare case, and the latency of the ZK fetches would require
+    // much more sophisticated waitNanos tracking.
+    List<Pair<String, byte[]>> result = new ArrayList<>();
+    for (String child : foundChildren) {
+      if (result.size() >= max) {
+        break;
+      }
+      try {
+        byte[] data = zookeeper.getData(dir + "/" + child, null, null, true);
+        result.add(new Pair<>(child, data));
+      } catch (KeeperException.NoNodeException e) {
+        // Another client deleted the node first, remove the in-memory and continue.
+        updateLock.lockInterruptibly();
+        try {
+          knownChildren.remove(child);
+        } finally {
+          updateLock.unlock();
+        }
+      }
+    }
+    return result;
   }
 
   /**
@@ -418,10 +445,8 @@ public class DistributedQueue {
         if (lastWatcher == this) {
           lastWatcher = null;
         }
-        // Do no updates in this thread, just signal state back to client threads.
-        isDirty = true;
         // optimistically signal any waiters that the queue may not be empty now, so they can wake up and retry
-        notEmpty.signalAll();
+        changed.signalAll();
       } finally {
         updateLock.unlock();
       }

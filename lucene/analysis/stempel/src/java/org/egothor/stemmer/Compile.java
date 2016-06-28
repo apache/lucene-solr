@@ -117,33 +117,32 @@ public class Compile {
     }
     
     for (int i = 1; i < args.length; i++) {
-      LineNumberReader in;
       // System.out.println("[" + args[i] + "]");
       Diff diff = new Diff();
       
       allocTrie();
       
       System.out.println(args[i]);
-      in = new LineNumberReader(Files.newBufferedReader(Paths.get(args[i]), Charset.forName(charset)));
-      for (String line = in.readLine(); line != null; line = in.readLine()) {
-        try {
-          line = line.toLowerCase(Locale.ROOT);
-          StringTokenizer st = new StringTokenizer(line);
-          String stem = st.nextToken();
-          if (storeorig) {
-            trie.add(stem, "-a");
-          }
-          while (st.hasMoreTokens()) {
-            String token = st.nextToken();
-            if (token.equals(stem) == false) {
-              trie.add(token, diff.exec(token, stem));
+      try (LineNumberReader in = new LineNumberReader(Files.newBufferedReader(Paths.get(args[i]), Charset.forName(charset)))) {
+        for (String line = in.readLine(); line != null; line = in.readLine()) {
+          try {
+            line = line.toLowerCase(Locale.ROOT);
+            StringTokenizer st = new StringTokenizer(line);
+            String stem = st.nextToken();
+            if (storeorig) {
+              trie.add(stem, "-a");
             }
+            while (st.hasMoreTokens()) {
+              String token = st.nextToken();
+              if (token.equals(stem) == false) {
+                trie.add(token, diff.exec(token, stem));
+              }
+            }
+          } catch (java.util.NoSuchElementException x) {
+            // no base token (stem) on a line
           }
-        } catch (java.util.NoSuchElementException x) {
-          // no base token (stem) on a line
         }
       }
-      in.close();
       
       Optimizer o = new Optimizer();
       Optimizer2 o2 = new Optimizer2();
@@ -180,11 +179,11 @@ public class Compile {
         trie.printInfo(System.out, prefix + " ");
       }
       
-      DataOutputStream os = new DataOutputStream(new BufferedOutputStream(
-          Files.newOutputStream(Paths.get(args[i] + ".out"))));
-      os.writeUTF(args[0]);
-      trie.store(os);
-      os.close();
+      try (DataOutputStream os = new DataOutputStream(new BufferedOutputStream(
+          Files.newOutputStream(Paths.get(args[i] + ".out"))))) {
+        os.writeUTF(args[0]);
+        trie.store(os);
+      }
     }
   }
   

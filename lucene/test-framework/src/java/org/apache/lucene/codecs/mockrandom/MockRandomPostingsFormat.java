@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.mockrandom;
 import java.io.IOException;
 import java.util.Random;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -47,7 +48,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -107,11 +108,10 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     }
 
     final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, SEED_EXT);
-    final IndexOutput out = state.directory.createOutput(seedFileName, state.context);
-    try {
+    try(IndexOutput out = state.directory.createOutput(seedFileName, state.context)) {
+      CodecUtil.writeIndexHeader(out, "MockRandomSeed", 0, state.segmentInfo.getId(), state.segmentSuffix);
       out.writeLong(seed);
-    } finally {
-      out.close();
+      CodecUtil.writeFooter(out);
     }
 
     final Random random = new Random(seed);
@@ -267,8 +267,10 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
     final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, SEED_EXT);
-    final IndexInput in = state.directory.openInput(seedFileName, state.context);
+    final ChecksumIndexInput in = state.directory.openChecksumInput(seedFileName, state.context);
+    CodecUtil.checkIndexHeader(in, "MockRandomSeed", 0, 0, state.segmentInfo.getId(), state.segmentSuffix);
     final long seed = in.readLong();
+    CodecUtil.checkFooter(in);
     if (LuceneTestCase.VERBOSE) {
       System.out.println("MockRandomCodec: reading from seg=" + state.segmentInfo.name + " formatID=" + state.segmentSuffix + " seed=" + seed);
     }

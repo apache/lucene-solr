@@ -182,6 +182,7 @@ class GeoWideSouthRectangle extends GeoBaseBBox {
       .addHorizontalPlane(planetModel, topLat, topPlane, eitherBound)
       .addVerticalPlane(planetModel, rightLon, rightPlane, topPlane)
       .addVerticalPlane(planetModel, leftLon, leftPlane, topPlane)
+      .addIntersection(planetModel, leftPlane, rightPlane, topPlane)
       .addPoint(ULHC).addPoint(URHC).addPoint(planetModel.SOUTH_POLE);
   }
 

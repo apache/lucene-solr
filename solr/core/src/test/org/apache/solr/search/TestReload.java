@@ -18,8 +18,6 @@ package org.apache.solr.search;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Ignore;
-
 import java.util.Random;
 
 public class TestReload extends TestRTGBase {

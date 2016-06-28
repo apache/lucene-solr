@@ -26,7 +26,6 @@ import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.*;
 
 

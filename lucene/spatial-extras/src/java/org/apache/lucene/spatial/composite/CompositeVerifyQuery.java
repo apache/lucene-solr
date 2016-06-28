@@ -57,22 +57,19 @@ public class CompositeVerifyQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-
-    CompositeVerifyQuery that = (CompositeVerifyQuery) o;
-
-    if (!indexQuery.equals(that.indexQuery)) return false;
-    if (!predicateValueSource.equals(that.predicateValueSource)) return false;
-
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(CompositeVerifyQuery other) {
+    return indexQuery.equals(other.indexQuery) &&
+           predicateValueSource.equals(other.predicateValueSource);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
+    int result = classHash();
     result = 31 * result + indexQuery.hashCode();
     result = 31 * result + predicateValueSource.hashCode();
     return result;

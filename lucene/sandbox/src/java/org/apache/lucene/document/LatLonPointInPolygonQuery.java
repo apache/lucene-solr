@@ -32,6 +32,7 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.geo.Polygon;
@@ -110,25 +111,28 @@ final class LatLonPointInPolygonQuery extends Query {
         LatLonPoint.checkCompatible(fieldInfo);
 
         // matching docids
-        MatchingPoints result = new MatchingPoints(reader, field);
+        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
         values.intersect(field, 
                          new IntersectVisitor() {
+
+                           DocIdSetBuilder.BulkAdder adder;
+
                            @Override
                            public void grow(int count) {
-                             result.grow(count);
+                             adder = result.grow(count);
                            }
 
                            @Override
                            public void visit(int docID) {
-                             result.add(docID);
+                             adder.add(docID);
                            }
 
                            @Override
                            public void visit(int docID, byte[] packedValue) {
                              if (tree.contains(decodeLatitude(packedValue, 0), 
                                                decodeLongitude(packedValue, Integer.BYTES))) {
-                               result.add(docID);
+                               adder.add(docID);
                              }
                            }
 
@@ -151,7 +155,7 @@ final class LatLonPointInPolygonQuery extends Query {
                            }
                          });
 
-        return new ConstantScoreScorer(this, score(), result.iterator());
+        return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
     };
   }
@@ -169,21 +173,21 @@ final class LatLonPointInPolygonQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
+    int result = classHash();
     result = prime * result + field.hashCode();
     result = prime * result + Arrays.hashCode(polygons);
     return result;
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
-    LatLonPointInPolygonQuery other = (LatLonPointInPolygonQuery) obj;
-    if (!field.equals(other.field)) return false;
-    if (!Arrays.equals(polygons, other.polygons)) return false;
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(LatLonPointInPolygonQuery other) {
+    return field.equals(other.field) &&
+           Arrays.equals(polygons, other.polygons);
   }
 
   @Override

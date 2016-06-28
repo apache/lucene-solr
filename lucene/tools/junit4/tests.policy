@@ -38,7 +38,9 @@ grant {
   permission java.io.FilePermission "${junit4.childvm.cwd}${/}jacoco.db", "write";
   permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,write,delete";
   permission java.io.FilePermission "${clover.db.dir}${/}-", "read,write,delete";
-  
+
+  // misc HardlinkCopyDirectoryWrapper needs this to test if hardlinks can be created
+  permission java.nio.file.LinkPermission "hard";
   // needed by SSD detection tests in TestIOUtils (creates symlinks)
   permission java.nio.file.LinkPermission "symbolic";
 

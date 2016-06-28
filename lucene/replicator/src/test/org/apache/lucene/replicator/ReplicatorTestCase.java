@@ -17,8 +17,6 @@
 package org.apache.lucene.replicator;
 
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.lucene.util.LuceneTestCase;

@@ -18,7 +18,6 @@ package org.apache.solr.update.processor;
 
 import org.apache.solr.common.SolrInputDocument;
 
-import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.update.UpdateCommand;

@@ -18,8 +18,6 @@ package org.apache.solr.cloud.overseer;
 
 import java.util.Locale;
 
-import org.apache.solr.cloud.Overseer;
-
 /**
  * Enum of actions supported by the overseer only.
  *

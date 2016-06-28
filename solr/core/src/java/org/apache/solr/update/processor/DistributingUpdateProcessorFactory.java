@@ -16,8 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.common.SolrException;
-
 /**
  * A marker interface for denoting that a factory is responsible for handling
  * distributed communication of updates across a SolrCloud cluster.

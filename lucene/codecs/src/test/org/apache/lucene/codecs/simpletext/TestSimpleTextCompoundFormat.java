@@ -27,4 +27,14 @@ public class TestSimpleTextCompoundFormat extends BaseCompoundFormatTestCase {
   protected Codec getCodec() {
     return codec;
   }
+
+  @Override
+  public void testCorruptFilesAreCaught() {
+    // SimpleText does not catch broken sub-files in CFS!
+  }
+
+  @Override
+  public void testMissingCodecHeadersAreCaught() {
+    // SimpleText does not catch broken sub-files in CFS!
+  }
 }

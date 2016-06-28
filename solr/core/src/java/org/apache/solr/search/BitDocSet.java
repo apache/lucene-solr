@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -266,11 +267,12 @@ public class BitDocSet extends DocSetBase {
 
   @Override
   public Filter getTopFilter() {
-    final FixedBitSet bs = bits;
     // TODO: if cardinality isn't cached, do a quick measure of sparseness
     // and return null from bits() if too sparse.
 
     return new Filter() {
+      final FixedBitSet bs = bits;
+
       @Override
       public DocIdSet getDocIdSet(final LeafReaderContext context, final Bits acceptDocs) {
         LeafReader reader = context.reader();
@@ -355,9 +357,21 @@ public class BitDocSet extends DocSetBase {
 
         }, acceptDocs2);
       }
+
       @Override
       public String toString(String field) {
         return "BitSetDocTopFilter";
+      }
+
+      @Override
+      public boolean equals(Object other) {
+        return sameClassAs(other) &&
+               Objects.equals(bs, getClass().cast(other).bs);
+      }
+      
+      @Override
+      public int hashCode() {
+        return classHash() * 31 + bs.hashCode();
       }
     };
   }

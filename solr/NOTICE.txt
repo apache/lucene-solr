@@ -61,6 +61,9 @@ Copyright (C) 2010-2014 James Burke, https://github.com/jrburke/requirejs
 This product includes fugue icons created by Yusuke Kamiyamane
 Copyright (C) 2013-2014 Yusuke Kamiyamane, https://github.com/yusukekamiyamane/fugue-icons
 
+Jackcess: http://jackcess.sourceforge.net/
+Copyright (C) 2011-2014 James Ahlborn
+
 JavaMail API 1.5.1: https://glassfish.dev.java.net/javaee5/mail/
 License: Common Development and Distribution License (CDDL) v1.1 (https://glassfish.java.net/public/CDDL+GPL_1_1.html)
 

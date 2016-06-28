@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.ar;
 
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;

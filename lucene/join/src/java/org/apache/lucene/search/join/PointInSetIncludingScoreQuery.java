@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
@@ -21,7 +20,6 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -32,7 +30,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
 
 /*
@@ -289,7 +286,7 @@ abstract class PointInSetIncludingScoreQuery extends Query {
 
   @Override
   public final int hashCode() {
-    int hash = super.hashCode();
+    int hash = classHash();
     hash = 31 * hash + field.hashCode();
     hash = 31 * hash + originalQuery.hashCode();
     hash = 31 * hash + sortedPackedPointsHashCode;
@@ -299,16 +296,16 @@ abstract class PointInSetIncludingScoreQuery extends Query {
 
   @Override
   public final boolean equals(Object other) {
-    if (super.equals(other)) {
-      final PointInSetIncludingScoreQuery q = (PointInSetIncludingScoreQuery) other;
-      return q.field.equals(field) &&
-        q.originalQuery.equals(originalQuery) &&
-        q.bytesPerDim == bytesPerDim &&
-        q.sortedPackedPointsHashCode == sortedPackedPointsHashCode &&
-        q.sortedPackedPoints.equals(sortedPackedPoints);
-    }
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
 
-    return false;
+  private boolean equalsTo(PointInSetIncludingScoreQuery other) {
+    return other.field.equals(field) &&
+           other.originalQuery.equals(originalQuery) &&
+           other.bytesPerDim == bytesPerDim &&
+           other.sortedPackedPointsHashCode == sortedPackedPointsHashCode &&
+           other.sortedPackedPoints.equals(sortedPackedPoints);
   }
 
   @Override

@@ -35,13 +35,10 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -54,10 +51,11 @@ public class TestRestoreCore extends SolrJettyTestBase {
   TestReplicationHandler.SolrInstance master = null;
   SolrClient masterClient;
 
-  private static final String CONF_DIR = "solr" + File.separator + "collection1" + File.separator + "conf"
+  private static final String CONF_DIR = "solr" + File.separator + DEFAULT_TEST_CORENAME + File.separator + "conf"
       + File.separator;
 
   private static String context = "/solr";
+  private static long docsSeed; // see indexDocs()
 
   private static JettySolrRunner createJetty(TestReplicationHandler.SolrInstance instance) throws Exception {
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
@@ -72,7 +70,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
   private static SolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
-      final String baseUrl = buildUrl(port, context) + "/" + DEFAULT_TEST_CORENAME;
+      final String baseUrl = buildUrl(port, context);
       HttpSolrClient client = getHttpSolrClient(baseUrl);
       client.setConnectionTimeout(15000);
       client.setSoTimeout(60000);
@@ -95,6 +93,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     masterJetty = createJetty(master);
     masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    docsSeed = random().nextLong();
   }
 
   @Override
@@ -111,11 +110,12 @@ public class TestRestoreCore extends SolrJettyTestBase {
   @Test
   public void testSimpleRestore() throws Exception {
 
-    int nDocs = usually() ? TestReplicationHandlerBackup.indexDocs(masterClient) : 0;
+    int nDocs = usually() ? BackupRestoreUtils.indexDocs(masterClient, "collection1", docsSeed) : 0;
 
     String snapshotName;
     String location;
     String params = "";
+    String baseUrl = masterJetty.getBaseUrl().toString();
 
     //Use the default backup location or an externally provided location.
     if (random().nextBoolean()) {
@@ -131,7 +131,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, params);
 
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, null);
+    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME, null);
     while (!checkBackupStatus.success) {
       checkBackupStatus.fetchStatus();
       Thread.sleep(1000);
@@ -148,9 +148,9 @@ public class TestRestoreCore extends SolrJettyTestBase {
         //Delete a few docs
         int numDeletes = TestUtil.nextInt(random(), 1, nDocs);
         for(int i=0; i<numDeletes; i++) {
-          masterClient.deleteByQuery("id:" + i);
+          masterClient.deleteByQuery(DEFAULT_TEST_CORENAME, "id:" + i);
         }
-        masterClient.commit();
+        masterClient.commit(DEFAULT_TEST_CORENAME);
 
         //Add a few more
         int moreAdds = TestUtil.nextInt(random(), 1, 100);
@@ -158,37 +158,38 @@ public class TestRestoreCore extends SolrJettyTestBase {
           SolrInputDocument doc = new SolrInputDocument();
           doc.addField("id", i + nDocs);
           doc.addField("name", "name = " + (i + nDocs));
-          masterClient.add(doc);
+          masterClient.add(DEFAULT_TEST_CORENAME, doc);
         }
         //Purposely not calling commit once in a while. There can be some docs which are not committed
         if (usually()) {
-          masterClient.commit();
+          masterClient.commit(DEFAULT_TEST_CORENAME);
         }
       }
 
       TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_RESTORE, params);
 
-      while (!fetchRestoreStatus()) {
+      while (!fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME)) {
         Thread.sleep(1000);
       }
 
       //See if restore was successful by checking if all the docs are present again
-      verifyDocs(nDocs);
+      BackupRestoreUtils.verifyDocs(nDocs, masterClient, DEFAULT_TEST_CORENAME);
     }
 
   }
 
   @Test
   public void testFailedRestore() throws Exception {
-    int nDocs = TestReplicationHandlerBackup.indexDocs(masterClient);
+    int nDocs = BackupRestoreUtils.indexDocs(masterClient, "collection1", docsSeed);
 
     String location = createTempDir().toFile().getAbsolutePath();
     String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
     String params = "&name=" + snapshotName + "&location=" + URLEncoder.encode(location, "UTF-8");
+    String baseUrl = masterJetty.getBaseUrl().toString();
 
     TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, params);
 
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, null);
+    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME, null);
     while (!checkBackupStatus.success) {
       checkBackupStatus.fetchStatus();
       Thread.sleep(1000);
@@ -205,7 +206,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_RESTORE, params);
 
     try {
-      while (!fetchRestoreStatus()) {
+      while (!fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME)) {
         Thread.sleep(1000);
       }
       fail("Should have thrown an error because restore could not have been successful");
@@ -213,25 +214,16 @@ public class TestRestoreCore extends SolrJettyTestBase {
       //supposed to happen
     }
 
-    verifyDocs(nDocs);
+    BackupRestoreUtils.verifyDocs(nDocs, masterClient, DEFAULT_TEST_CORENAME);
 
     //make sure we can write to the index again
-    nDocs = TestReplicationHandlerBackup.indexDocs(masterClient);
-    verifyDocs(nDocs);
+    nDocs = BackupRestoreUtils.indexDocs(masterClient, "collection1", docsSeed);
+    BackupRestoreUtils.verifyDocs(nDocs, masterClient, DEFAULT_TEST_CORENAME);
 
   }
 
-  private void verifyDocs(int nDocs) throws SolrServerException, IOException {
-    ModifiableSolrParams queryParams = new ModifiableSolrParams();
-    queryParams.set("q", "*:*");
-    QueryResponse response = masterClient.query(queryParams);
-
-    assertEquals(0, response.getStatus());
-    assertEquals(nDocs, response.getResults().getNumFound());
-  }
-
-  private boolean fetchRestoreStatus() throws IOException {
-    String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME +
+  public static boolean fetchRestoreStatus (String baseUrl, String coreName) throws IOException {
+    String masterUrl = baseUrl + "/" + coreName +
         ReplicationHandler.PATH + "?command=" + ReplicationHandler.CMD_RESTORE_STATUS;
     final Pattern pException = Pattern.compile("<str name=\"exception\">(.*?)</str>");
 

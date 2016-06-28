@@ -16,17 +16,9 @@
  */
 package org.apache.solr.util;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
-
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MergePolicy.MergeSpecification;
 import org.apache.lucene.index.MergePolicyWrapper;
-import org.apache.lucene.index.MergeTrigger;
-import org.apache.lucene.index.SegmentCommitInfo;
-import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.util.LuceneTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

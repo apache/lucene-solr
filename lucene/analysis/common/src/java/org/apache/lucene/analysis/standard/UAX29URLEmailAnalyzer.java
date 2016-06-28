@@ -20,18 +20,18 @@ package org.apache.lucene.analysis.standard;
 import java.io.IOException;
 import java.io.Reader;
 
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopAnalyzer;
-import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 
 /**
  * Filters {@link org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer}
  * with {@link org.apache.lucene.analysis.standard.StandardFilter},
- * {@link org.apache.lucene.analysis.core.LowerCaseFilter} and
- * {@link org.apache.lucene.analysis.core.StopFilter}, using a list of
+ * {@link org.apache.lucene.analysis.LowerCaseFilter} and
+ * {@link org.apache.lucene.analysis.StopFilter}, using a list of
  * English stop words.
  */
 public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
@@ -59,7 +59,7 @@ public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
   }
 
   /** Builds an analyzer with the stop words from the given reader.
-   * @see org.apache.lucene.analysis.util.WordlistLoader#getWordSet(java.io.Reader)
+   * @see org.apache.lucene.analysis.WordlistLoader#getWordSet(java.io.Reader)
    * @param stopwords Reader to read stop words from */
   public UAX29URLEmailAnalyzer(Reader stopwords) throws IOException {
     this(loadStopwordSet(stopwords));

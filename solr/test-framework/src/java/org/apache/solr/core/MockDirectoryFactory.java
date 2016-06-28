@@ -63,11 +63,6 @@ public class MockDirectoryFactory extends EphemeralDirectoryFactory {
       // and check index fails
       mockDirWrapper.setCheckIndexOnClose(false);
       
-      // if we enable this, TestReplicationHandler fails when it
-      // tries to write to index.properties after the file has
-      // already been created.
-      mockDirWrapper.setPreventDoubleWrite(false);
-      
       if (allowReadingFilesStillOpenForWrite) {
         mockDirWrapper.setAllowReadingFilesStillOpenForWrite(true);
       }

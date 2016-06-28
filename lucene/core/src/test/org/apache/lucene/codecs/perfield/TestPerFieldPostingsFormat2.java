@@ -24,8 +24,8 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
+import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
-import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -33,8 +33,8 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -202,13 +202,13 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
   public static class MockCodec extends AssertingCodec {
     final PostingsFormat luceneDefault = TestUtil.getDefaultPostingsFormat();
-    final PostingsFormat simpleText = new SimpleTextPostingsFormat();
+    final PostingsFormat direct = new DirectPostingsFormat();
     final PostingsFormat memory = new MemoryPostingsFormat();
     
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       if (field.equals("id")) {
-        return simpleText;
+        return direct;
       } else if (field.equals("content")) {
         return memory;
       } else {
@@ -219,12 +219,12 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
   public static class MockCodec2 extends AssertingCodec {
     final PostingsFormat luceneDefault = TestUtil.getDefaultPostingsFormat();
-    final PostingsFormat simpleText = new SimpleTextPostingsFormat();
+    final PostingsFormat direct = new DirectPostingsFormat();
     
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       if (field.equals("id")) {
-        return simpleText;
+        return direct;
       } else {
         return luceneDefault;
       }

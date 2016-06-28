@@ -17,7 +17,6 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.JmxConfiguration;
 import org.junit.After;
@@ -33,8 +32,6 @@ import javax.management.Query;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
-import javax.management.remote.rmi.RMIConnectorServer;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;

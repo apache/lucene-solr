@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.store.BaseDirectoryWrapper;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;

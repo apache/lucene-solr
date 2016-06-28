@@ -19,7 +19,6 @@ package org.apache.solr.common.cloud;
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.ZkCLI;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;

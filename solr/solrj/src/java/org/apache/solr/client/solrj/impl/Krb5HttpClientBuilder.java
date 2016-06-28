@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.Arrays;
@@ -29,8 +28,6 @@ import javax.security.auth.login.Configuration;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
-import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.auth.AuthScope;
@@ -43,10 +40,6 @@ import org.apache.http.cookie.CookieSpecProvider;
 import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.protocol.HttpContext;
-import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder.AuthSchemeRegistryProvider;
-import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder.CookieSpecRegistryProvider;
-import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder.CredentialsProviderProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

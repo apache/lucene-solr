@@ -647,11 +647,11 @@ public class RestManager {
    * Restlet router.  Returns the corresponding instance.
    */
   public synchronized ManagedResource addManagedResource(String resourceId, Class<? extends ManagedResource> clazz) {
-    ManagedResource res = null;
-    ManagedResourceRegistration existingReg = registry.registered.get(resourceId);
+    final ManagedResource res;
+    final ManagedResourceRegistration existingReg = registry.registered.get(resourceId);
     if (existingReg == null) {
       registry.registerManagedResource(resourceId, clazz, null);
-      addRegisteredResource(registry.registered.get(resourceId));
+      res = addRegisteredResource(registry.registered.get(resourceId));
     } else {
       res = getManagedResource(resourceId);
     }

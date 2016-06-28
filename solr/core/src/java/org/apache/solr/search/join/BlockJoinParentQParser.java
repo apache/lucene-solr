@@ -17,6 +17,7 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
@@ -134,16 +135,14 @@ public class BlockJoinParentQParser extends QParser {
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
-        return false;
-      }
-      return filter.equals(((BitDocIdSetFilterWrapper) obj).filter);
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             Objects.equals(filter, getClass().cast(other).filter);
     }
 
     @Override
     public int hashCode() {
-      return 31 * super.hashCode() + filter.hashCode();
+      return classHash() + filter.hashCode();
     }
 
   }

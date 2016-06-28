@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.RefCounted;
 import org.noggit.ObjectBuilder;

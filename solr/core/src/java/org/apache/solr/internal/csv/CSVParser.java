@@ -18,8 +18,6 @@ package org.apache.solr.internal.csv;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.InputStreamReader;
-import java.io.InputStream;
 import java.util.ArrayList;
 
 

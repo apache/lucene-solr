@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.zip.CRC32;
 
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -122,42 +123,6 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     dir.close();
   }
   
-  // TODO: are these semantics really needed by lucene? can we just throw exception?
-  public void testCopyOverwrite() throws Exception {
-    Directory source = getDirectory(createTempDir("testCopyOverwrite"));
-    Directory dest = newDirectory();
-    
-    // we are double-writing intentionally, because thats the api
-    if (dest instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dest).setPreventDoubleWrite(false);
-    }
-    
-    IndexOutput output = source.createOutput("foobar", newIOContext(random()));
-    int numBytes = random().nextInt(20000);
-    byte bytes[] = new byte[numBytes];
-    random().nextBytes(bytes);
-    output.writeBytes(bytes, bytes.length);
-    output.close();
-    
-    // create foobaz first, it should be overwritten
-    IndexOutput output2 = dest.createOutput("foobaz", newIOContext(random()));
-    output2.writeString("bogus!");
-    output2.close();
-    
-    dest.copyFrom(source, "foobar", "foobaz", newIOContext(random()));
-    assertTrue(slowFileExists(dest, "foobaz"));
-    
-    IndexInput input = dest.openInput("foobaz", newIOContext(random()));
-    byte bytes2[] = new byte[numBytes];
-    input.readBytes(bytes2, 0, bytes2.length);
-    assertEquals(input.length(), numBytes);
-    input.close();
-    
-    assertArrayEquals(bytes, bytes2);
-    
-    IOUtils.close(source, dest);
-  }
-
   public void testDeleteFile() throws Exception {
     Directory dir = getDirectory(createTempDir("testDeleteFile"));
     int count = dir.listAll().length;
@@ -1208,10 +1173,8 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       // Keep trying until virus checker refuses to delete:
       final String fileName;
       while (true) {
-        String candidate = TestUtil.randomSimpleString(random());
-        if (candidate.length() == 0) {
-          continue;
-        }
+        // create a random filename (segment file name style), so it cannot hit windows problem with special filenames ("con", "com1",...):
+        String candidate = IndexFileNames.segmentFileName(TestUtil.randomSimpleString(random(), 1, 6), TestUtil.randomSimpleString(random()), "test");
         try (IndexOutput out = dir.createOutput(candidate, IOContext.DEFAULT)) {
           out.getFilePointer(); // just fake access to prevent compiler warning
         }
@@ -1241,24 +1204,10 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
         fsDir.deleteFile(fileName);
       });
 
+      // Make sure we cannot open it for reading:
       expectThrows(NoSuchFileException.class, () -> {      
         fsDir.openInput(fileName, IOContext.DEFAULT);
       });
-
-      if (random().nextBoolean()) {
-        try (IndexOutput out = fsDir.createOutput(fileName + "z", IOContext.DEFAULT)) {
-          out.getFilePointer(); // just fake access to prevent compiler warning
-        }
-        // Make sure we can rename onto the deleted file:
-        fsDir.renameFile(fileName + "z", fileName);
-      } else {
-        // write the file again
-        try (IndexOutput out = dir.createOutput(fileName, IOContext.DEFAULT)) {
-          out.getFilePointer(); // just fake access to prevent compiler warning
-        }
-      }
-      assertEquals(0, fsDir.fileLength(fileName));
-      assertTrue(Arrays.asList(fsDir.listAll()).contains(fileName));
     }
   }
 

@@ -31,7 +31,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -66,9 +65,9 @@ public class LocalReplicatorTest extends ReplicatorTestCase {
   
   private Revision createRevision(final int id) throws IOException {
     sourceWriter.addDocument(new Document());
-    sourceWriter.setCommitData(new HashMap<String, String>() {{
+    sourceWriter.setLiveCommitData(new HashMap<String, String>() {{
       put(VERSION_ID, Integer.toString(id, 16));
-    }});
+    }}.entrySet());
     sourceWriter.commit();
     return new IndexRevision(sourceWriter);
   }

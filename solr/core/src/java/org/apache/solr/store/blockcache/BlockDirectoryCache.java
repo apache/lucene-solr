@@ -17,7 +17,6 @@
 package org.apache.solr.store.blockcache;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BlockDirectoryCache implements Cache {
   private final BlockCache blockCache;
   private final AtomicInteger counter = new AtomicInteger();
-  private final Map<String,Integer> names = new ConcurrentHashMap<>();
+  private final Map<String,Integer> names = new ConcurrentHashMap<>(8192, 0.75f, 512);
   private Set<BlockCacheKey> keysToRelease;
   private final String path;
   private final Metrics metrics;
@@ -43,7 +42,7 @@ public class BlockDirectoryCache implements Cache {
     this.path = path;
     this.metrics = metrics;
     if (releaseBlocks) {
-      keysToRelease = Collections.synchronizedSet(new HashSet<BlockCacheKey>());
+      keysToRelease = Collections.newSetFromMap(new ConcurrentHashMap<BlockCacheKey,Boolean>(1024, 0.75f, 512));
     }
   }
   

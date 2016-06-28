@@ -17,6 +17,7 @@
 package org.apache.solr.update;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
@@ -28,9 +29,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.uninverting.UninvertingReader;
-import org.apache.lucene.util.Bits;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.uninverting.UninvertingReader;
 
 /** 
  * Allows access to uninverted docvalues by delete-by-queries.
@@ -99,24 +99,20 @@ final class DeleteByQueryWrapper extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + ((in == null) ? 0 : in.hashCode());
-    result = prime * result + ((schema == null) ? 0 : schema.hashCode());
+    int result = classHash();
+    result = prime * result + Objects.hashCode(in);
+    result = prime * result + Objects.hashCode(schema);
     return result;
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
-    DeleteByQueryWrapper other = (DeleteByQueryWrapper) obj;
-    if (in == null) {
-      if (other.in != null) return false;
-    } else if (!in.equals(other.in)) return false;
-    if (schema == null) {
-      if (other.schema != null) return false;
-    } else if (!schema.equals(other.schema)) return false;
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(DeleteByQueryWrapper other) {
+    return Objects.equals(in, other.in) &&
+           Objects.equals(schema, other.schema);
   }
 }

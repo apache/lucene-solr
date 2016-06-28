@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;

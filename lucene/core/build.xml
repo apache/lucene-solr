@@ -133,7 +133,7 @@
     <delete file="${build.dir}/moman.zip"/>
   </target>
 
-  <target name="regenerate" depends="createLevAutomata,createPackedIntSources"/>
+  <target name="regenerate" depends="createLevAutomata,createPackedIntSources,jflex"/>
   
   <macrodef name="startLockStressTestClient">
     <attribute name="clientId"/>
@@ -222,5 +222,21 @@
   </target>
   
   <target name="test" depends="common.test, test-lock-factory"/>
+
+  <target name="clean-jflex">
+    <delete>
+      <fileset dir="src/java/org/apache/lucene/analysis/standard" includes="**/*.java">
+        <containsregexp expression="generated.*by.*JFlex"/>
+      </fileset>
+    </delete>
+  </target>
+
+  <target name="jflex" depends="-install-jflex,clean-jflex,-jflex-StandardAnalyzer"/>
+  
+  <target name="-jflex-StandardAnalyzer" depends="init,-install-jflex">
+    <run-jflex-and-disable-buffer-expansion 
+        dir="src/java/org/apache/lucene/analysis/standard" name="StandardTokenizerImpl"/>
+  </target>
+
 
 </project>

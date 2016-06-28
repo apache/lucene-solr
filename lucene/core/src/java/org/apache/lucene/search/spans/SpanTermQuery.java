@@ -163,19 +163,13 @@ public class SpanTermQuery extends SpanQuery {
 
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + term.hashCode();
-    return result;
+    return classHash() ^ term.hashCode();
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (! super.equals(obj)) {
-      return false;
-    }
-    SpanTermQuery other = (SpanTermQuery) obj;
-    return term.equals(other.term);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           term.equals(((SpanTermQuery) other).term);
   }
 
 }

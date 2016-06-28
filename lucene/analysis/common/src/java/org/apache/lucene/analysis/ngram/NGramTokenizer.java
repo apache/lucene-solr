@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
-import org.apache.lucene.analysis.util.CharacterUtils;
+import org.apache.lucene.analysis.CharacterUtils;
 import org.apache.lucene.util.AttributeFactory;
 
 /**
@@ -57,7 +57,6 @@ public class NGramTokenizer extends Tokenizer {
   public static final int DEFAULT_MIN_NGRAM_SIZE = 1;
   public static final int DEFAULT_MAX_NGRAM_SIZE = 2;
 
-  private CharacterUtils charUtils;
   private CharacterUtils.CharacterBuffer charBuffer;
   private int[] buffer; // like charBuffer, but converted to code points
   private int bufferStart, bufferEnd; // remaining slice in buffer
@@ -110,7 +109,6 @@ public class NGramTokenizer extends Tokenizer {
   }
 
   private void init(int minGram, int maxGram, boolean edgesOnly) {
-    charUtils = CharacterUtils.getInstance();
     if (minGram < 1) {
       throw new IllegalArgumentException("minGram must be greater than zero");
     }
@@ -142,9 +140,9 @@ public class NGramTokenizer extends Tokenizer {
         bufferStart = 0;
 
         // fill in remaining space
-        exhausted = !charUtils.fill(charBuffer, input, buffer.length - bufferEnd);
+        exhausted = !CharacterUtils.fill(charBuffer, input, buffer.length - bufferEnd);
         // convert to code points
-        bufferEnd += charUtils.toCodePoints(charBuffer.getBuffer(), 0, charBuffer.getLength(), buffer, bufferEnd);
+        bufferEnd += CharacterUtils.toCodePoints(charBuffer.getBuffer(), 0, charBuffer.getLength(), buffer, bufferEnd);
       }
 
       // should we go to the next offset?
@@ -168,7 +166,7 @@ public class NGramTokenizer extends Tokenizer {
         continue;
       }
 
-      final int length = charUtils.toChars(buffer, bufferStart, gramSize, termAtt.buffer(), 0);
+      final int length = CharacterUtils.toChars(buffer, bufferStart, gramSize, termAtt.buffer(), 0);
       termAtt.setLength(length);
       posIncAtt.setPositionIncrement(1);
       posLenAtt.setPositionLength(1);

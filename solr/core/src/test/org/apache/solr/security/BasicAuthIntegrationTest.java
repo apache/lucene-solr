@@ -16,7 +16,12 @@
  */
 package org.apache.solr.security;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -55,6 +60,7 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.SolrCLI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,39 +135,20 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
         "'set-user-role': {'harry':'admin'}\n" +
         "}";
 
-    httpPost = new HttpPost(baseUrl + authzPrefix);
-    setBasicAuthHeader(httpPost, "solr", "SolrRocks");
-    httpPost.setEntity(new ByteArrayEntity(command.getBytes(UTF_8)));
-    httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
-    r = cl.execute(httpPost);
-    assertEquals(200, r.getStatusLine().getStatusCode());
-    Utils.consumeFully(r.getEntity());
+    executeCommand(baseUrl + authzPrefix, cl,command, "solr", "SolrRocks");
 
     baseUrl = getRandomReplica(zkStateReader.getClusterState().getCollection(defaultCollName), random()).getStr(BASE_URL_PROP);
     verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/user-role/harry", NOT_NULL_PREDICATE, 20);
 
-
-    httpPost = new HttpPost(baseUrl + authzPrefix);
-    setBasicAuthHeader(httpPost, "harry", "HarryIsUberCool");
-    httpPost.setEntity(new ByteArrayEntity(Utils.toJSON(singletonMap("set-permission", Utils.makeMap
+    executeCommand(baseUrl + authzPrefix, cl, Utils.toJSONString(singletonMap("set-permission", Utils.makeMap
         ("collection", "x",
             "path", "/update/*",
-            "role", "dev")))));
-
-    httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
-    verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/user-role/harry", NOT_NULL_PREDICATE, 20);
-    r = cl.execute(httpPost);
-    assertEquals(200, r.getStatusLine().getStatusCode());
-    Utils.consumeFully(r.getEntity());
+            "role", "dev"))), "harry", "HarryIsUberCool" );
 
     verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[1]/collection", "x", 20);
 
-    httpPost = new HttpPost(baseUrl + authzPrefix);
-    setBasicAuthHeader(httpPost, "harry", "HarryIsUberCool");
-    httpPost.setEntity(new ByteArrayEntity(Utils.toJSON(singletonMap("set-permission", Utils.makeMap
-        ("name","collection-admin-edit", "role", "admin" )))));
-    r = cl.execute(httpPost);
-    Utils.consumeFully(r.getEntity());
+    executeCommand(baseUrl + authzPrefix, cl,Utils.toJSONString(singletonMap("set-permission", Utils.makeMap
+        ("name", "collection-admin-edit", "role", "admin"))), "harry", "HarryIsUberCool"  );
     verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/name", "collection-admin-edit", 20);
 
     CollectionAdminRequest.Reload reload = new CollectionAdminRequest.Reload();
@@ -196,14 +183,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     }
 
     cloudSolrClient.setDefaultCollection(old);
-
-    httpPost = new HttpPost(baseUrl + authzPrefix);
-    setBasicAuthHeader(httpPost, "harry", "HarryIsUberCool");
-    httpPost.setEntity(new ByteArrayEntity("{set-permission : { name : update , role : admin}}".getBytes(UTF_8)));
-    httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
-    r = cl.execute(httpPost);
-    assertEquals(200,r.getStatusLine().getStatusCode());
-    Utils.consumeFully(r.getEntity());
+    executeCommand(baseUrl + authzPrefix, cl,"{set-permission : { name : update , role : admin}}", "harry", "HarryIsUberCool");
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id","4");
@@ -212,8 +192,40 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     update.add(doc);
     update.setCommitWithin(100);
     cloudSolrClient.request(update);
-    
+
+
+    executeCommand(baseUrl + authzPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
+    String[] toolArgs = new String[]{
+        "status", "-solr", baseUrl};
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
+    SolrCLI.StatusTool tool = new SolrCLI.StatusTool(stdoutSim);
+    try {
+      System.setProperty("basicauth", "harry:HarryIsUberCool");
+      tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+      Map obj = (Map) Utils.fromJSON(new ByteArrayInputStream(baos.toByteArray()));
+      assertTrue(obj.containsKey("version"));
+      assertTrue(obj.containsKey("startTime"));
+      assertTrue(obj.containsKey("uptime"));
+      assertTrue(obj.containsKey("memory"));
+    } catch (Exception e) {
+      log.error("RunExampleTool failed due to: " + e +
+          "; stdout from tool prior to failure: " + baos.toString(StandardCharsets.UTF_8.name()));
+    }
+    executeCommand(baseUrl + authzPrefix, cl, "{set-property : { blockUnknown: false}}", "harry", "HarryIsUberCool");
     HttpClientUtil.close(cl);
+  }
+
+  public static void executeCommand(String url, HttpClient cl, String payload, String user, String pwd) throws IOException {
+    HttpPost httpPost;
+    HttpResponse r;
+    httpPost = new HttpPost(url);
+    setBasicAuthHeader(httpPost, user, pwd);
+    httpPost.setEntity(new ByteArrayEntity(payload.getBytes(UTF_8)));
+    httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
+    r = cl.execute(httpPost);
+    assertEquals(200, r.getStatusLine().getStatusCode());
+    Utils.consumeFully(r.getEntity());
   }
 
   public static void verifySecurityStatus(HttpClient cl, String url, String objPath, Object expected, int count) throws Exception {
@@ -262,12 +274,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     return l.isEmpty() ? null : l.get(0);
   }
 
-  static final Predicate NOT_NULL_PREDICATE = new Predicate() {
-    @Override
-    public boolean test(Object o) {
-      return o != null;
-    }
-  };
+  static final Predicate NOT_NULL_PREDICATE = o -> o != null;
 
   //the password is 'SolrRocks'
   //this could be generated everytime. But , then we will not know if there is any regression

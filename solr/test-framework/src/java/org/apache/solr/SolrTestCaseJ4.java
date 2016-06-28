@@ -104,6 +104,8 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.RandomizeSSL;
+import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.SSLTestConfig;
@@ -137,6 +139,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 })
 @SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
 @SuppressFileSystems("ExtrasFS") // might be ok, the failures with e.g. nightly runs might be "normal"
+@RandomizeSSL()
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -215,9 +218,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public TestRule solrTestRules = 
     RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
-  @BeforeClass 
-  @SuppressWarnings("unused")
-  private static void beforeClass() {
+  @BeforeClass
+  public static void setupTestCases() {
     initCoreDataDir = createTempDir("init-core-data").toFile();
 
     System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
@@ -241,8 +243,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   @AfterClass
-  @SuppressWarnings("unused")
-  private static void afterClass() throws Exception {
+  public static void teardownTestCases() throws Exception {
     try {
       deleteCore();
       resetExceptionIgnores();
@@ -317,27 +318,21 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   private static SSLTestConfig buildSSLConfig() {
-    // test has been disabled
-    if (RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressSSL.class)) {
-      return new SSLTestConfig();
-    }
+
+    SSLRandomizer sslRandomizer =
+      SSLRandomizer.getSSLRandomizerForClass(RandomizedContext.current().getTargetClass());
     
-    // we don't choose ssl that often because of SOLR-5776
-    final boolean trySsl = random().nextInt(10) < 2;
-    // NOTE: clientAuth is useless unless trySsl==true, but we randomize it independently
-    // just in case it might find bugs in our test/ssl client code (ie: attempting to use
-    // SSL w/client cert to non-ssl servers)
-    boolean trySslClientAuth = random().nextInt(10) < 2;
     if (Constants.MAC_OS_X) {
       // see SOLR-9039
       // If a solution is found to remove this, please make sure to also update
       // TestMiniSolrCloudClusterSSL.testSslAndClientAuth as well.
-      trySslClientAuth = false; 
+      sslRandomizer = new SSLRandomizer(sslRandomizer.ssl, 0.0D, (sslRandomizer.debug + " w/ MAC_OS_X supressed clientAuth"));
     }
-    
-    log.info("Randomized ssl ({}) and clientAuth ({})", trySsl, trySslClientAuth);
-    
-    return new SSLTestConfig(trySsl, trySslClientAuth);
+
+    SSLTestConfig result = sslRandomizer.createSSLTestConfig();
+    log.info("Randomized ssl ({}) and clientAuth ({}) via: {}",
+             result.isSSLMode(), result.isClientAuthMode(), sslRandomizer.debug);
+    return result;
   }
 
   protected static JettyConfig buildJettyConfig(String context) {

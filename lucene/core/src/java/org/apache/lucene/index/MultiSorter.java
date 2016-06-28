@@ -23,7 +23,6 @@ import java.util.List;
 
 import org.apache.lucene.index.MergeState.DocMap;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Bits;
