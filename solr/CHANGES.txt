@@ -84,6 +84,8 @@ Bug Fixes
 
 * SOLR-9237: DefaultSolrHighlighter.doHighlightingByFastVectorHighlighter can't be overidden (janhoy)
 
+* SOLR-8626: 404 error when clicking nodes in cloud graph view in angular UI. (janhoy, Trey Grainger via shalin)
+
 Optimizations
 ----------------------
 
