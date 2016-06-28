@@ -147,7 +147,7 @@ public class SolrRequestInfo {
     return new ExecutorUtil.InheritableThreadLocalProvider() {
       @Override
       public void store(AtomicReference ctx) {
-        SolrRequestInfo me = threadLocal.get();
+        SolrRequestInfo me = SolrRequestInfo.getRequestInfo();
         if (me != null) ctx.set(me);
       }
 
@@ -156,13 +156,13 @@ public class SolrRequestInfo {
         SolrRequestInfo me = (SolrRequestInfo) ctx.get();
         if (me != null) {
           ctx.set(null);
-          threadLocal.set(me);
+          SolrRequestInfo.setRequestInfo(me);
         }
       }
 
       @Override
       public void clean(AtomicReference ctx) {
-        threadLocal.remove();
+        SolrRequestInfo.clearRequestInfo();
       }
     };
   }
