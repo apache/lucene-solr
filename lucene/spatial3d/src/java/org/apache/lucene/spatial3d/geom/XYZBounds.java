@@ -30,7 +30,7 @@ public class XYZBounds implements Bounds {
    * unacceptably large.
    * Also, see LUCENE-7290 for a description of how geometry can magnify the bounds delta.
    */
-  private static final double FUDGE_FACTOR = Vector.MINIMUM_RESOLUTION * 1000.0;
+  private static final double FUDGE_FACTOR = Vector.MINIMUM_RESOLUTION * 1e3;
   
   /** Minimum x */
   private Double minX = null;
