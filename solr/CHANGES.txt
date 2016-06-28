@@ -86,7 +86,7 @@ Bug Fixes
 
 * SOLR-8626: 404 error when clicking nodes in cloud graph view in angular UI. (janhoy, Trey Grainger via shalin)
 
-* SOLR-9254: GraphTermsQueryQParserPlugin throws NPE when field being search is not present in segment
+* SOLR-9254: GraphTermsQueryQParserPlugin throws NPE when field being searched is not present in segment
   (Joel Bernstein)
 
 
