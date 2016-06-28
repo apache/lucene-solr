@@ -26,6 +26,9 @@ New Features
   methods Directory.rename and Directory.syncMetaData instead (Robert Muir,
   Uwe Schindler, Mike McCandless)
 
+* LUCENE-7355: Added Analyzer#normalize(), which only applies normalization to
+  an input string. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
@@ -76,6 +79,10 @@ Improvements
 
 * LUCENE-7276: MatchNoDocsQuery now includes an optional reason for
   why it was used (Jim Ferenczi via Mike McCandless)
+
+* LUCENE-7355: AnalyzingQueryParser now only applies the subset of the analysis
+  chain that is about normalization for range/fuzzy/wildcard queries.
+  (Adrien Grand)
 
 Optimizations
 

@@ -21,9 +21,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.CharacterUtils;
 import org.apache.lucene.analysis.MockBytesAnalyzer;
-import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -99,24 +98,6 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
     wildcardEscapeMisses.put("mö\\*tl*y", "moatley");
       
     a = new ASCIIAnalyzer();
-  }
-
-  public void testSingleChunkExceptions() {
-    String termStr = "the*tre";
-      
-    Analyzer stopsAnalyzer = new MockAnalyzer
-        (random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
-
-    ParseException expected = expectThrows(ParseException.class, () -> {
-      parseWithAnalyzingQueryParser(termStr, stopsAnalyzer, true);
-    });
-    assertTrue(expected.getMessage().contains("returned nothing"));
-     
-    AnalyzingQueryParser qp = new AnalyzingQueryParser(FIELD, a);
-    expected = expectThrows(ParseException.class, () -> {
-      qp.analyzeSingleChunk(FIELD, "", "not a single chunk");
-    });
-    assertTrue(expected.getMessage().contains("multiple terms"));
   }
    
   public void testWildcardAlone() throws ParseException {
@@ -221,11 +202,35 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
     }
   }
 
+  final static class LowercaseFilter extends TokenFilter {
+
+    final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+
+    LowercaseFilter(TokenStream input) {
+      super(input);
+    }
+
+    @Override
+    public final boolean incrementToken() throws IOException {
+      if (input.incrementToken()) {
+        CharacterUtils.toLowerCase(termAtt.buffer(), 0, termAtt.length());
+        return true;
+      } else
+        return false;
+    }
+
+  }
+
   final static class ASCIIAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
       Tokenizer result = new MockTokenizer(MockTokenizer.WHITESPACE, true);
       return new TokenStreamComponents(result, new FoldingFilter(result));
+    }
+
+    @Override
+    protected TokenStream normalize(String fieldName, TokenStream in) {
+      return new FoldingFilter(new LowercaseFilter(in));
     }
   }
    

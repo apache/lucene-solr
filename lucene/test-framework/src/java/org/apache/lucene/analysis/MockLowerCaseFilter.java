@@ -14,31 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.core;
+package org.apache.lucene.analysis;
 
+import java.io.IOException;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
-/** An {@link Analyzer} that filters {@link LetterTokenizer} 
- *  with {@link LowerCaseFilter} 
- **/
-public final class SimpleAnalyzer extends Analyzer {
+/** A lowercasing {@link TokenFilter}. */
+public final class MockLowerCaseFilter extends TokenFilter {
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-  /**
-   * Creates a new {@link SimpleAnalyzer}
-   */
-  public SimpleAnalyzer() {
+  /** Sole constructor. */
+  public MockLowerCaseFilter(TokenStream in) {
+    super(in);
   }
   
   @Override
-  protected TokenStreamComponents createComponents(final String fieldName) {
-    return new TokenStreamComponents(new LowerCaseTokenizer());
-  }
-
-  @Override
-  protected TokenStream normalize(String fieldName, TokenStream in) {
-    return new LowerCaseFilter(in);
+  public final boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      CharacterUtils.toLowerCase(termAtt.buffer(), 0, termAtt.length());
+      return true;
+    } else
+      return false;
   }
 }

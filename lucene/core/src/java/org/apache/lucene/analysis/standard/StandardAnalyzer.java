@@ -112,4 +112,11 @@ public final class StandardAnalyzer extends StopwordAnalyzerBase {
       }
     };
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new StandardFilter(in);
+    result = new LowerCaseFilter(result);
+    return result;
+  }
 }

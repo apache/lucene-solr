@@ -159,4 +159,11 @@ public final class DutchAnalyzer extends Analyzer {
     result = new SnowballFilter(result, new org.tartarus.snowball.ext.DutchStemmer());
     return new TokenStreamComponents(source, result);
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new StandardFilter(in);
+    result = new LowerCaseFilter(result);
+    return result;
+  }
 }

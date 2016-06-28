@@ -1169,6 +1169,10 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
       Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
       return new TokenStreamComponents(tokenizer, new MockCollationFilter(tokenizer));
     }
+    @Override
+    protected TokenStream normalize(String fieldName, TokenStream in) {
+      return new MockCollationFilter(in);
+    }
   }
   
   public void testCollatedRange() throws Exception {

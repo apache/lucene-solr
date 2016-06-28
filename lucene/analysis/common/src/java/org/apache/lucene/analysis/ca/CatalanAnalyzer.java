@@ -130,4 +130,12 @@ public final class CatalanAnalyzer extends StopwordAnalyzerBase {
     result = new SnowballFilter(result, new CatalanStemmer());
     return new TokenStreamComponents(source, result);
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new StandardFilter(in);
+    result = new ElisionFilter(result, DEFAULT_ARTICLES);
+    result = new LowerCaseFilter(result);
+    return result;
+  }
 }

@@ -26,6 +26,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
@@ -551,7 +552,9 @@ public class SimpleQueryParser extends QueryBuilder {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setDisableCoord(true);
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
-      Query q = new FuzzyQuery(new Term(entry.getKey(), text), fuzziness);
+      final String fieldName = entry.getKey();
+      final BytesRef term = getAnalyzer().normalize(fieldName, text);
+      Query q = new FuzzyQuery(new Term(fieldName, term), fuzziness);
       float boost = entry.getValue();
       if (boost != 1f) {
         q = new BoostQuery(q, boost);
@@ -587,7 +590,9 @@ public class SimpleQueryParser extends QueryBuilder {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.setDisableCoord(true);
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
-      Query q = new PrefixQuery(new Term(entry.getKey(), text));
+      final String fieldName = entry.getKey();
+      final BytesRef term = getAnalyzer().normalize(fieldName, text);
+      Query q = new PrefixQuery(new Term(fieldName, term));
       float boost = entry.getValue();
       if (boost != 1f) {
         q = new BoostQuery(q, boost);

@@ -16,14 +16,11 @@
  */
 package org.apache.lucene.queryparser.classic;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.text.DateFormat;
 import java.util.*;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser.Operator;
@@ -41,9 +38,6 @@ import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZ
  * and acts to separate the majority of the Java code from the .jj grammar file. 
  */
 public abstract class QueryParserBase extends QueryBuilder implements CommonQueryParserConfiguration {
-  
-  /** Do not catch this exception in your code, it means you are using methods that you should no longer use. */
-  public static class MethodRemovedUseAnother extends Throwable {}
 
   static final int CONJ_NONE   = 0;
   static final int CONJ_AND    = 1;
@@ -640,31 +634,6 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     return new FuzzyQuery(term,numEdits,prefixLength);
   }
 
-  // TODO: Should this be protected instead?
-  private BytesRef analyzeMultitermTerm(String field, String part) {
-    return analyzeMultitermTerm(field, part, getAnalyzer());
-  }
-
-  protected BytesRef analyzeMultitermTerm(String field, String part, Analyzer analyzerIn) {
-    if (analyzerIn == null) analyzerIn = getAnalyzer();
-
-    try (TokenStream source = analyzerIn.tokenStream(field, part)) {
-      source.reset();
-      
-      TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
-
-      if (!source.incrementToken())
-        throw new IllegalArgumentException("analyzer returned no terms for multiTerm term: " + part);
-      BytesRef bytes = BytesRef.deepCopyOf(termAtt.getBytesRef());
-      if (source.incrementToken())
-        throw new IllegalArgumentException("analyzer returned too many terms for multiTerm term: " + part);
-      source.end();
-      return bytes;
-    } catch (IOException e) {
-      throw new RuntimeException("Error analyzing multiTerm term: " + part, e);
-    }
-  }
-
   /**
    * Builds a new {@link TermRangeQuery} instance
    * @param field Field
@@ -681,13 +650,13 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     if (part1 == null) {
       start = null;
     } else {
-      start = analyzeRangeTerms ? analyzeMultitermTerm(field, part1) : new BytesRef(part1);
+      start = analyzeRangeTerms ? getAnalyzer().normalize(field, part1) : new BytesRef(part1);
     }
      
     if (part2 == null) {
       end = null;
     } else {
-      end = analyzeRangeTerms ? analyzeMultitermTerm(field, part2) : new BytesRef(part2);
+      end = analyzeRangeTerms ? getAnalyzer().normalize(field, part2) : new BytesRef(part2);
     }
       
     final TermRangeQuery query = new TermRangeQuery(field, start, end, startInclusive, endInclusive);

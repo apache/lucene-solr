@@ -92,4 +92,11 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
     result = new CJKBigramFilter(result);
     return new TokenStreamComponents(source, new StopFilter(result, stopwords));
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new CJKWidthFilter(in);
+    result = new LowerCaseFilter(result);
+    return result;
+  }
 }

@@ -16,15 +16,15 @@
  */
 package org.apache.lucene.queryparser.analyzing;
 
-import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * Overrides Lucene's default QueryParser so that Fuzzy-, Prefix-, Range-, and WildcardQuerys
@@ -39,7 +39,7 @@ import org.apache.lucene.search.Query;
  */
 public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.QueryParser {
   // gobble escaped chars or find a wildcard character 
-  private final Pattern wildcardPattern = Pattern.compile("(\\.)|([?*]+)");
+  private static final Pattern WILDCARD_PATTERN = Pattern.compile("(\\\\.)|([?*]+)");
   public AnalyzingQueryParser(String field, Analyzer analyzer) {
     super(field, analyzer);
     setAnalyzeRangeTerms(true);
@@ -65,42 +65,41 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
    */
   @Override
   protected Query getWildcardQuery(String field, String termStr) throws ParseException {
+    if ("*".equals(field)) {
+      if ("*".equals(termStr)) return newMatchAllDocsQuery();
+    }
+    if (getAllowLeadingWildcard() == false && (termStr.startsWith("*") || termStr.startsWith("?")))
+      throw new ParseException("'*' or '?' not allowed as first character in WildcardQuery");
 
-    if (termStr == null){
-      //can't imagine this would ever happen
-      throw new ParseException("Passed null value as term to getWildcardQuery");
-    }
-    if ( ! getAllowLeadingWildcard() && (termStr.startsWith("*") || termStr.startsWith("?"))) {
-      throw new ParseException("'*' or '?' not allowed as first character in WildcardQuery"
-                              + " unless getAllowLeadingWildcard() returns true");
-    }
-    
-    Matcher wildcardMatcher = wildcardPattern.matcher(termStr);
-    StringBuilder sb = new StringBuilder();
+    Term t = new Term(field, analyzeWildcard(field, termStr));
+    return newWildcardQuery(t);
+  }
+
+  private BytesRef analyzeWildcard(String field, String termStr) {
+    // best effort to not pass the wildcard characters and escaped characters through #normalize
+    Matcher wildcardMatcher = WILDCARD_PATTERN.matcher(termStr);
+    BytesRefBuilder sb = new BytesRefBuilder();
     int last = 0;
-  
+
     while (wildcardMatcher.find()){
-      // continue if escaped char
-      if (wildcardMatcher.group(1) != null){
-        continue;
-      }
-     
-      if (wildcardMatcher.start() > 0){
+      if (wildcardMatcher.start() > 0) {
         String chunk = termStr.substring(last, wildcardMatcher.start());
-        String analyzed = analyzeSingleChunk(field, termStr, chunk);
-        sb.append(analyzed);
+        BytesRef normalized = getAnalyzer().normalize(field, chunk);
+        sb.append(normalized);
       }
-      //append the wildcard character
-      sb.append(wildcardMatcher.group(2));
-     
+      //append the matched group - without normalizing
+      sb.append(new BytesRef(wildcardMatcher.group()));
+
       last = wildcardMatcher.end();
     }
     if (last < termStr.length()){
-      sb.append(analyzeSingleChunk(field, termStr, termStr.substring(last)));
+      String chunk = termStr.substring(last);
+      BytesRef normalized = getAnalyzer().normalize(field, chunk);
+      sb.append(normalized);
     }
-    return super.getWildcardQuery(field, sb.toString());
+    return sb.toBytesRef();
   }
-  
+
   /**
    * Called when parser parses an input term
    * that uses prefix notation; that is, contains a single '*' wildcard
@@ -121,8 +120,14 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
    */
   @Override
   protected Query getPrefixQuery(String field, String termStr) throws ParseException {
-    String analyzed = analyzeSingleChunk(field, termStr, termStr);
-    return super.getPrefixQuery(field, analyzed);
+    if (!getAllowLeadingWildcard() && termStr.startsWith("*"))
+      throw new ParseException("'*' not allowed as first character in PrefixQuery");
+    if (getLowercaseExpandedTerms()) {
+      termStr = termStr.toLowerCase(getLocale());
+    }
+    BytesRef term = getAnalyzer().normalize(field, termStr);
+    Term t = new Term(field, term);
+    return newPrefixQuery(t);
   }
 
   /**
@@ -142,61 +147,9 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
   protected Query getFuzzyQuery(String field, String termStr, float minSimilarity)
       throws ParseException {
    
-    String analyzed = analyzeSingleChunk(field, termStr, termStr);
-    return super.getFuzzyQuery(field, analyzed, minSimilarity);
+    BytesRef term = getAnalyzer().normalize(field, termStr);
+    Term t = new Term(field, term);
+    return newFuzzyQuery(t, minSimilarity, getFuzzyPrefixLength());
   }
 
-  /**
-   * Returns the analyzed form for the given chunk
-   * 
-   * If the analyzer produces more than one output token from the given chunk,
-   * a ParseException is thrown.
-   *
-   * @param field The target field
-   * @param termStr The full term from which the given chunk is excerpted
-   * @param chunk The portion of the given termStr to be analyzed
-   * @return The result of analyzing the given chunk
-   * @throws ParseException when analysis returns other than one output token
-   */
-  protected String analyzeSingleChunk(String field, String termStr, String chunk) throws ParseException{
-    String analyzed = null;
-    try (TokenStream stream = getAnalyzer().tokenStream(field, chunk)) {
-      stream.reset();
-      CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
-      // get first and hopefully only output token
-      if (stream.incrementToken()) {
-        analyzed = termAtt.toString();
-        
-        // try to increment again, there should only be one output token
-        StringBuilder multipleOutputs = null;
-        while (stream.incrementToken()) {
-          if (null == multipleOutputs) {
-            multipleOutputs = new StringBuilder();
-            multipleOutputs.append('"');
-            multipleOutputs.append(analyzed);
-            multipleOutputs.append('"');
-          }
-          multipleOutputs.append(',');
-          multipleOutputs.append('"');
-          multipleOutputs.append(termAtt.toString());
-          multipleOutputs.append('"');
-        }
-        stream.end();
-        if (null != multipleOutputs) {
-          throw new ParseException(
-              String.format(getLocale(),
-                  "Analyzer created multiple terms for \"%s\": %s", chunk, multipleOutputs.toString()));
-        }
-      } else {
-        // nothing returned by analyzer.  Was it a stop word and the user accidentally
-        // used an analyzer with stop words?
-        stream.end();
-        throw new ParseException(String.format(getLocale(), "Analyzer returned nothing for \"%s\"", chunk));
-      }
-    } catch (IOException e){
-      throw new ParseException(
-          String.format(getLocale(), "IO error while trying to analyze single term: \"%s\"", termStr));
-    }
-    return analyzed;
-  }
 }
