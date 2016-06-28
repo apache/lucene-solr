@@ -2195,7 +2195,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   private void processBackupAction(ZkNodeProps message, NamedList results) throws IOException, KeeperException, InterruptedException {
     String collectionName =  message.getStr(COLLECTION_PROP);
     String backupName =  message.getStr(NAME);
-    String location = message.getStr("location");
+    String location = message.getStr(ZkStateReader.BACKUP_LOCATION);
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     String asyncId = message.getStr(ASYNC);
     Map<String, String> requestMap = new HashMap<>();
@@ -2267,7 +2267,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     // TODO maybe we can inherit createCollection's options/code
     String restoreCollectionName =  message.getStr(COLLECTION_PROP);
     String backupName =  message.getStr(NAME); // of backup
-    String location = message.getStr("location");
+    String location = message.getStr(ZkStateReader.BACKUP_LOCATION);
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     String asyncId = message.getStr(ASYNC);
     Map<String, String> requestMap = new HashMap<>();

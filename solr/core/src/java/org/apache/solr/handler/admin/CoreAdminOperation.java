@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,6 +59,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.RestoreCore;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -858,20 +858,32 @@ enum CoreAdminOperation {
         throw new IllegalArgumentException(CoreAdminParams.NAME + " is required");
       }
 
-      String location = params.get("location");
+      SolrResourceLoader loader = callInfo.handler.coreContainer.getResourceLoader();
+      BackupRepository repository;
+      String repoName = params.get(BackupRepository.REPOSITORY_PROPERTY_NAME);
+      if(repoName != null) {
+        repository = callInfo.handler.coreContainer.getBackupRepoFactory().newInstance(loader, repoName);
+      } else { // Fetch the default.
+        repository = callInfo.handler.coreContainer.getBackupRepoFactory().newInstance(loader);
+      }
+
+      String location = params.get(ZkStateReader.BACKUP_LOCATION);
       if (location == null) {
-        throw new IllegalArgumentException("location is required");
+        location = repository.getConfigProperty(ZkStateReader.BACKUP_LOCATION);
+        if (location == null) {
+          throw new IllegalArgumentException("location is required");
+        }
       }
 
       try (SolrCore core = callInfo.handler.coreContainer.getCore(cname)) {
-        SnapShooter snapShooter = new SnapShooter(core, location, name);
+        SnapShooter snapShooter = new SnapShooter(repository, core, location, name);
         // validateCreateSnapshot will create parent dirs instead of throw; that choice is dubious.
         //  But we want to throw. One reason is that
         //  this dir really should, in fact must, already exist here if triggered via a collection backup on a shared
         //  file system. Otherwise, perhaps the FS location isn't shared -- we want an error.
-        if (!Files.exists(snapShooter.getLocation())) {
+        if (!snapShooter.getBackupRepository().exists(snapShooter.getLocation())) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Directory to contain snapshots doesn't exist: " + snapShooter.getLocation().toAbsolutePath());
+              "Directory to contain snapshots doesn't exist: " + snapShooter.getLocation());
         }
         snapShooter.validateCreateSnapshot();
         snapShooter.createSnapshot();
@@ -900,13 +912,25 @@ enum CoreAdminOperation {
         throw new IllegalArgumentException(CoreAdminParams.NAME + " is required");
       }
 
-      String location = params.get("location");
+      SolrResourceLoader loader = callInfo.handler.coreContainer.getResourceLoader();
+      BackupRepository repository;
+      String repoName = params.get(BackupRepository.REPOSITORY_PROPERTY_NAME);
+      if(repoName != null) {
+        repository = callInfo.handler.coreContainer.getBackupRepoFactory().newInstance(loader, repoName);
+      } else { // Fetch the default.
+        repository = callInfo.handler.coreContainer.getBackupRepoFactory().newInstance(loader);
+      }
+
+      String location = params.get(ZkStateReader.BACKUP_LOCATION);
       if (location == null) {
-        throw new IllegalArgumentException("location is required");
+        location = repository.getConfigProperty(ZkStateReader.BACKUP_LOCATION);
+        if (location == null) {
+          throw new IllegalArgumentException("location is required");
+        }
       }
 
       try (SolrCore core = callInfo.handler.coreContainer.getCore(cname)) {
-        RestoreCore restoreCore = new RestoreCore(core, location, name);
+        RestoreCore restoreCore = new RestoreCore(repository, core, location, name);
         boolean success = restoreCore.doRestore();
         if (!success) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to restore core=" + core.getName());

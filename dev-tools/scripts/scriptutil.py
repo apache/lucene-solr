@@ -66,6 +66,11 @@ class Version(object):
            (self.bugfix > other.bugfix or self.bugfix == other.bugfix and
            self.prerelease >= other.prerelease)))
 
+  def is_back_compat_with(self, other):
+    if not self.on_or_after(other):
+      raise Exception('Back compat check disallowed for newer version: %s < %s' % (self, other))
+    return other.major + 1 >= self.major
+
 def run(cmd):
   try:
     output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
@@ -119,7 +124,7 @@ def find_branch_type():
 
 version_prop_re = re.compile('version\.base=(.*)')
 def find_current_version():
-  return version_prop_re.search(open('lucene/version.properties').read()).group(1)
+  return version_prop_re.search(open('lucene/version.properties').read()).group(1).strip()
 
 if __name__ == '__main__':
   print('This is only a support module, it cannot be run')

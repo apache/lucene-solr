@@ -214,18 +214,19 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
           new Object[] {slabSize, bankCount,
               ((long) bankCount * (long) slabSize)});
       
-      int bufferSize = getConfig("solr.hdfs.blockcache.bufferstore.buffersize", 128);
-      int bufferCount = getConfig("solr.hdfs.blockcache.bufferstore.buffercount", 128 * 128);
+      int bsBufferSize = params.getInt("solr.hdfs.blockcache.bufferstore.buffersize", blockSize);
+      int bsBufferCount = params.getInt("solr.hdfs.blockcache.bufferstore.buffercount", 0); // this is actually total size
       
       BlockCache blockCache = getBlockDirectoryCache(numberOfBlocksPerBank,
           blockSize, bankCount, directAllocation, slabSize,
-          bufferSize, bufferCount, blockCacheGlobal);
+          bsBufferSize, bsBufferCount, blockCacheGlobal);
       
       Cache cache = new BlockDirectoryCache(blockCache, path, metrics, blockCacheGlobal);
-      hdfsDir = new HdfsDirectory(new Path(path), lockFactory, conf);
+      int readBufferSize = params.getInt("solr.hdfs.blockcache.read.buffersize", blockSize);
+      hdfsDir = new HdfsDirectory(new Path(path), lockFactory, conf, readBufferSize);
       dir = new BlockDirectory(path, hdfsDir, cache, null, blockCacheReadEnabled, false, cacheMerges, cacheReadOnce);
     } else {
-      hdfsDir = new HdfsDirectory(new Path(path), lockFactory, conf);
+      hdfsDir = new HdfsDirectory(new Path(path), conf);
       dir = hdfsDir;
     }
     if (params.getBool(LOCALITYMETRICS_ENABLED, false)) {
@@ -330,7 +331,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     }
   }
   
-  private Configuration getConf() {
+  public Configuration getConf() {
     Configuration conf = new Configuration();
     confDir = getConfig(CONFIG_DIRECTORY, null);
     HdfsUtil.addHdfsResources(conf, confDir);

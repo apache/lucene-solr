@@ -28,7 +28,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
@@ -74,7 +73,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
     conf.set("dfs.permissions.enabled", "false");
     
-    directory = new HdfsDirectory(new Path(HdfsTestUtil.getURI(dfsCluster) + createTempDir().toFile().getAbsolutePath() + "/hdfs"), NoLockFactory.INSTANCE, conf);
+    directory = new HdfsDirectory(new Path(dfsCluster.getURI().toString() + createTempDir().toFile().getAbsolutePath() + "/hdfs"), conf);
     
     random = random();
   }
