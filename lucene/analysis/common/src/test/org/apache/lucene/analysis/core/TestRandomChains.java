@@ -928,6 +928,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           System.out.println("Creating random analyzer:" + a);
         }
         try {
+          checkNormalize(a);
           checkRandomData(random, a, 500*RANDOM_MULTIPLIER, 20, false,
               false /* We already validate our own offsets... */);
         } catch (Throwable e) {
@@ -937,7 +938,14 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       }
     }
   }
-  
+
+  public void checkNormalize(Analyzer a) {
+    // normalization should not modify characters that may be used for wildcards
+    // or regular expressions
+    String s = "([0-9]+)?*";
+    assertEquals(s, a.normalize("dummy", s).utf8ToString());
+  }
+
   // we might regret this decision...
   public void testRandomChainsWithLargeStrings() throws Throwable {
     int numIterations = TEST_NIGHTLY ? atLeast(20) : 3;

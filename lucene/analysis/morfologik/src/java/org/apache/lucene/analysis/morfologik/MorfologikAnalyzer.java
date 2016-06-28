@@ -23,6 +23,7 @@ import morfologik.stemming.Dictionary;
 import morfologik.stemming.polish.PolishStemmer;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -68,5 +69,10 @@ public class MorfologikAnalyzer extends Analyzer {
     return new TokenStreamComponents(
         src, 
         new MorfologikFilter(new StandardFilter(src), dictionary));
+  }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    return new StandardFilter(in);
   }
 }

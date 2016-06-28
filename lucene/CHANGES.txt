@@ -15,6 +15,9 @@ API Changes
 
 * LUCENE-7368: Removed query normalization. (Adrien Grand)
 
+* LUCENE-7355: AnalyzingQueryParser has been removed as its functionality has
+  been folded into the classic QueryParser. (Adrien Grand)
+
 Bug Fixes
 
 Improvements
@@ -47,6 +50,9 @@ New Features
   of the directory metadata, has been deprecated; use the new separate
   methods Directory.rename and Directory.syncMetaData instead (Robert Muir,
   Uwe Schindler, Mike McCandless)
+
+* LUCENE-7355: Added Analyzer#normalize(), which only applies normalization to
+  an input string. (Adrien Grand)
 
 Bug Fixes
 
@@ -98,6 +104,10 @@ Improvements
 
 * LUCENE-7276: MatchNoDocsQuery now includes an optional reason for
   why it was used (Jim Ferenczi via Mike McCandless)
+
+* LUCENE-7355: AnalyzingQueryParser now only applies the subset of the analysis
+  chain that is about normalization for range/fuzzy/wildcard queries.
+  (Adrien Grand)
 
 Optimizations
 

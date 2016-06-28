@@ -145,8 +145,6 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
 
   public abstract void setDefaultOperatorAND(CommonQueryParserConfiguration cqpC);
 
-  public abstract void setAnalyzeRangeTerms(CommonQueryParserConfiguration cqpC, boolean value);
-
   public abstract void setAutoGeneratePhraseQueries(CommonQueryParserConfiguration cqpC, boolean value);
 
   public abstract void setDateResolution(CommonQueryParserConfiguration cqpC, CharSequence field, DateTools.Resolution value);
@@ -203,10 +201,9 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     }
   }
 
-  public void assertWildcardQueryEquals(String query, boolean lowercase, String result, boolean allowLeadingWildcard)
+  public void assertWildcardQueryEquals(String query, String result, boolean allowLeadingWildcard)
     throws Exception {
     CommonQueryParserConfiguration cqpC = getParserConfig(null);
-    cqpC.setLowercaseExpandedTerms(lowercase);
     cqpC.setAllowLeadingWildcard(allowLeadingWildcard);
     Query q = getQuery(query, cqpC);
     String s = q.toString("field");
@@ -216,18 +213,9 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     }
   }
 
-  public void assertWildcardQueryEquals(String query, boolean lowercase, String result)
+  public void assertWildcardQueryEquals(String query, String result)
     throws Exception {
-    assertWildcardQueryEquals(query, lowercase, result, false);
-  }
-
-  public void assertWildcardQueryEquals(String query, String result) throws Exception {
-    Query q = getQuery(query);
-    String s = q.toString("field");
-    if (!s.equals(result)) {
-      fail("WildcardQuery /" + query + "/ yielded /" + s + "/, expecting /"
-          + result + "/");
-    }
+    assertWildcardQueryEquals(query, result, false);
   }
 
   public Query getQueryDOA(String query, Analyzer a)
@@ -473,39 +461,26 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
    */
 // First prefix queries:
     // by default, convert to lowercase:
-    assertWildcardQueryEquals("Term*", true, "term*");
+    assertWildcardQueryEquals("Term*", "term*");
     // explicitly set lowercase:
-    assertWildcardQueryEquals("term*", true, "term*");
-    assertWildcardQueryEquals("Term*", true, "term*");
-    assertWildcardQueryEquals("TERM*", true, "term*");
-    // explicitly disable lowercase conversion:
-    assertWildcardQueryEquals("term*", false, "term*");
-    assertWildcardQueryEquals("Term*", false, "Term*");
-    assertWildcardQueryEquals("TERM*", false, "TERM*");
+    assertWildcardQueryEquals("term*", "term*");
+    assertWildcardQueryEquals("Term*", "term*");
+    assertWildcardQueryEquals("TERM*", "term*");
 // Then 'full' wildcard queries:
     // by default, convert to lowercase:
     assertWildcardQueryEquals("Te?m", "te?m");
     // explicitly set lowercase:
-    assertWildcardQueryEquals("te?m", true, "te?m");
-    assertWildcardQueryEquals("Te?m", true, "te?m");
-    assertWildcardQueryEquals("TE?M", true, "te?m");
-    assertWildcardQueryEquals("Te?m*gerM", true, "te?m*germ");
-    // explicitly disable lowercase conversion:
-    assertWildcardQueryEquals("te?m", false, "te?m");
-    assertWildcardQueryEquals("Te?m", false, "Te?m");
-    assertWildcardQueryEquals("TE?M", false, "TE?M");
-    assertWildcardQueryEquals("Te?m*gerM", false, "Te?m*gerM");
+    assertWildcardQueryEquals("te?m", "te?m");
+    assertWildcardQueryEquals("Te?m", "te?m");
+    assertWildcardQueryEquals("TE?M", "te?m");
+    assertWildcardQueryEquals("Te?m*gerM", "te?m*germ");
 //  Fuzzy queries:
     assertWildcardQueryEquals("Term~", "term~2");
-    assertWildcardQueryEquals("Term~", true, "term~2");
-    assertWildcardQueryEquals("Term~", false, "Term~2");
 //  Range queries:
     assertWildcardQueryEquals("[A TO C]", "[a TO c]");
-    assertWildcardQueryEquals("[A TO C]", true, "[a TO c]");
-    assertWildcardQueryEquals("[A TO C]", false, "[A TO C]");
     // Test suffix queries: first disallow
     try {
-      assertWildcardQueryEquals("*Term", true, "*term");
+      assertWildcardQueryEquals("*Term", "*term", false);
     } catch(Exception pe) {
       // expected exception
       if(!isQueryParserException(pe)){
@@ -513,7 +488,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
       }
     }
     try {
-      assertWildcardQueryEquals("?Term", true, "?term");
+      assertWildcardQueryEquals("?Term", "?term");
       fail();
     } catch(Exception pe) {
       // expected exception
@@ -522,8 +497,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
       }
     }
     // Test suffix queries: then allow
-    assertWildcardQueryEquals("*Term", true, "*term", true);
-    assertWildcardQueryEquals("?Term", true, "?term", true);
+    assertWildcardQueryEquals("*Term", "*term", true);
+    assertWildcardQueryEquals("?Term", "?term", true);
   }
   
   public void testLeadingWildcardType() throws Exception {
@@ -982,10 +957,9 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
   
   public void testRegexps() throws Exception {
-    CommonQueryParserConfiguration qp = getParserConfig( new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
+    CommonQueryParserConfiguration qp = getParserConfig( new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true));
     RegexpQuery q = new RegexpQuery(new Term("field", "[a-z][123]"));
     assertEquals(q, getQuery("/[a-z][123]/",qp));
-    qp.setLowercaseExpandedTerms(true);
     assertEquals(q, getQuery("/[A-Z][123]/",qp));
     assertEquals(new BoostQuery(q, 0.5f), getQuery("/[A-Z][123]/^0.5",qp));
     qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
@@ -1169,11 +1143,14 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
       Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
       return new TokenStreamComponents(tokenizer, new MockCollationFilter(tokenizer));
     }
+    @Override
+    protected TokenStream normalize(String fieldName, TokenStream in) {
+      return new MockCollationFilter(new LowerCaseFilter(in));
+    }
   }
   
   public void testCollatedRange() throws Exception {
     CommonQueryParserConfiguration qp = getParserConfig(new MockCollationAnalyzer());
-    setAnalyzeRangeTerms(qp, true);
     Query expected = TermRangeQuery.newStringRange(getDefaultField(), "collatedabc", "collateddef", true, true);
     Query actual = getQuery("[abc TO def]", qp);
     assertEquals(expected, actual);

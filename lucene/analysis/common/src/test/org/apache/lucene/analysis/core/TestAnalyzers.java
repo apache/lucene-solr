@@ -52,6 +52,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
                      new String[] { "b" });
     assertAnalyzesTo(a, "\"QUOTED\" word", 
                      new String[] { "quoted", "word" });
+    assertEquals(new BytesRef("\"\\à3[]()! cz@"), a.normalize("dummy", "\"\\À3[]()! Cz@"));
     a.close();
   }
 
@@ -73,6 +74,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
                      new String[] { "2B" });
     assertAnalyzesTo(a, "\"QUOTED\" word", 
                      new String[] { "\"QUOTED\"", "word" });
+    assertEquals(new BytesRef("\"\\À3[]()! Cz@"), a.normalize("dummy", "\"\\À3[]()! Cz@"));
     a.close();
   }
 
@@ -82,6 +84,8 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
                      new String[] { "foo", "bar", "foo", "bar" });
     assertAnalyzesTo(a, "foo a bar such FOO THESE BAR", 
                      new String[] { "foo", "bar", "foo", "bar" });
+    assertEquals(new BytesRef("\"\\à3[]()! cz@"), a.normalize("dummy", "\"\\À3[]()! Cz@"));
+    assertEquals(new BytesRef("the"), a.normalize("dummy", "the"));
     a.close();
   }
 

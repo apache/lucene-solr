@@ -17,7 +17,10 @@
 package org.apache.lucene.queryparser.flexible.standard.processors;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;
@@ -25,11 +28,13 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryparser.flexible.core.util.UnescapedCharSequence;
+import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryparser.flexible.standard.nodes.PrefixWildcardQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.parser.StandardSyntaxParser;
 import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * The {@link StandardSyntaxParser} creates {@link PrefixWildcardQueryNode} nodes which
@@ -42,6 +47,39 @@ import org.apache.lucene.search.PrefixQuery;
  * @see PrefixWildcardQueryNode
  */
 public class WildcardQueryNodeProcessor extends QueryNodeProcessorImpl {
+
+  private static final Pattern WILDCARD_PATTERN = Pattern.compile("(\\.)|([?*]+)");
+
+  // because we call utf8ToString, this will only work with the default TermToBytesRefAttribute
+  private static String analyzeWildcard(Analyzer a, String field, String wildcard) {
+    // best effort to not pass the wildcard characters through #normalize
+    Matcher wildcardMatcher = WILDCARD_PATTERN.matcher(wildcard);
+    StringBuilder sb = new StringBuilder();
+    int last = 0;
+
+    while (wildcardMatcher.find()){
+      // continue if escaped char
+      if (wildcardMatcher.group(1) != null){
+        continue;
+      }
+
+      if (wildcardMatcher.start() > 0){
+        String chunk = wildcard.substring(last, wildcardMatcher.start());
+        BytesRef normalized = a.normalize(field, chunk);
+        sb.append(normalized.utf8ToString());
+      }
+      //append the wildcard character
+      sb.append(wildcardMatcher.group(2));
+
+      last = wildcardMatcher.end();
+    }
+    if (last < wildcard.length()){
+      String chunk = wildcard.substring(last);
+      BytesRef normalized = a.normalize(field, chunk);
+      sb.append(normalized.utf8ToString());
+    }
+    return sb.toString();
+  }
 
   public WildcardQueryNodeProcessor() {
     // empty constructor
@@ -67,15 +105,19 @@ public class WildcardQueryNodeProcessor extends QueryNodeProcessorImpl {
       
       // Code below simulates the old lucene parser behavior for wildcards
       
-      if (isPrefixWildcard(text)) {        
-        PrefixWildcardQueryNode prefixWildcardQN = new PrefixWildcardQueryNode(fqn);
-        return prefixWildcardQN;
-        
-      } else if (isWildcard(text)){
-        WildcardQueryNode wildcardQN = new WildcardQueryNode(fqn);
-        return wildcardQN;
+      
+      if (isWildcard(text)) {
+        Analyzer analyzer = getQueryConfigHandler().get(ConfigurationKeys.ANALYZER);
+        if (analyzer != null) {
+          text = analyzeWildcard(analyzer, fqn.getFieldAsString(), text.toString());
+        }
+        if (isPrefixWildcard(text)) {
+          return new PrefixWildcardQueryNode(fqn.getField(), text, fqn.getBegin(), fqn.getEnd());
+        } else {
+          return new WildcardQueryNode(fqn.getField(), text, fqn.getBegin(), fqn.getEnd());
+        }
       }
-             
+
     }
 
     return node;

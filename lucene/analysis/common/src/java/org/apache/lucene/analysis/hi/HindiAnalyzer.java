@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.DecimalDigitFilter;
 import org.apache.lucene.analysis.in.IndicNormalizationFilter;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
+import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
@@ -124,5 +125,15 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
     result = new StopFilter(result, stopwords);
     result = new HindiStemFilter(result);
     return new TokenStreamComponents(source, result);
+  }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new StandardFilter(in);
+    result = new LowerCaseFilter(result);
+    result = new DecimalDigitFilter(result);
+    result = new IndicNormalizationFilter(result);
+    result = new HindiNormalizationFilter(result);
+    return result;
   }
 }

@@ -94,4 +94,11 @@ public class JapaneseAnalyzer extends StopwordAnalyzerBase {
     stream = new LowerCaseFilter(stream);
     return new TokenStreamComponents(tokenizer, stream);
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new CJKWidthFilter(in);
+    result = new LowerCaseFilter(result);
+    return result;
+  }
 }

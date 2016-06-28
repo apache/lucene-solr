@@ -14,9 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * QueryParser that passes Fuzzy-, Prefix-, Range-, and WildcardQuerys through the given analyzer.
- */
-package org.apache.lucene.queryparser.analyzing;
+package org.apache.lucene.analysis;
 
+import java.io.IOException;
+
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+
+/** A lowercasing {@link TokenFilter}. */
+public final class MockLowerCaseFilter extends TokenFilter {
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+
+  /** Sole constructor. */
+  public MockLowerCaseFilter(TokenStream in) {
+    super(in);
+  }
+  
+  @Override
+  public final boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      CharacterUtils.toLowerCase(termAtt.buffer(), 0, termAtt.length());
+      return true;
+    } else
+      return false;
+  }
+}

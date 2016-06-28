@@ -32,18 +32,6 @@ import org.apache.lucene.search.MultiTermQuery;
 public interface CommonQueryParserConfiguration {
   
   /**
-   * Whether terms of multi-term queries (e.g., wildcard,
-   * prefix, fuzzy and range) should be automatically
-   * lower-cased or not.  Default is <code>true</code>.
-   */
-  public void setLowercaseExpandedTerms(boolean lowercaseExpandedTerms);
-  
-  /**
-   * @see #setLowercaseExpandedTerms(boolean)
-   */
-  public boolean getLowercaseExpandedTerms();
-  
-  /**
    * Set to <code>true</code> to allow leading wildcard characters.
    * <p>
    * When set, <code>*</code> or <code>?</code> are allowed as the first

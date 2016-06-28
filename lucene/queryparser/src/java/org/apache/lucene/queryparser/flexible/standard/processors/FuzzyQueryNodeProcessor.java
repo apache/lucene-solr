@@ -18,6 +18,7 @@ package org.apache.lucene.queryparser.flexible.standard.processors;
 
 import java.util.List;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;
@@ -55,9 +56,17 @@ public class FuzzyQueryNodeProcessor extends QueryNodeProcessorImpl {
       FuzzyQueryNode fuzzyNode = (FuzzyQueryNode) node;
       QueryConfigHandler config = getQueryConfigHandler();
 
+      Analyzer analyzer = getQueryConfigHandler().get(ConfigurationKeys.ANALYZER);
+      if (analyzer != null) {
+        // because we call utf8ToString, this will only work with the default TermToBytesRefAttribute
+        String text = fuzzyNode.getTextAsString();
+        text = analyzer.normalize(fuzzyNode.getFieldAsString(), text).utf8ToString();
+        fuzzyNode.setText(text);
+      }
+
       FuzzyConfig fuzzyConfig = null;
       
-      if (config != null && (fuzzyConfig = config.get(ConfigurationKeys.FUZZY_CONFIG)) != null) {
+      if ((fuzzyConfig = config.get(ConfigurationKeys.FUZZY_CONFIG)) != null) {
         fuzzyNode.setPrefixLength(fuzzyConfig.getPrefixLength());
 
         if (fuzzyNode.getSimilarity() < 0) {

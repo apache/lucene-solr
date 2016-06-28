@@ -102,4 +102,11 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
     result = new StopFilter(result, stopwords);
     return new TokenStreamComponents(source, result);
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new LowerCaseFilter(in);
+    result = new DecimalDigitFilter(result);
+    return result;
+  }
 }

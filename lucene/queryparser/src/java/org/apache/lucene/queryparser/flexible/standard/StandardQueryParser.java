@@ -190,36 +190,6 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
    * Default: false.
    */
   @Override
-  public void setLowercaseExpandedTerms(boolean lowercaseExpandedTerms) {
-    getQueryConfigHandler().set(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS, lowercaseExpandedTerms);
-  }
-  
-  /**
-   * @see #setLowercaseExpandedTerms(boolean)
-   */
-  @Override
-  public boolean getLowercaseExpandedTerms() {
-    Boolean lowercaseExpandedTerms = getQueryConfigHandler().get(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS);
-    
-    if (lowercaseExpandedTerms == null) {
-      return true;
-      
-    } else {
-      return lowercaseExpandedTerms;
-    }
-    
-  }
-  
-  /**
-   * Set to <code>true</code> to allow leading wildcard characters.
-   * <p>
-   * When set, <code>*</code> or <code>?</code> are allowed as the first
-   * character of a PrefixQuery and WildcardQuery. Note that this can produce
-   * very slow queries on big indexes.
-   * <p>
-   * Default: false.
-   */
-  @Override
   public void setAllowLeadingWildcard(boolean allowLeadingWildcard) {
     getQueryConfigHandler().set(ConfigurationKeys.ALLOW_LEADING_WILDCARD, allowLeadingWildcard);
   }
