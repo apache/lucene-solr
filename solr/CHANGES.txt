@@ -151,7 +151,7 @@ New Features
 * SOLR-8859: Spatial fields like RPT can now be configured to use Spatial4j registered shape formats
   e.g. via format="GeoJSON".  (ryan, David Smiley)
 
-* SOLR-445: new ToleranteUpdateProcessorFactory to support skipping update commands that cause
+* SOLR-445: new TolerantUpdateProcessorFactory to support skipping update commands that cause
   failures when sending multiple updates in a single request.
   (Erick Erickson, Tomás Fernández Löbbe, Anshum Gupta, hossman)
 
