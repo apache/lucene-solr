@@ -48,9 +48,9 @@ public class QuerySenderListener extends AbstractSolrEventListener {
     log.info("QuerySenderListener sending requests to " + newSearcher);
     List<NamedList> allLists = (List<NamedList>)getArgs().get("queries");
     if (allLists == null) return;
+    boolean createNewReqInfo = SolrRequestInfo.getRequestInfo() == null;
     for (NamedList nlst : allLists) {
       SolrQueryRequest req = null;
-
       try {
         // bind the request to a particular searcher (the newSearcher)
         NamedList params = addEventParms(currentSearcher, nlst);
@@ -64,7 +64,11 @@ public class QuerySenderListener extends AbstractSolrEventListener {
         };
 
         SolrQueryResponse rsp = new SolrQueryResponse();
-        SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+        if (createNewReqInfo) {
+          // SolrRequerstInfo for this thread could have been transferred from the parent
+          // thread.
+          SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+        }
         getCore().execute(getCore().getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
         // Retrieve the Document instances (not just the ids) to warm
@@ -89,7 +93,7 @@ public class QuerySenderListener extends AbstractSolrEventListener {
         // the failure should have already been logged.
       } finally {
         if (req != null) req.close();
-        SolrRequestInfo.clearRequestInfo();
+        if (createNewReqInfo) SolrRequestInfo.clearRequestInfo();
       }
     }
     log.info("QuerySenderListener done.");
