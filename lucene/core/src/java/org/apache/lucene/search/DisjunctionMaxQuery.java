@@ -241,16 +241,18 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
   }
 
   /** Return true iff we represent the same query as o
-   * @param o another object
+   * @param other another object
    * @return true iff o is a DisjunctionMaxQuery with the same boost and the same subqueries, in the same order, as us
    */
   @Override
-  public boolean equals(Object o) {
-    if (! (o instanceof DisjunctionMaxQuery) ) return false;
-    DisjunctionMaxQuery other = (DisjunctionMaxQuery)o;
-    return super.equals(o)
-            && this.tieBreakerMultiplier == other.tieBreakerMultiplier
-            && Arrays.equals(disjuncts, other.disjuncts);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(DisjunctionMaxQuery other) {
+    return tieBreakerMultiplier == other.tieBreakerMultiplier && 
+           Arrays.equals(disjuncts, other.disjuncts);
   }
 
   /** Compute a hash code for hashing us
@@ -258,7 +260,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
    */
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = classHash();
     h = 31 * h + Float.floatToIntBits(tieBreakerMultiplier);
     h = 31 * h + Arrays.hashCode(disjuncts);
     return h;

@@ -146,6 +146,31 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public abstract void remove(String path) throws IOException;
   
   /**
+   * @param directory to calculate size of
+   * @return size in bytes
+   * @throws IOException on low level IO error
+   */
+  public long size(Directory directory) throws IOException {
+    return sizeOfDirectory(directory);
+  }
+  
+  /**
+   * @param path to calculate size of
+   * @return size in bytes
+   * @throws IOException on low level IO error
+   */
+  public long size(String path) throws IOException {
+    Directory dir = get(path, DirContext.DEFAULT, null);
+    long size;
+    try {
+      size = sizeOfDirectory(dir);
+    } finally {
+      release(dir); 
+    }
+    return size;
+  }
+  
+  /**
    * Override for more efficient moves.
    * 
    * Intended for use with replication - use

@@ -19,7 +19,6 @@ package org.apache.lucene.util;
 import java.io.Closeable;
 
 import org.apache.lucene.store.BaseDirectoryWrapper;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.junit.Assert;
 
 /**

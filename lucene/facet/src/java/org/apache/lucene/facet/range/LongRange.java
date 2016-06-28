@@ -96,19 +96,20 @@ public final class LongRange extends Range {
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
-        return false;
-      }
-      ValueSourceQuery other = (ValueSourceQuery) obj;
-      return range.equals(other.range)
-          && Objects.equals(fastMatchQuery, other.fastMatchQuery)
-          && valueSource.equals(other.valueSource);
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+
+    private boolean equalsTo(ValueSourceQuery other) {
+      return range.equals(other.range) && 
+             Objects.equals(fastMatchQuery, other.fastMatchQuery) && 
+             valueSource.equals(other.valueSource);
     }
 
     @Override
     public int hashCode() {
-      return 31 * Objects.hash(range, fastMatchQuery, valueSource) + super.hashCode();
+      return classHash() + 31 * Objects.hash(range, fastMatchQuery, valueSource);
     }
 
     @Override

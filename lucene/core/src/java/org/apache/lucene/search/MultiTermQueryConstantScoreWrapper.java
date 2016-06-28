@@ -91,17 +91,14 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
   }
 
   @Override
-  public final boolean equals(final Object o) {
-    if (super.equals(o) == false) {
-      return false;
-    }
-    final MultiTermQueryConstantScoreWrapper<?> that = (MultiTermQueryConstantScoreWrapper<?>) o;
-    return this.query.equals(that.query);
+  public final boolean equals(final Object other) {
+    return sameClassAs(other) &&
+           query.equals(((MultiTermQueryConstantScoreWrapper<?>) other).query);
   }
 
   @Override
   public final int hashCode() {
-    return 31 * super.hashCode() + query.hashCode();
+    return 31 * classHash() + query.hashCode();
   }
 
   /** Returns the encapsulated query */
@@ -125,10 +122,6 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
             return true;
           }
           TermState state = termsEnum.termState();
-          if (state.isRealTerm() == false) {
-            // TermQuery does not accept fake terms for now
-            return false;
-          }
           terms.add(new TermAndState(BytesRef.deepCopyOf(term), state, termsEnum.docFreq(), termsEnum.totalTermFreq()));
         }
         return termsEnum.next() == null;

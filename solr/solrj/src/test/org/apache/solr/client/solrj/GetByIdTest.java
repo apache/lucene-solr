@@ -16,10 +16,8 @@
  */
 package org.apache.solr.client.solrj;
 
-import java.io.File;
 import java.util.Arrays;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;

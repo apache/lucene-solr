@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Properties;

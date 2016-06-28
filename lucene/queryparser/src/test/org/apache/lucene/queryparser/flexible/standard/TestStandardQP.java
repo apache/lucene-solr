@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.queryparser.flexible.standard;
 
-import java.io.Reader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;

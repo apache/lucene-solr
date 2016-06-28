@@ -19,14 +19,12 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.RateLimiter;
-import org.apache.lucene.util.FixedBitSet;
 
 /**
  * <p>Expert: a MergePolicy determines the sequence of

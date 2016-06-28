@@ -17,20 +17,24 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -40,6 +44,7 @@ import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.OrdFieldSource;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 /**
  *
  */
@@ -123,7 +128,11 @@ public class BoolField extends PrimitiveFieldType {
 
   @Override
   public String toExternal(IndexableField f) {
-    return indexedToReadable(f.stringValue());
+    if (f.binaryValue() == null) {
+      return null;
+    }
+
+    return indexedToReadable(f.binaryValue().utf8ToString());
   }
 
   @Override
@@ -144,7 +153,7 @@ public class BoolField extends PrimitiveFieldType {
 
   private static final CharsRef TRUE = new CharsRef("true");
   private static final CharsRef FALSE = new CharsRef("false");
-  
+
   @Override
   public CharsRef indexedToReadable(BytesRef input, CharsRefBuilder charsRef) {
     if (input.length > 0 && input.bytes[input.offset] == 'T') {
@@ -168,6 +177,36 @@ public class BoolField extends PrimitiveFieldType {
   @Override
   public Object unmarshalSortValue(Object value) {
     return unmarshalStringSortValue(value);
+  }
+
+  @Override
+  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
+    IndexableField fval = createField(field, value, boost);
+
+    if (field.hasDocValues()) {
+      IndexableField docval;
+      final BytesRef bytes = new BytesRef(toInternal(value.toString()));
+      if (field.multiValued()) {
+        docval = new SortedSetDocValuesField(field.getName(), bytes);
+      } else {
+        docval = new SortedDocValuesField(field.getName(), bytes);
+      }
+
+      // Only create a list of we have 2 values...
+      if (fval != null) {
+        List<IndexableField> fields = new ArrayList<>(2);
+        fields.add(fval);
+        fields.add(docval);
+        return fields;
+      }
+
+      fval = docval;
+    }
+    return Collections.singletonList(fval);
+  }
+
+  @Override
+  public void checkSchemaField(final SchemaField field) {
   }
 }
 

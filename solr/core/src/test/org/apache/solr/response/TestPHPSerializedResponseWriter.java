@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.PHPSerializedResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;

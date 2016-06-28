@@ -33,7 +33,6 @@ import org.easymock.EasyMock;
 import org.junit.Test;
 
 import static org.easymock.EasyMock.createMock;
-import static org.easymock.EasyMock.createStrictMock;
 
 public class ClusterStateTest extends SolrTestCaseJ4 {
   @Test

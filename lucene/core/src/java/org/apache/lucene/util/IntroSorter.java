@@ -38,7 +38,7 @@ public abstract class IntroSorter extends Sorter {
   }
 
   void quicksort(int from, int to, int maxDepth) {
-    if (to - from < THRESHOLD) {
+    if (to - from < INSERTION_SORT_THRESHOLD) {
       insertionSort(from, to);
       return;
     } else if (--maxDepth < 0) {

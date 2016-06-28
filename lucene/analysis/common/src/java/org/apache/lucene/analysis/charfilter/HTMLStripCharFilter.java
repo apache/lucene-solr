@@ -20,13 +20,12 @@ package org.apache.lucene.analysis.charfilter;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.analysis.util.CharArrayMap;
-import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.CharArrayMap;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.util.OpenStringBuilder;
 
 /**

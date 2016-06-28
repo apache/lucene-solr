@@ -23,19 +23,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import morfologik.stemming.Dictionary;
-import morfologik.stemming.DictionaryLookup;
-import morfologik.stemming.IStemmer;
-import morfologik.stemming.WordData;
-import morfologik.stemming.polish.PolishStemmer;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.util.CharsRefBuilder;
+
+import morfologik.stemming.Dictionary;
+import morfologik.stemming.DictionaryLookup;
+import morfologik.stemming.IStemmer;
+import morfologik.stemming.WordData;
+import morfologik.stemming.polish.PolishStemmer;
 
 /**
  * {@link TokenFilter} using Morfologik library to transform input tokens into lemma and
@@ -54,7 +53,6 @@ public class MorfologikFilter extends TokenFilter {
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
 
   private final CharsRefBuilder scratch = new CharsRefBuilder();
-  private final CharacterUtils charUtils = CharacterUtils.getInstance();
 
   private State current;
   private final TokenStream input;
@@ -154,7 +152,7 @@ public class MorfologikFilter extends TokenFilter {
     char buffer[] = scratch.chars();
     for (int i = 0; i < length;) {
       i += Character.toChars(
-          Character.toLowerCase(charUtils.codePointAt(chs, i)), buffer, i);      
+          Character.toLowerCase(Character.codePointAt(chs, i)), buffer, i);      
     }
 
     return scratch.get();

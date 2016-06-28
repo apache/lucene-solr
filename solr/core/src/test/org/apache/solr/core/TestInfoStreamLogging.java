@@ -17,7 +17,6 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.update.LoggingInfoStream;
 import org.junit.BeforeClass;

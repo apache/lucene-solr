@@ -70,7 +70,7 @@
     <dependency org="aopalliance" name="aopalliance" rev="${/aopalliance/aopalliance}" conf="test" />
     <dependency org="com.sun.xml.bind" name="jaxb-impl" rev="${/com.sun.xml.bind/jaxb-impl}" conf="test" />
     <dependency org="org.objenesis" name="objenesis" rev="${/org.objenesis/objenesis}" conf="test" />
-    <dependency org="io.netty" name="netty" rev="${/io.netty/netty}" conf="test" />
+    <dependency org="io.netty" name="netty-all" rev="${/io.netty/netty-all}" conf="test" />
     <dependency org="org.apache.mrunit" name="mrunit" rev="${/org.apache.mrunit/mrunit}" conf="test">
       <artifact name="mrunit" maven:classifier="hadoop2" />
       <exclude org="log4j" module="log4j" />
@@ -116,7 +116,8 @@
     <dependency org="org.mortbay.jetty" name="jetty" rev="${/org.mortbay.jetty/jetty}" conf="test.DfsMiniCluster" />
     <dependency org="org.mortbay.jetty" name="jetty-util" rev="${/org.mortbay.jetty/jetty-util}" conf="test.DfsMiniCluster" />
     <dependency org="com.sun.jersey" name="jersey-core" rev="${/com.sun.jersey/jersey-core}" conf="test.DfsMiniCluster" />
-
+    <dependency org="org.apache.htrace" name="htrace-core" rev="${/org.apache.htrace/htrace-core}" conf="test.DfsMiniCluster"/>
+    
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}" />
 
   </dependencies>

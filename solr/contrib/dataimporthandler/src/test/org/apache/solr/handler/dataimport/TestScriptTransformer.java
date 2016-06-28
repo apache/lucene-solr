@@ -16,11 +16,9 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
 import org.apache.solr.handler.dataimport.config.DIHConfiguration;
 import org.junit.Test;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 
 import javax.xml.parsers.DocumentBuilder;

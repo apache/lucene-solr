@@ -67,7 +67,7 @@ import org.apache.lucene.search.TermQuery;
  *
  * <p>
  * Examples of appropriately formatted queries can be found in the <a
- * href="{@docRoot}/org/apache/lucene/queryparser/classic/package-summary.html#package_description">query syntax
+ * href="{@docRoot}/org/apache/lucene/queryparser/classic/package-summary.html#package.description">query syntax
  * documentation</a>.
  * </p>
  *

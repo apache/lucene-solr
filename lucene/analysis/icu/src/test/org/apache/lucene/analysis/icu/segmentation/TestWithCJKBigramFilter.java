@@ -21,12 +21,12 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.cjk.CJKBigramFilter;
-import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.icu.ICUNormalizer2Filter;
-import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.IOUtils;
 
 /**

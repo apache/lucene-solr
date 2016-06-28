@@ -148,17 +148,14 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
-        return false;
-      }
-      QueryWrapper that = (QueryWrapper) obj;
-      return in.equals(that.in);
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             in.equals(((QueryWrapper) other).in);
     }
 
     @Override
     public int hashCode() {
-      return 31 * super.hashCode() + in.hashCode();
+      return 31 * classHash() + in.hashCode();
     }
   }
 

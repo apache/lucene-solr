@@ -24,7 +24,6 @@ import org.apache.solr.core.SolrCore;
 
 import java.util.Collections;
 import java.util.Collection;
-import java.util.Iterator;
 
 /**
  * An update processor that keeps only the the minimum value from any selected 

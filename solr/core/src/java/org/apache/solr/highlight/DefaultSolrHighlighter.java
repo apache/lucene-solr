@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -61,6 +60,7 @@ import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
 import org.apache.lucene.util.AttributeSource.State;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -389,8 +389,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       preFetchFieldNames.add(keyField.getName());
     }
 
-    FastVectorHighlighter fvh = null; // lazy
-    FieldQuery fvhFieldQuery = null; // lazy
+    FvhContainer fvhContainer = new FvhContainer(null, null); // Lazy container for fvh and fieldQuery
 
     IndexReader reader = new TermVectorReusingLeafReader(req.getSearcher().getLeafReader()); // SOLR-5855
 
@@ -408,30 +407,10 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         SchemaField schemaField = schema.getFieldOrNull(fieldName);
 
         Object fieldHighlights; // object type allows flexibility for subclassers
-        if (schemaField == null) {
-          fieldHighlights = null;
-        } else if (schemaField.getType() instanceof org.apache.solr.schema.TrieField) {
-          // TODO: highlighting numeric fields is broken (Lucene) - so we disable them until fixed (see LUCENE-3080)!
-          fieldHighlights = null;
-        } else if (useFastVectorHighlighter(params, schemaField)) {
-          if (fvhFieldQuery == null) {
-            fvh = new FastVectorHighlighter(
-                // FVH cannot process hl.usePhraseHighlighter parameter per-field basis
-                params.getBool(HighlightParams.USE_PHRASE_HIGHLIGHTER, true),
-                // FVH cannot process hl.requireFieldMatch parameter per-field basis
-                params.getBool(HighlightParams.FIELD_MATCH, false));
-            fvh.setPhraseLimit(params.getInt(HighlightParams.PHRASE_LIMIT, SolrHighlighter.DEFAULT_PHRASE_LIMIT));
-            fvhFieldQuery = fvh.getFieldQuery(query, reader);
-          }
-          fieldHighlights =
-              doHighlightingByFastVectorHighlighter(doc, docId, schemaField, fvh, fvhFieldQuery, reader, req);
-        } else { // standard/default highlighter
-          fieldHighlights = doHighlightingByHighlighter(doc, docId, schemaField, query, reader, req);
-        }
+        fieldHighlights = doHighlightingOfField(doc, docId, schemaField, fvhContainer, query, reader, req, params);
 
         if (fieldHighlights == null) {
-          // no summaries made; copy text from alternate field
-          fieldHighlights = alternateField(doc, fieldName, req);
+          fieldHighlights = alternateField(doc, docId, fieldName, fvhContainer, query, reader, req);
         }
 
         if (fieldHighlights != null) {
@@ -441,6 +420,34 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       fragments.add(schema.printableUniqueKey(doc), docHighlights);
     } // for each doc
     return fragments;
+  }
+
+  protected Object doHighlightingOfField(Document doc, int docId, SchemaField schemaField,
+                                       FvhContainer fvhContainer, Query query, IndexReader reader, SolrQueryRequest req,
+                                       SolrParams params) throws IOException {
+    Object fieldHighlights;
+    if (schemaField == null) {
+      fieldHighlights = null;
+    } else if (schemaField.getType() instanceof org.apache.solr.schema.TrieField) {
+      // TODO: highlighting numeric fields is broken (Lucene) - so we disable them until fixed (see LUCENE-3080)!
+      fieldHighlights = null;
+    } else if (useFastVectorHighlighter(params, schemaField)) {
+      if (fvhContainer.fieldQuery == null) {
+        FastVectorHighlighter fvh = new FastVectorHighlighter(
+            // FVH cannot process hl.usePhraseHighlighter parameter per-field basis
+            params.getBool(HighlightParams.USE_PHRASE_HIGHLIGHTER, true),
+            // FVH cannot process hl.requireFieldMatch parameter per-field basis
+            params.getBool(HighlightParams.FIELD_MATCH, false));
+        fvh.setPhraseLimit(params.getInt(HighlightParams.PHRASE_LIMIT, SolrHighlighter.DEFAULT_PHRASE_LIMIT));
+        fvhContainer.fvh = fvh;
+        fvhContainer.fieldQuery = fvh.getFieldQuery(query, reader);
+      }
+      fieldHighlights =
+          doHighlightingByFastVectorHighlighter(doc, docId, schemaField, fvhContainer, reader, req);
+    } else { // standard/default highlighter
+      fieldHighlights = doHighlightingByHighlighter(doc, docId, schemaField, query, reader, req);
+    }
+    return fieldHighlights;
   }
 
   /** Returns the field names to be passed to {@link SolrIndexSearcher#doc(int, Set)}.
@@ -469,14 +476,13 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   /** Highlights and returns the highlight object for this field -- a String[] by default.  Null if none. */
   @SuppressWarnings("unchecked")
   protected Object doHighlightingByFastVectorHighlighter(Document doc, int docId,
-                                                         SchemaField schemaField, FastVectorHighlighter highlighter,
-                                                         FieldQuery fieldQuery,
+                                                         SchemaField schemaField, FvhContainer fvhContainer,
                                                          IndexReader reader, SolrQueryRequest req) throws IOException {
     SolrParams params = req.getParams();
     String fieldName = schemaField.getName();
     SolrFragmentsBuilder solrFb = getSolrFragmentsBuilder(fieldName, params);
 
-    String[] snippets = highlighter.getBestFragments( fieldQuery, reader, docId, fieldName,
+    String[] snippets = fvhContainer.fvh.getBestFragments( fvhContainer.fieldQuery, reader, docId, fieldName,
         params.getFieldInt( fieldName, HighlightParams.FRAGSIZE, 100 ),
         params.getFieldInt( fieldName, HighlightParams.SNIPPETS, 1 ),
         getFragListBuilder( fieldName, params ),
@@ -497,12 +503,12 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     final String fieldName = schemaField.getName();
 
     final int mvToExamine =
-        req.getParams().getFieldInt(fieldName, HighlightParams.MAX_MULTIVALUED_TO_EXAMINE,
+        params.getFieldInt(fieldName, HighlightParams.MAX_MULTIVALUED_TO_EXAMINE,
             (schemaField.multiValued()) ? Integer.MAX_VALUE : 1);
 
     // Technically this is the max *fragments* (snippets), not max values:
     int mvToMatch =
-        req.getParams().getFieldInt(fieldName, HighlightParams.MAX_MULTIVALUED_TO_MATCH, Integer.MAX_VALUE);
+        params.getFieldInt(fieldName, HighlightParams.MAX_MULTIVALUED_TO_MATCH, Integer.MAX_VALUE);
     if (mvToExamine <= 0 || mvToMatch <= 0) {
       return null;
     }
@@ -557,7 +563,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       }
 
       Highlighter highlighter;
-      if (req.getParams().getFieldBool(fieldName, HighlightParams.USE_PHRASE_HIGHLIGHTER, true)) {
+      if (params.getFieldBool(fieldName, HighlightParams.USE_PHRASE_HIGHLIGHTER, true)) {
         // We're going to call getPhraseHighlighter and it might consume the tokenStream. If it does, the tokenStream
         // needs to implement reset() efficiently.
 
@@ -662,12 +668,38 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
   /** Returns the alternate highlight object for this field -- a String[] by default.  Null if none. */
   @SuppressWarnings("unchecked")
-  protected Object alternateField(Document doc, String fieldName, SolrQueryRequest req) {
+  protected Object alternateField(Document doc, int docId, String fieldName, FvhContainer fvhContainer, Query query,
+                                  IndexReader reader, SolrQueryRequest req) throws IOException {
+    IndexSchema schema = req.getSearcher().getSchema();
     SolrParams params = req.getParams();
     String alternateField = params.getFieldParam(fieldName, HighlightParams.ALTERNATE_FIELD);
+    int alternateFieldLen = params.getFieldInt(fieldName, HighlightParams.ALTERNATE_FIELD_LENGTH, 0);
     if (alternateField == null || alternateField.length() == 0) {
       return null;
     }
+
+    if (params.getFieldBool(fieldName, HighlightParams.HIGHLIGHT_ALTERNATE, true) && !alternateField.equals(fieldName)) {
+      // Try to highlight alternate field
+      Object fieldHighlights = null;
+      SchemaField schemaField = schema.getFieldOrNull(alternateField);
+      if (schemaField != null) {
+        HashMap<String, String> invariants = new HashMap<>();
+        invariants.put("f." + alternateField + "." + HighlightParams.SNIPPETS, "1");
+        // Enforce maxAlternateFieldLength by FRAGSIZE. Minimum 18 due to FVH limitations
+        invariants.put("f." + alternateField + "." + HighlightParams.FRAGSIZE,
+            alternateFieldLen > 0 ? String.valueOf(Math.max(18, alternateFieldLen)) : String.valueOf(Integer.MAX_VALUE));
+        SolrParams origParams = req.getParams();
+        req.setParams(SolrParams.wrapDefaults(new MapSolrParams(invariants), origParams));
+        fieldHighlights = doHighlightingOfField(doc, docId, schemaField, fvhContainer, query, reader, req, params);
+        req.setParams(origParams);
+        if (fieldHighlights != null) {
+          return fieldHighlights;
+        }
+      }
+    }
+
+
+    // Fallback to static non-highlighted
     IndexableField[] docFields = doc.getFields(alternateField);
     if (docFields.length == 0) {
       // The alternate field did not exist, treat the original field as fallback instead
@@ -685,7 +717,6 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     String[] altTexts = listFields.toArray(new String[listFields.size()]);
 
     Encoder encoder = getEncoder(fieldName, params);
-    int alternateFieldLen = params.getFieldInt(fieldName, HighlightParams.ALTERNATE_FIELD_LENGTH, 0);
     List<String> altList = new ArrayList<>();
     int len = 0;
     for( String altText: altTexts ){
@@ -706,6 +737,17 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   protected TokenStream createAnalyzerTStream(SchemaField schemaField, String docText) throws IOException {
     final TokenStream tStream = schemaField.getType().getIndexAnalyzer().tokenStream(schemaField.getName(), docText);
     return new TokenOrderingFilter(tStream, 10);
+  }
+
+  // Wraps FVH to allow pass-by-reference
+  protected class FvhContainer {
+    FastVectorHighlighter fvh;
+    FieldQuery fieldQuery;
+
+    FvhContainer(FastVectorHighlighter fvh, FieldQuery fieldQuery) {
+      this.fvh = fvh;
+      this.fieldQuery = fieldQuery;
+    }
   }
 }
 

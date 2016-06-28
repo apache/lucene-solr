@@ -26,7 +26,7 @@ import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -48,10 +48,10 @@ import org.apache.lucene.util.BytesRef;
 public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
 
   /**
-   * {@link org.apache.lucene.index.LeafReader} used to access the {@link org.apache.lucene.classification.Classifier}'s
+   * {@link org.apache.lucene.index.IndexReader} used to access the {@link org.apache.lucene.classification.Classifier}'s
    * index
    */
-  protected final LeafReader leafReader;
+  protected final IndexReader indexReader;
 
   /**
    * names of the fields to be used as input text
@@ -81,7 +81,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   /**
    * Creates a new NaiveBayes classifier.
    *
-   * @param leafReader     the reader on the index to be used for classification
+   * @param indexReader     the reader on the index to be used for classification
    * @param analyzer       an {@link Analyzer} used to analyze unseen text
    * @param query          a {@link Query} to eventually filter the docs used for training the classifier, or {@code null}
    *                       if all the indexed docs should be used
@@ -89,9 +89,9 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
    *                       as the returned class will be a token indexed for this field
    * @param textFieldNames the name of the fields used as the inputs for the classifier, NO boosting supported per field
    */
-  public SimpleNaiveBayesClassifier(LeafReader leafReader, Analyzer analyzer, Query query, String classFieldName, String... textFieldNames) {
-    this.leafReader = leafReader;
-    this.indexSearcher = new IndexSearcher(this.leafReader);
+  public SimpleNaiveBayesClassifier(IndexReader indexReader, Analyzer analyzer, Query query, String classFieldName, String... textFieldNames) {
+    this.indexReader = indexReader;
+    this.indexSearcher = new IndexSearcher(this.indexReader);
     this.textFieldNames = textFieldNames;
     this.classFieldName = classFieldName;
     this.analyzer = analyzer;
@@ -144,19 +144,20 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   protected List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = new ArrayList<>();
 
-    Terms classes = MultiFields.getTerms(leafReader, classFieldName);
-    TermsEnum classesEnum = classes.iterator();
-    BytesRef next;
-    String[] tokenizedText = tokenize(inputDocument);
-    int docsWithClassSize = countDocsWithClass();
-    while ((next = classesEnum.next()) != null) {
-      if (next.length > 0) {
-        Term term = new Term(this.classFieldName, next);
-        double clVal = calculateLogPrior(term, docsWithClassSize) + calculateLogLikelihood(tokenizedText, term, docsWithClassSize);
-        assignedClasses.add(new ClassificationResult<>(term.bytes(), clVal));
+    Terms classes = MultiFields.getTerms(indexReader, classFieldName);
+    if (classes != null) {
+      TermsEnum classesEnum = classes.iterator();
+      BytesRef next;
+      String[] tokenizedText = tokenize(inputDocument);
+      int docsWithClassSize = countDocsWithClass();
+      while ((next = classesEnum.next()) != null) {
+        if (next.length > 0) {
+          Term term = new Term(this.classFieldName, next);
+          double clVal = calculateLogPrior(term, docsWithClassSize) + calculateLogLikelihood(tokenizedText, term, docsWithClassSize);
+          assignedClasses.add(new ClassificationResult<>(term.bytes(), clVal));
+        }
       }
     }
-
     // normalization; the values transforms to a 0-1 range
     return normClassificationResults(assignedClasses);
   }
@@ -168,8 +169,9 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
    * @throws IOException if accessing to term vectors or search fails
    */
   protected int countDocsWithClass() throws IOException {
-    int docCount = MultiFields.getTerms(this.leafReader, this.classFieldName).getDocCount();
-    if (docCount == -1) { // in case codec doesn't support getDocCount
+    Terms terms = MultiFields.getTerms(this.indexReader, this.classFieldName);
+    int docCount;
+    if (terms == null || terms.getDocCount() == -1) { // in case codec doesn't support getDocCount
       TotalHitCountCollector classQueryCountCollector = new TotalHitCountCollector();
       BooleanQuery.Builder q = new BooleanQuery.Builder();
       q.add(new BooleanClause(new WildcardQuery(new Term(classFieldName, String.valueOf(WildcardQuery.WILDCARD_STRING))), BooleanClause.Occur.MUST));
@@ -179,6 +181,8 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
       indexSearcher.search(q.build(),
           classQueryCountCollector);
       docCount = classQueryCountCollector.getTotalHits();
+    } else {
+      docCount = terms.getDocCount();
     }
     return docCount;
   }
@@ -236,11 +240,11 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   private double getTextTermFreqForClass(Term term) throws IOException {
     double avgNumberOfUniqueTerms = 0;
     for (String textFieldName : textFieldNames) {
-      Terms terms = MultiFields.getTerms(leafReader, textFieldName);
+      Terms terms = MultiFields.getTerms(indexReader, textFieldName);
       long numPostings = terms.getSumDocFreq(); // number of term/doc pairs
       avgNumberOfUniqueTerms += numPostings / (double) terms.getDocCount(); // avg # of unique terms per doc
     }
-    int docsWithC = leafReader.docFreq(term);
+    int docsWithC = indexReader.docFreq(term);
     return avgNumberOfUniqueTerms * docsWithC; // avg # of unique terms in text fields per doc * # docs with c
   }
 
@@ -273,7 +277,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   }
 
   private int docCount(Term term) throws IOException {
-    return leafReader.docFreq(term);
+    return indexReader.docFreq(term);
   }
 
   /**

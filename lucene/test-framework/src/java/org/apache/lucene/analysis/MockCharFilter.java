@@ -19,7 +19,6 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Map;
-import java.util.SortedMap;
 import java.util.TreeMap;
 
 /** the purpose of this charfilter is to send offsets out of bounds

@@ -139,6 +139,7 @@ class GeoWideLongitudeSlice extends GeoBaseBBox {
     bounds.isWide()
       .addVerticalPlane(planetModel, leftLon, leftPlane)
       .addVerticalPlane(planetModel, rightLon, rightPlane)
+      .addIntersection(planetModel, leftPlane, rightPlane)
       .addPoint(planetModel.NORTH_POLE)
       .addPoint(planetModel.SOUTH_POLE);
   }

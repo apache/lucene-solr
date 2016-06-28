@@ -41,7 +41,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
-import java.util.Map;
 
 /**
  * TODO!

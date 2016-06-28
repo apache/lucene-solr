@@ -34,7 +34,7 @@ import org.apache.lucene.index.SegmentWriteState;
  *  any text editor, and even edit it to alter your index.
  *
  *  @lucene.experimental */
-public final class SimpleTextPostingsFormat extends PostingsFormat {
+final class SimpleTextPostingsFormat extends PostingsFormat {
   
   public SimpleTextPostingsFormat() {
     super("SimpleText");

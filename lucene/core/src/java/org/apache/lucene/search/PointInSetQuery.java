@@ -17,8 +17,11 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.AbstractCollection;
 import java.util.Arrays;
-
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
@@ -303,9 +306,57 @@ public abstract class PointInSetQuery extends Query {
     }
   }
 
+  public Collection<byte[]> getPackedPoints() {
+    return new AbstractCollection<byte[]>() {
+
+      @Override
+      public Iterator<byte[]> iterator() {
+        int size = (int) sortedPackedPoints.size();
+        PrefixCodedTerms.TermIterator iterator = sortedPackedPoints.iterator();
+        return new Iterator<byte[]>() {
+
+          int upto = 0;
+
+          @Override
+          public boolean hasNext() {
+            return upto < size;
+          }
+
+          @Override
+          public byte[] next() {
+            if (upto == size) {
+              throw new NoSuchElementException();
+            }
+
+            upto++;
+            BytesRef next = iterator.next();
+            return Arrays.copyOfRange(next.bytes, next.offset, next.length);
+          }
+        };
+      }
+
+      @Override
+      public int size() {
+        return (int) sortedPackedPoints.size();
+      }
+    };
+  }
+
+  public String getField() {
+    return field;
+  }
+
+  public int getNumDims() {
+    return numDims;
+  }
+
+  public int getBytesPerDim() {
+    return bytesPerDim;
+  }
+
   @Override
   public final int hashCode() {
-    int hash = super.hashCode();
+    int hash = classHash();
     hash = 31 * hash + field.hashCode();
     hash = 31 * hash + sortedPackedPointsHashCode;
     hash = 31 * hash + numDims;
@@ -315,16 +366,16 @@ public abstract class PointInSetQuery extends Query {
 
   @Override
   public final boolean equals(Object other) {
-    if (super.equals(other)) {
-      final PointInSetQuery q = (PointInSetQuery) other;
-      return q.field.equals(field) &&
-        q.numDims == numDims &&
-        q.bytesPerDim == bytesPerDim &&
-        q.sortedPackedPointsHashCode == sortedPackedPointsHashCode &&
-        q.sortedPackedPoints.equals(sortedPackedPoints);
-    }
-
-    return false;
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(PointInSetQuery other) {
+    return other.field.equals(field) &&
+           other.numDims == numDims &&
+           other.bytesPerDim == bytesPerDim &&
+           other.sortedPackedPointsHashCode == sortedPackedPointsHashCode &&
+           other.sortedPackedPoints.equals(sortedPackedPoints);
   }
 
   @Override

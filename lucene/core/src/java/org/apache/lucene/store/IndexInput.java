@@ -149,6 +149,11 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
           slice.seek(pos);
           return slice.readLong();
         }
+
+        @Override
+        public String toString() {
+          return "RandomAccessInput(" + IndexInput.this.toString() + ")";
+        }
       };
     }
   }

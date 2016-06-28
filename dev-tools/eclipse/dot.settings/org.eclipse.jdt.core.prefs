@@ -304,3 +304,6 @@ org.eclipse.jdt.core.formatter.use_tabs_only_for_leading_indentations=true
 org.eclipse.jdt.core.formatter.wrap_before_binary_operator=true
 org.eclipse.jdt.core.formatter.wrap_before_or_operator_multicatch=true
 org.eclipse.jdt.core.formatter.wrap_outer_expressions_when_nested=true
+org.eclipse.jdt.core.compiler.problem.comparingIdentical=error
+org.eclipse.jdt.core.compiler.problem.noEffectAssignment=error
+org.eclipse.jdt.core.compiler.problem.unusedImport=error

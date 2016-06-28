@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -118,6 +119,8 @@ public class SpellCheckCollator {
         params.set(CommonParams.FL, "id");
         // we'll sort by doc id to ensure no scoring is done.
         params.set(CommonParams.SORT, "_docid_ asc");
+        // CursorMark does not like _docid_ sorting, and we don't need it.
+        params.remove(CursorMarkParams.CURSOR_MARK_PARAM);
         // If a dismax query, don't add unnecessary clauses for scoring
         params.remove(DisMaxParams.TIE);
         params.remove(DisMaxParams.PF);

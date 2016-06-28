@@ -357,11 +357,9 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (obj instanceof DummyQuery == false) {
-        return false;
-      }
-      return id == ((DummyQuery) obj).id;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             id == ((DummyQuery) other).id;
     }
 
     @Override
@@ -950,9 +948,14 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     @Override
     public int hashCode() {
-      return super.hashCode() ^ i[0];
+      return classHash() ^ i[0];
     }
 
+    @Override
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             i[0] == ((BadQuery) other).i[0];
+    }
   }
 
   public void testDetectMutatedQueries() throws IOException {

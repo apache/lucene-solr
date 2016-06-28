@@ -81,6 +81,7 @@ public class Utils {
   }
 
   public static byte[] toJSON(Object o) {
+    if(o == null) return new byte[0];
     CharArr out = new CharArr();
     new JSONWriter(out, 2).write(o); // indentation by default
     return toUTF8(out);

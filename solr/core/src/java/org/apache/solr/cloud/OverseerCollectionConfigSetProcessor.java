@@ -16,10 +16,10 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+
 import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_ACTION_PREFIX;
 
 /**
@@ -61,8 +61,6 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
     super(
         zkStateReader,
         myId,
-        shardHandlerFactory,
-        adminPath,
         stats,
         getOverseerMessageHandlerSelector(zkStateReader, myId, shardHandlerFactory,
             adminPath, stats, overseer, overseerNodePrioritizer),
@@ -85,15 +83,12 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
         zkStateReader, myId, shardHandlerFactory, adminPath, stats, overseer, overseerNodePrioritizer);
     final OverseerConfigSetMessageHandler configMessageHandler = new OverseerConfigSetMessageHandler(
         zkStateReader);
-    return new OverseerMessageHandlerSelector() {
-      @Override
-      public OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message) {
-        String operation = message.getStr(Overseer.QUEUE_OPERATION);
-        if (operation != null && operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
-          return configMessageHandler;
-        }
-        return collMessageHandler;
+    return message -> {
+      String operation = message.getStr(Overseer.QUEUE_OPERATION);
+      if (operation != null && operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
+        return configMessageHandler;
       }
+      return collMessageHandler;
     };
   }
 }

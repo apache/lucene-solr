@@ -19,8 +19,6 @@ package org.apache.lucene.geo;
 import static java.lang.Math.PI;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static java.lang.Math.toDegrees;
-import static java.lang.Math.toRadians;
 import static org.apache.lucene.geo.GeoUtils.checkLatitude;
 import static org.apache.lucene.geo.GeoUtils.checkLongitude;
 import static org.apache.lucene.geo.GeoUtils.MAX_LAT_INCL;
@@ -34,6 +32,8 @@ import static org.apache.lucene.geo.GeoUtils.sloppySin;
 import static org.apache.lucene.util.SloppyMath.TO_DEGREES;
 import static org.apache.lucene.util.SloppyMath.asin;
 import static org.apache.lucene.util.SloppyMath.cos;
+import static org.apache.lucene.util.SloppyMath.toDegrees;
+import static org.apache.lucene.util.SloppyMath.toRadians;
 
 /** Represents a lat/lon rectangle. */
 public class Rectangle {

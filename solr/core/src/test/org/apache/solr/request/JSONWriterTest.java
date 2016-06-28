@@ -19,9 +19,6 @@ package org.apache.solr.request;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -29,7 +26,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.response.JSONResponseWriter;
-import org.apache.solr.response.PHPSerializedResponseWriter;
 import org.apache.solr.response.PythonResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RubyResponseWriter;

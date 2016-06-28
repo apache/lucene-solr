@@ -95,6 +95,7 @@ public class SolrXmlConfig {
     configBuilder.setSolrProperties(loadProperties(config));
     if (cloudConfig != null)
       configBuilder.setCloudConfig(cloudConfig);
+    configBuilder.setBackupRepositoryPlugins((getBackupRepositoryPluginInfos(config)));
     return fillSolrSection(configBuilder, entries);
   }
 
@@ -154,6 +155,7 @@ public class SolrXmlConfig {
     assertSingleInstance("solrcloud", config);
     assertSingleInstance("logging", config);
     assertSingleInstance("logging/watcher", config);
+    assertSingleInstance("backup", config);
   }
 
   private static void assertSingleInstance(String section, Config config) {
@@ -424,5 +426,15 @@ public class SolrXmlConfig {
     return (node == null) ? null : new PluginInfo(node, "shardHandlerFactory", false, true);
   }
 
+  private static PluginInfo[] getBackupRepositoryPluginInfos(Config config) {
+    NodeList nodes = (NodeList) config.evaluate("solr/backup/repository", XPathConstants.NODESET);
+    if (nodes == null || nodes.getLength() == 0)
+      return new PluginInfo[0];
+    PluginInfo[] configs = new PluginInfo[nodes.getLength()];
+    for (int i = 0; i < nodes.getLength(); i++) {
+      configs[i] = new PluginInfo(nodes.item(i), "BackupRepositoryFactory", true, true);
+    }
+    return configs;
+  }
 }
 

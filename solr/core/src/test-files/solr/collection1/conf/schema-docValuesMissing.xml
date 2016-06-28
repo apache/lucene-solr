@@ -25,6 +25,7 @@
   <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="date" class="solr.TrieDateField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="string" class="solr.StrField"/>
+  <fieldType name="boolean" class="solr.BoolField"/>
 
   <field name="id" type="string" required="true"/>
 
@@ -58,6 +59,13 @@
   <field name="stringdv_missingfirst" type="string" indexed="false" stored="false" docValues="true"
          sortMissingFirst="true"/>
   <field name="stringdv_missinglast" type="string" indexed="false" stored="false" docValues="true"
+         sortMissingLast="true"/>
+
+
+  <field name="booldv" type="boolean" indexed="false" stored="false" docValues="true"/>
+  <field name="booldv_missingfirst" type="boolean" indexed="false" stored="false" docValues="true"
+         sortMissingFirst="true"/>
+  <field name="booldv_missinglast" type="boolean" indexed="false" stored="false" docValues="true"
          sortMissingLast="true"/>
 
 
@@ -97,6 +105,11 @@
   <dynamicField name="*_stringdv_missinglast" type="string" indexed="false" stored="false" docValues="true"
                 sortMissingLast="true"/>
 
+  <dynamicField name="*_booldv" type="boolean" indexed="false" stored="false" docValues="true"/>
+  <dynamicField name="*_booldv_missingfirst" type="boolean" indexed="false" stored="false" docValues="true"
+                sortMissingFirst="true"/>
+  <dynamicField name="*_booldv_missinglast" type="boolean" indexed="false" stored="false" docValues="true"
+                sortMissingLast="true"/>
 
   <uniqueKey>id</uniqueKey>
 

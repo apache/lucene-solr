@@ -20,7 +20,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.GeoUtils;
 
@@ -46,6 +45,8 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
   protected final double centerLon;
   /** distance (in meters) from lat, lon center location */
   protected final double radiusMeters;
+  /** partial haversin computation */
+  protected final double sortKey;
 
   // we must check these before passing to superclass or circleToBBox, or users can get a strange exception!
   private static double checkRadius(double radiusMeters) {
@@ -54,41 +55,23 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
     }
     return radiusMeters;
   }
-  
-  private static double checkLatitude(double centerLat) {
-    GeoUtils.checkLatitude(centerLat);
-    return centerLat;
-  }
-  
-  private static double checkLongitude(double centerLon) {
-    GeoUtils.checkLongitude(centerLon);
-    return centerLon;
-  }
-  
+
   /**
    * Constructs a Query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types within a
    * distance (in meters) from a given point
    **/
   public GeoPointDistanceQuery(final String field, final double centerLat, final double centerLon, final double radiusMeters) {
-    this(field, TermEncoding.PREFIX, checkLatitude(centerLat), checkLongitude(centerLon), checkRadius(radiusMeters));
+    this(field, Rectangle.fromPointDistance(centerLat, centerLon, checkRadius(radiusMeters)), centerLat, centerLon, radiusMeters);
   }
 
-  /**
-   * Constructs a Query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types within a
-   * distance (in meters) from a given point. Accepts optional
-   * {@link org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding} parameter
-   **/
-  public GeoPointDistanceQuery(final String field, final TermEncoding termEncoding, final double centerLat, final double centerLon, final double radiusMeters) {
-    this(field, termEncoding, Rectangle.fromPointDistance(centerLat, centerLon, checkRadius(radiusMeters)), centerLat, centerLon, radiusMeters);
-  }
-
-  private GeoPointDistanceQuery(final String field, final TermEncoding termEncoding, final Rectangle bbox,
+  private GeoPointDistanceQuery(final String field, final Rectangle bbox,
                                  final double centerLat, final double centerLon, final double radiusMeters) {
-    super(field, termEncoding, bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon);
+    super(field, bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon);
 
     this.centerLat = centerLat;
     this.centerLon = centerLon;
     this.radiusMeters = radiusMeters;
+    this.sortKey = GeoUtils.distanceQuerySortKey(radiusMeters);
   }
 
   @Override
@@ -103,7 +86,7 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
         // unwrap left
         unwrappedLon += -360.0D;
       }
-      GeoPointDistanceQueryImpl left = new GeoPointDistanceQueryImpl(field, termEncoding, this, unwrappedLon,
+      GeoPointDistanceQueryImpl left = new GeoPointDistanceQueryImpl(field, this, unwrappedLon,
                                                                      new Rectangle(minLat, maxLat, GeoUtils.MIN_LON_INCL, maxLon));
       bqb.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
 
@@ -111,13 +94,13 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
         // unwrap right
         unwrappedLon += 360.0D;
       }
-      GeoPointDistanceQueryImpl right = new GeoPointDistanceQueryImpl(field, termEncoding, this, unwrappedLon,
+      GeoPointDistanceQueryImpl right = new GeoPointDistanceQueryImpl(field, this, unwrappedLon,
                                                                       new Rectangle(minLat, maxLat, minLon, GeoUtils.MAX_LON_INCL));
       bqb.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
 
       return bqb.build();
     }
-    return new GeoPointDistanceQueryImpl(field, termEncoding, this, centerLon,
+    return new GeoPointDistanceQueryImpl(field, this, centerLon,
                                          new Rectangle(this.minLat, this.maxLat, this.minLon, this.maxLon));
   }
 

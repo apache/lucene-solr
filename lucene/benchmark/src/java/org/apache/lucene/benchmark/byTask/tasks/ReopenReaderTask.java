@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 
 /**
 * Reopens IndexReader and closes old IndexReader.

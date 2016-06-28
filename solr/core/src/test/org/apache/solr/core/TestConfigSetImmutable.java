@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
@@ -46,7 +47,7 @@ public class TestConfigSetImmutable extends RestTestBase {
     File tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
     // make the ConfigSet immutable
-    FileUtils.write(new File(tmpConfDir, "configsetprops.json"), new StringBuilder("{\"immutable\":\"true\"}"));
+    FileUtils.write(new File(tmpConfDir, "configsetprops.json"), new StringBuilder("{\"immutable\":\"true\"}"), StandardCharsets.UTF_8);
 
     System.setProperty("managed.schema.mutable", "true");
 

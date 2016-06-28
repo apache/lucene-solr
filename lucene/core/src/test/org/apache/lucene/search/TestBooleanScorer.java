@@ -39,7 +39,7 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestBooleanScorer extends LuceneTestCase {
   private static final String FIELD = "category";
-  
+
   public void testMethod() throws Exception {
     Directory directory = newDirectory();
 
@@ -121,6 +121,16 @@ public class TestBooleanScorer extends LuceneTestCase {
           };
         }
       };
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return this == obj;
+    }
+
+    @Override
+    public int hashCode() {
+      return System.identityHashCode(this);
     }
   }
 

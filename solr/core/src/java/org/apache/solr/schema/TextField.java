@@ -16,14 +16,16 @@
  */
 package org.apache.solr.schema;
 
+import java.io.IOException;
+import java.util.Map;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.*;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.solr.common.SolrException;
@@ -31,9 +33,7 @@ import org.apache.solr.query.SolrRangeQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.Sorting;
-
-import java.util.Map;
-import java.io.IOException;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /** <code>TextField</code> is the basic type for configurable text analysis.
  * Analyzers for field types using this implementation should be defined in the schema.

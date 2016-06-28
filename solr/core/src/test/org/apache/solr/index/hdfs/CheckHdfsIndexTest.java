@@ -23,7 +23,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.index.BaseTestCheckIndex;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.NoLockFactory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -78,7 +77,7 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
     Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
     conf.setBoolean("fs.hdfs.impl.disable.cache", true);
 
-    directory = new HdfsDirectory(path, NoLockFactory.INSTANCE, conf);
+    directory = new HdfsDirectory(path, conf);
   }
 
   @Override

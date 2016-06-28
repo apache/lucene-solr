@@ -55,7 +55,7 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public final static List<String> allowedConfigDirectories = new ArrayList<>(
-      Arrays.asList(new String[] { "conf", "lib", "solr.xml" }));
+      Arrays.asList(new String[] { "conf", "lib", "solr.xml", "core1" }));
 
   public final static Set<String> requiredConfigDirectories = new HashSet<>();
   
@@ -160,8 +160,7 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
     
     CoreContainer container = new CoreContainer(loader);
     container.load();
-
-    SolrCore core = container.create("core1", ImmutableMap.of(CoreDescriptor.CORE_DATADIR, dataDirStr));
+    SolrCore core = container.create("", ImmutableMap.of(CoreDescriptor.CORE_DATADIR, dataDirStr));
     
     if (!(core.getDirectoryFactory() instanceof HdfsDirectoryFactory)) {
       throw new UnsupportedOperationException(
@@ -169,7 +168,7 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
               + HdfsDirectoryFactory.class.getSimpleName());
     }
 
-    EmbeddedSolrServer solr = new EmbeddedSolrServer(container, "core1");
+    EmbeddedSolrServer solr = new EmbeddedSolrServer(container, "");
     return solr;
   }
 

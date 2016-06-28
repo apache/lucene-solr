@@ -44,7 +44,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ROUTER;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARD_UNIQUE;
 
 public class TestCollectionAPI extends ReplicaPropertiesBase {

@@ -8,15 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.Utils;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
@@ -45,12 +42,14 @@ class Permission {
   Set<String> path, role, collections, method;
   Map<String, Function<String[], Boolean>> params;
   PermissionNameProvider.Name wellknownName;
+  Map originalConfig;
 
   private Permission() {
   }
 
   static Permission load(Map m) {
     Permission p = new Permission();
+    p.originalConfig = new LinkedHashMap<>(m);
     String name = (String) m.get(NAME);
     if (!m.containsKey("role")) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "role not specified");
     p.role = readValueAsSet(m, "role");
@@ -150,6 +149,10 @@ class Permission {
     return result.isEmpty() ? null : Collections.unmodifiableSet(result);
   }
 
+  @Override
+  public String toString() {
+   return Utils.toJSONString(originalConfig);
+  }
 
   static final Set<String> knownKeys = ImmutableSet.of("collection", "role", "params", "path", "method", NAME,"index");
   public static final Set<String> HTTP_METHODS = ImmutableSet.of("GET", "POST", "DELETE", "PUT", "HEAD");

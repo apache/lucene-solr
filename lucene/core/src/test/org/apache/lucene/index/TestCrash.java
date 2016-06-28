@@ -104,7 +104,6 @@ public class TestCrash extends LuceneTestCase {
     // running / store files could be open when we crash:
     dir.setAssertNoUnrefencedFilesOnClose(false);
 
-    dir.setPreventDoubleWrite(false);
     if (VERBOSE) {
       System.out.println("TEST: now crash");
     }

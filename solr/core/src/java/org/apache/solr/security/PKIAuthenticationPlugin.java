@@ -122,7 +122,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       return;
     }
     if ((receivedTime - decipher.timestamp) > MAX_VALIDITY) {
-        log.error("Invalid key ");
+      log.error("Invalid key request timestamp: {} , received timestamp: {} , TTL: {}", decipher.timestamp, receivedTime, MAX_VALIDITY);
         filterChain.doFilter(request, response);
         return;
     }

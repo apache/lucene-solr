@@ -452,6 +452,7 @@
   <field name="bind" type="boolean" indexed="true" stored="false"/>
   <field name="bsto" type="boolean" indexed="false" stored="true"/>
   <field name="bindsto" type="boolean" indexed="true" stored="true"/>
+  <field name="bindstom" type="boolean" indexed="true" stored="true" multiValued="true"/>
   <field name="isto" type="int" indexed="false" stored="true"/>
   <field name="iind" type="int" indexed="true" stored="false"/>
   <field name="ssto" type="string" indexed="false" stored="true"/>

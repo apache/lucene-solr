@@ -49,20 +49,14 @@ public class RandomApproximationQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (super.equals(obj) == false) {
-      return false;
-    }
-    final RandomApproximationQuery that = (RandomApproximationQuery) obj;
-    if (this.query.equals(that.query) == false) {
-      return false;
-    }
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           query.equals(((RandomApproximationQuery) other).query);
   }
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + query.hashCode();
+    return 31 * classHash() + query.hashCode();
   }
 
   @Override

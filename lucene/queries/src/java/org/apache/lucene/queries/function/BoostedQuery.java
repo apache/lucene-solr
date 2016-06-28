@@ -31,7 +31,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * Query that is boosted by a ValueSource
@@ -160,16 +159,19 @@ public final class BoostedQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object o) {
-  if (!super.equals(o)) return false;
-    BoostedQuery other = (BoostedQuery)o;
-    return this.q.equals(other.q)
-           && this.boostVal.equals(other.boostVal);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(BoostedQuery other) {
+    return q.equals(other.q) &&
+           boostVal.equals(other.boostVal);
   }
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = classHash();
     h = 31 * h + q.hashCode();
     h = 31 * h + boostVal.hashCode();
     return h;

@@ -53,8 +53,6 @@ public class TermQuery extends Query {
       super(TermQuery.this);
       this.needsScores = needsScores;
       assert termStates != null : "TermContext must not be null";
-      // checked with a real exception in TermQuery constructor
-      assert termStates.hasOnlyRealTerms();
       this.termStates = termStates;
       this.similarity = searcher.getSimilarity(needsScores);
 
@@ -166,12 +164,6 @@ public class TermQuery extends Query {
   public TermQuery(Term t, TermContext states) {
     assert states != null;
     term = Objects.requireNonNull(t);
-    if (states.hasOnlyRealTerms() == false) {
-      // The reason for this is that fake terms might have the same bytes as
-      // real terms, and this confuses query caching because they don't match
-      // the same documents
-      throw new IllegalArgumentException("Term queries must be created on real terms");
-    }
     perReaderTermState = Objects.requireNonNull(states);
   }
 
@@ -211,14 +203,13 @@ public class TermQuery extends Query {
 
   /** Returns true iff <code>o</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof TermQuery)) return false;
-    TermQuery other = (TermQuery) o;
-    return super.equals(o) && this.term.equals(other.term);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           term.equals(((TermQuery) other).term);
   }
 
   @Override
   public int hashCode() {
-    return super.hashCode() ^ term.hashCode();
+    return classHash() ^ term.hashCode();
   }
 }

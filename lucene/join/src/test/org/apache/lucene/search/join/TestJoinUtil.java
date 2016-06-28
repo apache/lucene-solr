@@ -507,6 +507,17 @@ public class TestJoinUtil extends LuceneTestCase {
       public String toString(String field) {
         return fieldQuery.toString(field);
       }
+
+      @Override
+      public boolean equals(Object o) {
+        return o == this;
+      }
+
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(this);
+      }
+
     };
 
     Directory dir = newDirectory();
@@ -964,10 +975,10 @@ public class TestJoinUtil extends LuceneTestCase {
 
         final Query joinQuery;
         {
-          // single val can be handled by multiple-vals 
+          // single val can be handled by multiple-vals
           final boolean muliValsQuery = multipleValuesPerDocument || random().nextBoolean();
-          final String fromField = from ? "from":"to"; 
-          final String toField = from ? "to":"from"; 
+          final String fromField = from ? "from":"to";
+          final String toField = from ? "to":"from";
 
           int surpriseMe = random().nextInt(3);
           switch (surpriseMe) {
@@ -1079,22 +1090,22 @@ public class TestJoinUtil extends LuceneTestCase {
     for (int i = 0; i < numRandomValues; i++) {
       String uniqueRandomValue;
       do {
-        // the trick is to generate values which will be ordered similarly for string, ints&longs, positive nums makes it easier 
+        // the trick is to generate values which will be ordered similarly for string, ints&longs, positive nums makes it easier
         final int nextInt = random.nextInt(Integer.MAX_VALUE);
         uniqueRandomValue = String.format(Locale.ROOT, "%08x", nextInt);
         assert nextInt == Integer.parseUnsignedInt(uniqueRandomValue,16);
       } while ("".equals(uniqueRandomValue) || trackSet.contains(uniqueRandomValue));
-     
+
       // Generate unique values and empty strings aren't allowed.
       trackSet.add(uniqueRandomValue);
-      
+
       context.randomFrom[i] = random.nextBoolean();
       context.randomUniqueValues[i] = uniqueRandomValue;
-      
+
     }
 
     List<String> randomUniqueValuesReplica = new ArrayList<>(Arrays.asList(context.randomUniqueValues));
-        
+
     RandomDoc[] docs = new RandomDoc[nDocs];
     for (int i = 0; i < nDocs; i++) {
       String id = Integer.toString(i);
@@ -1117,7 +1128,7 @@ public class TestJoinUtil extends LuceneTestCase {
       Collections.shuffle(subValues, random);
       }
       for (String linkValue : subValues) {
-        
+
         assert !docs[i].linkValues.contains(linkValue);
         docs[i].linkValues.add(linkValue);
         if (from) {
@@ -1131,7 +1142,7 @@ public class TestJoinUtil extends LuceneTestCase {
           context.fromDocuments.get(linkValue).add(docs[i]);
           context.randomValueFromDocs.get(value).add(docs[i]);
           addLinkFields(random, document,  "from", linkValue, multipleValuesPerDocument, globalOrdinalJoin);
-          
+
         } else {
           if (!context.toDocuments.containsKey(linkValue)) {
             context.toDocuments.put(linkValue, new ArrayList<>());

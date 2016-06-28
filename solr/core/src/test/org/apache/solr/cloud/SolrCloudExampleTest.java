@@ -21,14 +21,12 @@ import java.io.FilenameFilter;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -92,6 +90,10 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     ensureAllReplicasAreActive(testCollectionName, "shard1", 2, 2, 20);
     ensureAllReplicasAreActive(testCollectionName, "shard2", 2, 2, 10);
     cloudClient.setDefaultCollection(testCollectionName);
+
+    int invalidToolExitStatus = 1;
+    assertEquals("Collection '" + testCollectionName + "' created even though it already existed",
+        invalidToolExitStatus, tool.runTool(cli));
 
     // now index docs like bin/post would do but we can't use SimplePostTool because it uses System.exit when
     // it encounters an error, which JUnit doesn't like ...

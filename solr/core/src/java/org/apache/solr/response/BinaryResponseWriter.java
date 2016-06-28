@@ -16,8 +16,6 @@
  */
 package org.apache.solr.response;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrDocument;
@@ -38,7 +37,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,7 +163,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       new JavaBinCodec(resolver).setWritableDocFields(resolver).marshal(rsp.getValues(), out);
 
-      InputStream in = new ByteArrayInputStream(out.toByteArray());
+      InputStream in = out.toInputStream();
       return (NamedList<Object>) new JavaBinCodec(resolver).unmarshal(in);
     }
     catch (Exception ex) {

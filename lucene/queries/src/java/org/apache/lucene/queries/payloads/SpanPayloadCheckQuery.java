@@ -173,18 +173,13 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (! super.equals(o)) {
-      return false;
-    }
-    SpanPayloadCheckQuery other = (SpanPayloadCheckQuery)o;
-    return this.payloadToMatch.equals(other.payloadToMatch);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           payloadToMatch.equals(((SpanPayloadCheckQuery) other).payloadToMatch);
   }
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
-    h = (h * 63) ^ payloadToMatch.hashCode();
-    return h;
+    return classHash() ^ payloadToMatch.hashCode();
   }
 }

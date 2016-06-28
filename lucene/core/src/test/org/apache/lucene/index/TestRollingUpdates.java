@@ -80,7 +80,7 @@ public class TestRollingUpdates extends LuceneTestCase {
       if (s != null && updateCount < SIZE) {
         TopDocs hits = s.search(new TermQuery(idTerm), 1);
         assertEquals(1, hits.totalHits);
-        doUpdate = !w.tryDeleteDocument(r, hits.scoreDocs[0].doc);
+        doUpdate = w.tryDeleteDocument(r, hits.scoreDocs[0].doc) == -1;
         if (VERBOSE) {
           if (doUpdate) {
             System.out.println("  tryDeleteDocument failed");

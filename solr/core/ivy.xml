@@ -31,6 +31,7 @@
 
   <dependencies>
     <dependency org="commons-codec" name="commons-codec" rev="${/commons-codec/commons-codec}" conf="compile"/>
+    <dependency org="commons-io" name="commons-io" rev="${/commons-io/commons-io}" conf="compile"/>
     <dependency org="org.apache.commons" name="commons-exec" rev="${/org.apache.commons/commons-exec}" conf="compile"/>
     <dependency org="commons-fileupload" name="commons-fileupload" rev="${/commons-fileupload/commons-fileupload}" conf="compile"/>
     <dependency org="commons-cli" name="commons-cli" rev="${/commons-cli/commons-cli}" conf="compile"/>
@@ -76,7 +77,7 @@
     
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile.hadoop"/>
     <dependency org="com.github.ben-manes.caffeine" name="caffeine" rev="${/com.github.ben-manes.caffeine/caffeine}" conf="compile.hadoop"/>
-    <dependency org="org.htrace" name="htrace-core" rev="${/org.htrace/htrace-core}" conf="compile.hadoop"/>
+    <dependency org="org.apache.htrace" name="htrace-core" rev="${/org.apache.htrace/htrace-core}" conf="compile.hadoop"/>
     
     <!-- Hadoop DfsMiniCluster Dependencies-->
     <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="test.DfsMiniCluster">
@@ -90,7 +91,11 @@
     <dependency org="com.sun.jersey" name="jersey-core" rev="${/com.sun.jersey/jersey-core}" conf="test.DfsMiniCluster"/>
     <dependency org="com.sun.jersey" name="jersey-server" rev="${/com.sun.jersey/jersey-server}" conf="test.DfsMiniCluster"/>
     <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="test.DfsMiniCluster"/>
-
+    <dependency org="io.netty" name="netty-all" rev="${/io.netty/netty-all}" conf="test.DfsMiniCluster"/>
+    <dependency org="org.apache.htrace" name="htrace-core" rev="${/org.apache.htrace/htrace-core}" conf="test.DfsMiniCluster"/>
+    <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="${/org.codehaus.jackson/jackson-core-asl}" conf="test.DfsMiniCluster" />
+    <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="${/org.codehaus.jackson/jackson-mapper-asl}" conf="test.DfsMiniCluster" />
+ 
     <!-- Hadoop MiniKdc Dependencies-->
     <dependency org="org.apache.hadoop" name="hadoop-minikdc" rev="${/org.apache.hadoop/hadoop-minikdc}" conf="test.MiniKdc"/>
     <dependency org="org.apache.directory.server" name="apacheds-core" rev="${/org.apache.directory.server/apacheds-core}" conf="test.MiniKdc"/>

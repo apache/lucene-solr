@@ -137,6 +137,16 @@ public class TestFilteredDocIdSet extends LuceneTestCase {
       public String toString(String field) {
         return "nullDocIdSetFilter";
       }
+      
+      @Override
+      public boolean equals(Object other) {
+        return other == this;
+      }
+      
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(this);
+      }
     };
 
     Query filtered = new BooleanQuery.Builder()
@@ -183,9 +193,20 @@ public class TestFilteredDocIdSet extends LuceneTestCase {
           }
         };
       }
+
       @Override
       public String toString(String field) {
         return "nullDocIdSetFilter";
+      }
+      
+      @Override
+      public boolean equals(Object other) {
+        return other == this;
+      }
+      
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(this);
       }
     };
     

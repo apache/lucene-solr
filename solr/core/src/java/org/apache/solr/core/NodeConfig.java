@@ -58,13 +58,15 @@ public class NodeConfig {
 
   private final String managementPath;
 
+  private final PluginInfo[] backupRepositoryPlugins;
+
   private NodeConfig(String nodeName, Path coreRootDirectory, Path configSetBaseDirectory, String sharedLibDirectory,
                      PluginInfo shardHandlerFactoryConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
                      String coreAdminHandlerClass, String collectionsAdminHandlerClass,
                      String infoHandlerClass, String configSetsHandlerClass,
                      LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, int coreLoadThreads,
-                     int transientCacheSize, boolean useSchemaCache, String managementPath,
-                     SolrResourceLoader loader, Properties solrProperties) {
+                     int transientCacheSize, boolean useSchemaCache, String managementPath, SolrResourceLoader loader,
+                     Properties solrProperties, PluginInfo[] backupRepositoryPlugins) {
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
     this.configSetBaseDirectory = configSetBaseDirectory;
@@ -83,6 +85,7 @@ public class NodeConfig {
     this.managementPath = managementPath;
     this.loader = loader;
     this.solrProperties = solrProperties;
+    this.backupRepositoryPlugins = backupRepositoryPlugins;
 
     if (this.cloudConfig != null && this.coreLoadThreads < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -165,6 +168,10 @@ public class NodeConfig {
     return loader;
   }
 
+  public PluginInfo[] getBackupRepositoryPlugins() {
+    return backupRepositoryPlugins;
+  }
+
   public static class NodeConfigBuilder {
 
     private Path coreRootDirectory;
@@ -183,6 +190,7 @@ public class NodeConfig {
     private boolean useSchemaCache = false;
     private String managementPath;
     private Properties solrProperties = new Properties();
+    private PluginInfo[] backupRepositoryPlugins;
 
     private final SolrResourceLoader loader;
     private final String nodeName;
@@ -283,10 +291,16 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setBackupRepositoryPlugins(PluginInfo[] backupRepositoryPlugins) {
+      this.backupRepositoryPlugins = backupRepositoryPlugins;
+      return this;
+    }
+
     public NodeConfig build() {
       return new NodeConfig(nodeName, coreRootDirectory, configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, infoHandlerClass, configSetsHandlerClass,
-                            logWatcherConfig, cloudConfig, coreLoadThreads, transientCacheSize, useSchemaCache, managementPath, loader, solrProperties);
+                            logWatcherConfig, cloudConfig, coreLoadThreads, transientCacheSize, useSchemaCache, managementPath, loader, solrProperties,
+                            backupRepositoryPlugins);
     }
   }
 }

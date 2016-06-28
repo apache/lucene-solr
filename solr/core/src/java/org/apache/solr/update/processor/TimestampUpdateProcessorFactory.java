@@ -16,18 +16,11 @@
  */
 package org.apache.solr.update.processor;
 
-import java.io.IOException;
 import java.util.Date;
 
-import org.apache.solr.common.SolrException;
-import static org.apache.solr.common.SolrException.ErrorCode.*;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.AddUpdateCommand;
-
 import org.apache.solr.common.params.CommonParams; // javadoc
 
 /**

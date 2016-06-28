@@ -497,7 +497,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     }
     return livePaths;
   }
-
+  
   @Override
   protected boolean deleteOldIndexDirectory(String oldDirPath) throws IOException {
     Set<String> livePaths = getLivePaths();
@@ -507,5 +507,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     }
 
     return super.deleteOldIndexDirectory(oldDirPath);
+  }
+  
+  protected synchronized String getPath(Directory directory) {
+    return byDirectoryCache.get(directory).path;
   }
 }

@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -35,8 +35,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.util.BytesRef;
-
-
 
 /**
  * A simplistic Lucene based NaiveBayes classifier, with caching feature, see
@@ -61,15 +59,15 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
    * Creates a new NaiveBayes classifier with inside caching. If you want less memory usage you could call
    * {@link #reInitCache(int, boolean) reInitCache()}.
    *
-   * @param leafReader     the reader on the index to be used for classification
+   * @param indexReader     the reader on the index to be used for classification
    * @param analyzer       an {@link Analyzer} used to analyze unseen text
    * @param query          a {@link Query} to eventually filter the docs used for training the classifier, or {@code null}
    *                       if all the indexed docs should be used
    * @param classFieldName the name of the field used as the output for the classifier
    * @param textFieldNames the name of the fields used as the inputs for the classifier
    */
-  public CachingNaiveBayesClassifier(LeafReader leafReader, Analyzer analyzer, Query query, String classFieldName, String... textFieldNames) {
-    super(leafReader, analyzer, query, classFieldName, textFieldNames);
+  public CachingNaiveBayesClassifier(IndexReader indexReader, Analyzer analyzer, Query query, String classFieldName, String... textFieldNames) {
+    super(indexReader, analyzer, query, classFieldName, textFieldNames);
     // building the cache
     try {
       reInitCache(0, true);
@@ -212,7 +210,7 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     // build the cache for the word
     Map<String, Long> frequencyMap = new HashMap<>();
     for (String textFieldName : textFieldNames) {
-      TermsEnum termsEnum = leafReader.terms(textFieldName).iterator();
+      TermsEnum termsEnum = MultiFields.getTerms(indexReader, textFieldName).iterator();
       while (termsEnum.next() != null) {
         BytesRef term = termsEnum.term();
         String termText = term.utf8ToString();
@@ -229,7 +227,7 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     }
 
     // fill the class list
-    Terms terms = MultiFields.getTerms(leafReader, classFieldName);
+    Terms terms = MultiFields.getTerms(indexReader, classFieldName);
     TermsEnum termsEnum = terms.iterator();
     while ((termsEnum.next()) != null) {
       cclasses.add(BytesRef.deepCopyOf(termsEnum.term()));
@@ -238,11 +236,11 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     for (BytesRef cclass : cclasses) {
       double avgNumberOfUniqueTerms = 0;
       for (String textFieldName : textFieldNames) {
-        terms = MultiFields.getTerms(leafReader, textFieldName);
+        terms = MultiFields.getTerms(indexReader, textFieldName);
         long numPostings = terms.getSumDocFreq(); // number of term/doc pairs
         avgNumberOfUniqueTerms += numPostings / (double) terms.getDocCount();
       }
-      int docsWithC = leafReader.docFreq(new Term(classFieldName, cclass));
+      int docsWithC = indexReader.docFreq(new Term(classFieldName, cclass));
       classTermFreq.put(cclass, avgNumberOfUniqueTerms * docsWithC);
     }
   }

@@ -17,6 +17,20 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -31,20 +45,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
-
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * A collection of segmentInfo objects with methods for operating on those
@@ -103,7 +103,7 @@ import java.util.Set;
  * <li>SegID is the identifier of the Codec that encoded this segment. </li>
  * <li>CommitUserData stores an optional user-supplied opaque
  * Map&lt;String,String&gt; that was passed to
- * {@link IndexWriter#setCommitData(java.util.Map)}.</li>
+ * {@link IndexWriter#setLiveCommitData(Iterable)}.</li>
  * <li>FieldInfosGen is the generation count of the fieldInfos file. If this is
  * -1, there are no updates to the fieldInfos in that segment. Anything above
  * zero means there are updates to fieldInfos stored by {@link FieldInfosFormat}
@@ -443,7 +443,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     String segmentFileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.PENDING_SEGMENTS,
                                                                    "",
                                                                    nextGeneration);
-    
+
     // Always advance the generation on write:
     generation = nextGeneration;
     
