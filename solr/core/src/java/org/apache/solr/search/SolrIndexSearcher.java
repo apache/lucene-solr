@@ -766,12 +766,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     final DirectoryReader reader = getIndexReader();
-    if (!enableLazyFieldLoading || fields == null) {
-      d = reader.document(i);
+    if (fields != null) {
+      if (enableLazyFieldLoading) {
+        final SetNonLazyFieldSelector visitor = new SetNonLazyFieldSelector(fields, reader, i);
+        reader.document(i, visitor);
+        d = visitor.doc;
+      } else {
+        d = reader.document(i, fields);
+      }
     } else {
-      final SetNonLazyFieldSelector visitor = new SetNonLazyFieldSelector(fields, reader, i);
-      reader.document(i, visitor);
-      d = visitor.doc;
+      d = reader.document(i);
     }
 
     if (documentCache != null) {

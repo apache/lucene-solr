@@ -910,8 +910,12 @@ public class QueryComponent extends SearchComponent
         additionalAdded = addFL(additionalFL, "score", additionalAdded);
       }
     } else {
-      // reset so that only unique key is requested in shard requests
-      sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());
+      if (rb.req.getSearcher().enableLazyFieldLoading) {
+        // reset so that only unique key is requested in shard requests
+        sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());
+      } else {
+        sreq.params.set(CommonParams.FL, "*");
+      }
       if (shardQueryIncludeScore) {
         additionalAdded = addFL(additionalFL, "score", additionalAdded);
       }
