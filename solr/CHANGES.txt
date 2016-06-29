@@ -185,6 +185,8 @@ Bug Fixes
 * SOLR-9176: facet method ENUM was sometimes unnecessarily being rewritten to
   FCS, causing slowdowns (Alessandro Benedetti, Jesse McLaughlin, Alan Woodward)
 
+* SOLR-9246: If the JDBCStream sees an unknown column type it will now throw a detailed exception. (Dennis Gove)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.

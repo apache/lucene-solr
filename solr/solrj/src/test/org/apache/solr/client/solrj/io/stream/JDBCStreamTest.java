@@ -84,6 +84,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     statement.executeUpdate("create table COUNTRIES(CODE varchar(3) not null primary key, COUNTRY_NAME varchar(50), DELETED char(1) default 'N')");
     statement.executeUpdate("create table PEOPLE(ID int not null primary key, NAME varchar(50), COUNTRY_CODE char(2), DELETED char(1) default 'N')");
     statement.executeUpdate("create table PEOPLE_SPORTS(ID int not null primary key, PERSON_ID int, SPORT_NAME varchar(50), DELETED char(1) default 'N')");
+    statement.executeUpdate("create table UNSUPPORTED_COLUMNS(ID int not null primary key, UNSP binary)");
     
   }
 
@@ -109,6 +110,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
       statement.executeUpdate("delete from COUNTRIES WHERE 1=1");
       statement.executeUpdate("delete from PEOPLE WHERE 1=1");
       statement.executeUpdate("delete from PEOPLE_SPORTS WHERE 1=1");
+      statement.executeUpdate("delete from UNSUPPORTED_COLUMNS WHERE 1=1");
     }
   }
 
@@ -495,6 +497,20 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     assertTrue(3.95D == tuple.getDouble("avg(rating)"));
     assertTrue(4D == tuple.getDouble("count(*)"));
     
+  }
+  
+  @Test(expected=IOException.class)
+  public void testUnsupportedColumns() throws Exception {
+
+    // No need to load table with any data
+    
+    TupleStream stream;
+    
+    // Simple 1
+    stream = new JDBCStream("jdbc:hsqldb:mem:.", "select ID,UNSP from UNSUPPORTED_COLUMNS",
+        new FieldComparator("CODE", ComparatorOrder.ASCENDING));
+    getTuples(stream);
+        
   }
   
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
