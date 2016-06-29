@@ -81,6 +81,8 @@ Other
 
 * LUCENE-7346: Update forbiddenapis to version 2.2.
   (Uwe Schindler)
+
+* LUCENE-7360: Explanation.toHtml() is deprecated. (Alan Woodward)
   
 ======================= Lucene 6.1.0 =======================
 
