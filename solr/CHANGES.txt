@@ -54,10 +54,12 @@ Bug Fixes
 
 * SOLR-8626: 404 error when clicking nodes in cloud graph view in angular UI. (janhoy, Trey Grainger via shalin)
 
+* SOLR-8777: Duplicate Solr process can cripple a running process. (Jessica Cheng Mallet, Scott Blum, shalin)
+
 * SOLR-9254: GraphTermsQueryQParserPlugin throws NPE when field being searched is not present in segment
   (Joel Bernstein)
 
-* SOLR-8657: Fix SolrRequestInfo error logs if QuerySenderListener is being used (Pascal Chollet, 
+* SOLR-8657: Fix SolrRequestInfo error logs if QuerySenderListener is being used (Pascal Chollet,
   Tomás Fernández Löbbe)
 
 Optimizations
