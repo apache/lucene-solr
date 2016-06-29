@@ -29,6 +29,8 @@ Bug Fixes
 
 * SOLR-8940: Fix group.sort option (hossman)
 
+* SOLR-9246: If the JDBCStream sees an unknown column type it will now throw a detailed exception. (Dennis Gove)
+
 ==================  6.0.1 ==================
 
 Upgrade Notes

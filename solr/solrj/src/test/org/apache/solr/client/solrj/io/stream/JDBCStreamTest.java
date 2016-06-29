@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Properties;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -79,7 +78,7 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     statement.executeUpdate("create table COUNTRIES(CODE varchar(3) not null primary key, COUNTRY_NAME varchar(50), DELETED char(1) default 'N')");
     statement.executeUpdate("create table PEOPLE(ID int not null primary key, NAME varchar(50), COUNTRY_CODE char(2), DELETED char(1) default 'N')");
     statement.executeUpdate("create table PEOPLE_SPORTS(ID int not null primary key, PERSON_ID int, SPORT_NAME varchar(50), DELETED char(1) default 'N')");
-    
+    statement.executeUpdate("create table UNSUPPORTED_COLUMNS(ID int not null primary key, UNSP binary)");
   }
 
   @AfterClass
@@ -149,6 +148,20 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     
     // Delete database
     // done during afterSuperClass(...)
+  }
+  
+  @Test(expected=IOException.class)
+  public void testUnsupportedColumns() throws Exception {
+
+    // No need to load table with any data
+    
+    TupleStream stream;
+    
+    // Simple 1
+    stream = new JDBCStream("jdbc:hsqldb:mem:.", "select ID,UNSP from UNSUPPORTED_COLUMNS",
+        new FieldComparator("CODE", ComparatorOrder.ASCENDING));
+    getTuples(stream);
+        
   }
   
   private void clearData() throws Exception {
