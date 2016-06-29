@@ -89,8 +89,10 @@ Bug Fixes
 * SOLR-9254: GraphTermsQueryQParserPlugin throws NPE when field being searched is not present in segment
   (Joel Bernstein)
 
-* SOLR-8657: Fix SolrRequestInfo error logs if QuerySenderListener is being used (Pascal Chollet, 
+* SOLR-8657: Fix SolrRequestInfo error logs if QuerySenderListener is being used (Pascal Chollet,
   Tomás Fernández Löbbe)
+
+* SOLR-8777: Duplicate Solr process can cripple a running process. (Jessica Cheng Mallet, Scott Blum, shalin)
 
 Optimizations
 ----------------------
