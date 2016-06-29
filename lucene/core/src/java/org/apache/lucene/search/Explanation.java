@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -121,7 +120,6 @@ public final class Explanation {
     return buffer.toString();
   }
 
-
   /** Render an explanation as HTML. */
   @Deprecated
   public String toHtml() {
@@ -142,4 +140,21 @@ public final class Explanation {
 
     return buffer.toString();
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Explanation that = (Explanation) o;
+    return match == that.match &&
+        Float.compare(that.value, value) == 0 &&
+        Objects.equals(description, that.description) &&
+        Objects.equals(details, that.details);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(match, value, description, details);
+  }
+
 }
