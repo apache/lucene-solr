@@ -1,5 +1,7 @@
 package org.apache.solr.response;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -56,14 +58,11 @@ public class XLSXResponseWriter extends RawResponseWriter {
   @Override
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     //throwaway arraywriter just to satisfy super requirements; we're grabbing
-    //all writes before they go to it anyway
+    // all writes before they go to it anyway
     XLSXWriter w = new XLSXWriter(new CharArrayWriter(), req, rsp);
     try {
       w.writeResponse(out);
-      w.close();
-    } catch (IOException e) {
-      log.warn("Write response failed due to IOException");
-      log.warn(e.getMessage());
+    } finally {
       w.close();
     }
   }
@@ -123,7 +122,7 @@ class XLSXWriter extends TextResponseWriter {
 
     //set the width of the most recently created column
     void setColWidth(int charWidth) {
-      //width is set in units of 1/256th of a character width for some reason
+      //width in poi is units of 1/256th of a character width for some reason
       this.sh.setColumnWidth(cellIndex - 1, 256*charWidth);
     }
 
@@ -149,26 +148,23 @@ class XLSXWriter extends TextResponseWriter {
 
   private SerialWriteWorkbook wb = new SerialWriteWorkbook();
 
-  static class Field {
+  static class XLField {
     String name;
     SchemaField sf;
   }
 
-  private Map<String,Field> xlFields = new LinkedHashMap<String,Field>();
+  private Map<String,XLField> xlFields = new LinkedHashMap<String,XLField>();
 
   public XLSXWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp){
     super(writer, req, rsp);
-    this.req = req;
-    this.rsp = rsp;
   }
 
   public void writeResponse(OutputStream out) throws IOException {
-    log.info("Beginning export");
+    SolrParams params = req.getParams();
 
     Collection<String> fields = returnFields.getRequestedFieldNames();
     Object responseObj = rsp.getValues().get("response");
     boolean returnOnlyStored = false;
-    //TODO check this against CSVResponseWriter, mostly from there
     if (fields==null||returnFields.hasPatternMatching()) {
       if (responseObj instanceof SolrDocumentList) {
         // get the list of fields from the SolrDocumentList
@@ -179,13 +175,12 @@ class XLSXWriter extends TextResponseWriter {
           fields.addAll(sdoc.getFieldNames());
         }
       } else {
-        // get the list of all fields in the index
-        Iterable<String> allFields = req.getSearcher().getFieldNames();
-        if(fields==null) {
-          fields = new ArrayList<String>();
-        }
-        for (String fieldName: allFields) {
-          fields.add(fieldName);
+        // get the list of fields from the index
+        Iterable<String> all = req.getSearcher().getFieldNames();
+        if (fields == null) {
+          fields = Sets.newHashSet(all);
+        } else {
+          Iterables.addAll(fields, all);
         }
       }
       if (returnFields.wantsScore()) {
@@ -201,7 +196,7 @@ class XLSXWriter extends TextResponseWriter {
         continue;
       }
       if (field.equals("score")) {
-        Field xlField = new Field();
+        XLField xlField = new XLField();
         xlField.name = "score";
         xlFields.put("score", xlField);
         continue;
@@ -218,7 +213,7 @@ class XLSXWriter extends TextResponseWriter {
         continue;
       }
 
-      Field xlField = new Field();
+      XLField xlField = new XLField();
       xlField.name = field;
       xlField.sf = sf;
       xlFields.put(field, xlField);
@@ -257,7 +252,7 @@ class XLSXWriter extends TextResponseWriter {
 
     wb.addRow();
     //write header
-    for (Field xlField : xlFields.values()) {
+    for (XLField xlField : xlFields.values()) {
       String printName = xlField.name;
       int colWidth = 14;
 
@@ -274,23 +269,18 @@ class XLSXWriter extends TextResponseWriter {
     wb.setHeaderRow();
     wb.addRow();
 
-    //write rows
-    //TODO check this against CSVResponseWriter, mostly from there
-    if (responseObj instanceof ResultContext ) {
-      writeDocuments("",(ResultContext)responseObj, returnFields );
+    if (responseObj instanceof ResultContext) {
+      writeDocuments(null, (ResultContext)responseObj );
     }
     else if (responseObj instanceof DocList) {
-      ResultContext ctx = new ResultContext();
-      ctx.docs =  (DocList)responseObj;
-      writeDocuments(null, ctx, returnFields );
+      ResultContext ctx = new BasicResultContext((DocList)responseObj, returnFields, null, null, req);
+      writeDocuments(null, ctx );
     } else if (responseObj instanceof SolrDocumentList) {
       writeSolrDocumentList(null, (SolrDocumentList)responseObj, returnFields );
     }
-    log.info("Export complete; flushing document");
-    //flush to outputstream
+
     wb.flush(out);
     wb = null;
-
   }
 
   @Override
@@ -324,7 +314,7 @@ class XLSXWriter extends TextResponseWriter {
       tmpList.add(null);
     }
 
-    for (Field xlField : xlFields.values()) {
+    for (XLField xlField : xlFields.values()) {
       Object val = doc.getFieldValue(xlField.name);
       int nVals = val instanceof Collection ? ((Collection)val).size() : (val==null ? 0 : 1);
       if (nVals == 0) {
