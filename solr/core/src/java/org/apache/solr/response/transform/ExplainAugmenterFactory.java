@@ -70,6 +70,26 @@ public class ExplainAugmenterFactory extends TransformerFactory
     return new ExplainAugmenter( field, style );
   }
 
+  /** Render an explanation as HTML. */
+  public static String toHtml(Explanation explanation) {
+    StringBuilder buffer = new StringBuilder();
+    buffer.append("<ul>\n");
+
+    buffer.append("<li>");
+    buffer.append(explanation.getValue()).append(" = ").append(explanation.getDescription());
+    buffer.append("<br />\n");
+
+    Explanation[] details = explanation.getDetails();
+    for (int i = 0 ; i < details.length; i++) {
+      buffer.append(toHtml(details[i]));
+    }
+
+    buffer.append("</li>\n");
+    buffer.append("</ul>\n");
+
+    return buffer.toString();
+  }
+
   static class ExplainAugmenter extends DocTransformer {
     final String name;
     final Style style;
@@ -95,7 +115,7 @@ public class ExplainAugmenterFactory extends TransformerFactory
             doc.setField( name, SolrPluginUtils.explanationToNamedList(exp) );
           }
           else if( style == Style.html ) {
-            doc.setField( name, exp.toHtml() );
+            doc.setField( name, toHtml(exp));
           }
           else {
             doc.setField( name, exp.toString() );

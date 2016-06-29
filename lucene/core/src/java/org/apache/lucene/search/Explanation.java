@@ -123,6 +123,7 @@ public final class Explanation {
 
 
   /** Render an explanation as HTML. */
+  @Deprecated
   public String toHtml() {
     StringBuilder buffer = new StringBuilder();
     buffer.append("<ul>\n");
