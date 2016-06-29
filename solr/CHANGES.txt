@@ -72,6 +72,8 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-9191: OverseerTaskQueue.peekTopN() fatally flawed (Scott Blum, Noble Paul)
+
 * SOLR-9199: ZkController#publishAndWaitForDownStates logic is inefficient (Hrishikesh Gadre)
 
 * SOLR-9161: Change SolrPluginUtils.invokeSetters implementation to accommodate setter variants.
