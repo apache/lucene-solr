@@ -120,26 +120,5 @@ public final class Explanation {
 
     return buffer.toString();
   }
-
-
-  /** Render an explanation as HTML. */
-  @Deprecated
-  public String toHtml() {
-    StringBuilder buffer = new StringBuilder();
-    buffer.append("<ul>\n");
-
-    buffer.append("<li>");
-    buffer.append(getSummary());
-    buffer.append("<br />\n");
-
-    Explanation[] details = getDetails();
-    for (int i = 0 ; i < details.length; i++) {
-      buffer.append(details[i].toHtml());
-    }
-
-    buffer.append("</li>\n");
-    buffer.append("</ul>\n");
-
-    return buffer.toString();
-  }
+  
 }

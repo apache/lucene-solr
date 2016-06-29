@@ -14,3 +14,7 @@ yielding better compression ratios. In case you would still like to compress on
 top of the codec, you can do it on the application side by using the utility
 classes from the java.util.zip package.
 
+## Explanation.toHtml() removed (LUCENE-7360)
+
+Clients wishing to render Explanations as HTML should implement their own
+utilities for this.
