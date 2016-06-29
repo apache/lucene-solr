@@ -67,6 +67,8 @@ Bug Fixes
 * SOLR-8657: Fix SolrRequestInfo error logs if QuerySenderListener is being used (Pascal Chollet,
   Tomás Fernández Löbbe)
 
+* SOLR-9246: If the JDBCStream sees an unknown column type it will now throw a detailed exception. (Dennis Gove)
+
 Optimizations
 ----------------------
 
