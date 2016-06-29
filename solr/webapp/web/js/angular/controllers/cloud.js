@@ -313,6 +313,32 @@ solrAdminApp.directive('graph', function(Constants) {
                 }
             });
 
+
+            function setNodeNavigationBehavior(node, view){
+                node
+                .attr('data-href', function (d) {
+                    if (d.type == "node"){
+                        return getNodeUrl(d, view);
+                    }
+                    else{
+                        return "";
+                    }
+                })
+                .on('click', function(d) {
+                    if (d.data.type == "node"){
+                        location.href = getNodeUrl(d, view);
+                    }
+                });
+            }
+
+            function getNodeUrl(d, view){
+                var url = d.name + Constants.ROOT_URL + "#/~cloud";
+                if (view != undefined){
+                    url += "?view=" + view;
+                }
+                return url;
+            }
+
             var flatGraph = function(element, graphData, leafCount) {
                 var w = element.width(),
                     h = leafCount * 20;
@@ -358,14 +384,10 @@ solrAdminApp.directive('graph', function(Constants) {
                     })
                     .attr('text-anchor', function (d) {
                         return 0 === d.depth ? 'end' : 'start';
-                    })
-                    .attr('data-href', function (d) {
-                        return d.name + Constants.ROOT_URL + "#/~cloud";
-                    })
-                    .text(helper_node_text)
-                    .on('click', function(d,i) {
-                        location.href = d.name+Constants.ROOT_URL+"#/~cloud";
-                    });
+                    })                    
+                    .text(helper_node_text);
+
+                setNodeNavigationBehavior(node);
             };
 
             var radialGraph = function(element, graphData, leafCount) {
@@ -417,13 +439,9 @@ solrAdminApp.directive('graph', function(Constants) {
                     .attr('transform', function (d) {
                         return d.x < 180 ? null : 'rotate(180)';
                     })
-                    .attr('data-href', function (d) {
-                        return d.name;
-                    })
-                    .text(helper_node_text)
-                    .on('click', function(d,i) {
-                        location.href = d.name+Constants.ROOT_URL+"#/~cloud";
-                    });
+                    .text(helper_node_text);
+
+                setNodeNavigationBehavior(node, "rgraph");
             }
         }
     };

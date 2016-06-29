@@ -267,4 +267,39 @@ public class GeoPathTest {
     p.done();//at least test this doesn't bomb like it used too -- LUCENE-6520
   }
 
+  @Test
+  public void testFailure1() {
+    /*
+   GeoStandardPath: {planetmodel=PlanetModel.WGS84, width=1.117010721276371(64.0), points={[
+   [lat=2.18531083006635E-12, lon=-3.141592653589793([X=-1.0011188539924791, Y=-1.226017000107956E-16, Z=2.187755873813378E-12])], 
+   [lat=0.0, lon=-3.141592653589793([X=-1.0011188539924791, Y=-1.226017000107956E-16, Z=0.0])]]}}
+    */
+    final GeoPoint[] points = new GeoPoint[]{
+      new GeoPoint(PlanetModel.WGS84, 2.18531083006635E-12, -3.141592653589793),
+      new GeoPoint(PlanetModel.WGS84, 0.0, -3.141592653589793)};
+    
+    final GeoPath path;
+    try {
+      path = GeoPathFactory.makeGeoPath(PlanetModel.WGS84,
+        1.117010721276371, points);
+    } catch (IllegalArgumentException e) {
+      return;
+    }
+    assertTrue(false);
+    
+    final GeoPoint point = new GeoPoint(PlanetModel.WGS84, -2.848117399637174E-91, -1.1092122135274942);
+    System.err.println("point = "+point);
+      
+    final XYZBounds bounds = new XYZBounds();
+    path.getBounds(bounds);
+      
+    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84,
+      bounds.getMinimumX(), bounds.getMaximumX(),
+      bounds.getMinimumY(), bounds.getMaximumY(),
+      bounds.getMinimumZ(), bounds.getMaximumZ());
+      
+    assertTrue(path.isWithin(point));
+    assertTrue(solid.isWithin(point));
+  }
+  
 }

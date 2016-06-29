@@ -18,6 +18,8 @@ package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.EventParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
@@ -38,11 +40,16 @@ public class TestQuerySenderListener extends SolrTestCaseJ4 {
     // in the same VM
     preInitMockListenerCount = MockEventListener.getCreateCount();
 
+    if (usually()) {
+      // This is set by the SolrDispatchFilter, used in Http calls but not Embedded
+      ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
+    }
     initCore("solrconfig-querysender.xml","schema.xml");
+    
   }
 
   public void testListenerCreationCounts() {
-    SolrCore core = h.getCore();
+    h.getCore();
 
     assertEquals("Unexpected number of listeners created",
                  EXPECTED_MOCK_LISTENER_INSTANCES, 
@@ -73,14 +80,15 @@ public class TestQuerySenderListener extends SolrTestCaseJ4 {
     String evt = mock.req.getParams().get(EventParams.EVENT);
     assertNotNull("Event is null", evt);
     assertTrue(evt + " is not equal to " + EventParams.FIRST_SEARCHER, evt.equals(EventParams.FIRST_SEARCHER) == true);
+    
+    assertU(adoc("id", "1"));
+    assertU(commit());
 
-    SolrIndexSearcher newSearcher = new SolrIndexSearcher(core, core.getNewIndexDir(), core.getLatestSchema(), core.getSolrConfig().indexConfig, "testQuerySenderListener", false, core.getDirectoryFactory());
-
-    qsl.newSearcher(newSearcher, currentSearcher);
+    RefCounted<SolrIndexSearcher> newSearcherRef = core.getSearcher();
     evt = mock.req.getParams().get(EventParams.EVENT);
     assertNotNull("Event is null", evt);
     assertTrue(evt + " is not equal to " + EventParams.NEW_SEARCHER, evt.equals(EventParams.NEW_SEARCHER) == true);
-    newSearcher.close();
+    newSearcherRef.decref();
     currentSearcherRef.decref();
   }
 

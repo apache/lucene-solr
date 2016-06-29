@@ -84,6 +84,14 @@ Bug Fixes
 
 * SOLR-9237: DefaultSolrHighlighter.doHighlightingByFastVectorHighlighter can't be overidden (janhoy)
 
+* SOLR-8626: 404 error when clicking nodes in cloud graph view in angular UI. (janhoy, Trey Grainger via shalin)
+
+* SOLR-9254: GraphTermsQueryQParserPlugin throws NPE when field being searched is not present in segment
+  (Joel Bernstein)
+
+* SOLR-8657: Fix SolrRequestInfo error logs if QuerySenderListener is being used (Pascal Chollet, 
+  Tomás Fernández Löbbe)
+
 Optimizations
 ----------------------
 
@@ -151,7 +159,7 @@ New Features
 * SOLR-8859: Spatial fields like RPT can now be configured to use Spatial4j registered shape formats
   e.g. via format="GeoJSON".  (ryan, David Smiley)
 
-* SOLR-445: new ToleranteUpdateProcessorFactory to support skipping update commands that cause
+* SOLR-445: new TolerantUpdateProcessorFactory to support skipping update commands that cause
   failures when sending multiple updates in a single request.
   (Erick Erickson, Tomás Fernández Löbbe, Anshum Gupta, hossman)
 

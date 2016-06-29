@@ -40,9 +40,11 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
@@ -220,6 +222,9 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           final LeafReader reader = context.reader();
           final Fields fields = reader.fields();
           Terms terms = fields.terms(field);
+          if(terms == null) {
+            return new WeightOrDocIdSet(new BitDocIdSet(new FixedBitSet(reader.maxDoc()), 0));
+          }
           TermsEnum  termsEnum = terms.iterator();
           PostingsEnum docs = null;
           DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc(), terms);
