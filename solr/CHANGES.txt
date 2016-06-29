@@ -96,6 +96,8 @@ Bug Fixes
 
 * SOLR-8777: Duplicate Solr process can cripple a running process. (Jessica Cheng Mallet, Scott Blum, shalin)
 
+* SOLR-9246: If the JDBCStream sees an unknown column type it will now throw a detailed exception. (Dennis Gove)
+
 Optimizations
 ----------------------
 
