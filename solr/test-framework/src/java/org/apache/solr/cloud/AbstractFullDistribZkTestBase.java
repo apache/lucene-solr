@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
@@ -369,6 +370,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     return defaultStateFormat; // random
   }
+  
+  protected boolean randomNameNodes = true;
 
   protected List<JettySolrRunner> createJettys(int numJettys) throws Exception {
     List<JettySolrRunner> jettys = new ArrayList<>();
@@ -394,6 +397,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       File jettyDir = createTempDir("shard-" + i).toFile();
 
       jettyDir.mkdirs();
+      
+      if(randomNameNodes && random().nextBoolean()) {
+        System.setProperty("solr.nodeName", "node"+cnt);
+      }
+      
       setupJettySolrHome(jettyDir);
       log.info("create jetty {} in directory {}", i, jettyDir);
       JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
@@ -401,6 +409,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       jettys.add(j);
       SolrClient client = createNewSolrClient(j.getLocalPort());
       clients.add(client);
+      
+      System.clearProperty("solr.nodeName");
     }
 
     this.jettys.addAll(jettys);
@@ -506,6 +516,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       props.setProperty("solr.data.dir", getDataDir(dataDir));
     props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toAbsolutePath().toString());
     
+    if(null != System.getProperty("solr.nodeName")){
+      props.setProperty("solr.nodeName", System.getProperty("solr.nodeName"));
+    }
+    
     JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), props, jettyconfig);
     jetty.start();
 
@@ -550,12 +564,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return jetty;
   }
 
-  protected int getReplicaPort(Replica replica) {
-    String replicaNode = replica.getNodeName();
-    String tmp = replicaNode.substring(replicaNode.indexOf(':')+1);
-    if (tmp.indexOf('_') != -1)
-      tmp = tmp.substring(0,tmp.indexOf('_'));
-    return Integer.parseInt(tmp);
+  protected int getReplicaPort(Replica replica) throws MalformedURLException {
+    URL replicaNode = new URL(replica.getCoreUrl());
+    return replicaNode.getPort();
   }
 
   protected JettySolrRunner getJettyOnPort(int port) {

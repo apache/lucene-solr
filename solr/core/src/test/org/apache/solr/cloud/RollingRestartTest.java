@@ -66,6 +66,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
     numDesignateOverseers = Math.max(getShardCount(), numDesignateOverseers);
     List<String> designates = new ArrayList<>();
     List<CloudJettyRunner> designateJettys = new ArrayList<>();
+    
     for (int i = 0; i < numDesignateOverseers; i++) {
       int n = random().nextInt(getShardCount());
       String nodeName = cloudJettys.get(n).nodeName;

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.cloud.ClusterState;
@@ -27,9 +29,22 @@ public class MockZkStateReader extends ZkStateReader {
   private Set<String> collections;
 
   public MockZkStateReader(ClusterState clusterState, Set<String> collections) {
+    this(clusterState, collections, null);
+  }
+  
+  public MockZkStateReader(ClusterState clusterState, Set<String> collections, Map<String, String> liveNodes) {
     super(new MockSolrZkClient());
     this.clusterState = clusterState;
     this.collections = collections;
+    
+    if(liveNodes == null && clusterState != null) {
+      liveNodes = new HashMap<String, String>();
+      for(String n: clusterState.getLiveNodes()) {
+        liveNodes.put(n, n);
+      }
+    }
+    
+    this.liveNodes = liveNodes;
   }
   
   public Set<String> getAllCollections(){

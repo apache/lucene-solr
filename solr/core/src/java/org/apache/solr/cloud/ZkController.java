@@ -181,7 +181,8 @@ public class ZkController {
 
   private final int localHostPort;      // example: 54065
   private final String hostName;           // example: 127.0.0.1
-  private final String nodeName;           // example: 127.0.0.1:54065_solr
+  private final String genericNodeName;           // example: 127.0.0.1:54065_solr
+  private final String nodeName;          //set in solr.xml or genericNodeName as default
   private String baseURL;            // example: http://127.0.0.1:54065/solr
 
   private final CloudConfig cloudConfig;
@@ -271,8 +272,11 @@ public class ZkController {
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = cloudConfig.getSolrHostPort();
     this.hostName = normalizeHostName(cloudConfig.getHost());
-    this.nodeName = generateNodeName(this.hostName, Integer.toString(this.localHostPort), localHostContext);
-    MDCLoggingContext.setNode(nodeName);
+    this.genericNodeName = generateNodeName(this.hostName, Integer.toString(this.localHostPort), localHostContext);
+    String nodeName = cloudConfig.getNodeName();
+    this.nodeName = nodeName == null || nodeName.isEmpty() ? this.genericNodeName : nodeName;
+    String loggingContext = this.nodeName == this.genericNodeName ? this.genericNodeName : String.format("%s[%s]", this.nodeName, this.genericNodeName);
+    MDCLoggingContext.setNode(loggingContext);
     this.leaderVoteWait = cloudConfig.getLeaderVoteWait();
     this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
 
@@ -671,7 +675,7 @@ public class ZkController {
     try {
       createClusterZkNodes(zkClient);
       zkStateReader.createClusterStateWatchersAndUpdate();
-      this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
+      this.baseURL = zkStateReader.getBaseUrlFromGenericNodeName(this.genericNodeName);
 
       checkForExistingEphemeralNode();
 
@@ -738,9 +742,10 @@ public class ZkController {
     }
 
     boolean deleted = deletedLatch.await(zkClient.getSolrZooKeeper().getSessionTimeout() * 2, TimeUnit.MILLISECONDS);
+
     if (!deleted) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "A previous ephemeral live node still exists. " +
-          "Solr cannot continue. Please ensure that no other Solr process using the same port is running already.");
+      throw new SolrException(ErrorCode.SERVER_ERROR, "An ephemeral live node still exists named '" + this.nodeName +
+          "'. Solr cannot continue. Please ensure that no other Solr process using the same port is running already or configured with the same nodeName in solr.xml");
     }
   }
 
@@ -819,7 +824,11 @@ public class ZkController {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:" + nodePath);
-    zkClient.makePath(nodePath, CreateMode.EPHEMERAL, true);
+    zkClient.makePath(nodePath, getGenericNodeName().getBytes(), CreateMode.EPHEMERAL, true);
+  }
+
+  private String getGenericNodeName() {
+    return genericNodeName;
   }
 
   public String getNodeName() {
@@ -2104,7 +2113,7 @@ public class ZkController {
     stateObj.put(ZkStateReader.STATE_PROP, state.toString());
     // only update the createdBy value if it's not set
     if (stateObj.get("createdByNodeName") == null) {
-      stateObj.put("createdByNodeName", this.nodeName);
+      stateObj.put("createdByNodeName", this.genericNodeName);
     }
     if (stateObj.get("createdByCoreNodeName") == null && leaderCoreNodeName != null)  {
       stateObj.put("createdByCoreNodeName", leaderCoreNodeName);

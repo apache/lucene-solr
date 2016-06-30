@@ -364,6 +364,9 @@ public class SolrXmlConfig {
         case "genericCoreNodeNames":
           builder.setUseGenericCoreNames(Boolean.parseBoolean(value));
           break;
+        case "nodeName":
+          builder.setNodeName(value);
+          break;
         case "zkACLProvider":
           builder.setZkACLProviderClass(value);
           break;
