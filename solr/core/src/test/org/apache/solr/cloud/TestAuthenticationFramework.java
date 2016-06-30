@@ -104,27 +104,28 @@ public class TestAuthenticationFramework extends LuceneTestCase {
   public void testBasics() throws Exception {
 
     MiniSolrCloudCluster miniCluster = createMiniSolrCloudCluster();
-
-    // Should pass
-    collectionCreateSearchDelete(miniCluster);
-
-    MockAuthenticationPlugin.expectedUsername = "solr";
-    MockAuthenticationPlugin.expectedPassword = "s0lrRocks";
-    
-    // Should fail with 401
     try {
+      // Should pass
       collectionCreateSearchDelete(miniCluster);
-      fail("Should've returned a 401 error");
-    } catch (Exception ex) {
-      if (!ex.getMessage().contains("Error 401")) {
+
+      MockAuthenticationPlugin.expectedUsername = "solr";
+      MockAuthenticationPlugin.expectedPassword = "s0lrRocks";
+
+      // Should fail with 401
+      try {
+        collectionCreateSearchDelete(miniCluster);
         fail("Should've returned a 401 error");
+      } catch (Exception ex) {
+        if (!ex.getMessage().contains("Error 401")) {
+          fail("Should've returned a 401 error");
+        }
+      } finally {
+        MockAuthenticationPlugin.expectedUsername = null;
+        MockAuthenticationPlugin.expectedPassword = null;
       }
     } finally {
-      MockAuthenticationPlugin.expectedUsername = null;
-      MockAuthenticationPlugin.expectedPassword = null;
+      miniCluster.shutdown();
     }
-
-    miniCluster.shutdown();
   }
 
   @After
