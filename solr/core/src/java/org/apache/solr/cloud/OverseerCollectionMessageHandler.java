@@ -136,7 +136,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
 public class OverseerCollectionMessageHandler implements OverseerMessageHandler {
 
   public static final String NUM_SLICES = "numShards";
-  
+
   static final boolean CREATE_NODE_SET_SHUFFLE_DEFAULT = true;
   public static final String CREATE_NODE_SET_SHUFFLE = "createNodeSet.shuffle";
   public static final String CREATE_NODE_SET_EMPTY = "EMPTY";
@@ -275,7 +275,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
           processRebalanceLeaders(message);
           break;
         case MODIFYCOLLECTION:
-          overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+          modifyCollection(message, results);
           break;
         case MIGRATESTATEFORMAT:
           migrateStateFormat(message, results);
@@ -1824,6 +1824,25 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
     return nodeList;
   }
+  
+  
+  private void modifyCollection(ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
+    
+    final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
+    //the rest of the processing is based on writing cluster state properties
+    //remove the property here to avoid any errors down the pipeline due to this property appearing
+    String configName = (String) message.getProperties().remove(COLL_CONF);
+    
+    if(configName != null) {
+      validateConfigOrThrowSolrException(configName);
+      
+      boolean isLegacyCloud =  Overseer.isLegacy(zkStateReader);
+      createConfNode(configName, collectionName, isLegacyCloud);
+      reloadCollection(new ZkNodeProps(NAME, collectionName), results);
+    }
+    
+    overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+  }
 
   private void createCollection(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
     final String collectionName = message.getStr(NAME);
@@ -1835,9 +1854,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     String configName = getConfigName(collectionName, message);
     if (configName == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "No config set found to associate with the collection.");
-    } else if (!validateConfig(configName)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find the specified config set: " + configName);
     }
+    
+    validateConfigOrThrowSolrException(configName);
+    
 
     try {
       // look at the replication factor and see if it matches reality
@@ -2487,8 +2507,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     return configName;
   }
   
-  private boolean validateConfig(String configName) throws KeeperException, InterruptedException {
-    return zkStateReader.getZkClient().exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, true);
+  private void validateConfigOrThrowSolrException(String configName) throws KeeperException, InterruptedException {
+    boolean isValid = zkStateReader.getZkClient().exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, true);
+    if(!isValid) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find the specified config set: " + configName);
+    }
   }
 
   /**
@@ -2679,34 +2702,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       message.getStr(COLLECTION_PROP) : message.getStr(NAME);
   }
 
-
- /* @Override
-  public void markExclusiveTask(String collectionName, ZkNodeProps message) {
-    if (collectionName != null) {
-      synchronized (collectionWip) {
-        collectionWip.add(collectionName);
-      }
-    }
-  }
-
-  @Override
-  public void unmarkExclusiveTask(String collectionName, String operation, ZkNodeProps message) {
-    if(collectionName != null) {
-      synchronized (collectionWip) {
-        collectionWip.remove(collectionName);
-      }
-    }
-  }*/
-/*
-  @Override
-  public ExclusiveMarking checkExclusiveMarking(String collectionName, ZkNodeProps message) {
-    synchronized (collectionWip) {
-      if(collectionWip.contains(collectionName))
-        return ExclusiveMarking.NONEXCLUSIVE;
-    }
-
-    return ExclusiveMarking.NOTDETERMINED;
-  }*/
 
   private long sessionId = -1;
   private LockTree.Session lockSession;

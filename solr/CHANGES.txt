@@ -69,6 +69,9 @@ New Features
 * SOLR-7374: Core level Backup/Restore now supports specifying the directory implementation to use
   via the "repository" parameter. (Hrishikesh Gadre, Varun Thacker, Mark Miller)
 
+* SOLR-9216: Support collection.configName in MODIFYCOLLECTION request (Keith Laban, noble)
+
+
 Bug Fixes
 ----------------------
 
