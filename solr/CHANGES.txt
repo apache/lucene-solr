@@ -121,6 +121,8 @@ Other Changes
 * SOLR-9076: Update to Hadoop 2.7.2
   (Mark Miller, Gregory Chanan)
 
+* SOLR-8787: TestAuthenticationFramework should not extend TestMiniSolrCloudCluster. (Trey Cahill via shalin)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
