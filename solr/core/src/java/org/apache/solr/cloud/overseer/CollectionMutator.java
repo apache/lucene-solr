@@ -92,9 +92,18 @@ public class CollectionMutator {
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     DocCollection coll = clusterState.getCollection(message.getStr(COLLECTION_PROP));
     Map<String, Object> m = coll.shallowCopy();
+    boolean hasAnyOps = false;
     for (String prop : CollectionsHandler.MODIFIABLE_COLL_PROPS) {
-      if(message.get(prop)!= null) m.put(prop,message.get(prop));
+      if(message.get(prop)!= null) {
+        hasAnyOps = true;
+        m.put(prop,message.get(prop));
+      }
     }
+    
+    if(!hasAnyOps) {
+      return ZkStateWriter.NO_OP;
+    }
+    
     return new ZkWriteCommand(coll.getName(),
         new DocCollection(coll.getName(),coll.getSlicesMap(),m,coll.getRouter(),coll.getZNodeVersion(),coll.getZNode()));
   }

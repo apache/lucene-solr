@@ -107,7 +107,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       case "rule":
         return (List) o;
       default:
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Unknown property " + propName);
+        return o;
     }
 
   }

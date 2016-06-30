@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -51,8 +50,18 @@ import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -765,13 +774,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         return null;
       }
     },
-    MODIFYCOLLECTION_OP(MODIFYCOLLECTION, DEFAULT_COLLECTION_OP_TIMEOUT, false) {
+    MODIFYCOLLECTION_OP(MODIFYCOLLECTION) {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
 
-        Map<String, Object> m = req.getParams().getAll(null, MODIFIABLE_COLL_PROPS.toArray(new String[0]));
+        Map<String, Object> m = req.getParams().getAll(null, MODIFIABLE_COLL_PROPS);
         if (m.isEmpty()) throw new SolrException(ErrorCode.BAD_REQUEST,
-            formatString("no supported values provided rule, snitch, masShardsPerNode, replicationFactor"));
+            formatString("no supported values provided rule, snitch, maxShardsPerNode, replicationFactor, collection.configName"));
         req.getParams().required().getAll(m, COLLECTION_PROP);
         addMapObject(m, RULE);
         addMapObject(m, SNITCH);
@@ -1045,11 +1054,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  public static final List<String> MODIFIABLE_COLL_PROPS = ImmutableList.of(
+  public static final List<String> MODIFIABLE_COLL_PROPS = Arrays.asList(
       RULE,
       SNITCH,
       REPLICATION_FACTOR,
       MAX_SHARDS_PER_NODE,
-      AUTO_ADD_REPLICAS);
-
+      AUTO_ADD_REPLICAS,
+      COLL_CONF);
 }

@@ -1075,9 +1075,13 @@ public class ZkStateReader implements Closeable {
       }
     }
   }
+  
+  public static String getCollectionPathRoot(String coll) {
+    return COLLECTIONS_ZKNODE+"/"+coll;
+  }
 
   public static String getCollectionPath(String coll) {
-    return COLLECTIONS_ZKNODE+"/"+coll + "/state.json";
+    return getCollectionPathRoot(coll) + "/state.json";
   }
 
   /**
