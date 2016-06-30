@@ -113,11 +113,6 @@ public class TestSimilarityProvider extends LuceneTestCase {
     public float decodeNormValue(long norm) {
       return norm;
     }
-    
-    @Override
-    public float coord(int overlap, int maxOverlap) {
-      return 1f;
-    }
 
     @Override
     public float queryNorm(float sumOfSquaredWeights) {
@@ -160,11 +155,6 @@ public class TestSimilarityProvider extends LuceneTestCase {
     @Override
     public float decodeNormValue(long norm) {
       return norm;
-    }
-    
-    @Override
-    public float coord(int overlap, int maxOverlap) {
-      return 1f;
     }
 
     @Override

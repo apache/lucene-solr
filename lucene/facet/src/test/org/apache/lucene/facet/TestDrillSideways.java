@@ -1132,7 +1132,6 @@ public class TestDrillSideways extends FacetTestCase {
     DrillSideways ds = new DrillSideways(searcher, config, taxoReader);
 
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
     bq.add(new TermQuery(new Term("field", "foo")), BooleanClause.Occur.MUST);
     bq.add(new TermQuery(new Term("field", "bar")), BooleanClause.Occur.MUST_NOT);
     DrillDownQuery ddq = new DrillDownQuery(config, bq.build());

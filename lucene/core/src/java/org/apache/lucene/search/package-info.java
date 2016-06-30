@@ -522,8 +522,7 @@
  *    {@link org.apache.lucene.search.Scorer Scorer} is going to be a <code>BooleanScorer2</code> created
  *    from {@link org.apache.lucene.search.BooleanWeight BooleanWeight} (see the section on
  *    <a href="#customQueriesExpert">custom queries</a> for info on changing this).
- * <p>Assuming a BooleanScorer2, we first initialize the Coordinator, which is used to apply the coord() 
- *   factor. We then get a internal Scorer based on the required, optional and prohibited parts of the query.
+ * <p>Assuming a BooleanScorer2, we get a internal Scorer based on the required, optional and prohibited parts of the query.
  *   Using this internal Scorer, the BooleanScorer2 then proceeds into a while loop based on the 
  *   {@link org.apache.lucene.search.DocIdSetIterator#nextDoc DocIdSetIterator.nextDoc()} method. The nextDoc() method advances 
  *   to the next document matching the query. This is an abstract method in the Scorer class and is thus 

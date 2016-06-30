@@ -10,6 +10,9 @@ API Changes
 * LUCENE-2605: Classic QueryParser no longer splits on whitespace by default.
   Use setSplitOnWhitespace(true) to get the old behavior.  (Steve Rowe)
 
+* LUCENE-7369: Similarity.coord and BooleanQuery.disableCoord are removed.
+  (Adrien Grand)
+
 Bug Fixes
 
 Improvements

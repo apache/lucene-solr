@@ -137,7 +137,6 @@ public class QueryBuilder {
     if (query instanceof BooleanQuery) {
       BooleanQuery bq = (BooleanQuery) query;
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      builder.setDisableCoord(bq.isCoordDisabled());
       builder.setMinimumNumberShouldMatch((int) (fraction * bq.clauses().size()));
       for (BooleanClause clause : bq) {
         builder.add(clause);

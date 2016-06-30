@@ -261,11 +261,6 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     public float queryNorm(float sumOfSquaredWeights) {
       return 1;
     }
-    
-    @Override
-    public float coord(int overlap, int maxOverlap) {
-      return 1;
-    }
 
     // TODO: Remove warning after API has been finalized
     @Override

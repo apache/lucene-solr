@@ -202,7 +202,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     assertFalse(collector.getSummaries().isEmpty());
     for (String summary : collector.getSummaries()) {
       assertEquals(
-          "CoordinatingConjunctionScorer\n" +
+          "ConjunctionScorer\n" +
           "    MUST ConstantScoreScorer\n" +
           "    MUST MinShouldMatchSumScorer\n" +
           "            SHOULD TermScorer body:nutch\n" +
@@ -222,8 +222,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     assertFalse(collector.getSummaries().isEmpty());
     for (String summary : collector.getSummaries()) {
       assertEquals(
-          "BoostedScorer\n" +
-          "    BOOSTED TermScorer body:nutch", summary);
+          "TermScorer body:nutch", summary);
     }
   }
 

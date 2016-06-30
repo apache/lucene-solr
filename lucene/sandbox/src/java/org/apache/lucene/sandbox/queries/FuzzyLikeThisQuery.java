@@ -308,7 +308,6 @@ public class FuzzyLikeThisQuery extends Query
             else
             {
                 BooleanQuery.Builder termVariants=new BooleanQuery.Builder();
-                termVariants.setDisableCoord(true); //disable coord and IDF for these term variants
                 for (Iterator<ScoreTerm> iterator2 = variants.iterator(); iterator2
                         .hasNext();)
                 {

@@ -108,7 +108,6 @@ public final class DrillDownQuery extends Query {
     if (drillDownDims.containsKey(dim) == false) {
       drillDownDims.put(dim, drillDownDims.size());
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      builder.setDisableCoord(true);
       dimQueries.add(builder);
     }
     final int index = drillDownDims.get(dim);

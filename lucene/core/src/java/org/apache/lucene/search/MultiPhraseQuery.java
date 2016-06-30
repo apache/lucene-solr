@@ -321,7 +321,6 @@ public class MultiPhraseQuery extends Query {
     } else if (termArrays.length == 1) {                 // optimize one-term case
       Term[] terms = termArrays[0];
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      builder.setDisableCoord(true);
       for (Term term : terms) {
         builder.add(new TermQuery(term), BooleanClause.Occur.SHOULD);
       }

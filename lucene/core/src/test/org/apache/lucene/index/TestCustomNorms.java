@@ -95,11 +95,6 @@ public class TestCustomNorms extends LuceneTestCase {
         return delegate;
       }
     }
-
-    @Override
-    public float coord(int overlap, int maxOverlap) {
-      return delegate.coord(overlap, maxOverlap);
-    }
   }
 
   public static class FloatEncodingBoostSimilarity extends Similarity {

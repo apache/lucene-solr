@@ -20,30 +20,11 @@ import java.util.List;
 
 import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.similarities.Similarity;
 
-/**
- * A {@link StandardBooleanQueryNode} has the same behavior as
- * {@link BooleanQueryNode}. It only indicates if the coord should be enabled or
- * not for this boolean query.
- * 
- * @see Similarity#coord(int, int)
- * @see BooleanQuery
- */
-public class StandardBooleanQueryNode extends BooleanQueryNode {
-
-  private boolean disableCoord;
-
-  public StandardBooleanQueryNode(List<QueryNode> clauses, boolean disableCoord) {
+/** {@link QueryNode} for clauses that are synonym of each other. */
+public class SynonymQueryNode extends BooleanQueryNode {
+  /** Sole constructor. */
+  public SynonymQueryNode(List<QueryNode> clauses) {
     super(clauses);
-
-    this.disableCoord = disableCoord;
-
   }
-
-  public boolean isDisableCoord() {
-    return this.disableCoord;
-  }
-
 }

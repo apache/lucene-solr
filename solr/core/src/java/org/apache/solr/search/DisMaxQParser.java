@@ -107,7 +107,6 @@ public class DisMaxQParser extends QParser {
      * this query is an artificial construct
      */
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.setDisableCoord(true);
 
     boolean notBlank = addMainQuery(query, solrParams);
     if (!notBlank)

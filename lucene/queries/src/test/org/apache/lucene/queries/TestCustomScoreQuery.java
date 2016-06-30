@@ -234,7 +234,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
 
     // custom query, that should score the same as q1.
     BooleanQuery.Builder q2CustomNeutralB = new BooleanQuery.Builder();
-    q2CustomNeutralB.setDisableCoord(true);
     Query q2CustomNeutralInner = new CustomScoreQuery(q1);
     q2CustomNeutralB.add(new BoostQuery(q2CustomNeutralInner, (float)Math.sqrt(dboost)), BooleanClause.Occur.SHOULD);
     // a little tricky: we split the boost across an outer BQ and CustomScoreQuery

@@ -32,7 +32,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -240,7 +239,6 @@ public class TestBoolean2 extends LuceneTestCase {
   @Test
   public void testQueries01() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.setDisableCoord(random().nextBoolean());
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST);
     int[] expDocNrs = {2,3};
@@ -250,7 +248,6 @@ public class TestBoolean2 extends LuceneTestCase {
   @Test
   public void testQueries02() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.setDisableCoord(random().nextBoolean());
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.SHOULD);
     int[] expDocNrs = {2,3,1,0};
@@ -260,7 +257,6 @@ public class TestBoolean2 extends LuceneTestCase {
   @Test
   public void testQueries03() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.setDisableCoord(random().nextBoolean());
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.SHOULD);
     int[] expDocNrs = {2,3,1,0};
@@ -270,7 +266,6 @@ public class TestBoolean2 extends LuceneTestCase {
   @Test
   public void testQueries04() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.setDisableCoord(random().nextBoolean());
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST_NOT);
     int[] expDocNrs = {1,0};
@@ -280,7 +275,6 @@ public class TestBoolean2 extends LuceneTestCase {
   @Test
   public void testQueries05() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.setDisableCoord(random().nextBoolean());
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST_NOT);
     int[] expDocNrs = {1,0};
@@ -290,7 +284,6 @@ public class TestBoolean2 extends LuceneTestCase {
   @Test
   public void testQueries06() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.setDisableCoord(random().nextBoolean());
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST_NOT);
     query.add(new TermQuery(new Term(field, "w5")), BooleanClause.Occur.MUST_NOT);
@@ -301,7 +294,6 @@ public class TestBoolean2 extends LuceneTestCase {
   @Test
   public void testQueries07() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.setDisableCoord(random().nextBoolean());
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST_NOT);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST_NOT);
     query.add(new TermQuery(new Term(field, "w5")), BooleanClause.Occur.MUST_NOT);
@@ -312,7 +304,6 @@ public class TestBoolean2 extends LuceneTestCase {
   @Test
   public void testQueries08() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.setDisableCoord(random().nextBoolean());
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term(field, "w5")), BooleanClause.Occur.MUST_NOT);
@@ -323,40 +314,12 @@ public class TestBoolean2 extends LuceneTestCase {
   @Test
   public void testQueries09() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.setDisableCoord(random().nextBoolean());
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(field, "w2")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(field, "zz")), BooleanClause.Occur.SHOULD);
     int[] expDocNrs = {2, 3};
     queriesTest(query.build(), expDocNrs);
-  }
-
-  @Test
-  public void testQueries10() throws Exception {
-    BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.setDisableCoord(random().nextBoolean());
-    query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
-    query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST);
-    query.add(new TermQuery(new Term(field, "w2")), BooleanClause.Occur.MUST);
-    query.add(new TermQuery(new Term(field, "zz")), BooleanClause.Occur.SHOULD);
-
-    int[] expDocNrs = {2, 3};
-    Similarity oldSimilarity = searcher.getSimilarity(true);
-    Similarity newSimilarity = new ClassicSimilarity() {
-        @Override
-        public float coord(int overlap, int maxOverlap) {
-          return overlap / ((float)maxOverlap - 1);
-        }
-      };
-    try {
-      searcher.setSimilarity(newSimilarity);
-      singleSegmentSearcher.setSimilarity(newSimilarity);
-      queriesTest(query.build(), expDocNrs);
-    } finally {
-      searcher.setSimilarity(oldSimilarity);
-      singleSegmentSearcher.setSimilarity(oldSimilarity);
-    }
   }
 
   @Test
@@ -434,7 +397,6 @@ public class TestBoolean2 extends LuceneTestCase {
   // more than once.
   public static BooleanQuery.Builder randBoolQuery(Random rnd, boolean allowMust, int level, String field, String[] vals, Callback cb) {
     BooleanQuery.Builder current = new BooleanQuery.Builder();
-    current.setDisableCoord(rnd.nextBoolean());
     for (int i=0; i<rnd.nextInt(vals.length)+1; i++) {
       int qType=0; // term query
       if (level>0) {

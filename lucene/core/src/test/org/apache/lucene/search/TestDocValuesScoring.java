@@ -80,11 +80,6 @@ public class TestDocValuesScoring extends LuceneTestCase {
       }
 
       @Override
-      public float coord(int overlap, int maxOverlap) {
-        return base.coord(overlap, maxOverlap);
-      }
-
-      @Override
       public float queryNorm(float sumOfSquaredWeights) {
         return base.queryNorm(sumOfSquaredWeights);
       }

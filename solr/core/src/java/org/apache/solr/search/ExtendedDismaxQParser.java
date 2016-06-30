@@ -143,7 +143,6 @@ public class ExtendedDismaxQParser extends QParser {
      * this query is an artificial construct
      */
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.setDisableCoord(true);
     
     /* * * Main User Query * * */
     parsedUserQuery = null;
@@ -978,7 +977,6 @@ public class ExtendedDismaxQParser extends QParser {
     }
     
     boolean makeDismax=true;
-    boolean disableCoord=true;
     boolean allowWildcard=true;
     int minClauseSize = 0;    // minimum number of clauses per phrase query...
     // used when constructing boosting part of query via sloppy phrases
@@ -1159,9 +1157,7 @@ public class ExtendedDismaxQParser extends QParser {
           DisjunctionMaxQuery q = new DisjunctionMaxQuery(lst, a.tie);
           return q;
         } else {
-          // should we disable coord?
           BooleanQuery.Builder q = new BooleanQuery.Builder();
-          q.setDisableCoord(disableCoord);
           for (Query sub : lst) {
             q.add(sub, BooleanClause.Occur.SHOULD);
           }
@@ -1238,17 +1234,11 @@ public class ExtendedDismaxQParser extends QParser {
           case FIELD:  // fallthrough
           case PHRASE:
             Query query = super.getFieldQuery(field, val, type == QType.PHRASE);
-            // A BooleanQuery is only possible from getFieldQuery if it came from
-            // a single whitespace separated term. In this case, check the coordination
-            // factor on the query: if it's enabled, that means we aren't a set of synonyms
-            // but instead multiple terms from one whitespace-separated term, we must
-            // apply minShouldMatch here so that it works correctly with other things
-            // like aliasing.
+            // Boolean query on a whitespace-separated string
+            // If these were synonyms we would have a SynonymQuery
             if (query instanceof BooleanQuery) {
               BooleanQuery bq = (BooleanQuery) query;
-              if (!bq.isCoordDisabled()) {
-                query = SolrPluginUtils.setMinShouldMatch(bq, minShouldMatch, false);
-              }
+              query = SolrPluginUtils.setMinShouldMatch(bq, minShouldMatch, false);
             }
             if (query instanceof PhraseQuery) {
               PhraseQuery pq = (PhraseQuery)query;

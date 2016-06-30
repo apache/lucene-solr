@@ -267,11 +267,6 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
       return 1.0f;
     }
 
-    @Override
-    public float coord(int overlap, int maxOverlap) {
-      return 1.0f;
-    }
-
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

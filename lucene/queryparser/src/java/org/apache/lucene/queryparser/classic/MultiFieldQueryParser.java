@@ -281,7 +281,6 @@ public class MultiFieldQueryParser extends QueryParser
       return null; // all clause words were filtered away by the analyzer.
     }
     BooleanQuery.Builder query = newBooleanQuery();
-    query.setDisableCoord(true);
     for (Query sub : queries) {
       query.add(sub, BooleanClause.Occur.SHOULD);
     }
