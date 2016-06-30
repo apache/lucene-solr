@@ -106,6 +106,9 @@ Optimizations
 
 * SOLR-9219: Make hdfs blockcache read buffer sizes configurable and improve cache concurrency. (Mark Miller)
 
+* SOLR-9264: Optimize ZkController.publishAndWaitForDownStates to not read all collection states and
+  watch relevant collections instead. (Hrishikesh Gadre, shalin)
+
 Other Changes
 ----------------------
 
