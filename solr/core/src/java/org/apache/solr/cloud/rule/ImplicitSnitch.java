@@ -22,6 +22,7 @@ import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -49,10 +51,11 @@ public class ImplicitSnitch extends Snitch implements CoreAdminHandler.Invocable
   public static final String HOST = "host";
   public static final String CORES = "cores";
   public static final String DISK = "freedisk";
+  public static final String ROLE = "role";
   public static final String SYSPROP = "sysprop.";
   public static final List<String> IP_SNITCHES = ImmutableList.of("ip_1", "ip_2", "ip_3", "ip_4");
 
-  public static final Set<String> tags = ImmutableSet.<String>builder().add(NODE, PORT, HOST, CORES, DISK).addAll(IP_SNITCHES).build();
+  public static final Set<String> tags = ImmutableSet.<String>builder().add(NODE, PORT, HOST, CORES, DISK, ROLE).addAll(IP_SNITCHES).build();
 
 
 
@@ -67,7 +70,7 @@ public class ImplicitSnitch extends Snitch implements CoreAdminHandler.Invocable
       Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
       if (hostAndPortMatcher.find()) ctx.getTags().put(PORT, hostAndPortMatcher.group(2));
     }
-
+    if (requestedTags.contains(ROLE)) fillRole(solrNode, ctx);
     addIpTags(solrNode, requestedTags, ctx);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -77,6 +80,24 @@ public class ImplicitSnitch extends Snitch implements CoreAdminHandler.Invocable
       if (tag.startsWith(SYSPROP)) params.add(SYSPROP, tag.substring(SYSPROP.length()));
     }
     if (params.size() > 0) ctx.invokeRemote(solrNode, params, ImplicitSnitch.class.getName(), null);
+  }
+
+  private void fillRole(String solrNode, SnitchContext ctx) {
+    Map roles = (Map) ctx.retrieve(ZkStateReader.ROLES); // we don't want to hit the ZK for each node
+    // so cache and reuse
+    if(roles == null) roles = ctx.getZkJson(ZkStateReader.ROLES);
+    ctx.store(ZkStateReader.ROLES, roles == null ? Collections.emptyMap() : roles);
+    if (roles != null) {
+      for (Object o : roles.entrySet()) {
+        Map.Entry e = (Map.Entry) o;
+        if (e.getValue() instanceof List) {
+          if(((List) e.getValue()).contains(solrNode)) {
+            ctx.getTags().put(ROLE, e.getKey());
+            break;
+          }
+        }
+      }
+    }
   }
 
   static long getUsableSpaceInGB() throws IOException {
