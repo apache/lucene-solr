@@ -37,12 +37,7 @@ Upgrading from Solr 6.x
 * HttpSolrClient#setDefaultMaxConnectionsPerHost and
   HttpSolrClient#setMaxTotalConnections have been removed. These now default very
   high and can only be changed via param when creating an HttpClient instance.
-
-Bug Fixes
-----------------------
-* SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
-  (Mark Miller, shalin)
-
+  
 Optimizations
 ----------------------
 
