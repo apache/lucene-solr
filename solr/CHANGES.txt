@@ -71,6 +71,8 @@ New Features
 
 * SOLR-9216: Support collection.configName in MODIFYCOLLECTION request (Keith Laban, noble)
 
+* SOLR-9251: Support for a new tag 'role' in replica placement rules (noble)
+
 
 Bug Fixes
 ----------------------

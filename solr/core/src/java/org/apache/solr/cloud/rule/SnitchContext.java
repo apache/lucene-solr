@@ -32,8 +32,10 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.update.UpdateShardHandler;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,13 +50,15 @@ public class SnitchContext implements RemoteCallback {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Map<String, Object> tags = new HashMap<>();
   private String node;
+  private Map<String, Object> session;
   final SnitchInfo snitchInfo;
   Exception exception;
 
 
-  SnitchContext(SnitchInfo perSnitch, String node) {
+  SnitchContext(SnitchInfo perSnitch, String node, Map<String, Object> session) {
     this.snitchInfo = perSnitch;
     this.node = node;
+    this.session = session;
   }
 
   public SnitchInfo getSnitchInfo() {
@@ -63,6 +67,33 @@ public class SnitchContext implements RemoteCallback {
 
   public Map<String, Object> getTags() {
     return tags;
+  }
+
+  public void store(String s, Object val) {
+    if (session != null) session.put(s, val);
+
+  }
+
+  public Object retrieve(String s) {
+    return session != null ? session.get(s) : null;
+
+  }
+
+  public Map getZkJson(String path) {
+    if (snitchInfo.getCoreContainer().isZooKeeperAware()) {
+      try {
+        byte[] data = snitchInfo.getCoreContainer().getZkController().getZkClient().getData(path, null, new Stat(), true);
+        if (data == null) return null;
+        return (Map) Utils.fromJSON(data);
+      } catch (Exception e) {
+        log.warn("Unable to read from ZK path : " + path, e);
+        return null;
+
+      }
+    } else {
+      return null;
+    }
+
   }
 
   public String getNode() {
