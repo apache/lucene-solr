@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -52,25 +53,7 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.BeforeReconnect;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ClusterStateUtil;
-import org.apache.solr.common.cloud.DefaultConnectionStrategy;
-import org.apache.solr.common.cloud.DefaultZkACLProvider;
-import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.OnReconnect;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkACLProvider;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.solr.common.cloud.ZkConfigManager;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkCredentialsProvider;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -746,35 +729,36 @@ public final class ZkController {
       InterruptedException {
 
     publishNodeAsDown(getNodeName());
-    
-    // now wait till the updates are in our state
-    long now = System.nanoTime();
-    long timeout = now + TimeUnit.NANOSECONDS.convert(WAIT_DOWN_STATES_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-    while (System.nanoTime() < timeout) {
-      boolean foundStates = true;
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Map<String, DocCollection> collections = clusterState.getCollectionsMap();
-      for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
-        DocCollection collection = entry.getValue();
-        Collection<Slice> slices = collection.getSlices();
-        for (Slice slice : slices) {
-          Collection<Replica> replicas = slice.getReplicas();
-          for (Replica replica : replicas) {
-            if (getNodeName().equals(replica.getNodeName()) && replica.getState() != Replica.State.DOWN) {
+    Set<String> collectionsWithLocalReplica = ConcurrentHashMap.newKeySet();
+    for (SolrCore core : cc.getCores()) {
+      collectionsWithLocalReplica.add(core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
+    }
+
+    CountDownLatch latch = new CountDownLatch(collectionsWithLocalReplica.size());
+    for (String collectionWithLocalReplica : collectionsWithLocalReplica) {
+      zkStateReader.registerCollectionStateWatcher(collectionWithLocalReplica, (liveNodes, collectionState) -> {
+        boolean foundStates = true;
+        for (SolrCore core : cc.getCores()) {
+          if (core.getCoreDescriptor().getCloudDescriptor().getCollectionName().equals(collectionWithLocalReplica))  {
+            Replica replica = collectionState.getReplica(core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+            if (replica.getState() != Replica.State.DOWN) {
               foundStates = false;
             }
           }
         }
-      }
 
-      Thread.sleep(1000);
-      if (foundStates) {
-        return;
-      }
+        if (foundStates && collectionsWithLocalReplica.remove(collectionWithLocalReplica))  {
+          latch.countDown();
+        }
+        return foundStates;
+      });
     }
 
-    log.warn("Timed out waiting to see all nodes published as DOWN in our cluster state.");
+    boolean allPublishedDown = latch.await(WAIT_DOWN_STATES_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    if (!allPublishedDown) {
+      log.warn("Timed out waiting to see all nodes published as DOWN in our cluster state.");
+    }
   }
 
   /**

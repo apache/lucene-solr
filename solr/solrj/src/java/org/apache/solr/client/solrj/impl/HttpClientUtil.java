@@ -221,10 +221,6 @@ public class HttpClientUtil {
       logger.debug("Creating new http client, config:" + config);
     }
  
-    if (params.get(PROP_SO_TIMEOUT) != null || params.get(PROP_CONNECTION_TIMEOUT) != null) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "The socket connect and read timeout cannot be set here and must be set");
-    }
-    
     cm.setMaxTotal(params.getInt(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000));
     cm.setDefaultMaxPerRoute(params.getInt(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 10000));
     cm.setValidateAfterInactivity(Integer.getInteger(VALIDATE_AFTER_INACTIVITY, VALIDATE_AFTER_INACTIVITY_DEFAULT));
@@ -261,7 +257,7 @@ public class HttpClientUtil {
     newHttpClientBuilder = newHttpClientBuilder.setKeepAliveStrategy(keepAliveStrat)
         .evictIdleConnections((long) Integer.getInteger(EVICT_IDLE_CONNECTIONS, EVICT_IDLE_CONNECTIONS_DEFAULT), TimeUnit.MILLISECONDS);
     
-    HttpClientBuilder builder = setupBuilder(newHttpClientBuilder, params == null ? new ModifiableSolrParams() : params);
+    HttpClientBuilder builder = setupBuilder(newHttpClientBuilder, params);
     
     HttpClient httpClient = builder.setConnectionManager(cm).build();
     

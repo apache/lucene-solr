@@ -37,7 +37,12 @@ Upgrading from Solr 6.x
 * HttpSolrClient#setDefaultMaxConnectionsPerHost and
   HttpSolrClient#setMaxTotalConnections have been removed. These now default very
   high and can only be changed via param when creating an HttpClient instance.
-  
+
+Bug Fixes
+----------------------
+* SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
+  (Mark Miller, shalin)
+
 Optimizations
 ----------------------
 
@@ -108,6 +113,9 @@ Optimizations
 
 * SOLR-9219: Make hdfs blockcache read buffer sizes configurable and improve cache concurrency. (Mark Miller)
 
+* SOLR-9264: Optimize ZkController.publishAndWaitForDownStates to not read all collection states and
+  watch relevant collections instead. (Hrishikesh Gadre, shalin)
+
 Other Changes
 ----------------------
 
@@ -119,6 +127,8 @@ Other Changes
 
 * SOLR-9076: Update to Hadoop 2.7.2
   (Mark Miller, Gregory Chanan)
+
+* SOLR-8787: TestAuthenticationFramework should not extend TestMiniSolrCloudCluster. (Trey Cahill via shalin)
 
 ==================  6.1.0 ==================
 

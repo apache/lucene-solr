@@ -60,8 +60,19 @@ public class UpdateShardHandler {
     }
 
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
-    log.info("Creating UpdateShardHandler HTTP client with params: {}", clientParams);
+    if (cfg != null)  {
+      clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
+      clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
+    }
     client = HttpClientUtil.createClient(clientParams, clientConnectionManager);
+
+    // following is done only for logging complete configuration.
+    // The maxConnections and maxConnectionsPerHost have already been specified on the connection manager
+    if (cfg != null)  {
+      clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, cfg.getMaxUpdateConnections());
+      clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, cfg.getMaxUpdateConnectionsPerHost());
+    }
+    log.info("Created UpdateShardHandler HTTP client with params: {}", clientParams);
   }
   
   public HttpClient getHttpClient() {
