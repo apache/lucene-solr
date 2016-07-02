@@ -585,7 +585,7 @@ public class CloudSolrClient extends SolrClient {
    * @param unit       the units of the wait parameter
    * @param predicate  a {@link CollectionStatePredicate} to check the collection state
    * @throws InterruptedException on interrupt
-   * @throws TimeoutException on timeout
+   * @throws TimeoutException     on timeout
    */
   public void waitForState(String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
       throws InterruptedException, TimeoutException {
@@ -1453,7 +1453,7 @@ public class CloudSolrClient extends SolrClient {
 
     /* Log the constructed connection string and then initialize. */
     final String zkHostString = zkBuilder.toString();
-    log.info("Final constructed zkHost string: " + zkHostString);
+    log.debug("Final constructed zkHost string: " + zkHostString);
     return zkHostString;
   }
   

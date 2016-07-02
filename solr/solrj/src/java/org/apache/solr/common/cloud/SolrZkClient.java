@@ -17,6 +17,7 @@
 package org.apache.solr.common.cloud;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ZkClientConnectionStrategy.ZkUpdate;
@@ -27,7 +28,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
-import org.apache.zookeeper.KeeperException.NotEmptyException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.WatchedEvent;
@@ -52,8 +52,10 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -123,7 +125,7 @@ public class SolrZkClient implements Closeable {
       ZkClientConnectionStrategy strat, final OnReconnect onReconnect, BeforeReconnect beforeReconnect, ZkACLProvider zkACLProvider) {
     this.zkClientConnectionStrategy = strat;
     this.zkServerAddress = zkServerAddress;
-
+    
     if (strat == null) {
       strat = new DefaultConnectionStrategy();
     }
@@ -701,22 +703,6 @@ public class SolrZkClient implements Closeable {
     }
   }
 
-  // yeah, it's recursive :(
-  public void clean(String path) throws InterruptedException, KeeperException {
-    traverseZkTree(path, znode -> {
-      try {
-        if (!znode.equals("/")) {
-          try {
-            delete(znode, -1, true);
-          } catch (NotEmptyException e) {
-            clean(znode);
-          }
-        }
-      } catch (NoNodeException r) {
-        return;
-      }
-    });
-  }
 
   /**
    * Validates if zkHost contains a chroot. See http://zookeeper.apache.org/doc/r3.2.2/zookeeperProgrammers.html#ch_zkSessions
@@ -772,7 +758,7 @@ public class SolrZkClient implements Closeable {
    * @param root the root node to recursively update
    */
   public void updateACLs(final String root) throws KeeperException, InterruptedException {
-    traverseZkTree(root, path -> {
+    ZkMaintenanceUtils.traverseZkTree(this, root, ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST, path -> {
       try {
         setACL(path, getZkACLProvider().getACLsToAdd(path), true);
         log.info("Updated ACL on " + path);
@@ -783,38 +769,38 @@ public class SolrZkClient implements Closeable {
     });
   }
 
-  @FunctionalInterface
-  private interface ZkVisitor {
-    /**
-     * Visit the target path
-     * @param path the path to visit
-     */
-    void visit(String path) throws InterruptedException, KeeperException;
+  // Some pass-throughs to allow less code disruption to other classes that use SolrZkClient.
+  public void clean(String path) throws InterruptedException, KeeperException {
+    ZkMaintenanceUtils.clean(this, path);
   }
 
-  /**
-   * Recursively visit a zk tree rooted at path and apply the given visitor to each path. Exists as a separate method
-   * because some of the logic can get nuanced.
-   *
-   * @param path the path to start from
-   * @param visitor the operation to perform on each path
-   */
-  private void traverseZkTree(final String path, final ZkVisitor visitor) throws InterruptedException, KeeperException {
-    List<String> children;
-    try {
-      children = getChildren(path, null, true);
-    } catch (NoNodeException r) {
-      return;
-    }
-    for (String string : children) {
-      // we can't do anything to the built-in zookeeper node
-      if (path.equals("/") && string.equals("zookeeper")) continue;
-      if (path.equals("/")) {
-        traverseZkTree(path + string, visitor);
-      } else {
-        traverseZkTree(path + "/" + string, visitor);
-      }
-    }
-    visitor.visit(path);
+  public void upConfig(Path confPath, String confName) throws IOException {
+    ZkMaintenanceUtils.upConfig(this, confPath, confName);
+  }
+
+  public String listZnode(String path, Boolean recurse) throws KeeperException, InterruptedException, SolrServerException {
+    return ZkMaintenanceUtils.listZnode(this, path, recurse);
+  }
+
+  public void downConfig(String confName, Path confPath) throws IOException {
+    ZkMaintenanceUtils.downConfig(this, confName, confPath);
+  }
+
+  public void zkTransfer(String src, Boolean srcIsZk, 
+                         String dst, Boolean dstIsZk,
+                         Boolean recurse) throws SolrServerException, KeeperException, InterruptedException, IOException {
+    ZkMaintenanceUtils.zkTransfer(this, src, srcIsZk, dst, dstIsZk, recurse);
+  }
+
+  public void moveZnode(String src, String dst) throws SolrServerException, KeeperException, InterruptedException {
+    ZkMaintenanceUtils.moveZnode(this, src, dst);
+  }
+
+  public void uploadToZK(final Path rootPath, final String zkPath,
+                         final Pattern filenameExclusions) throws IOException {
+    ZkMaintenanceUtils.uploadToZK(this, rootPath, zkPath, filenameExclusions);
+  }
+  public void downloadFromZK(String zkPath, Path dir) throws IOException {
+    ZkMaintenanceUtils.downloadFromZK(this, zkPath, dir);
   }
 }
