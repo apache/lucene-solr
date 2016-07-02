@@ -1439,7 +1439,7 @@ public class SolrCLI {
       } else if (configExistsInZk) {
         echo("Re-using existing configuration directory "+confname);
       } else {
-        Path confPath = ZkConfigManager.getConfigsetPath(confname, cli.getOptionValue("confdir", DEFAULT_CONFIG_SET),
+        Path confPath = ZkConfigManager.getConfigsetPath(cli.getOptionValue("confdir", DEFAULT_CONFIG_SET),
             cli.getOptionValue("configsetsDir"));
 
         echo("Uploading " + confPath.toAbsolutePath().toString() +
@@ -1685,7 +1685,7 @@ public class SolrCLI {
           OptionBuilder
               .withArgName("configsetsDir")
               .hasArg()
-              .isRequired()
+              .isRequired(false)
               .withDescription("Parent directory of example configsets")
               .create("configsetsDir"),
           OptionBuilder
@@ -1712,7 +1712,7 @@ public class SolrCLI {
       String confName = cli.getOptionValue("confname");
       try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
         echo("\nConnecting to ZooKeeper at " + zkHost + " ...");
-        Path confPath = ZkConfigManager.getConfigsetPath(confName, cli.getOptionValue("confdir"), cli.getOptionValue("configsetsDir"));
+        Path confPath = ZkConfigManager.getConfigsetPath(cli.getOptionValue("confdir"), cli.getOptionValue("configsetsDir"));
 
         echo("Uploading " + confPath.toAbsolutePath().toString() +
             " for config " + cli.getOptionValue("confname") + " to ZooKeeper at " + zkHost);

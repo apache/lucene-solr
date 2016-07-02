@@ -180,34 +180,41 @@ public class ZkConfigManager {
 
   // This method is used by configSetUploadTool and CreateTool to resolve the configset directory.
   // Check several possibilities:
-  // 1> configSetDirParam + confname is defined in configsets, thus has a conf/solrconfig.xml
-  // 2> configSet is a path that contains conf/solrconfig.xml
-  // 3> configSet is t 
-  public static Path getConfigsetPath(String confname, String configSet, String configSetDirParam) throws IOException {
+  // 1> confDir/solrconfig.xml exists
+  // 2> confDir/conf/solrconfig.xml exists
+  // 3> configSetDir/confDir/conf/solrconfig.xml exists (canned configs)
+  
+  // Order is important here since "confDir" may be
+  // 1> a full path to the parent of a solrconfig.xml or parent of /conf/solrconfig.xml
+  // 2> one of the canned config sets only, e.g. basic_configs
+  // and trying to assemble a path for configsetDir/confDir is A Bad Idea. if confDir is a full path.
+  
+  public static Path getConfigsetPath(String confDir, String configSetDir) throws IOException {
 
-    // one of the canned configsets.
-    Path ret = Paths.get(configSetDirParam, configSet, "conf", "solrconfig.xml").normalize();
+    // A local path to the source, probably already includes "conf".
+    Path ret = Paths.get(confDir, "solrconfig.xml").normalize();
     if (Files.exists(ret)) {
-      return Paths.get(configSetDirParam, configSet, "conf").normalize();
+      return Paths.get(confDir).normalize();
     }
 
     // a local path to the parent of a "conf" directory 
-    ret = Paths.get(configSet, "conf", "solrconfig.xml").normalize();
+    ret = Paths.get(confDir, "conf", "solrconfig.xml").normalize();
     if (Files.exists(ret)) {
-      return Paths.get(configSet, "conf").normalize();
+      return Paths.get(confDir, "conf").normalize();
     }
 
-    // A local path to the source, probably already includes "conf".
-    ret = Paths.get(configSet, "solrconfig.xml").normalize();
+    // one of the canned configsets.
+    ret = Paths.get(configSetDir, confDir, "conf", "solrconfig.xml").normalize();
     if (Files.exists(ret)) {
-      return Paths.get(configSet).normalize();
+      return Paths.get(configSetDir, confDir, "conf").normalize();
     }
+
 
     throw new IllegalArgumentException(String.format(Locale.ROOT,
         "Could not find solrconfig.xml at %s, %s or %s",
-        Paths.get(configSetDirParam, configSet, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString(),
-        Paths.get(configSet, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString(),
-        Paths.get(configSet, "solrconfig.xml").normalize().toAbsolutePath().toString()
+        Paths.get(configSetDir, "solrconfig.xml").normalize().toAbsolutePath().toString(),
+        Paths.get(configSetDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString(),
+        Paths.get(configSetDir, confDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString()
     ));
   }
 }
