@@ -60,11 +60,12 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   @Test
   public void testUpconfig() throws Exception {
     // Use a full, explicit path for configset.
-    Path src = TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf");
-    Path configSet = TEST_PATH().resolve("configsets").resolve("cloud-subdirs");
-    copyConfigUp(src, configSet, "upconfig1");
+
+    Path configSet = TEST_PATH().resolve("configsets");
+    Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
+    copyConfigUp(configSet, "cloud-subdirs", "upconfig1");
     // Now do we have that config up on ZK?
-    verifyZkLocalPathsMatch(src, "/configs/upconfig1");
+    verifyZkLocalPathsMatch(srcPathCheck, "/configs/upconfig1");
 
     // Now just use a name in the configsets directory, do we find it?
     configSet = TEST_PATH().resolve("configsets");
@@ -81,7 +82,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     int res = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
     assertEquals("tool should have returned 0 for success ", 0, res);
     // Now do we have that config up on ZK?
-    verifyZkLocalPathsMatch(src, "/configs/upconfig2");
+    verifyZkLocalPathsMatch(srcPathCheck, "/configs/upconfig2");
 
     // do we barf on a bogus path?
     args = new String[]{
@@ -104,11 +105,12 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     Path tmp = createTempDir("downConfigNewPlace");
 
     // First we need a configset on ZK to bring down. 
-    Path src = TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf");
-    Path configSet = TEST_PATH().resolve("configsets").resolve("cloud-subdirs");
-    copyConfigUp(src, configSet, "downconfig1");
+    
+    Path configSet = TEST_PATH().resolve("configsets");
+    Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
+    copyConfigUp(configSet, "cloud-subdirs", "downconfig1");
     // Now do we have that config up on ZK?
-    verifyZkLocalPathsMatch(src, "/configs/downconfig1");
+    verifyZkLocalPathsMatch(srcPathCheck, "/configs/downconfig1");
 
     String[] args = new String[]{
         "-confname", "downconfig1",
@@ -126,10 +128,11 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   @Test
   public void testCp() throws Exception {
     // First get something up on ZK
-    Path src = TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf");
-    Path configSet = TEST_PATH().resolve("configsets").resolve("cloud-subdirs");
 
-    copyConfigUp(src, configSet, "cp1");
+    Path configSet = TEST_PATH().resolve("configsets");
+    Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
+    
+    copyConfigUp(configSet, "cloud-subdirs", "cp1");
 
     // Now copy it somewhere else on ZK.
     String[] args = new String[]{
@@ -176,7 +179,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     // try with local->zk
     args = new String[]{
-        "-src", src.toAbsolutePath().toString(),
+        "-src", srcPathCheck.toAbsolutePath().toString(),
         "-dst", "zk:/cp3",
         "-recurse", "true",
         "-zkHost", zkAddr,
@@ -184,11 +187,11 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
     assertEquals("Copy should have succeeded.", 0, res);
-    verifyZkLocalPathsMatch(src, "/cp3");
+    verifyZkLocalPathsMatch(srcPathCheck, "/cp3");
 
     // try with local->zk, file: specified
     args = new String[]{
-        "-src", "file:" + src.toAbsolutePath().toString(),
+        "-src", "file:" + srcPathCheck.toAbsolutePath().toString(),
         "-dst", "zk:/cp4",
         "-recurse", "true",
         "-zkHost", zkAddr,
@@ -196,12 +199,12 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
     assertEquals("Copy should have succeeded.", 0, res);
-    verifyZkLocalPathsMatch(src, "/cp4");
+    verifyZkLocalPathsMatch(srcPathCheck, "/cp4");
 
 
     // try with recurse not specified
     args = new String[]{
-        "-src", "file:" + src.toAbsolutePath().toString(),
+        "-src", "file:" + srcPathCheck.toAbsolutePath().toString(),
         "-dst", "zk:/cp5Fail",
         "-zkHost", zkAddr,
     };
@@ -211,7 +214,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     // try with recurse = false
     args = new String[]{
-        "-src", "file:" + src.toAbsolutePath().toString(),
+        "-src", "file:" + srcPathCheck.toAbsolutePath().toString(),
         "-dst", "zk:/cp6Fail",
         "-recurse", "false",
         "-zkHost", zkAddr,
@@ -241,7 +244,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // copy to ZK ending in '/'.
     //src and cp3 are valid
     args = new String[]{
-        "-src", "file:" + src.normalize().toAbsolutePath().toString() + "/solrconfig.xml",
+        "-src", "file:" + srcPathCheck.normalize().toAbsolutePath().toString() + "/solrconfig.xml",
         "-dst", "zk:/powerup/",
         "-recurse", "false",
         "-zkHost", zkAddr,
@@ -254,7 +257,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // copy individual file up
     //src and cp3 are valid
     args = new String[]{
-        "-src", "file:" + src.normalize().toAbsolutePath().toString() + "/solrconfig.xml",
+        "-src", "file:" + srcPathCheck.normalize().toAbsolutePath().toString() + "/solrconfig.xml",
         "-dst", "zk:/copyUpFile.xml",
         "-recurse", "false",
         "-zkHost", zkAddr,
@@ -309,10 +312,11 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   public void testMv() throws Exception {
 
     // First get something up on ZK
-    Path src = TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf");
-    Path configSet = TEST_PATH().resolve("configsets").resolve("cloud-subdirs");
 
-    copyConfigUp(src, configSet, "mv1");
+    Path configSet = TEST_PATH().resolve("configsets");
+    Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
+    
+    copyConfigUp(configSet, "cloud-subdirs", "mv1");
 
     // Now move it somewhere else.
     String[] args = new String[]{
@@ -327,7 +331,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertEquals("Move should have succeeded.", 0, res);
 
     // Now does the moved directory match the original on disk?
-    verifyZkLocalPathsMatch(src, "/mv2");
+    verifyZkLocalPathsMatch(srcPathCheck, "/mv2");
     // And are we sure the old path is gone?
     assertFalse("/configs/mv1 Znode should not be there: ", zkClient.exists("/configs/mv1", true));
 
@@ -356,7 +360,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertFalse("Znode /mv3 really should be gone", zkClient.exists("/mv3", true));
 
     // Now does the moved directory match the original on disk?
-    verifyZkLocalPathsMatch(src, "/mv4");
+    verifyZkLocalPathsMatch(srcPathCheck, "/mv4");
 
     args = new String[]{
         "-src", "/mv4/solrconfig.xml",
@@ -387,10 +391,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   @Test
   public void testLs() throws Exception {
 
-    Path src = TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf");
-    Path configSet = TEST_PATH().resolve("configsets").resolve("cloud-subdirs");
+    Path configSet = TEST_PATH().resolve("configsets");
 
-    copyConfigUp(src, configSet, "lister");
+    copyConfigUp(configSet, "cloud-subdirs", "lister");
 
     // Should only find a single level.
     String[] args = new String[]{
@@ -485,11 +488,12 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
   @Test
   public void testRm() throws Exception {
-    Path src = TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf");
-    Path configSet = TEST_PATH().resolve("configsets").resolve("cloud-subdirs");
-
-    copyConfigUp(src, configSet, "rm1");
-    copyConfigUp(src, configSet, "rm2");
+    
+    Path configSet = TEST_PATH().resolve("configsets");
+    Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
+    
+    copyConfigUp(configSet, "cloud-subdirs", "rm1");
+    copyConfigUp(configSet, "cloud-subdirs", "rm2");
 
     // Should fail if recurse not set.
     String[] args = new String[]{
@@ -504,7 +508,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertTrue("Should have failed to remove node with children unless -recurse is set to true", res != 0);
 
     // Are we sure all the znodes are still there?
-    verifyZkLocalPathsMatch(src, "/configs/rm1");
+    verifyZkLocalPathsMatch(srcPathCheck, "/configs/rm1");
 
     args = new String[]{
         "-path", "zk:/configs/rm1",
@@ -545,7 +549,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         "-zkHost", zkAddr,
     };
 
-    copyConfigUp(src, configSet, "rm3");
+    copyConfigUp(configSet, "cloud-subdirs", "rm3");
     res = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
     assertFalse("Should fail when trying to remove /.", res == 0);
   }
@@ -559,12 +563,12 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
   // We can use this for testing since the goal is to move "some stuff" up to ZK.
   // The fact that they're in configsets is irrelevant.
-  private void copyConfigUp(Path src, Path configSet, String confName) throws Exception {
+  private void copyConfigUp(Path configSetDir, String srcConfigSet, String dstConfigName) throws Exception {
     String[] args = new String[]{
-        "-confname", confName,
-        "-confdir", src.toAbsolutePath().toString(),
+        "-confname", dstConfigName,
+        "-confdir", srcConfigSet,
         "-zkHost", zkAddr,
-        "-configsetsDir", configSet.toAbsolutePath().toString(),
+        "-configsetsDir", configSetDir.toAbsolutePath().toString(),
     };
 
     SolrCLI.ConfigSetUploadTool tool = new SolrCLI.ConfigSetUploadTool();
