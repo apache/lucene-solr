@@ -766,6 +766,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     final DirectoryReader reader = getIndexReader();
+    boolean cachable = true;
+    
     if (fields != null) {
       if (enableLazyFieldLoading) {
         final SetNonLazyFieldSelector visitor = new SetNonLazyFieldSelector(fields, reader, i);
@@ -773,12 +775,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         d = visitor.doc;
       } else {
         d = reader.document(i, fields);
+        cachable = false;
       }
     } else {
       d = reader.document(i);
     }
 
-    if (documentCache != null) {
+    if (documentCache != null && cachable) {
       documentCache.put(i, d);
     }
 
