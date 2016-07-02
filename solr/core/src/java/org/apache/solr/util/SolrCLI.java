@@ -269,7 +269,7 @@ public class SolrCLI {
         log.info("Set HttpClientConfigurer from: "+configurerClassName);
       } catch (Exception ex) {
         log.error(ex.getMessage());
-        throw new RuntimeException("Error during loading of configurer '"+builderClassName+"'.", ex);
+        throw new RuntimeException("Error during loading of configurer '"+configurerClassName+"'.", ex);
       }
     }
 
