@@ -25,7 +25,6 @@ import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 
 import java.io.BufferedReader;
@@ -75,8 +74,6 @@ public class TestQualityRun extends BenchmarkTestCase {
     Directory dir = newFSDirectory(getWorkDir().resolve("index"));
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
-    // TODO: adapt this test data to bm25
-    searcher.setSimilarity(new ClassicSimilarity());
 
     QualityQueryParser qqParser = new SimpleQQParser("title","body");
     QualityBenchmark qrun = new QualityBenchmark(qqs, qqParser, searcher, docNameField);
