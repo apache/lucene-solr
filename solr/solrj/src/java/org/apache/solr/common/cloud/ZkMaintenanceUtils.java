@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * Class to hold  ZK upload/download/move common code. With the advent of the upconfig/downconfig/cp/ls/mv commands
  * in bin/solr it made sense to keep the individual transfer methods in a central place, so here it is.
  */
-class ZkMaintenanceUtils {
+public class ZkMaintenanceUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private ZkMaintenanceUtils() {} // don't let it be instantiated, all methods are static.
@@ -50,7 +50,7 @@ class ZkMaintenanceUtils {
    * @throws KeeperException      Could not perform the Zookeeper operation.
    * @throws InterruptedException Thread interrupted
    * @throws SolrServerException  zookeeper node has children and recurse not specified.
-   * @returns an indented list of the znodes suitable for display
+   * @return an indented list of the znodes suitable for display
    */
   public static String listZnode(SolrZkClient zkClient, String path, Boolean recurse) throws KeeperException, InterruptedException, SolrServerException {
     String root = path;
@@ -335,6 +335,10 @@ class ZkMaintenanceUtils {
     String separator = root.getFileSystem().getSeparator();
     if ("\\".equals(separator))
       relativePath = relativePath.replaceAll("\\\\", "/");
+    // It's possible that the relative path and file are the same, in which case
+    // adding the bare slash is A Bad Idea
+    if (relativePath.length() == 0) return zkRoot;
+    
     return zkRoot + "/" + relativePath;
   }
 }
@@ -358,9 +362,6 @@ class ZkCopier implements ZkMaintenanceUtils.ZkVisitor {
   public void visit(String path) throws InterruptedException, KeeperException {
     String finalDestination = dest;
     if (path.equals(source) == false) finalDestination +=  "/" + path.substring(source.length() + 1);
-    if (finalDestination.endsWith("/") || path.endsWith("/")) {
-      int eoe = 99;
-    }
     zkClient.makePath(finalDestination, false, true);
     zkClient.setData(finalDestination, zkClient.getData(path, null, null, true), true);
   }
