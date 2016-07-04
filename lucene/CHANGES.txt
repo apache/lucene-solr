@@ -70,6 +70,10 @@ Improvements
 
 * LUCENE-7359: Add equals() and hashCode() to Explanation (Alan Woodward)
 
+* LUCENE-7353: ScandinavianFoldingFilterFactory and
+  ScandinavianNormalizationFilterFactory now implement MultiTermAwareComponent.
+  (Adrien Grand)
+
 Optimizations
 
 * LUCENE-7330, LUCENE-7339: Speed up conjunction queries. (Adrien Grand)
