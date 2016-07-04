@@ -11,9 +11,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Set;
 
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.util.SolrCLI;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
@@ -554,13 +554,6 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertFalse("Should fail when trying to remove /.", res == 0);
   }
 
-  private void getAllKids(String zkRoot, Set<String> paths) throws KeeperException, InterruptedException {
-    for (String node : zkClient.getChildren(zkRoot, null, true)) {
-      paths.add(node);
-      getAllKids(zkRoot + "/" + node, paths);
-    }
-  }
-
   // We can use this for testing since the goal is to move "some stuff" up to ZK.
   // The fact that they're in configsets is irrelevant.
   private void copyConfigUp(Path configSetDir, String srcConfigSet, String dstConfigName) throws Exception {
@@ -597,8 +590,8 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   void verifyAllFilesAreZNodes(Path fileRoot, String zkRoot) throws IOException {
     Files.walkFileTree(fileRoot, new SimpleFileVisitor<Path>() {
       void checkPathOnZk(Path path) {
-        String znode = zkRoot + path.toAbsolutePath().toString().substring(fileRoot.toAbsolutePath().toString().length());
-        try {
+        String znode = ZkMaintenanceUtils.createZkNodeName(zkRoot, fileRoot, path);
+        try { // It's easier to catch this exception and fail than catch it everywher eles.
           assertTrue("Should have found " + znode + " on Zookeeper", zkClient.exists(znode, true));
         } catch (Exception e) {
           fail("Caught unexpected exception " + e.getMessage() + " Znode we were checking " + znode);
@@ -623,27 +616,17 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
   // Insure that all znodes in first are in second and vice-versa
   private void verifyZnodesMatch(String first, String second) throws KeeperException, InterruptedException {
-    verifyFirstNodesInSecond(first, second);
-    verifyFirstNodesInSecond(second, first);
+    verifyFirstZNodesInSecond(first, second);
+    verifyFirstZNodesInSecond(second, first);
   }
 
-  private void verifyFirstNodesInSecond(String first, String second) throws KeeperException, InterruptedException {
+  // Note, no folderol here with Windows path names. 
+  private void verifyFirstZNodesInSecond(String first, String second) throws KeeperException, InterruptedException {
     for (String node : zkClient.getChildren(first, null, true)) {
       String fNode = first + "/" + node;
       String sNode = second + "/" + node;
       assertTrue("Node " + sNode + " not found. Exists on " + fNode, zkClient.exists(sNode, true));
-      verifyFirstNodesInSecond(fNode, sNode);
+      verifyFirstZNodesInSecond(fNode, sNode);
     }
   }
-
-  public static String createZkNodeName(String zkRoot, Path root, Path file) {
-    String relativePath = root.relativize(file).toString();
-    // Windows shenanigans
-    String separator = root.getFileSystem().getSeparator();
-    if ("\\".equals(separator))
-      relativePath = relativePath.replaceAll("\\\\", "/");
-    return zkRoot + "/" + relativePath;
-  }
-
-
 }
