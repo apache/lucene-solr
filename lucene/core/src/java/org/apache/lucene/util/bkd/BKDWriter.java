@@ -77,7 +77,8 @@ public class BKDWriter implements Closeable {
 
   public static final String CODEC_NAME = "BKD";
   public static final int VERSION_START = 0;
-  public static final int VERSION_CURRENT = VERSION_START;
+  public static final int VERSION_COMPRESSED_DOC_IDS = 1;
+  public static final int VERSION_CURRENT = VERSION_COMPRESSED_DOC_IDS;
 
   /** How many bytes each docs takes in the fixed-width offline format */
   private final int bytesPerDoc;
@@ -892,10 +893,7 @@ public class BKDWriter implements Closeable {
   protected void writeLeafBlockDocs(IndexOutput out, int[] docIDs, int start, int count) throws IOException {
     assert count > 0: "maxPointsInLeafNode=" + maxPointsInLeafNode;
     out.writeVInt(count);
-
-    for (int i=0;i<count;i++) {
-      out.writeInt(docIDs[start + i]);
-    }
+    DocIdsWriter.writeDocIds(docIDs, start, count, out);
   }
 
   protected void writeLeafBlockPackedValue(IndexOutput out, int[] commonPrefixLengths, byte[] bytes, int offset) throws IOException {

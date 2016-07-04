@@ -76,6 +76,8 @@ Optimizations
 
 * LUCENE-7356: SearchGroup tweaks. (Christine Poerschke)
 
+* LUCENE-7351: Doc id compression for points. (Adrien Grand)
+
 Other
 
 * LUCENE-4787: Fixed some highlighting javadocs. (Michael Dodsworth via Adrien

@@ -44,11 +44,12 @@ public class BKDReader implements Accountable {
   final byte[] maxPackedValue;
   final long pointCount;
   final int docCount;
+  final int version;
   protected final int packedBytesLength;
 
   /** Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned */
   public BKDReader(IndexInput in) throws IOException {
-    CodecUtil.checkHeader(in, BKDWriter.CODEC_NAME, BKDWriter.VERSION_START, BKDWriter.VERSION_START);
+    version = CodecUtil.checkHeader(in, BKDWriter.CODEC_NAME, BKDWriter.VERSION_START, BKDWriter.VERSION_CURRENT);
     numDims = in.readVInt();
     maxPointsInLeafNode = in.readVInt();
     bytesPerDim = in.readVInt();
@@ -141,6 +142,7 @@ public class BKDReader implements Accountable {
     this.maxPackedValue = maxPackedValue;
     this.pointCount = pointCount;
     this.docCount = docCount;
+    this.version = BKDWriter.VERSION_CURRENT;
     assert minPackedValue.length == packedBytesLength;
     assert maxPackedValue.length == packedBytesLength;
   }
@@ -314,13 +316,15 @@ public class BKDReader implements Accountable {
   protected void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor) throws IOException {
     // Leaf node
     in.seek(blockFP);
-      
+
     // How many points are stored in this leaf cell:
     int count = in.readVInt();
     visitor.grow(count);
 
-    for(int i=0;i<count;i++) {
-      visitor.visit(in.readInt());
+    if (version < BKDWriter.VERSION_COMPRESSED_DOC_IDS) {
+      DocIdsWriter.readInts32(in, count, visitor);
+    } else {
+      DocIdsWriter.readInts(in, count, visitor);
     }
   }
 
@@ -330,8 +334,10 @@ public class BKDReader implements Accountable {
     // How many points are stored in this leaf cell:
     int count = in.readVInt();
 
-    for(int i=0;i<count;i++) {
-      docIDs[i] = in.readInt();
+    if (version < BKDWriter.VERSION_COMPRESSED_DOC_IDS) {
+      DocIdsWriter.readInts32(in, count, docIDs);
+    } else {
+      DocIdsWriter.readInts(in, count, docIDs);
     }
 
     return count;
