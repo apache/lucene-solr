@@ -153,7 +153,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     Path tmp = createTempDir("tmpNewPlace2");
     args = new String[]{
         "-src", "zk:/configs/cp1",
-        "-dst", "file:/" + tmp.toAbsolutePath().toString(),
+        "-dst", "file:" + tmp.toAbsolutePath().toString(),
         "-recurse", "true",
         "-zkHost", zkAddr,
     };
