@@ -93,6 +93,14 @@ public class TermsComponent extends SearchComponent {
 
     if (fields == null || fields.length==0) return;
 
+    boolean termStats = params.getBool(TermsParams.TERMS_STATS, false);
+
+    if(termStats) {
+      NamedList<Number> stats = new SimpleOrderedMap();
+      rb.rsp.add("stats", stats);
+      collectStats(rb.req.getSearcher(), stats);
+    }
+
     String termList = params.get(TermsParams.TERMS_LIST);
     if(termList != null) {
       fetchTerms(rb.req.getSearcher(), fields, termList, termsResult);
@@ -291,6 +299,13 @@ public class TermsComponent extends SearchComponent {
         @SuppressWarnings("unchecked")
         NamedList<NamedList<Number>> terms = (NamedList<NamedList<Number>>) srsp.getSolrResponse().getResponse().get("terms");
         th.parse(terms);
+
+
+        NamedList<Number> stats = (NamedList<Number>)srsp.getSolrResponse().getResponse().get("stats");
+        if(stats != null) {
+          th.numDocs += stats.get("numDocs").longValue();
+          th.stats = true;
+        }
       }
     }
   }
@@ -305,6 +320,11 @@ public class TermsComponent extends SearchComponent {
     NamedList terms = ti.buildResponse();
 
     rb.rsp.add("terms", terms);
+    if(ti.stats) {
+      NamedList<Number> stats = new SimpleOrderedMap();
+      stats.add("numDocs", Long.valueOf(ti.numDocs));
+      rb.rsp.add("stats", stats);
+    }
     rb._termsHelper = null;
   }
 
@@ -331,6 +351,8 @@ public class TermsComponent extends SearchComponent {
     // map to store returned terms
     private HashMap<String, HashMap<String, TermsResponse.Term>> fieldmap;
     private SolrParams params;
+    public long numDocs = 0;
+    public boolean stats;
 
     public TermsHelper() {
       fieldmap = new HashMap<>(5);
@@ -545,6 +567,11 @@ public class TermsComponent extends SearchComponent {
 
       }
     }
+  }
+
+  private void collectStats(SolrIndexSearcher searcher, NamedList<Number> stats) {
+    int numDocs = searcher.getTopReaderContext().reader().numDocs();
+    stats.add("numDocs", Long.valueOf(numDocs));
   }
 
   @Override
