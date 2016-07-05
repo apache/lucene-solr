@@ -766,7 +766,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     final DirectoryReader reader = getIndexReader();
-    boolean cachable = true;
+    boolean containsAllFields = true;
     
     if (fields != null) {
       if (enableLazyFieldLoading) {
@@ -775,14 +775,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         d = visitor.doc;
       } else {
         d = reader.document(i, fields);
-        cachable = false;
+        containsAllFields = false;
       }
     } else {
       d = reader.document(i);
     }
 
-    if (documentCache != null && cachable) {
-      documentCache.put(i, d);
+    if (documentCache != null) {
+      // Only cache the already retrieved document if it is complete... 
+      if (containsAllFields) {
+        documentCache.put(i, d);
+      } else {
+        // ...and retrieve a complete document for caching otherwise.
+        documentCache.put(i, reader.document(i));
+      }
     }
 
     return d;
