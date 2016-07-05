@@ -16,6 +16,10 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
@@ -31,11 +35,12 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ZkStateWriterTest extends SolrTestCaseJ4 {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void testZkStateWriterBatching() throws Exception {
     String zkDir = createTempDir("testZkStateWriterBatching").toFile().getAbsolutePath();
@@ -319,6 +324,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       // get the most up-to-date state
       reader.forceUpdateCollection("c2");
       state = reader.getClusterState();
+      log.info("Cluster state: {}", state);
       assertTrue(state.hasCollection("c2"));
       assertEquals(sharedClusterStateVersion, (int) state.getZkClusterStateVersion());
       assertEquals(stateFormat2Version + 1, state.getCollection("c2").getZNodeVersion());
