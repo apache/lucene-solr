@@ -822,6 +822,49 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
 
+    addParser("gt", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhs = fp.parseValueSource();
+        ValueSource rhs = fp.parseValueSource();
+
+        return new GreaterThanFunction(lhs, rhs);
+      }
+    });
+
+    addParser("lt", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhs = fp.parseValueSource();
+        ValueSource rhs = fp.parseValueSource();
+
+        return new LessThanFunction(lhs, rhs);
+      }
+    });
+
+    addParser("gte", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhs = fp.parseValueSource();
+        ValueSource rhs = fp.parseValueSource();
+
+        return new GreaterThanEqualFunction(lhs, rhs);
+      }
+    });
+
+
+    addParser("lte", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhs = fp.parseValueSource();
+        ValueSource rhs = fp.parseValueSource();
+
+        return new LessThanEqualFunction(lhs, rhs);
+      }
+    });
+
+
+
     addParser("def", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {

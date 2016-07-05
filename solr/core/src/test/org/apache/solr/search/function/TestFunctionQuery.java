@@ -98,7 +98,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     return sb.toString();
   }
 
-  void singleTest(String field, String funcTemplate, List<String> args, float... results) {
+  protected void singleTest(String field, String funcTemplate, List<String> args, float... results) {
     String parseableQuery = func(field, funcTemplate);
 
     List<String> nargs = new ArrayList<>(Arrays.asList("q", parseableQuery
