@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,16 +28,16 @@ import java.util.Comparator;
 
 public final class ArrayUtil {
 
-  /** Maximum length for an array (Integer.MAX_VALUE - RamUsageEstimator.NUM_BYTES_ARRAY_HEADER). */
+/** Maximum length for an array (Integer.MAX_VALUE - RamUsageEstimator.NUM_BYTES_ARRAY_HEADER). */
   public static final int MAX_ARRAY_LENGTH = Integer.MAX_VALUE - RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 
+  private static final String UNABLE_TO_PARSE = "Unable to parse";
+  
   private ArrayUtil() {} // no instance
 
   /*
      Begin Apache Harmony code
-
      Revision taken on Friday, June 12. https://svn.apache.org/repos/asf/harmony/enhanced/classlib/archive/java6/modules/luni/src/main/java/java/lang/Integer.java
-
    */
 
   /**
@@ -91,24 +92,23 @@ public final class ArrayUtil {
     for (int i = 0; i < len; i++){
       int digit = Character.digit(chars[i + offset], radix);
       if (digit == -1) {
-        throw new NumberFormatException("Unable to parse");
+        throw new NumberFormatException(UNABLE_TO_PARSE);
       }
       if (max > result) {
-        throw new NumberFormatException("Unable to parse");
+        throw new NumberFormatException(UNABLE_TO_PARSE);
       }
       int next = result * radix - digit;
       if (next > result) {
-        throw new NumberFormatException("Unable to parse");
+        throw new NumberFormatException(UNABLE_TO_PARSE);
       }
       result = next;
     }
     /*while (offset < len) {
-
     }*/
     if (!negative) {
       result = -result;
       if (result < 0) {
-        throw new NumberFormatException("Unable to parse");
+        throw new NumberFormatException(UNABLE_TO_PARSE);
       }
     }
     return result;
@@ -116,7 +116,6 @@ public final class ArrayUtil {
 
 
   /*
-
  END APACHE HARMONY CODE
   */
 
