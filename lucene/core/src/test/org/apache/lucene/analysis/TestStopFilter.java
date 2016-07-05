@@ -22,7 +22,6 @@ import java.util.ArrayList;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -137,40 +136,4 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
       System.out.println(s);
     }
   }
-  
-  // stupid filter that inserts synonym of 'hte' for 'the'
-  private class MockSynonymFilter extends TokenFilter {
-    State bufferedState;
-    CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-    PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
-
-    MockSynonymFilter(TokenStream input) {
-      super(input);
-    }
-
-    @Override
-    public boolean incrementToken() throws IOException {
-      if (bufferedState != null) {
-        restoreState(bufferedState);
-        posIncAtt.setPositionIncrement(0);
-        termAtt.setEmpty().append("hte");
-        bufferedState = null;
-        return true;
-      } else if (input.incrementToken()) {
-        if (termAtt.toString().equals("the")) {
-          bufferedState = captureState();
-        }
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    @Override
-    public void reset() throws IOException {
-      super.reset();
-      bufferedState = null;
-    }
-  }
-
 }

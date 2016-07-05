@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockSynonymFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -121,44 +122,13 @@ public class TestQueryBuilder extends LuceneTestCase {
     assertNull(builder.createBooleanQuery("field", ""));
   }
   
-  /** adds synonym of "dog" for "dogs". */
+  /** adds synonym of "dog" for "dogs", and synonym of "cavy" for "guinea pig". */
   static class MockSynonymAnalyzer extends Analyzer {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
       MockTokenizer tokenizer = new MockTokenizer();
       return new TokenStreamComponents(tokenizer, new MockSynonymFilter(tokenizer));
     }
-  }
-  
-  /**
-   * adds synonym of "dog" for "dogs".
-   */
-  protected static class MockSynonymFilter extends TokenFilter {
-    CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-    PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
-    boolean addSynonym = false;
-    
-    public MockSynonymFilter(TokenStream input) {
-      super(input);
-    }
-
-    @Override
-    public final boolean incrementToken() throws IOException {
-      if (addSynonym) { // inject our synonym
-        clearAttributes();
-        termAtt.setEmpty().append("dog");
-        posIncAtt.setPositionIncrement(0);
-        addSynonym = false;
-        return true;
-      }
-      
-      if (input.incrementToken()) {
-        addSynonym = termAtt.toString().equals("dogs");
-        return true;
-      } else {
-        return false;
-      }
-    } 
   }
   
   /** simple synonyms test */
@@ -178,6 +148,15 @@ public class TestQueryBuilder extends LuceneTestCase {
     expectedBuilder.add(new Term[] { new Term("field", "dogs"), new Term("field", "dog") });
     QueryBuilder builder = new QueryBuilder(new MockSynonymAnalyzer());
     assertEquals(expectedBuilder.build(), builder.createPhraseQuery("field", "old dogs"));
+  }
+
+  /** forms multiphrase query */
+  public void testMultiWordSynonymsPhrase() throws Exception {
+    MultiPhraseQuery.Builder expectedBuilder = new MultiPhraseQuery.Builder();
+    expectedBuilder.add(new Term[] { new Term("field", "guinea"), new Term("field", "cavy") });
+    expectedBuilder.add(new Term("field", "pig"));
+    QueryBuilder queryBuilder = new QueryBuilder(new MockSynonymAnalyzer());
+    assertEquals(expectedBuilder.build(), queryBuilder.createPhraseQuery("field", "guinea pig"));
   }
 
   protected static class SimpleCJKTokenizer extends Tokenizer {

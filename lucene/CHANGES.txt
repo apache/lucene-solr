@@ -74,6 +74,10 @@ Improvements
   ScandinavianNormalizationFilterFactory now implement MultiTermAwareComponent.
   (Adrien Grand)
 
+* LUCENE-2605: Add classic QueryParser option setSplitOnWhitespace() to
+  control whether to split on whitespace prior to text analysis.  Default
+  behavior remains unchanged: split-on-whitespace=true. (Steve Rowe)
+
 Optimizations
 
 * LUCENE-7330, LUCENE-7339: Speed up conjunction queries. (Adrien Grand)
