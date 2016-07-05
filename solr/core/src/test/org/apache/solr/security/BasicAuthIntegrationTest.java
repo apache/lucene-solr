@@ -154,8 +154,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
           ("name", "collection-admin-edit", "role", "admin"))), "harry", "HarryIsUberCool"  );
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/name", "collection-admin-edit", 20);
 
-      CollectionAdminRequest.Reload reload = new CollectionAdminRequest.Reload();
-      reload.setCollectionName(defaultCollName);
+      CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(defaultCollName);
 
       try (HttpSolrClient solrClient = getHttpSolrClient(baseUrl)) {
         try {
@@ -172,13 +171,11 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
 
         }
       }
-      cloudSolrClient.request(new CollectionAdminRequest.Reload()
-          .setCollectionName(defaultCollName)
+      cloudSolrClient.request(CollectionAdminRequest.reloadCollection(defaultCollName)
           .setBasicAuthCredentials("harry", "HarryIsUberCool"));
 
       try {
-        cloudSolrClient.request(new CollectionAdminRequest.Reload()
-            .setCollectionName(defaultCollName)
+        cloudSolrClient.request(CollectionAdminRequest.reloadCollection(defaultCollName)
             .setBasicAuthCredentials("harry", "Cool12345"));
         fail("This should not succeed");
       } catch (HttpSolrClient.RemoteSolrException e) {
