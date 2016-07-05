@@ -198,7 +198,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     assertQ(req("indent", "true", "qt", "/terms", "terms", "true",
             "terms.fl", "standardfilt","terms.stats", "true",
             "terms.list", "spider, snake, shark, ddddd, bad")
-        , "//lst[@name='stats']/int[1][@name='numDocs'][.='23']"
+        , "//lst[@name='indexstats']/long[1][@name='numDocs'][.='23']"
     );
   }
 
