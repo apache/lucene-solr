@@ -165,7 +165,13 @@ public class ScoreNodesStream extends TupleStream implements Expressible
         break;
       }
 
+      if(!node.fields.containsKey("node")) {
+        throw new IOException("node field not present in the Tuple");
+      }
+
       String nodeId = node.getString("node");
+
+
       nodes.put(nodeId, node);
       if(builder.length() > 0) {
         builder.append(",");
@@ -202,6 +208,9 @@ public class ScoreNodesStream extends TupleStream implements Expressible
           String term = terms.getName(t);
           Number docFreq = terms.get(term);
           Tuple tuple = nodes.get(term);
+          if(!tuple.fields.containsKey(termFreq)) {
+            throw new Exception("termFreq field not present in the Tuple");
+          }
           Number termFreqValue = (Number)tuple.get(termFreq);
           float score = termFreqValue.floatValue() * (float) (Math.log((numDocs + 1) / (docFreq.doubleValue() + 1)) + 1.0);
           tuple.put("nodeScore", score);
