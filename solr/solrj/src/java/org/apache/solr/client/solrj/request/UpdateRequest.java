@@ -257,6 +257,9 @@ public class UpdateRequest extends AbstractUpdateRequest {
           return null;
         }
         List<String> urls = urlMap.get(slice.getName());
+        if (urls == null) {
+          return null;
+        }
         String leaderUrl = urls.get(0);
         LBHttpSolrClient.Req request = (LBHttpSolrClient.Req) routes
             .get(leaderUrl);
@@ -305,6 +308,9 @@ public class UpdateRequest extends AbstractUpdateRequest {
           return null;
         }
         List<String> urls = urlMap.get(slice.getName());
+        if (urls == null) {
+          return null;
+        }
         String leaderUrl = urls.get(0);
         LBHttpSolrClient.Req request = routes.get(leaderUrl);
         if (request != null) {
