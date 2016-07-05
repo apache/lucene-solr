@@ -88,6 +88,9 @@ New Features
 * SOLR-9243: Add terms.list parameter to the TermsComponent to fetch the docFreq for a list of terms
   (Joel Bernstein)
 
+* SOLR-9090: Add directUpdatesToLeadersOnly flag to solrj CloudSolrClient.
+  (Marvin Justice, Christine Poerschke)
+
 Bug Fixes
 ----------------------
 

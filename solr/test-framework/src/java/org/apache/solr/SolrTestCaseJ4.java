@@ -2041,11 +2041,55 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return (0 == TestUtil.nextInt(random(), 0, 9)) ? unlikely : likely;
   }
   
+  public static class CloudSolrClientBuilder extends CloudSolrClient.Builder {
+
+    private boolean configuredDUTflag = false;
+
+    public CloudSolrClientBuilder() {
+      super();
+    }
+
+    @Override
+    public CloudSolrClient.Builder sendDirectUpdatesToShardLeadersOnly() {
+      configuredDUTflag = true;
+      return super.sendDirectUpdatesToShardLeadersOnly();
+    }
+
+    @Override
+    public CloudSolrClient.Builder sendDirectUpdatesToAnyShardReplica() {
+      configuredDUTflag = true;
+      return super.sendDirectUpdatesToAnyShardReplica();
+    }
+
+    private void randomlyChooseDirectUpdatesToLeadersOnly() {
+      if (random().nextBoolean()) {
+        sendDirectUpdatesToShardLeadersOnly();
+      } else {
+        sendDirectUpdatesToAnyShardReplica();
+      }
+    }
+
+    @Override
+    public CloudSolrClient build() {
+      if (configuredDUTflag == false) {
+        // flag value not explicity configured
+        if (random().nextBoolean()) {
+          // so randomly choose a value
+          randomlyChooseDirectUpdatesToLeadersOnly();
+        } else {
+          // or go with whatever the default value is
+          configuredDUTflag = true;
+        }
+      }
+      return super.build();
+    }
+  }
+
   public static CloudSolrClient getCloudSolrClient(String zkHost) {
     if (random().nextBoolean()) {
       return new CloudSolrClient(zkHost);
     }
-    return new CloudSolrClient.Builder()
+    return new CloudSolrClientBuilder()
         .withZkHost(zkHost)
         .build();
   }
@@ -2054,7 +2098,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     if (random().nextBoolean()) {
       return new CloudSolrClient(zkHost, httpClient);
     }
-    return new CloudSolrClient.Builder()
+    return new CloudSolrClientBuilder()
         .withZkHost(zkHost)
         .withHttpClient(httpClient)
         .build();
@@ -2066,12 +2110,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     
     if (shardLeadersOnly) {
-      return new CloudSolrClient.Builder()
+      return new CloudSolrClientBuilder()
           .withZkHost(zkHost)
           .sendUpdatesOnlyToShardLeaders()
           .build();
     }
-    return new CloudSolrClient.Builder()
+    return new CloudSolrClientBuilder()
         .withZkHost(zkHost)
         .sendUpdatesToAllReplicasInShard()
         .build();
@@ -2083,13 +2127,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     
     if (shardLeadersOnly) {
-      return new CloudSolrClient.Builder()
+      return new CloudSolrClientBuilder()
           .withZkHost(zkHost)
           .withHttpClient(httpClient)
           .sendUpdatesOnlyToShardLeaders()
           .build();
     }
-    return new CloudSolrClient.Builder()
+    return new CloudSolrClientBuilder()
         .withZkHost(zkHost)
         .withHttpClient(httpClient)
         .sendUpdatesToAllReplicasInShard()
