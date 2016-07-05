@@ -117,6 +117,9 @@ Optimizations
 
 * LUCENE-7351: Doc id compression for points. (Adrien Grand)
 
+* LUCENE-7351: Point values are now better compressed using run-length
+  encoding. (Adrien Grand)
+
 Other
 
 * LUCENE-4787: Fixed some highlighting javadocs. (Michael Dodsworth via Adrien
