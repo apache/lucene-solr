@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.util.TestUtil;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
@@ -44,14 +46,12 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  Random r = new Random(1);
-
   void addInt(SolrInputDocument doc, int l, int u, String... fields) {
     int v=0;
     if (0==l && l==u) {
-      v=r.nextInt();
+      v=random().nextInt();
     } else {
-      v=r.nextInt(u-l)+l;
+      v=random().nextInt(u-l)+l;
     }
     for (String field : fields) {
       doc.addField(field, v);
@@ -193,43 +193,74 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       assertQ(req("{!frange incl=false incu=false" + " l=" +v[3] +" u="+v[4]+"}"+f ), "*[count(//doc)=3]");
     }
 
+    // now pick a random range to use to delete (some of) the docs...
+    
+    final boolean incl = random().nextBoolean();
+    final boolean incu = random().nextBoolean();
+    final int expected = 0 + (incl ? 0 : 1) + (incu ? 0 : 1);
+    String dbq = null;
+    if (random().nextBoolean()) { // regular range
+      String field = randomKey(norm_fields);
+      String[] values = norm_fields.get(field);
+      dbq = field + ":" + (incl ? "[" : "{") + values[0] + " TO " + values[2] + (incu ? "]" : "}");
+    } else { // frange
+      String field = randomKey(frange_fields);
+      String[] values = frange_fields.get(field);
+      dbq = "{!frange incl=" + incl + " incu=" + incu + " l=" + values[0] + " u=" + values[2] + "}" + field;
+    }
+    if (random().nextBoolean()) {
+      // wrap in a BQ
+      String field = randomKey(norm_fields);
+      String value = norm_fields.get(field)[1];
+      // wraping shouldn't affect expected
+      dbq = "("+field+":\""+value+"\" OR " + dbq + ")";
+    }    
+      
+    assertU(delQ(dbq));
+    assertU(commit());
+    assertQ(req("q","*:*","_trace_dbq",dbq),
+            "*[count(//doc)=" + expected + "]");
+    
   }
 
   @Test
   public void testRandomRangeQueries() throws Exception {
     String handler="";
-    final String[] fields = {"foo_s","foo_i","foo_l","foo_f","foo_d"
-            ,"foo_ti","foo_tl","foo_tf","foo_td"
-    };
-    final int l=-5;
-    final int u=25;
-
-
-    createIndex(15, new DocProcessor() {
-      @Override
-      public void process(SolrInputDocument doc) {
-        // 10% of the docs have missing values
-        if (r.nextInt(10)!=0) addInt(doc, l,u, fields);
-      }
-    });
-    assertU(commit());
+    final String[] fields = {"foo_s","foo_i","foo_l","foo_f","foo_d",
+                             "foo_ti","foo_tl","foo_tf","foo_td" };
     
+    // NOTE: foo_s supports ranges, but for the arrays below we are only
+    // interested in fields that support *equivilent* ranges -- strings
+    // are not ordered the same as ints/longs, so we can't test the ranges
+    // for equivilence across diff fields.
+    //
     // fields that a normal range query will work correctly on
-    String[] norm_fields = {
-            "foo_i","foo_l","foo_f","foo_d"
-            ,"foo_ti","foo_tl","foo_tf","foo_td"
-
-    };
-    
+    String[] norm_fields = {"foo_i","foo_l","foo_f","foo_d",
+                            "foo_ti","foo_tl","foo_tf","foo_td" };
     // fields that a value source range query should work on
     String[] frange_fields = {"foo_i","foo_l","foo_f","foo_d"};
 
-    for (int i=0; i<1000; i++) {
-      int lower = l + r.nextInt(u-l+10)-5;
-      int upper = lower + r.nextInt(u+5-lower);
-      boolean lowerMissing = r.nextInt(10)==1;
-      boolean upperMissing = r.nextInt(10)==1;
-      boolean inclusive = lowerMissing || upperMissing || r.nextBoolean();
+    final int l= -1 * atLeast(50);
+    final int u= atLeast(250);
+
+    // sometimes a very small index, sometimes a very large index
+    final int numDocs = random().nextBoolean() ? random().nextInt(50) : atLeast(1000);
+    createIndex(numDocs, new DocProcessor() {
+      @Override
+      public void process(SolrInputDocument doc) {
+        // 10% of the docs have missing values
+        if (random().nextInt(10)!=0) addInt(doc, l,u, fields);
+      }
+    });
+    assertU(commit());
+
+    final int numIters = atLeast(1000);
+    for (int i=0; i < numIters; i++) {
+      int lower = TestUtil.nextInt(random(), 2 * l, u);
+      int upper = TestUtil.nextInt(random(), lower, 2 * u);
+      boolean lowerMissing = random().nextInt(10)==1;
+      boolean upperMissing = random().nextInt(10)==1;
+      boolean inclusive = lowerMissing || upperMissing || random().nextBoolean();
 
       // lower=2; upper=2; inclusive=true;      
       // inclusive=true; lowerMissing=true; upperMissing=true;    
@@ -252,33 +283,82 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
                 + "}";
         qs.add(q);
       }
-
+      String lastQ = null;
       SolrQueryResponse last=null;
       for (String q : qs) {
         // System.out.println("QUERY="+q);
-        SolrQueryRequest req = req("q",q,"rows","1000");
+        SolrQueryRequest req = req("q",q,"rows",""+numDocs);
         SolrQueryResponse qr = h.queryAndResponse(handler, req);
         if (last != null) {
           // we only test if the same docs matched since some queries will include factors like idf, etc.
           DocList rA = ((ResultContext)qr.getResponse()).getDocList();
           DocList rB = ((ResultContext)last.getResponse()).getDocList();
-          sameDocs( rA, rB );
+          sameDocs(q + " vs " + lastQ, rA, rB );
         }
         req.close();
         last = qr;
+        lastQ = q;
+      }
+    }
+
+    // now build some random queries (against *any* field) and validate that using it in a DBQ changes
+    // the index by the expected number of docs
+    int numDocsLeftInIndex = numDocs;
+    final int numDBQs= atLeast(10);
+    for (int i=0; i < numDBQs; i++) {
+      int lower = TestUtil.nextInt(random(), 2 * l, u);
+      int upper = TestUtil.nextInt(random(), lower, 2 * u);
+      boolean lowerMissing = random().nextInt(10)==1;
+      boolean upperMissing = random().nextInt(10)==1;
+      boolean inclusive = lowerMissing || upperMissing || random().nextBoolean();
+      
+      String dbq = null;
+      if (random().nextBoolean()) { // regular range
+        String field = fields[random().nextInt(fields.length)];
+        dbq = field + ':' + (inclusive?'[':'{')
+          + (lowerMissing?"*":lower)
+          + " TO "
+          + (upperMissing?"*":upper)
+          + (inclusive?']':'}');
+       } else { // frange
+        String field = frange_fields[random().nextInt(frange_fields.length)];
+        dbq = "{!frange v="+field
+          + (lowerMissing?"":(" l="+lower))
+          + (upperMissing?"":(" u="+upper))
+          + (inclusive?"":" incl=false")
+          + (inclusive?"":" incu=false")
+          + "}";
+      }
+      try (SolrQueryRequest req = req("q",dbq,"rows","0")) {
+        SolrQueryResponse qr = h.queryAndResponse(handler, req);
+        numDocsLeftInIndex -= ((ResultContext)qr.getResponse()).getDocList().matches();
+      }
+      assertU(delQ(dbq));
+      assertU(commit());
+      try (SolrQueryRequest req = req("q","*:*","rows","0","_trace_after_dbq",dbq)) {
+        SolrQueryResponse qr = h.queryAndResponse(handler, req);
+        final int allDocsFound = ((ResultContext)qr.getResponse()).getDocList().matches();
+        assertEquals(dbq, numDocsLeftInIndex, allDocsFound);
       }
     }
   }
 
-  static boolean sameDocs(DocSet a, DocSet b) {
+  static boolean sameDocs(String msg, DocSet a, DocSet b) {
     DocIterator i = a.iterator();
     // System.out.println("SIZES="+a.size() + "," + b.size());
-    assertEquals(a.size(), b.size());
+    assertEquals(msg, a.size(), b.size());
     while (i.hasNext()) {
       int doc = i.nextDoc();
-      assertTrue(b.exists(doc));
+      assertTrue(msg, b.exists(doc));
       // System.out.println("MATCH! " + doc);
     }
     return true;
+  }
+
+  private static <X extends Comparable<? super X>,Y> X randomKey(Map<X,Y> map) {
+    assert ! map.isEmpty();
+    List<X> sortedKeys = new ArrayList<>(map.keySet());
+    Collections.sort(sortedKeys);
+    return sortedKeys.get(random().nextInt(sortedKeys.size()));
   }
 }

@@ -112,6 +112,8 @@ Bug Fixes
 * SOLR-9181: Fix some races in CollectionStateWatcher API (Alan Woodward, Scott
   Blum)
 
+* SOLR-9235: Fixed NPE when using non-numeric range query in deleteByQuery (hossman)
+
 Optimizations
 ----------------------
 
