@@ -203,4 +203,15 @@ public class TestStandardQP extends QueryParserTestBase {
     //TODO test something like "SmartQueryParser()"
   }
 
+  // TODO: Remove this specialization once the flexible standard parser gets multi-word synonym support
+  @Override
+  public void testQPA() throws Exception {
+    super.testQPA();
+
+    assertQueryEquals("term phrase term", qpAnalyzer, "term (phrase1 phrase2) term");
+
+    CommonQueryParserConfiguration cqpc = getParserConfig(qpAnalyzer);
+    setDefaultOperatorAND(cqpc);
+    assertQueryEquals(cqpc, "field", "term phrase term", "+term +(+phrase1 +phrase2) +term");
+  }
 }
