@@ -290,6 +290,7 @@ public class ZkStateReader implements Closeable {
 
     synchronized (getUpdateLock()) {
       if (clusterState == null) {
+        LOG.info("ClusterState watchers have not been initialized");
         return;
       }
 
@@ -297,6 +298,7 @@ public class ZkStateReader implements Closeable {
       if (ref == null || legacyCollectionStates.containsKey(collection)) {
         // We either don't know anything about this collection (maybe it's new?) or it's legacy.
         // First update the legacy cluster state.
+        LOG.info("Checking legacy cluster state for collection {}", collection);
         refreshLegacyClusterState(null);
         if (!legacyCollectionStates.containsKey(collection)) {
           // No dice, see if a new collection just got created.
@@ -307,6 +309,7 @@ public class ZkStateReader implements Closeable {
           }
         }
       } else if (ref.isLazilyLoaded()) {
+        LOG.info("Refreshing lazily-loaded state for collection {}", collection);
         if (ref.get() != null) {
           return;
         }
@@ -314,6 +317,7 @@ public class ZkStateReader implements Closeable {
         refreshLegacyClusterState(null);
       } else if (watchedCollectionStates.containsKey(collection)) {
         // Exists as a watched collection, force a refresh.
+        LOG.info("Forcing refresh of watched collection state for {}", collection);
         DocCollection newState = fetchCollectionState(collection, null);
         if (updateWatchedCollection(collection, newState)) {
           constructState(Collections.singletonMap(collection, newState));
