@@ -690,16 +690,17 @@ public class TestQueryParser extends QueryParserTestBase {
   public void testDefaultSplitOnWhitespace() throws Exception {
     QueryParser parser = new QueryParser("field", new Analyzer1());
 
-    assertTrue(parser.getSplitOnWhitespace()); // default is true
+    assertFalse(parser.getSplitOnWhitespace()); // default is false
 
+    // A multi-word synonym source will form a synonym query for the same-starting-position tokens
     BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
-    bqBuilder.add(new TermQuery(new Term("field", "guinea")), BooleanClause.Occur.SHOULD);
+    bqBuilder.add(new SynonymQuery(new Term("field", "guinea"), new Term("field", "cavy")), BooleanClause.Occur.SHOULD);
     bqBuilder.add(new TermQuery(new Term("field", "pig")), BooleanClause.Occur.SHOULD);
     assertEquals(bqBuilder.build(), parser.parse("guinea pig"));
 
     boolean oldSplitOnWhitespace = splitOnWhitespace;
     splitOnWhitespace = QueryParser.DEFAULT_SPLIT_ON_WHITESPACE;
-    assertQueryEquals("guinea pig", new MockSynonymAnalyzer(), "guinea pig");
+    assertQueryEquals("guinea pig", new MockSynonymAnalyzer(), "Synonym(cavy guinea) pig");
     splitOnWhitespace = oldSplitOnWhitespace;
   }
 }

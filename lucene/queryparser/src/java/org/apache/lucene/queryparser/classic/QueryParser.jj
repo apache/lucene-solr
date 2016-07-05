@@ -109,7 +109,7 @@ public class QueryParser extends QueryParserBase {
   static public enum Operator { OR, AND }
   
   /** default split on whitespace behavior */
-  public static final boolean DEFAULT_SPLIT_ON_WHITESPACE = true;
+  public static final boolean DEFAULT_SPLIT_ON_WHITESPACE = false;
 
   /** Create a query parser.
    *  @param f  the default field for query terms.

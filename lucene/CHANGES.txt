@@ -5,6 +5,11 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 7.0.0 =======================
 
+API Changes
+
+* LUCENE-2605: Classic QueryParser no longer splits on whitespace by default.
+  Use setSplitOnWhitespace(true) to get the old behavior.  (Steve Rowe)
+
 Bug Fixes
 
 Improvements
