@@ -67,6 +67,8 @@ public class TermsComponent extends SearchComponent {
     SolrParams params = rb.req.getParams();
     if (params.getBool(TermsParams.TERMS, false)) {
       rb.doTerms = true;
+    } else {
+      return;
     }
 
     // TODO: temporary... this should go in a different component.
@@ -97,7 +99,7 @@ public class TermsComponent extends SearchComponent {
 
     if(termStats) {
       NamedList<Number> stats = new SimpleOrderedMap();
-      rb.rsp.add("stats", stats);
+      rb.rsp.add("indexstats", stats);
       collectStats(rb.req.getSearcher(), stats);
     }
 
@@ -301,7 +303,7 @@ public class TermsComponent extends SearchComponent {
         th.parse(terms);
 
 
-        NamedList<Number> stats = (NamedList<Number>)srsp.getSolrResponse().getResponse().get("stats");
+        NamedList<Number> stats = (NamedList<Number>)srsp.getSolrResponse().getResponse().get("indexstats");
         if(stats != null) {
           th.numDocs += stats.get("numDocs").longValue();
           th.stats = true;
@@ -323,7 +325,7 @@ public class TermsComponent extends SearchComponent {
     if(ti.stats) {
       NamedList<Number> stats = new SimpleOrderedMap();
       stats.add("numDocs", Long.valueOf(ti.numDocs));
-      rb.rsp.add("stats", stats);
+      rb.rsp.add("indexstats", stats);
     }
     rb._termsHelper = null;
   }

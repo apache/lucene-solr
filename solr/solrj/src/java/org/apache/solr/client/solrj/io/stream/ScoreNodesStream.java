@@ -189,7 +189,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
 
       //Get the response from the terms component
       NamedList response = client.request(request, collection);
-      NamedList<Number> stats = (NamedList<Number>)response.get("stats");
+      NamedList<Number> stats = (NamedList<Number>)response.get("indexstats");
       long numDocs = stats.get("numDocs").longValue();
       NamedList<NamedList<Number>> fields = (NamedList<NamedList<Number>>)response.get("terms");
 
