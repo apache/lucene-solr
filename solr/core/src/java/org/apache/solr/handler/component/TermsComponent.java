@@ -65,7 +65,9 @@ public class TermsComponent extends SearchComponent {
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
-    if (params.getBool(TermsParams.TERMS, false)) {
+
+    //the terms parameter is also used by json facet API. So we will get errors if we try to parse as boolean
+    if (params.get(TermsParams.TERMS, "false").equals("true")) {
       rb.doTerms = true;
     } else {
       return;
@@ -86,7 +88,9 @@ public class TermsComponent extends SearchComponent {
   @Override
   public void process(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
-    if (!params.getBool(TermsParams.TERMS, false)) return;
+    if (!params.get(TermsParams.TERMS, "false").equals("true")) {
+      return;
+    }
 
     String[] fields = params.getParams(TermsParams.TERMS_FIELD);
 
