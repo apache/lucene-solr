@@ -323,6 +323,9 @@ public class ZkStateReader implements Closeable {
           constructState(Collections.singletonMap(collection, newState));
         }
       }
+      else {
+        LOG.error("Collection {} is not lazy or watched!", collection);
+      }
     }
 
   }
@@ -611,6 +614,7 @@ public class ZkStateReader implements Closeable {
           // Double check contains just to avoid allocating an object.
           LazyCollectionRef existing = lazyCollectionStates.get(coll);
           if (existing == null) {
+            LOG.info("Adding lazy collectionRef for collection {}", coll);
             lazyCollectionStates.putIfAbsent(coll, new LazyCollectionRef(coll));
           }
         }
