@@ -180,6 +180,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         ,"//lst[@name='standardfilt']/int[4][@name='spider'][.='1']"
     );
 
+
     //Test with numeric terms
     assertQ(req("indent","true", "qt","/terms",  "terms","true",
             "terms.fl","foo_i",
@@ -187,6 +188,17 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         ,"count(//lst[@name='foo_i']/*)=2"
         ,"//lst[@name='foo_i']/int[1][@name='1'][.='2']"
         ,"//lst[@name='foo_i']/int[2][@name='2'][.='1']"
+    );
+  }
+
+
+  @Test
+  public void testStats() throws Exception {
+    //Terms list always returns in index order
+    assertQ(req("indent", "true", "qt", "/terms", "terms", "true",
+            "terms.fl", "standardfilt","terms.stats", "true",
+            "terms.list", "spider, snake, shark, ddddd, bad")
+        , "//lst[@name='stats']/int[1][@name='numDocs'][.='23']"
     );
   }
 
