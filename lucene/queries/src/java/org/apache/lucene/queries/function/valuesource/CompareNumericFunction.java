@@ -30,10 +30,10 @@ import org.apache.lucene.search.IndexSearcher;
  * Base class for comparison operators used within if statements
  * To Solr's if function query a 0 is considered "false", all other values are "true"
  */
-public abstract class CompareNumericFunction extends ValueSource {
+public abstract class CompareNumericFunction extends BoolFunction {
 
-  public final ValueSource lhs;
-  public final ValueSource rhs;
+  private final ValueSource lhs;
+  private final ValueSource rhs;
 
   public CompareNumericFunction(ValueSource lhs, ValueSource rhs) {
     this.lhs = lhs;
