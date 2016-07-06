@@ -147,6 +147,8 @@ Other Changes
 
 * SOLR-9180: More comprehensive tests of psuedo-fields for RTG and SolrCloud requests (hossman)
 
+* SOLR-7930: Comment out trappy references to example docs in elevate.xml files (Erick Erickson)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

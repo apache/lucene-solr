@@ -24,15 +24,19 @@
 
 -->
 <elevate>
- <query text="foo bar">
-  <doc id="1" />
-  <doc id="2" />
-  <doc id="3" />
- </query>
+ <!-- Query elevation examples
+  <query text="foo bar">
+    <doc id="1" />
+    <doc id="2" />
+    <doc id="3" />
+  </query>
+
+for use with techproducts example
  
- <query text="ipod">
-   <doc id="MA147LL/A" />  <!-- put the actual ipod at the top -->
-   <doc id="IW-02" exclude="true" /> <!-- exclude this cable -->
- </query>
- 
+  <query text="ipod">
+    <doc id="MA147LL/A" />  put the actual ipod at the top 
+    <doc id="IW-02" exclude="true" /> exclude this cable
+  </query>
+-->
+
 </elevate>
