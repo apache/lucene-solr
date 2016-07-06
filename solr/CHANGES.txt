@@ -141,6 +141,8 @@ Other Changes
 
 * SOLR-8787: TestAuthenticationFramework should not extend TestMiniSolrCloudCluster. (Trey Cahill via shalin)
 
+* SOLR-9180: More comprehensive tests of psuedo-fields for RTG and SolrCloud requests (hossman)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
