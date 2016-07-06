@@ -52,5 +52,8 @@
       "multipartUploadLimitInKB":0,
       "formdataUploadLimitInKB":0,
       "enableRemoteStreaming":0,
-      "addHttpRequestToContext":0}}
+      "addHttpRequestToContext":0}},
+  "peerSync":{
+    "useRangeVersions":11
+  }
 }
