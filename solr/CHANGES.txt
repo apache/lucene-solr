@@ -119,6 +119,10 @@ Bug Fixes
 
 * SOLR-9088: Fixed TestManagedSchemaAPI failures which exposed race conditions in the schema API ( Varun Thacker, noble)
 
+* SOLR-9207: PeerSync recovery failes if number of updates requested is high. A new useRangeVersions config option
+  is introduced (defaults to true) to send version ranges instead of individual versions for peer sync.
+  (Pushkar Raste, shalin)
+
 Optimizations
 ----------------------
 
