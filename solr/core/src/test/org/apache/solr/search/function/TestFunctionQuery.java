@@ -793,4 +793,45 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testNumericComparisons() {
+    assertU(adoc("id", "1", "age_i", "35"));
+    assertU(adoc("id", "2", "age_i", "25"));
+    assertU(commit());
+
+    singleTest("age_i", "if(gt(age_i,30),5,2)",
+               /*id*/1, /*score*/5,
+               /*id*/2, /*score*/2);
+
+    singleTest("age_i", "if(lt(age_i,30),5,2)",
+               /*id*/1, /*score*/2,
+               /*id*/2, /*score*/5);
+
+    singleTest("age_i", "if(lte(age_i,35),5,2)",
+               /*id*/1, /*score*/5,
+               /*id*/2, /*score*/5);
+
+    singleTest("age_i", "if(gte(age_i,25),5,2)",
+               /*id*/1, /*score*/5,
+               /*id*/2, /*score*/5);
+
+    singleTest("age_i", "if(lte(age_i,25),5,2)",
+               /*id*/1, /*score*/2,
+               /*id*/2, /*score*/5);
+
+    singleTest("age_i", "if(gte(age_i,35),5,2)",
+               /*id*/1, /*score*/5,
+               /*id*/2, /*score*/2);
+
+
+    singleTest("age_i", "if(eq(age_i,30),5,2)",
+               /*id*/1, /*score*/2,
+               /*id*/2, /*score*/2);
+
+    singleTest("age_i", "if(eq(age_i,35),5,2)",
+               /*id*/1, /*score*/5,
+               /*id*/2, /*score*/2);
+
+  }
+
 }
