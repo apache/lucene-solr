@@ -148,6 +148,10 @@ final class DocumentsWriter implements Closeable, Accountable {
     return seqNo;
   }
 
+  synchronized void setLastSeqNo(long seqNo) {
+    lastSeqNo = seqNo;
+  }
+
   // TODO: we could check w/ FreqProxTermsWriter: if the
   // term doesn't exist, don't bother buffering into the
   // per-DWPT map (but still must go into the global map)
