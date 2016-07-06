@@ -26,6 +26,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
@@ -86,7 +87,7 @@ public class PeerSync  {
   private SolrCore core;
 
   // comparator that sorts by absolute value, putting highest first
-  private static Comparator<Long> absComparator = (o1, o2) -> {
+  public static Comparator<Long> absComparator = (o1, o2) -> {
     long l1 = Math.abs(o1);
     long l2 = Math.abs(o2);
     if (l1 > l2) return -1;
@@ -117,6 +118,8 @@ public class PeerSync  {
     boolean doFingerprintComparison;
     List<Long> requestedUpdates;
     Exception updateException;
+    List<String> requestedRanges;
+    long totalRequestedUpdates;
   }
 
   public PeerSync(SolrCore core, List<String> replicas, int nUpdates) {
@@ -359,6 +362,103 @@ public class PeerSync  {
     }
   }
 
+  private boolean canHandleVersionRanges(String replica) {
+    SyncShardRequest sreq = new SyncShardRequest();
+    requests.add(sreq);
+
+    // determine if leader can handle version ranges
+    sreq.shards = new String[] {replica};
+    sreq.actualShards = sreq.shards;
+    sreq.params = new ModifiableSolrParams();
+    sreq.params.set("qt", "/get");
+    sreq.params.set("distrib", false);
+    sreq.params.set("checkCanHandleVersionRanges", false);
+
+    ShardHandler sh = shardHandlerFactory.getShardHandler(client);
+    sh.submit(sreq, replica, sreq.params);
+
+    ShardResponse srsp = sh.takeCompletedIncludingErrors();
+    Boolean canHandleVersionRanges = srsp.getSolrResponse().getResponse().getBooleanArg("canHandleVersionRanges");
+
+    if (canHandleVersionRanges == null || canHandleVersionRanges.booleanValue() == false) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private boolean handleVersionsWithRanges(ShardResponse srsp, List<Long> otherVersions, SyncShardRequest sreq,
+      boolean completeList, long otherHigh, long otherHighest) {
+    // we may endup asking for updates for too many versions, causing 2MB post payload limit. Construct a range of
+    // versions to request instead of asking individual versions
+    List<String> rangesToRequest = new ArrayList<>();
+
+    // construct ranges to request
+    // both ourUpdates and otherVersions are sorted with highest range first
+    // may be we can create another reverse the lists and avoid confusion
+    int ourUpdatesIndex = ourUpdates.size() - 1;
+    int otherUpdatesIndex = otherVersions.size() - 1;
+    long totalRequestedVersions = 0;
+
+    while (otherUpdatesIndex >= 0) {
+      // we have run out of ourUpdates, pick up all the remaining versions from the other versions
+      if (ourUpdatesIndex < 0) {
+        String range = otherVersions.get(otherUpdatesIndex) + "..." + otherVersions.get(0);
+        rangesToRequest.add(range);
+        totalRequestedVersions += otherUpdatesIndex + 1;
+        break;
+      }
+
+      // stop when the entries get old enough that reorders may lead us to see updates we don't need
+      if (!completeList && Math.abs(otherVersions.get(otherUpdatesIndex)) < ourLowThreshold) break;
+
+      if (ourUpdates.get(ourUpdatesIndex).longValue() == otherVersions.get(otherUpdatesIndex).longValue()) {
+        ourUpdatesIndex--;
+        otherUpdatesIndex--;
+      } else if (Math.abs(ourUpdates.get(ourUpdatesIndex)) < Math.abs(otherVersions.get(otherUpdatesIndex))) {
+        ourUpdatesIndex--;
+      } else {
+        long rangeStart = otherVersions.get(otherUpdatesIndex);
+        while ((otherUpdatesIndex < otherVersions.size())
+            && (Math.abs(otherVersions.get(otherUpdatesIndex)) < Math.abs(ourUpdates.get(ourUpdatesIndex)))) {
+          otherUpdatesIndex--;
+          totalRequestedVersions++;
+        }
+        // construct range here
+        rangesToRequest.add(rangeStart + "..." + otherVersions.get(otherUpdatesIndex + 1));
+      }
+    }
+
+    // TODO, do we really need to hold on to all the ranges we requested 
+    // keeping track of totalRequestedUpdates should suffice for verification
+    sreq.requestedRanges = rangesToRequest;
+    sreq.totalRequestedUpdates = totalRequestedVersions;
+
+    if (rangesToRequest.isEmpty()) {
+      log.info(msg() + " No additional versions requested. ourLowThreshold=" + ourLowThreshold + " otherHigh="
+          + otherHigh + " ourHighest=" + ourHighest + " otherHighest=" + otherHighest);
+
+      // we had (or already requested) all the updates referenced by the replica
+
+      // If we requested updates from another replica, we can't compare fingerprints yet with this replica, we need to
+      // defer
+      if (doFingerprint) {
+        sreq.doFingerprintComparison = true;
+      }
+
+      return true;
+    }
+
+    if (totalRequestedVersions > maxUpdates) {
+      log.info(msg() + " Failing due to needing too many updates:" + maxUpdates);
+      return false;
+    }
+
+    String rangesToRequestStr = rangesToRequest.stream().collect(Collectors.joining(","));
+    return requestUpdates(srsp, rangesToRequestStr, totalRequestedVersions);
+  }
+
+  
   private boolean handleVersions(ShardResponse srsp) {
     // we retrieved the last N updates from the replica
     List<Long> otherVersions = (List<Long>)srsp.getSolrResponse().getResponse().get("versions");
@@ -410,6 +510,15 @@ public class PeerSync  {
       return true;
     }
     
+    if(core.getSolrConfig().useRangeVersionsForPeerSync && canHandleVersionRanges(sreq.shards[0])) {
+      return handleVersionsWithRanges(srsp, otherVersions, sreq, completeList, otherHigh, otherHighest);
+    } else {
+      return handleIndividualVersions(srsp, otherVersions, sreq, completeList, otherHigh, otherHighest);
+    }
+  }
+
+  private boolean handleIndividualVersions(ShardResponse srsp, List<Long> otherVersions, SyncShardRequest sreq,
+      boolean completeList, long otherHigh, long otherHighest) {
     List<Long> toRequest = new ArrayList<>();
     for (Long otherVersion : otherVersions) {
       // stop when the entries get old enough that reorders may lead us to see updates we don't need
@@ -426,7 +535,10 @@ public class PeerSync  {
       requestedUpdateSet.add(otherVersion);
     }
 
+    // TODO, do we really need to hold on to all the version numbers we requested.
+    // keeping track of totalRequestedUpdates should suffice for verification 
     sreq.requestedUpdates = toRequest;
+    sreq.totalRequestedUpdates = toRequest.size();
     
     if (toRequest.isEmpty()) {
       log.info(msg() + " No additional versions requested. ourLowThreshold="+ourLowThreshold + " otherHigh="+otherHigh+ " ourHighest=" + ourHighest + " otherHighest=" + otherHighest);
@@ -446,7 +558,7 @@ public class PeerSync  {
       return false;
     }
 
-    return requestUpdates(srsp, toRequest);
+    return requestUpdates(srsp, StrUtils.join(toRequest, ','), toRequest.size());
   }
 
   private boolean compareFingerprint(SyncShardRequest sreq) {
@@ -462,10 +574,10 @@ public class PeerSync  {
     }
   }
 
-  private boolean requestUpdates(ShardResponse srsp, List<Long> toRequest) {
+  private boolean requestUpdates(ShardResponse srsp, String versionsAndRanges, long totalUpdates) {
     String replica = srsp.getShardRequest().shards[0];
 
-    log.info(msg() + "Requesting updates from " + replica + "n=" + toRequest.size() + " versions=" + toRequest);
+    log.info(msg() + "Requesting updates from " + replica + "n=" + totalUpdates + " versions=" + versionsAndRanges);
 
     // reuse our original request object
     ShardRequest sreq = srsp.getShardRequest();
@@ -474,7 +586,7 @@ public class PeerSync  {
     sreq.params = new ModifiableSolrParams();
     sreq.params.set("qt", "/get");
     sreq.params.set("distrib", false);
-    sreq.params.set("getUpdates", StrUtils.join(toRequest, ','));
+    sreq.params.set("getUpdates", versionsAndRanges);
     sreq.params.set("onlyIfActive", onlyIfActive);
     sreq.responses.clear();  // needs to be zeroed for correct correlation to occur
 
@@ -489,7 +601,7 @@ public class PeerSync  {
     List<Object> updates = (List<Object>)srsp.getSolrResponse().getResponse().get("updates");
 
     SyncShardRequest sreq = (SyncShardRequest) srsp.getShardRequest();
-    if (updates.size() < sreq.requestedUpdates.size()) {
+    if (updates.size() < sreq.totalRequestedUpdates) {
       log.error(msg() + " Requested " + sreq.requestedUpdates.size() + " updates from " + sreq.shards[0] + " but retrieved " + updates.size());
       return false;
     }

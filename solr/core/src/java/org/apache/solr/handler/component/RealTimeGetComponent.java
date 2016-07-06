@@ -20,9 +20,13 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocValuesType;
@@ -41,6 +45,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -97,8 +102,16 @@ public class RealTimeGetComponent extends SearchComponent
     if (!params.getBool(COMPONENT_NAME, true)) {
       return;
     }
-
-    String val = params.get("getVersions");
+    
+    // This seems rather kludgey, may there is better way to indicate
+    // that replica can support handling version ranges
+    String val = params.get("checkCanHandleVersionRanges");
+    if(val != null) {
+      rb.rsp.add("canHandleVersionRanges", true);
+      return;
+    }
+    
+    val = params.get("getVersions");
     if (val != null) {
       processGetVersions(rb);
       return;
@@ -667,7 +680,14 @@ public class RealTimeGetComponent extends SearchComponent
     UpdateLog ulog = req.getCore().getUpdateHandler().getUpdateLog();
     if (ulog == null) return;
 
-    List<String> versions = StrUtils.splitSmart(versionsStr, ",", true);
+    // handle version ranges
+    List<Long> versions = null;
+    if (versionsStr.indexOf("...") != -1) {
+      versions = resolveVersionRanges(versionsStr, ulog);
+    } else {
+      versions = StrUtils.splitSmart(versionsStr, ",", true).stream().map(Long::parseLong)
+          .collect(Collectors.toList());
+    }
 
 
     List<Object> updates = new ArrayList<>(versions.size());
@@ -676,8 +696,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: get this from cache instead of rebuilding?
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-      for (String versionStr : versions) {
-        long version = Long.parseLong(versionStr);
+      for (Long version : versions) {
         try {
           Object o = recentUpdates.lookup(version);
           if (o == null) continue;
@@ -702,5 +721,37 @@ public class RealTimeGetComponent extends SearchComponent
 
     }
   }
-
+  
+  
+  private List<Long> resolveVersionRanges(String versionsStr, UpdateLog ulog) {
+    if (StringUtils.isEmpty(versionsStr)) {
+      return Collections.emptyList();
+    }
+    
+    List<String> ranges = StrUtils.splitSmart(versionsStr, ",", true);
+    
+    // TODO merge ranges.
+    
+    // get all the versions from updatelog and sort them
+    List<Long> versionAvailable = null;
+    try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
+      versionAvailable = recentUpdates.getVersions(ulog.getNumRecordsToKeep());
+    }
+    // sort versions
+    Collections.sort(versionAvailable, PeerSync.absComparator);
+    
+    // This can be done with single pass over both ranges and versionsAvailable, that would require 
+    // merging ranges. We currently use Set to ensure there are no duplicates.
+    Set<Long> versionsToRet = new HashSet<>(ulog.getNumRecordsToKeep());
+    for (String range : ranges) {
+      String[] rangeBounds = range.split("\\.{3}");
+      int indexStart = Collections.binarySearch(versionAvailable, Long.valueOf(rangeBounds[1]), PeerSync.absComparator);
+      int indexEnd = Collections.binarySearch(versionAvailable, Long.valueOf(rangeBounds[0]), PeerSync.absComparator); 
+      if(indexStart >=0 && indexEnd >= 0) {
+        versionsToRet.addAll(versionAvailable.subList(indexStart, indexEnd + 1)); // indexEnd is exclusive
+      }
+    }
+    // TODO do we need to sort versions using PeerSync.absComparator?
+    return new ArrayList<>(versionsToRet);
+  }
 }
