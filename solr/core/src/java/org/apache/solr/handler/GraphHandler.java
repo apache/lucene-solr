@@ -118,7 +118,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
         .withFunctionName("shortestPath", ShortestPathStream.class)
         .withFunctionName("gatherNodes", GatherNodesStream.class)
         .withFunctionName("sort", SortStream.class)
-
+            .withFunctionName("scoreNodes", ScoreNodesStream.class)
 
         // metrics
         .withFunctionName("min", MinMetric.class)

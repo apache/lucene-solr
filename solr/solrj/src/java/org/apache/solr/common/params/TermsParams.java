@@ -39,6 +39,18 @@ public interface TermsParams {
   public static final String TERMS_FIELD = TERMS_PREFIX + "fl";
 
   /**
+   * Optional. The list of terms to be retrieved.
+   *
+   */
+  public static final String TERMS_LIST = TERMS_PREFIX + "list";
+
+  /**
+   * Optional. The list of terms to be retrieved.
+   *
+   */
+  public static final String TERMS_STATS = TERMS_PREFIX + "stats";
+
+  /**
    * Optional.  The lower bound term to start at.  The TermEnum will start at the next term after this term in the dictionary.
    *
    * If not specified, the empty string is used

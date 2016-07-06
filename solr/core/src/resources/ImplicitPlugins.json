@@ -104,6 +104,12 @@
         "wt": "json",
         "distrib": false
       }
+    },
+    "/terms": {
+      "class": "solr.SearchHandler",
+      "components": [
+        "terms"
+      ]
     }
   }
 }

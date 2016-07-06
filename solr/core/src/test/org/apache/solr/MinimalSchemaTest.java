@@ -114,7 +114,9 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
             handler.startsWith("/export") ||
             handler.startsWith("/graph") ||
             handler.startsWith("/sql") ||
-            handler.startsWith("/stream")
+            handler.startsWith("/stream") ||
+            handler.startsWith("/terms")
+
             ) {
           continue;
         }

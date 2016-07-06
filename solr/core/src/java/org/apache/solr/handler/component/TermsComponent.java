@@ -28,6 +28,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.request.SimpleFacets.CountPair;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.client.solrj.response.TermsResponse;
 
@@ -64,8 +65,12 @@ public class TermsComponent extends SearchComponent {
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
-    if (params.getBool(TermsParams.TERMS, false)) {
+
+    //the terms parameter is also used by json facet API. So we will get errors if we try to parse as boolean
+    if (params.get(TermsParams.TERMS, "false").equals("true")) {
       rb.doTerms = true;
+    } else {
+      return;
     }
 
     // TODO: temporary... this should go in a different component.
@@ -83,7 +88,9 @@ public class TermsComponent extends SearchComponent {
   @Override
   public void process(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
-    if (!params.getBool(TermsParams.TERMS, false)) return;
+    if (!params.get(TermsParams.TERMS, "false").equals("true")) {
+      return;
+    }
 
     String[] fields = params.getParams(TermsParams.TERMS_FIELD);
 
@@ -91,6 +98,20 @@ public class TermsComponent extends SearchComponent {
     rb.rsp.add("terms", termsResult);
 
     if (fields == null || fields.length==0) return;
+
+    boolean termStats = params.getBool(TermsParams.TERMS_STATS, false);
+
+    if(termStats) {
+      NamedList<Number> stats = new SimpleOrderedMap();
+      rb.rsp.add("indexstats", stats);
+      collectStats(rb.req.getSearcher(), stats);
+    }
+
+    String termList = params.get(TermsParams.TERMS_LIST);
+    if(termList != null) {
+      fetchTerms(rb.req.getSearcher(), fields, termList, termsResult);
+      return;
+    }
 
     int limit = params.getInt(TermsParams.TERMS_LIMIT, 10);
     if (limit < 0) {
@@ -284,6 +305,13 @@ public class TermsComponent extends SearchComponent {
         @SuppressWarnings("unchecked")
         NamedList<NamedList<Number>> terms = (NamedList<NamedList<Number>>) srsp.getSolrResponse().getResponse().get("terms");
         th.parse(terms);
+
+
+        NamedList<Number> stats = (NamedList<Number>)srsp.getSolrResponse().getResponse().get("indexstats");
+        if(stats != null) {
+          th.numDocs += stats.get("numDocs").longValue();
+          th.stats = true;
+        }
       }
     }
   }
@@ -298,6 +326,11 @@ public class TermsComponent extends SearchComponent {
     NamedList terms = ti.buildResponse();
 
     rb.rsp.add("terms", terms);
+    if(ti.stats) {
+      NamedList<Number> stats = new SimpleOrderedMap();
+      stats.add("numDocs", Long.valueOf(ti.numDocs));
+      rb.rsp.add("indexstats", stats);
+    }
     rb._termsHelper = null;
   }
 
@@ -324,6 +357,8 @@ public class TermsComponent extends SearchComponent {
     // map to store returned terms
     private HashMap<String, HashMap<String, TermsResponse.Term>> fieldmap;
     private SolrParams params;
+    public long numDocs = 0;
+    public boolean stats;
 
     public TermsHelper() {
       fieldmap = new HashMap<>(5);
@@ -377,8 +412,12 @@ public class TermsComponent extends SearchComponent {
       NamedList<Object> response = new SimpleOrderedMap<>();
 
       // determine if we are going index or count sort
-      boolean sort = !TermsParams.TERMS_SORT_INDEX.equals(params.get(
-          TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_COUNT));
+      boolean sort = !TermsParams.TERMS_SORT_INDEX.equals(params.get(TermsParams.TERMS_SORT,
+                                                                     TermsParams.TERMS_SORT_COUNT));
+      if(params.get(TermsParams.TERMS_LIST) != null) {
+        //Always use lexical sort when TERM_LIST is provided
+        sort = false;
+      }
 
       // init minimum frequency
       long freqmin = 1;
@@ -464,6 +503,81 @@ public class TermsComponent extends SearchComponent {
 
       return arr;
     }
+  }
+
+  private void fetchTerms(SolrIndexSearcher indexSearcher,
+                          String[] fields,
+                          String termList,
+                          NamedList result) throws IOException {
+
+    NamedList termsMap = new SimpleOrderedMap();
+    List<LeafReaderContext> leaves = indexSearcher.getTopReaderContext().leaves();
+    String field = fields[0];
+    FieldType fieldType = indexSearcher.getSchema().getField(field).getType();
+    String[] splitTerms = termList.split(",");
+
+    for(int i=0; i<splitTerms.length; i++) {
+      splitTerms[i] = splitTerms[i].trim();
+    }
+
+    Term[] terms = new Term[splitTerms.length];
+    TermContext[] termContexts = new TermContext[terms.length];
+    for(int i=0; i<splitTerms.length; i++) {
+      terms[i] = new Term(field, fieldType.readableToIndexed(splitTerms[i]));
+    }
+
+    Arrays.sort(terms);
+
+    collectTermContext(indexSearcher.getTopReaderContext().reader(), leaves, termContexts, terms);
+
+    for(int i=0; i<terms.length; i++) {
+      if(termContexts[i] != null) {
+        String outTerm = fieldType.indexedToReadable(terms[i].bytes().utf8ToString());
+        int docFreq = termContexts[i].docFreq();
+        termsMap.add(outTerm, docFreq);
+      }
+    }
+
+    result.add(field, termsMap);
+  }
+
+  private void collectTermContext(IndexReader reader,
+                                 List<LeafReaderContext> leaves, TermContext[] contextArray,
+                                 Term[] queryTerms) throws IOException {
+    TermsEnum termsEnum = null;
+    for (LeafReaderContext context : leaves) {
+      final Fields fields = context.reader().fields();
+      for (int i = 0; i < queryTerms.length; i++) {
+        Term term = queryTerms[i];
+        TermContext termContext = contextArray[i];
+        final Terms terms = fields.terms(term.field());
+        if (terms == null) {
+          // field does not exist
+          continue;
+        }
+        termsEnum = terms.iterator();
+        assert termsEnum != null;
+
+        if (termsEnum == TermsEnum.EMPTY) continue;
+        if (termsEnum.seekExact(term.bytes())) {
+          if (termContext == null) {
+            contextArray[i] = new TermContext(reader.getContext(),
+                termsEnum.termState(), context.ord, termsEnum.docFreq(),
+                termsEnum.totalTermFreq());
+          } else {
+            termContext.register(termsEnum.termState(), context.ord,
+                termsEnum.docFreq(), termsEnum.totalTermFreq());
+          }
+
+        }
+
+      }
+    }
+  }
+
+  private void collectStats(SolrIndexSearcher searcher, NamedList<Number> stats) {
+    int numDocs = searcher.getTopReaderContext().reader().numDocs();
+    stats.add("numDocs", Long.valueOf(numDocs));
   }
 
   @Override
