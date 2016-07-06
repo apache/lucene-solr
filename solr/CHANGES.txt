@@ -80,6 +80,9 @@ New Features
 
 * SOLR-9194: Enhance the bin/solr script to perform file operations to/from Zookeeper (Erick Erickson, janhoy)
 
+* SOLR-9242: Collection Backup/Restore now supports specifying the directory implementation to use
+  via the "repository" parameter. (Hrishikesh Gadre, Varun Thacker)
+
 Bug Fixes
 ----------------------
 

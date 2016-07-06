@@ -36,6 +36,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -59,6 +60,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -155,8 +157,21 @@ public class CoreContainer {
 
   private BackupRepositoryFactory backupRepoFactory;
 
-  public BackupRepositoryFactory getBackupRepoFactory() {
-    return backupRepoFactory;
+  /**
+   * This method instantiates a new instance of {@linkplain BackupRepository}.
+   *
+   * @param repositoryName The name of the backup repository (Optional).
+   *                       If not specified, a default implementation is used.
+   * @return a new instance of {@linkplain BackupRepository}.
+   */
+  public BackupRepository newBackupRepository(Optional<String> repositoryName) {
+    BackupRepository repository;
+    if (repositoryName.isPresent()) {
+      repository = backupRepoFactory.newInstance(getResourceLoader(), repositoryName.get());
+    } else {
+      repository = backupRepoFactory.newInstance(getResourceLoader());
+    }
+    return repository;
   }
 
   public ExecutorService getCoreZkRegisterExecutorService() {

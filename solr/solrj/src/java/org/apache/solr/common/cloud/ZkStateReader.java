@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
@@ -106,7 +107,6 @@ public class ZkStateReader implements Closeable {
 
   public static final String URL_SCHEME = "urlScheme";
 
-  public static final String BACKUP_LOCATION = "location";
 
   /** A view of the current state of all collections; combines all the different state sources into a single view. */
   protected volatile ClusterState clusterState;
@@ -160,7 +160,7 @@ public class ZkStateReader implements Closeable {
       LEGACY_CLOUD,
       URL_SCHEME,
       AUTO_ADD_REPLICAS,
-      BACKUP_LOCATION,
+      CoreAdminParams.BACKUP_LOCATION,
       MAX_CORES_PER_NODE)));
 
   /**
