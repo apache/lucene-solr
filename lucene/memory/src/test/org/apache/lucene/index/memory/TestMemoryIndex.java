@@ -464,4 +464,26 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertEquals("term", leafReader.getBinaryDocValues("field").get(0).utf8ToString());
   }
 
+  public void testToStringDebug() {
+    MemoryIndex mi = new MemoryIndex(true, true);
+    Analyzer analyzer = new MockPayloadAnalyzer();
+
+    mi.addField("analyzedField", "aa bb aa", analyzer);
+
+    FieldType type = new FieldType();
+    type.setDimensions(1, 4);
+    type.setDocValuesType(DocValuesType.BINARY);
+    type.freeze();
+    mi.addField(new BinaryPoint("pointAndDvField", "term".getBytes(StandardCharsets.UTF_8), type), analyzer);
+
+    assertEquals("analyzedField:\n" +
+        "\t'[61 61]':2: [(0, 0, 2, [70 6f 73 3a 20 30]), (1, 6, 8, [70 6f 73 3a 20 32])]\n" +
+        "\t'[62 62]':1: [(1, 3, 5, [70 6f 73 3a 20 31])]\n" +
+        "\tterms=2, positions=3\n" +
+        "pointAndDvField:\n" +
+        "\tterms=0, positions=0\n" +
+        "\n" +
+        "fields=2, terms=2, positions=3", mi.toStringDebug());
+  }
+
 }
