@@ -863,6 +863,16 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
 
+    addParser("eq", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhs = fp.parseValueSource();
+        ValueSource rhs = fp.parseValueSource();
+
+        return new EqualFunction(lhs, rhs);
+      }
+    });
+
 
 
     addParser("def", new ValueSourceParser() {
