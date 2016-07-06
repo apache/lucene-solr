@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.CommonParams;
@@ -48,10 +47,10 @@ import org.apache.solr.common.util.NamedList;
  *
  *  Expression Syntax:
  *
- *  Default function call uses the "count(*)" value for node freq.
+ *  Default function call uses the "count(*)" field for node freq.
  *
  *  You can use a different value for node freq by providing the nodeFreq param
- *  scoreNodes(gatherNodes(...), nodeFreq="min(weight)")
+ *  scoreNodes(gatherNodes(...), termFreq="min(weight)")
  *
  **/
 
@@ -188,6 +187,9 @@ public class ScoreNodesStream extends TupleStream implements Expressible
     params.add(TermsParams.TERMS_FIELD, field);
     params.add(TermsParams.TERMS_STATS, "true");
     params.add(TermsParams.TERMS_LIST, builder.toString());
+    params.add(TermsParams.TERMS_LIMIT, Integer.toString(nodes.size()));
+    params.add("distrib", "true");
+
     QueryRequest request = new QueryRequest(params);
 
 
