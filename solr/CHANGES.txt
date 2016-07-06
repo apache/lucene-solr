@@ -83,6 +83,11 @@ New Features
 * SOLR-9242: Collection Backup/Restore now supports specifying the directory implementation to use
   via the "repository" parameter. (Hrishikesh Gadre, Varun Thacker)
 
+* SOLR-9193: Add scoreNodes Streaming Expression (Joel Bernstein)
+
+* SOLR-9243: Add terms.list parameter to the TermsComponent to fetch the docFreq for a list of terms
+  (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
