@@ -43,13 +43,13 @@ import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
- *  Iterates over a gatherNodes() expression and scores the node Tuples based based on tf-idf.
+ *  Iterates over a gatherNodes() expression and scores the Tuples based on tf-idf.
  *
  *  Expression Syntax:
  *
- *  Default function call uses the "count(*)" field for node freq.
+ *  Default function call uses the "count(*)" field for termFreq.
  *
- *  You can use a different value for node freq by providing the nodeFreq param
+ *  You can use a different value for termFreq by providing the termFreq param
  *  scoreNodes(gatherNodes(...), termFreq="min(weight)")
  *
  **/
