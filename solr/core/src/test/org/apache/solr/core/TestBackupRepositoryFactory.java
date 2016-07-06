@@ -21,9 +21,9 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
@@ -36,8 +36,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
   @Rule
@@ -129,7 +127,7 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
       attrs.put(CoreAdminParams.NAME, "repo1");
       attrs.put(FieldType.CLASS_NAME, LocalFileSystemRepository.class.getName());
       attrs.put("default" , "true");
-      attrs.put(ZkStateReader.BACKUP_LOCATION, "/tmp");
+      attrs.put("location", "/tmp");
       plugins[0] = new PluginInfo("repository", attrs);
     }
 
@@ -139,14 +137,14 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
       BackupRepository repo = f.newInstance(loader);
 
       assertTrue(repo instanceof LocalFileSystemRepository);
-      assertEquals("/tmp", repo.getConfigProperty(ZkStateReader.BACKUP_LOCATION));
+      assertEquals("/tmp", repo.getConfigProperty("location"));
     }
 
     {
       BackupRepository repo = f.newInstance(loader, "repo1");
 
       assertTrue(repo instanceof LocalFileSystemRepository);
-      assertEquals("/tmp", repo.getConfigProperty(ZkStateReader.BACKUP_LOCATION));
+      assertEquals("/tmp", repo.getConfigProperty("location"));
     }
   }
 }
