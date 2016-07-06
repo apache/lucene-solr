@@ -134,6 +134,9 @@ Bug Fixes
 * SOLR-8858: SolrIndexSearcher#doc() completely ignores field filters unless lazy field loading is enabled.
   (Caleb Rackliffe, David Smiley, shalin)
 
+* SOLR-9236: AutoAddReplicas will append an extra /tlog to the update log location on replica failover.
+  (Eungsop Yoo, Mark Miller)
+
 Optimizations
 ----------------------
 
