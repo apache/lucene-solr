@@ -5,10 +5,6 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 6.2.0 =======================
 
-Bug Fixes
-
-* LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
-
 New Features
 
 * LUCENE-6968: LSH Filter (Tommaso Teofili, Andy Hind, Cao Manh Dat)
