@@ -405,6 +405,7 @@ public class ZkStateReader implements Closeable {
                   final Stat stat = new Stat();
                   final byte[] data = zkClient.getData(ALIASES, thisWatch, stat, true);
                   ZkStateReader.this.aliases = ClusterState.load(data);
+                  LOG.info("New alias definition is: " + ZkStateReader.this.aliases.toString());
                 }
               } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
                 LOG.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
