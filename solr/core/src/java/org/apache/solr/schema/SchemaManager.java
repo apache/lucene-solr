@@ -16,6 +16,18 @@
  */
 package org.apache.solr.schema;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -30,18 +42,6 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
@@ -108,7 +108,7 @@ public class SchemaManager {
     SolrCore core = req.getCore();
     String errorMsg = "Unable to persist managed schema. ";
     while (!timeOut.hasTimedOut()) {
-      managedIndexSchema = getFreshManagedSchema();
+      managedIndexSchema = getFreshManagedSchema(req.getCore());
       for (CommandOperation op : operations) {
         OpType opType = OpType.get(op.name);
         if (opType != null) {
@@ -131,9 +131,9 @@ public class SchemaManager {
         }
 
         try {
-          ZkController.persistConfigResourceToZooKeeper(zkLoader, managedIndexSchema.getSchemaZkVersion(),
+          int latestVersion = ZkController.persistConfigResourceToZooKeeper(zkLoader, managedIndexSchema.getSchemaZkVersion(),
               managedIndexSchema.getResourceName(), sw.toString().getBytes(StandardCharsets.UTF_8), true);
-          waitForOtherReplicasToUpdate(timeOut);
+          waitForOtherReplicasToUpdate(timeOut, latestVersion);
           core.setLatestSchema(managedIndexSchema);
           return Collections.emptyList();
         } catch (ZkController.ResourceModifiedInZkException e) {
@@ -155,7 +155,7 @@ public class SchemaManager {
     return singletonList(errorMsg + "Timed out.");
   }
 
-  private void waitForOtherReplicasToUpdate(TimeOut timeOut) {
+  private void waitForOtherReplicasToUpdate(TimeOut timeOut, int latestVersion) {
     CoreDescriptor cd = req.getCore().getCoreDescriptor();
     String collection = cd.getCollectionName();
     if (collection != null) {
@@ -164,11 +164,8 @@ public class SchemaManager {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Not enough time left to update replicas. However, the schema is updated already.");
       }
-      ManagedIndexSchema.waitForSchemaZkVersionAgreement(collection,
-          cd.getCloudDescriptor().getCoreNodeName(),
-          (managedIndexSchema).getSchemaZkVersion(),
-          zkLoader.getZkController(),
-          (int) timeOut.timeLeft(TimeUnit.SECONDS));
+      ManagedIndexSchema.waitForSchemaZkVersionAgreement(collection, cd.getCloudDescriptor().getCoreNodeName(),
+          latestVersion, zkLoader.getZkController(), (int) timeOut.timeLeft(TimeUnit.SECONDS));
     }
   }
 
@@ -423,21 +420,23 @@ public class SchemaManager {
     return sb.toString();
   }
 
-  public ManagedIndexSchema getFreshManagedSchema() throws IOException, KeeperException, InterruptedException {
-    SolrResourceLoader resourceLoader = req.getCore().getResourceLoader();
+  public static ManagedIndexSchema getFreshManagedSchema(SolrCore core) throws IOException,
+      KeeperException, InterruptedException {
+
+    SolrResourceLoader resourceLoader = core.getResourceLoader();
+    String name = core.getLatestSchema().getResourceName();
     if (resourceLoader instanceof ZkSolrResourceLoader) {
-      InputStream in = resourceLoader.openResource(req.getSchema().getResourceName());
+      InputStream in = resourceLoader.openResource(name);
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.info("managed schema loaded . version : {} ", version);
-        return new ManagedIndexSchema
-            (req.getCore().getSolrConfig(), req.getSchema().getResourceName(), new InputSource(in),
-                true, req.getSchema().getResourceName(), version, req.getSchema().getSchemaUpdateLock());
+        return new ManagedIndexSchema(core.getSolrConfig(), name, new InputSource(in), true, name, version,
+            core.getLatestSchema().getSchemaUpdateLock());
       } else {
-        return (ManagedIndexSchema) req.getCore().getLatestSchema();
+        return (ManagedIndexSchema) core.getLatestSchema();
       }
     } else {
-      return (ManagedIndexSchema) req.getCore().getLatestSchema();
+      return (ManagedIndexSchema) core.getLatestSchema();
     }
   }
 }

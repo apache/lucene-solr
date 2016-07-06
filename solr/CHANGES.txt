@@ -117,6 +117,8 @@ Bug Fixes
 
 * SOLR-9235: Fixed NPE when using non-numeric range query in deleteByQuery (hossman)
 
+* SOLR-9088: Fixed TestManagedSchemaAPI failures which exposed race conditions in the schema API ( Varun Thacker, noble)
+
 Optimizations
 ----------------------
 
