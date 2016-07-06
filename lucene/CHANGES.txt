@@ -42,6 +42,9 @@ Bug Fixes
 
 * LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
 
+* LUCENE-7340: MemoryIndex.toString() could throw NPE; fixed. Renamed to toStringDebug().
+  (Daniel Collins, David Smiley)
+
 Improvements
 
 * LUCENE-7323: Compound file writing now verifies the incoming

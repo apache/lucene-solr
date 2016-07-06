@@ -43,10 +43,21 @@ import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.*;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefArray;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
+import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.IntBlockPool.SliceReader;
 import org.apache.lucene.util.IntBlockPool.SliceWriter;
+import org.apache.lucene.util.RecyclingByteBlockAllocator;
+import org.apache.lucene.util.RecyclingIntBlockAllocator;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -746,13 +757,14 @@ public class MemoryIndex {
    * Returns a String representation of the index data for debugging purposes.
    * 
    * @return the string representation
+   * @lucene.experimental
    */
-  @Override
-  public String toString() {
+  public String toStringDebug() {
     StringBuilder result = new StringBuilder(256);
     int sumPositions = 0;
     int sumTerms = 0;
     final BytesRef spare = new BytesRef();
+    final BytesRefBuilder payloadBuilder = storePayloads ? new BytesRefBuilder() : null;
     for (Map.Entry<String, Info> entry : fields.entrySet()) {
       String fieldName = entry.getKey();
       Info info = entry.getValue();
@@ -778,9 +790,16 @@ public class MemoryIndex {
               result.append(", ");
             }
           }
+          if (storePayloads) {
+            int payloadIndex = postingsReader.readInt();
+            if (payloadIndex != -1) {
+                result.append(", " + payloadsBytesRefs.get(payloadBuilder, payloadIndex));
+            }
+          }
           result.append(")");
+
           if (!postingsReader.endOfSlice()) {
-            result.append(",");
+            result.append(", ");
           }
 
         }
