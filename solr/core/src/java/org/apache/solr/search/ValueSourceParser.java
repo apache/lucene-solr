@@ -825,30 +825,45 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("gt", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource lhs = fp.parseValueSource();
-        ValueSource rhs = fp.parseValueSource();
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
 
-        return new GreaterThanFunction(lhs, rhs);
+        return new CompareNumericFunction(lhsValSource, rhsValSource, "gt") {
+          @Override
+          public boolean compare(double lhs, double rhs) {
+            return lhs > rhs;
+          }
+        };
       }
     });
 
     addParser("lt", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource lhs = fp.parseValueSource();
-        ValueSource rhs = fp.parseValueSource();
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
 
-        return new LessThanFunction(lhs, rhs);
+        return new CompareNumericFunction(lhsValSource, rhsValSource, "lt") {
+          @Override
+          public boolean compare(double lhs, double rhs) {
+            return lhs < rhs;
+          }
+        };
       }
     });
 
     addParser("gte", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource lhs = fp.parseValueSource();
-        ValueSource rhs = fp.parseValueSource();
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
 
-        return new GreaterThanEqualFunction(lhs, rhs);
+        return new CompareNumericFunction(lhsValSource, rhsValSource, "gte") {
+          @Override
+          public boolean compare(double lhs, double rhs) {
+            return lhs >= rhs;
+          }
+        };
       }
     });
 
@@ -856,20 +871,30 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("lte", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource lhs = fp.parseValueSource();
-        ValueSource rhs = fp.parseValueSource();
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
 
-        return new LessThanEqualFunction(lhs, rhs);
+        return new CompareNumericFunction(lhsValSource, rhsValSource, "lte") {
+          @Override
+          public boolean compare(double lhs, double rhs) {
+            return lhs <= rhs;
+          }
+        };
       }
     });
 
     addParser("eq", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource lhs = fp.parseValueSource();
-        ValueSource rhs = fp.parseValueSource();
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
 
-        return new EqualFunction(lhs, rhs);
+        return new CompareNumericFunction(lhsValSource, rhsValSource, "eq") {
+          @Override
+          public boolean compare(double lhs, double rhs) {
+            return lhs == rhs;
+          }
+        };
       }
     });
 

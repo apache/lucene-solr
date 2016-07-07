@@ -34,17 +34,21 @@ public abstract class CompareNumericFunction extends BoolFunction {
 
   private final ValueSource lhs;
   private final ValueSource rhs;
+  private final String label;
 
-  public CompareNumericFunction(ValueSource lhs, ValueSource rhs) {
+  public CompareNumericFunction(ValueSource lhs, ValueSource rhs, String label) {
     this.lhs = lhs;
     this.rhs = rhs;
+    this.label = label;
   }
 
   // Perform the comparison, returning true or false
-  public abstract boolean compareNumeric(double lhs, double rhs);
+  public abstract boolean compare(double lhs, double rhs);
 
   // Uniquely identify the operation (ie "gt", "lt" "gte, etc)
-  public abstract String getLabel();
+  public String getLabel() {
+    return this.label;
+  }
 
   // string comparison? Probably should be a seperate function
   // public abstract boolean compareString(String lhs, String rhs);
@@ -89,7 +93,7 @@ public abstract class CompareNumericFunction extends BoolFunction {
 
       @Override
       public boolean boolVal(int doc) {
-        return compareNumeric(lhsVal.floatVal(doc), rhsVal.floatVal(doc));
+        return compare(lhsVal.floatVal(doc), rhsVal.floatVal(doc));
       }
 
       @Override
