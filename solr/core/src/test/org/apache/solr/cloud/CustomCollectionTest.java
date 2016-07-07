@@ -68,7 +68,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
   private static final boolean DEBUG = false;
 
   protected String getSolrXml() {
-    return "solr-no-core.xml";
+    return "solr.xml";
   }
 
 

@@ -58,7 +58,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected String getSolrXml() {
-    return "solr-no-core.xml";
+    return "solr.xml";
   }
 
   public OverseerRolesTest() {

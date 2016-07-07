@@ -54,7 +54,7 @@ import java.util.concurrent.TimeUnit;
 public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
   protected String getSolrXml() {
-    return "solr-no-core.xml";
+    return "solr.xml";
   }
   
   public UnloadDistributedZkTest() {

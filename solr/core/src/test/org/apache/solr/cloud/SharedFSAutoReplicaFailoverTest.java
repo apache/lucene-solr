@@ -90,7 +90,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   }
   
   protected String getSolrXml() {
-    return "solr-no-core.xml";
+    return "solr.xml";
   }
 
   
@@ -219,7 +219,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
     ChaosMonkey.stop(jettys.get(3));
 
-    //solr-no-core.xml has defined workLoopDelay=10s and waitAfterExpiration=10s
+    //solr.xml has defined workLoopDelay=10s and waitAfterExpiration=10s
     //Hence waiting for 30 seconds to be on the safe side.
     Thread.sleep(30000);
     //Ensures that autoAddReplicas has not kicked in.
