@@ -217,7 +217,7 @@ public class TestValueSources extends LuceneTestCase {
     ValueSource vs = new FloatFieldSource("float");
     ValueSource const52Vs = new ConstValueSource(5.2f);
 
-    ValueSource gtVs = new ComparisonValueSource(const52Vs, vs, "test") {
+    ValueSource gtVs = new ComparisonBoolFunction(const52Vs, vs, "test") {
       @Override
       public boolean compare(double lhs, double rhs) {
         return lhs > rhs;
@@ -227,7 +227,7 @@ public class TestValueSources extends LuceneTestCase {
     FunctionQuery q = new FunctionQuery(gtVs);
     assertHits(q, new float[] {0f, 0f});
 
-    ValueSource gteVs = new ComparisonValueSource(const52Vs, vs, "test") {
+    ValueSource gteVs = new ComparisonBoolFunction(const52Vs, vs, "test") {
       @Override
       public boolean compare(double lhs, double rhs) {
         return lhs >= rhs;
