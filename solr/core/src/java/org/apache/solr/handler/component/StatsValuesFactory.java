@@ -487,8 +487,12 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
   @Override
   public void accumulate(int docID) {
     if (values.exists(docID)) {
+      double minFence = statsField.getMinFence();
+      double maxFence = statsField.getMaxFence();
       Number value = (Number) values.objectVal(docID);
-      accumulate(value, 1);
+      if (value.doubleValue() >= minFence && value.doubleValue() <= maxFence) {
+        accumulate(value, 1);
+      }
     } else {
       missing();
     }

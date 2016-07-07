@@ -208,7 +208,9 @@ public class StatsField {
   private final EnumSet<Stat> statsInResponse = EnumSet.noneOf(Stat.class);
   private final List<Double> percentilesList= new ArrayList<Double>();
   private final boolean isShard;
-  
+
+  private double minFence = Double.MIN_VALUE;
+  private double maxFence = Double.MAX_VALUE;
   private double tdigestCompression = 100.0D;
   private HllOptions hllOpts;
   
@@ -300,6 +302,9 @@ public class StatsField {
     this.excludeTagList = (null == excludeStr) 
       ? Collections.<String>emptyList()
       : StrUtils.splitSmart(excludeStr,',');
+
+    this.minFence = localParams.getDouble("minFence", this.minFence);
+    this.maxFence = localParams.getDouble("maxFence", this.maxFence);
 
     assert ( (null == this.valueSource) ^ (null == this.schemaField) ) 
       : "exactly one of valueSource & schemaField must be null";
@@ -511,6 +516,10 @@ public class StatsField {
   public List<String> getTagList() {
     return tagList;
   }
+
+  public double getMinFence() {return minFence; }
+
+  public double getMaxFence() {return maxFence; }
 
   public String toString() {
     return "StatsField<" + originalParam + ">";
