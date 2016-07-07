@@ -262,11 +262,6 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
 
   static class BoostingSimilarity extends MultiplyingSimilarity {
 
-    @Override
-    public float queryNorm(float sumOfSquaredWeights) {
-      return 1.0f;
-    }
-
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

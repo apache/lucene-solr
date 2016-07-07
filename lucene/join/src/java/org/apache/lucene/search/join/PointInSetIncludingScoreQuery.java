@@ -118,8 +118,7 @@ abstract class PointInSetIncludingScoreQuery extends Query {
   }
 
   @Override
-  public final Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    final Weight originalWeight = originalQuery.createWeight(searcher, needsScores);
+  public final Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     return new Weight(this) {
 
       @Override
@@ -136,16 +135,6 @@ abstract class PointInSetIncludingScoreQuery extends Query {
           }
         }
         return Explanation.noMatch("Not a match");
-      }
-
-      @Override
-      public float getValueForNormalization() throws IOException {
-        return originalWeight.getValueForNormalization();
-      }
-
-      @Override
-      public void normalize(float norm, float boost) {
-        originalWeight.normalize(norm, boost);
       }
 
       @Override

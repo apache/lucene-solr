@@ -30,7 +30,6 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -100,14 +99,6 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       searcher = newSearcher(reader, true, false);
       searcher.setQueryCache(null); // to assert on scorer impl
       
-      // set a similarity that does not normalize our boost away
-      searcher.setSimilarity(new ClassicSimilarity() {
-        @Override
-        public float queryNorm(float sumOfSquaredWeights) {
-          return 1.0f;
-        }
-      });
-      
       final BoostQuery csq1 = new BoostQuery(new ConstantScoreQuery(new TermQuery(new Term ("field", "term"))), 2f);
       final BoostQuery csq2 = new BoostQuery(new ConstantScoreQuery(csq1), 5f);
       
@@ -143,8 +134,8 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     }
     
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      return in.createWeight(searcher, needsScores);
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      return in.createWeight(searcher, needsScores, boost);
     }
 
     @Override

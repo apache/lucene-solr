@@ -246,7 +246,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     Query q3CustomMul;
     {
       CustomScoreQuery csq = new CustomScoreQuery(q1, functionQuery);
-      csq.setStrict(true);
       q3CustomMul = csq;
     }
     q3CustomMul = new BoostQuery(q3CustomMul, boost);
@@ -256,7 +255,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     Query q4CustomAdd;
     {
       CustomScoreQuery csq = new CustomAddQuery(q1, functionQuery);
-      csq.setStrict(true);
       q4CustomAdd = csq;
     }
     q4CustomAdd = new BoostQuery(q4CustomAdd, boost);
@@ -266,7 +264,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     Query q5CustomMulAdd;
     {
       CustomScoreQuery csq = new CustomMulAddQuery(q1, functionQuery, functionQuery);
-      csq.setStrict(true);
       q5CustomMulAdd = csq;
     }
     q5CustomMulAdd = new BoostQuery(q5CustomMulAdd, boost);

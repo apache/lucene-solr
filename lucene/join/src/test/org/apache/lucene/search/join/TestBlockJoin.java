@@ -118,13 +118,13 @@ public class TestBlockJoin extends LuceneTestCase {
     IndexReader indexReader = DirectoryReader.open(directory);
     IndexSearcher indexSearcher = new IndexSearcher(indexReader);
 
-    Weight weight = toParentBlockJoinQuery.createWeight(indexSearcher, false);
+    Weight weight = toParentBlockJoinQuery.createWeight(indexSearcher, false, 1f);
     Set<Term> terms = new HashSet<>();
     weight.extractTerms(terms);
     Term[] termArr =terms.toArray(new Term[0]);
     assertEquals(1, termArr.length);
 
-    weight = toChildBlockJoinQuery.createWeight(indexSearcher, false);
+    weight = toChildBlockJoinQuery.createWeight(indexSearcher, false, 1f);
     terms = new HashSet<>();
     weight.extractTerms(terms);
     termArr =terms.toArray(new Term[0]);

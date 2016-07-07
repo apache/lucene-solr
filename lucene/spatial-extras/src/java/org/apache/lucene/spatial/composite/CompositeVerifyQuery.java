@@ -82,11 +82,11 @@ public class CompositeVerifyQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    final Weight indexQueryWeight = indexQuery.createWeight(searcher, false);//scores aren't unsupported
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    final Weight indexQueryWeight = indexQuery.createWeight(searcher, false, boost);//scores aren't unsupported
     final Map valueSourceContext = ValueSource.newContext(searcher);
 
-    return new ConstantScoreWeight(this) {
+    return new ConstantScoreWeight(this, boost) {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {

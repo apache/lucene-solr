@@ -73,8 +73,8 @@ public class TestBaseExplanationTestCase extends BaseExplanationTestCase {
       this.toggleExplainMatch = toggleExplainMatch;
       this.breakExplainScores = breakExplainScores;
     }
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      return new BrokenExplainWeight(this, super.createWeight(searcher,needsScores));
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      return new BrokenExplainWeight(this, super.createWeight(searcher,needsScores, boost));
     }
   }
   
@@ -106,12 +106,6 @@ public class TestBaseExplanationTestCase extends BaseExplanationTestCase {
     }
     public void extractTerms(Set<Term> terms) {
       in.extractTerms(terms);
-    }
-    public float getValueForNormalization() throws IOException {
-      return in.getValueForNormalization();
-    }
-    public void normalize(float norm, float boost) {
-      in.normalize(norm, boost);
     }
     public Scorer scorer(LeafReaderContext context) throws IOException {
       return in.scorer(context);

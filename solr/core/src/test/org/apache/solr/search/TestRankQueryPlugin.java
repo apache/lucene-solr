@@ -109,8 +109,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
       return false;
     }
 
-    public Weight createWeight(IndexSearcher indexSearcher, boolean needsScores) throws IOException{
-      return q.createWeight(indexSearcher, needsScores);
+    public Weight createWeight(IndexSearcher indexSearcher, boolean needsScores, float boost) throws IOException{
+      return q.createWeight(indexSearcher, needsScores, boost);
     }
 
     @Override

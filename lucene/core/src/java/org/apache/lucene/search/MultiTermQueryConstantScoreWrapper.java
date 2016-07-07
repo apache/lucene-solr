@@ -108,8 +108,8 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
   public final String getField() { return query.getField(); }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new ConstantScoreWeight(this) {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new ConstantScoreWeight(this, boost) {
 
       /** Try to collect terms from the given terms enum and return true iff all
        *  terms could be collected. If {@code false} is returned, the enum is
@@ -153,8 +153,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
             bq.add(new TermQuery(new Term(query.field, t.term), termContext), Occur.SHOULD);
           }
           Query q = new ConstantScoreQuery(bq.build());
-          final Weight weight = searcher.rewrite(q).createWeight(searcher, needsScores);
-          weight.normalize(1f, score());
+          final Weight weight = searcher.rewrite(q).createWeight(searcher, needsScores, score());
           return new WeightOrDocIdSet(weight);
         }
 

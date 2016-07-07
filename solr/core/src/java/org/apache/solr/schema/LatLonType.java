@@ -309,8 +309,8 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     protected Map latContext;
     protected Map lonContext;
 
-    public SpatialWeight(IndexSearcher searcher) throws IOException {
-      super(SpatialDistanceQuery.this);
+    public SpatialWeight(IndexSearcher searcher, float boost) throws IOException {
+      super(SpatialDistanceQuery.this, boost);
       this.searcher = searcher;
       this.latContext = ValueSource.newContext(searcher);
       this.lonContext = ValueSource.newContext(searcher);
@@ -491,7 +491,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
   @Override
   public DelegatingCollector getFilterCollector(IndexSearcher searcher) {
     try {
-      return new SpatialCollector(new SpatialWeight(searcher));
+      return new SpatialCollector(new SpatialWeight(searcher, 1f));
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
@@ -523,10 +523,10 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     // if we were supposed to use bboxQuery, then we should have been rewritten using that query
     assert bboxQuery == null;
-    return new SpatialWeight(searcher);
+    return new SpatialWeight(searcher, boost);
   }
 
 

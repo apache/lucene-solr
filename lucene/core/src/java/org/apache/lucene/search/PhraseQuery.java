@@ -356,7 +356,7 @@ public class PhraseQuery extends Query {
     private final boolean needsScores;
     private transient TermContext states[];
 
-    public PhraseWeight(IndexSearcher searcher, boolean needsScores)
+    public PhraseWeight(IndexSearcher searcher, boolean needsScores, float boost)
       throws IOException {
       super(PhraseQuery.this);
       final int[] positions = PhraseQuery.this.getPositions();
@@ -375,7 +375,7 @@ public class PhraseQuery extends Query {
         states[i] = TermContext.build(context, term);
         termStats[i] = searcher.termStatistics(term, states[i]);
       }
-      stats = similarity.computeWeight(searcher.collectionStatistics(field), termStats);
+      stats = similarity.computeWeight(boost, searcher.collectionStatistics(field), termStats);
     }
 
     @Override
@@ -385,16 +385,6 @@ public class PhraseQuery extends Query {
 
     @Override
     public String toString() { return "weight(" + PhraseQuery.this + ")"; }
-
-    @Override
-    public float getValueForNormalization() {
-      return stats.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float queryNorm, float boost) {
-      stats.normalize(queryNorm, boost);
-    }
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -507,8 +497,8 @@ public class PhraseQuery extends Query {
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new PhraseWeight(searcher, needsScores);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new PhraseWeight(searcher, needsScores, boost);
   }
 
   /** Prints a user-readable version of this query. */

@@ -257,7 +257,7 @@ public class RealTimeGetComponent extends SearchComponent
 
          if (rb.getFilters() != null) {
            for (Query q : rb.getFilters()) {
-             Scorer scorer = searcher.createWeight(q, false).scorer(ctx);
+             Scorer scorer = searcher.createWeight(q, false, 1f).scorer(ctx);
              if (scorer == null || segid != scorer.iterator().advance(segid)) {
                // filter doesn't match.
                docid = -1;

@@ -992,8 +992,8 @@ public class TestIndexSorting extends LuceneTestCase {
     }
     
     @Override
-    public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return in.computeWeight(collectionStats, termStats);
+    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return in.computeWeight(boost, collectionStats, termStats);
     }
     
     @Override

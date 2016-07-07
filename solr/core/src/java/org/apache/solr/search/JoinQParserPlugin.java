@@ -146,8 +146,8 @@ class JoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new JoinQueryWeight((SolrIndexSearcher)searcher);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new JoinQueryWeight((SolrIndexSearcher)searcher, boost);
   }
 
   private class JoinQueryWeight extends ConstantScoreWeight {
@@ -157,8 +157,8 @@ class JoinQuery extends Query {
     private Similarity similarity;
     ResponseBuilder rb;
 
-    public JoinQueryWeight(SolrIndexSearcher searcher) {
-      super(JoinQuery.this);
+    public JoinQueryWeight(SolrIndexSearcher searcher, float boost) {
+      super(JoinQuery.this, boost);
       this.fromSearcher = searcher;
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       if (info != null) {

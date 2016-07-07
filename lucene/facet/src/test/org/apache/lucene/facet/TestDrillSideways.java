@@ -650,8 +650,8 @@ public class TestDrillSideways extends FacetTestCase {
         filter = new Query() {
 
           @Override
-          public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-            return new RandomAccessWeight(this) {
+          public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+            return new RandomAccessWeight(this, boost) {
               @Override
               protected Bits getMatchingDocs(final LeafReaderContext context) throws IOException {
                 return new Bits() {

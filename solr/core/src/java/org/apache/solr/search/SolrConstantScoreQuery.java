@@ -84,8 +84,8 @@ public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
   protected class ConstantWeight extends ConstantScoreWeight {
     private Map context;
 
-    public ConstantWeight(IndexSearcher searcher) throws IOException {
-      super(SolrConstantScoreQuery.this);
+    public ConstantWeight(IndexSearcher searcher, float boost) throws IOException {
+      super(SolrConstantScoreQuery.this, boost);
       this.context = ValueSource.newContext(searcher);
       if (filter instanceof SolrFilter)
         ((SolrFilter)filter).createWeight(context, searcher);
@@ -107,8 +107,8 @@ public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new SolrConstantScoreQuery.ConstantWeight(searcher);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new SolrConstantScoreQuery.ConstantWeight(searcher, boost);
   }
 
   /** Prints a user-readable version of this query. */

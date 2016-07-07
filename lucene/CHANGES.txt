@@ -13,6 +13,8 @@ API Changes
 * LUCENE-7369: Similarity.coord and BooleanQuery.disableCoord are removed.
   (Adrien Grand)
 
+* LUCENE-7368: Removed query normalization. (Adrien Grand)
+
 Bug Fixes
 
 Improvements

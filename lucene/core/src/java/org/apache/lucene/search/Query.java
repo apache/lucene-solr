@@ -61,8 +61,9 @@ public abstract class Query {
    *
    * @param needsScores   True if document scores ({@link Scorer#score}) or match
    *                      frequencies ({@link Scorer#freq}) are needed.
+   * @param boost         The boost that is propagated by the parent queries.
    */
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     throw new UnsupportedOperationException("Query " + this + " does not implement createWeight");
   }
 

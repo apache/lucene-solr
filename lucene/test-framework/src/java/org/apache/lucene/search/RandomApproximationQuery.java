@@ -65,8 +65,8 @@ public class RandomApproximationQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    final Weight weight = query.createWeight(searcher, needsScores);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    final Weight weight = query.createWeight(searcher, needsScores, boost);
     return new RandomApproximationWeight(weight, new Random(random.nextLong()));
   }
 
@@ -89,16 +89,6 @@ public class RandomApproximationQuery extends Query {
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       return weight.explain(context, doc);
-    }
-
-    @Override
-    public float getValueForNormalization() throws IOException {
-      return weight.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float norm, float boost) {
-      weight.normalize(norm, boost);
     }
 
     @Override

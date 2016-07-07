@@ -61,8 +61,8 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new W(this, toQuery.createWeight(searcher, false));
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new W(this, toQuery.createWeight(searcher, false, 1f));
   }
 
   @Override
@@ -139,17 +139,6 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
 
       float score = collector.score(ord);
       return Explanation.match(score, "A match, join value " + Term.toString(joinValue));
-    }
-
-    @Override
-    public float getValueForNormalization() throws IOException {
-      return 1f;
-    }
-
-    @Override
-    public void normalize(float norm, float boost) {
-      // no normalization, we ignore the normalization process
-      // and produce scores based on the join
     }
 
     @Override

@@ -678,8 +678,8 @@ public class TestRangeFacetCounts extends FacetTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      final Weight in = this.in.createWeight(searcher, needsScores);
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      final Weight in = this.in.createWeight(searcher, needsScores, boost);
       return new Weight(in.getQuery()) {
 
         @Override
@@ -690,16 +690,6 @@ public class TestRangeFacetCounts extends FacetTestCase {
         @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
           return in.explain(context, doc);
-        }
-
-        @Override
-        public float getValueForNormalization() throws IOException {
-          return in.getValueForNormalization();
-        }
-
-        @Override
-        public void normalize(float norm, float topLevelBoost) {
-          in.normalize(norm, topLevelBoost);
         }
 
         @Override

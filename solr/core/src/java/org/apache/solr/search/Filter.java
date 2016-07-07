@@ -88,19 +88,11 @@ public abstract class Filter extends Query {
   //
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     return new Weight(this) {
 
       @Override
       public void extractTerms(Set<Term> terms) {}
-
-      @Override
-      public float getValueForNormalization() throws IOException {
-        return 0f;
-      }
-
-      @Override
-      public void normalize(float norm, float boost) {}
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {

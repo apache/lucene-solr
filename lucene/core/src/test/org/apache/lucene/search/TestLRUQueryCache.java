@@ -347,8 +347,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      return new ConstantScoreWeight(this) {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           return null;
@@ -932,8 +932,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
     int[] i = new int[] {42}; // an array so that clone keeps the reference
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      return new ConstantScoreWeight(this) {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           return null;
@@ -1109,16 +1109,6 @@ public class TestLRUQueryCache extends LuceneTestCase {
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       return in.explain(context, doc);
-    }
-
-    @Override
-    public float getValueForNormalization() throws IOException {
-      return in.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float norm, float boost) {
-      in.normalize(norm, boost);
     }
 
     @Override

@@ -29,3 +29,10 @@ undesirable. The new BM25Similarity does not suffer from this problem since it
 has better saturation for the contribution of the term frequency so the coord
 factors have been removed from scores. Things now work as if coords were always
 disabled when constructing boolean queries.
+
+## Weight.getValueForNormalization() and Weight.normalize() removed (LUCENE-7368)
+
+Query normalization's goal was to make scores comparable across queries, which
+was only implemented by the ClassicSimilarity. Since ClassicSimilarity is not
+the default similarity anymore, this functionality has been removed. Boosts are
+now propagated through Query#createWeight.

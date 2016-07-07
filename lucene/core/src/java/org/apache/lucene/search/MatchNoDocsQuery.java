@@ -42,7 +42,7 @@ public class MatchNoDocsQuery extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     return new Weight(this) {
       @Override
       public void extractTerms(Set<Term> terms) {
@@ -58,29 +58,6 @@ public class MatchNoDocsQuery extends Query {
         return null;
       }
 
-      @Override
-      public final float getValueForNormalization() throws IOException {
-        return 0;
-      }
-
-      @Override
-      public void normalize(float norm, float boost) {
-      }
-
-      /** Return the normalization factor for this weight. */
-      protected final float queryNorm() {
-        return 0;
-      }
-
-      /** Return the boost for this weight. */
-      protected final float boost() {
-        return 0;
-      }
-
-      /** Return the score produced by this {@link Weight}. */
-      protected final float score() {
-        return 0;
-      }
     };
   }
 

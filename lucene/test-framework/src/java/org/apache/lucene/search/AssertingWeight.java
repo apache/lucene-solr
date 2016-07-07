@@ -47,16 +47,6 @@ class AssertingWeight extends Weight {
   }
 
   @Override
-  public float getValueForNormalization() throws IOException {
-    return in.getValueForNormalization();
-  }
-
-  @Override
-  public void normalize(float norm, float boost) {
-    in.normalize(norm, boost);
-  }
-
-  @Override
   public Scorer scorer(LeafReaderContext context) throws IOException {
     final Scorer inScorer = in.scorer(context);
     assert inScorer == null || inScorer.docID() == -1;
