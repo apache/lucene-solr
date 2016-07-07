@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
