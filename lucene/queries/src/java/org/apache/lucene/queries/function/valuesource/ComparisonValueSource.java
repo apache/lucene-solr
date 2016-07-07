@@ -70,10 +70,11 @@ public abstract class ComparisonValueSource extends BoolFunction {
         return compLabel + "(" + lhsVal.toString(doc) + "," + rhsVal.toString(doc) + ")";
       }
     };
-  };
+  }
 
   @Override
   public boolean equals(Object o) {
+    if (this.getClass() != o.getClass()) return false;
     if (!(o instanceof ComparisonValueSource)) return false;
     ComparisonValueSource other = (ComparisonValueSource)o;
     return name().equals(other.name())
@@ -82,7 +83,8 @@ public abstract class ComparisonValueSource extends BoolFunction {
 
   @Override
   public int hashCode() {
-    int h = name().hashCode();
+    int h = this.getClass().hashCode();
+    h = h * 31 + this.name().hashCode();
     h = h * 31 + lhs.hashCode();
     h = h * 31 + rhs.hashCode();
     return h;
