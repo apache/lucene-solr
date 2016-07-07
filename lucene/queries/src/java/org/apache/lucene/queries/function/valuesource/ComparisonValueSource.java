@@ -35,20 +35,20 @@ public abstract class ComparisonValueSource extends BoolFunction {
 
   private final ValueSource lhs;
   private final ValueSource rhs;
-  private final String label;
+  private final String name;
 
-  public ComparisonValueSource(ValueSource lhs, ValueSource rhs, String label) {
+  public ComparisonValueSource(ValueSource lhs, ValueSource rhs, String name) {
     this.lhs = lhs;
     this.rhs = rhs;
-    this.label = label;
+    this.name = name;
   }
 
   // Perform the comparison, returning true or false
   public abstract boolean compare(double lhs, double rhs);
 
-  // Uniquely identify the operation (ie "gt", "lt" "gte, etc)
-  public String getLabel() {
-    return this.label;
+  // Uniquely identify the operation (ie "gt", "lt" "gte", etc)
+  public String name() {
+    return this.name;
   }
 
   // string comparison? Probably should be a seperate function
@@ -57,7 +57,7 @@ public abstract class ComparisonValueSource extends BoolFunction {
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues lhsVal = this.lhs.getValues(context, readerContext);
     final FunctionValues rhsVal = this.rhs.getValues(context, readerContext);
-    final String compLabel = this.getLabel();
+    final String compLabel = this.name();
 
     return new BoolDocValues(this) {
       @Override
@@ -76,13 +76,13 @@ public abstract class ComparisonValueSource extends BoolFunction {
   public boolean equals(Object o) {
     if (!(o instanceof ComparisonValueSource)) return false;
     ComparisonValueSource other = (ComparisonValueSource)o;
-    return getLabel().equals(other.getLabel())
+    return name().equals(other.name())
         && lhs.equals(other.lhs)
         && rhs.equals(other.rhs);  }
 
   @Override
   public int hashCode() {
-    int h = getLabel().hashCode();
+    int h = name().hashCode();
     h = h * 31 + lhs.hashCode();
     h = h * 31 + rhs.hashCode();
     return h;
@@ -90,7 +90,7 @@ public abstract class ComparisonValueSource extends BoolFunction {
 
   @Override
   public String description() {
-      return getLabel() + "(" + lhs.description() + "," + rhs.description() + ")";
+      return name() + "(" + lhs.description() + "," + rhs.description() + ")";
   }
 
   @Override
