@@ -31,13 +31,13 @@ import org.apache.lucene.search.IndexSearcher;
  * Base class for comparison operators used within if statements
  * To Solr's if function query a 0 is considered "false", all other values are "true"
  */
-public abstract class CompareNumericFunction extends BoolFunction {
+public abstract class ComparisonValueSource extends BoolFunction {
 
   private final ValueSource lhs;
   private final ValueSource rhs;
   private final String label;
 
-  public CompareNumericFunction(ValueSource lhs, ValueSource rhs, String label) {
+  public ComparisonValueSource(ValueSource lhs, ValueSource rhs, String label) {
     this.lhs = lhs;
     this.rhs = rhs;
     this.label = label;
@@ -70,14 +70,12 @@ public abstract class CompareNumericFunction extends BoolFunction {
         return compLabel + "(" + lhsVal.toString(doc) + "," + rhsVal.toString(doc) + ")";
       }
     };
-
-
   };
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof CompareNumericFunction)) return false;
-    CompareNumericFunction other = (CompareNumericFunction)o;
+    if (!(o instanceof ComparisonValueSource)) return false;
+    ComparisonValueSource other = (ComparisonValueSource)o;
     return getLabel().equals(other.getLabel())
         && lhs.equals(other.lhs)
         && rhs.equals(other.rhs);  }

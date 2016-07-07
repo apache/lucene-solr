@@ -828,7 +828,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource lhsValSource = fp.parseValueSource();
         ValueSource rhsValSource = fp.parseValueSource();
 
-        return new CompareNumericFunction(lhsValSource, rhsValSource, "gt") {
+        return new ComparisonValueSource(lhsValSource, rhsValSource, "gt") {
           @Override
           public boolean compare(double lhs, double rhs) {
             return lhs > rhs;
@@ -843,7 +843,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource lhsValSource = fp.parseValueSource();
         ValueSource rhsValSource = fp.parseValueSource();
 
-        return new CompareNumericFunction(lhsValSource, rhsValSource, "lt") {
+        return new ComparisonValueSource(lhsValSource, rhsValSource, "lt") {
           @Override
           public boolean compare(double lhs, double rhs) {
             return lhs < rhs;
@@ -858,7 +858,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource lhsValSource = fp.parseValueSource();
         ValueSource rhsValSource = fp.parseValueSource();
 
-        return new CompareNumericFunction(lhsValSource, rhsValSource, "gte") {
+        return new ComparisonValueSource(lhsValSource, rhsValSource, "gte") {
           @Override
           public boolean compare(double lhs, double rhs) {
             return lhs >= rhs;
@@ -874,7 +874,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource lhsValSource = fp.parseValueSource();
         ValueSource rhsValSource = fp.parseValueSource();
 
-        return new CompareNumericFunction(lhsValSource, rhsValSource, "lte") {
+        return new ComparisonValueSource(lhsValSource, rhsValSource, "lte") {
           @Override
           public boolean compare(double lhs, double rhs) {
             return lhs <= rhs;
@@ -889,7 +889,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource lhsValSource = fp.parseValueSource();
         ValueSource rhsValSource = fp.parseValueSource();
 
-        return new CompareNumericFunction(lhsValSource, rhsValSource, "eq") {
+        return new ComparisonValueSource(lhsValSource, rhsValSource, "eq") {
           @Override
           public boolean compare(double lhs, double rhs) {
             return lhs == rhs;
