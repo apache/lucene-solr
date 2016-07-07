@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.search.IndexSearcher;
 
 
@@ -58,39 +59,7 @@ public abstract class CompareNumericFunction extends BoolFunction {
     final FunctionValues rhsVal = this.rhs.getValues(context, readerContext);
     final String compLabel = this.getLabel();
 
-    return new FunctionValues() {
-      @Override
-      public byte byteVal(int doc) {
-
-        return boolVal(doc) ? (byte)1 : (byte)0;
-      }
-
-      @Override
-      public short shortVal(int doc) {
-        return byteVal(doc);
-      }
-
-      @Override
-      public float floatVal(int doc) {
-        return byteVal(doc);
-      }
-
-      @Override
-      public int intVal(int doc) {
-        return byteVal(doc);
-      }
-
-      @Override
-      public long longVal(int doc) {
-        return byteVal(doc);
-      }
-
-      @Override
-      public double doubleVal(int doc) {
-        return byteVal(doc);
-      }
-
-
+    return new BoolDocValues(this) {
       @Override
       public boolean boolVal(int doc) {
         return compare(lhsVal.floatVal(doc), rhsVal.floatVal(doc));
