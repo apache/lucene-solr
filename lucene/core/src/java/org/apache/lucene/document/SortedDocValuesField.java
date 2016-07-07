@@ -33,7 +33,9 @@ import org.apache.lucene.util.BytesRef;
  * <p>
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
- * 
+ *
+ * <p>
+ * This value can be at most 32766 bytes long.
  * */
 
 public class SortedDocValuesField extends Field {

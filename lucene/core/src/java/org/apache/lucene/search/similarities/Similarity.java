@@ -109,20 +109,6 @@ public abstract class Similarity {
    */
   public Similarity() {}
   
-  /** Hook to integrate coordinate-level matching.
-   * <p>
-   * By default this is disabled (returns <code>1</code>), as with
-   * most modern models this will only skew performance, but some
-   * implementations such as {@link TFIDFSimilarity} override this.
-   *
-   * @param overlap the number of query terms matched in the document
-   * @param maxOverlap the total number of terms in the query
-   * @return a score factor based on term overlap with the query
-   */
-  public float coord(int overlap, int maxOverlap) {
-    return 1f;
-  }
-  
   /** Computes the normalization value for a query given the sum of the
    * normalized weights {@link SimWeight#getValueForNormalization()} of 
    * each of the query terms.  This value is passed back to the 

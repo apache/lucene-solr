@@ -138,8 +138,8 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     assertArrayEquals(expectedIds, actualIds);
 
     String[] expectedQueryStrings = new String[]{
-        "(+(lowerfilt_u:bmw lowerfilt_u:usa) -id:3)/no_coord",
-        "(+(lowerfilt_u:usa lowerfilt_u:bmw) -id:3)/no_coord"};
+        "+(lowerfilt_u:bmw lowerfilt_u:usa) -id:3",
+        "+(lowerfilt_u:usa lowerfilt_u:bmw) -id:3"};
 
     String[] actualParsedQueries;
     if (queryResponse.getDebugMap().get("parsedquery") instanceof String) {

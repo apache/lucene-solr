@@ -32,9 +32,9 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTest() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-    initCore("solrconfig.xml","schema12.xml");
+    initCore("solrconfig.xml", "schema12.xml");
 
-    assertNull(h.validateUpdate(adoc("id", "0", "lowerfilt", "a", "standardfilt", "a", "foo_i","1")));
+    assertNull(h.validateUpdate(adoc("id", "0", "lowerfilt", "a", "standardfilt", "a", "foo_i", "1")));
     assertNull(h.validateUpdate(adoc("id", "1", "lowerfilt", "a", "standardfilt", "aa", "foo_i","1")));
     assertNull(h.validateUpdate(adoc("id", "2", "lowerfilt", "aa", "standardfilt", "aaa", "foo_i","2")));
     assertNull(h.validateUpdate(adoc("id", "3", "lowerfilt", "aaa", "standardfilt", "abbb")));
@@ -45,13 +45,18 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     assertNull(h.validateUpdate(adoc("id", "8", "lowerfilt", "baa", "standardfilt", "cccc")));
     assertNull(h.validateUpdate(adoc("id", "9", "lowerfilt", "bbb", "standardfilt", "ccccc")));
 
+
     assertNull(h.validateUpdate(adoc("id", "10", "standardfilt", "ddddd")));
+
+    assertNull(h.validateUpdate(commit()));
     assertNull(h.validateUpdate(adoc("id", "11", "standardfilt", "ddddd")));
     assertNull(h.validateUpdate(adoc("id", "12", "standardfilt", "ddddd")));
     assertNull(h.validateUpdate(adoc("id", "13", "standardfilt", "ddddd")));
     assertNull(h.validateUpdate(adoc("id", "14", "standardfilt", "d")));
     assertNull(h.validateUpdate(adoc("id", "15", "standardfilt", "d")));
     assertNull(h.validateUpdate(adoc("id", "16", "standardfilt", "d")));
+
+    assertNull(h.validateUpdate(commit()));
 
     assertNull(h.validateUpdate(adoc("id", "17", "standardfilt", "snake")));
     assertNull(h.validateUpdate(adoc("id", "18", "standardfilt", "spider")));
@@ -137,13 +142,13 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testRegexpWithFlags() throws Exception {
     // TODO: there are no uppercase or mixed-case terms in the index!
-    assertQ(req("indent","true", "qt","/terms",  "terms","true",
-        "terms.fl","standardfilt",
-        "terms.lower","a", "terms.lower.incl","false",
-        "terms.upper","c", "terms.upper.incl","true",
-        "terms.regex","B.*",
-        "terms.regex.flag","case_insensitive")
-        ,"count(//lst[@name='standardfilt']/*)=3"               
+    assertQ(req("indent", "true", "qt", "/terms", "terms", "true",
+            "terms.fl", "standardfilt",
+            "terms.lower", "a", "terms.lower.incl", "false",
+            "terms.upper", "c", "terms.upper.incl", "true",
+            "terms.regex", "B.*",
+            "terms.regex.flag", "case_insensitive")
+        , "count(//lst[@name='standardfilt']/*)=3"
     );
   }
 
@@ -160,6 +165,41 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         ,"//lst[@name='standardfilt']/int[3][@name='spider'][.='1']"
     );
   
+  }
+
+  @Test
+  public void testTermsList() throws Exception {
+    //Terms list always returns in index order
+    assertQ(req("indent","true", "qt","/terms",  "terms","true",
+            "terms.fl","standardfilt",
+            "terms.list","spider, snake, shark, ddddd, bad")
+        ,"count(//lst[@name='standardfilt']/*)=4"
+        ,"//lst[@name='standardfilt']/int[1][@name='ddddd'][.='4']"
+        ,"//lst[@name='standardfilt']/int[2][@name='shark'][.='2']"
+        ,"//lst[@name='standardfilt']/int[3][@name='snake'][.='3']"
+        ,"//lst[@name='standardfilt']/int[4][@name='spider'][.='1']"
+    );
+
+
+    //Test with numeric terms
+    assertQ(req("indent","true", "qt","/terms",  "terms","true",
+            "terms.fl","foo_i",
+            "terms.list","2, 1")
+        ,"count(//lst[@name='foo_i']/*)=2"
+        ,"//lst[@name='foo_i']/int[1][@name='1'][.='2']"
+        ,"//lst[@name='foo_i']/int[2][@name='2'][.='1']"
+    );
+  }
+
+
+  @Test
+  public void testStats() throws Exception {
+    //Terms list always returns in index order
+    assertQ(req("indent", "true", "qt", "/terms", "terms", "true",
+            "terms.fl", "standardfilt","terms.stats", "true",
+            "terms.list", "spider, snake, shark, ddddd, bad")
+        , "//lst[@name='indexstats']/long[1][@name='numDocs'][.='23']"
+    );
   }
 
   @Test

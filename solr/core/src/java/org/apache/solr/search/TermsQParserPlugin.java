@@ -67,7 +67,6 @@ public class TermsQParserPlugin extends QParserPlugin {
       @Override
       Filter makeFilter(String fname, BytesRef[] byteRefs) {
         BooleanQuery.Builder bq = new BooleanQuery.Builder();
-        bq.setDisableCoord(true);
         for (BytesRef byteRef : byteRefs) {
           bq.add(new TermQuery(new Term(fname, byteRef)), BooleanClause.Occur.SHOULD);
         }

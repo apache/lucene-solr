@@ -100,13 +100,11 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
   
   /** 
    * check the expDocNrs match and have scores that match the explanations.
-   * Query may be randomly wrapped in a BooleanQuery with a term that matches no documents in 
-   * order to trigger coord logic.
+   * Query may be randomly wrapped in a BooleanQuery with a term that matches no documents.
    */
   public void qtest(Query q, int[] expDocNrs) throws Exception {
     if (random().nextBoolean()) {
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
-      bq.setDisableCoord(random().nextBoolean());
       bq.add(q, BooleanClause.Occur.SHOULD);
       bq.add(new TermQuery(new Term("NEVER","MATCH")), BooleanClause.Occur.SHOULD);
       q = bq.build();
@@ -214,7 +212,6 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
    */
   public Query optB(Query q) throws Exception {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
     bq.add(q, BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(new Term("NEVER","MATCH")), BooleanClause.Occur.MUST_NOT);
     return bq.build();
@@ -226,7 +223,6 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
    */
   public Query reqB(Query q) throws Exception {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
     bq.add(q, BooleanClause.Occur.MUST);
     bq.add(new TermQuery(new Term(FIELD,"w1")), BooleanClause.Occur.SHOULD);
     return bq.build();

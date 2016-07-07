@@ -157,9 +157,7 @@ public abstract class MultiTermQuery extends Query {
     
     @Override
     protected BooleanQuery.Builder getTopLevelBuilder() {
-      BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      builder.setDisableCoord(true);
-      return builder;
+      return new BooleanQuery.Builder();
     }
     
     @Override
@@ -255,9 +253,7 @@ public abstract class MultiTermQuery extends Query {
     
     @Override
     protected BooleanQuery.Builder getTopLevelBuilder() {
-      BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      builder.setDisableCoord(true);
-      return builder;
+      return new BooleanQuery.Builder();
     }
     
     @Override

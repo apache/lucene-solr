@@ -208,7 +208,6 @@ public class LatLonPoint extends Field {
     if (maxLongitude < minLongitude) {
       // Disable coord here because a multi-valued doc could match both rects and get unfairly boosted:
       BooleanQuery.Builder q = new BooleanQuery.Builder();
-      q.setDisableCoord(true);
 
       // E.g.: maxLon = -179, minLon = 179
       byte[] leftOpen = lower.clone();

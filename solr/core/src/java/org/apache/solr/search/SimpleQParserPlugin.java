@@ -182,7 +182,6 @@ public class SimpleQParserPlugin extends QParserPlugin {
     @Override
     protected Query newPrefixQuery(String text) {
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
-      bq.setDisableCoord(true);
 
       for (Map.Entry<String, Float> entry : weights.entrySet()) {
         String field = entry.getKey();
@@ -214,7 +213,6 @@ public class SimpleQParserPlugin extends QParserPlugin {
     @Override
     protected Query newFuzzyQuery(String text, int fuzziness) {
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
-      bq.setDisableCoord(true);
 
       for (Map.Entry<String, Float> entry : weights.entrySet()) {
         String field = entry.getKey();

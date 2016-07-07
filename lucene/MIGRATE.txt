@@ -18,3 +18,14 @@ classes from the java.util.zip package.
 
 Clients wishing to render Explanations as HTML should implement their own
 utilities for this.
+
+## Similarity.coord and BooleanQuery.disableCoord removed (LUCENE-7369)
+
+Coordination factors were a workaround for the fact that the ClassicSimilarity
+does not have strong enough term frequency saturation. This causes disjunctions
+to get better scores on documents that have many occurrences of a few query
+terms than on documents that match most clauses, which is most of time
+undesirable. The new BM25Similarity does not suffer from this problem since it
+has better saturation for the contribution of the term frequency so the coord
+factors have been removed from scores. Things now work as if coords were always
+disabled when constructing boolean queries.

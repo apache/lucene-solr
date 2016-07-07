@@ -130,7 +130,6 @@ public class SimpleMLTQParser extends QParser {
 
       if (boostFields.size() > 0) {
         BooleanQuery.Builder newQ = new BooleanQuery.Builder();
-        newQ.setDisableCoord(boostedMLTQuery.isCoordDisabled());
         newQ.setMinimumNumberShouldMatch(boostedMLTQuery.getMinimumNumberShouldMatch());
 
         for (BooleanClause clause : boostedMLTQuery) {
@@ -151,7 +150,6 @@ public class SimpleMLTQParser extends QParser {
 
       // exclude current document from results
       BooleanQuery.Builder realMLTQuery = new BooleanQuery.Builder();
-      realMLTQuery.setDisableCoord(true);
       realMLTQuery.add(boostedMLTQuery, BooleanClause.Occur.MUST);
       realMLTQuery.add(docIdQuery, BooleanClause.Occur.MUST_NOT);
 

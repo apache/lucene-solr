@@ -137,7 +137,6 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     String[] p2 = parseCommaSeparatedList(part2, dimension);
 
     BooleanQuery.Builder result = new BooleanQuery.Builder();
-    result.setDisableCoord(true);
     for (int i = 0; i < dimension; i++) {
       SchemaField subSF = subField(field, i, schema);
       // points must currently be ordered... should we support specifying any two opposite corner points?
@@ -151,7 +150,6 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     String[] p1 = parseCommaSeparatedList(externalVal, dimension);
     //TODO: should we assert that p1.length == dimension?
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
     for (int i = 0; i < dimension; i++) {
       SchemaField sf = subField(field, i, schema);
       Query tq = sf.getType().getFieldQuery(parser, sf, p1[i]);

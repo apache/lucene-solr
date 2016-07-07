@@ -765,8 +765,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * 
    * <p>
    * <b>NOTE:</b> after ths writer is created, the given configuration instance
-   * cannot be passed to another writer. If you intend to do so, you should
-   * {@link IndexWriterConfig#clone() clone} it beforehand.
+   * cannot be passed to another writer.
    * 
    * @param d
    *          the index directory. The index is either created or appended
@@ -2348,7 +2347,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             globalFieldNumberMap.clear();
 
             success = true;
-            return docWriter.deleteQueue.getNextSequenceNumber();
+            long seqNo = docWriter.deleteQueue.getNextSequenceNumber();
+            docWriter.setLastSeqNo(seqNo);
+            return seqNo;
 
           } finally {
             docWriter.unlockAllAfterAbortAll(this);

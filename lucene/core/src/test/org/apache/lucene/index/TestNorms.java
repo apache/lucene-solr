@@ -64,7 +64,6 @@ public class TestNorms extends LuceneTestCase {
       return state.getLength();
     }
 
-    @Override public float coord(int overlap, int maxOverlap) { return 0; }
     @Override public float queryNorm(float sumOfSquaredWeights) { return 0; }
     @Override public float tf(float freq) { return 0; }
     @Override public float idf(long docFreq, long docCount) { return 0; }
@@ -169,11 +168,6 @@ public class TestNorms extends LuceneTestCase {
       } else {
         return delegate;
       }
-    }
-
-    @Override
-    public float coord(int overlap, int maxOverlap) {
-      return delegate.coord(overlap, maxOverlap);
     }
   }
 

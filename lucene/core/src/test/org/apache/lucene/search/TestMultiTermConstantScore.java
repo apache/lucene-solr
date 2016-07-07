@@ -254,7 +254,6 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     Query q1 = new BoostQuery(csrq("data", "A", "A", T, T), .1f); // matches document #0
     Query q2 = csrq("data", "Z", "Z", T, T); // matches document #1
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
     bq.add(q1, BooleanClause.Occur.SHOULD);
     bq.add(q2, BooleanClause.Occur.SHOULD);
 
@@ -266,7 +265,6 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     q1 = new BoostQuery(csrq("data", "A", "A", T, T, MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE), .1f); // matches document #0
     q2 = csrq("data", "Z", "Z", T, T, MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE); // matches document #1
     bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
     bq.add(q1, BooleanClause.Occur.SHOULD);
     bq.add(q2, BooleanClause.Occur.SHOULD);
 

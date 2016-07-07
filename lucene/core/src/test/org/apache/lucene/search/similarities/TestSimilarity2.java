@@ -109,7 +109,6 @@ public class TestSimilarity2 extends LuceneTestCase {
     for (Similarity sim : sims) {
       is.setSimilarity(sim);
       BooleanQuery.Builder query = new BooleanQuery.Builder();
-      query.setDisableCoord(true);
       query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
       query.add(new TermQuery(new Term("bar", "baz")), BooleanClause.Occur.SHOULD);
       assertEquals(1, is.search(query.build(), 10).totalHits);
@@ -132,7 +131,6 @@ public class TestSimilarity2 extends LuceneTestCase {
     for (Similarity sim : sims) {
       is.setSimilarity(sim);
       BooleanQuery.Builder query = new BooleanQuery.Builder();
-      query.setDisableCoord(true);
       query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
       query.add(new TermQuery(new Term("foo", "baz")), BooleanClause.Occur.SHOULD);
       assertEquals(1, is.search(query.build(), 10).totalHits);
@@ -158,7 +156,6 @@ public class TestSimilarity2 extends LuceneTestCase {
     for (Similarity sim : sims) {
       is.setSimilarity(sim);
       BooleanQuery.Builder query = new BooleanQuery.Builder();
-      query.setDisableCoord(true);
       query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
       assertEquals(1, is.search(query.build(), 10).totalHits);
     }
@@ -230,7 +227,6 @@ public class TestSimilarity2 extends LuceneTestCase {
     for (Similarity sim : sims) {
       is.setSimilarity(sim);
       BooleanQuery.Builder query = new BooleanQuery.Builder();
-      query.setDisableCoord(true);
       query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
       assertEquals(1, is.search(query.build(), 10).totalHits);
     }
@@ -257,7 +253,6 @@ public class TestSimilarity2 extends LuceneTestCase {
     for (Similarity sim : sims) {
       is.setSimilarity(sim);
       BooleanQuery.Builder query = new BooleanQuery.Builder();
-      query.setDisableCoord(true);
       query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
       assertEquals(1, is.search(query.build(), 10).totalHits);
     }

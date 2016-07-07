@@ -80,6 +80,17 @@ New Features
 
 * SOLR-9194: Enhance the bin/solr script to perform file operations to/from Zookeeper (Erick Erickson, janhoy)
 
+* SOLR-9242: Collection Backup/Restore now supports specifying the directory implementation to use
+  via the "repository" parameter. (Hrishikesh Gadre, Varun Thacker)
+
+* SOLR-9193: Add scoreNodes Streaming Expression (Joel Bernstein)
+
+* SOLR-9243: Add terms.list parameter to the TermsComponent to fetch the docFreq for a list of terms
+  (Joel Bernstein)
+
+* SOLR-9090: Add directUpdatesToLeadersOnly flag to solrj CloudSolrClient.
+  (Marvin Justice, Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
@@ -112,6 +123,20 @@ Bug Fixes
 * SOLR-9181: Fix some races in CollectionStateWatcher API (Alan Woodward, Scott
   Blum)
 
+* SOLR-9235: Fixed NPE when using non-numeric range query in deleteByQuery (hossman)
+
+* SOLR-9088: Fixed TestManagedSchemaAPI failures which exposed race conditions in the schema API ( Varun Thacker, noble)
+
+* SOLR-9207: PeerSync recovery failes if number of updates requested is high. A new useRangeVersions config option
+  is introduced (defaults to true) to send version ranges instead of individual versions for peer sync.
+  (Pushkar Raste, shalin)
+
+* SOLR-8858: SolrIndexSearcher#doc() completely ignores field filters unless lazy field loading is enabled.
+  (Caleb Rackliffe, David Smiley, shalin)
+
+* SOLR-9236: AutoAddReplicas will append an extra /tlog to the update log location on replica failover.
+  (Eungsop Yoo, Mark Miller)
+
 Optimizations
 ----------------------
 
@@ -133,6 +158,12 @@ Other Changes
   (Mark Miller, Gregory Chanan)
 
 * SOLR-8787: TestAuthenticationFramework should not extend TestMiniSolrCloudCluster. (Trey Cahill via shalin)
+
+* SOLR-9180: More comprehensive tests of psuedo-fields for RTG and SolrCloud requests (hossman)
+
+* SOLR-7930: Comment out trappy references to example docs in elevate.xml files (Erick Erickson)
+
+* SOLR-9277: Clean up some more remnants of supporting old and new style solr.xml in tests (Erick Erickson)
 
 ==================  6.1.0 ==================
 

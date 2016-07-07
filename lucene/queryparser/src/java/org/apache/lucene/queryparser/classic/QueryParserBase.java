@@ -465,6 +465,45 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   }
 
   /**
+   * Adds clauses generated from analysis over text containing whitespace.
+   * There are no operators, so the query's clauses can either be MUST (if the
+   * default operator is AND) or SHOULD (default OR).
+   *
+   * If all of the clauses in the given Query are TermQuery-s, this method flattens the result
+   * by adding the TermQuery-s individually to the output clause list; otherwise, the given Query
+   * is added as a single clause including its nested clauses.
+   */
+  protected void addMultiTermClauses(List<BooleanClause> clauses, Query q) {
+    // We might have been passed a null query; the term might have been
+    // filtered away by the analyzer.
+    if (q == null) {
+      return;
+    }
+    boolean allNestedTermQueries = false;
+    if (q instanceof BooleanQuery) {
+      allNestedTermQueries = true;
+      for (BooleanClause clause : ((BooleanQuery)q).clauses()) {
+        if ( ! (clause.getQuery() instanceof TermQuery)) {
+          allNestedTermQueries = false;
+          break;
+        }
+      }
+    }
+    if (allNestedTermQueries) {
+      clauses.addAll(((BooleanQuery)q).clauses());
+    } else {
+      BooleanClause.Occur occur = operator == OR_OPERATOR ? BooleanClause.Occur.SHOULD : BooleanClause.Occur.MUST;
+      if (q instanceof BooleanQuery) {
+        for (BooleanClause clause : ((BooleanQuery)q).clauses()) {
+          clauses.add(newBooleanClause(clause.getQuery(), occur));
+        }
+      } else {
+        clauses.add(newBooleanClause(q, occur));
+      }
+    }
+  }
+
+  /**
    * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
   protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {

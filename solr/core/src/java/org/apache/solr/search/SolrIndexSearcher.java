@@ -766,12 +766,22 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     final DirectoryReader reader = getIndexReader();
-    if (!enableLazyFieldLoading || fields == null) {
-      d = reader.document(i);
+    if (fields != null) {
+      if (enableLazyFieldLoading) {
+        final SetNonLazyFieldSelector visitor = new SetNonLazyFieldSelector(fields, reader, i);
+        reader.document(i, visitor);
+        d = visitor.doc;
+      } else if (documentCache == null) {
+        d = reader.document(i, fields);
+      } else {
+        // we do not pass the fields in this case because that would return an incomplete document which would
+        // be eventually cached. The alternative would be to read the stored fields twice; once with the fields
+        // and then without for caching leading to a performance hit
+        // see SOLR-8858 for related discussion
+        d = reader.document(i);
+      }
     } else {
-      final SetNonLazyFieldSelector visitor = new SetNonLazyFieldSelector(fields, reader, i);
-      reader.document(i, visitor);
-      d = visitor.doc;
+      d = reader.document(i);
     }
 
     if (documentCache != null) {

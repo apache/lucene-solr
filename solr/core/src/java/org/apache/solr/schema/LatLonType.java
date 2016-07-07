@@ -98,7 +98,6 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     SchemaField latSF = subField(field, LAT, parser.getReq().getSchema());
     SchemaField lonSF = subField(field, LON, parser.getReq().getSchema());
     BooleanQuery.Builder result = new BooleanQuery.Builder();
-    result.setDisableCoord(true);
     // points must currently be ordered... should we support specifying any two opposite corner points?
     result.add(latSF.getType().getRangeQuery(parser, latSF,
         Double.toString(p1.getY()), Double.toString(p2.getY()), minInclusive, maxInclusive), BooleanClause.Occur.MUST);
@@ -114,7 +113,6 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     SchemaField latSF = subField(field, LAT, parser.getReq().getSchema());
     SchemaField lonSF = subField(field, LON, parser.getReq().getSchema());
     BooleanQuery.Builder result = new BooleanQuery.Builder();
-    result.setDisableCoord(true);
     result.add(latSF.getType().getFieldQuery(parser, latSF,
         Double.toString(p1.getY())), BooleanClause.Occur.MUST);
     result.add(lonSF.getType().getFieldQuery(parser, lonSF,

@@ -5,6 +5,14 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 7.0.0 =======================
 
+API Changes
+
+* LUCENE-2605: Classic QueryParser no longer splits on whitespace by default.
+  Use setSplitOnWhitespace(true) to get the old behavior.  (Steve Rowe)
+
+* LUCENE-7369: Similarity.coord and BooleanQuery.disableCoord are removed.
+  (Adrien Grand)
+
 Bug Fixes
 
 Improvements
@@ -36,6 +44,9 @@ New Features
 Bug Fixes
 
 * LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
+
+* LUCENE-7340: MemoryIndex.toString() could throw NPE; fixed. Renamed to toStringDebug().
+  (Daniel Collins, David Smiley)
 
 Improvements
 
@@ -73,6 +84,10 @@ Improvements
 * LUCENE-7353: ScandinavianFoldingFilterFactory and
   ScandinavianNormalizationFilterFactory now implement MultiTermAwareComponent.
   (Adrien Grand)
+
+* LUCENE-2605: Add classic QueryParser option setSplitOnWhitespace() to
+  control whether to split on whitespace prior to text analysis.  Default
+  behavior remains unchanged: split-on-whitespace=true. (Steve Rowe)
 
 Optimizations
 

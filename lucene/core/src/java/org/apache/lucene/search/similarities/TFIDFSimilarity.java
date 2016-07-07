@@ -156,10 +156,7 @@ import org.apache.lucene.util.BytesRef;
  *  </li>
  *
  *  <li>A document may match a multi term query without containing all
- *  the terms of that query (this is correct for some of the queries),
- *  and users can further reward documents matching more query terms
- *  through a coordination factor, which is usually larger when
- *  more terms are matched: <i>coord-factor(q,d)</i>.
+ *  the terms of that query (this is correct for some of the queries).
  *  </li>
  * </ul>
  *
@@ -175,7 +172,6 @@ import org.apache.lucene.util.BytesRef;
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
  *            score(q,d) &nbsp; = &nbsp;
- *            <span style="color: #FF9933">coord-factor(q,d)</span> &middot; &nbsp;
  *            <span style="color: #CCCC00">query-boost(q)</span> &middot; &nbsp;
  *          </td>
  *          <td valign="middle" align="center">
@@ -266,7 +262,6 @@ import org.apache.lucene.util.BytesRef;
  *   <tr>
  *     <td valign="middle" align="right" rowspan="1">
  *       score(q,d) &nbsp; = &nbsp;
- *       <A HREF="#formula_coord"><span style="color: #FF9933">coord(q,d)</span></A> &nbsp;&middot;&nbsp;
  *       <A HREF="#formula_queryNorm"><span style="color: #FF33CC">queryNorm(q)</span></A> &nbsp;&middot;&nbsp;
  *     </td>
  *     <td valign="bottom" align="center" rowspan="1" style="text-align: center">
@@ -356,18 +351,6 @@ import org.apache.lucene.util.BytesRef;
  *          </td>
  *        </tr>
  *      </table>
- *      <br>&nbsp;<br>
- *    </li>
- *
- *    <li>
- *      <A NAME="formula_coord"></A>
- *      <b><i>coord(q,d)</i></b>
- *      is a score factor based on how many of the query terms are found in the specified document.
- *      Typically, a document that contains more of the query's terms will receive a higher score
- *      than another document with fewer query terms.
- *      This is a search time factor computed in
- *      {@link #coord(int, int) coord(q,d)}
- *      by the Similarity in effect at search time.
  *      <br>&nbsp;<br>
  *    </li>
  *
@@ -511,21 +494,6 @@ public abstract class TFIDFSimilarity extends Similarity {
    * constructors, typically implicit.)
    */
   public TFIDFSimilarity() {}
-  
-  /** Computes a score factor based on the fraction of all query terms that a
-   * document contains.  This value is multiplied into scores.
-   *
-   * <p>The presence of a large portion of the query terms indicates a better
-   * match with the query, so implementations of this method usually return
-   * larger values when the ratio between these parameters is large and smaller
-   * values when the ratio between them is small.
-   *
-   * @param overlap the number of query terms matched in the document
-   * @param maxOverlap the total number of terms in the query
-   * @return a score factor based on term overlap with the query
-   */
-  @Override
-  public abstract float coord(int overlap, int maxOverlap);
   
   /** Computes the normalization value for a query given the sum of the squared
    * weights of each of the query terms.  This value is multiplied into the

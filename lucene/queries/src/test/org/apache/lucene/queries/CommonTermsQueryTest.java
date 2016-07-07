@@ -132,7 +132,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
   
   public void testEqualsHashCode() {
     CommonTermsQuery query = new CommonTermsQuery(randomOccur(random()),
-        randomOccur(random()), random().nextFloat(), random().nextBoolean());
+        randomOccur(random()), random().nextFloat());
     int terms = atLeast(2);
     for (int i = 0; i < terms; i++) {
       query.add(new Term(TestUtil.randomRealisticUnicodeString(random()),
@@ -140,14 +140,14 @@ public class CommonTermsQueryTest extends LuceneTestCase {
     }
     QueryUtils.checkHashEquals(query);
     QueryUtils.checkUnequal(new CommonTermsQuery(randomOccur(random()),
-        randomOccur(random()), random().nextFloat(), random().nextBoolean()),
+        randomOccur(random()), random().nextFloat()),
         query);
     
     {
       final long seed = random().nextLong();
       Random r = new Random(seed);
       CommonTermsQuery left = new CommonTermsQuery(randomOccur(r),
-          randomOccur(r), r.nextFloat(), r.nextBoolean());
+          randomOccur(r), r.nextFloat());
       int leftTerms = atLeast(r, 2);
       for (int i = 0; i < leftTerms; i++) {
         left.add(new Term(TestUtil.randomRealisticUnicodeString(r), TestUtil
@@ -158,7 +158,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       
       r = new Random(seed);
       CommonTermsQuery right = new CommonTermsQuery(randomOccur(r),
-          randomOccur(r), r.nextFloat(), r.nextBoolean());
+          randomOccur(r), r.nextFloat());
       int rightTerms = atLeast(r, 2);
       for (int i = 0; i < rightTerms; i++) {
         right.add(new Term(TestUtil.randomRealisticUnicodeString(r), TestUtil
@@ -453,7 +453,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       Occur lowFreqOccur = randomOccur(random());
       BooleanQuery.Builder verifyQuery = new BooleanQuery.Builder();
       CommonTermsQuery cq = new CommonTermsQuery(randomOccur(random()),
-          lowFreqOccur, highFreq - 1, random().nextBoolean());
+          lowFreqOccur, highFreq - 1);
       for (TermAndFreq termAndFreq : lowTerms) {
         cq.add(new Term(field, termAndFreq.term));
         verifyQuery.add(new BooleanClause(new TermQuery(new Term(field,

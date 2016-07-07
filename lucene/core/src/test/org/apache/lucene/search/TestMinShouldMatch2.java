@@ -351,7 +351,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     @Override
     public float score() throws IOException {
       assert score != 0 : currentMatched;
-      return (float)score * ((BooleanWeight) weight).coord(currentMatched, ((BooleanWeight) weight).maxCoord);
+      return (float)score;
     }
 
     @Override

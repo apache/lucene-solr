@@ -360,7 +360,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       BooleanQuery boostedQuery = (BooleanQuery)mltquery;
       if (boostFields.size() > 0) {
         BooleanQuery.Builder newQ = new BooleanQuery.Builder();
-        newQ.setDisableCoord(boostedQuery.isCoordDisabled());
         newQ.setMinimumNumberShouldMatch(boostedQuery.getMinimumNumberShouldMatch());
         for (BooleanClause clause : boostedQuery) {
           Query q = clause.getQuery();

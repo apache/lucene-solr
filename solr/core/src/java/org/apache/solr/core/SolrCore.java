@@ -28,7 +28,19 @@ import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -77,7 +89,22 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.*;
+import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.CSVResponseWriter;
+import org.apache.solr.response.GeoJSONResponseWriter;
+import org.apache.solr.response.GraphMLResponseWriter;
+import org.apache.solr.response.JSONResponseWriter;
+import org.apache.solr.response.PHPResponseWriter;
+import org.apache.solr.response.PHPSerializedResponseWriter;
+import org.apache.solr.response.PythonResponseWriter;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.RawResponseWriter;
+import org.apache.solr.response.RubyResponseWriter;
+import org.apache.solr.response.SchemaXmlResponseWriter;
+import org.apache.solr.response.SmileResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.SortingResponseWriter;
+import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
@@ -86,6 +113,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.ManagedIndexSchema;
+import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheMBean;
@@ -2488,13 +2516,13 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       SolrZkClient zkClient = cc.getZkController().getZkClient();
       int solrConfigversion, overlayVersion, managedSchemaVersion = 0;
       SolrConfig cfg = null;
-      try (SolrCore core1 = cc.solrCores.getCoreFromAnyList(coreName, true)) {
-        if (core1 == null || core1.isClosed()) return;
-        cfg = core1.getSolrConfig();
-        solrConfigversion = core1.getSolrConfig().getOverlay().getZnodeVersion();
-        overlayVersion = core1.getSolrConfig().getZnodeVersion();
+      try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+        if (solrCore == null || solrCore.isClosed()) return;
+        cfg = solrCore.getSolrConfig();
+        solrConfigversion = solrCore.getSolrConfig().getOverlay().getZnodeVersion();
+        overlayVersion = solrCore.getSolrConfig().getZnodeVersion();
         if (managedSchmaResourcePath != null) {
-          managedSchemaVersion = ((ManagedIndexSchema) core1.getLatestSchema()).getSchemaZkVersion();
+          managedSchemaVersion = ((ManagedIndexSchema) solrCore.getLatestSchema()).getSchemaZkVersion();
         }
 
       }
@@ -2504,6 +2532,13 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       if (checkStale(zkClient, overlayPath, solrConfigversion) ||
           checkStale(zkClient, solrConfigPath, overlayVersion) ||
           checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
+
+        try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+          solrCore.setLatestSchema(SchemaManager.getFreshManagedSchema(solrCore));
+        } catch (Exception e) {
+          log.warn("", SolrZkClient.checkInterrupted(e));
+        }
+
         log.info("core reload {}", coreName);
         try {
           cc.reload(coreName);
@@ -2513,9 +2548,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         return;
       }
       //some files in conf directory may have  other than managedschema, overlay, params
-      try (SolrCore core1 = cc.solrCores.getCoreFromAnyList(coreName, true)) {
-        if (core1 == null || core1.isClosed()) return;
-        for (Runnable listener : core1.confListeners) {
+      try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+        if (solrCore == null || solrCore.isClosed()) return;
+        for (Runnable listener : solrCore.confListeners) {
           try {
             listener.run();
           } catch (Exception e) {

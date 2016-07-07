@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -40,6 +41,7 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.SyncStrategy;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
@@ -858,21 +860,13 @@ enum CoreAdminOperation {
         throw new IllegalArgumentException(CoreAdminParams.NAME + " is required");
       }
 
-      SolrResourceLoader loader = callInfo.handler.coreContainer.getResourceLoader();
-      BackupRepository repository;
-      String repoName = params.get(BackupRepository.REPOSITORY_PROPERTY_NAME);
-      if(repoName != null) {
-        repository = callInfo.handler.coreContainer.getBackupRepoFactory().newInstance(loader, repoName);
-      } else { // Fetch the default.
-        repository = callInfo.handler.coreContainer.getBackupRepoFactory().newInstance(loader);
-      }
+      String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
+      BackupRepository repository = callInfo.handler.coreContainer.newBackupRepository(Optional.ofNullable(repoName));
 
-      String location = params.get(ZkStateReader.BACKUP_LOCATION);
-      if (location == null) {
-        location = repository.getConfigProperty(ZkStateReader.BACKUP_LOCATION);
-        if (location == null) {
-          throw new IllegalArgumentException("location is required");
-        }
+      String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
+      if(location == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
+            + " parameter or as a default repository property");
       }
 
       try (SolrCore core = callInfo.handler.coreContainer.getCore(cname)) {
@@ -912,21 +906,13 @@ enum CoreAdminOperation {
         throw new IllegalArgumentException(CoreAdminParams.NAME + " is required");
       }
 
-      SolrResourceLoader loader = callInfo.handler.coreContainer.getResourceLoader();
-      BackupRepository repository;
-      String repoName = params.get(BackupRepository.REPOSITORY_PROPERTY_NAME);
-      if(repoName != null) {
-        repository = callInfo.handler.coreContainer.getBackupRepoFactory().newInstance(loader, repoName);
-      } else { // Fetch the default.
-        repository = callInfo.handler.coreContainer.getBackupRepoFactory().newInstance(loader);
-      }
+      String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
+      BackupRepository repository = callInfo.handler.coreContainer.newBackupRepository(Optional.ofNullable(repoName));
 
-      String location = params.get(ZkStateReader.BACKUP_LOCATION);
-      if (location == null) {
-        location = repository.getConfigProperty(ZkStateReader.BACKUP_LOCATION);
-        if (location == null) {
-          throw new IllegalArgumentException("location is required");
-        }
+      String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
+      if(location == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
+            + " parameter or as a default repository property");
       }
 
       try (SolrCore core = callInfo.handler.coreContainer.getCore(cname)) {
