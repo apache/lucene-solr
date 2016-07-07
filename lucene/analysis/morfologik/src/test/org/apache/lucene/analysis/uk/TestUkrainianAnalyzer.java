@@ -37,22 +37,29 @@ public class TestUkrainianAnalyzer extends BaseTokenStreamTestCase {
 
   public void testReusableTokenStream() throws Exception {
     Analyzer a = new UkrainianMorfologikAnalyzer();
-    assertAnalyzesTo(a, "Ця п'єса у свою чергу рухається по колу.",
-                     new String[] { "п'єса", "черга", "рухатися", "кола", "коло", "коло", "кіл", "кіл" });
+    assertAnalyzesTo(a, "Ця п'єса, у свою чергу, рухається по емоційно-напруженому колу за ритм-енд-блюзом.",
+                     new String[] { "п'єса", "черга", "рухатися", "емоційно", "напружений", "кола", "коло", "кіл", "ритм", "енд", "блюз" });
     a.close();
   }
 
   public void testSpecialCharsTokenStream() throws Exception {
     Analyzer a = new UkrainianMorfologikAnalyzer();
-    assertAnalyzesTo(a, "Ця пʼєса, у сво́ю чергу, рухається по колу.",
-                     new String[] { "п'єса", "черга", "рухатися", "кола", "коло", "коло", "кіл", "кіл" });
+    assertAnalyzesTo(a, "Ця пʼєса, у сво́ю чергу рухається.",
+                     new String[] { "п'єса", "черга", "рухатися" });
     a.close();
   }
 
   public void testCapsTokenStream() throws Exception {
     Analyzer a = new UkrainianMorfologikAnalyzer();
-    assertAnalyzesTo(a, "Цей Чайковський.",
-                     new String[] { "чайковський" });
+    assertAnalyzesTo(a, "Цей Чайковський і Ґете.",
+                     new String[] { "чайковський", "ґете" });
+    a.close();
+  }
+
+  public void testSampleSentence() throws Exception {
+    Analyzer a = new UkrainianMorfologikAnalyzer();
+    assertAnalyzesTo(a, "Це — проект генерування словника з тегами частин мови для української мови.",
+                     new String[] { "проект", "генерування", "словник", "тег", "частина", "мова", "українська", "український", "мова" });
     a.close();
   }
 

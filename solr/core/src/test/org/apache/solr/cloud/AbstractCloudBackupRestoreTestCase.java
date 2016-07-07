@@ -1,3 +1,35 @@
+package org.apache.solr.cloud;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+import java.util.TreeMap;
+
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest.ClusterProp;
+import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.ShardParams._ROUTE_;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,58 +47,43 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Random;
-import java.util.TreeMap;
-
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ImplicitDocRouter;
-import org.apache.solr.common.cloud.Slice;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.ShardParams._ROUTE_;
-
-public class TestCloudBackupRestore extends SolrCloudTestCase {
-
+/**
+ * This class implements the logic required to test Solr cloud backup/restore capability.
+ */
+public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final int NUM_SHARDS = 2;//granted we sometimes shard split to get more
+  protected static final int NUM_SHARDS = 2;//granted we sometimes shard split to get more
 
   private static long docsSeed; // see indexDocs()
 
   @BeforeClass
   public static void createCluster() throws Exception {
-    configureCluster(2)// nodes
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .configure();
-
     docsSeed = random().nextLong();
   }
 
+  /**
+   * @return The name of the collection to use.
+   */
+  public abstract String getCollectionName();
+
+  /**
+   * @return The name of the backup repository to use.
+   */
+  public abstract String getBackupRepoName();
+
+  /**
+   * @return The absolute path for the backup location.
+   *         Could return null.
+   */
+  public abstract String getBackupLocation();
+
   @Test
   public void test() throws Exception {
-    String collectionName = "backuprestore";
     boolean isImplicit = random().nextBoolean();
     int replFactor = TestUtil.nextInt(random(), 1, 2);
     CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection(collectionName, "conf1", NUM_SHARDS, replFactor);
+        CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor);
     if (NUM_SHARDS * replFactor > cluster.getJettySolrRunners().size() || random().nextBoolean()) {
       create.setMaxShardsPerNode(NUM_SHARDS);//just to assert it survives the restoration
     }
@@ -90,24 +107,62 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
     CloudSolrClient solrClient = cluster.getSolrClient();
     create.process(solrClient);
 
-    indexDocs(collectionName);
+    indexDocs(getCollectionName());
 
     if (!isImplicit && random().nextBoolean()) {
       // shard split the first shard
-      int prevActiveSliceCount = getActiveSliceCount(collectionName);
-      CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName);
+      int prevActiveSliceCount = getActiveSliceCount(getCollectionName());
+      CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(getCollectionName());
       splitShard.setShardName("shard1");
       splitShard.process(solrClient);
       // wait until we see one more active slice...
-      for (int i = 0; getActiveSliceCount(collectionName) != prevActiveSliceCount + 1; i++) {
+      for (int i = 0; getActiveSliceCount(getCollectionName()) != prevActiveSliceCount + 1; i++) {
         assertTrue(i < 30);
         Thread.sleep(500);
       }
       // issue a hard commit.  Split shard does a soft commit which isn't good enough for the backup/snapshooter to see
-      solrClient.commit(collectionName);
+      solrClient.commit(getCollectionName());
     }
 
-    testBackupAndRestore(collectionName);
+    testBackupAndRestore(getCollectionName());
+    testInvalidPath(getCollectionName());
+  }
+
+  // This test verifies the system behavior when the backup location cluster property is configured with an invalid
+  // value for the specified repository (and the default backup location is not configured in solr.xml).
+  private void testInvalidPath(String collectionName) throws Exception {
+    // Execute this test only if the default backup location is NOT configured in solr.xml
+    if (getBackupLocation() == null) {
+      return;
+    }
+
+    String backupName = "invalidbackuprequest";
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    ClusterProp req = CollectionAdminRequest.setClusterProperty(CoreAdminParams.BACKUP_LOCATION, "/location/does/not/exist");
+    assertEquals(0, req.process(solrClient).getStatus());
+
+    // Do not specify the backup location.
+    CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(collectionName, backupName)
+        .setRepositoryName(getBackupRepoName());
+    try {
+      backup.process(solrClient);
+      fail("This request should have failed since the cluster property value for backup location property is invalid.");
+    } catch (SolrServerException ex) {
+      assertTrue(ex.getCause() instanceof RemoteSolrException);
+      assertEquals(ErrorCode.SERVER_ERROR.code, ((RemoteSolrException)ex.getCause()).code());
+    }
+
+    String restoreCollectionName = collectionName + "_invalidrequest";
+    CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+        .setRepositoryName(getBackupRepoName());
+    try {
+      restore.process(solrClient);
+      fail("This request should have failed since the cluster property value for backup location property is invalid.");
+    } catch (SolrServerException ex) {
+      assertTrue(ex.getCause() instanceof RemoteSolrException);
+      assertEquals(ErrorCode.SERVER_ERROR.code, ((RemoteSolrException)ex.getCause()).code());
+    }
   }
 
   private int getActiveSliceCount(String collectionName) {
@@ -134,6 +189,7 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
   }
 
   private void testBackupAndRestore(String collectionName) throws Exception {
+    String backupLocation = getBackupLocation();
     String backupName = "mytestbackup";
 
     CloudSolrClient client = cluster.getSolrClient();
@@ -142,13 +198,11 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
     Map<String, Integer> origShardToDocCount = getShardToDocCountMap(client, backupCollection);
     assert origShardToDocCount.isEmpty() == false;
 
-    String location = createTempDir().toFile().getAbsolutePath();
-
     log.info("Triggering Backup command");
 
     {
       CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(collectionName, backupName)
-          .setLocation(location);
+          .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
       if (random().nextBoolean()) {
         assertEquals(0, backup.process(client).getStatus());
       } else {
@@ -163,7 +217,8 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
 
     {
       CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
-              .setLocation(location);
+          .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
+
       if (origShardToDocCount.size() > cluster.getJettySolrRunners().size()) {
         // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
         restore.setMaxShardsPerNode(origShardToDocCount.size());
@@ -215,5 +270,4 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
     }
     return shardToDocCount;
   }
-
 }

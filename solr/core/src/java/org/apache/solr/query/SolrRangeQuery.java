@@ -371,12 +371,13 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
             filter = answer.getTopFilter();
           }
         }
+      } else {
+        doCheck = false;
       }
-
+      
       if (filter != null) {
         return segStates[context.ord] = new SegState(filter.getDocIdSet(context, null));
       }
-
 
       final Terms terms = context.reader().terms(SolrRangeQuery.this.getField());
       if (terms == null) {

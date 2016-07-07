@@ -46,6 +46,14 @@ New Features
 
 * SOLR-9194: Enhance the bin/solr script to perform file operations to/from Zookeeper (Erick Erickson, janhoy)
 
+* SOLR-9242: Collection Backup/Restore now supports specifying the directory implementation to use
+  via the "repository" parameter. (Hrishikesh Gadre, Varun Thacker)
+
+* SOLR-9193: Add scoreNodes Streaming Expression (Joel Bernstein)
+
+* SOLR-9243: Add terms.list parameter to the TermsComponent to fetch the docFreq for a list of terms
+  (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
@@ -77,6 +85,14 @@ Bug Fixes
 
 * SOLR-9181: Fix some races in CollectionStateWatcher API (Alan Woodward, Scott
   Blum)
+
+* SOLR-9235: Fixed NPE when using non-numeric range query in deleteByQuery (hossman)
+
+* SOLR-9088: Fixed TestManagedSchemaAPI failures which exposed race conditions in the schema API ( Varun Thacker, noble)
+
+* SOLR-9207: PeerSync recovery failes if number of updates requested is high. A new useRangeVersions config option
+  is introduced (defaults to true) to send version ranges instead of individual versions for peer sync.
+  (Pushkar Raste, shalin)
 
 Optimizations
 ----------------------

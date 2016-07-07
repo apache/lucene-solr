@@ -126,6 +126,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("select", SelectStream.class)
          .withFunctionName("shortestPath", ShortestPathStream.class)
          .withFunctionName("gatherNodes", GatherNodesStream.class)
+         .withFunctionName("scoreNodes", ScoreNodesStream.class)
 
       // metrics
       .withFunctionName("min", MinMetric.class)

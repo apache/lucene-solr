@@ -5,10 +5,6 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 6.2.0 =======================
 
-Bug Fixes
-
-* LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
-
 New Features
 
 * LUCENE-6968: LSH Filter (Tommaso Teofili, Andy Hind, Cao Manh Dat)
@@ -24,6 +20,13 @@ New Features
 * LUCENE-7287: UkrainianMorfologikAnalyzer is a new dictionary-based
   analyzer for the Ukrainian language (Andriy Rysin via Mike
   McCandless)
+
+Bug Fixes
+
+* LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
+
+* LUCENE-7340: MemoryIndex.toString() could throw NPE; fixed. Renamed to toStringDebug().
+  (Daniel Collins, David Smiley)
 
 Improvements
 
@@ -61,6 +64,10 @@ Improvements
 * LUCENE-7353: ScandinavianFoldingFilterFactory and
   ScandinavianNormalizationFilterFactory now implement MultiTermAwareComponent.
   (Adrien Grand)
+
+* LUCENE-2605: Add classic QueryParser option setSplitOnWhitespace() to
+  control whether to split on whitespace prior to text analysis.  Default
+  behavior remains unchanged: split-on-whitespace=true. (Steve Rowe)
 
 Optimizations
 

@@ -27,7 +27,6 @@ import java.util.TimeZone;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -535,8 +534,10 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertQueryEquals("term -(stop) term", qpAnalyzer, "term term");
     
     assertQueryEquals("drop AND stop AND roll", qpAnalyzer, "+drop +roll");
-    assertQueryEquals("term phrase term", qpAnalyzer,
-                      "term (phrase1 phrase2) term");
+
+// TODO: Re-enable once flexible standard parser gets multi-word synonym support
+//    assertQueryEquals("term phrase term", qpAnalyzer,
+//                      "term phrase1 phrase2 term");
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
                       "+term -(phrase1 phrase2) term");
     assertQueryEquals("stop^3", qpAnalyzer, "");
@@ -552,8 +553,9 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     
     CommonQueryParserConfiguration cqpc = getParserConfig(qpAnalyzer);
     setDefaultOperatorAND(cqpc);
-    assertQueryEquals(cqpc, "field", "term phrase term",
-        "+term +(+phrase1 +phrase2) +term");
+// TODO: Re-enable once flexible standard parser gets multi-word synonym support
+//    assertQueryEquals(cqpc, "field", "term phrase term",
+//        "+term +phrase1 +phrase2 +term");
     assertQueryEquals(cqpc, "field", "phrase",
         "+phrase1 +phrase2");
   }
@@ -1101,37 +1103,6 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     dir.close();
   }
 
-  /**
-   * adds synonym of "dog" for "dogs".
-   */
-  protected static class MockSynonymFilter extends TokenFilter {
-    CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-    PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
-    boolean addSynonym = false;
-    
-    public MockSynonymFilter(TokenStream input) {
-      super(input);
-    }
-
-    @Override
-    public final boolean incrementToken() throws IOException {
-      if (addSynonym) { // inject our synonym
-        clearAttributes();
-        termAtt.setEmpty().append("dog");
-        posIncAtt.setPositionIncrement(0);
-        addSynonym = false;
-        return true;
-      }
-      
-      if (input.incrementToken()) {
-        addSynonym = termAtt.toString().equals("dogs");
-        return true;
-      } else {
-        return false;
-      }
-    } 
-  }
-  
   /** whitespace+lowercase analyzer with synonyms */
   protected class Analyzer1 extends Analyzer {
     public Analyzer1(){
@@ -1251,10 +1222,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     CharacterRunAutomaton stopStopList =
     new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toAutomaton());
 
-    CommonQueryParserConfiguration qp = getParserConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopStopList));
-
-    qp = getParserConfig(
-                         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopStopList));
+    CommonQueryParserConfiguration qp
+        = getParserConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopStopList));
     qp.setEnablePositionIncrements(true);
 
     PhraseQuery.Builder phraseQuery = new PhraseQuery.Builder();
