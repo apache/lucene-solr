@@ -29,7 +29,7 @@ import org.junit.Test;
 public class CollectionStateFormat2Test extends AbstractFullDistribZkTestBase {
 
   protected String getSolrXml() {
-    return "solr-no-core.xml";
+    return "solr.xml";
   }
 
   @Test

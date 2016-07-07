@@ -1855,21 +1855,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf and copies
-  // the stock files in there. Seems to be indicated for some tests when we remove the default, hard-coded
-  // solr.xml from being automatically synthesized from SolrConfigXmlOld.DEFAULT_SOLR_XML.
+  // the stock files in there.
+
   public static void copySolrHomeToTemp(File dstRoot, String collection) throws IOException {
-    copySolrHomeToTemp(dstRoot, collection, false);
-  }
-  public static void copySolrHomeToTemp(File dstRoot, String collection, boolean newStyle) throws IOException {
     if (!dstRoot.exists()) {
       assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
     }
 
-    if (newStyle) {
-      FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml"), new File(dstRoot, "solr.xml"));
-    } else {
-      FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(dstRoot, "solr.xml"));
-    }
+    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(dstRoot, "solr.xml"));
 
     File subHome = new File(dstRoot, collection + File.separator + "conf");
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
