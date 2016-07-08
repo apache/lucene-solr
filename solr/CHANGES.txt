@@ -165,6 +165,9 @@ Other Changes
 
 * SOLR-9277: Clean up some more remnants of supporting old and new style solr.xml in tests (Erick Erickson)
 
+* SOLR-9163: Sync up basic_configs and data_driven_schema_configs, removing almost all differences
+  except what is required for schemaless. (yonik)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
