@@ -271,7 +271,7 @@ public class PhraseQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (terms.length == 0) {
-      return   new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("empty PhraseQuery");
     } else if (terms.length == 1) {
       return new TermQuery(terms[0]);
     } else if (positions[0] != 0) {

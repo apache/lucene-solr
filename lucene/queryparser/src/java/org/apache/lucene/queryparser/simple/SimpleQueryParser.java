@@ -150,7 +150,7 @@ public class SimpleQueryParser extends QueryBuilder {
     State state = new State(data, buffer, 0, data.length);
     parseSubQuery(state);
     if (state.top == null) {
-      return new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("empty string passed to query parser");
     } else {
       return state.top;
     }
