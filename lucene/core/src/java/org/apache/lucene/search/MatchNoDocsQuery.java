@@ -28,6 +28,19 @@ import org.apache.lucene.index.Term;
  */
 
 public class MatchNoDocsQuery extends Query {
+
+  private final String reason;
+
+  /** Default constructor */
+  public MatchNoDocsQuery() {
+    this("");
+  }
+
+  /** Provides a reason explaining why this query was used */
+  public MatchNoDocsQuery(String reason) {
+    this.reason = reason;
+  }
+  
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new Weight(this) {
@@ -37,7 +50,7 @@ public class MatchNoDocsQuery extends Query {
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        return Explanation.noMatch("");
+        return Explanation.noMatch(reason);
       }
 
       @Override
@@ -73,7 +86,7 @@ public class MatchNoDocsQuery extends Query {
 
   @Override
   public String toString(String field) {
-    return "";
+    return "MatchNoDocsQuery(\"" + reason + "\")";
   }
 
   @Override

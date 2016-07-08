@@ -161,13 +161,26 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     return getQuery(query, (Analyzer)null);
   }
 
-  public void assertQueryEquals(String query, Analyzer a, String result)
-    throws Exception {
+  public void assertQueryEquals(String query, Analyzer a, String result) throws Exception {
     Query q = getQuery(query, a);
     String s = q.toString("field");
     if (!s.equals(result)) {
       fail("Query /" + query + "/ yielded /" + s
            + "/, expecting /" + result + "/");
+    }
+  }
+
+  public void assertMatchNoDocsQuery(String queryString, Analyzer a) throws Exception {
+    assertMatchNoDocsQuery(getQuery(queryString, a));
+  }
+
+  public void assertMatchNoDocsQuery(Query query) throws Exception {
+    if (query instanceof MatchNoDocsQuery) {
+      // good
+    } else if (query instanceof BooleanQuery && ((BooleanQuery) query).clauses().size() == 0) {
+      // good
+    } else {
+      fail("expected MatchNoDocsQuery or an empty BooleanQuery but got: " + query);
     }
   }
 
@@ -418,7 +431,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
 
   public void testNumber() throws Exception {
 // The numbers go away because SimpleAnalzyer ignores them
-    assertQueryEquals("3", null, "");
+    assertMatchNoDocsQuery("3", null);
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
@@ -540,14 +553,14 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
 //                      "term phrase1 phrase2 term");
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
                       "+term -(phrase1 phrase2) term");
-    assertQueryEquals("stop^3", qpAnalyzer, "");
-    assertQueryEquals("stop", qpAnalyzer, "");
-    assertQueryEquals("(stop)^3", qpAnalyzer, "");
-    assertQueryEquals("((stop))^3", qpAnalyzer, "");
-    assertQueryEquals("(stop^3)", qpAnalyzer, "");
-    assertQueryEquals("((stop)^3)", qpAnalyzer, "");
-    assertQueryEquals("(stop)", qpAnalyzer, "");
-    assertQueryEquals("((stop))", qpAnalyzer, "");
+    assertMatchNoDocsQuery("stop^3", qpAnalyzer);
+    assertMatchNoDocsQuery("stop", qpAnalyzer);
+    assertMatchNoDocsQuery("(stop)^3", qpAnalyzer);
+    assertMatchNoDocsQuery("((stop))^3", qpAnalyzer);
+    assertMatchNoDocsQuery("(stop^3)", qpAnalyzer);
+    assertMatchNoDocsQuery("((stop)^3)", qpAnalyzer);
+    assertMatchNoDocsQuery("(stop)", qpAnalyzer);
+    assertMatchNoDocsQuery("((stop))", qpAnalyzer);
     assertTrue(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
     assertTrue(getQuery("term +stop", qpAnalyzer) instanceof TermQuery);
     
@@ -881,7 +894,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     q = getQuery("the^3", qp2);
     // "the" is a stop word so the result is an empty query:
     assertNotNull(q);
-    assertEquals("", q.toString());
+    assertMatchNoDocsQuery(q);
     assertFalse(q instanceof BoostQuery);
   }
 

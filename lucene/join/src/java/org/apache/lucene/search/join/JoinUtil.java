@@ -494,7 +494,7 @@ public final class JoinUtil {
     int numSegments = indexReader.leaves().size();
     final long valueCount;
     if (numSegments == 0) {
-      return new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("JoinUtil.createJoinQuery with no segments");
     } else if (numSegments == 1) {
       // No need to use the ordinal map, because there is just one segment.
       ordinalMap = null;
@@ -503,7 +503,7 @@ public final class JoinUtil {
       if (joinSortedDocValues != null) {
         valueCount = joinSortedDocValues.getValueCount();
       } else {
-        return new MatchNoDocsQuery();
+        return new MatchNoDocsQuery("JoinUtil.createJoinQuery: no join values");
       }
     } else {
       if (ordinalMap == null) {

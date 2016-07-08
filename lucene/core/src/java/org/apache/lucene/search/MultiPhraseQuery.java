@@ -317,7 +317,7 @@ public class MultiPhraseQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (termArrays.length == 0) {
-      return new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("empty MultiPhraseQuery");
     } else if (termArrays.length == 1) {                 // optimize one-term case
       Term[] terms = termArrays[0];
       BooleanQuery.Builder builder = new BooleanQuery.Builder();

@@ -38,6 +38,7 @@ import org.apache.lucene.queryparser.util.QueryParserTestBase; // javadocs
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
@@ -61,7 +62,7 @@ import org.junit.BeforeClass;
  * 
  * @see QueryParserTestBase
  */
-//TODO: refactor this to actually extend that class, overriding the tests
+//TODO: refactor this to actually extend that class (QueryParserTestBase), overriding the tests
 //that it adjusts to fit the precedence requirement, adding its extra tests.
 public class TestPrecedenceQueryParser extends LuceneTestCase {
 
@@ -163,6 +164,20 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     if (!s.equals(result)) {
       fail("Query /" + query + "/ yielded /" + s + "/, expecting /" + result
           + "/");
+    }
+  }
+
+  public void assertMatchNoDocsQuery(String queryString, Analyzer a) throws Exception {
+    assertMatchNoDocsQuery(getQuery(queryString, a));
+  }
+
+  public void assertMatchNoDocsQuery(Query query) throws Exception {
+    if (query instanceof MatchNoDocsQuery) {
+      // good
+    } else if (query instanceof BooleanQuery && ((BooleanQuery) query).clauses().size() == 0) {
+      // good
+    } else {
+      fail("expected MatchNoDocsQuery or an empty BooleanQuery but got: " + query);
     }
   }
 
@@ -282,7 +297,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
 
   public void testNumber() throws Exception {
     // The numbers go away because SimpleAnalzyer ignores them
-    assertQueryEquals("3", null, "");
+    assertMatchNoDocsQuery("3", null);
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
@@ -367,8 +382,8 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     // QueryParser behavior
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
         "(+term -(phrase1 phrase2)) term");
-    assertQueryEquals("stop", qpAnalyzer, "");
-    assertQueryEquals("stop OR stop AND stop", qpAnalyzer, "");
+    assertMatchNoDocsQuery("stop", qpAnalyzer);
+    assertMatchNoDocsQuery("stop OR stop AND stop", qpAnalyzer);
     assertTrue(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
     assertTrue(getQuery("term +stop", qpAnalyzer) instanceof TermQuery);
   }
