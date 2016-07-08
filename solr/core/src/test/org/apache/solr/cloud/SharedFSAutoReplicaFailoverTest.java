@@ -314,11 +314,11 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
   private void queryAndAssertResultSize(String collection, int expectedResultSize, int timeoutMS)
       throws SolrServerException, IOException, InterruptedException {
-    long startTimestamp = System.currentTimeMillis();
+    long startTimestamp = System.nanoTime();
 
     long actualResultSize = 0;
     while(true) {
-      if (System.currentTimeMillis() - startTimestamp > timeoutMS || actualResultSize > expectedResultSize) {
+      if (System.nanoTime() - startTimestamp > TimeUnit.MILLISECONDS.toNanos(timeoutMS) || actualResultSize > expectedResultSize) {
         fail("expected: " + expectedResultSize + ", actual: " + actualResultSize);
       }
       SolrParams queryAll = new SolrQuery("*:*");
