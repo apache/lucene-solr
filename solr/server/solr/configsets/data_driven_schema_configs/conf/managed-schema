@@ -121,8 +121,10 @@
     <field name="_version_" type="long" indexed="true" stored="false"/>
     <field name="_root_" type="string" indexed="true" stored="false" docValues="false" />
     <field name="_text_" type="text_general" indexed="true" stored="false" multiValued="true"/>
-    <copyField source="*" dest="_text_"/>
 
+    <!-- Only enabled in the "schemaless" data-driven example (assuming the client
+         does not know what fields may be searched) because it's very expensive to index everything twice. -->
+    <copyField source="*" dest="_text_"/>
 
     <!-- Dynamic field definitions allow using convention over configuration
        for fields via the specification of patterns to match field names. 
