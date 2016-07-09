@@ -91,6 +91,10 @@ New Features
 * SOLR-9090: Add directUpdatesToLeadersOnly flag to solrj CloudSolrClient.
   (Marvin Justice, Christine Poerschke)
 
+* SOLR-9270: Allow spatialContextFactory to be simply "JTS". And if any spatial params include the old
+  Spatial4j package "com.spatial4j.core" it is rewritten to "org.locationtech.spatial4j" with a warning.
+  (David Smiley)
+
 Bug Fixes
 ----------------------
 
@@ -610,6 +614,10 @@ Upgrading from Solr 5.x
 
 * SolrJ no longer includes DateUtil. If for some reason you need to format or parse dates, simply use Instant.format()
   and Instant.parse().
+
+* If you are using an RPT or other spatial field referencing Spatial4j in its configuration, then replace the string
+  "com.spatial4j.core" with "org.locationtech.spatial4j".  Consider updating direct to Solr 6.2 which accepts the
+  old value, albeit with a warning.
 
 Detailed Change List
 ----------------------
