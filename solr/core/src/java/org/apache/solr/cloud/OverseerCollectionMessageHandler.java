@@ -578,17 +578,15 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
     //if there are too many nodes this command may time out. And most likely dedicated
     // overseers are created when there are too many nodes  . So , do this operation in a separate thread
-    new Thread(){
-      @Override
-      public void run() {
-        try {
-          overseerPrioritizer.prioritizeOverseerNodes(myId);
-        } catch (Exception e) {
-          log.error("Error in prioritizing Overseer",e);
-        }
-
+    new Thread(() -> {
+      try {
+        overseerPrioritizer.prioritizeOverseerNodes(myId);
+      } catch (Exception e) {
+        log.error("Error in prioritizing Overseer", e);
       }
-    }.start();
+
+    }).start();
+
   }
 
   @SuppressWarnings("unchecked")

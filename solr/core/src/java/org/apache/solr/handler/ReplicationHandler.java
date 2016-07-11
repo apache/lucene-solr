@@ -275,12 +275,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         return;
       }
       final SolrParams paramsCopy = new ModifiableSolrParams(solrParams);
-      Thread fetchThread = new Thread("explicit-fetchindex-cmd") {
-        @Override
-        public void run() {
-          doFetch(paramsCopy, false);
-        }
-      };
+      Thread fetchThread = new Thread(() -> doFetch(paramsCopy, false), "explicit-fetchindex-cmd") ;
       fetchThread.setDaemon(false);
       fetchThread.start();
       if (solrParams.getBool(WAIT, false)) {

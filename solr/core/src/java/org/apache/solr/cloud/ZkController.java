@@ -2435,20 +2435,18 @@ public final class ZkController {
       final Set<Runnable> listeners = confDirectoryListeners.get(zkDir);
       if (listeners != null && !listeners.isEmpty()) {
         final Set<Runnable> listenersCopy = new HashSet<>(listeners);
-        new Thread() {
-          // run these in a separate thread because this can be long running
-          @Override
-          public void run() {
-            log.info("Running listeners for {}", zkDir);
-            for (final Runnable listener : listenersCopy) {
-              try {
-                listener.run();
-              } catch (Exception e) {
-                log.warn("listener throws error", e);
-              }
+        // run these in a separate thread because this can be long running
+        new Thread(() -> {
+          log.info("Running listeners for {}", zkDir);
+          for (final Runnable listener : listenersCopy) {
+            try {
+              listener.run();
+            } catch (Exception e) {
+              log.warn("listener throws error", e);
             }
           }
-        }.start();
+        }).start();
+
       }
     }
     return true;

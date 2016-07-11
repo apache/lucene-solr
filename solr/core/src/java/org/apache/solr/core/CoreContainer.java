@@ -533,24 +533,22 @@ public class CoreContainer {
 
     } finally {
       if (asyncSolrCoreLoad && futures != null) {
-        Thread shutdownThread = new Thread() {
-          public void run() {
-            try {
-              for (Future<SolrCore> future : futures) {
-                try {
-                  future.get();
-                } catch (InterruptedException e) {
-                  Thread.currentThread().interrupt();
-                } catch (ExecutionException e) {
-                  log.error("Error waiting for SolrCore to be created", e);
-                }
+
+        coreContainerWorkExecutor.submit((Runnable) () -> {
+          try {
+            for (Future<SolrCore> future : futures) {
+              try {
+                future.get();
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+              } catch (ExecutionException e) {
+                log.error("Error waiting for SolrCore to be created", e);
               }
-            } finally {
-              ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor);
             }
+          } finally {
+            ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor);
           }
-        };
-        coreContainerWorkExecutor.submit(shutdownThread);
+        });
       } else {
         ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor);
       }

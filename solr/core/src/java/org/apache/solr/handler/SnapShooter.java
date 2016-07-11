@@ -128,12 +128,7 @@ public class SnapShooter {
   }
 
   protected void deleteSnapAsync(final ReplicationHandler replicationHandler) {
-    new Thread() {
-      @Override
-      public void run() {
-        deleteNamedSnapshot(replicationHandler);
-      }
-    }.start();
+    new Thread(() -> deleteNamedSnapshot(replicationHandler)).start();
   }
 
   public void validateCreateSnapshot() throws IOException {
@@ -170,28 +165,27 @@ public class SnapShooter {
   public void createSnapAsync(final IndexCommit indexCommit, final int numberToKeep, Consumer<NamedList> result) {
     solrCore.getDeletionPolicy().saveCommitPoint(indexCommit.getGeneration());
 
-    new Thread() { //TODO should use Solr's ExecutorUtil
-      @Override
-      public void run() {
+    //TODO should use Solr's ExecutorUtil
+    new Thread(() -> {
+      try {
+        result.accept(createSnapshot(indexCommit));
+      } catch (Exception e) {
+        LOG.error("Exception while creating snapshot", e);
+        NamedList snapShootDetails = new NamedList<>();
+        snapShootDetails.add("snapShootException", e.getMessage());
+        result.accept(snapShootDetails);
+      } finally {
+        solrCore.getDeletionPolicy().releaseCommitPoint(indexCommit.getGeneration());
+      }
+      if (snapshotName == null) {
         try {
-          result.accept(createSnapshot(indexCommit));
-        } catch (Exception e) {
-          LOG.error("Exception while creating snapshot", e);
-          NamedList snapShootDetails = new NamedList<>();
-          snapShootDetails.add("snapShootException", e.getMessage());
-          result.accept(snapShootDetails);
-        } finally {
-          solrCore.getDeletionPolicy().releaseCommitPoint(indexCommit.getGeneration());
-        }
-        if (snapshotName == null) {
-          try {
-            deleteOldBackups(numberToKeep);
-          } catch (IOException e) {
-            LOG.warn("Unable to delete old snapshots ", e);
-          }
+          deleteOldBackups(numberToKeep);
+        } catch (IOException e) {
+          LOG.warn("Unable to delete old snapshots ", e);
         }
       }
-    }.start();
+    }).start();
+
   }
 
   // note: remember to reserve the indexCommit first so it won't get deleted concurrently

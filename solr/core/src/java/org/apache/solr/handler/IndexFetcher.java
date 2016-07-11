@@ -768,18 +768,15 @@ public class IndexFetcher {
 
   private void reloadCore() {
     final CountDownLatch latch = new CountDownLatch(1);
-    new Thread() {
-      @Override
-      public void run() {
-        try {
-          solrCore.getCoreDescriptor().getCoreContainer().reload(solrCore.getName());
-        } catch (Exception e) {
-          LOG.error("Could not reload core ", e);
-        } finally {
-          latch.countDown();
-        }
+    new Thread(() -> {
+      try {
+        solrCore.getCoreDescriptor().getCoreContainer().reload(solrCore.getName());
+      } catch (Exception e) {
+        LOG.error("Could not reload core ", e);
+      } finally {
+        latch.countDown();
       }
-    }.start();
+    }).start();
     try {
       latch.await();
     } catch (InterruptedException e) {

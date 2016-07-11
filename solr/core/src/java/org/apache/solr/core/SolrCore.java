@@ -2595,18 +2595,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     final String myIndexDir = getIndexDir();
     final String coreName = getName();
     if (myDirFactory != null && myDataDir != null && myIndexDir != null) {
-      Thread cleanupThread = new Thread() {
-        @Override
-        public void run() {
-          log.info("Looking for old index directories to cleanup for core {} in {}", coreName, myDataDir);
-          try {
-            myDirFactory.cleanupOldIndexDirectories(myDataDir, myIndexDir);
-          } catch (Exception exc) {
-            log.error("Failed to cleanup old index directories for core "+coreName, exc);
-          }
+      Thread cleanupThread = new Thread(() -> {
+        log.info("Looking for old index directories to cleanup for core {} in {}", coreName, myDataDir);
+        try {
+          myDirFactory.cleanupOldIndexDirectories(myDataDir, myIndexDir);
+        } catch (Exception exc) {
+          log.error("Failed to cleanup old index directories for core "+coreName, exc);
         }
-      };
-      cleanupThread.setName("OldIndexDirectoryCleanupThreadForCore-"+coreName);
+      }, "OldIndexDirectoryCleanupThreadForCore-"+coreName);
       cleanupThread.setDaemon(true);
       cleanupThread.start();
     }
