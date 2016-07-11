@@ -174,42 +174,38 @@ public class ZkContainer {
   }
 
   public void registerInZk(final SolrCore core, boolean background) {
-    Thread thread = new Thread() {
-      @Override
-      public void run() {
-        MDCLoggingContext.setCore(core);
+    Runnable r = () -> {
+      MDCLoggingContext.setCore(core);
+      try {
         try {
+          zkController.register(core.getName(), core.getCoreDescriptor());
+        } catch (InterruptedException e) {
+          // Restore the interrupted status
+          Thread.currentThread().interrupt();
+          SolrException.log(log, "", e);
+        } catch (Exception e) {
           try {
-            zkController.register(core.getName(), core.getCoreDescriptor());
-          } catch (InterruptedException e) {
-            // Restore the interrupted status
+            zkController.publish(core.getCoreDescriptor(), Replica.State.DOWN);
+          } catch (InterruptedException e1) {
             Thread.currentThread().interrupt();
-            SolrException.log(log, "", e);
-          } catch (Exception e) {
-            try {
-              zkController.publish(core.getCoreDescriptor(), Replica.State.DOWN);
-            } catch (InterruptedException e1) {
-              Thread.currentThread().interrupt();
-              log.error("", e1);
-            } catch (Exception e1) {
-              log.error("", e1);
-            }
-            SolrException.log(log, "", e);
+            log.error("", e1);
+          } catch (Exception e1) {
+            log.error("", e1);
           }
-        } finally {
-          MDCLoggingContext.clear();
+          SolrException.log(log, "", e);
         }
+      } finally {
+        MDCLoggingContext.clear();
       }
-      
     };
-    
+
     if (zkController != null) {
       if (background) {
-        coreZkRegister.execute(thread);
+        coreZkRegister.execute(r);
       } else {
         MDCLoggingContext.setCore(core);
         try {
-          thread.run();
+          r.run();
         } finally {
           MDCLoggingContext.clear();
         }

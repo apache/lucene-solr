@@ -206,23 +206,20 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
               log.info("I already have the expected version {} of params", expectedVersion);
             }
             if (checkStale && req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
-              new Thread(SolrConfigHandler.class.getSimpleName() + "-refreshconf") {
-                @Override
-                public void run() {
-                  if (!reloadLock.tryLock()) {
-                    log.info("Another reload is in progress . Not doing anything");
-                    return;
-                  }
-                  try {
-                    log.info("Trying to update my configs");
-                    SolrCore.getConfListener(req.getCore(), (ZkSolrResourceLoader) req.getCore().getResourceLoader()).run();
-                  } catch (Exception e) {
-                    log.error("Unable to refresh conf ", e);
-                  } finally {
-                    reloadLock.unlock();
-                  }
+              new Thread(() -> {
+                if (!reloadLock.tryLock()) {
+                  log.info("Another reload is in progress . Not doing anything");
+                  return;
                 }
-              }.start();
+                try {
+                  log.info("Trying to update my configs");
+                  SolrCore.getConfListener(req.getCore(), (ZkSolrResourceLoader) req.getCore().getResourceLoader()).run();
+                } catch (Exception e) {
+                  log.error("Unable to refresh conf ", e);
+                } finally {
+                  reloadLock.unlock();
+                }
+              }, SolrConfigHandler.class.getSimpleName() + "-refreshconf").start();
             } else {
               log.info("checkStale {} , resourceloader {}", checkStale, req.getCore().getResourceLoader().getClass().getName());
             }
