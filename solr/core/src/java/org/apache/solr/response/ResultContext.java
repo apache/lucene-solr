@@ -48,7 +48,7 @@ public abstract class ResultContext {
   public abstract SolrQueryRequest getRequest();
 
   public boolean wantsScores() {
-    return getReturnFields().wantsScore() && getDocList().hasScores();
+    return getReturnFields() != null && getReturnFields().wantsScore() && getDocList() != null && getDocList().hasScores();
   }
 
   public Iterator<SolrDocument> getProcessedDocuments() {
