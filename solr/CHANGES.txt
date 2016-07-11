@@ -141,6 +141,9 @@ Bug Fixes
 * SOLR-9236: AutoAddReplicas will append an extra /tlog to the update log location on replica failover.
   (Eungsop Yoo, Mark Miller)
 
+* SOLR-9291: ZkSolrResourceLoader should not retry fetching resources if the server has been shutdown.
+  (shalin)
+
 Optimizations
 ----------------------
 
