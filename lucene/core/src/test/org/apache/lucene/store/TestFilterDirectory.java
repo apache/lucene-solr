@@ -39,7 +39,6 @@ public class TestFilterDirectory extends BaseDirectoryTestCase {
     Set<Method> exclude = new HashSet<>();
     exclude.add(Directory.class.getMethod("copyFrom", Directory.class, String.class, String.class, IOContext.class));
     exclude.add(Directory.class.getMethod("openChecksumInput", String.class, IOContext.class));
-    exclude.add(Directory.class.getMethod("renameFile", String.class, String.class));
     for (Method m : FilterDirectory.class.getMethods()) {
       if (m.getDeclaringClass() == Directory.class) {
         assertTrue("method " + m.getName() + " not overridden!", exclude.contains(m));

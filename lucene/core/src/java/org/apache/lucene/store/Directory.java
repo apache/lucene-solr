@@ -99,24 +99,6 @@ public abstract class Directory implements Closeable {
    * both {@code source} and {@code dest} can be visible temporarily.
    * It is just important that the contents of {@code dest} appear
    * atomically, or an exception is thrown.
-   *
-   * @deprecated Use {@link #rename} and {@link #syncMetaData} instead.
-   */
-  @Deprecated
-  public final void renameFile(String source, String dest) throws IOException {
-    rename(source, dest);
-    syncMetaData();
-  }
-
-  /**
-   * Renames {@code source} to {@code dest} as an atomic operation,
-   * where {@code dest} does not yet exist in the directory.
-   * <p>
-   * Notes: This method is used by IndexWriter to publish commits.
-   * It is ok if this operation is not truly atomic, for example
-   * both {@code source} and {@code dest} can be visible temporarily.
-   * It is just important that the contents of {@code dest} appear
-   * atomically, or an exception is thrown.
    */
   public abstract void rename(String source, String dest) throws IOException;
 
