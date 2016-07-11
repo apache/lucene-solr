@@ -41,6 +41,11 @@ New Features
   analyzer for the Ukrainian language (Andriy Rysin via Mike
   McCandless)
 
+* LUCENE-7373: Directory.renameFile, which did both renaming and fsync
+  of the directory metadata, has been deprecated; use the new separate
+  methods Directory.rename and Directory.syncMetaData instead (Robert Muir,
+  Uwe Schindler, Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)

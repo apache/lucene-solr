@@ -788,7 +788,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     try {
       final String src = IndexFileNames.fileNameFromGeneration(IndexFileNames.PENDING_SEGMENTS, "", generation);
       dest = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", generation);
-      dir.renameFile(src, dest);
+      dir.rename(src, dest);
+      dir.syncMetaData();
       success = true;
     } finally {
       if (!success) {
