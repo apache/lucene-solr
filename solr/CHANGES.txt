@@ -144,6 +144,9 @@ Bug Fixes
 * SOLR-9291: ZkSolrResourceLoader should not retry fetching resources if the server has been shutdown.
   (shalin)
 
+* SOLR-9287: Including 'score' in the 'fl' param when doing an RTG no longer causes an NPE
+  (hossman, Ishan Chattopadhyaya)
+
 Optimizations
 ----------------------
 

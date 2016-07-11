@@ -162,7 +162,6 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
   
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9287")
   public void testScoreAndAllRealFieldsRTG() throws Exception {
   
     // if we use RTG (committed or otherwise) score should be ignored
@@ -209,7 +208,6 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
             );
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9287")
   public void testScoreAndExplicitRealFieldsRTG() throws Exception {
     // if we use RTG (committed or otherwise) score should be ignored
     for (String id : Arrays.asList("42","99")) {
@@ -348,8 +346,9 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     
   }
   
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9287")
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9285")
   public void testFunctionsAndScoreRTG() throws Exception {
+    // NOTE: once this test is fixed to pass, testAugmentersRTG should also be updated to test a abs(val_i)
 
     // if we use RTG (committed or otherwise) score should be ignored
     for (String id : Arrays.asList("42","99")) {
@@ -492,7 +491,6 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
   
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9287")
   public void testGlobsAndScoreRTG() throws Exception {
     // behavior shouldn't matter if we are committed or uncommitted, score should be ignored
     for (String id : Arrays.asList("42","99")) {
@@ -563,6 +561,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     // behavior shouldn't matter if we are committed or uncommitted
     for (String id : Arrays.asList("42","99")) {
       // NOTE: once testDocIdAugmenterRTG can pass, [docid] should be tested here as well.
+      // NOTE: once testFunctionsAndScoreRTG can pass, abs(val_i) should be tested here as well
       for (SolrParams p : Arrays.asList(params("fl","[shard],[explain],x_alias:[value v=10 t=int]"),
                                         params("fl","[shard]","fl","[explain],x_alias:[value v=10 t=int]"),
                                         params("fl","[shard]","fl","[explain]","fl","x_alias:[value v=10 t=int]"))) {
@@ -570,6 +569,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
                 req(p, "qt","/get","id",id, "wt","xml")
                 ,"count(//doc)=1"
                 // ,"//doc/int[@name='[docid]']" // TODO
+                // ,"//doc/gloat[@name='abs(val_i)']" // TODO
                 ,"//doc/str[@name='[shard]'][.='[not a shard request]']"
                 // RTG: [explain] should be missing (ignored)
                 ,"//doc/int[@name='x_alias'][.=10]"
@@ -601,6 +601,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     // behavior shouldn't matter if we are committed or uncommitted
     for (String id : Arrays.asList("42","99")) {
       // NOTE: once testDocIdAugmenterRTG can pass, [docid] should be tested here as well.
+      // NOTE: once testFunctionsAndScoreRTG can pass, abs(val_i) should be tested here as well
       for (SolrParams p : Arrays.asList(params("fl","id,[explain],x_alias:[value v=10 t=int]"),
                                         params("fl","id","fl","[explain],x_alias:[value v=10 t=int]"),
                                         params("fl","id","fl","[explain]","fl","x_alias:[value v=10 t=int]"))) {
@@ -609,6 +610,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
                 ,"count(//doc)=1"
                 ,"//doc/str[@name='id']"
                 // ,"//doc/int[@name='[docid]']" // TODO
+                // ,"//doc/gloat[@name='abs(val_i)']" // TODO
                 // RTG: [explain] should be missing (ignored)
                 ,"//doc/int[@name='x_alias'][.=10]"
                 
@@ -646,15 +648,16 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
   
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9287")
   public void testAugmentersAndScoreRTG() throws Exception {
     // if we use RTG (committed or otherwise) score should be ignored
     for (String id : Arrays.asList("42","99")) {
       // NOTE: once testDocIdAugmenterRTG can pass, [docid] should be tested here as well.
+      // NOTE: once testFunctionsAndScoreRTG can pass, abs(val_i) should be tested here as well
       assertQ(id,
               req("qt","/get","id",id, "wt","xml",
                   "fl","x_alias:[value v=10 t=int],score")
               // ,"//doc/int[@name='[docid]']" // TODO
+              // ,"//doc/gloat[@name='abs(val_i)']" // TODO
               ,"//doc/int[@name='x_alias'][.=10]"
               
               ,"//doc[count(*)=1]"
@@ -667,6 +670,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
                 req(p, "qt","/get","id",id, "wt","xml")
                 
                 // ,"//doc/int[@name='[docid]']" // TODO
+                // ,"//doc/gloat[@name='abs(val_i)']" // TODO
                 ,"//doc/int[@name='x_alias'][.=10]"
                 // RTG: [explain] and score should be missing (ignored)
                 
@@ -710,13 +714,13 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
   
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9287")
   public void testAugmentersGlobsExplicitAndScoreOhMyRTG() throws Exception {
     Random random = random();
 
     // NOTE: 'ssto' is the missing one
     final List<String> fl = Arrays.asList
       // NOTE: once testDocIdAugmenterRTG can pass, [docid] should be tested here as well.
+      // NOTE: once testFunctionsAndScoreRTG can pass, abs(val_i) should be tested here as well
       ("id","[explain]","score","val_*","subj*");
     
     final int iters = atLeast(random, 10);
@@ -738,10 +742,11 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
                   ,"count(//doc)=1"
                   ,"//doc/str[@name='id']"
                   // ,"//doc/int[@name='[docid]']" // TODO
+                  // ,"//doc/gloat[@name='abs(val_i)']" // TODO
                   // RTG: [explain] and score should be missing (ignored)
                   ,"//doc/int[@name='val_i'][.=1]"
                   ,"//doc/str[@name='subject']"
-                  ,"//result/doc[count(*)=3]"
+                  ,"//doc[count(*)=3]"
                   );
         }
       }
