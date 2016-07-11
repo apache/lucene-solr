@@ -17,9 +17,7 @@
 package org.apache.lucene.index;
 
 import java.io.Closeable;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -2885,9 +2883,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // Copy the segment's files
       for (String file: info.files()) {
         final String newFileName = newInfo.namedForThisSegment(file);
-
-        assert !slowFileExists(directory, newFileName): "file \"" + newFileName + "\" already exists; newInfo.files=" + newInfo.files();
-
         directory.copyFrom(info.info.dir, file, newFileName, context);
         copiedFiles.add(newFileName);
       }
@@ -4542,7 +4537,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     
     Collection<String> files = toSync.files(false);
     for(final String fileName: files) {
-      assert slowFileExists(directory, fileName): "file " + fileName + " does not exist; files=" + Arrays.toString(directory.listAll());
       // If this trips it means we are missing a call to
       // .checkpoint somewhere, because by the time we
       // are called, deleter should know about every
@@ -4997,19 +4991,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
      *           if an {@link IOException} occurs
      */
     void process(IndexWriter writer, boolean triggerMerge, boolean clearBuffers) throws IOException;
-  }
-
-  /** Used only by asserts: returns true if the file exists
-   *  (can be opened), false if it cannot be opened, and
-   *  (unlike Java's File.exists) throws IOException if
-   *  there's some unexpected error. */
-  static boolean slowFileExists(Directory dir, String fileName) throws IOException {
-    try {
-      dir.openInput(fileName, IOContext.DEFAULT).close();
-      return true;
-    } catch (NoSuchFileException | FileNotFoundException e) {
-      return false;
-    }
   }
 
   /** Anything that will add N docs to the index should reserve first to
