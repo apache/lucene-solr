@@ -145,7 +145,7 @@ class SimpleCopyJob extends CopyJob {
       // NOTE: if this throws exception, then some files have been moved to their true names, and others are leftover .tmp files.  I don't
       // think heroic exception handling is necessary (no harm will come, except some leftover files),  nor warranted here (would make the
       // code more complex, for the exceptional cases when something is wrong w/ your IO system):
-      dest.dir.renameFile(tmpFileName, fileName);
+      dest.dir.rename(tmpFileName, fileName);
     }
 
     copiedFiles.clear();
