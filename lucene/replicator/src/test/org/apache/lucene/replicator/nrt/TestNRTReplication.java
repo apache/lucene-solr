@@ -30,6 +30,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -695,6 +698,12 @@ public class TestNRTReplication extends LuceneTestCase {
     replica.close();
   }
 
+  private void assertWriteLockHeld(Path path) throws Exception {
+    try (FSDirectory dir = FSDirectory.open(path)) {
+      expectThrows(LockObtainFailedException.class, () -> {dir.obtainLock(IndexWriter.WRITE_LOCK_NAME);});
+    }
+  }
+
   public void testCrashReplica() throws Exception {
 
     Path path1 = createTempDir("1");
@@ -702,6 +711,8 @@ public class TestNRTReplication extends LuceneTestCase {
 
     Path path2 = createTempDir("2");
     NodeProcess replica = startNode(primary.tcpPort, 1, path2, -1, true);
+
+    assertWriteLockHeld(path2);
 
     sendReplicasToPrimary(primary, replica);
 
