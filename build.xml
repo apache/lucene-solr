@@ -151,6 +151,7 @@
         (~$/\$$Id\b/$) : 'svn keyword',
         (~$/\$$Header\b/$) : 'svn keyword',
         (~$/\$$Source\b/$) : 'svn keyword',
+        (~$/^\uFEFF/$) : 'UTF-8 byte order mark'
       ];
       
       def baseDir = properties['validate.baseDir'];
