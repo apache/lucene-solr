@@ -1,9 +1,3 @@
-package org.apache.lucene.geo;
-
-import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
-import static org.apache.lucene.util.SloppyMath.cos;
-import static org.apache.lucene.util.SloppyMath.haversinMeters;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,6 +14,12 @@ import static org.apache.lucene.util.SloppyMath.haversinMeters;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.lucene.geo;
+
+import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
+import static org.apache.lucene.util.SloppyMath.cos;
+import static org.apache.lucene.util.SloppyMath.haversinMeters;
 
 /**
  * Basic reusable geo-spatial utility methods
