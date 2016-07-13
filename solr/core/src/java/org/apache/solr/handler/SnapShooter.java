@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 
+import com.google.common.base.Preconditions;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.common.SolrException;
@@ -42,8 +43,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Preconditions;
 
 /**
  * <p> Provides functionality equivalent to the snapshooter script </p>

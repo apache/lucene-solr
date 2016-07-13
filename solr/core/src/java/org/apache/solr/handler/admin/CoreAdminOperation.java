@@ -860,7 +860,7 @@ enum CoreAdminOperation {
       BackupRepository repository = callInfo.handler.coreContainer.newBackupRepository(Optional.ofNullable(repoName));
 
       String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
-      if(location == null) {
+      if (location == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
             + " parameter or as a default repository property");
       }
@@ -906,7 +906,7 @@ enum CoreAdminOperation {
       BackupRepository repository = callInfo.handler.coreContainer.newBackupRepository(Optional.ofNullable(repoName));
 
       String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
-      if(location == null) {
+      if (location == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
             + " parameter or as a default repository property");
       }

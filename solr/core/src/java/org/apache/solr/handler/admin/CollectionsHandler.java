@@ -816,6 +816,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
         String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
         if (location == null) {
+          //Refresh the cluster property file to make sure the value set for location is the latest
+          h.coreContainer.getZkController().getZkStateReader().forceUpdateClusterProperties();
+
           // Check if the location is specified in the cluster property.
           location = h.coreContainer.getZkController().getZkStateReader().getClusterProperty(CoreAdminParams.BACKUP_LOCATION, null);
           if (location == null) {
@@ -857,6 +860,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
         String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
         if (location == null) {
+          //Refresh the cluster property file to make sure the value set for location is the latest
+          h.coreContainer.getZkController().getZkStateReader().forceUpdateClusterProperties();
+
           // Check if the location is specified in the cluster property.
           location = h.coreContainer.getZkController().getZkStateReader().getClusterProperty("location", null);
           if (location == null) {
