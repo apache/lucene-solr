@@ -20,11 +20,9 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
-import java.util.Set;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -90,21 +88,14 @@ public class ToChildBlockJoinQuery extends Query {
     return parentQuery;
   }
 
-  private static class ToChildBlockJoinWeight extends Weight {
-    private final Weight parentWeight;
+  private static class ToChildBlockJoinWeight extends FilterWeight {
     private final BitSetProducer parentsFilter;
     private final boolean doScores;
 
     public ToChildBlockJoinWeight(Query joinQuery, Weight parentWeight, BitSetProducer parentsFilter, boolean doScores) {
-      super(joinQuery);
-      this.parentWeight = parentWeight;
+      super(joinQuery, parentWeight);
       this.parentsFilter = parentsFilter;
       this.doScores = doScores;
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      parentWeight.extractTerms(terms);
     }
 
     // NOTE: acceptDocs applies (and is checked) only in the
@@ -112,7 +103,7 @@ public class ToChildBlockJoinQuery extends Query {
     @Override
     public Scorer scorer(LeafReaderContext readerContext) throws IOException {
 
-      final Scorer parentScorer = parentWeight.scorer(readerContext);
+      final Scorer parentScorer = in.scorer(readerContext);
 
       if (parentScorer == null) {
         // No matches
@@ -138,7 +129,7 @@ public class ToChildBlockJoinQuery extends Query {
         return Explanation.match(
           scorer.score(), 
           String.format(Locale.ROOT, "Score based on parent document %d", parentDoc + context.docBase), 
-          parentWeight.explain(context, parentDoc)
+          in.explain(context, parentDoc)
         );
       }
       return Explanation.noMatch("Not a match");

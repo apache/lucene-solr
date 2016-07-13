@@ -20,14 +20,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
-import java.util.Set;
-
 import com.carrotsearch.hppc.IntFloatHashMap;
 import com.carrotsearch.hppc.IntIntHashMap;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
@@ -35,7 +33,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryRescorer;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
@@ -179,33 +176,20 @@ public class ReRankQParserPlugin extends QParserPlugin {
     }
   }
 
-  private class ReRankWeight extends Weight{
+  private class ReRankWeight extends FilterWeight {
     private Query reRankQuery;
     private IndexSearcher searcher;
-    private Weight mainWeight;
     private double reRankWeight;
 
     public ReRankWeight(Query mainQuery, Query reRankQuery, double reRankWeight, IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-      super(mainQuery);
+      super(mainQuery, mainQuery.createWeight(searcher, needsScores, boost));
       this.reRankQuery = reRankQuery;
       this.searcher = searcher;
       this.reRankWeight = reRankWeight;
-      this.mainWeight = mainQuery.createWeight(searcher, needsScores, boost);
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      this.mainWeight.extractTerms(terms);
-
-    }
-
-    @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
-      return mainWeight.scorer(context);
     }
 
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Explanation mainExplain = mainWeight.explain(context, doc);
+      Explanation mainExplain = in.explain(context, doc);
       return new QueryRescorer(reRankQuery) {
         @Override
         protected float combine(float firstPassScore, boolean secondPassMatches, float secondPassScore) {

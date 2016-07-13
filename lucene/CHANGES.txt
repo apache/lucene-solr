@@ -132,6 +132,9 @@ Other
 
 * LUCENE-7360: Explanation.toHtml() is deprecated. (Alan Woodward)
   
+* LUCENE-7372: Factor out an org.apache.lucene.search.FilterWeight class.
+  (Christine Poerschke, Adrien Grand, David Smiley)
+
 ======================= Lucene 6.1.0 =======================
 
 New Features

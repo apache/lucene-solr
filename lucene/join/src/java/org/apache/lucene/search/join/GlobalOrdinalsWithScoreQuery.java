@@ -22,6 +22,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -102,13 +103,10 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
         '}';
   }
 
-  final class W extends Weight {
-
-    private final Weight approximationWeight;
+  final class W extends FilterWeight {
 
     W(Query query, Weight approximationWeight) {
-      super(query);
-      this.approximationWeight = approximationWeight;
+      super(query, approximationWeight);
     }
 
     @Override
@@ -148,7 +146,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
         return null;
       }
 
-      Scorer approximationScorer = approximationWeight.scorer(context);
+      Scorer approximationScorer = in.scorer(context);
       if (approximationScorer == null) {
         return null;
       } else if (globalOrds != null) {
