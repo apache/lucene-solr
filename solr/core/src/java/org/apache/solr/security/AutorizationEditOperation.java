@@ -1,18 +1,3 @@
-package org.apache.solr.security;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import org.apache.solr.util.CommandOperation;
-
-import static org.apache.solr.common.util.Utils.getDeepCopy;
-import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
-import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -30,6 +15,20 @@ import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
  * limitations under the License.
  */
 
+package org.apache.solr.security;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import org.apache.solr.util.CommandOperation;
+
+import static org.apache.solr.common.util.Utils.getDeepCopy;
+import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
+import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
 
 enum AutorizationEditOperation {
   SET_USER_ROLE("set-user-role") {
