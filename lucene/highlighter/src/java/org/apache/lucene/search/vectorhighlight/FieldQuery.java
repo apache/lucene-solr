@@ -37,6 +37,7 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
 
 /**
@@ -136,6 +137,11 @@ public class FieldQuery {
       final Query q = ((CustomScoreQuery) sourceQuery).getSubQuery();
       if (q != null) {
         flatten( q, reader, flatQueries, boost);
+      }
+    } else if (sourceQuery instanceof ToParentBlockJoinQuery) {
+      Query childQuery = ((ToParentBlockJoinQuery) sourceQuery).getChildQuery();
+      if (childQuery != null) {
+        flatten(childQuery, reader, flatQueries, boost);
       }
     } else if (reader != null) {
       Query query = sourceQuery;
