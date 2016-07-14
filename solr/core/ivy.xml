@@ -134,6 +134,7 @@
     <dependency org="org.apache.poi" name="poi" rev="${/org.apache.poi/poi}" conf="compile"/>
     <dependency org="org.apache.poi" name="poi-ooxml" rev="${/org.apache.poi/poi-ooxml}" conf="compile"/>
     <dependency org="org.apache.poi" name="poi-ooxml-schemas" rev="${/org.apache.poi/poi-ooxml-schemas}" conf="compile"/>
+    <dependency org="org.apache.xmlbeans" name="xmlbeans" rev="${/org.apache.xmlbeans/xmlbeans}" conf="compile"/>
     <dependency org="antlr" name="antlr" rev="${/antlr/antlr}" conf="test.MiniKdc"/>
     <dependency org="net.sf.ehcache" name="ehcache-core" rev="${/net.sf.ehcache/ehcache-core}" conf="test.MiniKdc"/>
 

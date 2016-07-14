@@ -24,10 +24,6 @@ import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.format.DateTimeFormatter;
 import java.io.IOException;
 import java.io.Writer;
@@ -49,15 +45,15 @@ import java.util.LinkedHashSet;
  */
 
 public class XLSXResponseWriter extends RawResponseWriter {
-  Logger log = LoggerFactory.getLogger(SolrCore.class);
 
   @Override
   public void init(NamedList n) {
+    //solrconfig calls in here
   }
 
   @Override
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    //throwaway arraywriter just to satisfy super requirements; we're grabbing
+    // throw away arraywriter just to satisfy super requirements; we're grabbing
     // all writes before they go to it anyway
     XLSXWriter w = new XLSXWriter(new CharArrayWriter(), req, rsp);
     try {
@@ -77,8 +73,6 @@ class XLSXWriter extends TextResponseWriter {
 
   SolrQueryRequest req;
   SolrQueryResponse rsp;
-
-  Logger log = LoggerFactory.getLogger(SolrCore.class);
 
   class SerialWriteWorkbook {
     SXSSFWorkbook swb;
@@ -134,12 +128,10 @@ class XLSXWriter extends TextResponseWriter {
     void flush(OutputStream out) {
       try {
         swb.write(out);
-        log.info("Flush complete");
       } catch (IOException e) {
         StringWriter sw = new StringWriter();
         e.printStackTrace(new PrintWriter(sw));
         String stacktrace = sw.toString();
-        log.warn("Failed to export to XLSX - "+stacktrace);
       }finally {
         swb.dispose();
       }
@@ -157,6 +149,8 @@ class XLSXWriter extends TextResponseWriter {
 
   public XLSXWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp){
     super(writer, req, rsp);
+    this.req = req;
+    this.rsp = rsp;
   }
 
   public void writeResponse(OutputStream out) throws IOException {
