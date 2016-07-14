@@ -25,6 +25,8 @@
 
   <import file="../contrib-build.xml"/>
   
+  <target name="compile-test" depends="-compile-test-lucene-analysis,common-solr.compile-test"/>
+
   <path id="analysis.extras.lucene.libs">
     <pathelement location="${analyzers-icu.jar}"/>
     <!-- 
@@ -41,6 +43,14 @@
     <fileset dir="lib" excludes="${common.classpath.excludes}"/>
     <path refid="analysis.extras.lucene.libs" />
     <path refid="solr.base.classpath"/>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="solr.test.base.classpath"/>
+    <dirset dir="${common.dir}/build/analysis/">
+      <include name="**/classes/java"/>
+      <include name="**/classes/test"/>
+    </dirset>
   </path>
 
   <!-- 
