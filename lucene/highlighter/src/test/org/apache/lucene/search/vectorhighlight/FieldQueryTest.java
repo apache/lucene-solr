@@ -959,10 +959,9 @@ public class FieldQueryTest extends AbstractTestCase {
     initBoost();
     Query childQuery = tq(boost, "a");
     Query query = new ToParentBlockJoinQuery(childQuery, new QueryBitSetProducer(new MatchAllDocsQuery()), ScoreMode.None);
-    query = new BoostQuery(query, boost );
     FieldQuery fq = new FieldQuery(query, true, true );
     Set<Query> flatQueries = new HashSet<>();
-    fq.flatten(query, reader, flatQueries, 1f );
+    fq.flatten(query, reader, flatQueries, 1f);
     assertCollectionQueries(flatQueries, tq(boost, "a"));
   }
 
