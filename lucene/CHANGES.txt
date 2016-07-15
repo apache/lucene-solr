@@ -54,6 +54,10 @@ New Features
 * LUCENE-7355: Added Analyzer#normalize(), which only applies normalization to
   an input string. (Adrien Grand)
 
+* LUCENE-7380: Add Polygon.fromGeoJSON for more easily creating
+  Polygon instances from a standard GeoJSON string (Robert Muir, Mike
+  McCandless)
+
 Bug Fixes
 
 * LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
