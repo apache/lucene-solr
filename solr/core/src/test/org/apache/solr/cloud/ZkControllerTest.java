@@ -24,7 +24,16 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -331,6 +340,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   private static class MockCoreContainer extends CoreContainer {
 
+    UpdateShardHandler updateShardHandler;
+
     public MockCoreContainer() {
       super((Object)null);
       this.shardHandlerFactory = new HttpShardHandlerFactory();
@@ -342,8 +353,13 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     
     @Override
     public UpdateShardHandler getUpdateShardHandler() {
-      return new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
+      return this.updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     }
 
+    @Override
+    public void shutdown() {
+      super.shutdown();
+      updateShardHandler.close();
+    }
   }
 }

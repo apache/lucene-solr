@@ -113,6 +113,9 @@ Bug Fixes
 * SOLR-9287: Including 'score' in the 'fl' param when doing an RTG no longer causes an NPE
   (hossman, Ishan Chattopadhyaya)
 
+* SOLR-9290: TCP-connections in CLOSE_WAIT spike during heavy indexing and do not decrease.
+  (Mads Tomasgård Bjørgan, Anshum Gupta, Shai Erera, hossman, Mark Miller, yonik, shalin)
+
 Optimizations
 ----------------------
 
