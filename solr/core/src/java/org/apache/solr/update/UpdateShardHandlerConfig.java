@@ -22,10 +22,13 @@ public class UpdateShardHandlerConfig {
   public static final int DEFAULT_DISTRIBUPDATESOTIMEOUT = 600000;
   public static final int DEFAULT_MAXUPDATECONNECTIONS = 100000;
   public static final int DEFAULT_MAXUPDATECONNECTIONSPERHOST = 100000;
+  public static final int DEFAULT_UPDATECONNECTIONSEVICTORSLEEPDELAY = 5000;
+  public static final int DEFAULT_MAXUPDATECONNECTIONIDLETIME = 40000;
 
   public static final UpdateShardHandlerConfig DEFAULT
       = new UpdateShardHandlerConfig(DEFAULT_MAXUPDATECONNECTIONS, DEFAULT_MAXUPDATECONNECTIONSPERHOST,
-                                     DEFAULT_DISTRIBUPDATESOTIMEOUT, DEFAULT_DISTRIBUPDATECONNTIMEOUT);
+                                     DEFAULT_DISTRIBUPDATESOTIMEOUT, DEFAULT_DISTRIBUPDATECONNTIMEOUT,
+                                      DEFAULT_UPDATECONNECTIONSEVICTORSLEEPDELAY, DEFAULT_MAXUPDATECONNECTIONIDLETIME);
 
   private final int maxUpdateConnections;
 
@@ -35,11 +38,17 @@ public class UpdateShardHandlerConfig {
 
   private final int distributedConnectionTimeout;
 
-  public UpdateShardHandlerConfig(int maxUpdateConnections, int maxUpdateConnectionsPerHost, int distributedSocketTimeout, int distributedConnectionTimeout) {
+  private final int updateConnectionsEvictorSleepDelay;
+
+  private final int maxUpdateConnectionIdleTime;
+
+  public UpdateShardHandlerConfig(int maxUpdateConnections, int maxUpdateConnectionsPerHost, int distributedSocketTimeout, int distributedConnectionTimeout, int updateConnectionsEvictorSleepDelay, int maxUpdateConnectionIdleTime) {
     this.maxUpdateConnections = maxUpdateConnections;
     this.maxUpdateConnectionsPerHost = maxUpdateConnectionsPerHost;
     this.distributedSocketTimeout = distributedSocketTimeout;
     this.distributedConnectionTimeout = distributedConnectionTimeout;
+    this.updateConnectionsEvictorSleepDelay = updateConnectionsEvictorSleepDelay;
+    this.maxUpdateConnectionIdleTime = maxUpdateConnectionIdleTime;
   }
 
   public int getMaxUpdateConnectionsPerHost() {
@@ -56,5 +65,13 @@ public class UpdateShardHandlerConfig {
 
   public int getDistributedConnectionTimeout() {
     return distributedConnectionTimeout;
+  }
+
+  public int getUpdateConnectionsEvictorSleepDelay() {
+    return updateConnectionsEvictorSleepDelay;
+  }
+
+  public int getMaxUpdateConnectionIdleTime() {
+    return maxUpdateConnectionIdleTime;
   }
 }

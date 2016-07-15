@@ -21,8 +21,11 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.2.13.v20150730
 
+Bug Fixes
+---------------------
 
-(No Changes)
+* SOLR-9290: TCP-connections in CLOSE_WAIT spike during heavy indexing and do not decrease.
+  (Mads Tomasgård Bjørgan, Anshum Gupta, Shai Erera, hossman, Mark Miller, yonik, shalin)
 
 
 ======================= 5.5.2 =======================

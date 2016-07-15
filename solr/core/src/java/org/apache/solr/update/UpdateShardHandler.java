@@ -16,12 +16,18 @@
  */
 package org.apache.solr.update;
 
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.SchemeRegistryFactory;
+import org.apache.http.util.Args;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.RecoveryStrategy;
@@ -33,9 +39,6 @@ import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.core.NodeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.ExecutorService;
 
 public class UpdateShardHandler {
   
@@ -60,6 +63,8 @@ public class UpdateShardHandler {
 
   private final UpdateShardHandlerConfig cfg;
 
+  private IdleConnectionsEvictor idleConnectionsEvictor;
+
   @Deprecated
   public UpdateShardHandler(NodeConfig cfg) {
     this(cfg.getUpdateShardHandlerConfig());
@@ -76,6 +81,13 @@ public class UpdateShardHandler {
     ModifiableSolrParams clientParams = getClientParams();
     log.info("Creating UpdateShardHandler HTTP client with params: {}", clientParams);
     client = HttpClientUtil.createClient(clientParams, clientConnectionManager);
+
+    if (cfg != null)  {
+      idleConnectionsEvictor = new IdleConnectionsEvictor(clientConnectionManager,
+          cfg.getUpdateConnectionsEvictorSleepDelay(), TimeUnit.MILLISECONDS,
+          cfg.getMaxUpdateConnectionIdleTime(), TimeUnit.MILLISECONDS);
+      idleConnectionsEvictor.start();
+    }
   }
 
   protected ModifiableSolrParams getClientParams() {
@@ -133,12 +145,96 @@ public class UpdateShardHandler {
       // we interrupt on purpose here, but this executor should not run threads that do disk IO!
       ExecutorUtil.shutdownWithInterruptAndAwaitTermination(updateExecutor);
       ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
+      if (idleConnectionsEvictor != null) {
+        idleConnectionsEvictor.shutdown();
+      }
     } catch (Exception e) {
       SolrException.log(log, e);
     } finally {
       IOUtils.closeQuietly(client);
       clientConnectionManager.shutdown();
     }
+  }
+
+  /**
+   * This class is adapted from org.apache.http.impl.client.IdleConnectionEvictor and changed to use
+   * the deprecated ClientConnectionManager instead of the new HttpClientConnectionManager.
+   * <p>
+   * This class maintains a background thread to enforce an eviction policy for expired / idle
+   * persistent connections kept alive in the connection pool.
+   * <p>
+   * See SOLR-9290 for related discussion.
+   */
+  public static final class IdleConnectionsEvictor {
+
+    private final ClientConnectionManager connectionManager;
+    private final ThreadFactory threadFactory;
+    private final Thread thread;
+    private final long sleepTimeMs;
+    private final long maxIdleTimeMs;
+
+    private volatile Exception exception;
+
+    public IdleConnectionsEvictor(
+        final ClientConnectionManager connectionManager,
+        final ThreadFactory threadFactory,
+        final long sleepTime, final TimeUnit sleepTimeUnit,
+        final long maxIdleTime, final TimeUnit maxIdleTimeUnit) {
+      this.connectionManager = Args.notNull(connectionManager, "Connection manager");
+      this.threadFactory = threadFactory != null ? threadFactory : new DefaultThreadFactory();
+      this.sleepTimeMs = sleepTimeUnit != null ? sleepTimeUnit.toMillis(sleepTime) : sleepTime;
+      this.maxIdleTimeMs = maxIdleTimeUnit != null ? maxIdleTimeUnit.toMillis(maxIdleTime) : maxIdleTime;
+      this.thread = this.threadFactory.newThread(new Runnable() {
+        @Override
+        public void run() {
+          try {
+            while (!Thread.currentThread().isInterrupted()) {
+              Thread.sleep(sleepTimeMs);
+              connectionManager.closeExpiredConnections();
+              if (maxIdleTimeMs > 0) {
+                connectionManager.closeIdleConnections(maxIdleTimeMs, TimeUnit.MILLISECONDS);
+              }
+            }
+          } catch (Exception ex) {
+            exception = ex;
+          }
+
+        }
+      });
+    }
+
+    public IdleConnectionsEvictor(ClientConnectionManager connectionManager,
+                                  long sleepTime, TimeUnit sleepTimeUnit, long maxIdleTime, TimeUnit maxIdleTimeUnit) {
+      this(connectionManager, null, sleepTime, sleepTimeUnit, maxIdleTime, maxIdleTimeUnit);
+    }
+
+    public void start() {
+      thread.start();
+    }
+
+    public void shutdown() {
+      thread.interrupt();
+    }
+
+    public boolean isRunning() {
+      return thread.isAlive();
+    }
+
+    public void awaitTermination(final long time, final TimeUnit tunit) throws InterruptedException {
+      thread.join((tunit != null ? tunit : TimeUnit.MILLISECONDS).toMillis(time));
+    }
+
+    static class DefaultThreadFactory implements ThreadFactory {
+
+      @Override
+      public Thread newThread(final Runnable r) {
+        final Thread t = new Thread(r, "solr-idle-connections-evictor");
+        t.setDaemon(true);
+        return t;
+      }
+
+    }
+
   }
 
 }

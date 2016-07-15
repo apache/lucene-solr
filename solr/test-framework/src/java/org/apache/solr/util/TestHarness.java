@@ -177,7 +177,7 @@ public class TestHarness extends BaseTestHarness {
     UpdateShardHandlerConfig updateShardHandlerConfig
         = new UpdateShardHandlerConfig(UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONS,
                                        UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONSPERHOST,
-                                       30000, 30000);
+                                       30000, 30000, 5000, 50000);
     return new NodeConfig.NodeConfigBuilder("testNode", loader)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
         .setCloudConfig(cloudConfig)

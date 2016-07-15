@@ -109,7 +109,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
                      zkStateReader.getBaseUrlForNodeName("foo-bar.baz.org:9999_some_dir"));
         assertEquals("http://foo-bar.baz.org:9999/solr/sub_dir",
                      zkStateReader.getBaseUrlForNodeName("foo-bar.baz.org:9999_solr%2Fsub_dir"));
-        
+
         // generateNodeName + getBaseUrlForNodeName
         assertEquals("http://foo:9876/solr",
                      zkStateReader.getBaseUrlForNodeName
@@ -142,10 +142,10 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         //Verify the URL Scheme is taken into account
         zkStateReader.getZkClient().create(ZkStateReader.CLUSTER_PROPS,
             Utils.toJSON(Collections.singletonMap("urlScheme", "https")), CreateMode.PERSISTENT, true);
-        
+
         assertEquals("https://zzz.xxx:1234/solr",
             zkStateReader.getBaseUrlForNodeName("zzz.xxx:1234_solr"));
-        
+
         assertEquals("https://foo-bar.com:80/some_dir",
             zkStateReader.getBaseUrlForNodeName
             (ZkController.generateNodeName("foo-bar.com","80","/some_dir")));
@@ -327,6 +327,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   private static class MockCoreContainer extends CoreContainer {
 
+    UpdateShardHandler updateShardHandler;
+
     public MockCoreContainer() {
       super((Object)null);
       this.shardHandlerFactory = new HttpShardHandlerFactory();
@@ -338,8 +340,13 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     
     @Override
     public UpdateShardHandler getUpdateShardHandler() {
-      return new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
+      return this.updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     }
 
+    @Override
+    public void shutdown() {
+      super.shutdown();
+      updateShardHandler.close();
+    }
   }
 }
