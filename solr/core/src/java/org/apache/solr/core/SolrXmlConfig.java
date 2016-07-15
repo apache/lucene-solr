@@ -279,6 +279,8 @@ public class SolrXmlConfig {
     int maxUpdateConnectionsPerHost = UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONSPERHOST;
     int distributedSocketTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
     int distributedConnectionTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATECONNTIMEOUT;
+    int updateConnectionsEvictorSleepDelay = UpdateShardHandlerConfig.DEFAULT_UPDATECONNECTIONSEVICTORSLEEPDELAY;
+    int maxUpdateConnectionIdleTime = UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONIDLETIME;
 
     Object muc = nl.remove("maxUpdateConnections");
     if (muc != null) {
@@ -304,10 +306,23 @@ public class SolrXmlConfig {
       defined = true;
     }
 
+    Object ucesd = nl.remove("updateConnectionsEvictorSleepDelay");
+    if (ucesd != null)  {
+      updateConnectionsEvictorSleepDelay = parseInt("updateConnectionsEvictorSleepDelay", ucesd.toString());
+      defined = true;
+    }
+
+    Object mucit = nl.remove("maxUpdateConnectionIdleTime");
+    if (mucit != null)  {
+      maxUpdateConnectionIdleTime = parseInt("maxUpdateConnectionIdleTime", mucit.toString());
+      defined = true;
+    }
+
     if (!defined && !alwaysDefine)
       return null;
 
-    return new UpdateShardHandlerConfig(maxUpdateConnections, maxUpdateConnectionsPerHost, distributedSocketTimeout, distributedConnectionTimeout);
+    return new UpdateShardHandlerConfig(maxUpdateConnections, maxUpdateConnectionsPerHost, distributedSocketTimeout,
+        distributedConnectionTimeout, updateConnectionsEvictorSleepDelay, maxUpdateConnectionIdleTime);
 
   }
 

@@ -17,8 +17,11 @@
 package org.apache.solr.handler.component;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.http.impl.conn.SchemeRegistryFactory;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -26,10 +29,12 @@ import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
@@ -67,7 +72,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       new DefaultSolrThreadFactory("httpShardExecutor")
   );
 
-  protected HttpClient defaultClient;
+  protected PoolingClientConnectionManager clientConnectionManager;
+  protected CloseableHttpClient defaultClient;
   private LBHttpSolrClient loadbalancer;
   //default values:
   int soTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
@@ -80,6 +86,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   int queueSize = -1;
   boolean accessPolicy = false;
   boolean useRetries = false;
+  int maxConnectionIdleTime = UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONIDLETIME;
+  int connectionsEvictorSleepDelay = UpdateShardHandlerConfig.DEFAULT_UPDATECONNECTIONSEVICTORSLEEPDELAY;
+
+  protected UpdateShardHandler.IdleConnectionsEvictor idleConnectionsEvictor;
 
   private String scheme = null;
 
@@ -106,6 +116,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   // Turn on retries for certain IOExceptions, many of which can happen
   // due to connection pooling limitations / races
   static final String USE_RETRIES = "useRetries";
+
+  static final String CONNECTIONS_EVICTOR_SLEEP_DELAY = "connectionsEvictorSleepDelay";
+
+  static final String MAX_CONNECTION_IDLE_TIME = "maxConnectionIdleTime";
 
   /**
    * Get {@link ShardHandler} that uses the default http client.
@@ -141,6 +155,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     this.queueSize = getParameter(args, INIT_SIZE_OF_QUEUE, queueSize,sb);
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy,sb);
     this.useRetries = getParameter(args, USE_RETRIES, useRetries,sb);
+    this.connectionsEvictorSleepDelay = getParameter(args, CONNECTIONS_EVICTOR_SLEEP_DELAY, connectionsEvictorSleepDelay, sb);
+    this.maxConnectionIdleTime = getParameter(args, MAX_CONNECTION_IDLE_TIME, maxConnectionIdleTime, sb);
+
     log.info("created with {}",sb);
     
     // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.
@@ -163,7 +180,13 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
     ModifiableSolrParams clientParams = getClientParams();
 
-    this.defaultClient = HttpClientUtil.createClient(clientParams);
+    this.clientConnectionManager = new PoolingClientConnectionManager(SchemeRegistryFactory.createSystemDefault());
+    clientConnectionManager.setDefaultMaxPerRoute(maxConnectionsPerHost);
+    clientConnectionManager.setMaxTotal(maxConnections);
+    this.defaultClient = HttpClientUtil.createClient(clientParams, clientConnectionManager);
+    this.idleConnectionsEvictor = new UpdateShardHandler.IdleConnectionsEvictor(clientConnectionManager,
+        connectionsEvictorSleepDelay, TimeUnit.MILLISECONDS, maxConnectionIdleTime, TimeUnit.MILLISECONDS);
+    idleConnectionsEvictor.start();
     
     // must come after createClient
     if (useRetries) {
@@ -177,8 +200,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   
   protected ModifiableSolrParams getClientParams() {
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
-    clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost);
-    clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, maxConnections);
     clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, soTimeout);
     clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, connectionTimeout);
     if (!useRetries) {
@@ -222,8 +243,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
     } finally {
       try {
-        if (defaultClient != null) {
-          defaultClient.getConnectionManager().shutdown();
+        if (idleConnectionsEvictor != null) {
+          idleConnectionsEvictor.shutdown();
+        }
+        IOUtils.closeQuietly(defaultClient);
+        if (clientConnectionManager != null)  {
+          clientConnectionManager.shutdown();
         }
       } finally {
         
