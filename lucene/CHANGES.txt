@@ -38,6 +38,9 @@ API Changes
 
 New Features
 
+* LUCENE-7381: Add point based DoubleRangeField and RangeFieldQuery for
+  indexing and querying on Ranges up to 4 dimensions (Nick Knize)
+
 * LUCENE-7302: IndexWriter methods that change the index now return a
   long "sequence number" indicating the effective equivalent
   single-threaded execution order (Mike McCandless)
