@@ -65,6 +65,10 @@ Bug Fixes
 * LUCENE-7340: MemoryIndex.toString() could throw NPE; fixed. Renamed to toStringDebug().
   (Daniel Collins, David Smiley)
 
+* LUCENE-7382: Fix bug introduced by LUCENE-7355 that used the
+  wrong default AttributeFactory for new Tokenizers.
+  (Terry Smith, Uwe Schindler)
+
 Improvements
 
 * LUCENE-7323: Compound file writing now verifies the incoming

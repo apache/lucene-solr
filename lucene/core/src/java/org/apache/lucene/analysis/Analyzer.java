@@ -287,9 +287,9 @@ public abstract class Analyzer implements Closeable {
   /** Return the {@link AttributeFactory} to be used for
    *  {@link #tokenStream analysis} and
    *  {@link #normalize(String, String) normalization}. The default
-   *  implementation returns {@link AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY}. */
+   *  implementation returns {@link TokenStream#DEFAULT_TOKEN_ATTRIBUTE_FACTORY}. */
   protected AttributeFactory attributeFactory() {
-    return AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY;
+    return TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY;
   }
 
   /**
