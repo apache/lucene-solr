@@ -147,6 +147,9 @@ Bug Fixes
 * SOLR-9287: Including 'score' in the 'fl' param when doing an RTG no longer causes an NPE
   (hossman, Ishan Chattopadhyaya)
 
+* SOLR-7280: In cloud-mode sort the cores smartly before loading & limit threads to improve cluster stability
+  (noble, Erick Erickson, shalin)
+
 Optimizations
 ----------------------
 
