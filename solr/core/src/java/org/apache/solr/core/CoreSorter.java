@@ -1,20 +1,3 @@
-package org.apache.solr.core;
-
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-
-import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -31,6 +14,23 @@ import static java.util.stream.Collectors.toList;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.core;
+
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+
+import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
 
 /**
  * This is a utility class that sorts cores in such a way as to minimize other cores
