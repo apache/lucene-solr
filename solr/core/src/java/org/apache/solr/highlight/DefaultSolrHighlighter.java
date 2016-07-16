@@ -739,12 +739,12 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     return new TokenOrderingFilter(tStream, 10);
   }
 
-  // Wraps FVH to allow pass-by-reference
-  protected class FvhContainer {
+  // Wraps FVH to allow pass-by-reference. Public access to allow use in 3rd party subclasses
+  public class FvhContainer {
     FastVectorHighlighter fvh;
     FieldQuery fieldQuery;
 
-    FvhContainer(FastVectorHighlighter fvh, FieldQuery fieldQuery) {
+    public FvhContainer(FastVectorHighlighter fvh, FieldQuery fieldQuery) {
       this.fvh = fvh;
       this.fieldQuery = fieldQuery;
     }
