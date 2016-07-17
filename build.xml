@@ -762,6 +762,7 @@ Test args: [${args}]</echo>
   <target name="jenkins-hourly">
     <antcall>
       <param name="is.jenkins.build" value="true"/>
+      <param name="tests.haltonfailure" value="false"/>
       <target name="-jenkins-base"/>
     </antcall>
   </target>
@@ -769,6 +770,7 @@ Test args: [${args}]</echo>
   <target name="jenkins-nightly">
     <antcall>
       <param name="is.jenkins.build" value="true"/>
+      <param name="tests.haltonfailure" value="false"/>
       <param name="tests.nightly" value="true"/>
       <target name="-jenkins-base"/>
     </antcall>
