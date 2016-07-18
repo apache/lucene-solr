@@ -95,6 +95,8 @@ New Features
   Spatial4j package "com.spatial4j.core" it is rewritten to "org.locationtech.spatial4j" with a warning.
   (David Smiley)
 
+* SOLR-9240: Support parallel ETL with the topic expression (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
