@@ -155,6 +155,8 @@ Bug Fixes
 * SOLR-7280: In cloud-mode sort the cores smartly before loading & limit threads to improve cluster stability
   (noble, Erick Erickson, shalin)
 
+* SOLR-9285: Fixed AIOOBE when using ValueSourceAugmenter in single node RTG (hossman)
+
 Optimizations
 ----------------------
 

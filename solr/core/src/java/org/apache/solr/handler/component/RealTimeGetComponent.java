@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,13 +59,13 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.BasicResultContext;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocList;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -192,12 +193,18 @@ public class RealTimeGetComponent extends SearchComponent
     UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
 
     RefCounted<SolrIndexSearcher> searcherHolder = null;
+    
+    // this is initialized & set on the context *after* any searcher (re-)opening
+    ResultContext resultContext = null;
+    final DocTransformer transformer = rsp.getReturnFields().getTransformer();
 
-    DocTransformer transformer = rsp.getReturnFields().getTransformer();
-    if (transformer != null) {
-      ResultContext context = new BasicResultContext(null, rsp.getReturnFields(), null, null, req);
-      transformer.setContext(context);
-    }
+    // true in any situation where we have to use a realtime searcher rather then returning docs
+    // directly from the UpdateLog
+    final boolean mustUseRealtimeSearcher =
+      // if we have filters, we need to check those against the indexed form of the doc
+      (rb.getFilters() != null)
+      || ((null != transformer) && transformer.needsSolrIndexSearcher());
+
    try {
      SolrIndexSearcher searcher = null;
 
@@ -214,13 +221,13 @@ public class RealTimeGetComponent extends SearchComponent
            switch (oper) {
              case UpdateLog.ADD:
 
-               if (rb.getFilters() != null) {
-                 // we have filters, so we need to check those against the indexed form of the doc
+               if (mustUseRealtimeSearcher) {
                  if (searcherHolder != null) {
-                   // close handles to current searchers
+                   // close handles to current searchers & result context
                    searcher = null;
                    searcherHolder.decref();
                    searcherHolder = null;
+                   resultContext = null;
                  }
                  ulog.openRealtimeSearcher();  // force open a new realtime searcher
                  o = null;  // pretend we never found this record and fall through to use the searcher
@@ -228,7 +235,7 @@ public class RealTimeGetComponent extends SearchComponent
                }
 
                SolrDocument doc = toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), core.getLatestSchema());
-               if(transformer!=null) {
+               if (transformer!=null) {
                  transformer.transform(doc, -1, 0); // unknown docID
                }
               docList.add(doc);
@@ -246,6 +253,7 @@ public class RealTimeGetComponent extends SearchComponent
        if (searcher == null) {
          searcherHolder = core.getRealtimeSearcher();
          searcher = searcherHolder.get();
+         // don't bother with ResultContext yet, we won't need it if doc doesn't match filters
        }
 
        int docid = -1;
@@ -267,12 +275,17 @@ public class RealTimeGetComponent extends SearchComponent
          }
        }
 
-
        if (docid < 0) continue;
+       
        Document luceneDocument = searcher.doc(docid, rsp.getReturnFields().getLuceneFieldNames());
        SolrDocument doc = toSolrDoc(luceneDocument,  core.getLatestSchema());
        searcher.decorateDocValueFields(doc, docid, searcher.getNonStoredDVs(true));
-       if( transformer != null ) {
+       if ( null != transformer) {
+         if (null == resultContext) {
+           // either first pass, or we've re-opened searcher - either way now we setContext
+           resultContext = new RTGResultContext(rsp.getReturnFields(), searcher, req);
+           transformer.setContext(resultContext);
+         }
          transformer.transform(doc, docid, 0);
        }
        docList.add(doc);
@@ -754,4 +767,46 @@ public class RealTimeGetComponent extends SearchComponent
     // TODO do we need to sort versions using PeerSync.absComparator?
     return new ArrayList<>(versionsToRet);
   }
+
+  /**
+   * A lite weight ResultContext for use with RTG requests that can point at Realtime Searchers
+   */
+  private static final class RTGResultContext extends ResultContext {
+    final ReturnFields returnFields;
+    final SolrIndexSearcher searcher;
+    final SolrQueryRequest req;
+    public RTGResultContext(ReturnFields returnFields, SolrIndexSearcher searcher, SolrQueryRequest req) {
+      this.returnFields = returnFields;
+      this.searcher = searcher;
+      this.req = req;
+    }
+    
+    /** @returns null */
+    public DocList getDocList() {
+      return null;
+    }
+    
+    public ReturnFields getReturnFields() {
+      return this.returnFields;
+    }
+    
+    public SolrIndexSearcher getSearcher() {
+      return this.searcher;
+    }
+    
+    /** @returns null */
+    public Query getQuery() {
+      return null;
+    }
+    
+    public SolrQueryRequest getRequest() {
+      return this.req;
+    }
+    
+    /** @returns null */
+    public Iterator<SolrDocument> getProcessedDocuments() {
+      return null;
+    }
+  }
+  
 }
