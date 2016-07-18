@@ -97,6 +97,9 @@ New Features
 
 * SOLR-9240: Support parallel ETL with the topic expression (Joel Bernstein)
 
+* SOLR-9275: XML QueryParser support (defType=xmlparser) now extensible via configuration.
+  (Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
