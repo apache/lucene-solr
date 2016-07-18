@@ -61,6 +61,8 @@ New Features
 * SOLR-9090: Add directUpdatesToLeadersOnly flag to solrj CloudSolrClient.
   (Marvin Justice, Christine Poerschke)
 
+* SOLR-9240: Support parallel ETL with the topic expression (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
