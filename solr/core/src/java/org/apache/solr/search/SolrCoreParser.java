@@ -43,6 +43,9 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
 
   @Override
   public void init(NamedList initArgs) {
+    if (initArgs == null || initArgs.size() == 0) {
+      return;
+    }
     final SolrResourceLoader loader;
     if (req == null) {
       loader = new SolrResourceLoader();
