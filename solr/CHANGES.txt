@@ -157,6 +157,8 @@ Bug Fixes
 
 * SOLR-9285: Fixed AIOOBE when using ValueSourceAugmenter in single node RTG (hossman)
 
+* SOLR-9288: Fix [docid] transformer to return -1 when used in RTG with uncommitted doc (hossman)
+
 Optimizations
 ----------------------
 
