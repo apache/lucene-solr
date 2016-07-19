@@ -81,8 +81,6 @@ import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH
 import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
-import static org.apache.solr.core.NodeConfig.NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS;
-import static org.apache.solr.core.NodeConfig.NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS_IN_CLOUD;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 
@@ -466,7 +464,7 @@ public class CoreContainer {
 
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(
-        cfg.getCoreLoadThreadCount(isZooKeeperAware() ? DEFAULT_CORE_LOAD_THREADS_IN_CLOUD : DEFAULT_CORE_LOAD_THREADS),
+        cfg.getCoreLoadThreadCount(isZooKeeperAware()),
         new DefaultSolrThreadFactory("coreLoadExecutor") );
     final List<Future<SolrCore>> futures = new ArrayList<>();
     try {
