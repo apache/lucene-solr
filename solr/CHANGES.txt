@@ -159,6 +159,8 @@ Bug Fixes
 
 * SOLR-9288: Fix [docid] transformer to return -1 when used in RTG with uncommitted doc (hossman)
 
+* SOLR-9309: Fix SolrCloud RTG response structure when multi ids requested but only 1 found (hossman)
+
 Optimizations
 ----------------------
 

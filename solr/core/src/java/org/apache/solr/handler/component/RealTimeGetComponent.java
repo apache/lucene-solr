@@ -143,10 +143,9 @@ public class RealTimeGetComponent extends SearchComponent
       return;
     }
 
-    String id[] = params.getParams("id");
-    String ids[] = params.getParams("ids");
-
-    if (id == null && ids == null) {
+    final IdsRequsted reqIds = IdsRequsted.parseParams(req);
+    
+    if (reqIds.allIds.isEmpty()) {
       return;
     }
 
@@ -169,20 +168,6 @@ public class RealTimeGetComponent extends SearchComponent
       }
     } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
-
-
-    String[] allIds = id==null ? new String[0] : id;
-
-    if (ids != null) {
-      List<String> lst = new ArrayList<>();
-      for (String s : allIds) {
-        lst.add(s);
-      }
-      for (String idList : ids) {
-        lst.addAll( StrUtils.splitSmart(idList, ",", true) );
-      }
-      allIds = lst.toArray(new String[lst.size()]);
     }
 
     SolrCore core = req.getCore();
@@ -209,7 +194,7 @@ public class RealTimeGetComponent extends SearchComponent
      SolrIndexSearcher searcher = null;
 
      BytesRefBuilder idBytes = new BytesRefBuilder();
-     for (String idStr : allIds) {
+     for (String idStr : reqIds.allIds) {
        fieldType.readableToIndexed(idStr, idBytes);
        if (ulog != null) {
          Object o = ulog.lookup(idBytes.get());
@@ -297,18 +282,7 @@ public class RealTimeGetComponent extends SearchComponent
      }
    }
 
-
-   // if the client specified a single id=foo, then use "doc":{
-   // otherwise use a standard doclist
-
-   if (ids ==  null && allIds.length <= 1) {
-     // if the doc was not found, then use a value of null.
-     rsp.add("doc", docList.size() > 0 ? docList.get(0) : null);
-   } else {
-     docList.setNumFound(docList.size());
-     rsp.addResponse(docList);
-   }
-
+   addDocListToResponse(rb, docList);
   }
 
 
@@ -461,25 +435,13 @@ public class RealTimeGetComponent extends SearchComponent
   }
 
   public int createSubRequests(ResponseBuilder rb) throws IOException {
-    SolrParams params = rb.req.getParams();
-    String id1[] = params.getParams("id");
-    String ids[] = params.getParams("ids");
-
-    if (id1 == null && ids == null) {
+    
+    final IdsRequsted reqIds = IdsRequsted.parseParams(rb.req);
+    if (reqIds.allIds.isEmpty()) {
       return ResponseBuilder.STAGE_DONE;
     }
-
-    List<String> allIds = new ArrayList<>();
-    if (id1 != null) {
-      for (String s : id1) {
-        allIds.add(s);
-      }
-    }
-    if (ids != null) {
-      for (String s : ids) {
-        allIds.addAll( StrUtils.splitSmart(s, ",", true) );
-      }
-    }
+    
+    SolrParams params = rb.req.getParams();
 
     // TODO: handle collection=...?
 
@@ -495,7 +457,7 @@ public class RealTimeGetComponent extends SearchComponent
 
 
       Map<String, List<String>> sliceToId = new HashMap<>();
-      for (String id : allIds) {
+      for (String id : reqIds.allIds) {
         Slice slice = coll.getRouter().getTargetSlice(id, null, null, params, coll);
 
         List<String> idsForShard = sliceToId.get(slice.getName());
@@ -524,7 +486,7 @@ public class RealTimeGetComponent extends SearchComponent
         rb.addRequest(this, sreq);
       }      
     } else {
-      String shardIdList = StrUtils.join(allIds, ',');
+      String shardIdList = StrUtils.join(reqIds.allIds, ',');
       ShardRequest sreq = new ShardRequest();
 
       sreq.purpose = 1;
@@ -586,17 +548,31 @@ public class RealTimeGetComponent extends SearchComponent
         docList.addAll(subList);
       }
     }
+    
+    addDocListToResponse(rb, docList);
+  }
 
-    if (docList.size() <= 1 && rb.req.getParams().getParams("ids")==null) {
+  /**
+   * Encapsulates logic for how a {@link SolrDocumentList} should be added to the response
+   * based on the request params used
+   */
+  private void addDocListToResponse(final ResponseBuilder rb, final SolrDocumentList docList) {
+    assert null != docList;
+    
+    final SolrQueryResponse rsp = rb.rsp;
+    final IdsRequsted reqIds = IdsRequsted.parseParams(rb.req);
+    
+    if (reqIds.useSingleDocResponse) {
+      assert docList.size() <= 1;
       // if the doc was not found, then use a value of null.
-      rb.rsp.add("doc", docList.size() > 0 ? docList.get(0) : null);
+      rsp.add("doc", docList.size() > 0 ? docList.get(0) : null);
     } else {
       docList.setNumFound(docList.size());
-      rb.rsp.addResponse(docList);
+      rsp.addResponse(docList);
     }
   }
 
-
+                                                                                               
 
   ////////////////////////////////////////////
   ///  SolrInfoMBean
@@ -768,6 +744,66 @@ public class RealTimeGetComponent extends SearchComponent
     return new ArrayList<>(versionsToRet);
   }
 
+  /** 
+   * Simple struct for tracking what ids were requested and what response format is expected 
+   * acording to the request params
+   */
+  private final static class IdsRequsted {
+    /** An List (which may be empty but will never be null) of the uniqueKeys requested. */
+    public final List<String> allIds;
+    /** 
+     * true if the params provided by the user indicate that a single doc response structure 
+     * should be used.  
+     * Value is meaninless if <code>ids</code> is empty.
+     */
+    public final boolean useSingleDocResponse;
+    private IdsRequsted(List<String> allIds, boolean useSingleDocResponse) {
+      assert null != allIds;
+      this.allIds = allIds;
+      this.useSingleDocResponse = useSingleDocResponse;
+    }
+    
+    /**
+     * Parsers the <code>id</code> and <code>ids</code> params attached to the specified request object, 
+     * and returns an <code>IdsRequsted</code> struct to use for this request.
+     * The <code>IdsRequsted</code> is cached in the {@link SolrQueryRequest#getContext} so subsequent 
+     * method calls on the same request will not re-parse the params.
+     */
+    public static IdsRequsted parseParams(SolrQueryRequest req) {
+      final String contextKey = IdsRequsted.class.toString() + "_PARSED_ID_PARAMS";
+      if (req.getContext().containsKey(contextKey)) {
+        return (IdsRequsted)req.getContext().get(contextKey);
+      }
+      final SolrParams params = req.getParams();
+      final String id[] = params.getParams("id");
+      final String ids[] = params.getParams("ids");
+      
+      if (id == null && ids == null) {
+        IdsRequsted result = new IdsRequsted(Collections.<String>emptyList(), true);
+        req.getContext().put(contextKey, result);
+        return result;
+      }
+      final List<String> allIds = new ArrayList<>((null == id ? 0 : id.length)
+                                                  + (null == ids ? 0 : (2 * ids.length)));
+      if (null != id) {
+        for (String singleId : id) {
+          allIds.add(singleId);
+        }
+      }
+      if (null != ids) {
+        for (String idList : ids) {
+          allIds.addAll( StrUtils.splitSmart(idList, ",", true) );
+        }
+      }
+      // if the client specified a single id=foo, then use "doc":{
+      // otherwise use a standard doclist
+      IdsRequsted result = new IdsRequsted(allIds, (ids == null && allIds.size() <= 1));
+      req.getContext().put(contextKey, result);
+      return result;
+    }
+  }
+
+  
   /**
    * A lite weight ResultContext for use with RTG requests that can point at Realtime Searchers
    */
