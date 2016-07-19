@@ -39,7 +39,7 @@ import org.apache.solr.util.MockCoreContainer;
 import static java.util.stream.Collectors.toList;
 import static org.apache.solr.core.CoreSorter.getShardName;
 import static org.easymock.EasyMock.createMock;
-import static org.easymock.EasyMock.expectLastCall;
+import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.reset;
 
@@ -49,16 +49,16 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
 
   public void testComparator() {
     List<CountsForEachShard> l = new ArrayList<>();
-    //                           DN LIV  MY
-    l.add(new CountsForEachShard(1, 3, 1));
-    l.add(new CountsForEachShard(0, 3, 2));
-    l.add(new CountsForEachShard(0, 3, 3));
-    l.add(new CountsForEachShard(0, 3, 4));
-    l.add(new CountsForEachShard(1, 0, 2));
-    l.add(new CountsForEachShard(1, 0, 1));
-    l.add(new CountsForEachShard(2, 5, 1));
-    l.add(new CountsForEachShard(2, 4, 2));
-    l.add(new CountsForEachShard(2, 3, 3));
+    //                           DOWN LIVE  MY
+    l.add(new CountsForEachShard(1,     3,  1));
+    l.add(new CountsForEachShard(0,     3,  2));
+    l.add(new CountsForEachShard(0,     3,  3));
+    l.add(new CountsForEachShard(0,     3,  4));
+    l.add(new CountsForEachShard(1,     0,  2));
+    l.add(new CountsForEachShard(1,     0,  1));
+    l.add(new CountsForEachShard(2,     5,  1));
+    l.add(new CountsForEachShard(2,     4,  2));
+    l.add(new CountsForEachShard(2,     3,  3));
 
     List<CountsForEachShard> expected = Arrays.asList(
         new CountsForEachShard(0, 3, 2),
@@ -108,14 +108,10 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     ZkController mockZKC = createMock(ZkController.class);
     ClusterState mockClusterState = createMock(ClusterState.class);
     reset(mockCC, mockZKC, mockClusterState);
-    mockCC.isZooKeeperAware();
-    expectLastCall().andAnswer(() -> Boolean.TRUE).anyTimes();
-    mockCC.getZkController();
-    expectLastCall().andAnswer(() -> mockZKC).anyTimes();
-    mockClusterState.getLiveNodes();
-    expectLastCall().andAnswer(() -> liveNodes).anyTimes();
-    mockZKC.getClusterState();
-    expectLastCall().andAnswer(() -> mockClusterState).anyTimes();
+    expect(mockCC.isZooKeeperAware()).andReturn(Boolean.TRUE).anyTimes();
+    expect(mockCC.getZkController()).andReturn(mockZKC).anyTimes();
+    expect(mockClusterState.getLiveNodes()).andReturn(liveNodes).anyTimes();
+    expect(mockZKC.getClusterState()).andReturn(mockClusterState).anyTimes();
     replay(mockCC, mockZKC, mockClusterState);
     return mockCC;
   }

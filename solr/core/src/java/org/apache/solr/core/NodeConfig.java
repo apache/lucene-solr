@@ -87,7 +87,7 @@ public class NodeConfig {
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
 
-    if (this.cloudConfig != null && this.getCoreLoadThreadCount(NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS) < 2) {
+    if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "SolrCloud requires a value of at least 2 for coreLoadThreads (configured value = " + this.coreLoadThreads + ")");
     }
@@ -109,8 +109,10 @@ public class NodeConfig {
     return updateShardHandlerConfig;
   }
 
-  public int getCoreLoadThreadCount(int def) {
-    return coreLoadThreads == null ? def : coreLoadThreads;
+  public int getCoreLoadThreadCount(boolean zkAware) {
+    return coreLoadThreads == null ?
+        (zkAware ? NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS_IN_CLOUD : NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS)
+        : coreLoadThreads;
   }
 
   public String getSharedLibDirectory() {
@@ -196,8 +198,8 @@ public class NodeConfig {
     private final String nodeName;
 
     public static final int DEFAULT_CORE_LOAD_THREADS = 3;
-    //No:of core load threads in cloud mode is set to a default of 24
-    public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 24;
+    //No:of core load threads in cloud mode is set to a default of 8
+    public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
 
     private static final int DEFAULT_TRANSIENT_CACHE_SIZE = Integer.MAX_VALUE;
 
