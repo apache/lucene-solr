@@ -126,7 +126,7 @@ public final class SpanNotQuery extends SpanQuery {
 
       Spans excludeSpans = excludeWeight.getSpans(context, requiredPostings);
       if (excludeSpans == null) {
-        return new ScoringWrapperSpans(includeSpans, getSimScorer(context));
+        return includeSpans;
       }
 
       TwoPhaseIterator excludeTwoPhase = excludeSpans.asTwoPhaseIterator();

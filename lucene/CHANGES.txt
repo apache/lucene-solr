@@ -32,6 +32,10 @@ Other
 
 ======================= Lucene 6.2.0 =======================
 
+API Changes
+
+* ScoringWrapperSpans was removed since it had no purpose or effect as of Lucene 5.5.
+
 New Features
 
 * LUCENE-7302: IndexWriter methods that change the index now return a
@@ -147,6 +151,9 @@ Other
   
 * LUCENE-7372: Factor out an org.apache.lucene.search.FilterWeight class.
   (Christine Poerschke, Adrien Grand, David Smiley)
+
+* LUCENE-7384: Removed ScoringWrapperSpans. And tweaked SpanWeight.buildSimWeight() to
+  reuse the existing Similarity instead of creating a new one. (David Smiley)
 
 ======================= Lucene 6.1.0 =======================
 
