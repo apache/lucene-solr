@@ -16,19 +16,6 @@
  */
 package org.apache.solr.core;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.Collections.EMPTY_MAP;
-import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
-import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
-import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.ZK_PATH;
-import static org.apache.solr.core.NodeConfig.NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS;
-import static org.apache.solr.core.NodeConfig.NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS_IN_CLOUD;
-import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -46,6 +33,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;
@@ -88,8 +77,16 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Collections.EMPTY_MAP;
+import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
+import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
+import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.ZK_PATH;
+import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 
 /**
@@ -489,7 +486,7 @@ public class CoreContainer {
 
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(
-        cfg.getCoreLoadThreadCount(isZooKeeperAware() ? DEFAULT_CORE_LOAD_THREADS_IN_CLOUD : DEFAULT_CORE_LOAD_THREADS),
+        cfg.getCoreLoadThreadCount(isZooKeeperAware()),
         new DefaultSolrThreadFactory("coreLoadExecutor") );
     final List<Future<SolrCore>> futures = new ArrayList<>();
     try {
