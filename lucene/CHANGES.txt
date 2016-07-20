@@ -137,6 +137,9 @@ Optimizations
 * LUCENE-7371: Point values are now better compressed using run-length
   encoding. (Adrien Grand)
 
+* LUCENE-7311: Cached term queries do not seek the terms dictionary anymore.
+  (Adrien Grand)
+
 Other
 
 * LUCENE-4787: Fixed some highlighting javadocs. (Michael Dodsworth via Adrien
