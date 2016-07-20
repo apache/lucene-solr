@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -77,6 +78,8 @@ import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH
 import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
+import static org.apache.solr.core.NodeConfig.NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS;
+import static org.apache.solr.core.NodeConfig.NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS_IN_CLOUD;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 
@@ -437,16 +440,19 @@ public class CoreContainer {
     containerProperties.putAll(cfg.getSolrProperties());
 
     // setup executor to load cores in parallel
-    // do not limit the size of the executor in zk mode since cores may try and wait for each other.
     final ExecutorService coreLoadExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(
-        ( zkSys.getZkController() == null ? cfg.getCoreLoadThreadCount() : Integer.MAX_VALUE ),
+        cfg.getCoreLoadThreadCount(isZooKeeperAware()),
         new DefaultSolrThreadFactory("coreLoadExecutor") );
-    final List<Future<SolrCore>> futures = new ArrayList<Future<SolrCore>>();
+    final List<Future<SolrCore>> futures = new ArrayList<>();
     try {
 
       List<CoreDescriptor> cds = coresLocator.discover(this);
+      if (isZooKeeperAware()) {
+        CoreSorter coreComparator = new CoreSorter().init(this);
+        cds = new ArrayList<>(cds);//make a copy
+        Collections.sort(cds, coreComparator.descComp);
+      }
       checkForDuplicateCoreNames(cds);
-
 
       for (final CoreDescriptor cd : cds) {
         if (cd.isTransient() || !cd.isLoadOnStartup()) {
@@ -1218,6 +1224,10 @@ public class CoreContainer {
 
   public AuthenticationPlugin getAuthenticationPlugin() {
     return authenticationPlugin == null ? null : authenticationPlugin.plugin;
+  }
+
+  public NodeConfig getNodeConfig() {
+    return cfg;
   }
 
 }

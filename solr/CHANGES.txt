@@ -46,6 +46,9 @@ Bug Fixes
 * SOLR-9290: TCP-connections in CLOSE_WAIT spike during heavy indexing and do not decrease.
   (Mads Tomasgård Bjørgan, Anshum Gupta, Shai Erera, hossman, Mark Miller, yonik, shalin)
 
+* SOLR-7280: Load cores in sorted order & limit threads to improve cluster stability (noble, Erick Erickson, shalin)
+
+
 ======================= 5.5.2 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
