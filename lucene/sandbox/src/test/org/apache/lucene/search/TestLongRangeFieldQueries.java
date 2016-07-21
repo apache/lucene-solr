@@ -19,56 +19,56 @@ package org.apache.lucene.search;
 import java.util.Arrays;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleRangeField;
+import org.apache.lucene.document.LongRangeField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 
 /**
- * Random testing for RangeFieldQueries.
+ * Random testing for LongRangeField Queries.
  */
-public class TestDoubleRangeFieldQueries extends BaseRangeFieldQueryTestCase {
-  private static final String FIELD_NAME = "doubleRangeField";
+public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
+  private static final String FIELD_NAME = "longRangeField";
 
-  private double nextDoubleInternal() {
+  private long nextLongInternal() {
     if (rarely()) {
-      return random().nextBoolean() ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
+      return random().nextBoolean() ? Long.MAX_VALUE : Long.MIN_VALUE;
     }
-    double max = Double.MAX_VALUE / 2;
-    return (max + max) * random().nextDouble() - max;
+    long max = Long.MAX_VALUE / 2;
+    return (max + max) * random().nextLong() - max;
   }
 
   @Override
   protected Range nextRange(int dimensions) {
-    double[] min = new double[dimensions];
-    double[] max = new double[dimensions];
+    long[] min = new long[dimensions];
+    long[] max = new long[dimensions];
 
     for (int d=0; d<dimensions; ++d) {
-      min[d] = nextDoubleInternal();
-      max[d] = nextDoubleInternal();
+      min[d] = nextLongInternal();
+      max[d] = nextLongInternal();
     }
 
-    return new DoubleRange(min, max);
+    return new LongRange(min, max);
   }
 
   @Override
-  protected DoubleRangeField newRangeField(Range r) {
-    return new DoubleRangeField(FIELD_NAME, ((DoubleRange)r).min, ((DoubleRange)r).max);
+  protected LongRangeField newRangeField(Range r) {
+    return new LongRangeField(FIELD_NAME, ((LongRange)r).min, ((LongRange)r).max);
   }
 
   @Override
   protected Query newIntersectsQuery(Range r) {
-    return DoubleRangeField.newIntersectsQuery(FIELD_NAME, ((DoubleRange)r).min, ((DoubleRange)r).max);
+    return LongRangeField.newIntersectsQuery(FIELD_NAME, ((LongRange)r).min, ((LongRange)r).max);
   }
 
   @Override
   protected Query newContainsQuery(Range r) {
-    return DoubleRangeField.newContainsQuery(FIELD_NAME, ((DoubleRange)r).min, ((DoubleRange)r).max);
+    return LongRangeField.newContainsQuery(FIELD_NAME, ((LongRange)r).min, ((LongRange)r).max);
   }
 
   @Override
   protected Query newWithinQuery(Range r) {
-    return DoubleRangeField.newWithinQuery(FIELD_NAME, ((DoubleRange)r).min, ((DoubleRange)r).max);
+    return LongRangeField.newWithinQuery(FIELD_NAME, ((LongRange)r).min, ((LongRange)r).max);
   }
 
   /** Basic test */
@@ -78,74 +78,74 @@ public class TestDoubleRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     // intersects (within)
     Document document = new Document();
-    document.add(new DoubleRangeField(FIELD_NAME, new double[] {-10.0, -10.0}, new double[] {9.1, 10.1}));
+    document.add(new LongRangeField(FIELD_NAME, new long[] {-10, -10}, new long[] {9, 10}));
     writer.addDocument(document);
 
     // intersects (crosses)
     document = new Document();
-    document.add(new DoubleRangeField(FIELD_NAME, new double[] {10.0, -10.0}, new double[] {20.0, 10.0}));
+    document.add(new LongRangeField(FIELD_NAME, new long[] {10, -10}, new long[] {20, 10}));
     writer.addDocument(document);
 
     // intersects (contains)
     document = new Document();
-    document.add(new DoubleRangeField(FIELD_NAME, new double[] {-20.0, -20.0}, new double[] {30.0, 30.1}));
+    document.add(new LongRangeField(FIELD_NAME, new long[] {-20, -20}, new long[] {30, 30}));
+    writer.addDocument(document);
+
+    // intersects (within)
+    document = new Document();
+    document.add(new LongRangeField(FIELD_NAME, new long[] {-11, -11}, new long[] {1, 11}));
     writer.addDocument(document);
 
     // intersects (crosses)
     document = new Document();
-    document.add(new DoubleRangeField(FIELD_NAME, new double[] {-11.1, -11.2}, new double[] {1.23, 11.5}));
-    writer.addDocument(document);
-
-    // intersects (crosses)
-    document = new Document();
-    document.add(new DoubleRangeField(FIELD_NAME, new double[] {12.33, 1.2}, new double[] {15.1, 29.9}));
+    document.add(new LongRangeField(FIELD_NAME, new long[] {12, 1}, new long[] {15, 29}));
     writer.addDocument(document);
 
     // disjoint
     document = new Document();
-    document.add(new DoubleRangeField(FIELD_NAME, new double[] {-122.33, 1.2}, new double[] {-115.1, 29.9}));
+    document.add(new LongRangeField(FIELD_NAME, new long[] {-122, 1}, new long[] {-115, 29}));
     writer.addDocument(document);
 
     // intersects (crosses)
     document = new Document();
-    document.add(new DoubleRangeField(FIELD_NAME, new double[] {Double.NEGATIVE_INFINITY, 1.2}, new double[] {-11.0, 29.9}));
+    document.add(new LongRangeField(FIELD_NAME, new long[] {Long.MIN_VALUE, 1}, new long[] {-11, 29}));
     writer.addDocument(document);
 
     // equal (within, contains, intersects)
     document = new Document();
-    document.add(new DoubleRangeField(FIELD_NAME, new double[] {-11, -15}, new double[] {15, 20}));
+    document.add(new LongRangeField(FIELD_NAME, new long[] {-11, -15}, new long[] {15, 20}));
     writer.addDocument(document);
 
     // search
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(7, searcher.count(DoubleRangeField.newIntersectsQuery(FIELD_NAME,
-        new double[] {-11.0, -15.0}, new double[] {15.0, 20.0})));
-    assertEquals(2, searcher.count(DoubleRangeField.newWithinQuery(FIELD_NAME,
-        new double[] {-11.0, -15.0}, new double[] {15.0, 20.0})));
-    assertEquals(2, searcher.count(DoubleRangeField.newContainsQuery(FIELD_NAME,
-        new double[] {-11.0, -15.0}, new double[] {15.0, 20.0})));
+    assertEquals(7, searcher.count(LongRangeField.newIntersectsQuery(FIELD_NAME,
+        new long[] {-11, -15}, new long[] {15, 20})));
+    assertEquals(3, searcher.count(LongRangeField.newWithinQuery(FIELD_NAME,
+        new long[] {-11, -15}, new long[] {15, 20})));
+    assertEquals(2, searcher.count(LongRangeField.newContainsQuery(FIELD_NAME,
+        new long[] {-11, -15}, new long[] {15, 20})));
 
     reader.close();
     writer.close();
     dir.close();
   }
 
-  /** DoubleRange test class implementation - use to validate DoubleRangeField */
-  private class DoubleRange extends Range {
-    double[] min;
-    double[] max;
+  /** LongRange test class implementation - use to validate LongRangeField */
+  private class LongRange extends Range {
+    long[] min;
+    long[] max;
 
-    DoubleRange(double[] min, double[] max) {
+    LongRange(long[] min, long[] max) {
       assert min != null && max != null && min.length > 0 && max.length > 0
           : "test box: min/max cannot be null or empty";
       assert min.length == max.length : "test box: min/max length do not agree";
-      this.min = new double[min.length];
-      this.max = new double[max.length];
+      this.min = new long[min.length];
+      this.max = new long[max.length];
       for (int d=0; d<min.length; ++d) {
         if (min[d] > max[d]) {
           // swap if max < min:
-          double temp = min[d];
+          long temp = min[d];
           min[d] = max[d];
           max[d] = temp;
         }
@@ -158,34 +158,34 @@ public class TestDoubleRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     }
 
     @Override
-    protected Double getMin(int dim) {
+    protected Long getMin(int dim) {
       return min[dim];
     }
 
     @Override
     protected void setMin(int dim, Object val) {
-      min[dim] = (Double)val;
+      min[dim] = (Long)val;
     }
 
     @Override
-    protected Double getMax(int dim) {
+    protected Long getMax(int dim) {
       return max[dim];
     }
 
     @Override
     protected void setMax(int dim, Object val) {
-      max[dim] = (Double)val;
+      max[dim] = (Long)val;
     }
 
     @Override
     protected boolean isEqual(Range other) {
-      DoubleRange o = (DoubleRange)other;
+      LongRange o = (LongRange)other;
       return Arrays.equals(min, o.min) && Arrays.equals(max, o.max);
     }
 
     @Override
     protected boolean isDisjoint(Range o) {
-      DoubleRange other = (DoubleRange)o;
+      LongRange other = (LongRange)o;
       for (int d=0; d<this.min.length; ++d) {
         if (this.min[d] > other.max[d] || this.max[d] < other.min[d]) {
           // disjoint:
@@ -197,7 +197,7 @@ public class TestDoubleRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isWithin(Range o) {
-      DoubleRange other = (DoubleRange)o;
+      LongRange other = (LongRange)o;
       for (int d=0; d<this.min.length; ++d) {
         if ((this.min[d] >= other.min[d] && this.max[d] <= other.max[d]) == false) {
           // not within:
@@ -209,7 +209,7 @@ public class TestDoubleRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean contains(Range o) {
-      DoubleRange other = (DoubleRange) o;
+      LongRange other = (LongRange) o;
       for (int d=0; d<this.min.length; ++d) {
         if ((this.min[d] <= other.min[d] && this.max[d] >= other.max[d]) == false) {
           // not contains:

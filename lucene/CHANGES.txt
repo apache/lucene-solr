@@ -38,6 +38,9 @@ API Changes
 
 New Features
 
+* LUCENE-7388: Add point based IntRangeField, FloatRangeField, LongRangeField along with
+  supporting queries and tests (Nick Knize)
+
 * LUCENE-7381: Add point based DoubleRangeField and RangeFieldQuery for
   indexing and querying on Ranges up to 4 dimensions (Nick Knize)
 
