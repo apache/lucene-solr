@@ -1514,9 +1514,9 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
       CloudSolrClient cloudSolrClient = this.context.getSolrClientCache().getCloudSolrClient(this.zkHost);
       cloudSolrClient.connect();
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-      Map<String, DocCollection> collections = zkStateReader.getClusterState().getCollectionsMap();
+      Set<String> collections = zkStateReader.getClusterState().getCollectionStates().keySet();
       if (collections.size() != 0) {
-        this.tables.addAll(collections.keySet());
+        this.tables.addAll(collections);
       }
       Collections.sort(this.tables);
     }
