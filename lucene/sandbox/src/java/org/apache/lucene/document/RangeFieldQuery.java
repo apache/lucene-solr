@@ -124,8 +124,9 @@ abstract class RangeFieldQuery extends Query {
               @Override
               public void visit(int docID, byte[] leaf) throws IOException {
                 // add the document iff:
-                if (// target is within cell and queryType is INTERSECTS or CONTAINS:
-                    (comparator.isWithin(leaf) && queryType != QueryType.WITHIN)
+                if (Arrays.equals(ranges, leaf)
+                    // target is within cell and queryType is INTERSECTS or CONTAINS:
+                    || (comparator.isWithin(leaf) && queryType != QueryType.WITHIN)
                     // target contains cell and queryType is INTERSECTS or WITHIN:
                     || (comparator.contains(leaf) && queryType != QueryType.CONTAINS)
                     // target is not disjoint (crosses) and queryType is INTERSECTS
@@ -139,12 +140,12 @@ abstract class RangeFieldQuery extends Query {
                 // compute range relation for BKD traversal
                 if (comparator.isDisjoint(node)) {
                   return Relation.CELL_OUTSIDE_QUERY;
-                } else if (comparator.contains(node)) {
-                  // target contains cell; add iff queryType is not a CONTAINS query:
-                  return (queryType == QueryType.CONTAINS) ? Relation.CELL_OUTSIDE_QUERY : Relation.CELL_INSIDE_QUERY;
                 } else if (comparator.isWithin(node)) {
                   // target within cell; continue traversing:
                   return Relation.CELL_CROSSES_QUERY;
+                } else if (comparator.contains(node)) {
+                  // target contains cell; add iff queryType is not a CONTAINS query:
+                  return (queryType == QueryType.CONTAINS) ? Relation.CELL_OUTSIDE_QUERY : Relation.CELL_INSIDE_QUERY;
                 }
                 // target intersects cell; continue traversing:
                 return Relation.CELL_CROSSES_QUERY;
@@ -170,8 +171,9 @@ abstract class RangeFieldQuery extends Query {
         if (values.getDocCount(field) == reader.maxDoc()) {
           // if query crosses, docs need to be further scrutinized
           byte[] range = getInternalRange(values.getMinPackedValue(field), values.getMaxPackedValue(field));
-          // if the internal node is not contained by the query, all docs do not match
-          if (((comparator.contains(range) && queryType == QueryType.CONTAINS)) == false) {
+          // if the internal node is not equal and not contained by the query, all docs do not match
+          if ((!Arrays.equals(ranges, range)
+              && (comparator.contains(range) && queryType != QueryType.CONTAINS)) == false) {
             allDocsMatch = false;
           }
         } else {
