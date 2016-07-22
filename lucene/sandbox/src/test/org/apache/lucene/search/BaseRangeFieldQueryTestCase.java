@@ -17,6 +17,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -262,10 +263,11 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
 
         if (hits.get(docID) != expected) {
           StringBuilder b = new StringBuilder();
+          b.append("FAIL (iter " + iter + "): ");
           if (expected == true) {
-            b.append("FAILS: id=" + id + (boxes[id].length > 1 ? " (MultiValue) " : " ") + "should match but did not\n");
+            b.append("id=" + id + (boxes[id].length > 1 ? " (MultiValue) " : " ") + "should match but did not\n");
           } else {
-            b.append("FAIL: id=" + id + " should not match but did\n");
+            b.append("id=" + id + " should not match but did\n");
           }
           b.append(" queryBox=" + queryBox + "\n");
           b.append(" box" + ((boxes[id].length > 1) ? "es=" : "=" ) + boxes[id][0]);
@@ -292,6 +294,9 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
   }
 
   protected boolean expectedBBoxQueryResult(Box queryBox, Box box, Box.QueryType queryType) {
+    if (box.equals(queryBox)) {
+      return true;
+    }
     Box.QueryType relation = box.relate(queryBox);
     if (queryType == Box.QueryType.INTERSECTS) {
       return relation != null;
@@ -343,6 +348,25 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
       } else {
         max[dimension] = val;
       }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      return o != null
+          && getClass() == o.getClass()
+          && equalTo(getClass().cast(o));
+    }
+
+    private boolean equalTo(Box o) {
+      return Arrays.equals(min, o.min)
+          && Arrays.equals(max, o.max);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = Arrays.hashCode(min);
+      result = 31 * result + Arrays.hashCode(max);
+      return result;
     }
 
     QueryType relate(Box other) {
