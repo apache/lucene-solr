@@ -76,6 +76,9 @@ Bug Fixes
   wrong default AttributeFactory for new Tokenizers.
   (Terry Smith, Uwe Schindler)
 
+* LUCENE-7389: Fix FieldType.setDimensions(...) validation for the dimensionNumBytes
+  parameter. (Martijn van Groningen)
+
 Improvements
 
 * LUCENE-7323: Compound file writing now verifies the incoming
