@@ -352,6 +352,16 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
   }
 
+  public static Collection<Slice> getSlicesIgnoreCase(String name, ClusterState clusterState) {
+    for (String coll : clusterState.getCollectionStates().keySet()) {
+      if (coll.equalsIgnoreCase(name)) {
+        DocCollection collection = clusterState.getCollectionOrNull(coll);
+        if (collection != null) return collection.getActiveSlices();
+      }
+    }
+    return null;
+  }
+
   protected void constructStreams() throws IOException {
 
     try {
@@ -362,20 +372,9 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       //System.out.println("Connected to zk an got cluster state.");
 
       Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
-
+      if (slices == null) slices = getSlicesIgnoreCase(this.collection, clusterState);
       if (slices == null) {
-        //Try case insensitive match
-        Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
-        for (Map.Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
-          if (entry.getKey().equalsIgnoreCase(collection)) {
-            slices = entry.getValue().getActiveSlices();
-            break;
-          }
-        }
-
-        if (slices == null) {
-          throw new Exception("Collection not found:" + this.collection);
-        }
+        throw new Exception("Collection not found:" + this.collection);
       }
 
       ModifiableSolrParams mParams = new ModifiableSolrParams(params); 

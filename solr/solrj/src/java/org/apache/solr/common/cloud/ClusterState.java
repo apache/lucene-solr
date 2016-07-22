@@ -39,8 +39,8 @@ import org.noggit.JSONWriter;
 public class ClusterState implements JSONWriter.Writable {
   
   private final Integer znodeVersion;
-  
-  private final Map<String, CollectionRef> collectionStates;
+
+  private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
   private Set<String> liveNodes;
 
   /**
@@ -67,6 +67,7 @@ public class ClusterState implements JSONWriter.Writable {
     this.liveNodes = new HashSet<>(liveNodes.size());
     this.liveNodes.addAll(liveNodes);
     this.collectionStates = new LinkedHashMap<>(collectionStates);
+    this.immutableCollectionStates = Collections.unmodifiableMap(collectionStates);
   }
 
 
@@ -432,10 +433,12 @@ public class ClusterState implements JSONWriter.Writable {
     this.liveNodes = liveNodes;
   }
 
-  /**For internal use only
+  /** Be aware that this may return collections which may not exist now.
+   * You can confirm that this collection exists after verifying
+   * CollectionRef.get() != null
    */
-  Map<String, CollectionRef> getCollectionStates() {
-    return collectionStates;
+  public Map<String, CollectionRef> getCollectionStates() {
+    return immutableCollectionStates;
   }
 
   public static class CollectionRef {
