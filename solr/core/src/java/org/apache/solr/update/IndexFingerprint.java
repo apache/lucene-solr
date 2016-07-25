@@ -42,7 +42,9 @@ public class IndexFingerprint {
 
   private long maxVersionSpecified;
   private long maxVersionEncountered;
-  private long maxVersionsUsedInHash;
+  // this actually means max versions used in computing the hash.
+  // we cannot change this now because it changes back-compat
+  private long maxInHash;
   private long versionsHash;
   private long numVersions;
   private long numDocs;
@@ -56,8 +58,8 @@ public class IndexFingerprint {
     return maxVersionEncountered;
   }
 
-  public long getMaxVersionsUsedInHash() {
-    return maxVersionsUsedInHash;
+  public long getMaxInHash() {
+    return maxInHash;
   }
 
   public long getVersionsHash() {
@@ -113,7 +115,7 @@ public class IndexFingerprint {
         long v = fv.longVal(doc);
         f.maxVersionEncountered = Math.max(v, f.maxVersionEncountered);
         if (v <= f.maxVersionSpecified) {
-          f.maxVersionsUsedInHash = Math.max(v, f.maxVersionsUsedInHash);
+          f.maxInHash = Math.max(v, f.maxInHash);
           f.versionsHash += Hash.fmix64(v);
           f.numVersions++;
         }
@@ -139,7 +141,7 @@ public class IndexFingerprint {
     }
 
     // Go by the highest version under the requested max.
-    cmp = Long.compare(f1.maxVersionsUsedInHash, f2.maxVersionsUsedInHash);
+    cmp = Long.compare(f1.maxInHash, f2.maxInHash);
     if (cmp != 0) return cmp;
 
     // go by who has the most documents in the index
@@ -158,7 +160,7 @@ public class IndexFingerprint {
     Map<String,Object> map = new LinkedHashMap<>();
     map.put("maxVersionSpecified", maxVersionSpecified);
     map.put("maxVersionEncountered", maxVersionEncountered);
-    map.put("maxVersionsUsedInHash", maxVersionsUsedInHash);
+    map.put("maxInHash", maxInHash);
     map.put("versionsHash", versionsHash);
     map.put("numVersions", numVersions);
     map.put("numDocs", numDocs);
@@ -186,7 +188,7 @@ public class IndexFingerprint {
     IndexFingerprint f = new IndexFingerprint();
     f.maxVersionSpecified = getLong(o, "maxVersionSpecified", Long.MAX_VALUE);
     f.maxVersionEncountered = getLong(o, "maxVersionEncountered", -1);
-    f.maxVersionsUsedInHash = getLong(o, "maxVersionsUsedInHash", -1);
+    f.maxInHash = getLong(o, "maxInHash", -1);
     f.versionsHash = getLong(o, "versionsHash", -1);
     f.numVersions = getLong(o, "numVersions", -1);
     f.numDocs = getLong(o, "numDocs", -1);
