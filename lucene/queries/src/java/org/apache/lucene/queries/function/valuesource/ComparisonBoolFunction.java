@@ -70,7 +70,7 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
         //
         // If these are integers, we need to compare them as such
         // as to avoid floating point precision problems
-        if (lhsVal.doubleVal(doc) == lhsVal.longVal(doc) && rhsVal.doubleVal(doc) == lhsVal.longVal(doc)) {
+        if (lhsVal.doubleVal(doc) == lhsVal.longVal(doc) && rhsVal.doubleVal(doc) == rhsVal.longVal(doc)) {
           return compare(lhsVal.longVal(doc), rhsVal.longVal(doc));
 
         }
