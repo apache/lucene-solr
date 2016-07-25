@@ -21,11 +21,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -1045,6 +1043,7 @@ public class MemoryIndex {
   private final class MemoryIndexReader extends LeafReader {
 
     private final PointValues pointValues;
+    private Fields memoryFields = new MemoryFields(fields);
 
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
@@ -1198,13 +1197,7 @@ public class MemoryIndex {
 
     @Override
     public Fields fields() {
-      Map<String, Info> filteredFields = fields.entrySet().stream()
-          .filter(entry ->  entry.getValue().numTokens > 0)
-          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
-              (u,v) -> { throw new IllegalStateException(String.format(Locale.ROOT, "Duplicate key %s", u));},
-              TreeMap::new
-          ));
-      return new MemoryFields(filteredFields );
+      return memoryFields;
     }
 
     private class MemoryFields extends Fields {
@@ -1217,13 +1210,16 @@ public class MemoryIndex {
 
       @Override
       public Iterator<String> iterator() {
-        return fields.keySet().iterator();
+        return fields.entrySet().stream()
+            .filter(e -> e.getValue().numTokens > 0)
+            .map(Map.Entry::getKey)
+            .iterator();
       }
 
       @Override
       public Terms terms(final String field) {
         final Info info = fields.get(field);
-        if (info == null) {
+        if (info == null || info.numTokens <= 0) {
           return null;
         }
 
@@ -1278,7 +1274,11 @@ public class MemoryIndex {
 
       @Override
       public int size() {
-        return fields.size();
+        int size = 0;
+        for (String fieldName : this) {
+          size++;
+        }
+        return size;
       }
     }
 
