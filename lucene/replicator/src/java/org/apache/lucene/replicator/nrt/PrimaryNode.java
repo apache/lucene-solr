@@ -128,6 +128,11 @@ public abstract class PrimaryNode extends Node {
     }
   }
 
+  /** Returns the current primary generation, which is incremented each time a new primary is started for this index */
+  public long getPrimaryGen() {
+    return primaryGen;
+  }
+
   // TODO: in the future, we should separate "flush" (returns an incRef'd SegmentInfos) from "refresh" (open new NRT reader from
   // IndexWriter) so that the latter can be done concurrently while copying files out to replicas, minimizing the refresh time from the
   // replicas.  But fixing this is tricky because e.g. IndexWriter may complete a big merge just after returning the incRef'd SegmentInfos
