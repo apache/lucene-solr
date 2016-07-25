@@ -378,5 +378,13 @@ public final class ByteBlockPool {
       }
     } while (true);
   }
+
+  /** Read a single byte at the given {@code offset}. */
+  public byte readByte(long offset) {
+    int bufferIndex = (int) (offset >> BYTE_BLOCK_SHIFT);
+    int pos = (int) (offset & BYTE_BLOCK_MASK);
+    byte[] buffer = buffers[bufferIndex];
+    return buffer[pos];
+  }
 }
 
