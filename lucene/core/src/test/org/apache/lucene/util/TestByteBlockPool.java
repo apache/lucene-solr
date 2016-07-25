@@ -45,7 +45,13 @@ public class TestByteBlockPool extends LuceneTestCase {
       for (BytesRef expected : list) {
         ref.grow(expected.length);
         ref.setLength(expected.length);
-        pool.readBytes(position, ref.bytes(), 0, ref.length());
+        if (random().nextBoolean()) {
+          pool.readBytes(position, ref.bytes(), 0, ref.length());
+        } else {
+          for (int i = 0; i < ref.length(); ++i) {
+            ref.setByteAt(i, pool.readByte(position + i));
+          }
+        }
         assertEquals(expected, ref.get());
         position += ref.length();
       }

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 /**
  * {@link Sorter} implementation based on a variant of the quicksort algorithm
  * called <a href="http://en.wikipedia.org/wiki/Introsort">introsort</a>: when
@@ -91,4 +90,10 @@ public abstract class IntroSorter extends Sorter {
   /** Compare the pivot with the slot at <code>j</code>, similarly to
    *  {@link #compare(int, int) compare(i, j)}. */
   protected abstract int comparePivot(int j);
+
+  @Override
+  protected int compare(int i, int j) {
+    setPivot(i);
+    return comparePivot(j);
+  }
 }
