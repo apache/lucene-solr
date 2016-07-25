@@ -25,6 +25,7 @@ import java.io.PrintStream;
 import java.nio.file.NoSuchFileException;
 import java.util.Locale;
 import java.util.Map;
+
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
@@ -39,10 +40,10 @@ import org.apache.lucene.store.IndexInput;
  *
  * @lucene.experimental */
 
-abstract class Node implements Closeable {
+public abstract class Node implements Closeable {
 
-  static boolean VERBOSE_FILES = true;
-  static boolean VERBOSE_CONNECTIONS = false;
+  public static boolean VERBOSE_FILES = true;
+  public static boolean VERBOSE_CONNECTIONS = false;
 
   // Keys we store into IndexWriter's commit user data:
 
@@ -87,6 +88,16 @@ abstract class Node implements Closeable {
     this.printStream = printStream;
   }
 
+  /** Returns the {@link ReferenceManager} to use for acquiring and releasing searchers */
+  public ReferenceManager<IndexSearcher> getSearcherManager() {
+    return mgr;
+  }
+
+  /** Returns the {@link Directory} this node is writing to */
+  public Directory getDirectory() {
+    return dir;
+  }
+
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(id=" + id + ")";
@@ -119,7 +130,7 @@ abstract class Node implements Closeable {
     }
   }
 
-  protected void message(String message) {
+  public void message(String message) {
     if (printStream != null) {
       long now = System.nanoTime();
       printStream.println(String.format(Locale.ROOT,
