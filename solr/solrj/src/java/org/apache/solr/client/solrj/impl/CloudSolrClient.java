@@ -39,6 +39,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
@@ -142,15 +144,34 @@ public class CloudSolrClient extends SolrClient {
 
 
   protected final Map<String, ExpiringCachedDocCollection> collectionStateCache = new ConcurrentHashMap<String, ExpiringCachedDocCollection>(){
+    final Lock evictLock = new ReentrantLock(true);
     @Override
     public ExpiringCachedDocCollection get(Object key) {
       ExpiringCachedDocCollection val = super.get(key);
-      if(val == null) return null;
+      if(val == null) {
+        // a new collection is likely to be added now.
+        //check if there are stale items and remove them
+        evictStale();
+        return null;
+      }
       if(val.isExpired(timeToLive)) {
         super.remove(key);
         return null;
       }
       return val;
+    }
+
+    void evictStale() {
+      if(!evictLock.tryLock()) return;
+      try {
+        for (Entry<String, ExpiringCachedDocCollection> e : entrySet()) {
+          if(e.getValue().isExpired(timeToLive)){
+            super.remove(e.getKey());
+          }
+        }
+      } finally {
+        evictLock.unlock();
+      }
     }
 
   };
