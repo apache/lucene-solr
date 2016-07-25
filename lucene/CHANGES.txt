@@ -79,6 +79,9 @@ Bug Fixes
 * LUCENE-7389: Fix FieldType.setDimensions(...) validation for the dimensionNumBytes
   parameter. (Martijn van Groningen)
 
+* LUCENE-7391: Fix performance regression in MemoryIndex's fields() introduced
+  in Lucene 6. (Steve Mason via David Smiley)
+
 Improvements
 
 * LUCENE-7323: Compound file writing now verifies the incoming

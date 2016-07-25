@@ -45,6 +45,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
@@ -128,6 +129,19 @@ public class TestMemoryIndex extends LuceneTestCase {
     terms.seekExact(0);
     assertEquals("be", terms.term().utf8ToString());
     TestUtil.checkReader(reader);
+  }
+
+  public void testFieldsOnlyReturnsIndexedFields() throws IOException {
+    Document doc = new Document();
+
+    doc.add(new NumericDocValuesField("numeric", 29L));
+    doc.add(new TextField("text", "some text", Field.Store.NO));
+
+    MemoryIndex mi = MemoryIndex.fromDocument(doc, analyzer);
+    IndexSearcher searcher = mi.createSearcher();
+    IndexReader reader = searcher.getIndexReader();
+
+    assertEquals(reader.getTermVectors(0).size(), 1);
   }
   
   public void testReaderConsistency() throws IOException {
