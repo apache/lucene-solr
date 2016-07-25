@@ -833,6 +833,11 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           public boolean compare(double lhs, double rhs) {
             return lhs > rhs;
           }
+
+          @Override
+          public boolean compare(long lhs, long rhs) {
+            return lhs > rhs;
+          }
         };
       }
     });
@@ -846,6 +851,11 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new ComparisonBoolFunction(lhsValSource, rhsValSource, "lt") {
           @Override
           public boolean compare(double lhs, double rhs) {
+            return lhs < rhs;
+          }
+
+          @Override
+          public boolean compare(long lhs, long rhs) {
             return lhs < rhs;
           }
         };
@@ -863,6 +873,12 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           public boolean compare(double lhs, double rhs) {
             return lhs >= rhs;
           }
+
+          @Override
+          public boolean compare(long lhs, long rhs) {
+            return lhs >= rhs;
+          }
+
         };
       }
     });
@@ -879,6 +895,11 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           public boolean compare(double lhs, double rhs) {
             return lhs <= rhs;
           }
+
+          @Override
+          public boolean compare(long lhs, long rhs) {
+            return lhs <= rhs;
+          }
         };
       }
     });
@@ -892,6 +913,11 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new ComparisonBoolFunction(lhsValSource, rhsValSource, "eq") {
           @Override
           public boolean compare(double lhs, double rhs) {
+            return lhs == rhs;
+          }
+
+          @Override
+          public boolean compare(long lhs, long rhs) {
             return lhs == rhs;
           }
         };

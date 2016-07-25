@@ -37,6 +37,7 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
   private final ValueSource rhs;
   private final String name;
 
+
   public ComparisonBoolFunction(ValueSource lhs, ValueSource rhs, String name) {
     this.lhs = lhs;
     this.rhs = rhs;
@@ -45,6 +46,8 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
 
   // Perform the comparison, returning true or false
   public abstract boolean compare(double lhs, double rhs);
+
+  public abstract boolean compare(long lhs, long rhs);
 
   // Uniquely identify the operation (ie "gt", "lt" "gte", etc)
   public String name() {
@@ -62,7 +65,18 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
     return new BoolDocValues(this) {
       @Override
       public boolean boolVal(int doc) {
-        return compare(lhsVal.floatVal(doc), rhsVal.floatVal(doc));
+
+        // should we treat this as an integer comparison? only if doubleVal == longVal,
+        // indicating the two values are effectively integers.
+        //
+        // If these are integers, we need to compare them as such
+        // as to avoid floating point precision problems
+        if (lhsVal.doubleVal(doc) == lhsVal.longVal(doc) && rhsVal.doubleVal(doc) == lhsVal.longVal(doc)) {
+          return compare(lhsVal.longVal(doc), rhsVal.longVal(doc));
+
+        }
+
+        return compare(lhsVal.doubleVal(doc), rhsVal.doubleVal(doc));
       }
 
       @Override

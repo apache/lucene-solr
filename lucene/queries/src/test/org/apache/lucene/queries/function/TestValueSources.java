@@ -222,6 +222,11 @@ public class TestValueSources extends LuceneTestCase {
       public boolean compare(double lhs, double rhs) {
         return lhs > rhs;
       }
+
+      @Override
+      public boolean compare(long lhs, long rhs) {
+        return lhs > rhs;
+      }
     };
 
     FunctionQuery q = new FunctionQuery(gtVs);
@@ -232,6 +237,12 @@ public class TestValueSources extends LuceneTestCase {
       public boolean compare(double lhs, double rhs) {
         return lhs >= rhs;
       }
+
+      @Override
+      public boolean compare(long lhs, long rhs) {
+        return lhs >= rhs;
+      }
+
     };
 
     // both true with >=
