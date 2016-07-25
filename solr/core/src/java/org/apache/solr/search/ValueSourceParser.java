@@ -829,14 +829,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource rhsValSource = fp.parseValueSource();
 
         return new ComparisonBoolFunction(lhsValSource, rhsValSource, "gt") {
-          @Override
-          public boolean compare(double lhs, double rhs) {
-            return lhs > rhs;
-          }
-
-          @Override
-          public boolean compare(long lhs, long rhs) {
-            return lhs > rhs;
+          public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
+            return lhs.compareTo(rhs) > 0;
           }
         };
       }
@@ -849,14 +843,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource rhsValSource = fp.parseValueSource();
 
         return new ComparisonBoolFunction(lhsValSource, rhsValSource, "lt") {
-          @Override
-          public boolean compare(double lhs, double rhs) {
-            return lhs < rhs;
-          }
-
-          @Override
-          public boolean compare(long lhs, long rhs) {
-            return lhs < rhs;
+          public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
+            return lhs.compareTo(rhs) < 0;
           }
         };
       }
@@ -869,17 +857,11 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource rhsValSource = fp.parseValueSource();
 
         return new ComparisonBoolFunction(lhsValSource, rhsValSource, "gte") {
-          @Override
-          public boolean compare(double lhs, double rhs) {
-            return lhs >= rhs;
+          public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
+            return lhs.compareTo(rhs) >= 0;
           }
-
-          @Override
-          public boolean compare(long lhs, long rhs) {
-            return lhs >= rhs;
-          }
-
         };
+
       }
     });
 
@@ -891,14 +873,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource rhsValSource = fp.parseValueSource();
 
         return new ComparisonBoolFunction(lhsValSource, rhsValSource, "lte") {
-          @Override
-          public boolean compare(double lhs, double rhs) {
-            return lhs <= rhs;
-          }
-
-          @Override
-          public boolean compare(long lhs, long rhs) {
-            return lhs <= rhs;
+          public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
+            return lhs.compareTo(rhs) <= 0;
           }
         };
       }
@@ -911,14 +887,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource rhsValSource = fp.parseValueSource();
 
         return new ComparisonBoolFunction(lhsValSource, rhsValSource, "eq") {
-          @Override
-          public boolean compare(double lhs, double rhs) {
-            return lhs == rhs;
-          }
-
-          @Override
-          public boolean compare(long lhs, long rhs) {
-            return lhs == rhs;
+          public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
+            return lhs.compareTo(rhs) == 0;
           }
         };
       }

@@ -219,13 +219,8 @@ public class TestValueSources extends LuceneTestCase {
 
     ValueSource gtVs = new ComparisonBoolFunction(const52Vs, vs, "test") {
       @Override
-      public boolean compare(double lhs, double rhs) {
-        return lhs > rhs;
-      }
-
-      @Override
-      public boolean compare(long lhs, long rhs) {
-        return lhs > rhs;
+      public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
+        return lhs.compareTo(rhs) > 0;
       }
     };
 
@@ -234,13 +229,8 @@ public class TestValueSources extends LuceneTestCase {
 
     ValueSource gteVs = new ComparisonBoolFunction(const52Vs, vs, "test") {
       @Override
-      public boolean compare(double lhs, double rhs) {
-        return lhs >= rhs;
-      }
-
-      @Override
-      public boolean compare(long lhs, long rhs) {
-        return lhs >= rhs;
+      public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
+        return lhs.compareTo(rhs) >= 0;
       }
 
     };

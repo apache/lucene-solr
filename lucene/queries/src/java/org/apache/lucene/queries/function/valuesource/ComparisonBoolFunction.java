@@ -44,10 +44,9 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
     this.name = name;
   }
 
-  // Perform the comparison, returning true or false
-  public abstract boolean compare(double lhs, double rhs);
 
-  public abstract boolean compare(long lhs, long rhs);
+  // Perform the comparison, returning true or false
+  public abstract <T extends Comparable<T>> boolean compare(T lhs, T rhs);
 
   // Uniquely identify the operation (ie "gt", "lt" "gte", etc)
   public String name() {
