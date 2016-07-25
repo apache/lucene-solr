@@ -161,6 +161,9 @@ Bug Fixes
 
 * SOLR-9309: Fix SolrCloud RTG response structure when multi ids requested but only 1 found (hossman)
 
+* SOLR-9334: CloudSolrClient.collectionStateCache is unbounded (noble)
+
+
 Optimizations
 ----------------------
 
