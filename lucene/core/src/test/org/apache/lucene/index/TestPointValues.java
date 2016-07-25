@@ -362,9 +362,8 @@ public class TestPointValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new BinaryPoint("dim", new byte[PointValues.MAX_NUM_BYTES+1]));
     expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
+      doc.add(new BinaryPoint("dim", new byte[PointValues.MAX_NUM_BYTES+1]));
     });
 
     Document doc2 = new Document();
