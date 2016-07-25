@@ -53,16 +53,20 @@ import org.apache.commons.collections.iterators.IteratorEnumeration;
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
 import org.apache.hadoop.security.authentication.server.AuthenticationToken;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientConfigurer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.annotations.VisibleForTesting;
 
 public class KerberosPlugin extends AuthenticationPlugin implements HttpClientInterceptorPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -77,6 +81,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientIn
   public static final String KEYTAB_PARAM = "solr.kerberos.keytab";
   public static final String TOKEN_VALID_PARAM = "solr.kerberos.token.valid";
   public static final String COOKIE_PORT_AWARE_PARAM = "solr.kerberos.cookie.portaware";
+  public static final String IMPERSONATOR_PREFIX = "solr.kerberos.impersonator.user.";
   public static final String DELEGATION_TOKEN_ENABLED = "solr.kerberos.delegation.token.enabled";
   public static final String DELEGATION_TOKEN_KIND = "solr.kerberos.delegation.token.kind";
   public static final String DELEGATION_TOKEN_VALIDITY = "solr.kerberos.delegation.token.validity";
@@ -85,8 +90,11 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientIn
       "solr.kerberos.delegation.token.signer.secret.provider.zookeper.path";
   public static final String DELEGATION_TOKEN_SECRET_MANAGER_ZNODE_WORKING_PATH =
       "solr.kerberos.delegation.token.secret.manager.znode.working.path";
+
   public static final String DELEGATION_TOKEN_TYPE_DEFAULT = "solr-dt";
-  
+  public static final String IMPERSONATOR_DO_AS_HTTP_PARAM = "doAs";
+  public static final String IMPERSONATOR_USER_NAME = "solr.impersonator.user.name";
+
   // filled in by Plugin/Filter
   static final String REQUEST_CONTINUES_ATTR =
       "org.apache.solr.security.kerberosplugin.requestcontinues";
@@ -105,107 +113,121 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientIn
   @Override
   public void init(Map<String, Object> pluginConfig) {
     try {
-      Map<String, String> params = new HashMap();
-      putParam(params, "type", AUTH_HANDLER_PARAM, "kerberos");
-      putParam(params, "kerberos.name.rules", NAME_RULES_PARAM, "DEFAULT");
-      putParam(params, "token.valid", TOKEN_VALID_PARAM, "30");
-      putParam(params, "cookie.path", COOKIE_PATH_PARAM, "/");
-      if ("kerberos".equals(params.get("type"))) {
-        putParam(params, "kerberos.principal", PRINCIPAL_PARAM, null);
-        putParam(params, "kerberos.keytab", KEYTAB_PARAM, null);
-      } else {
-        // allow tests which specify AUTH_HANDLER_PARAM to avoid specifying kerberos principal/keytab
-        putParamOptional(params, "kerberos.principal", PRINCIPAL_PARAM);
-        putParamOptional(params, "kerberos.keytab", KEYTAB_PARAM);
-      }
-
-      String delegationTokenStr = System.getProperty(DELEGATION_TOKEN_ENABLED, null);
-      boolean delegationTokenEnabled =
-          (delegationTokenStr == null) ? false : Boolean.parseBoolean(delegationTokenStr);
-      ZkController controller = coreContainer.getZkController();
-
-      if (delegationTokenEnabled) {
-        putParam(params, "delegation-token.token-kind", DELEGATION_TOKEN_KIND, DELEGATION_TOKEN_TYPE_DEFAULT);
-        if (coreContainer.isZooKeeperAware()) {
-          putParam(params, "signer.secret.provider", DELEGATION_TOKEN_SECRET_PROVIDER, "zookeeper");
-          if ("zookeeper".equals(params.get("signer.secret.provider"))) {
-            String zkHost = controller.getZkServerAddress();
-            putParam(params, "token.validity", DELEGATION_TOKEN_VALIDITY, "36000");
-            params.put("zk-dt-secret-manager.enable", "true");
-
-            String chrootPath = zkHost.contains("/")? zkHost.substring(zkHost.indexOf("/")): "";
-            String znodeWorkingPath = chrootPath + SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH + "/zkdtsm";
-            // Note - Curator complains if the znodeWorkingPath starts with /
-            znodeWorkingPath = znodeWorkingPath.startsWith("/")? znodeWorkingPath.substring(1): znodeWorkingPath;
-            putParam(params, "zk-dt-secret-manager.znodeWorkingPath",
-                DELEGATION_TOKEN_SECRET_MANAGER_ZNODE_WORKING_PATH, znodeWorkingPath);
-            putParam(params, "signer.secret.provider.zookeeper.path",
-                DELEGATION_TOKEN_SECRET_PROVIDER_ZK_PATH, "/token");
-            // need to ensure krb5 is setup properly before running curator;
-            // the coreContainer should take care of this by calling configure on the
-            // kerberosConfigurer.
-          }
-        } else {
-          log.info("CoreContainer is not ZooKeeperAware, not setting ZK-related delegation token properties");
-        }
-      }
-
-      // Special handling for the "cookie.domain" based on whether port should be
-      // appended to the domain. Useful for situations where multiple solr nodes are
-      // on the same host.
-      String usePortStr = System.getProperty(COOKIE_PORT_AWARE_PARAM, null);
-      boolean needPortAwareCookies = (usePortStr == null) ? false: Boolean.parseBoolean(usePortStr);
-
-      if (!needPortAwareCookies || !coreContainer.isZooKeeperAware()) {
-        putParam(params, "cookie.domain", COOKIE_DOMAIN_PARAM, null);
-      } else { // we need port aware cookies and we are in SolrCloud mode.
-        String host = System.getProperty(COOKIE_DOMAIN_PARAM, null);
-        if (host==null) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Missing required parameter '"+COOKIE_DOMAIN_PARAM+"'.");
-        }
-        int port = controller.getHostPort();
-        params.put("cookie.domain", host + ":" + port);
-      }
-
-      final ServletContext servletContext = new AttributeOnlyServletContext();
-      if (delegationTokenEnabled) {
-        kerberosFilter = new DelegationTokenKerberosFilter();
-        // pass an attribute-enabled context in order to pass the zkClient
-        // and because the filter may pass a curator instance.
-        if (controller != null) {
-          servletContext.setAttribute(DELEGATION_TOKEN_ZK_CLIENT, controller.getZkClient());
-        }
-      } else {
-        kerberosFilter = new KerberosFilter();
-      }
-      log.info("Params: "+params);
-
-      FilterConfig conf = new FilterConfig() {
-        @Override
-        public ServletContext getServletContext() {
-          return servletContext;
-        }
-
-        @Override
-        public Enumeration<String> getInitParameterNames() {
-          return new IteratorEnumeration(params.keySet().iterator());
-        }
-
-        @Override
-        public String getInitParameter(String param) {
-          return params.get(param);
-        }
-
-        @Override
-        public String getFilterName() {
-          return "KerberosFilter";
-        }
-      };
-
+      FilterConfig conf = getInitFilterConfig(pluginConfig, false);
       kerberosFilter.init(conf);
     } catch (ServletException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error initializing kerberos authentication plugin: "+e);
     }
+  }
+
+  @VisibleForTesting
+  protected FilterConfig getInitFilterConfig(Map<String, Object> pluginConfig, boolean skipKerberosChecking) {
+    Map<String, String> params = new HashMap();
+    params.put("type", "kerberos");
+    putParam(params, "kerberos.name.rules", NAME_RULES_PARAM, "DEFAULT");
+    putParam(params, "token.valid", TOKEN_VALID_PARAM, "30");
+    putParam(params, "cookie.path", COOKIE_PATH_PARAM, "/");
+    if (!skipKerberosChecking) {
+      putParam(params, "kerberos.principal", PRINCIPAL_PARAM, null);
+      putParam(params, "kerberos.keytab", KEYTAB_PARAM, null);
+    } else {
+      putParamOptional(params, "kerberos.principal", PRINCIPAL_PARAM);
+      putParamOptional(params, "kerberos.keytab", KEYTAB_PARAM);
+    }
+
+    String delegationTokenStr = System.getProperty(DELEGATION_TOKEN_ENABLED, null);
+    boolean delegationTokenEnabled =
+        (delegationTokenStr == null) ? false : Boolean.parseBoolean(delegationTokenStr);
+    ZkController controller = coreContainer.getZkController();
+
+    if (delegationTokenEnabled) {
+      putParam(params, "delegation-token.token-kind", DELEGATION_TOKEN_KIND, DELEGATION_TOKEN_TYPE_DEFAULT);
+      if (coreContainer.isZooKeeperAware()) {
+        putParam(params, "signer.secret.provider", DELEGATION_TOKEN_SECRET_PROVIDER, "zookeeper");
+        if ("zookeeper".equals(params.get("signer.secret.provider"))) {
+          String zkHost = controller.getZkServerAddress();
+          putParam(params, "token.validity", DELEGATION_TOKEN_VALIDITY, "36000");
+          params.put("zk-dt-secret-manager.enable", "true");
+          // Note - Curator complains if the znodeWorkingPath starts with /
+          String chrootPath = zkHost.substring(zkHost.indexOf("/"));
+          String relativePath = chrootPath.startsWith("/") ? chrootPath.substring(1) : chrootPath;
+          putParam(params, "zk-dt-secret-manager.znodeWorkingPath",
+              DELEGATION_TOKEN_SECRET_MANAGER_ZNODE_WORKING_PATH,
+              relativePath + SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH + "/zkdtsm");
+          putParam(params, "signer.secret.provider.zookeeper.path",
+              DELEGATION_TOKEN_SECRET_PROVIDER_ZK_PATH, "/token");
+          // ensure krb5 is setup properly before running curator
+          kerberosConfigurer.configure(new DefaultHttpClient(), new ModifiableSolrParams());
+        }
+      } else {
+        log.info("CoreContainer is not ZooKeeperAware, not setting ZK-related delegation token properties");
+      }
+    }
+
+    // Special handling for the "cookie.domain" based on whether port should be
+    // appended to the domain. Useful for situations where multiple solr nodes are
+    // on the same host.
+    String usePortStr = System.getProperty(COOKIE_PORT_AWARE_PARAM, null);
+    boolean needPortAwareCookies = (usePortStr == null) ? false: Boolean.parseBoolean(usePortStr);
+
+    if (!needPortAwareCookies || !coreContainer.isZooKeeperAware()) {
+      putParam(params, "cookie.domain", COOKIE_DOMAIN_PARAM, null);
+    } else { // we need port aware cookies and we are in SolrCloud mode.
+      String host = System.getProperty(COOKIE_DOMAIN_PARAM, null);
+      if (host==null) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Missing required parameter '"+COOKIE_DOMAIN_PARAM+"'.");
+      }
+      int port = controller.getHostPort();
+      params.put("cookie.domain", host + ":" + port);
+    }
+
+    // check impersonator config
+    for (Enumeration e = System.getProperties().propertyNames(); e.hasMoreElements();) {
+      String key = e.nextElement().toString();
+      if (key.startsWith(IMPERSONATOR_PREFIX)) {
+        if (!delegationTokenEnabled) {
+          throw new SolrException(ErrorCode.SERVER_ERROR,
+              "Impersonator configuration requires delegation tokens to be enabled: " + key);
+        }
+        params.put(key, System.getProperty(key));
+      }
+    }
+    final ServletContext servletContext = new AttributeOnlyServletContext();
+    if (controller != null) {
+      servletContext.setAttribute(DELEGATION_TOKEN_ZK_CLIENT, controller.getZkClient());
+    }
+    if (delegationTokenEnabled) {
+      kerberosFilter = new DelegationTokenKerberosFilter();
+      // pass an attribute-enabled context in order to pass the zkClient
+      // and because the filter may pass a curator instance.
+    } else {
+      kerberosFilter = new KerberosFilter();
+    }
+    log.info("Params: "+params);
+
+    FilterConfig conf = new FilterConfig() {
+      @Override
+      public ServletContext getServletContext() {
+        return servletContext;
+      }
+
+      @Override
+      public Enumeration<String> getInitParameterNames() {
+        return new IteratorEnumeration(params.keySet().iterator());
+      }
+
+      @Override
+      public String getInitParameter(String param) {
+        return params.get(param);
+      }
+
+      @Override
+      public String getFilterName() {
+        return "KerberosFilter";
+      }
+    };
+
+    return conf;
   }
 
   private void putParam(Map<String, String> params, String internalParamName, String externalParamName, String defaultValue) {
@@ -260,9 +282,14 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientIn
     return kerberosConfigurer;
   }
 
+  @Override
   public void close() {
     kerberosFilter.destroy();
   }
+
+  protected Filter getKerberosFilter() { return kerberosFilter; }
+
+  protected void setKerberosFilter(Filter kerberosFilter) { this.kerberosFilter = kerberosFilter; }
 
   protected static class AttributeOnlyServletContext implements ServletContext {
     private Map<String, Object> attributes = new HashMap<String, Object>();
