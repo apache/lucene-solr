@@ -834,4 +834,18 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   }
 
-}
+  public void testLongComparisons() {
+    assertU(adoc("id", "1", "number_of_atoms_in_universe_l", Long.toString(Long.MAX_VALUE)));
+    assertU(adoc("id", "2", "number_of_atoms_in_universe_l", Long.toString(Long.MAX_VALUE - 1)));
+    assertU(commit());
+
+    singleTest("number_of_atoms_in_universe_l", "if(gt(number_of_atoms_in_universe_l," + Long.toString(Long.MAX_VALUE - 1) + "),5,2)",
+               /*id*/1, /*score*/5,
+               /*id*/2, /*score*/2);
+
+    singleTest("number_of_atoms_in_universe_l", "if(lt(number_of_atoms_in_universe_l," + Long.toString(Long.MAX_VALUE) + "),5,2)",
+               /*id*/2, /*score*/5,
+               /*id*/1, /*score*/2);
+  }
+
+  }
