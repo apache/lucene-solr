@@ -47,6 +47,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.response.transform.DocTransformer; // jdocs
 
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.lucene.util.TestUtil;
@@ -90,8 +91,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     (Arrays.<FlValidator>asList(
       // TODO: SOLR-9314: add more of these for other various transformers
       //
-      // TODO: add a [docid] validator (blocked by SOLR-9288 & SOLR-9289)
-      //
       new GlobValidator("*"),
       new GlobValidator("*_i"),
       new GlobValidator("*_s"),
@@ -119,6 +118,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
                             new RenameFieldValueValidator("id", "my_id_alias"),
                             new RenameFieldValueValidator("bbb_i", "my_int_field_alias"),
                             new RenameFieldValueValidator("ddd_s", "my_str_field_alias")));
+      // SOLR-9289...
+      FL_VALIDATORS.add(new DocIdValidator());
+      FL_VALIDATORS.add(new DocIdValidator("my_docid_alias"));
     } else {
       // No-Op
       // No known transformers that only work in distrib cloud but fail in singleCoreMode
@@ -385,16 +387,11 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * trivial helper method to deal with diff response structure between using a single 'id' param vs
    * 2 or more 'id' params (or 1 or more 'ids' params).
    *
-   * NOTE: <code>expectList</code> is currently ignored due to SOLR-9309 -- instead best efforst are made to
-   * return a synthetic list based on whatever can be found in the response.
-   *
    * @return List from response, or a synthetic one created from single response doc if 
    * <code>expectList</code> was false; May be empty; May be null if response included null list.
    */
   private static SolrDocumentList getDocsFromRTGResponse(final boolean expectList, final QueryResponse rsp) {
-    // TODO: blocked by SOLR-9309 (once this can be fixed, update jdocs)
-    if (null != rsp.getResults()) { // TODO: replace this..
-    // if (expectList) {            // TODO: ...with this tighter check.
+    if (expectList) {
       return rsp.getResults();
     }
     
@@ -428,7 +425,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   /** 
-   * abstraction for diff types of things that can be added to an 'fl' param that can validate
+   * Abstraction for diff types of things that can be added to an 'fl' param that can validate
    * the results are correct compared to an expected SolrInputDocument
    */
   private interface FlValidator {
@@ -440,6 +437,21 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         fls.add(v.getFlParam());
       }
       params.add(buildCommaSepParams(random(), "fl", fls));
+    }
+
+    /**
+     * Indicates if this validator is for a transformer that returns true from 
+     * {@link DocTransformer#needsSolrIndexSearcher}.  Other validators for transformers that 
+     * do <em>not</em> require a re-opened searcher (but may have slightly diff behavior depending 
+     * on wether a doc comesfrom the index or from the update log) may use this information to 
+     * decide wether they wish to enforce stricter assertions on the resulting document.
+     *
+     * The default implementation always returns <code>false</code>
+     *
+     * @see DocIdValidator
+     */
+    public default boolean requiresRealtimeSearcherReOpen() {
+      return false;
     }
     
     /** 
@@ -496,6 +508,42 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public String getFlParam() { return actualFieldName + ":" + expectedFieldName; }
   }
 
+  /** 
+   * enforces that a valid <code>[docid]</code> is present in the response, possibly using a 
+   * resultKey alias.  By default the only validation of docId values is that they are an integer 
+   * greater than or equal to <code>-1</code> -- but if any other validator in use returns true 
+   * from {@link #requiresRealtimeSearcherReOpen} then the constraint is tightened and values must 
+   * be greater than or equal to <code>0</code> 
+   */
+  private static class DocIdValidator implements FlValidator {
+    private final String resultKey;
+    public DocIdValidator(final String resultKey) {
+      this.resultKey = resultKey;
+    }
+    public DocIdValidator() {
+      this("[docid]");
+    }
+    public String getFlParam() { return "[docid]".equals(resultKey) ? resultKey : resultKey+":[docid]"; }
+    public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
+                                               final SolrInputDocument expected,
+                                               final SolrDocument actual) {
+      final Object value =  actual.getFirstValue(resultKey);
+      assertNotNull(getFlParam() + " => no value in actual doc", value);
+      assertTrue("[docid] must be an Integer: " + value, value instanceof Integer);
+
+      int minValidDocId = -1; // if it comes from update log
+      for (FlValidator other : validators) {
+        if (other.requiresRealtimeSearcherReOpen()) {
+          minValidDocId = 0;
+          break;
+        }
+      }
+      assertTrue("[docid] must be >= " + minValidDocId + ": " + value,
+                 minValidDocId <= ((Integer)value).intValue());
+      return Collections.<String>singleton(resultKey);
+    }
+  }
+  
   /** Trivial validator of a ValueSourceAugmenter */
   private static class FunctionValidator implements FlValidator {
     private static String func(String fieldName) {
@@ -515,6 +563,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       this.resultKey = resultKey;
       this.fieldName = fieldName;
     }
+    /** always returns true */
+    public boolean requiresRealtimeSearcherReOpen() { return true; }
     public String getFlParam() { return fl; }
     public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
                                                final SolrInputDocument expected,

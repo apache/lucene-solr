@@ -56,11 +56,11 @@ class CrankyPointsFormat extends PointsFormat {
     }
 
     @Override
-    public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
+    public void writeField(FieldInfo fieldInfo, PointsReader values, double maxMBSortInHeap) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException");
       }  
-      delegate.writeField(fieldInfo, values);
+      delegate.writeField(fieldInfo, values, maxMBSortInHeap);
     }
 
     @Override

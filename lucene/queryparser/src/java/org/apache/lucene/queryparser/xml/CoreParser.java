@@ -33,6 +33,7 @@ import java.io.InputStream;
  */
 public class CoreParser implements QueryBuilder {
 
+  protected String defaultField;
   protected Analyzer analyzer;
   protected QueryParser parser;
   protected QueryBuilderFactory queryFactory;
@@ -59,6 +60,7 @@ public class CoreParser implements QueryBuilder {
   }
 
   protected CoreParser(String defaultField, Analyzer analyzer, QueryParser parser) {
+    this.defaultField = defaultField;
     this.analyzer = analyzer;
     this.parser = parser;
 

@@ -47,6 +47,7 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -97,6 +98,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Conseque
 @SuppressSSL // SSL does not work with this test for currently unknown reasons
 @Slow
 @Nightly
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9076")
 public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   
   private static final int RECORD_COUNT = 2104;

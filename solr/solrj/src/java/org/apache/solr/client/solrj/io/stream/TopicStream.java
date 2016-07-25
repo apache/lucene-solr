@@ -52,7 +52,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -519,20 +518,9 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
       //System.out.println("Connected to zk an got cluster state.");
 
       Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
-
+      if (slices == null) slices = getSlicesIgnoreCase(this.collection, clusterState);
       if (slices == null) {
-        //Try case insensitive match
-        Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
-        for (Map.Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
-          if (entry.getKey().equalsIgnoreCase(collection)) {
-            slices = entry.getValue().getActiveSlices();
-            break;
-          }
-        }
-
-        if (slices == null) {
-          throw new Exception("Collection not found:" + this.collection);
-        }
+        throw new Exception("Collection not found:" + this.collection);
       }
 
 

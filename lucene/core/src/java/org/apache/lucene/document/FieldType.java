@@ -374,7 +374,7 @@ public class FieldType implements IndexableFieldType  {
     if (dimensionNumBytes < 0) {
       throw new IllegalArgumentException("dimensionNumBytes must be >= 0; got " + dimensionNumBytes);
     }
-    if (dimensionCount > PointValues.MAX_NUM_BYTES) {
+    if (dimensionNumBytes > PointValues.MAX_NUM_BYTES) {
       throw new IllegalArgumentException("dimensionNumBytes must be <= " + PointValues.MAX_NUM_BYTES + "; got " + dimensionNumBytes);
     }
     if (dimensionCount == 0) {

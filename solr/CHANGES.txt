@@ -63,6 +63,9 @@ New Features
 
 * SOLR-9240: Support parallel ETL with the topic expression (Joel Bernstein)
 
+* SOLR-9275: XML QueryParser support (defType=xmlparser) now extensible via configuration.
+  (Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
@@ -122,6 +125,10 @@ Bug Fixes
   (noble, Erick Erickson, shalin)
 
 * SOLR-9285: Fixed AIOOBE when using ValueSourceAugmenter in single node RTG (hossman)
+
+* SOLR-9288: Fix [docid] transformer to return -1 when used in RTG with uncommitted doc (hossman)
+
+* SOLR-9309: Fix SolrCloud RTG response structure when multi ids requested but only 1 found (hossman)
 
 * SOLR-9334: CloudSolrClient.collectionStateCache is unbounded (noble)
 

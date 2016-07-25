@@ -42,6 +42,8 @@ public class IndexFingerprint {
 
   private long maxVersionSpecified;
   private long maxVersionEncountered;
+  // this actually means max versions used in computing the hash.
+  // we cannot change this now because it changes back-compat
   private long maxInHash;
   private long versionsHash;
   private long numVersions;
