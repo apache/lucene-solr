@@ -204,7 +204,7 @@ public class BKDWriter implements Closeable {
     // all recursive halves (i.e. 16 + 8 + 4 + 2) so the memory usage is 2X
     // what that level would consume, so we multiply by 0.5 to convert from
     // bytes to points here.  Each dimension has its own sorted partition, so
-    // we must divide by numDims as wel.
+    // we must divide by numDims as well.
 
     maxPointsSortInHeap = (int) (0.5 * (maxMBSortInHeap * 1024 * 1024) / (bytesPerDoc * numDims));
 

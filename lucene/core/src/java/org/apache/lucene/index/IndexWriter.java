@@ -762,7 +762,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * {@link #getConfig()}.
    * 
    * <p>
-   * <b>NOTE:</b> after ths writer is created, the given configuration instance
+   * <b>NOTE:</b> after this writer is created, the given configuration instance
    * cannot be passed to another writer.
    * 
    * @param d
