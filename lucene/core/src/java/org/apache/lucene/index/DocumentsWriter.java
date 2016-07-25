@@ -376,9 +376,6 @@ final class DocumentsWriter implements Closeable, Accountable {
     boolean hasEvents = false;
     if (flushControl.anyStalledThreads() || flushControl.numQueuedFlushes() > 0) {
       // Help out flushing any queued DWPTs so we can un-stall:
-      if (infoStream.isEnabled("DW")) {
-        infoStream.message("DW", "DocumentsWriter has queued dwpt; will hijack this thread to flush pending segment(s)");
-      }
       do {
         // Try pick up pending threads here if possible
         DocumentsWriterPerThread flushingDWPT;
@@ -386,17 +383,9 @@ final class DocumentsWriter implements Closeable, Accountable {
           // Don't push the delete here since the update could fail!
           hasEvents |= doFlush(flushingDWPT);
         }
-  
-        if (infoStream.isEnabled("DW") && flushControl.anyStalledThreads()) {
-          infoStream.message("DW", "WARNING DocumentsWriter has stalled threads; waiting");
-        }
         
         flushControl.waitIfStalled(); // block if stalled
       } while (flushControl.numQueuedFlushes() != 0); // still queued DWPTs try help flushing
-
-      if (infoStream.isEnabled("DW")) {
-        infoStream.message("DW", "continue indexing after helping out flushing DocumentsWriter is healthy");
-      }
     }
     return hasEvents;
   }
