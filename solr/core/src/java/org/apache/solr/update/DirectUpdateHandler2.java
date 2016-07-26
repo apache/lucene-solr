@@ -26,7 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CodecReader;
@@ -76,20 +76,20 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   protected final SolrCoreState solrCoreState;
 
   // stats
-  AtomicLong addCommands = new AtomicLong();
-  AtomicLong addCommandsCumulative = new AtomicLong();
-  AtomicLong deleteByIdCommands= new AtomicLong();
-  AtomicLong deleteByIdCommandsCumulative= new AtomicLong();
-  AtomicLong deleteByQueryCommands= new AtomicLong();
-  AtomicLong deleteByQueryCommandsCumulative= new AtomicLong();
-  AtomicLong expungeDeleteCommands = new AtomicLong();
-  AtomicLong mergeIndexesCommands = new AtomicLong();
-  AtomicLong commitCommands= new AtomicLong();
-  AtomicLong optimizeCommands= new AtomicLong();
-  AtomicLong rollbackCommands= new AtomicLong();
-  AtomicLong numDocsPending= new AtomicLong();
-  AtomicLong numErrors = new AtomicLong();
-  AtomicLong numErrorsCumulative = new AtomicLong();
+  LongAdder addCommands = new LongAdder();
+  LongAdder addCommandsCumulative = new LongAdder();
+  LongAdder deleteByIdCommands= new LongAdder();
+  LongAdder deleteByIdCommandsCumulative= new LongAdder();
+  LongAdder deleteByQueryCommands= new LongAdder();
+  LongAdder deleteByQueryCommandsCumulative= new LongAdder();
+  LongAdder expungeDeleteCommands = new LongAdder();
+  LongAdder mergeIndexesCommands = new LongAdder();
+  LongAdder commitCommands= new LongAdder();
+  LongAdder optimizeCommands= new LongAdder();
+  LongAdder rollbackCommands= new LongAdder();
+  LongAdder numDocsPending= new LongAdder();
+  LongAdder numErrors = new LongAdder();
+  LongAdder numErrorsCumulative = new LongAdder();
 
   // tracks when auto-commit should occur
   protected final CommitTracker commitTracker;
@@ -158,7 +158,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   protected void rollbackWriter() throws IOException {
-    numDocsPending.set(0);
+    numDocsPending.reset();
     solrCoreState.rollbackIndexWriter(core);
     
   }
@@ -192,8 +192,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   private int addDoc0(AddUpdateCommand cmd) throws IOException {
     int rc = -1;
 
-    addCommands.incrementAndGet();
-    addCommandsCumulative.incrementAndGet();
+    addCommands.increment();
+    addCommandsCumulative.increment();
 
     // if there is no ID field, don't overwrite
     if (idField == null) {
@@ -230,10 +230,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       rc = 1;
     } finally {
       if (rc != 1) {
-        numErrors.incrementAndGet();
-        numErrorsCumulative.incrementAndGet();
+        numErrors.increment();
+        numErrorsCumulative.increment();
       } else {
-        numDocsPending.incrementAndGet();
+        numDocsPending.increment();
       }
     }
 
@@ -368,8 +368,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   // we don't return the number of docs deleted because it's not always possible to quickly know that info.
   @Override
   public void delete(DeleteUpdateCommand cmd) throws IOException {
-    deleteByIdCommands.incrementAndGet();
-    deleteByIdCommandsCumulative.incrementAndGet();
+    deleteByIdCommands.increment();
+    deleteByIdCommandsCumulative.increment();
 
     Term deleteTerm = new Term(idField.getName(), cmd.getIndexedId());
     // SolrCore.verbose("deleteDocuments",deleteTerm,writer);
@@ -426,8 +426,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   // we don't return the number of docs deleted because it's not always possible to quickly know that info.
   @Override
   public void deleteByQuery(DeleteUpdateCommand cmd) throws IOException {
-    deleteByQueryCommands.incrementAndGet();
-    deleteByQueryCommandsCumulative.incrementAndGet();
+    deleteByQueryCommands.increment();
+    deleteByQueryCommandsCumulative.increment();
     boolean madeIt=false;
     try {
       Query q = getQuery(cmd);
@@ -473,8 +473,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
     } finally {
       if (!madeIt) {
-        numErrors.incrementAndGet();
-        numErrorsCumulative.incrementAndGet();
+        numErrors.increment();
+        numErrorsCumulative.increment();
       }
     }
   }
@@ -482,7 +482,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public int mergeIndexes(MergeIndexesCommand cmd) throws IOException {
-    mergeIndexesCommands.incrementAndGet();
+    mergeIndexesCommands.increment();
     int rc;
 
     log.info("start " + cmd);
@@ -545,7 +545,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       error=false;
     }
     finally {
-      if (error) numErrors.incrementAndGet();
+      if (error) numErrors.increment();
     }
   }
 
@@ -557,10 +557,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
 
     if (cmd.optimize) {
-      optimizeCommands.incrementAndGet();
+      optimizeCommands.increment();
     } else {
-      commitCommands.incrementAndGet();
-      if (cmd.expungeDeletes) expungeDeleteCommands.incrementAndGet();
+      commitCommands.increment();
+      if (cmd.expungeDeletes) expungeDeleteCommands.increment();
     }
 
     Future[] waitSearcher = null;
@@ -622,7 +622,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           }
 
           // SolrCore.verbose("writer.commit() end");
-          numDocsPending.set(0);
+          numDocsPending.reset();
           callPostCommitCallbacks();
         }
       } finally {
@@ -676,10 +676,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         solrCoreState.getCommitLock().unlock();
       }
 
-      addCommands.set(0);
-      deleteByIdCommands.set(0);
-      deleteByQueryCommands.set(0);
-      if (error) numErrors.incrementAndGet();
+      addCommands.reset();
+      deleteByIdCommands.reset();
+      deleteByQueryCommands.reset();
+      if (error) numErrors.increment();
     }
 
     // if we are supposed to wait for the searcher to be registered, then we should do it
@@ -707,7 +707,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       throw new UnsupportedOperationException("Rollback is currently not supported in SolrCloud mode. (SOLR-4895)");
     }
 
-    rollbackCommands.incrementAndGet();
+    rollbackCommands.increment();
 
     boolean error=true;
 
@@ -727,13 +727,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       error=false;
     }
     finally {
-      addCommandsCumulative.set(
-          addCommandsCumulative.get() - addCommands.getAndSet( 0 ) );
-      deleteByIdCommandsCumulative.set(
-          deleteByIdCommandsCumulative.get() - deleteByIdCommands.getAndSet( 0 ) );
-      deleteByQueryCommandsCumulative.set(
-          deleteByQueryCommandsCumulative.get() - deleteByQueryCommands.getAndSet( 0 ) );
-      if (error) numErrors.incrementAndGet();
+      addCommandsCumulative.add(-addCommands.sumThenReset());
+      deleteByIdCommandsCumulative.add(-deleteByIdCommands.sumThenReset());
+      deleteByQueryCommandsCumulative.add(-deleteByQueryCommands.sumThenReset());
+      if (error) numErrors.increment();
     }
   }
 
@@ -749,7 +746,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     commitTracker.close();
     softCommitTracker.close();
 
-    numDocsPending.set(0);
+    numDocsPending.reset();
   }
 
 
@@ -882,7 +879,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   @Override
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
-    lst.add("commits", commitCommands.get());
+    lst.add("commits", commitCommands.longValue());
     if (commitTracker.getDocsUpperBound() > 0) {
       lst.add("autocommit maxDocs", commitTracker.getDocsUpperBound());
     }
@@ -897,20 +894,20 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       lst.add("soft autocommit maxTime", "" + softCommitTracker.getTimeUpperBound() + "ms");
     }
     lst.add("soft autocommits", softCommitTracker.getCommitCount());
-    lst.add("optimizes", optimizeCommands.get());
-    lst.add("rollbacks", rollbackCommands.get());
-    lst.add("expungeDeletes", expungeDeleteCommands.get());
-    lst.add("docsPending", numDocsPending.get());
+    lst.add("optimizes", optimizeCommands.longValue());
+    lst.add("rollbacks", rollbackCommands.longValue());
+    lst.add("expungeDeletes", expungeDeleteCommands.longValue());
+    lst.add("docsPending", numDocsPending.longValue());
     // pset.size() not synchronized, but it should be fine to access.
     // lst.add("deletesPending", pset.size());
-    lst.add("adds", addCommands.get());
-    lst.add("deletesById", deleteByIdCommands.get());
-    lst.add("deletesByQuery", deleteByQueryCommands.get());
-    lst.add("errors", numErrors.get());
-    lst.add("cumulative_adds", addCommandsCumulative.get());
-    lst.add("cumulative_deletesById", deleteByIdCommandsCumulative.get());
-    lst.add("cumulative_deletesByQuery", deleteByQueryCommandsCumulative.get());
-    lst.add("cumulative_errors", numErrorsCumulative.get());
+    lst.add("adds", addCommands.longValue());
+    lst.add("deletesById", deleteByIdCommands.longValue());
+    lst.add("deletesByQuery", deleteByQueryCommands.longValue());
+    lst.add("errors", numErrors.longValue());
+    lst.add("cumulative_adds", addCommandsCumulative.longValue());
+    lst.add("cumulative_deletesById", deleteByIdCommandsCumulative.longValue());
+    lst.add("cumulative_deletesByQuery", deleteByQueryCommandsCumulative.longValue());
+    lst.add("cumulative_errors", numErrorsCumulative.longValue());
     if (this.ulog != null) {
       lst.add("transaction_logs_total_size", ulog.getTotalLogsSize());
       lst.add("transaction_logs_total_number", ulog.getTotalLogsNumber());
