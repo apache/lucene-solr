@@ -35,38 +35,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
-import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
-import org.apache.lucene.queries.function.valuesource.ConstValueSource;
-import org.apache.lucene.queries.function.valuesource.DivFloatFunction;
-import org.apache.lucene.queries.function.valuesource.DocFreqValueSource;
-import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
-import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
-import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.queries.function.valuesource.IDFValueSource;
-import org.apache.lucene.queries.function.valuesource.IfFunction;
-import org.apache.lucene.queries.function.valuesource.IntFieldSource;
-import org.apache.lucene.queries.function.valuesource.JoinDocFreqValueSource;
-import org.apache.lucene.queries.function.valuesource.LinearFloatFunction;
-import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
-import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.queries.function.valuesource.MaxDocValueSource;
-import org.apache.lucene.queries.function.valuesource.MaxFloatFunction;
-import org.apache.lucene.queries.function.valuesource.MinFloatFunction;
-import org.apache.lucene.queries.function.valuesource.MultiFloatFunction;
-import org.apache.lucene.queries.function.valuesource.MultiFunction;
-import org.apache.lucene.queries.function.valuesource.NormValueSource;
-import org.apache.lucene.queries.function.valuesource.NumDocsValueSource;
-import org.apache.lucene.queries.function.valuesource.PowFloatFunction;
-import org.apache.lucene.queries.function.valuesource.ProductFloatFunction;
-import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.queries.function.valuesource.RangeMapFloatFunction;
-import org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction;
-import org.apache.lucene.queries.function.valuesource.ScaleFloatFunction;
-import org.apache.lucene.queries.function.valuesource.SumFloatFunction;
-import org.apache.lucene.queries.function.valuesource.SumTotalTermFreqValueSource;
-import org.apache.lucene.queries.function.valuesource.TFValueSource;
-import org.apache.lucene.queries.function.valuesource.TermFreqValueSource;
-import org.apache.lucene.queries.function.valuesource.TotalTermFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.*;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -242,6 +211,34 @@ public class TestValueSources extends LuceneTestCase {
                         BOGUS_FLOAT_VS, // match
                         new ConstValueSource(1.0f));
     assertNoneExist(vs);
+  }
+
+  public void testComparisons() throws Exception {
+    ValueSource vs = new FloatFieldSource("float");
+    ValueSource const52Vs = new ConstValueSource(5.2f);
+
+    ValueSource gtVs = new SafeNumericComparisonBoolFunction(const52Vs, vs, "test") {
+      @Override
+      public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
+        return lhs.compareTo(rhs) > 0;
+      }
+    };
+
+    FunctionQuery q = new FunctionQuery(gtVs);
+    assertHits(q, new float[] {0f, 0f});
+
+    ValueSource gteVs = new SafeNumericComparisonBoolFunction(const52Vs, vs, "test") {
+      @Override
+      public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
+        return lhs.compareTo(rhs) >= 0;
+      }
+
+    };
+
+    // both true with >=
+    q = new FunctionQuery(gteVs);
+    assertHits(q, new float[] {1f, 0f});
+
   }
   
   public void testInt() throws Exception {

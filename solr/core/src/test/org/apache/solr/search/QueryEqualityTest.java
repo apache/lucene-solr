@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.search;
+import com.facebook.presto.sql.tree.Except;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -1073,6 +1074,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("agg_percentile(foo_i,50)", "agg_percentile(foo_i,50)");
     // assertFuncEquals("agg_stdev(foo_i)", "agg_stdev(foo_i)");
     // assertFuncEquals("agg_multistat(foo_i)", "agg_multistat(foo_i)");
+  }
+
+  public void testCompares() throws Exception {
+    assertFuncEquals("gt(foo_i,2)", "gt(foo_i, 2)");
+    assertFuncEquals("gt(foo_i,2)", "gt(foo_i,2)");
+    assertFuncEquals("lt(foo_i,2)", "lt(foo_i,2)");
+    assertFuncEquals("lte(foo_i,2)", "lte(foo_i,2)");
+    assertFuncEquals("gte(foo_i,2)", "gte(foo_i,2)");
+    assertFuncEquals("eq(foo_i,2)", "eq(foo_i,2)");
+
   }
 
 }

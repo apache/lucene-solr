@@ -822,6 +822,80 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
 
+    addParser("gt", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
+
+        return new SafeNumericComparisonBoolFunction(lhsValSource, rhsValSource, "gt") {
+          public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
+            return lhs.compareTo(rhs) > 0;
+          }
+        };
+      }
+    });
+
+    addParser("lt", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
+
+        return new SafeNumericComparisonBoolFunction(lhsValSource, rhsValSource, "lt") {
+          public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
+            return lhs.compareTo(rhs) < 0;
+          }
+        };
+      }
+    });
+
+    addParser("gte", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
+
+        return new SafeNumericComparisonBoolFunction(lhsValSource, rhsValSource, "gte") {
+          public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
+            return lhs.compareTo(rhs) >= 0;
+          }
+        };
+
+      }
+    });
+
+
+    addParser("lte", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
+
+        return new SafeNumericComparisonBoolFunction(lhsValSource, rhsValSource, "lte") {
+          public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
+            return lhs.compareTo(rhs) <= 0;
+          }
+        };
+      }
+    });
+
+    addParser("eq", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
+
+        return new SafeNumericComparisonBoolFunction(lhsValSource, rhsValSource, "eq") {
+          public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
+            return lhs.compareTo(rhs) == 0;
+          }
+        };
+      }
+    });
+
+
+
     addParser("def", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
