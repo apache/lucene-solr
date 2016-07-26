@@ -72,6 +72,12 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
       public String toString(int doc) {
         return compLabel + "(" + lhsVal.toString(doc) + "," + rhsVal.toString(doc) + ")";
       }
+
+      @Override
+      public boolean exists(int doc) {
+        return lhsVal.exists(doc) && rhsVal.exists(doc);
+      }
+
     };
   }
 

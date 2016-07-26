@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import com.facebook.presto.sql.tree.Except;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
@@ -794,16 +795,27 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNumericComparisons() {
+  public void testNumericComparisons() throws Exception {
     assertU(adoc("id", "1", "age_i", "35"));
     assertU(adoc("id", "2", "age_i", "25"));
     assertU(commit());
+
+    // test weighting of functions
+    assertJQ(req("q", "id:1", "fl", "a:gt(age_i,30),b:lt(age_i,30)")
+        , "/response/docs/[0]=={'a':true,'b':false}");
+
+    assertJQ(req("q", "id:1", "fl", "a:exists(gt(foo_i,30))")
+        , "/response/docs/[0]=={'a':false}");
 
     singleTest("age_i", "if(gt(age_i,30),5,2)",
                /*id*/1, /*score*/5,
                /*id*/2, /*score*/2);
 
     singleTest("age_i", "if(lt(age_i,30),5,2)",
+               /*id*/1, /*score*/2,
+               /*id*/2, /*score*/5);
+
+    singleTest("age_i", "if(lt(age_i,34.5),5,2)",
                /*id*/1, /*score*/2,
                /*id*/2, /*score*/5);
 
@@ -831,7 +843,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     singleTest("age_i", "if(eq(age_i,35),5,2)",
                /*id*/1, /*score*/5,
                /*id*/2, /*score*/2);
-
   }
 
   public void testLongComparisons() {
