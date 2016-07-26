@@ -168,23 +168,20 @@ public class LiveIndexWriterConfig {
   
   /**
    * Determines the amount of RAM that may be used for buffering added documents
-   * and deletions before they are flushed to the Directory. Generally for
-   * faster indexing performance it's best to flush by RAM usage instead of
-   * document count and use as large a RAM buffer as you can.
+   * and deletions before beginning to flush them to the Directory.  For
+   * faster indexing performance it's best to use as large a RAM buffer as you can.
+   * <p>
+   * Note that this setting is not a hard limit on memory usage during indexing, as
+   * transient and non-trivial memory well beyond this buffer size may be used,
+   * for example due to segment merges or writing points to new segments.
+   * For application stability the available memory in the JVM
+   * should be significantly larger than the RAM buffer used for indexing.
    * <p>
    * When this is set, the writer will flush whenever buffered documents and
    * deletions use this much RAM. Pass in
    * {@link IndexWriterConfig#DISABLE_AUTO_FLUSH} to prevent triggering a flush
    * due to RAM usage. Note that if flushing by document count is also enabled,
    * then the flush will be triggered by whichever comes first.
-   * <p>
-   * The maximum RAM limit is inherently determined by the JVMs available
-   * memory. Yet, an {@link IndexWriter} session can consume a significantly
-   * larger amount of memory than the given RAM limit since this limit is just
-   * an indicator when to flush memory resident documents to the Directory.
-   * Flushes are likely happen concurrently while other threads adding documents
-   * to the writer. For application stability the available memory in the JVM
-   * should be significantly larger than the RAM buffer used for indexing.
    * <p>
    * <b>NOTE</b>: the account of RAM usage for pending deletions is only
    * approximate. Specifically, if you delete by Query, Lucene currently has no

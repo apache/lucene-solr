@@ -135,6 +135,11 @@ Improvements
 
 * LUCENE-7385: Improve/fix assert messages in SpanScorer. (David Smiley)
 
+* LUCENE-7390: Improve performance of indexing points by allowing the
+  codec to use transient heap in proportion to IndexWriter's RAM
+  buffer, instead of a fixed 16.0 MB.  A custom codec can still
+  override the buffer size itself. (Mike McCandless)
+
 Optimizations
 
 * LUCENE-7330, LUCENE-7339: Speed up conjunction queries. (Adrien Grand)
