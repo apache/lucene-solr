@@ -200,6 +200,9 @@ Other Changes
 * SOLR-9163: Sync up basic_configs and data_driven_schema_configs, removing almost all differences
   except what is required for schemaless. (yonik)
 
+* SOLR-9340: Change ZooKeeper disconnect and session expiry related logging from INFO to WARN to
+  make debugging easier (Varun Thacker)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
