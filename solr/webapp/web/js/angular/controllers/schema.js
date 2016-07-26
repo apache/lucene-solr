@@ -475,6 +475,11 @@ var getFieldProperties = function(data, core, is, field) {
     // identify rows and cell values in field property table:
     for (var i in display.rows) {
         var row = display.rows[i];
+
+		if (!row.flags) {
+			continue; //Match the special case in the LukeRequestHandler
+		}
+
         row.cells = [];
 
         for (var j in display.columns) {
