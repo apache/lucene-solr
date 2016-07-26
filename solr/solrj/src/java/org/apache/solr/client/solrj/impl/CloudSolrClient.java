@@ -1060,7 +1060,7 @@ public class CloudSolrClient extends SolrClient {
     try {
       resp = sendRequest(request, collection);
       //to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from there
-      Object o = resp.get(STATE_VERSION, resp.size()-1);
+      Object o = resp == null || resp.size() == 0 ? null : resp.get(STATE_VERSION, resp.size() - 1);
       if(o != null && o instanceof Map) {
         //remove this because no one else needs this and tests would fail if they are comparing responses
         resp.remove(resp.size()-1);
