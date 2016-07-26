@@ -31,6 +31,8 @@ Bug Fixes
 
 * SOLR-9339: NPE in CloudSolrClient when the response is null (noble)
 
+* SOLR-9334: CloudSolrClient.collectionStateCache is unbounded (noble)
+
 ======================= 5.5.2 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
