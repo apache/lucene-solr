@@ -828,7 +828,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource lhsValSource = fp.parseValueSource();
         ValueSource rhsValSource = fp.parseValueSource();
 
-        return new ComparisonBoolFunction(lhsValSource, rhsValSource, "gt") {
+        return new SafeNumericComparisonBoolFunction(lhsValSource, rhsValSource, "gt") {
           public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
             return lhs.compareTo(rhs) > 0;
           }
@@ -842,7 +842,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource lhsValSource = fp.parseValueSource();
         ValueSource rhsValSource = fp.parseValueSource();
 
-        return new ComparisonBoolFunction(lhsValSource, rhsValSource, "lt") {
+        return new SafeNumericComparisonBoolFunction(lhsValSource, rhsValSource, "lt") {
           public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
             return lhs.compareTo(rhs) < 0;
           }
@@ -856,7 +856,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource lhsValSource = fp.parseValueSource();
         ValueSource rhsValSource = fp.parseValueSource();
 
-        return new ComparisonBoolFunction(lhsValSource, rhsValSource, "gte") {
+        return new SafeNumericComparisonBoolFunction(lhsValSource, rhsValSource, "gte") {
           public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
             return lhs.compareTo(rhs) >= 0;
           }
@@ -872,7 +872,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource lhsValSource = fp.parseValueSource();
         ValueSource rhsValSource = fp.parseValueSource();
 
-        return new ComparisonBoolFunction(lhsValSource, rhsValSource, "lte") {
+        return new SafeNumericComparisonBoolFunction(lhsValSource, rhsValSource, "lte") {
           public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
             return lhs.compareTo(rhs) <= 0;
           }
@@ -886,7 +886,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource lhsValSource = fp.parseValueSource();
         ValueSource rhsValSource = fp.parseValueSource();
 
-        return new ComparisonBoolFunction(lhsValSource, rhsValSource, "eq") {
+        return new SafeNumericComparisonBoolFunction(lhsValSource, rhsValSource, "eq") {
           public <T extends Comparable<T>> boolean compare(T lhs, T rhs) {
             return lhs.compareTo(rhs) == 0;
           }

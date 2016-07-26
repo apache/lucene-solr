@@ -19,6 +19,7 @@ package org.apache.lucene.queries.function.valuesource;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
@@ -46,7 +47,7 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
 
 
   // Perform the comparison, returning true or false
-  public abstract <T extends Comparable<T>> boolean compare(T lhs, T rhs);
+  public abstract boolean compare(int doc, FunctionValues lhs, FunctionValues rhs);
 
   // Uniquely identify the operation (ie "gt", "lt" "gte", etc)
   public String name() {
@@ -64,18 +65,7 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
     return new BoolDocValues(this) {
       @Override
       public boolean boolVal(int doc) {
-
-        // should we treat this as an integer comparison? only if doubleVal == longVal,
-        // indicating the two values are effectively integers.
-        //
-        // If these are integers, we need to compare them as such
-        // as to avoid floating point precision problems
-        if (lhsVal.doubleVal(doc) == lhsVal.longVal(doc) && rhsVal.doubleVal(doc) == rhsVal.longVal(doc)) {
-          return compare(lhsVal.longVal(doc), rhsVal.longVal(doc));
-
-        }
-
-        return compare(lhsVal.doubleVal(doc), rhsVal.doubleVal(doc));
+        return compare(doc, lhsVal, rhsVal);
       }
 
       @Override
