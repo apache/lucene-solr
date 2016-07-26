@@ -163,6 +163,8 @@ Bug Fixes
 
 * SOLR-9334: CloudSolrClient.collectionStateCache is unbounded (noble)
 
+* SOLR-9339: NPE in CloudSolrClient when the response is null (noble)
+
 
 Optimizations
 ----------------------
