@@ -130,6 +130,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         }
       }
       deleteNode(ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName);
+      zkStateReader.close();
       zkClient.close();
     }
     
