@@ -154,12 +154,8 @@ public class TestNorms extends LuceneTestCase {
 
 
   public class MySimProvider extends PerFieldSimilarityWrapper {
-    Similarity delegate = new ClassicSimilarity();
-
-    @Override
-    public float queryNorm(float sumOfSquaredWeights) {
-
-      return delegate.queryNorm(sumOfSquaredWeights);
+    public MySimProvider() {
+      super(new ClassicSimilarity());
     }
 
     @Override
@@ -167,13 +163,8 @@ public class TestNorms extends LuceneTestCase {
       if (byteTestField.equals(field)) {
         return new ByteEncodingBoostSimilarity();
       } else {
-        return delegate;
+        return defaultSim;
       }
-    }
-
-    @Override
-    public float coord(int overlap, int maxOverlap) {
-      return delegate.coord(overlap, maxOverlap);
     }
   }
 

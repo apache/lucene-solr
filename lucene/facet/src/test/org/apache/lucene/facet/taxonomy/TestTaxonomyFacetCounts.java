@@ -259,13 +259,11 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     Directory dir = newDirectory();
     Directory taxoDir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setSimilarity(new PerFieldSimilarityWrapper() {
-        final Similarity sim = new ClassicSimilarity();
-
+    iwc.setSimilarity(new PerFieldSimilarityWrapper(new ClassicSimilarity()) {
         @Override
         public Similarity get(String name) {
           assertEquals("field", name);
-          return sim;
+          return defaultSim;
         }
       });
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);

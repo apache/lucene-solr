@@ -132,16 +132,15 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCo
         }
       }
       assert null != defaultSim;
-      final Similarity defaultSimilarity = defaultSim;
-      similarity = new PerFieldSimilarityWrapper() {
+      similarity = new PerFieldSimilarityWrapper(defaultSim) {
         @Override
         public Similarity get(String name) {
           FieldType fieldType = core.getLatestSchema().getFieldTypeNoEx(name);
           if (fieldType == null) {
-            return defaultSimilarity;
+            return defaultSim;
           } else {
             Similarity similarity = fieldType.getSimilarity();
-            return similarity == null ? defaultSimilarity : similarity;
+            return similarity == null ? defaultSim : similarity;
           }
         }
       };
