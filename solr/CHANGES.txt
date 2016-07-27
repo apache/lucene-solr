@@ -165,6 +165,7 @@ Bug Fixes
 
 * SOLR-9339: NPE in CloudSolrClient when the response is null (noble)
 
+* SOLR-8596: Web UI doesn't correctly generate queries which include local parameters (Alexandre Rafalovitch, janhoy)
 
 Optimizations
 ----------------------
