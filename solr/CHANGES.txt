@@ -103,6 +103,11 @@ New Features
 * SOLR-9200: Add Delegation Token Support to Solr.
   (Gregory Chanan)
 
+* SOLR-9038: Solr core snapshots: The current commit can be snapshotted which retains the commit and associates it with
+  a name.  The core admin API can create snapshots, list them, and delete them. Snapshot names can be referenced in
+  doing a core backup, and in replication.  Snapshot metadata is stored in a new snapshot_metadata/ dir.
+  (Hrishikesh Gadre via David Smiley)
+
 Bug Fixes
 ----------------------
 
