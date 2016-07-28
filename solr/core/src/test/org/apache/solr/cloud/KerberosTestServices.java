@@ -26,7 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
-import com.carrotsearch.ant.tasks.junit4.dependencies.com.google.common.base.Preconditions;
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 
