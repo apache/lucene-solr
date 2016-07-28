@@ -140,6 +140,10 @@ Improvements
   buffer, instead of a fixed 16.0 MB.  A custom codec can still
   override the buffer size itself. (Mike McCandless)
 
+* LUCENE-7393: Add ICUTokenizer option to parse Myanmar text as syllables instead of words,
+  because the ICU word-breaking algorithm has some issues. This allows for the previous 
+  tokenization used before Lucene 5. (AM, Robert Muir)
+
 Optimizations
 
 * LUCENE-7330, LUCENE-7339: Speed up conjunction queries. (Adrien Grand)
