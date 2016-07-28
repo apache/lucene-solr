@@ -168,8 +168,13 @@ final class Lucene50CompoundReader extends Directory {
   
   /** Not implemented
    * @throws UnsupportedOperationException always: not supported by CFS */
-  public void renameFile(String from, String to) {
+  @Override
+  public void rename(String from, String to) {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void syncMetaData() {
   }
   
   /** Returns the length of a file in the directory.

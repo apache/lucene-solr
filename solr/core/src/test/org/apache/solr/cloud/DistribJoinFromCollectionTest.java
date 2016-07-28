@@ -146,7 +146,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
   private void testJoins(String toColl, String fromColl, Integer toDocId, boolean isScoresTest)
       throws SolrServerException, IOException {
     // verify the join with fromIndex works
-    final String fromQ = "match_s:c match_s:not_1_0_score_after_weight_normalization";
+    final String fromQ = "match_s:c^2";
     CloudSolrClient client = cluster.getSolrClient();
     {
     final String joinQ = "{!join " + anyScoreMode(isScoresTest)

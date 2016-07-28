@@ -83,11 +83,6 @@ public class TestCustomNorms extends LuceneTestCase {
     Similarity delegate = new ClassicSimilarity();
 
     @Override
-    public float queryNorm(float sumOfSquaredWeights) {
-      return delegate.queryNorm(sumOfSquaredWeights);
-    }
-
-    @Override
     public Similarity get(String field) {
       if (floatTestField.equals(field)) {
         return new FloatEncodingBoostSimilarity();
@@ -105,7 +100,7 @@ public class TestCustomNorms extends LuceneTestCase {
     }
     
     @Override
-    public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
+    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       throw new UnsupportedOperationException();
     }
 

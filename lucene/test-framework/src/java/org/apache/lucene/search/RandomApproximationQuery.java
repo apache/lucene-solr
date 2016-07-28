@@ -18,13 +18,10 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Random;
-import java.util.Set;
-
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 
 /**
  * A {@link Query} that adds random approximations to its scorers.
@@ -65,45 +62,23 @@ public class RandomApproximationQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    final Weight weight = query.createWeight(searcher, needsScores);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    final Weight weight = query.createWeight(searcher, needsScores, boost);
     return new RandomApproximationWeight(weight, new Random(random.nextLong()));
   }
 
-  private static class RandomApproximationWeight extends Weight {
+  private static class RandomApproximationWeight extends FilterWeight {
 
-    private final Weight weight;
     private final Random random;
 
     RandomApproximationWeight(Weight weight, Random random) {
-      super(weight.getQuery());
-      this.weight = weight;
+      super(weight);
       this.random = random;
     }
 
     @Override
-    public void extractTerms(Set<Term> terms) {
-      weight.extractTerms(terms);
-    }
-
-    @Override
-    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      return weight.explain(context, doc);
-    }
-
-    @Override
-    public float getValueForNormalization() throws IOException {
-      return weight.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float norm, float boost) {
-      weight.normalize(norm, boost);
-    }
-
-    @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      final Scorer scorer = weight.scorer(context);
+      final Scorer scorer = in.scorer(context);
       if (scorer == null) {
         return null;
       }

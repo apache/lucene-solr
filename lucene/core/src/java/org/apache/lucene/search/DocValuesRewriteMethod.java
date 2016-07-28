@@ -73,8 +73,8 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
     public final String getField() { return query.getField(); }
     
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      return new RandomAccessWeight(this) {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      return new RandomAccessWeight(this, boost) {
         @Override
         protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
           final SortedSetDocValues fcsi = DocValues.getSortedSet(context.reader(), query.field);

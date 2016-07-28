@@ -170,12 +170,12 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
   }
 
   @Override
-  public void renameFile(String source, String dest) throws IOException {
+  public void rename(String source, String dest) throws IOException {
     unCache(source);
     if (cache.fileNameExists(dest)) {
       throw new IllegalArgumentException("target file " + dest + " already exists");
     }
-    in.renameFile(source, dest);
+    in.rename(source, dest);
   }
 
   @Override

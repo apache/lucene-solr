@@ -22,6 +22,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -61,8 +62,8 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new W(this, toQuery.createWeight(searcher, false));
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new W(this, toQuery.createWeight(searcher, false, 1f));
   }
 
   @Override
@@ -102,13 +103,10 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
         '}';
   }
 
-  final class W extends Weight {
-
-    private final Weight approximationWeight;
+  final class W extends FilterWeight {
 
     W(Query query, Weight approximationWeight) {
-      super(query);
-      this.approximationWeight = approximationWeight;
+      super(query, approximationWeight);
     }
 
     @Override
@@ -142,24 +140,13 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
     }
 
     @Override
-    public float getValueForNormalization() throws IOException {
-      return 1f;
-    }
-
-    @Override
-    public void normalize(float norm, float boost) {
-      // no normalization, we ignore the normalization process
-      // and produce scores based on the join
-    }
-
-    @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
       SortedDocValues values = DocValues.getSorted(context.reader(), joinField);
       if (values == null) {
         return null;
       }
 
-      Scorer approximationScorer = approximationWeight.scorer(context);
+      Scorer approximationScorer = in.scorer(context);
       if (approximationScorer == null) {
         return null;
       } else if (globalOrds != null) {

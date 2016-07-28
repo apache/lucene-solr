@@ -50,30 +50,11 @@ public class AssertingIndexSearcher extends IndexSearcher {
     super(context, ex);
     this.random = new Random(random.nextLong());
   }
-  
-  /** Ensures, that the returned {@code Weight} is not normalized again, which may produce wrong scores. */
-  @Override
-  public Weight createNormalizedWeight(Query query, boolean needsScores) throws IOException {
-    final Weight w = super.createNormalizedWeight(query, needsScores);
-    return new AssertingWeight(random, w, needsScores) {
-
-      @Override
-      public void normalize(float norm, float boost) {
-        throw new IllegalStateException("Weight already normalized.");
-      }
-
-      @Override
-      public float getValueForNormalization() {
-        throw new IllegalStateException("Weight already normalized.");
-      }
-
-    };
-  }
 
   @Override
-  public Weight createWeight(Query query, boolean needsScores) throws IOException {
+  public Weight createWeight(Query query, boolean needsScores, float boost) throws IOException {
     // this adds assertions to the inner weights/scorers too
-    return new AssertingWeight(random, super.createWeight(query, needsScores), needsScores);
+    return new AssertingWeight(random, super.createWeight(query, needsScores, boost), needsScores);
   }
 
   @Override

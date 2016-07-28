@@ -72,7 +72,7 @@ public class TestSpanContainQuery extends LuceneTestCase {
   }
 
   Spans makeSpans(SpanQuery sq) throws Exception {
-    return sq.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    return sq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
   }
 
   void tstEqualSpans(String mes, SpanQuery expectedQ, SpanQuery actualQ) throws Exception {

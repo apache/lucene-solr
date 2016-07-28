@@ -92,7 +92,16 @@ public final class MockAnalyzer extends Analyzer {
     MockTokenFilter filt = new MockTokenFilter(tokenizer, filter);
     return new TokenStreamComponents(tokenizer, maybePayload(filt, fieldName));
   }
-  
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = in;
+    if (lowerCase) {
+      result = new MockLowerCaseFilter(result);
+    }
+    return result;
+  }
+
   private synchronized TokenFilter maybePayload(TokenFilter stream, String fieldName) {
     Integer val = previousMappings.get(fieldName);
     if (val == null) {

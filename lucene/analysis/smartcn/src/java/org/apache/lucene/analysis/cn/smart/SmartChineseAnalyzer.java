@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -138,5 +139,10 @@ public final class SmartChineseAnalyzer extends Analyzer {
       result = new StopFilter(result, stopWords);
     }
     return new TokenStreamComponents(tokenizer, result);
+  }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    return new LowerCaseFilter(in);
   }
 }

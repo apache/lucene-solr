@@ -1,20 +1,3 @@
-package org.apache.solr.cloud.rule;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import com.google.common.collect.Sets;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.when;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -31,6 +14,23 @@ import static org.mockito.Mockito.when;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.cloud.rule;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import com.google.common.collect.Sets;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.when;
 
 public class ImplicitSnitchTest {
 

@@ -30,19 +30,22 @@ import org.apache.zookeeper.data.Id;
  * configurations have already been set up and will not be modified, or
  * where configuration changes are controlled via Solr APIs.
  */
-public class SaslZkACLProvider extends DefaultZkACLProvider {
+public class SaslZkACLProvider extends SecurityAwareZkACLProvider {
 
   private static String superUser = System.getProperty("solr.authorization.superuser", "solr");
 
   @Override
-  protected List<ACL> createGlobalACLsToAdd() {
-    List<ACL> result = new ArrayList<ACL>();
-    result.add(new ACL(ZooDefs.Perms.ALL, new Id("sasl", superUser)));
-    result.add(new ACL(ZooDefs.Perms.READ, ZooDefs.Ids.ANYONE_ID_UNSAFE));
+  protected List<ACL> createNonSecurityACLsToAdd() {
+    List<ACL> ret = new ArrayList<ACL>();
+    ret.add(new ACL(ZooDefs.Perms.ALL, new Id("sasl", superUser)));
+    ret.add(new ACL(ZooDefs.Perms.READ, ZooDefs.Ids.ANYONE_ID_UNSAFE));
+    return ret;
+  }
 
-    if (result.isEmpty()) {
-      result = super.createGlobalACLsToAdd();
-    }
-    return result;
+  @Override
+  protected List<ACL> createSecurityACLsToAdd() {
+    List<ACL> ret = new ArrayList<ACL>();
+    ret.add(new ACL(ZooDefs.Perms.ALL, new Id("sasl", superUser)));
+    return ret;
   }
 }

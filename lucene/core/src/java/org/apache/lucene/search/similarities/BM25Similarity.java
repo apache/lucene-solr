@@ -205,7 +205,7 @@ public class BM25Similarity extends Similarity {
   }
 
   @Override
-  public final SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
+  public final SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
     Explanation idf = termStats.length == 1 ? idfExplain(collectionStats, termStats[0]) : idfExplain(collectionStats, termStats);
 
     float avgdl = avgFieldLength(collectionStats);
@@ -215,7 +215,7 @@ public class BM25Similarity extends Similarity {
     for (int i = 0; i < cache.length; i++) {
       cache[i] = k1 * ((1 - b) + b * decodeNormValue((byte)i) / avgdl);
     }
-    return new BM25Stats(collectionStats.field(), idf, avgdl, cache);
+    return new BM25Stats(collectionStats.field(), boost, idf, avgdl, cache);
   }
 
   @Override
@@ -267,34 +267,23 @@ public class BM25Similarity extends Similarity {
     /** The average document length. */
     private final float avgdl;
     /** query boost */
-    private float boost;
+    private final float boost;
     /** weight (idf * boost) */
-    private float weight;
+    private final float weight;
     /** field name, for pulling norms */
     private final String field;
     /** precomputed norm[256] with k1 * ((1 - b) + b * dl / avgdl) */
     private final float cache[];
 
-    BM25Stats(String field, Explanation idf, float avgdl, float cache[]) {
+    BM25Stats(String field, float boost, Explanation idf, float avgdl, float cache[]) {
       this.field = field;
+      this.boost = boost;
       this.idf = idf;
       this.avgdl = avgdl;
       this.cache = cache;
-      normalize(1f, 1f);
-    }
-
-    @Override
-    public float getValueForNormalization() {
-      // we return a TF-IDF like normalization to be nice, but we don't actually normalize ourselves.
-      return weight * weight;
-    }
-
-    @Override
-    public void normalize(float queryNorm, float boost) {
-      // we don't normalize with queryNorm at all, we just capture the top-level boost
-      this.boost = boost;
       this.weight = idf.getValue() * boost;
-    } 
+    }
+
   }
 
   private Explanation explainTFNorm(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) {

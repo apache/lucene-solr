@@ -121,4 +121,11 @@ public final class LithuanianAnalyzer extends StopwordAnalyzerBase {
     result = new SnowballFilter(result, new LithuanianStemmer());
     return new TokenStreamComponents(source, result);
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new StandardFilter(in);
+    result = new LowerCaseFilter(result);
+    return result;
+  }
 }

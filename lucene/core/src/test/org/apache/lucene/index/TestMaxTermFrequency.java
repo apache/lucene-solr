@@ -115,7 +115,6 @@ public class TestMaxTermFrequency extends LuceneTestCase {
       return norm;
     }
 
-    @Override public float queryNorm(float sumOfSquaredWeights) { return 0; }
     @Override public float tf(float freq) { return 0; }
     @Override public float idf(long docFreq, long docCount) { return 0; }
     @Override public float sloppyFreq(int distance) { return 0; }

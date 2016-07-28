@@ -233,7 +233,8 @@ public class IndexReplicationHandler implements ReplicationHandler {
       // now copy and fsync segmentsFile as pending, then rename (simulating lucene commit)
       indexDir.copyFrom(clientDir, segmentsFile, pendingSegmentsFile, IOContext.READONCE);
       indexDir.sync(Collections.singletonList(pendingSegmentsFile));
-      indexDir.renameFile(pendingSegmentsFile, segmentsFile);
+      indexDir.rename(pendingSegmentsFile, segmentsFile);
+      indexDir.syncMetaData();
       
       success = true;
     } finally {

@@ -93,11 +93,11 @@ public final class SpanNotQuery extends SpanQuery {
 
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    SpanWeight includeWeight = include.createWeight(searcher, false);
-    SpanWeight excludeWeight = exclude.createWeight(searcher, false);
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    SpanWeight includeWeight = include.createWeight(searcher, false, boost);
+    SpanWeight excludeWeight = exclude.createWeight(searcher, false, boost);
     return new SpanNotWeight(searcher, needsScores ? getTermContexts(includeWeight, excludeWeight) : null,
-                                  includeWeight, excludeWeight);
+                                  includeWeight, excludeWeight, boost);
   }
 
   public class SpanNotWeight extends SpanWeight {
@@ -106,8 +106,8 @@ public final class SpanNotQuery extends SpanQuery {
     final SpanWeight excludeWeight;
 
     public SpanNotWeight(IndexSearcher searcher, Map<Term, TermContext> terms,
-                         SpanWeight includeWeight, SpanWeight excludeWeight) throws IOException {
-      super(SpanNotQuery.this, searcher, terms);
+                         SpanWeight includeWeight, SpanWeight excludeWeight, float boost) throws IOException {
+      super(SpanNotQuery.this, searcher, terms, boost);
       this.includeWeight = includeWeight;
       this.excludeWeight = excludeWeight;
     }
@@ -126,7 +126,7 @@ public final class SpanNotQuery extends SpanQuery {
 
       Spans excludeSpans = excludeWeight.getSpans(context, requiredPostings);
       if (excludeSpans == null) {
-        return new ScoringWrapperSpans(includeSpans, getSimScorer(context));
+        return includeSpans;
       }
 
       TwoPhaseIterator excludeTwoPhase = excludeSpans.asTwoPhaseIterator();

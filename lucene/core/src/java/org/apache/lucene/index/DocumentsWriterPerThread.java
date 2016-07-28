@@ -153,7 +153,7 @@ class DocumentsWriterPerThread {
   final Allocator byteBlockAllocator;
   final IntBlockPool.Allocator intBlockAllocator;
   private final AtomicLong pendingNumDocs;
-  private final LiveIndexWriterConfig indexWriterConfig;
+  final LiveIndexWriterConfig indexWriterConfig;
   private final boolean enableTestPoints;
   private final IndexWriter indexWriter;
   

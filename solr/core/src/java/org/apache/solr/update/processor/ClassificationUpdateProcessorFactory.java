@@ -1,13 +1,3 @@
-package org.apache.solr.update.processor;
-
-import org.apache.lucene.index.IndexReader;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,6 +14,16 @@ import org.apache.solr.schema.IndexSchema;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.update.processor;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 
 /**
  * This class implements an UpdateProcessorFactory for the Classification Update Processor.

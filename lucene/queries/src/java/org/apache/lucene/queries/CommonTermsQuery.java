@@ -119,7 +119,7 @@ public class CommonTermsQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (this.terms.isEmpty()) {
-      return new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("CommonTermsQuery with no terms");
     } else if (this.terms.size() == 1) {
       return newTermQuery(this.terms.get(0), null);
     }

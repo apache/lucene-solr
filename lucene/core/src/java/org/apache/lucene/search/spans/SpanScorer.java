@@ -87,13 +87,13 @@ public class SpanScorer extends Scorer {
 
     spans.doStartCurrentDoc();
 
-    assert spans.startPosition() == -1 : "incorrect initial start position, " + this.toString();
-    assert spans.endPosition() == -1 : "incorrect initial end position, " + this.toString();
+    assert spans.startPosition() == -1 : "incorrect initial start position, " + spans;
+    assert spans.endPosition() == -1 : "incorrect initial end position, " + spans;
     int prevStartPos = -1;
     int prevEndPos = -1;
 
     int startPos = spans.nextStartPosition();
-    assert startPos != Spans.NO_MORE_POSITIONS : "initial startPos NO_MORE_POSITIONS, " + this.toString();
+    assert startPos != Spans.NO_MORE_POSITIONS : "initial startPos NO_MORE_POSITIONS, " + spans;
     do {
       assert startPos >= prevStartPos;
       int endPos = spans.endPosition();
@@ -113,8 +113,8 @@ public class SpanScorer extends Scorer {
       startPos = spans.nextStartPosition();
     } while (startPos != Spans.NO_MORE_POSITIONS);
 
-    assert spans.startPosition() == Spans.NO_MORE_POSITIONS : "incorrect final start position, " + this.toString();
-    assert spans.endPosition() == Spans.NO_MORE_POSITIONS : "incorrect final end position, " + this.toString();
+    assert spans.startPosition() == Spans.NO_MORE_POSITIONS : "incorrect final start position, " + spans;
+    assert spans.endPosition() == Spans.NO_MORE_POSITIONS : "incorrect final end position, " + spans;
   }
 
   /**

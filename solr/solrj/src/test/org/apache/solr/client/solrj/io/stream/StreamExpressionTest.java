@@ -261,7 +261,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
 
     assertEquals(5, tuples.size());
-    assertOrder(tuples, 0,2,1,3,4);
+    assertOrder(tuples, 0, 2, 1, 3, 4);
   }
 
   @Test
@@ -1548,7 +1548,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     stream = new HashJoinStream(expression, factory);
     tuples = getTuples(stream);
     assertEquals(17, tuples.size());
-    assertOrder(tuples, 1, 1, 2, 2, 15, 15, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 7);
+
+    //Does a lexical sort
+    assertOrder(tuples, 1, 1, 15, 15, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 7);
 
   }
 
@@ -2526,6 +2528,169 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     }
   }
 
+
+  @Test
+  public void testParallelTopicStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello", "a_i", "0", "a_f", "1", "subject", "ha ha bla blah0")
+        .add(id, "2", "a_s", "hello", "a_i", "2", "a_f", "2", "subject", "ha ha bla blah2")
+        .add(id, "3", "a_s", "hello", "a_i", "3", "a_f", "3", "subject", "ha ha bla blah3")
+        .add(id, "4", "a_s", "hello", "a_i", "4", "a_f", "4", "subject", "ha ha bla blah4")
+        .add(id, "1", "a_s", "hello", "a_i", "1", "a_f", "5", "subject", "ha ha bla blah5")
+        .add(id, "5", "a_s", "hello", "a_i", "10", "a_f", "6","subject", "ha ha bla blah6")
+        .add(id, "6", "a_s", "hello", "a_i", "11", "a_f", "7","subject", "ha ha bla blah7")
+        .add(id, "7", "a_s", "hello", "a_i", "12", "a_f", "8", "subject", "ha ha bla blah8")
+        .add(id, "8", "a_s", "hello", "a_i", "13", "a_f", "9", "subject", "ha ha bla blah9")
+        .add(id, "9", "a_s", "hello", "a_i", "14", "a_f", "10", "subject", "ha ha bla blah10")
+        .commit(cluster.getSolrClient(), COLLECTION);
+
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+        .withFunctionName("topic", TopicStream.class)
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("parallel", ParallelStream.class)
+        .withFunctionName("daemon", DaemonStream.class);
+
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+
+    SolrClientCache cache = new SolrClientCache();
+
+    try {
+      //Store checkpoints in the same index as the main documents. This is perfectly valid
+      expression = StreamExpressionParser.parse("parallel(collection1, " +
+                                                         "workers=\"2\", " +
+                                                         "sort=\"_version_ asc\"," +
+                                                         "topic(collection1, " +
+                                                               "collection1, " +
+                                                               "q=\"a_s:hello\", " +
+                                                               "fl=\"id\", " +
+                                                               "id=\"1000000\", " +
+                                                               "partitionKeys=\"id\"))");
+
+      stream = factory.constructStream(expression);
+      StreamContext context = new StreamContext();
+      context.setSolrClientCache(cache);
+      stream.setStreamContext(context);
+      tuples = getTuples(stream);
+
+      //Should be zero because the checkpoints will be set to the highest version on the shards.
+      assertEquals(tuples.size(), 0);
+
+      cluster.getSolrClient().commit("collection1");
+      //Now check to see if the checkpoints are present
+
+      expression = StreamExpressionParser.parse("search(collection1, q=\"id:1000000*\", fl=\"id, checkpoint_ss, _version_\", sort=\"id asc\")");
+
+      stream = factory.constructStream(expression);
+      context = new StreamContext();
+      context.setSolrClientCache(cache);
+      stream.setStreamContext(context);
+      tuples = getTuples(stream);
+      assertEquals(tuples.size(), 2);
+      List<String> checkpoints = tuples.get(0).getStrings("checkpoint_ss");
+      assertEquals(checkpoints.size(), 2);
+      String id1 = tuples.get(0).getString("id");
+      String id2 = tuples.get(1).getString("id");
+      assertTrue(id1.equals("1000000_0"));
+      assertTrue(id2.equals("1000000_1"));
+
+      //Index a few more documents
+      new UpdateRequest()
+          .add(id, "10", "a_s", "hello", "a_i", "13", "a_f", "9")
+          .add(id, "11", "a_s", "hello", "a_i", "14", "a_f", "10")
+          .commit(cluster.getSolrClient(), COLLECTION);
+
+      expression = StreamExpressionParser.parse("parallel(collection1, " +
+          "workers=\"2\", " +
+          "sort=\"_version_ asc\"," +
+          "topic(collection1, " +
+          "collection1, " +
+          "q=\"a_s:hello\", " +
+          "fl=\"id\", " +
+          "id=\"1000000\", " +
+          "partitionKeys=\"id\"))");
+
+      stream = factory.constructStream(expression);
+      context = new StreamContext();
+      context.setSolrClientCache(cache);
+      stream.setStreamContext(context);
+
+      assertTopicRun(stream, "10", "11");
+
+      //Test will initial checkpoint. This should pull all
+
+      expression = StreamExpressionParser.parse("parallel(collection1, " +
+          "workers=\"2\", " +
+          "sort=\"_version_ asc\"," +
+          "topic(collection1, " +
+          "collection1, " +
+          "q=\"a_s:hello\", " +
+          "fl=\"id\", " +
+          "id=\"2000000\", " +
+          "initialCheckpoint=\"0\", " +
+          "partitionKeys=\"id\"))");
+
+      stream = factory.constructStream(expression);
+      context = new StreamContext();
+      context.setSolrClientCache(cache);
+      stream.setStreamContext(context);
+      assertTopicRun(stream, "0","1","2","3","4","5","6","7","8","9","10","11");
+
+      //Add more documents
+      //Index a few more documents
+      new UpdateRequest()
+          .add(id, "12", "a_s", "hello", "a_i", "13", "a_f", "9")
+          .add(id, "13", "a_s", "hello", "a_i", "14", "a_f", "10")
+          .commit(cluster.getSolrClient(), COLLECTION);
+
+      //Run the same topic again including the initialCheckpoint. It should start where it left off.
+      //initialCheckpoint should be ignored for all but the first run.
+      stream = factory.constructStream(expression);
+      context = new StreamContext();
+      context.setSolrClientCache(cache);
+      stream.setStreamContext(context);
+      assertTopicRun(stream, "12","13");
+
+      //Test text extraction
+
+      expression = StreamExpressionParser.parse("parallel(collection1, " +
+          "workers=\"2\", " +
+          "sort=\"_version_ asc\"," +
+          "topic(collection1, " +
+          "collection1, " +
+          "q=\"subject:bla\", " +
+          "fl=\"subject\", " +
+          "id=\"3000000\", " +
+          "initialCheckpoint=\"0\", " +
+          "partitionKeys=\"id\"))");
+
+      stream = factory.constructStream(expression);
+      context = new StreamContext();
+      context.setSolrClientCache(cache);
+      stream.setStreamContext(context);
+
+      assertTopicSubject(stream, "ha ha bla blah0",
+          "ha ha bla blah1",
+          "ha ha bla blah2",
+          "ha ha bla blah3",
+          "ha ha bla blah4",
+          "ha ha bla blah5",
+          "ha ha bla blah6",
+          "ha ha bla blah7",
+          "ha ha bla blah8",
+          "ha ha bla blah9",
+          "ha ha bla blah10");
+
+    } finally {
+      cache.close();
+    }
+  }
+
+
+
   @Test
   public void testUpdateStream() throws Exception {
 
@@ -3031,9 +3196,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     int i = 0;
     for(int val : ids) {
       Tuple t = tuples.get(i);
-      Long tip = (Long)t.get(fieldName);
-      if(tip.intValue() != val) {
-        throw new Exception("Found value:"+tip.intValue()+" expecting:"+val);
+      String tip = t.getString(fieldName);
+      if(!tip.equals(Integer.toString(val))) {
+        throw new Exception("Found value:"+tip+" expecting:"+val);
       }
       ++i;
     }
@@ -3119,9 +3284,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     int i=0;
     for(int val : ids) {
       Map t = maps.get(i);
-      Long tip = (Long)t.get("id");
-      if(tip.intValue() != val) {
-        throw new Exception("Found value:"+tip.intValue()+" expecting:"+val);
+      String tip = (String)t.get("id");
+      if(!tip.equals(Integer.toString(val))) {
+        throw new Exception("Found value:"+tip+" expecting:"+val);
       }
       ++i;
     }
@@ -3143,6 +3308,69 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     }
 
     return true;
+  }
+
+  private void assertTopicRun(TupleStream stream, String... idArray) throws Exception {
+    long version = -1;
+    int count = 0;
+    List<String> ids = new ArrayList();
+    for(String id : idArray) {
+      ids.add(id);
+    }
+
+    try {
+      stream.open();
+      while (true) {
+        Tuple tuple = stream.read();
+        if (tuple.EOF) {
+          break;
+        } else {
+          ++count;
+          String id = tuple.getString("id");
+          if (!ids.contains(id)) {
+            throw new Exception("Expecting id in topic run not found:" + id);
+          }
+
+          long v = tuple.getLong("_version_");
+          if (v < version) {
+            throw new Exception("Out of order version in topic run:" + v);
+          }
+        }
+      }
+    } finally {
+      stream.close();
+    }
+
+    if(count != ids.size()) {
+      throw new Exception("Wrong count in topic run:"+count);
+    }
+  }
+
+  private void assertTopicSubject(TupleStream stream, String... textArray) throws Exception {
+    long version = -1;
+    int count = 0;
+    List<String> texts = new ArrayList();
+    for(String text : textArray) {
+      texts.add(text);
+    }
+
+    try {
+      stream.open();
+      while (true) {
+        Tuple tuple = stream.read();
+        if (tuple.EOF) {
+          break;
+        } else {
+          ++count;
+          String subject = tuple.getString("subject");
+          if (!texts.contains(subject)) {
+            throw new Exception("Expecting subject in topic run not found:" + subject);
+          }
+        }
+      }
+    } finally {
+      stream.close();
+    }
   }
 
 }

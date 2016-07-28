@@ -196,18 +196,18 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     BooleanQuery query = this;
     if (needsScores == false) {
       query = rewriteNoScoring();
     }
-    return new BooleanWeight(query, searcher, needsScores);
+    return new BooleanWeight(query, searcher, needsScores, boost);
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (clauses.size() == 0) {
-      return new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("empty BooleanQuery");
     }
     
     // optimize 1-clause queries
@@ -226,7 +226,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
             return new BoostQuery(new ConstantScoreQuery(query), 0);
           case MUST_NOT:
             // no positive clauses
-            return new MatchNoDocsQuery();
+            return new MatchNoDocsQuery("pure negative BooleanQuery");
           default:
             throw new AssertionError();
         }

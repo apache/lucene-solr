@@ -77,7 +77,7 @@ public class TestBooleanScorer extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
       return new Weight(CrazyMustUseBulkScorerQuery.this) {
         @Override
         public void extractTerms(Set<Term> terms) {
@@ -87,15 +87,6 @@ public class TestBooleanScorer extends LuceneTestCase {
         @Override
         public Explanation explain(LeafReaderContext context, int doc) {
           throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public float getValueForNormalization() {
-          return 1.0f;
-        }
-
-        @Override
-        public void normalize(float norm, float topLevelBoost) {
         }
 
         @Override

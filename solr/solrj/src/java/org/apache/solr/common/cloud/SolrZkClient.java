@@ -122,12 +122,12 @@ public class SolrZkClient implements Closeable {
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout,
       ZkClientConnectionStrategy strat, final OnReconnect onReconnect, BeforeReconnect beforeReconnect, ZkACLProvider zkACLProvider) {
-    this.zkClientConnectionStrategy = strat;
     this.zkServerAddress = zkServerAddress;
     
     if (strat == null) {
       strat = new DefaultConnectionStrategy();
     }
+    this.zkClientConnectionStrategy = strat;
 
     if (!strat.hasZkCredentialsToAddAutomatically()) {
       ZkCredentialsProvider zkCredentialsToAddAutomatically = createZkCredentialsToAddAutomatically();

@@ -53,7 +53,10 @@ import org.apache.commons.lang.StringUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-/** @see TestPseudoReturnFields */
+/** 
+ * @see TestPseudoReturnFields 
+ * @see TestRandomFlRTGCloud
+ */
 public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();

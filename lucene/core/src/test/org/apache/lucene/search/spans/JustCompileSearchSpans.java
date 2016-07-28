@@ -93,7 +93,7 @@ final class JustCompileSearchSpans {
     }
 
     @Override
-    public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

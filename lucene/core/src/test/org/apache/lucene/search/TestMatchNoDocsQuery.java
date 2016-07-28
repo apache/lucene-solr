@@ -23,10 +23,10 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -41,23 +41,52 @@ public class TestMatchNoDocsQuery extends LuceneTestCase {
     analyzer = new MockAnalyzer(random());
   }
 
+  public void testSimple() throws Exception {
+    MatchNoDocsQuery query = new MatchNoDocsQuery();
+    assertEquals(query.toString(), "MatchNoDocsQuery(\"\")");
+    query = new MatchNoDocsQuery("field 'title' not found");
+    assertEquals(query.toString(), "MatchNoDocsQuery(\"field 'title' not found\")");
+    Query rewrite = query.rewrite(null);
+    assertTrue(rewrite instanceof MatchNoDocsQuery);
+    assertEquals(rewrite.toString(), "MatchNoDocsQuery(\"field 'title' not found\")");
+  }
+  
   public void testQuery() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(analyzer).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
     addDoc("one", iw);
     addDoc("two", iw);
-    addDoc("three four", iw);
+    addDoc("three", iw);
     IndexReader ir = DirectoryReader.open(iw);
+    IndexSearcher searcher = new IndexSearcher(ir);
+    
+    Query query = new MatchNoDocsQuery("field not found");
+    assertEquals(searcher.count(query), 0);
 
-    IndexSearcher is = newSearcher(ir);
     ScoreDoc[] hits;
-
-    hits = is.search(new MatchNoDocsQuery(), 1000).scoreDocs;
+    hits = searcher.search(new MatchNoDocsQuery(), 1000).scoreDocs;
     assertEquals(0, hits.length);
+    assertEquals(query.toString(), "MatchNoDocsQuery(\"field not found\")");
 
-    MatchNoDocsQuery mndq = new MatchNoDocsQuery();
-    hits = is.search(mndq, 1000).scoreDocs;
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.add(new BooleanClause(new TermQuery(new Term("key", "five")), BooleanClause.Occur.SHOULD));
+    bq.add(new BooleanClause(new MatchNoDocsQuery("field not found"), BooleanClause.Occur.MUST));
+    query = bq.build();
+    assertEquals(searcher.count(query), 0);
+    hits = searcher.search(new MatchNoDocsQuery(), 1000).scoreDocs;
     assertEquals(0, hits.length);
+    assertEquals(query.toString(), "key:five +MatchNoDocsQuery(\"field not found\")");
+
+    bq = new BooleanQuery.Builder();
+    bq.add(new BooleanClause(new TermQuery(new Term("key", "one")), BooleanClause.Occur.SHOULD));
+    bq.add(new BooleanClause(new MatchNoDocsQuery("field not found"), BooleanClause.Occur.SHOULD));
+    query = bq.build();
+    assertEquals(query.toString(), "key:one MatchNoDocsQuery(\"field not found\")");
+    assertEquals(searcher.count(query), 1);
+    hits = searcher.search(query, 1000).scoreDocs;
+    Query rewrite = query.rewrite(ir);
+    assertEquals(1, hits.length);
+    assertEquals(rewrite.toString(), "key:one MatchNoDocsQuery(\"field not found\")");
 
     iw.close();
     ir.close();
@@ -77,5 +106,4 @@ public class TestMatchNoDocsQuery extends LuceneTestCase {
     doc.add(f);
     iw.addDocument(doc);
   }
-
 }

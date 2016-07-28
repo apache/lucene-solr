@@ -1315,7 +1315,12 @@ public class StreamingTest extends SolrCloudTestCase {
 
     SolrParams sParams = mapParams("q", "a_s:hello0", "rows", "500", "fl", "id");
 
-    TopicStream topicStream = new TopicStream(zkHost, COLLECTION, COLLECTION, "50000000", 1000000, sParams);
+    TopicStream topicStream = new TopicStream(zkHost,
+                                              COLLECTION,
+                                              COLLECTION,
+                                              "50000000",
+                                              -1,
+                                              1000000, sParams);
 
     DaemonStream daemonStream = new DaemonStream(topicStream, "daemon1", 1000, 500);
     daemonStream.setStreamContext(context);
@@ -1895,9 +1900,9 @@ public class StreamingTest extends SolrCloudTestCase {
     int i = 0;
     for(int val : ids) {
       Tuple t = tuples.get(i);
-      Long tip = (Long)t.get("id");
-      if(tip.intValue() != val) {
-        throw new Exception("Found value:"+tip.intValue()+" expecting:"+val);
+      String tip = (String)t.get("id");
+      if(!tip.equals(Integer.toString(val))) {
+        throw new Exception("Found value:"+tip+" expecting:"+val);
       }
       ++i;
     }
@@ -1926,9 +1931,9 @@ public class StreamingTest extends SolrCloudTestCase {
     int i=0;
     for(int val : ids) {
       Map t = maps.get(i);
-      Long tip = (Long)t.get("id");
-      if(tip.intValue() != val) {
-        throw new Exception("Found value:"+tip.intValue()+" expecting:"+val);
+      String tip = (String)t.get("id");
+      if(!tip.equals(Integer.toString(val))) {
+        throw new Exception("Found value:"+tip+" expecting:"+val);
       }
       ++i;
     }

@@ -1,7 +1,3 @@
-package org.apache.solr.cloud;
-
-import org.junit.BeforeClass;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +14,10 @@ import org.junit.BeforeClass;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.cloud;
+
+import org.apache.lucene.util.Constants;
+import org.junit.BeforeClass;
 
 /**
  * This class implements the tests for local file-system integration for Solr backup/restore capability.
@@ -28,6 +28,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    assumeFalse("Backup/Restore is currently buggy on Windows. Tracking the fix on SOLR-9242", Constants.WINDOWS);
     configureCluster(NUM_SHARDS)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();

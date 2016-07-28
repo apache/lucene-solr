@@ -357,7 +357,7 @@
  *         {@link org.apache.lucene.search.Query Query} class has several methods that are important for
  *         derived classes:
  *         <ol>
- *             <li>{@link org.apache.lucene.search.Query#createWeight(IndexSearcher,boolean) createWeight(IndexSearcher searcher,boolean)} &mdash; A
+ *             <li>{@link org.apache.lucene.search.Query#createWeight(IndexSearcher,boolean,float) createWeight(IndexSearcher searcher, boolean needsScores, float boost)} &mdash; A
  *                 {@link org.apache.lucene.search.Weight Weight} is the internal representation of the
  *                 Query, so each Query implementation must
  *                 provide an implementation of Weight. See the subsection on <a
@@ -366,7 +366,7 @@
  *             <li>{@link org.apache.lucene.search.Query#rewrite(org.apache.lucene.index.IndexReader) rewrite(IndexReader reader)} &mdash; Rewrites queries into primitive queries. Primitive queries are:
  *                 {@link org.apache.lucene.search.TermQuery TermQuery},
  *                 {@link org.apache.lucene.search.BooleanQuery BooleanQuery}, <span
- *                     >and other queries that implement {@link org.apache.lucene.search.Query#createWeight(IndexSearcher,boolean) createWeight(IndexSearcher searcher,boolean,float)}</span></li>
+ *                     >and other queries that implement {@link org.apache.lucene.search.Query#createWeight(IndexSearcher,boolean,float) createWeight(IndexSearcher searcher,boolean needsScores, float boost)}</span></li>
  *         </ol>
  * <a name="weightClass"></a>
  * <h3>The Weight Interface</h3>
@@ -380,28 +380,6 @@
  *             <li>
  *                 {@link org.apache.lucene.search.Weight#getQuery getQuery()} &mdash; Pointer to the
  *                 Query that this Weight represents.</li>
- *             <li>
- *                 {@link org.apache.lucene.search.Weight#getValueForNormalization() getValueForNormalization()} &mdash; 
- *                 A weight can return a floating point value to indicate its magnitude for query normalization. Typically
- *                 a weight such as TermWeight that scores via a {@link org.apache.lucene.search.similarities.Similarity Similarity} 
- *                 will just defer to the Similarity's implementation: 
- *                 {@link org.apache.lucene.search.similarities.Similarity.SimWeight#getValueForNormalization SimWeight#getValueForNormalization()}.
- *                 For example, with {@link org.apache.lucene.search.similarities.TFIDFSimilarity Lucene's classic vector-space formula}, this
- *                 is implemented as the sum of squared weights: <code>(idf * boost)<sup>2</sup></code></li>
- *             <li>
- *                 {@link org.apache.lucene.search.Weight#normalize(float,float) normalize(float norm, float boost)} &mdash; 
- *                 Performs query normalization: 
- *                 <ul>
- *                 <li><code>boost</code>: A query-boost factor from any wrapping queries that should be multiplied into every
- *                 document's score. For example, a TermQuery that is wrapped within a BooleanQuery with a boost of <code>5</code> would
- *                 receive this value at this time. This allows the TermQuery (the leaf node in this case) to compute this up-front
- *                 a single time (e.g. by multiplying into the IDF), rather than for every document.</li> 
- *                 <li><code>norm</code>: Passes in a a normalization factor which may
- *                 allow for comparing scores between queries.</li>
- *                 </ul>
- *                 Typically a weight such as TermWeight
- *                 that scores via a {@link org.apache.lucene.search.similarities.Similarity Similarity} will just defer to the Similarity's implementation:
- *                 {@link org.apache.lucene.search.similarities.Similarity.SimWeight#normalize SimWeight#normalize(float,float)}.</li>
  *             <li>
  *                 {@link org.apache.lucene.search.Weight#scorer scorer()} &mdash;
  *                 Construct a new {@link org.apache.lucene.search.Scorer Scorer} for this Weight. See <a href="#scorerClass">The Scorer Class</a>

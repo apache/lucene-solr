@@ -17,17 +17,10 @@
 package org.apache.solr.security;
 
 import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 import java.io.Closeable;
-import java.io.IOException;
-import java.security.Principal;
 import java.util.Map;
-
-import org.apache.http.auth.BasicUserPrincipal;
 
 /**
  * 
@@ -42,32 +35,20 @@ public abstract class AuthenticationPlugin implements Closeable {
    * @param pluginConfig Config parameters, possibly from a ZK source
    */
   public abstract void init(Map<String, Object> pluginConfig);
-
-  protected void forward(String user, ServletRequest  req, ServletResponse rsp,
-                                    FilterChain chain) throws IOException, ServletException {
-    if(user != null) {
-      final Principal p = new BasicUserPrincipal(user);
-      req = new HttpServletRequestWrapper((HttpServletRequest) req) {
-        @Override
-        public Principal getUserPrincipal() {
-          return p;
-        }
-      };
-    }
-    chain.doFilter(req,rsp);
-  }
  
   /**
-   * This method must authenticate the request. Upon a successful authentication, this 
+   * This method attempts to authenticate the request. Upon a successful authentication, this
    * must call the next filter in the filter chain and set the user principal of the request,
    * or else, upon an error or an authentication failure, throw an exception.
-   * 
+   *
    * @param request the http request
    * @param response the http response
    * @param filterChain the servlet filter chain
+   * @return false if the request not be processed by Solr (not continue), i.e.
+   * the response and status code have already been sent.
    * @throws Exception any exception thrown during the authentication, e.g. PrivilegedActionException
    */
-  public abstract void doAuthenticate(ServletRequest request, ServletResponse response,
+  public abstract boolean doAuthenticate(ServletRequest request, ServletResponse response,
       FilterChain filterChain) throws Exception;
 
 

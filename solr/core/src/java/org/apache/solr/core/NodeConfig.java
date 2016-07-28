@@ -50,7 +50,7 @@ public class NodeConfig {
 
   private final CloudConfig cloudConfig;
 
-  private final int coreLoadThreads;
+  private final Integer coreLoadThreads;
 
   private final int transientCacheSize;
 
@@ -64,7 +64,7 @@ public class NodeConfig {
                      PluginInfo shardHandlerFactoryConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
                      String coreAdminHandlerClass, String collectionsAdminHandlerClass,
                      String infoHandlerClass, String configSetsHandlerClass,
-                     LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, int coreLoadThreads,
+                     LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, Integer coreLoadThreads,
                      int transientCacheSize, boolean useSchemaCache, String managementPath, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins) {
     this.nodeName = nodeName;
@@ -87,7 +87,7 @@ public class NodeConfig {
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
 
-    if (this.cloudConfig != null && this.coreLoadThreads < 2) {
+    if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "SolrCloud requires a value of at least 2 for coreLoadThreads (configured value = " + this.coreLoadThreads + ")");
     }
@@ -109,8 +109,10 @@ public class NodeConfig {
     return updateShardHandlerConfig;
   }
 
-  public int getCoreLoadThreadCount() {
-    return coreLoadThreads;
+  public int getCoreLoadThreadCount(boolean zkAware) {
+    return coreLoadThreads == null ?
+        (zkAware ? NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS_IN_CLOUD : NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS)
+        : coreLoadThreads;
   }
 
   public String getSharedLibDirectory() {
@@ -185,7 +187,7 @@ public class NodeConfig {
     private String configSetsHandlerClass = DEFAULT_CONFIGSETSHANDLERCLASS;
     private LogWatcherConfig logWatcherConfig = new LogWatcherConfig(true, null, null, 50);
     private CloudConfig cloudConfig;
-    private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
+    private Integer coreLoadThreads;
     private int transientCacheSize = DEFAULT_TRANSIENT_CACHE_SIZE;
     private boolean useSchemaCache = false;
     private String managementPath;
@@ -195,7 +197,9 @@ public class NodeConfig {
     private final SolrResourceLoader loader;
     private final String nodeName;
 
-    private static final int DEFAULT_CORE_LOAD_THREADS = 3;
+    public static final int DEFAULT_CORE_LOAD_THREADS = 3;
+    //No:of core load threads in cloud mode is set to a default of 8
+    public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
 
     private static final int DEFAULT_TRANSIENT_CACHE_SIZE = Integer.MAX_VALUE;
 

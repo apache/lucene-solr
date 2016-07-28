@@ -134,6 +134,10 @@
     <dependency org="antlr" name="antlr" rev="${/antlr/antlr}" conf="test.MiniKdc"/>
     <dependency org="net.sf.ehcache" name="ehcache-core" rev="${/net.sf.ehcache/ehcache-core}" conf="test.MiniKdc"/>
 
+    <dependency org="org.apache.curator" name="curator-framework" rev="${/org.apache.curator/curator-framework}" conf="compile"/>
+    <dependency org="org.apache.curator" name="curator-client" rev="${/org.apache.curator/curator-client}" conf="compile"/>
+    <dependency org="org.apache.curator" name="curator-recipes" rev="${/org.apache.curator/curator-recipes}" conf="compile"/>
+
     <!-- StatsComponents percentiles Dependencies-->
     <dependency org="com.tdunning" name="t-digest" rev="${/com.tdunning/t-digest}" conf="compile->*"/>
     <!-- SQL Parser -->

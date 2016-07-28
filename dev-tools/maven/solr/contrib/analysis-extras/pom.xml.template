@@ -43,6 +43,13 @@
   </scm>
   <dependencies>
     <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-analyzers-common</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <!-- lucene-test-framework dependency must be declared before lucene-core -->
       <!-- This dependency cannot be put into solr-parent, because local        -->
       <!-- dependencies are always ordered before inherited dependencies.       -->

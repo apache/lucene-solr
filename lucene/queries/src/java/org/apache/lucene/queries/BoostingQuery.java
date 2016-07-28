@@ -63,12 +63,12 @@ public class BoostingQuery extends Query {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
       if (needsScores == false) {
-        return match.createWeight(searcher, needsScores);
+        return match.createWeight(searcher, needsScores, boost);
       }
-      final Weight matchWeight = searcher.createWeight(match, needsScores);
-      final Weight contextWeight = searcher.createWeight(context, false);
+      final Weight matchWeight = searcher.createWeight(match, needsScores, boost);
+      final Weight contextWeight = searcher.createWeight(context, false, boost);
       return new Weight(this) {
 
         @Override
@@ -89,16 +89,6 @@ public class BoostingQuery extends Query {
           return Explanation.match(matchExplanation.getValue() * boost, "product of:",
               matchExplanation,
               Explanation.match(boost, "boost"));
-        }
-
-        @Override
-        public float getValueForNormalization() throws IOException {
-          return matchWeight.getValueForNormalization();
-        }
-
-        @Override
-        public void normalize(float norm, float boost) {
-          matchWeight.normalize(norm, boost);
         }
 
         @Override

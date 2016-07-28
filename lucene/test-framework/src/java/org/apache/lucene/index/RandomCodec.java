@@ -92,7 +92,6 @@ public class RandomCodec extends AssertingCodec {
   // which is less effective for testing.
   // TODO: improve how we randomize this...
   private final int maxPointsInLeafNode;
-  private final double maxMBSortInHeap;
   private final int bkdSplitRandomSeed;
 
   @Override
@@ -103,9 +102,9 @@ public class RandomCodec extends AssertingCodec {
 
         // Randomize how BKDWriter chooses its splis:
 
-        return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap) {
+        return new Lucene60PointsWriter(writeState, maxPointsInLeafNode) {
           @Override
-          public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
+          public void writeField(FieldInfo fieldInfo, PointsReader values, double maxMBSortInHeap) throws IOException {
 
             boolean singleValuePerDoc = values.size(fieldInfo.name) == values.getDocCount(fieldInfo.name);
 
@@ -185,7 +184,6 @@ public class RandomCodec extends AssertingCodec {
     int lowFreqCutoff = TestUtil.nextInt(random, 2, 100);
 
     maxPointsInLeafNode = TestUtil.nextInt(random, 16, 2048);
-    maxMBSortInHeap = 5.0 + (3*random.nextDouble());
     bkdSplitRandomSeed = random.nextInt();
 
     add(avoidCodecs,
@@ -253,8 +251,7 @@ public class RandomCodec extends AssertingCodec {
   public String toString() {
     return super.toString() + ": " + previousMappings.toString() +
            ", docValues:" + previousDVMappings.toString() +
-           ", maxPointsInLeafNode=" + maxPointsInLeafNode +
-           ", maxMBSortInHeap=" + maxMBSortInHeap;
+           ", maxPointsInLeafNode=" + maxPointsInLeafNode;
   }
 
   /** Just like {@link BKDWriter} except it evilly picks random ways to split cells on

@@ -73,18 +73,18 @@ public class FilterQuery extends ExtendedQueryBase {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needScores, float boost) throws IOException {
     // SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
 
     if (!(searcher instanceof SolrIndexSearcher)) {
       // delete-by-query won't have SolrIndexSearcher
-      return new BoostQuery(new ConstantScoreQuery(q), 0).createWeight(searcher, needScores);
+      return new BoostQuery(new ConstantScoreQuery(q), 0).createWeight(searcher, needScores, 1f);
     }
 
     SolrIndexSearcher solrSearcher = (SolrIndexSearcher)searcher;
     DocSet docs = solrSearcher.getDocSet(q);
     // reqInfo.addCloseHook(docs);  // needed for off-heap refcounting
 
-    return new BoostQuery(new SolrConstantScoreQuery(docs.getTopFilter()), 0).createWeight(searcher, needScores);
+    return new BoostQuery(new SolrConstantScoreQuery(docs.getTopFilter()), 0).createWeight(searcher, needScores, 1f);
   }
 }

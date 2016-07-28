@@ -115,11 +115,6 @@ public class TestSimilarityProvider extends LuceneTestCase {
     }
 
     @Override
-    public float queryNorm(float sumOfSquaredWeights) {
-      return 1f;
-    }
-
-    @Override
     public float lengthNorm(FieldInvertState state) {
       return 1f;
     }
@@ -155,11 +150,6 @@ public class TestSimilarityProvider extends LuceneTestCase {
     @Override
     public float decodeNormValue(long norm) {
       return norm;
-    }
-
-    @Override
-    public float queryNorm(float sumOfSquaredWeights) {
-      return 1f;
     }
     
     @Override

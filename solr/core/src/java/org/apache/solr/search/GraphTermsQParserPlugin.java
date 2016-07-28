@@ -193,7 +193,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
 
       List<TermContext> finalContexts = new ArrayList();
       List<Term> finalTerms = new ArrayList();
@@ -208,7 +208,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
         }
       }
 
-      return new ConstantScoreWeight(this) {
+      return new ConstantScoreWeight(this, boost) {
 
         @Override
         public void extractTerms(Set<Term> terms) {

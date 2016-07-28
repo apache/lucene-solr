@@ -71,8 +71,8 @@ public class ExportQParserPlugin extends QParserPlugin {
       return null;
     }
 
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException{
-      return mainQuery.createWeight(searcher, true);
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException{
+      return mainQuery.createWeight(searcher, true, boost);
     }
 
     public Query rewrite(IndexReader reader) throws IOException {

@@ -89,12 +89,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     r = DirectoryReader.open(dir);
     reader = getOnlyLeafReader(r);
     searcher = new IndexSearcher(reader);
-    searcher.setSimilarity(new ClassicSimilarity() {
-      @Override
-      public float queryNorm(float sumOfSquaredWeights) {
-        return 1; // we disable queryNorm, both for debugging and ease of impl
-      }
-    });
+    searcher.setSimilarity(new ClassicSimilarity());
   }
   
   @AfterClass
@@ -338,11 +333,9 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
           boolean success = ords.add(ord);
           assert success; // no dups
           TermContext context = TermContext.build(reader.getContext(), term);
-          SimWeight w = weight.similarity.computeWeight(
+          SimWeight w = weight.similarity.computeWeight(1f,
                         searcher.collectionStatistics("field"),
                         searcher.termStatistics(term, context));
-          w.getValueForNormalization(); // ignored
-          w.normalize(1F, 1F);
           sims[(int)ord] = weight.similarity.simScorer(w, reader.getContext());
         }
       }

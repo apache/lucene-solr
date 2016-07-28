@@ -91,6 +91,23 @@ New Features
 * SOLR-9090: Add directUpdatesToLeadersOnly flag to solrj CloudSolrClient.
   (Marvin Justice, Christine Poerschke)
 
+* SOLR-9270: Allow spatialContextFactory to be simply "JTS". And if any spatial params include the old
+  Spatial4j package "com.spatial4j.core" it is rewritten to "org.locationtech.spatial4j" with a warning.
+  (David Smiley)
+
+* SOLR-9240: Support parallel ETL with the topic expression (Joel Bernstein)
+
+* SOLR-9275: XML QueryParser support (defType=xmlparser) now extensible via configuration.
+  (Christine Poerschke)
+
+* SOLR-9200: Add Delegation Token Support to Solr.
+  (Gregory Chanan)
+
+* SOLR-9038: Solr core snapshots: The current commit can be snapshotted which retains the commit and associates it with
+  a name.  The core admin API can create snapshots, list them, and delete them. Snapshot names can be referenced in
+  doing a core backup, and in replication.  Snapshot metadata is stored in a new snapshot_metadata/ dir.
+  (Hrishikesh Gadre via David Smiley)
+
 Bug Fixes
 ----------------------
 
@@ -137,6 +154,27 @@ Bug Fixes
 * SOLR-9236: AutoAddReplicas will append an extra /tlog to the update log location on replica failover.
   (Eungsop Yoo, Mark Miller)
 
+* SOLR-9291: ZkSolrResourceLoader should not retry fetching resources if the server has been shutdown.
+  (shalin)
+
+* SOLR-9287: Including 'score' in the 'fl' param when doing an RTG no longer causes an NPE
+  (hossman, Ishan Chattopadhyaya)
+
+* SOLR-7280: In cloud-mode sort the cores smartly before loading & limit threads to improve cluster stability
+  (noble, Erick Erickson, shalin)
+
+* SOLR-9285: Fixed AIOOBE when using ValueSourceAugmenter in single node RTG (hossman)
+
+* SOLR-9288: Fix [docid] transformer to return -1 when used in RTG with uncommitted doc (hossman)
+
+* SOLR-9309: Fix SolrCloud RTG response structure when multi ids requested but only 1 found (hossman)
+
+* SOLR-9334: CloudSolrClient.collectionStateCache is unbounded (noble)
+
+* SOLR-9339: NPE in CloudSolrClient when the response is null (noble)
+
+* SOLR-8596: Web UI doesn't correctly generate queries which include local parameters (Alexandre Rafalovitch, janhoy)
+
 Optimizations
 ----------------------
 
@@ -144,6 +182,9 @@ Optimizations
 
 * SOLR-9264: Optimize ZkController.publishAndWaitForDownStates to not read all collection states and
   watch relevant collections instead. (Hrishikesh Gadre, shalin)
+
+* SOLR-9335: Solr cache/search/update stats counters now use LongAdder which are supposed to have higher throughput
+  under high contention. (Varun Thacker)
 
 Other Changes
 ----------------------
@@ -164,6 +205,12 @@ Other Changes
 * SOLR-7930: Comment out trappy references to example docs in elevate.xml files (Erick Erickson)
 
 * SOLR-9277: Clean up some more remnants of supporting old and new style solr.xml in tests (Erick Erickson)
+
+* SOLR-9163: Sync up basic_configs and data_driven_schema_configs, removing almost all differences
+  except what is required for schemaless. (yonik)
+
+* SOLR-9340: Change ZooKeeper disconnect and session expiry related logging from INFO to WARN to
+  make debugging easier (Varun Thacker)
 
 ==================  6.1.0 ==================
 
@@ -607,6 +654,10 @@ Upgrading from Solr 5.x
 
 * SolrJ no longer includes DateUtil. If for some reason you need to format or parse dates, simply use Instant.format()
   and Instant.parse().
+
+* If you are using an RPT or other spatial field referencing Spatial4j in its configuration, then replace the string
+  "com.spatial4j.core" with "org.locationtech.spatial4j".  Consider updating direct to Solr 6.2 which accepts the
+  old value, albeit with a warning.
 
 Detailed Change List
 ----------------------

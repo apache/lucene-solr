@@ -208,7 +208,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   @Override
-  public synchronized void renameFile(String source, String dest) throws IOException {
+  public synchronized void rename(String source, String dest) throws IOException {
     maybeYield();
     maybeThrowDeterministicException();
 
@@ -226,7 +226,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
     boolean success = false;
     try {
-      in.renameFile(source, dest);
+      in.rename(source, dest);
       success = true;
     } finally {
       if (success) {
@@ -240,6 +240,16 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         createdFiles.add(dest);
       }
     }
+  }
+
+  @Override
+  public synchronized void syncMetaData() throws IOException {
+    maybeYield();
+    maybeThrowDeterministicException();
+    if (crashed) {
+      throw new IOException("cannot rename after crash");
+    }
+    in.syncMetaData();
   }
 
   public synchronized final long sizeInBytes() throws IOException {
@@ -303,6 +313,10 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
     
   private synchronized void _corruptFiles(Collection<String> files) throws IOException {
+
+    // TODO: we should also mess with any recent file renames, file deletions, if
+    // syncMetaData was not called!!
+    
     // Must make a copy because we change the incoming unsyncedFiles
     // when we create temp files, delete, etc., below:
     final List<String> filesToCorrupt = new ArrayList<>(files);

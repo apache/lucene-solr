@@ -16,10 +16,6 @@
  */
 package org.apache.solr.util;
 
-import org.apache.solr.common.util.Cache;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.util.LinkedHashMap;
@@ -29,6 +25,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.apache.solr.common.util.Cache;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A LFU cache implementation based upon ConcurrentHashMap.
@@ -139,12 +139,7 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V> {
     // in this method.
     if (currentSize > upperWaterMark && !isCleaning) {
       if (newThreadForCleanup) {
-        new Thread() {
-          @Override
-          public void run() {
-            markAndSweep();
-          }
-        }.start();
+        new Thread(this::markAndSweep).start();
       } else if (cleanupThread != null) {
         cleanupThread.wakeThread();
       } else {

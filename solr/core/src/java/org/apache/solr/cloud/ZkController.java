@@ -115,7 +115,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
  * <p>
  * TODO: exceptions during close on attempts to update cloud state
  */
-public final class ZkController {
+public class ZkController {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final int WAIT_DOWN_STATES_TIMEOUT_SECONDS = 60;
@@ -2435,20 +2435,18 @@ public final class ZkController {
       final Set<Runnable> listeners = confDirectoryListeners.get(zkDir);
       if (listeners != null && !listeners.isEmpty()) {
         final Set<Runnable> listenersCopy = new HashSet<>(listeners);
-        new Thread() {
-          // run these in a separate thread because this can be long running
-          @Override
-          public void run() {
-            log.info("Running listeners for {}", zkDir);
-            for (final Runnable listener : listenersCopy) {
-              try {
-                listener.run();
-              } catch (Exception e) {
-                log.warn("listener throws error", e);
-              }
+        // run these in a separate thread because this can be long running
+        new Thread(() -> {
+          log.info("Running listeners for {}", zkDir);
+          for (final Runnable listener : listenersCopy) {
+            try {
+              listener.run();
+            } catch (Exception e) {
+              log.warn("listener throws error", e);
             }
           }
-        }.start();
+        }).start();
+
       }
     }
     return true;

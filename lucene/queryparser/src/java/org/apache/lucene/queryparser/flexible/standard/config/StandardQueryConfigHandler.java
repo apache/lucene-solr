@@ -55,14 +55,6 @@ public class StandardQueryConfigHandler extends QueryConfigHandler {
      * @see StandardQueryParser#getEnablePositionIncrements()
      */
     final public static ConfigurationKey<Boolean> ENABLE_POSITION_INCREMENTS = ConfigurationKey.newInstance();
-    
-    /**
-     * Key used to set whether expanded terms should be lower-cased
-     * 
-     * @see StandardQueryParser#setLowercaseExpandedTerms(boolean)
-     * @see StandardQueryParser#getLowercaseExpandedTerms()
-     */
-    final public static ConfigurationKey<Boolean> LOWERCASE_EXPANDED_TERMS = ConfigurationKey.newInstance();
 
     /**
      * Key used to set whether leading wildcards are supported
@@ -223,7 +215,6 @@ public class StandardQueryConfigHandler extends QueryConfigHandler {
     set(ConfigurationKeys.ANALYZER, null); //default value 2.4
     set(ConfigurationKeys.DEFAULT_OPERATOR, Operator.OR);
     set(ConfigurationKeys.PHRASE_SLOP, 0); //default value 2.4
-    set(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS, true); //default value 2.4
     set(ConfigurationKeys.ENABLE_POSITION_INCREMENTS, false); //default value 2.4
     set(ConfigurationKeys.FIELD_BOOST_MAP, new LinkedHashMap<String, Float>());
     set(ConfigurationKeys.FUZZY_CONFIG, new FuzzyConfig());

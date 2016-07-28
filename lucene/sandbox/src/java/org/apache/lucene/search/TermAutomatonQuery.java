@@ -186,7 +186,7 @@ public class TermAutomatonQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     IndexReaderContext context = searcher.getTopReaderContext();
     Map<Integer,TermContext> termStates = new HashMap<>();
 
@@ -196,7 +196,7 @@ public class TermAutomatonQuery extends Query {
       }
     }
 
-    return new TermAutomatonWeight(det, searcher, termStates);
+    return new TermAutomatonWeight(det, searcher, termStates, boost);
   }
 
   @Override
@@ -332,7 +332,7 @@ public class TermAutomatonQuery extends Query {
     private final Similarity.SimWeight stats;
     private final Similarity similarity;
 
-    public TermAutomatonWeight(Automaton automaton, IndexSearcher searcher, Map<Integer,TermContext> termStates) throws IOException {
+    public TermAutomatonWeight(Automaton automaton, IndexSearcher searcher, Map<Integer,TermContext> termStates, float boost) throws IOException {
       super(TermAutomatonQuery.this);
       this.automaton = automaton;
       this.termStates = termStates;
@@ -345,7 +345,7 @@ public class TermAutomatonQuery extends Query {
         }
       }
 
-      stats = similarity.computeWeight(searcher.collectionStatistics(field),
+      stats = similarity.computeWeight(boost, searcher.collectionStatistics(field),
                                        allTermStats.toArray(new TermStatistics[allTermStats.size()]));
     }
 
@@ -361,16 +361,6 @@ public class TermAutomatonQuery extends Query {
     @Override
     public String toString() {
       return "weight(" + TermAutomatonQuery.this + ")";
-    }
-
-    @Override
-    public float getValueForNormalization() {
-      return stats.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float queryNorm, float boost) {
-      stats.normalize(queryNorm, boost);
     }
 
     @Override

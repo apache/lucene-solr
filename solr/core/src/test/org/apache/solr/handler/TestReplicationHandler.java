@@ -20,6 +20,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -66,6 +67,7 @@ import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
+import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -896,8 +898,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       CachingDirectoryFactory dirFactory = (CachingDirectoryFactory) core.getDirectoryFactory();
       synchronized (dirFactory) {
         Set<String> livePaths = dirFactory.getLivePaths();
-        // one for data, one for hte index under data
-        assertEquals(livePaths.toString(), 2, livePaths.size());
+        // one for data, one for hte index under data and one for the snapshot metadata.
+        assertEquals(livePaths.toString(), 3, livePaths.size());
         // :TODO: assert that one of the paths is a subpath of hte other
       }
       if (dirFactory instanceof StandardDirectoryFactory) {
@@ -908,14 +910,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   private int indexDirCount(String ddir) {
-    String[] list = new File(ddir).list();
-    int cnt = 0;
-    for (String file : list) {
-      if (!file.endsWith(".properties")) {
-        cnt++;
+    String[] list = new File(ddir).list(new FilenameFilter() {
+      @Override
+      public boolean accept(File dir, String name) {
+        File f = new File(dir, name);
+        return f.isDirectory() && !SolrSnapshotMetaDataManager.SNAPSHOT_METADATA_DIR.equals(name);
       }
-    }
-    return cnt;
+    });
+    return list.length;
   }
 
   private void pullFromMasterToSlave() throws MalformedURLException,

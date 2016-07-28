@@ -252,7 +252,7 @@ public class TestPositionIncrement extends LuceneTestCase {
       System.out.println("\ngetPayloadSpans test");
     }
     PayloadSpanCollector collector = new PayloadSpanCollector();
-    Spans pspans = snq.createWeight(is, false).getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
+    Spans pspans = snq.createWeight(is, false, 1f).getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
     while (pspans.nextDoc() != Spans.NO_MORE_DOCS) {
       while (pspans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
         if (VERBOSE) {
@@ -274,7 +274,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(8, count);
 
     // System.out.println("\ngetSpans test");
-    Spans spans = snq.createWeight(is, false).getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = snq.createWeight(is, false, 1f).getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     count = 0;
     sawZero = false;
     while (spans.nextDoc() != Spans.NO_MORE_DOCS) {

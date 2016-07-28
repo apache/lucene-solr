@@ -1,5 +1,3 @@
-package org.apache.solr.client.solrj.io.stream;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,12 +15,15 @@ package org.apache.solr.client.solrj.io.stream;
  * limitations under the License.
  */
 
+package org.apache.solr.client.solrj.io.stream;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -51,7 +52,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -74,9 +74,9 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
   private int runCount;
   private String id;
   protected long checkpointEvery;
-
   private Map<String, Long> checkpoints = new HashMap<String, Long>();
   private String checkpointCollection;
+  private long initialCheckpoint = -1;
 
   // Use TopicStream that takes a SolrParams
   @Deprecated
@@ -84,12 +84,14 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
                      String checkpointCollection,
                      String collection,
                      String id,
+                     long initialCheckpoint,
                      long checkpointEvery,
                      Map<String, String> params) {
     init(zkHost,
          checkpointCollection,
          collection,
          id,
+         initialCheckpoint,
          checkpointEvery,
          new MapSolrParams(params));
   }
@@ -98,12 +100,14 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
                      String checkpointCollection,
                      String collection,
                      String id,
+                     long initialCheckpoint,
                      long checkpointEvery,
                      SolrParams params) {
     init(zkHost,
         checkpointCollection,
         collection,
         id,
+        initialCheckpoint,
         checkpointEvery,
         params);
   }
@@ -113,6 +117,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
                     String checkpointCollection,
                     String collection,
                     String id,
+                    long initialCheckpoint,
                     long checkpointEvery,
                     SolrParams params) {
     this.zkHost  = zkHost;
@@ -121,11 +126,13 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     if(mParams.getParams("rows") == null) {
       mParams.set("rows", "500");
     }
+
     this.params  = mParams; 
     this.collection = collection;
     this.checkpointCollection = checkpointCollection;
     this.checkpointEvery = checkpointEvery;
     this.id = id;
+    this.initialCheckpoint = initialCheckpoint;
     this.comp = new FieldComparator("_version_", ComparatorOrder.ASCENDING);
   }
 
@@ -145,6 +152,13 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
     if(null == flParam) {
       throw new IOException("invalid TopicStream fl cannot be null");
+    }
+
+    long initialCheckpoint = -1;
+    StreamExpressionNamedParameter initialCheckpointParam = factory.getNamedOperand(expression, "initialCheckpoint");
+
+    if(initialCheckpointParam != null) {
+      initialCheckpoint = Long.parseLong(((StreamExpressionValue) initialCheckpointParam.getParameter()).getValue());
     }
 
     long checkpointEvery = -1;
@@ -198,6 +212,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
         checkpointCollectionName,
         collectionName,
         ((StreamExpressionValue) idParam.getParameter()).getValue(),
+        initialCheckpoint,
         checkpointEvery,
         params);
   }
@@ -226,6 +241,9 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     // zkHost
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
     expression.addParameter(new StreamExpressionNamedParameter("id", id));
+    if(initialCheckpoint > -1) {
+      expression.addParameter(new StreamExpressionNamedParameter("initialCheckpoint", Long.toString(initialCheckpoint)));
+    }
     expression.addParameter(new StreamExpressionNamedParameter("checkpointEvery", Long.toString(checkpointEvery)));
 
     return expression;
@@ -278,6 +296,11 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     this.tuples = new TreeSet();
     this.solrStreams = new ArrayList();
     this.eofTuples = Collections.synchronizedMap(new HashMap());
+
+    if(checkpoints.size() == 0 && streamContext.numWorkers > 1) {
+      //Each worker must maintain it's own checkpoints
+      this.id = this.id+"_"+streamContext.workerID;
+    }
 
     if(streamContext.getSolrClientCache() != null) {
       cloudSolrClient = streamContext.getSolrClientCache().getCloudSolrClient(zkHost);
@@ -385,7 +408,13 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
     for(Slice slice : slices) {
       String sliceName = slice.getName();
-      long checkpoint = getCheckpoint(slice, clusterState.getLiveNodes());
+      long checkpoint = 0;
+      if(initialCheckpoint > -1) {
+        checkpoint = initialCheckpoint;
+      } else {
+        checkpoint = getCheckpoint(slice, clusterState.getLiveNodes());
+      }
+
       this.checkpoints.put(sliceName, checkpoint);
     }
   }
@@ -405,7 +434,9 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
         SolrStream solrStream = new SolrStream(coreUrl, params);
 
         if(streamContext != null) {
-          solrStream.setStreamContext(streamContext);
+          StreamContext localContext = new StreamContext();
+          localContext.setSolrClientCache(streamContext.getSolrClientCache());
+          solrStream.setStreamContext(localContext);
         }
 
         try {
@@ -487,21 +518,13 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
       //System.out.println("Connected to zk an got cluster state.");
 
       Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
-
+      if (slices == null) slices = getSlicesIgnoreCase(this.collection, clusterState);
       if (slices == null) {
-        //Try case insensitive match
-        Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
-        for (Map.Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
-          if (entry.getKey().equalsIgnoreCase(collection)) {
-            slices = entry.getValue().getActiveSlices();
-            break;
-          }
-        }
-
-        if (slices == null) {
-          throw new Exception("Collection not found:" + this.collection);
-        }
+        throw new Exception("Collection not found:" + this.collection);
       }
+
+
+      Iterator<String> iterator = params.getParameterNamesIterator();
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       mParams.set("distrib", "false"); // We are the aggregator.
       String fl = mParams.get("fl");

@@ -464,8 +464,8 @@ public class TestJoinUtil extends LuceneTestCase {
       private final Query fieldQuery = new FieldValueQuery(priceField);
 
       @Override
-      public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-        Weight fieldWeight = fieldQuery.createWeight(searcher, false);
+      public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+        Weight fieldWeight = fieldQuery.createWeight(searcher, false, boost);
         return new Weight(this) {
 
           @Override
@@ -475,15 +475,6 @@ public class TestJoinUtil extends LuceneTestCase {
           @Override
           public Explanation explain(LeafReaderContext context, int doc) throws IOException {
             return null;
-          }
-
-          @Override
-          public float getValueForNormalization() throws IOException {
-            return 0;
-          }
-
-          @Override
-          public void normalize(float norm, float topLevelBoost) {
           }
 
           @Override

@@ -38,6 +38,7 @@ import org.apache.lucene.queryparser.util.QueryParserTestBase; // javadocs
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
@@ -61,7 +62,7 @@ import org.junit.BeforeClass;
  * 
  * @see QueryParserTestBase
  */
-//TODO: refactor this to actually extend that class, overriding the tests
+//TODO: refactor this to actually extend that class (QueryParserTestBase), overriding the tests
 //that it adjusts to fit the precedence requirement, adding its extra tests.
 public class TestPrecedenceQueryParser extends LuceneTestCase {
 
@@ -166,20 +167,21 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     }
   }
 
-  public void assertWildcardQueryEquals(String query, boolean lowercase,
-      String result) throws Exception {
-    PrecedenceQueryParser qp = getParser(null);
-    qp.setLowercaseExpandedTerms(lowercase);
-    Query q = qp.parse(query, "field");
-    String s = q.toString("field");
-    if (!s.equals(result)) {
-      fail("WildcardQuery /" + query + "/ yielded /" + s + "/, expecting /"
-          + result + "/");
+  public void assertMatchNoDocsQuery(String queryString, Analyzer a) throws Exception {
+    assertMatchNoDocsQuery(getQuery(queryString, a));
+  }
+
+  public void assertMatchNoDocsQuery(Query query) throws Exception {
+    if (query instanceof MatchNoDocsQuery) {
+      // good
+    } else if (query instanceof BooleanQuery && ((BooleanQuery) query).clauses().size() == 0) {
+      // good
+    } else {
+      fail("expected MatchNoDocsQuery or an empty BooleanQuery but got: " + query);
     }
   }
 
-  public void assertWildcardQueryEquals(String query, String result)
-      throws Exception {
+  public void assertWildcardQueryEquals(String query, String result) throws Exception {
     PrecedenceQueryParser qp = getParser(null);
     Query q = qp.parse(query, "field");
     String s = q.toString("field");
@@ -282,7 +284,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
 
   public void testNumber() throws Exception {
     // The numbers go away because SimpleAnalzyer ignores them
-    assertQueryEquals("3", null, "");
+    assertMatchNoDocsQuery("3", null);
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
@@ -324,36 +326,23 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
      */
     // First prefix queries:
     // by default, convert to lowercase:
-    assertWildcardQueryEquals("Term*", true, "term*");
+    assertWildcardQueryEquals("Term*", "term*");
     // explicitly set lowercase:
-    assertWildcardQueryEquals("term*", true, "term*");
-    assertWildcardQueryEquals("Term*", true, "term*");
-    assertWildcardQueryEquals("TERM*", true, "term*");
-    // explicitly disable lowercase conversion:
-    assertWildcardQueryEquals("term*", false, "term*");
-    assertWildcardQueryEquals("Term*", false, "Term*");
-    assertWildcardQueryEquals("TERM*", false, "TERM*");
+    assertWildcardQueryEquals("term*", "term*");
+    assertWildcardQueryEquals("Term*", "term*");
+    assertWildcardQueryEquals("TERM*", "term*");
     // Then 'full' wildcard queries:
     // by default, convert to lowercase:
     assertWildcardQueryEquals("Te?m", "te?m");
     // explicitly set lowercase:
-    assertWildcardQueryEquals("te?m", true, "te?m");
-    assertWildcardQueryEquals("Te?m", true, "te?m");
-    assertWildcardQueryEquals("TE?M", true, "te?m");
-    assertWildcardQueryEquals("Te?m*gerM", true, "te?m*germ");
-    // explicitly disable lowercase conversion:
-    assertWildcardQueryEquals("te?m", false, "te?m");
-    assertWildcardQueryEquals("Te?m", false, "Te?m");
-    assertWildcardQueryEquals("TE?M", false, "TE?M");
-    assertWildcardQueryEquals("Te?m*gerM", false, "Te?m*gerM");
+    assertWildcardQueryEquals("te?m", "te?m");
+    assertWildcardQueryEquals("Te?m", "te?m");
+    assertWildcardQueryEquals("TE?M", "te?m");
+    assertWildcardQueryEquals("Te?m*gerM", "te?m*germ");
     // Fuzzy queries:
     assertWildcardQueryEquals("Term~", "term~2");
-    assertWildcardQueryEquals("Term~", true, "term~2");
-    assertWildcardQueryEquals("Term~", false, "Term~2");
     // Range queries:
     assertWildcardQueryEquals("[A TO C]", "[a TO c]");
-    assertWildcardQueryEquals("[A TO C]", true, "[a TO c]");
-    assertWildcardQueryEquals("[A TO C]", false, "[A TO C]");
   }
 
   public void testQPA() throws Exception {
@@ -367,8 +356,8 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     // QueryParser behavior
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
         "(+term -(phrase1 phrase2)) term");
-    assertQueryEquals("stop", qpAnalyzer, "");
-    assertQueryEquals("stop OR stop AND stop", qpAnalyzer, "");
+    assertMatchNoDocsQuery("stop", qpAnalyzer);
+    assertMatchNoDocsQuery("stop OR stop AND stop", qpAnalyzer);
     assertTrue(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
     assertTrue(getQuery("term +stop", qpAnalyzer) instanceof TermQuery);
   }

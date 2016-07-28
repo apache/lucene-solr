@@ -148,10 +148,15 @@ public class HdfsDirectory extends BaseDirectory {
   }
   
   @Override
-  public void renameFile(String source, String dest) throws IOException {
+  public void rename(String source, String dest) throws IOException {
     Path sourcePath = new Path(hdfsDirPath, source);
     Path destPath = new Path(hdfsDirPath, dest);
     fileContext.rename(sourcePath, destPath);
+  }
+
+  @Override
+  public void syncMetaData() throws IOException {
+    // TODO: how?
   }
 
   @Override

@@ -14,9 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * QueryParser that passes Fuzzy-, Prefix-, Range-, and WildcardQuerys through the given analyzer.
- */
-package org.apache.lucene.queryparser.analyzing;
+package org.apache.solr.search;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.solr.request.SolrQueryRequest;
+import org.w3c.dom.Element;
+
+public class HelloQueryBuilder extends SolrQueryBuilder {
+
+  public HelloQueryBuilder(String defaultField, Analyzer analyzer,
+      SolrQueryRequest req, QueryBuilder queryFactory) {
+    super(defaultField, analyzer, req, queryFactory);
+  }
+
+  @Override
+  public Query getQuery(Element e) throws ParserException {
+    return new MatchAllDocsQuery();
+  }
+
+}

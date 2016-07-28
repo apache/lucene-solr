@@ -39,7 +39,9 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDReader;
 import org.apache.lucene.util.bkd.BKDWriter;
 
-/** Writes dimensional values */
+/** Writes dimensional values
+ *
+ * @lucene.experimental */
 public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
   /** Output used to write the BKD tree data file */
@@ -50,15 +52,13 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
   final SegmentWriteState writeState;
   final int maxPointsInLeafNode;
-  final double maxMBSortInHeap;
   private boolean finished;
 
   /** Full constructor */
-  public Lucene60PointsWriter(SegmentWriteState writeState, int maxPointsInLeafNode, double maxMBSortInHeap) throws IOException {
+  public Lucene60PointsWriter(SegmentWriteState writeState, int maxPointsInLeafNode) throws IOException {
     assert writeState.fieldInfos.hasPointValues();
     this.writeState = writeState;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
-    this.maxMBSortInHeap = maxMBSortInHeap;
     String dataFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
                                                          writeState.segmentSuffix,
                                                          Lucene60PointsFormat.DATA_EXTENSION);
@@ -80,11 +80,11 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
   /** Uses the defaults values for {@code maxPointsInLeafNode} (1024) and {@code maxMBSortInHeap} (16.0) */
   public Lucene60PointsWriter(SegmentWriteState writeState) throws IOException {
-    this(writeState, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE, BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
+    this(writeState, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
   }
 
   @Override
-  public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
+  public void writeField(FieldInfo fieldInfo, PointsReader values, double maxMBSortInHeap) throws IOException {
 
     boolean singleValuePerDoc = values.size(fieldInfo.name) == values.getDocCount(fieldInfo.name);
 
@@ -173,7 +173,8 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                                 fieldInfo.getPointDimensionCount(),
                                                 fieldInfo.getPointNumBytes(),
                                                 maxPointsInLeafNode,
-                                                maxMBSortInHeap,
+                                                // NOTE: not used, since BKDWriter.merge does a merge sort:
+                                                BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
                                                 totMaxSize,
                                                 singleValuePerDoc)) {
             List<BKDReader> bkdReaders = new ArrayList<>();

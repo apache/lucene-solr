@@ -88,12 +88,6 @@ public class TestStandardQP extends QueryParserTestBase {
   }
   
   @Override
-  public void setAnalyzeRangeTerms(CommonQueryParserConfiguration cqpC,
-      boolean value) {
-    throw new UnsupportedOperationException();
-  }
-  
-  @Override
   public void setAutoGeneratePhraseQueries(CommonQueryParserConfiguration cqpC,
       boolean value) {
     throw new UnsupportedOperationException();
@@ -148,15 +142,6 @@ public class TestStandardQP extends QueryParserTestBase {
     CommonQueryParserConfiguration qp = getParserConfig( new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
     WildcardQuery q = new WildcardQuery(new Term("field", "foo?ba?r"));//TODO not correct!!
     assertEquals(q, getQuery("foo\\?ba?r", qp));
-  }
-
-  
-  @Override
-  public void testCollatedRange() throws Exception {
-    expectThrows(UnsupportedOperationException.class, () -> {
-      setAnalyzeRangeTerms(getParser(null), true);
-      super.testCollatedRange();
-    });
   }
   
   @Override

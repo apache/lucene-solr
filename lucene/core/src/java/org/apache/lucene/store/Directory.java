@@ -100,7 +100,13 @@ public abstract class Directory implements Closeable {
    * It is just important that the contents of {@code dest} appear
    * atomically, or an exception is thrown.
    */
-  public abstract void renameFile(String source, String dest) throws IOException;
+  public abstract void rename(String source, String dest) throws IOException;
+
+  /**
+   * Ensure that directory metadata, such as recent file renames, are made
+   * durable.
+   */
+  public abstract void syncMetaData() throws IOException;
   
   /** Returns a stream reading an existing file.
    * <p>Throws {@link FileNotFoundException} or {@link NoSuchFileException}

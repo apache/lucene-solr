@@ -288,10 +288,10 @@ public class WeightedSpanTermExtractor {
       for (final String field : fieldNames) {
         final SpanQuery rewrittenQuery = (SpanQuery) spanQuery.rewrite(getLeafContext().reader());
         queries.put(field, rewrittenQuery);
-        rewrittenQuery.createWeight(searcher, false).extractTerms(nonWeightedTerms);
+        rewrittenQuery.createWeight(searcher, false, boost).extractTerms(nonWeightedTerms);
       }
     } else {
-      spanQuery.createWeight(searcher, false).extractTerms(nonWeightedTerms);
+      spanQuery.createWeight(searcher, false, boost).extractTerms(nonWeightedTerms);
     }
 
     List<PositionSpan> spanPositions = new ArrayList<>();

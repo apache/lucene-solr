@@ -119,4 +119,11 @@ public final class IndonesianAnalyzer extends StopwordAnalyzerBase {
     }
     return new TokenStreamComponents(source, new IndonesianStemFilter(result));
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new StandardFilter(in);
+    result = new LowerCaseFilter(result);
+    return result;
+  }
 }

@@ -22,6 +22,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.util.bkd.BKDWriter;
 
 /** Abstract API to write points
  *
@@ -34,8 +35,9 @@ public abstract class PointsWriter implements Closeable {
   protected PointsWriter() {
   }
 
-  /** Write all values contained in the provided reader */
-  public abstract void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException;
+  /** Write all values contained in the provided reader.  {@code maxMBSortInHeap} is the maximum
+   *  transient heap that can be used to sort values, before spilling to disk for offline sorting */
+  public abstract void writeField(FieldInfo fieldInfo, PointsReader values, double maxMBSortInHeap) throws IOException;
 
   /** Default naive merge implementation for one field: it just re-indexes all the values
    *  from the incoming segment.  The default codec overrides this for 1D fields and uses
@@ -145,7 +147,10 @@ public abstract class PointsWriter implements Closeable {
                  public int getDocCount(String fieldName) {
                    return finalDocCount;
                  }
-               });
+               },
+               // TODO: also let merging of > 1D fields tap into IW's indexing buffer size, somehow (1D fields do an optimized merge sort
+               // and don't need heap)
+               BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
   }
 
   /** Default merge implementation to merge incoming points readers by visiting all their points and

@@ -45,15 +45,6 @@ public class RandomSimilarity extends PerFieldSimilarityWrapper {
   }
   
   @Override
-  public float queryNorm(float sumOfSquaredWeights) {
-    if (shouldQueryNorm) {
-      return defaultSim.queryNorm(sumOfSquaredWeights);
-    } else {
-      return 1.0f;
-    }
-  }
-  
-  @Override
   public synchronized Similarity get(String field) {
     assert field != null;
     Similarity sim = previousMappings.get(field);

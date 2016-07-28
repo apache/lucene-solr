@@ -54,8 +54,8 @@ public abstract class LMSimilarity extends SimilarityBase {
   }
   
   @Override
-  protected BasicStats newStats(String field) {
-    return new LMStats(field);
+  protected BasicStats newStats(String field, float boost) {
+    return new LMStats(field, boost);
   }
 
   /**
@@ -108,8 +108,8 @@ public abstract class LMSimilarity extends SimilarityBase {
     /**
      * Creates LMStats for the provided field and query-time boost
      */
-    public LMStats(String field) {
-      super(field);
+    public LMStats(String field, float boost) {
+      super(field, boost);
     }
     
     /**

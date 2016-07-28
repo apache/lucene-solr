@@ -17,6 +17,8 @@
 package org.apache.lucene.analysis.custom;
 
 
+import java.io.IOException;
+import java.io.Reader;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,16 +26,25 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CharFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.charfilter.HTMLStripCharFilterFactory;
+import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
+import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
 import org.apache.lucene.analysis.standard.ClassicTokenizerFactory;
 import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeFactory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.apache.lucene.util.Version;
 
@@ -334,6 +345,138 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
         .withTokenizer("whitespace")
         .build();
     });
+  }
+
+  private static class DummyCharFilter extends CharFilter {
+
+    private final char match, repl;
+
+    public DummyCharFilter(Reader input, char match, char repl) {
+      super(input);
+      this.match = match;
+      this.repl = repl;
+    }
+
+    @Override
+    protected int correct(int currentOff) {
+      return currentOff;
+    }
+
+    @Override
+    public int read(char[] cbuf, int off, int len) throws IOException {
+      final int read = input.read(cbuf, off, len);
+      for (int i = 0; i < read; ++i) {
+        if (cbuf[off+i] == match) {
+          cbuf[off+i] = repl;
+        }
+      }
+      return read;
+    }
+    
+  }
+
+  public static class DummyCharFilterFactory extends CharFilterFactory {
+
+    private final char match, repl;
+
+    public DummyCharFilterFactory(Map<String,String> args) {
+      this(args, '0', '1');
+    }
+
+    DummyCharFilterFactory(Map<String,String> args, char match, char repl) {
+      super(args);
+      this.match = match;
+      this.repl = repl;
+    }
+
+    @Override
+    public Reader create(Reader input) {
+      return new DummyCharFilter(input, match, repl);
+    }
+    
+  }
+
+  public static class DummyMultiTermAwareCharFilterFactory extends DummyCharFilterFactory implements MultiTermAwareComponent {
+
+    public DummyMultiTermAwareCharFilterFactory(Map<String,String> args) {
+      super(args);
+    }
+
+    @Override
+    public AbstractAnalysisFactory getMultiTermComponent() {
+      return new DummyCharFilterFactory(Collections.emptyMap(), '0', '2');
+    }
+
+  }
+
+  public static class DummyTokenizerFactory extends TokenizerFactory {
+
+    public DummyTokenizerFactory(Map<String,String> args) {
+      super(args);
+    }
+
+    @Override
+    public Tokenizer create(AttributeFactory factory) {
+      return new LowerCaseTokenizer(factory);
+    }
+
+  }
+
+  public static class DummyMultiTermAwareTokenizerFactory extends DummyTokenizerFactory implements MultiTermAwareComponent {
+
+    public DummyMultiTermAwareTokenizerFactory(Map<String,String> args) {
+      super(args);
+    }
+
+    @Override
+    public AbstractAnalysisFactory getMultiTermComponent() {
+      return new KeywordTokenizerFactory(getOriginalArgs());
+    }
+    
+  }
+
+  public static class DummyTokenFilterFactory extends TokenFilterFactory {
+
+    public DummyTokenFilterFactory(Map<String,String> args) {
+      super(args);
+    }
+
+    @Override
+    public TokenStream create(TokenStream input) {
+      return input;
+    }
+    
+  }
+
+  public static class DummyMultiTermAwareTokenFilterFactory extends DummyTokenFilterFactory implements MultiTermAwareComponent {
+
+    public DummyMultiTermAwareTokenFilterFactory(Map<String,String> args) {
+      super(args);
+    }
+
+    @Override
+    public AbstractAnalysisFactory getMultiTermComponent() {
+      return new ASCIIFoldingFilterFactory(Collections.emptyMap());
+    }
+    
+  }
+
+  public void testNormalization() throws IOException {
+    CustomAnalyzer analyzer1 = CustomAnalyzer.builder()
+        // none of these components are multi-term aware so they should not be applied
+        .withTokenizer(DummyTokenizerFactory.class, Collections.emptyMap())
+        .addCharFilter(DummyCharFilterFactory.class, Collections.emptyMap())
+        .addTokenFilter(DummyTokenFilterFactory.class, Collections.emptyMap())
+        .build();
+    assertEquals(new BytesRef("0À"), analyzer1.normalize("dummy", "0À"));
+
+    CustomAnalyzer analyzer2 = CustomAnalyzer.builder()
+        // these components are multi-term aware so they should be applied
+        .withTokenizer(DummyMultiTermAwareTokenizerFactory.class, Collections.emptyMap())
+        .addCharFilter(DummyMultiTermAwareCharFilterFactory.class, Collections.emptyMap())
+        .addTokenFilter(DummyMultiTermAwareTokenFilterFactory.class, Collections.emptyMap())
+        .build();
+    assertEquals(new BytesRef("2A"), analyzer2.normalize("dummy", "0À"));
   }
 
 }

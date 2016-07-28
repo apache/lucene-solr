@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PointsWriter;
@@ -67,7 +68,7 @@ class SimpleTextPointsWriter extends PointsWriter {
   }
 
   @Override
-  public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
+  public void writeField(FieldInfo fieldInfo, PointsReader values, double maxMBSortInHeap) throws IOException {
 
     boolean singleValuePerDoc = values.size(fieldInfo.name) == values.getDocCount(fieldInfo.name);
 
@@ -78,7 +79,7 @@ class SimpleTextPointsWriter extends PointsWriter {
                                           fieldInfo.getPointDimensionCount(),
                                           fieldInfo.getPointNumBytes(),
                                           BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
-                                          BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
+                                          maxMBSortInHeap,
                                           values.size(fieldInfo.name),
                                           singleValuePerDoc) {
 
@@ -161,12 +162,15 @@ class SimpleTextPointsWriter extends PointsWriter {
         }
 
         @Override
-        protected void writeLeafBlockPackedValue(IndexOutput out, int[] commonPrefixLengths, byte[] bytes, int bytesOffset) throws IOException {
-          // NOTE: we don't do prefix coding, so we ignore commonPrefixLengths
-          write(out, BLOCK_VALUE);
-          write(out, new BytesRef(bytes, bytesOffset, packedBytesLength).toString());
-          newline(out);
-        }          
+        protected void writeLeafBlockPackedValues(IndexOutput out, int[] commonPrefixLengths, int count, int sortedDim, IntFunction<BytesRef> packedValues) throws IOException {
+          for (int i = 0; i < count; ++i) {
+            BytesRef packedValue = packedValues.apply(i);
+            // NOTE: we don't do prefix coding, so we ignore commonPrefixLengths
+            write(out, BLOCK_VALUE);
+            write(out, packedValue.toString());
+            newline(out);
+          }
+        }
       }) {
 
       values.intersect(fieldInfo.name, new IntersectVisitor() {

@@ -20,13 +20,14 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.common.StringUtils;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 
-public class VMParamsAllAndReadonlyDigestZkACLProvider extends DefaultZkACLProvider {
+public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkACLProvider {
 
   public static final String DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME = "zkDigestReadonlyUsername";
   public static final String DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME = "zkDigestReadonlyPassword";
@@ -53,29 +54,56 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends DefaultZkACLProvi
     this.zkDigestReadonlyPasswordVMParamName = zkDigestReadonlyPasswordVMParamName;
   }
 
-
+  /**
+   * @return Set of ACLs to return for non-security related znodes
+   */
   @Override
-  protected List<ACL> createGlobalACLsToAdd() {
-    try {
+  protected List<ACL> createNonSecurityACLsToAdd() {
+    return createACLsToAdd(true);
+  }
+
+  /**
+   * @return Set of ACLs to return security-related znodes
+   */
+  @Override
+  protected List<ACL> createSecurityACLsToAdd() {
+    return createACLsToAdd(false);
+  }
+
+  protected List<ACL> createACLsToAdd(boolean includeReadOnly) {
+    String digestAllUsername = System.getProperty(zkDigestAllUsernameVMParamName);
+    String digestAllPassword = System.getProperty(zkDigestAllPasswordVMParamName);
+    String digestReadonlyUsername = System.getProperty(zkDigestReadonlyUsernameVMParamName);
+    String digestReadonlyPassword = System.getProperty(zkDigestReadonlyPasswordVMParamName);
+
+    return createACLsToAdd(includeReadOnly,
+        digestAllUsername, digestAllPassword,
+        digestReadonlyUsername, digestReadonlyPassword);
+  }
+
+  @VisibleForTesting
+  protected List<ACL> createACLsToAdd(boolean includeReadOnly,
+                                      String digestAllUsername, String digestAllPassword,
+                                      String digestReadonlyUsername, String digestReadonlyPassword) {
+
+      try {
       List<ACL> result = new ArrayList<ACL>();
   
       // Not to have to provide too much credentials and ACL information to the process it is assumed that you want "ALL"-acls
       // added to the user you are using to connect to ZK (if you are using VMParamsSingleSetCredentialsDigestZkCredentialsProvider)
-      String digestAllUsername = System.getProperty(zkDigestAllUsernameVMParamName);
-      String digestAllPassword = System.getProperty(zkDigestAllPasswordVMParamName);
       if (!StringUtils.isEmpty(digestAllUsername) && !StringUtils.isEmpty(digestAllPassword)) {
         result.add(new ACL(ZooDefs.Perms.ALL, new Id("digest", DigestAuthenticationProvider.generateDigest(digestAllUsername + ":" + digestAllPassword))));
       }
-  
-      // Besides that support for adding additional "READONLY"-acls for another user
-      String digestReadonlyUsername = System.getProperty(zkDigestReadonlyUsernameVMParamName);
-      String digestReadonlyPassword = System.getProperty(zkDigestReadonlyPasswordVMParamName);
-      if (!StringUtils.isEmpty(digestReadonlyUsername) && !StringUtils.isEmpty(digestReadonlyPassword)) {
-        result.add(new ACL(ZooDefs.Perms.READ, new Id("digest", DigestAuthenticationProvider.generateDigest(digestReadonlyUsername + ":" + digestReadonlyPassword))));
+
+      if (includeReadOnly) {
+        // Besides that support for adding additional "READONLY"-acls for another user
+        if (!StringUtils.isEmpty(digestReadonlyUsername) && !StringUtils.isEmpty(digestReadonlyPassword)) {
+          result.add(new ACL(ZooDefs.Perms.READ, new Id("digest", DigestAuthenticationProvider.generateDigest(digestReadonlyUsername + ":" + digestReadonlyPassword))));
+        }
       }
       
       if (result.isEmpty()) {
-        result = super.createGlobalACLsToAdd();
+        result = ZooDefs.Ids.OPEN_ACL_UNSAFE;
       }
       
       return result;

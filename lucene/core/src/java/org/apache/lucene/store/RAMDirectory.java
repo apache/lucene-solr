@@ -214,7 +214,7 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
   }
 
   @Override
-  public void renameFile(String source, String dest) throws IOException {
+  public void rename(String source, String dest) throws IOException {
     ensureOpen();
     RAMFile file = fileMap.get(source);
     if (file == null) {
@@ -229,6 +229,11 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
     fileMap.remove(source);
   }
 
+  @Override
+  public void syncMetaData() throws IOException {
+    // we are by definition not durable!
+  }
+  
   /** Returns a stream reading an existing file. */
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {

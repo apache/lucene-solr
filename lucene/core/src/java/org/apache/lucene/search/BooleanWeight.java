@@ -42,14 +42,14 @@ final class BooleanWeight extends Weight {
   final ArrayList<Weight> weights;
   final boolean needsScores;
 
-  BooleanWeight(BooleanQuery query, IndexSearcher searcher, boolean needsScores) throws IOException {
+  BooleanWeight(BooleanQuery query, IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     super(query);
     this.query = query;
     this.needsScores = needsScores;
     this.similarity = searcher.getSimilarity(needsScores);
     weights = new ArrayList<>();
     for (BooleanClause c : query) {
-      Weight w = searcher.createWeight(c.getQuery(), needsScores && c.isScoring());
+      Weight w = searcher.createWeight(c.getQuery(), needsScores && c.isScoring(), boost);
       weights.add(w);
     }
   }
@@ -62,31 +62,6 @@ final class BooleanWeight extends Weight {
         weights.get(i).extractTerms(terms);
       }
       i++;
-    }
-  }
-
-  @Override
-  public float getValueForNormalization() throws IOException {
-    float sum = 0.0f;
-    int i = 0;
-    for (BooleanClause clause : query) {
-      // call sumOfSquaredWeights for all clauses in case of side effects
-      float s = weights.get(i).getValueForNormalization();         // sum sub weights
-      if (clause.isScoring()) {
-        // only add to sum for scoring clauses
-        sum += s;
-      }
-      i += 1;
-    }
-
-    return sum ;
-  }
-
-  @Override
-  public void normalize(float norm, float boost) {
-    for (Weight w : weights) {
-      // normalize all clauses, (even if non-scoring in case of side affects)
-      w.normalize(norm, boost);
     }
   }
 

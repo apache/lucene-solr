@@ -59,9 +59,9 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    SpanWeight matchWeight = match.createWeight(searcher, false);
-    return new SpanPayloadCheckWeight(searcher, needsScores ? getTermContexts(matchWeight) : null, matchWeight);
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    SpanWeight matchWeight = match.createWeight(searcher, false, boost);
+    return new SpanPayloadCheckWeight(searcher, needsScores ? getTermContexts(matchWeight) : null, matchWeight, boost);
   }
 
   /**
@@ -71,8 +71,8 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
     final SpanWeight matchWeight;
 
-    public SpanPayloadCheckWeight(IndexSearcher searcher, Map<Term, TermContext> termContexts, SpanWeight matchWeight) throws IOException {
-      super(SpanPayloadCheckQuery.this, searcher, termContexts);
+    public SpanPayloadCheckWeight(IndexSearcher searcher, Map<Term, TermContext> termContexts, SpanWeight matchWeight, float boost) throws IOException {
+      super(SpanPayloadCheckQuery.this, searcher, termContexts, boost);
       this.matchWeight = matchWeight;
     }
 

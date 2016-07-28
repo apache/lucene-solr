@@ -139,4 +139,12 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
     result = new GermanLightStemFilter(result);
     return new TokenStreamComponents(source, result);
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new StandardFilter(in);
+    result = new LowerCaseFilter(result);
+    result = new GermanNormalizationFilter(result);
+    return result;
+  }
 }

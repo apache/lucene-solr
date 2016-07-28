@@ -123,4 +123,11 @@ public final class SpanishAnalyzer extends StopwordAnalyzerBase {
     result = new SpanishLightStemFilter(result);
     return new TokenStreamComponents(source, result);
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new StandardFilter(in);
+    result = new LowerCaseFilter(result);
+    return result;
+  }
 }

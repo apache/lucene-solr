@@ -20,12 +20,10 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
-import java.util.Set;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -115,8 +113,8 @@ public class ToParentBlockJoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new BlockJoinWeight(this, childQuery.createWeight(searcher, needsScores), parentsFilter, needsScores ? scoreMode : ScoreMode.None);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new BlockJoinWeight(this, childQuery.createWeight(searcher, needsScores, boost), parentsFilter, needsScores ? scoreMode : ScoreMode.None);
   }
   
   /** Return our child query. */
@@ -124,31 +122,14 @@ public class ToParentBlockJoinQuery extends Query {
     return childQuery;
   }
 
-  private static class BlockJoinWeight extends Weight {
-    private final Weight childWeight;
+  private static class BlockJoinWeight extends FilterWeight {
     private final BitSetProducer parentsFilter;
     private final ScoreMode scoreMode;
 
     public BlockJoinWeight(Query joinQuery, Weight childWeight, BitSetProducer parentsFilter, ScoreMode scoreMode) {
-      super(joinQuery);
-      this.childWeight = childWeight;
+      super(joinQuery, childWeight);
       this.parentsFilter = parentsFilter;
       this.scoreMode = scoreMode;
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      childWeight.extractTerms(terms);
-    }
-
-    @Override
-    public float getValueForNormalization() throws IOException {
-      return childWeight.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float norm, float boost) {
-      childWeight.normalize(norm, boost);
     }
 
     // NOTE: acceptDocs applies (and is checked) only in the
@@ -156,7 +137,7 @@ public class ToParentBlockJoinQuery extends Query {
     @Override
     public Scorer scorer(LeafReaderContext readerContext) throws IOException {
 
-      final Scorer childScorer = childWeight.scorer(readerContext);
+      final Scorer childScorer = in.scorer(readerContext);
       if (childScorer == null) {
         // No matches
         return null;
@@ -184,7 +165,7 @@ public class ToParentBlockJoinQuery extends Query {
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       BlockJoinScorer scorer = (BlockJoinScorer) scorer(context);
       if (scorer != null && scorer.iterator().advance(doc) == doc) {
-        return scorer.explain(context, childWeight);
+        return scorer.explain(context, in);
       }
       return Explanation.noMatch("Not a match");
     }

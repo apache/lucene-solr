@@ -28,8 +28,21 @@ import org.apache.lucene.index.Term;
  */
 
 public class MatchNoDocsQuery extends Query {
+
+  private final String reason;
+
+  /** Default constructor */
+  public MatchNoDocsQuery() {
+    this("");
+  }
+
+  /** Provides a reason explaining why this query was used */
+  public MatchNoDocsQuery(String reason) {
+    this.reason = reason;
+  }
+  
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     return new Weight(this) {
       @Override
       public void extractTerms(Set<Term> terms) {
@@ -37,7 +50,7 @@ public class MatchNoDocsQuery extends Query {
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        return Explanation.noMatch("");
+        return Explanation.noMatch(reason);
       }
 
       @Override
@@ -45,35 +58,12 @@ public class MatchNoDocsQuery extends Query {
         return null;
       }
 
-      @Override
-      public final float getValueForNormalization() throws IOException {
-        return 0;
-      }
-
-      @Override
-      public void normalize(float norm, float boost) {
-      }
-
-      /** Return the normalization factor for this weight. */
-      protected final float queryNorm() {
-        return 0;
-      }
-
-      /** Return the boost for this weight. */
-      protected final float boost() {
-        return 0;
-      }
-
-      /** Return the score produced by this {@link Weight}. */
-      protected final float score() {
-        return 0;
-      }
     };
   }
 
   @Override
   public String toString(String field) {
-    return "";
+    return "MatchNoDocsQuery(\"" + reason + "\")";
   }
 
   @Override

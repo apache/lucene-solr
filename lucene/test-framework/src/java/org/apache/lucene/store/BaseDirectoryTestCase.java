@@ -110,7 +110,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     output.writeBytes(bytes, bytes.length);
     output.close();
     
-    dir.renameFile("foobar", "foobaz");
+    dir.rename("foobar", "foobaz");
     
     IndexInput input = dir.openInput("foobaz", newIOContext(random()));
     byte bytes2[] = new byte[numBytes];
@@ -1196,7 +1196,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
 
       // Make sure rename fails:
       expectThrows(NoSuchFileException.class, () -> {      
-        fsDir.renameFile(fileName, "file2");
+        fsDir.rename(fileName, "file2");
       });
 
       // Make sure delete fails:

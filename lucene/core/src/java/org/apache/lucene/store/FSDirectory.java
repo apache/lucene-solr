@@ -288,15 +288,20 @@ public abstract class FSDirectory extends BaseDirectory {
   }
 
   @Override
-  public void renameFile(String source, String dest) throws IOException {
+  public void rename(String source, String dest) throws IOException {
     ensureOpen();
     if (pendingDeletes.contains(source)) {
       throw new NoSuchFileException("file \"" + source + "\" is pending delete and cannot be moved");
     }
     pendingDeletes.remove(dest);
     Files.move(directory.resolve(source), directory.resolve(dest), StandardCopyOption.ATOMIC_MOVE);
-    // TODO: should we move directory fsync to a separate 'syncMetadata' method?
-    // for example, to improve listCommits(), IndexFileDeleter could also call that after deleting segments_Ns
+    maybeDeletePendingFiles();
+  }
+
+  @Override
+  public void syncMetaData() throws IOException {
+    // TODO: to improve listCommits(), IndexFileDeleter could call this after deleting segments_Ns
+    ensureOpen();
     IOUtils.fsync(directory, true);
     maybeDeletePendingFiles();
   }
