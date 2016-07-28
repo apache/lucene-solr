@@ -180,6 +180,8 @@ Bug Fixes
 
 * SOLR-8645: managed-schema is now syntax highlighted in cloud->Tree view (Alexandre Rafalovitch via janhoy)
 
+* SOLR-8379: UI Cloud->Tree view now shows .txt files correctly (Alexandre Rafalovitch via janhoy)
+
 Optimizations
 ----------------------
 
