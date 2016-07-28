@@ -55,6 +55,11 @@ var treeSubController = function($scope, Zookeeper) {
             var path = data.znode.path.split( '.' );
             if(path.length >1) {
               $scope.lang = path.pop();
+            } else {
+              var lastPathElement = data.znode.path.split( '/' ).pop();
+              if (lastPathElement == "managed-schema") {
+                  $scope.lang = "xml";
+              }
             }
             $scope.showData = true;
         });
