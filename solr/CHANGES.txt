@@ -66,6 +66,11 @@ New Features
 * SOLR-9275: XML QueryParser support (defType=xmlparser) now extensible via configuration.
   (Christine Poerschke)
 
+* SOLR-9038: Solr core snapshots: The current commit can be snapshotted which retains the commit and associates it with
+  a name.  The core admin API can create snapshots, list them, and delete them. Snapshot names can be referenced in
+  doing a core backup, and in replication.  Snapshot metadata is stored in a new snapshot_metadata/ dir.
+  (Hrishikesh Gadre via David Smiley)
+
 Bug Fixes
 ----------------------
 
