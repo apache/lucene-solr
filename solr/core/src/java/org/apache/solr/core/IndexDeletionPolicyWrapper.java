@@ -19,6 +19,7 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,9 +53,11 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   private final Map<Long, Long> reserves = new ConcurrentHashMap<>();
   private volatile IndexCommit latestCommit;
   private final ConcurrentHashMap<Long, AtomicInteger> savedCommits = new ConcurrentHashMap<>();
+  private final SolrSnapshotMetaDataManager snapshotMgr;
 
-  public IndexDeletionPolicyWrapper(IndexDeletionPolicy deletionPolicy) {
+  public IndexDeletionPolicyWrapper(IndexDeletionPolicy deletionPolicy, SolrSnapshotMetaDataManager snapshotMgr) {
     this.deletionPolicy = deletionPolicy;
+    this.snapshotMgr = snapshotMgr;
   }
 
   /**
@@ -134,7 +137,6 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
     }
   }
 
-
   /**
    * Internal use for Lucene... do not explicitly call.
    */
@@ -185,7 +187,8 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
       Long gen = delegate.getGeneration();
       Long reserve = reserves.get(gen);
       if (reserve != null && System.nanoTime() < reserve) return;
-      if(savedCommits.containsKey(gen)) return;
+      if (savedCommits.containsKey(gen)) return;
+      if (snapshotMgr.isSnapshotted(gen)) return;
       delegate.delete();
     }
 
