@@ -863,6 +863,31 @@ public class StatsComponentTest extends AbstractSolrTestCase {
 
   }
 
+  public void testStatsFencing() throws Exception {
+    SolrCore core = h.getCore();
+
+    assertU(adoc("id", "1", "foo_i", "4"));
+    assertU(adoc("id", "2", "foo_i", "5"));
+    assertU(commit());
+    assertU(adoc("id", "3", "foo_i", "6"));
+    assertU(adoc("id", "4", "foo_i", "7"));
+    assertU(commit());
+
+    assertQ("min fence"
+        , req("q","*:*", "stats", "true", "stats.field", "{!minFence=5}foo_i")
+        ,"//lst[@name='foo_i']/double[@name='min'][.='5.0']"
+        ,"//lst[@name='foo_i']/double[@name='max'][.='7.0']"
+    );
+
+
+    assertQ("min fence"
+        , req("q","*:*", "stats", "true", "stats.field", "{!maxFence=6}foo_i")
+        ,"//lst[@name='foo_i']/double[@name='min'][.='4.0']"
+        ,"//lst[@name='foo_i']/double[@name='max'][.='6.0']"
+    );
+
+  }
+
   //SOLR-3177
   public void testStatsExcludeFilterQuery() throws Exception {
     SolrCore core = h.getCore();
