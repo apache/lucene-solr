@@ -175,6 +175,8 @@ Bug Fixes
 
 * SOLR-8596: Web UI doesn't correctly generate queries which include local parameters (Alexandre Rafalovitch, janhoy)
 
+* SOLR-8645: managed-schema is now syntax highlighted in cloud->Tree view (Alexandre Rafalovitch via janhoy)
+
 Optimizations
 ----------------------
 
