@@ -219,6 +219,8 @@ Other Changes
 * SOLR-9340: Change ZooKeeper disconnect and session expiry related logging from INFO to WARN to
   make debugging easier (Varun Thacker)
 
+* SOLR-9358: [AngularUI] In Cloud->Tree file view area, collapse metadata by default (janhoy)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
