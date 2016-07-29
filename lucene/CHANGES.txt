@@ -44,6 +44,9 @@ New Features
   for calculating query norm and coordination factor in Lucene 6.x.
   Lucene 7 will no longer have those factors.  (Uwe Schindler, Sascha Markus)
 
+* SOLR-9279: Queries module: new ComparisonBoolFunction base class
+  (Doug Turnbull via David Smiley)
+
 Bug Fixes
 
 * LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
