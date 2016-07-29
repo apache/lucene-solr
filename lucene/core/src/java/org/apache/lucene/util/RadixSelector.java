@@ -36,6 +36,7 @@ public abstract class RadixSelector extends Selector {
 
   // we store one histogram per recursion level
   private final int[] histogram = new int[HISTOGRAM_SIZE];
+  private final int[] commonPrefix;
 
   private final int maxLength;
 
@@ -45,6 +46,7 @@ public abstract class RadixSelector extends Selector {
    */
   protected RadixSelector(int maxLength) {
     this.maxLength = maxLength;
+    this.commonPrefix = new int[Math.min(24, maxLength)];
   }
 
   /** Return the k-th byte of the entry at index {@code i}, or {@code -1} if
@@ -112,22 +114,37 @@ public abstract class RadixSelector extends Selector {
   @Override
   public void select(int from, int to, int k) {
     checkArgs(from, to, k);
-    select(from, to, k, 0);
+    select(from, to, k, 0, 0);
   }
 
-  private void select(int from, int to, int k, int d) {
+  private void select(int from, int to, int k, int d, int l) {
     if (to - from <= LENGTH_THRESHOLD || d >= LEVEL_THRESHOLD) {
       getFallbackSelector(d).select(from, to, k);
     } else {
-      radixSelect(from, to, k, d);
+      radixSelect(from, to, k, d, l);
     }
   }
 
-  private void radixSelect(int from, int to, int k, int d) {
+  /**
+   * @param d the character number to compare
+   * @param l the level of recursion
+   */
+  private void radixSelect(int from, int to, int k, int d, int l) {
     final int[] histogram = this.histogram;
     Arrays.fill(histogram, 0);
 
-    buildHistogram(from, to, d, histogram);
+    final int commonPrefixLength = computeCommonPrefixLengthAndBuildHistogram(from, to, d, histogram);
+    if (commonPrefixLength > 0) {
+      // if there are no more chars to compare or if all entries fell into the
+      // first bucket (which means strings are shorter than d) then we are done
+      // otherwise recurse
+      if (d + commonPrefixLength < maxLength
+          && histogram[0] < to - from) {
+        radixSelect(from, to, k, d + commonPrefixLength, l);
+      }
+      return;
+    }
+    assert assertHistogram(commonPrefixLength, histogram);
 
     int bucketFrom = from;
     for (int bucket = 0; bucket < HISTOGRAM_SIZE; ++bucket) {
@@ -138,7 +155,7 @@ public abstract class RadixSelector extends Selector {
 
         if (bucket != 0 && d + 1 < maxLength) {
           // all elements in bucket 0 are equal so we only need to recurse if bucket != 0
-          select(bucketFrom, bucketTo, k, d + 1);
+          select(bucketFrom, bucketTo, k, d + 1, l + 1);
         }
         return;
       }
@@ -147,17 +164,76 @@ public abstract class RadixSelector extends Selector {
     throw new AssertionError("Unreachable code");
   }
 
+  // only used from assert
+  private boolean assertHistogram(int commonPrefixLength, int[] histogram) {
+    int numberOfUniqueBytes = 0;
+    for (int freq : histogram) {
+      if (freq > 0) {
+        numberOfUniqueBytes++;
+      }
+    }
+    if (numberOfUniqueBytes == 1) {
+      assert commonPrefixLength >= 1;
+    } else {
+      assert commonPrefixLength == 0;
+    }
+    return true;
+  }
+
   /** Return a number for the k-th character between 0 and {@link #HISTOGRAM_SIZE}. */
   private int getBucket(int i, int k) {
     return byteAt(i, k) + 1;
   }
 
-  /** Build a histogram of the number of values per {@link #getBucket(int, int) bucket}. */
-  private int[] buildHistogram(int from, int to, int k, int[] histogram) {
+  /** Build a histogram of the number of values per {@link #getBucket(int, int) bucket}
+   *  and return a common prefix length for all visited values.
+   *  @see #buildHistogram */
+  private int computeCommonPrefixLengthAndBuildHistogram(int from, int to, int k, int[] histogram) {
+    final int[] commonPrefix = this.commonPrefix;
+    int commonPrefixLength = Math.min(commonPrefix.length, maxLength - k);
+    for (int j = 0; j < commonPrefixLength; ++j) {
+      final int b = byteAt(from, k + j);
+      commonPrefix[j] = b;
+      if (b == -1) {
+        commonPrefixLength = j + 1;
+        break;
+      }
+    }
+
+    int i;
+    outer: for (i = from + 1; i < to; ++i) {
+      for (int j = 0; j < commonPrefixLength; ++j) {
+        final int b = byteAt(i, k + j);
+        if (b != commonPrefix[j]) {
+          commonPrefixLength = j;
+          if (commonPrefixLength == 0) { // we have no common prefix
+            histogram[commonPrefix[0] + 1] = i - from;
+            histogram[b + 1] = 1;
+            break outer;
+          }
+          break;
+        }
+      }
+    }
+
+    if (i < to) {
+      // the loop got broken because there is no common prefix
+      assert commonPrefixLength == 0;
+      buildHistogram(i + 1, to, k, histogram);
+    } else {
+      assert commonPrefixLength > 0;
+      histogram[commonPrefix[0] + 1] = to - from;
+    }
+
+    return commonPrefixLength;
+  }
+
+  /** Build an histogram of the k-th characters of values occurring between
+   *  offsets {@code from} and {@code to}, using {@link #getBucket}. */
+  private void buildHistogram(int from, int to, int k, int[] histogram) {
     for (int i = from; i < to; ++i) {
       histogram[getBucket(i, k)]++;
     }
-    return histogram;
   }
 
   /** Reorder elements so that all of them that fall into {@code bucket} are
