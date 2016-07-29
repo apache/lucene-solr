@@ -25,7 +25,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.bkd.BKDWriter;
 
 /** Buffers up pending byte[][] value(s) per doc, then flushes when segment flushes. */
 class PointValuesWriter {
@@ -37,7 +36,6 @@ class PointValuesWriter {
   private int numDocs;
   private int lastDocID = -1;
   private final int packedBytesLength;
-  private final LiveIndexWriterConfig indexWriterConfig;
 
   public PointValuesWriter(DocumentsWriterPerThread docWriter, FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
@@ -46,7 +44,6 @@ class PointValuesWriter {
     docIDs = new int[16];
     iwBytesUsed.addAndGet(16 * Integer.BYTES);
     packedBytesLength = fieldInfo.getPointDimensionCount() * fieldInfo.getPointNumBytes();
-    indexWriterConfig = docWriter.indexWriterConfig;
   }
 
   // TODO: if exactly the same value is added to exactly the same doc, should we dedup?
@@ -167,6 +164,6 @@ class PointValuesWriter {
       }
     };
 
-    writer.writeField(fieldInfo, reader, Math.max(indexWriterConfig.getRAMBufferSizeMB()/8.0, BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP));
+    writer.writeField(fieldInfo, reader, Math.max(indexWriterConfig.getRAMBufferSizeMB()/8.0));
   }
 }
