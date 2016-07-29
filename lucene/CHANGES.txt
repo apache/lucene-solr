@@ -156,7 +156,8 @@ Optimizations
 * LUCENE-7311: Cached term queries do not seek the terms dictionary anymore.
   (Adrien Grand)
 
-* LUCENE-7396: Faster flush of points. (Adrien Grand, Mike McCandless)
+* LUCENE-7396, LUCENE-7399: Faster flush of points.
+  (Adrien Grand, Mike McCandless)
 
 Other
 

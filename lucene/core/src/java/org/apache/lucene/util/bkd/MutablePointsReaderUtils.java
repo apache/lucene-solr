@@ -17,6 +17,7 @@
 package org.apache.lucene.util.bkd;
 
 import org.apache.lucene.codecs.MutablePointsReader;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntroSelector;
 import org.apache.lucene.util.IntroSorter;
 import org.apache.lucene.util.MSBRadixSorter;
@@ -54,8 +55,8 @@ final class MutablePointsReaderUtils {
       protected org.apache.lucene.util.Sorter getFallbackSorter(int k) {
         return new IntroSorter() {
 
-          final byte[] pivot = new byte[packedBytesLength];
-          final byte[] scratch = new byte[packedBytesLength];
+          final BytesRef pivot = new BytesRef();
+          final BytesRef scratch = new BytesRef();
           int pivotDoc;
 
           @Override
@@ -73,7 +74,7 @@ final class MutablePointsReaderUtils {
           protected int comparePivot(int j) {
             if (k < packedBytesLength) {
               reader.getValue(j, scratch);
-              int cmp = StringHelper.compare(packedBytesLength - k, pivot, k, scratch, k);
+              int cmp = StringHelper.compare(packedBytesLength - k, pivot.bytes, pivot.offset + k, scratch.bytes, scratch.offset + k);
               if (cmp != 0) {
                 return cmp;
               }
@@ -89,7 +90,7 @@ final class MutablePointsReaderUtils {
   /** Sort points on the given dimension. */
   static void sortByDim(int sortedDim, int bytesPerDim, int[] commonPrefixLengths,
       MutablePointsReader reader, int from, int to,
-      byte[] scratch1, byte[] scratch2) {
+      BytesRef scratch1, BytesRef scratch2) {
 
     // No need for a fancy radix sort here, this is called on the leaves only so
     // there are not many values to sort
@@ -97,7 +98,7 @@ final class MutablePointsReaderUtils {
     final int numBytesToCompare = bytesPerDim - commonPrefixLengths[sortedDim];
     new IntroSorter() {
 
-      final byte[] pivot = scratch1;
+      final BytesRef pivot = scratch1;
       int pivotDoc = -1;
 
       @Override
@@ -114,7 +115,7 @@ final class MutablePointsReaderUtils {
       @Override
       protected int comparePivot(int j) {
         reader.getValue(j, scratch2);
-        int cmp = StringHelper.compare(numBytesToCompare, pivot, offset, scratch2, offset);
+        int cmp = StringHelper.compare(numBytesToCompare, pivot.bytes, pivot.offset + offset, scratch2.bytes, scratch2.offset + offset);
         if (cmp == 0) {
           cmp = pivotDoc - reader.getDocID(j);
         }
@@ -128,7 +129,7 @@ final class MutablePointsReaderUtils {
    *  equal to it. */
   static void partition(int maxDoc, int splitDim, int bytesPerDim, int commonPrefixLen,
       MutablePointsReader reader, int from, int to, int mid,
-      byte[] scratch1, byte[] scratch2) {
+      BytesRef scratch1, BytesRef scratch2) {
     final int offset = splitDim * bytesPerDim + commonPrefixLen;
     final int cmpBytes = bytesPerDim - commonPrefixLen;
     final int bitsPerDocId = PackedInts.bitsRequired(maxDoc - 1);
@@ -138,7 +139,7 @@ final class MutablePointsReaderUtils {
       protected Selector getFallbackSelector(int k) {
         return new IntroSelector() {
 
-          final byte[] pivot = scratch1;
+          final BytesRef pivot = scratch1;
           int pivotDoc;
 
           @Override
@@ -156,7 +157,7 @@ final class MutablePointsReaderUtils {
           protected int comparePivot(int j) {
             if (k < cmpBytes) {
               reader.getValue(j, scratch2);
-              int cmp = StringHelper.compare(cmpBytes - k, pivot, offset + k, scratch2, offset + k);
+              int cmp = StringHelper.compare(cmpBytes - k, pivot.bytes, pivot.offset + offset + k, scratch2.bytes, scratch2.offset + offset + k);
               if (cmp != 0) {
                 return cmp;
               }

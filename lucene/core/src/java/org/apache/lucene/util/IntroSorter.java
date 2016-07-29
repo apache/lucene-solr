@@ -37,8 +37,8 @@ public abstract class IntroSorter extends Sorter {
   }
 
   void quicksort(int from, int to, int maxDepth) {
-    if (to - from < INSERTION_SORT_THRESHOLD) {
-      insertionSort(from, to);
+    if (to - from < BINARY_SORT_THRESHOLD) {
+      binarySort(from, to);
       return;
     } else if (--maxDepth < 0) {
       heapSort(from, to);
@@ -83,12 +83,13 @@ public abstract class IntroSorter extends Sorter {
     quicksort(left + 1, to, maxDepth);
   }
 
-  /** Save the value at slot <code>i</code> so that it can later be used as a
-   * pivot, see {@link #comparePivot(int)}. */
+  // Don't rely on the slow default impl of setPivot/comparePivot since
+  // quicksort relies on these methods to be fast for good performance
+
+  @Override
   protected abstract void setPivot(int i);
 
-  /** Compare the pivot with the slot at <code>j</code>, similarly to
-   *  {@link #compare(int, int) compare(i, j)}. */
+  @Override
   protected abstract int comparePivot(int j);
 
   @Override

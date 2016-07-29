@@ -41,9 +41,12 @@ public class TestMSBRadixSorter extends LuceneTestCase {
         break;
     }
 
+    final int finalMaxLength = maxLength;
     new MSBRadixSorter(maxLength) {
 
+      @Override
       protected int byteAt(int i, int k) {
+        assertTrue(k < finalMaxLength);
         BytesRef ref = refs[i];
         if (ref.length <= k) {
           return -1;

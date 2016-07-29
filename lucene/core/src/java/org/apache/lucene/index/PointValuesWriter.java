@@ -51,9 +51,10 @@ class PointValuesWriter {
     if (value == null) {
       throw new IllegalArgumentException("field=" + fieldInfo.name + ": point value must not be null");
     }
-    if (value.length != fieldInfo.getPointDimensionCount() * fieldInfo.getPointNumBytes()) {
+    if (value.length != packedBytesLength) {
       throw new IllegalArgumentException("field=" + fieldInfo.name + ": this field's value has length=" + value.length + " but should be " + (fieldInfo.getPointDimensionCount() * fieldInfo.getPointNumBytes()));
     }
+
     if (docIDs.length == numPoints) {
       docIDs = ArrayUtil.grow(docIDs, numPoints+1);
       iwBytesUsed.addAndGet((docIDs.length - numPoints) * Integer.BYTES);
@@ -64,6 +65,7 @@ class PointValuesWriter {
       numDocs++;
       lastDocID = docID;
     }
+
     numPoints++;
   }
 
@@ -82,9 +84,12 @@ class PointValuesWriter {
         if (fieldName.equals(fieldInfo.name) == false) {
           throw new IllegalArgumentException("fieldName must be the same");
         }
+        final BytesRef scratch = new BytesRef();
         final byte[] packedValue = new byte[packedBytesLength];
         for(int i=0;i<numPoints;i++) {
-          getValue(i, packedValue);
+          getValue(i, scratch);
+          assert scratch.length == packedValue.length;
+          System.arraycopy(scratch.bytes, scratch.offset, packedValue, 0, packedBytesLength);
           visitor.visit(getDocID(i), packedValue);
         }
       }
@@ -152,9 +157,10 @@ class PointValuesWriter {
       }
 
       @Override
-      public void getValue(int i, byte[] packedValue) {
+      public void getValue(int i, BytesRef packedValue) {
         final long offset = (long) packedBytesLength * ords[i];
-        bytes.readBytes(offset, packedValue, 0, packedBytesLength);
+        packedValue.length = packedBytesLength;
+        bytes.setRawBytesRef(packedValue, offset);
       }
 
       @Override
