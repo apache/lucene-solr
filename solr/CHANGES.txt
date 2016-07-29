@@ -108,6 +108,9 @@ New Features
   doing a core backup, and in replication.  Snapshot metadata is stored in a new snapshot_metadata/ dir.
   (Hrishikesh Gadre via David Smiley)
 
+* SOLR-9279: New boolean comparison function queries comparing numeric arguments: gt, gte, lt, lte, eq
+  (Doug Turnbull, David Smiley)
+
 Bug Fixes
 ----------------------
 

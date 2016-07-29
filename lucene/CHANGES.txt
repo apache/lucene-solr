@@ -65,6 +65,9 @@ New Features
   Polygon instances from a standard GeoJSON string (Robert Muir, Mike
   McCandless)
 
+* SOLR-9279: Queries module: new ComparisonBoolFunction base class
+  (Doug Turnbull via David Smiley)
+
 Bug Fixes
 
 * LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)

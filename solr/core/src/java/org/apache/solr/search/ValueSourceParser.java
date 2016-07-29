@@ -64,6 +64,7 @@ import org.apache.solr.search.facet.UniqueAgg;
 import org.apache.solr.search.function.CollapseScoreFunction;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
+import org.apache.solr.search.function.SolrComparisonBoolFunction;
 import org.apache.solr.search.function.distance.GeoDistValueSourceParser;
 import org.apache.solr.search.function.distance.GeohashFunction;
 import org.apache.solr.search.function.distance.GeohashHaversineFunction;
@@ -819,6 +820,57 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource falseValueSource = fp.parseValueSource();
 
         return new IfFunction(ifValueSource, trueValueSource, falseValueSource);
+      }
+    });
+
+    addParser("gt", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
+
+        return new SolrComparisonBoolFunction(lhsValSource, rhsValSource, "gt", (cmp) -> cmp > 0);
+      }
+    });
+
+    addParser("lt", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
+
+        return new SolrComparisonBoolFunction(lhsValSource, rhsValSource, "lt", (cmp) -> cmp < 0);
+      }
+    });
+
+    addParser("gte", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
+
+        return new SolrComparisonBoolFunction(lhsValSource, rhsValSource, "gte", (cmp) -> cmp >= 0);
+
+      }
+    });
+
+    addParser("lte", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
+
+        return new SolrComparisonBoolFunction(lhsValSource, rhsValSource, "lte", (cmp) -> cmp <= 0);
+      }
+    });
+
+    addParser("eq", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        ValueSource lhsValSource = fp.parseValueSource();
+        ValueSource rhsValSource = fp.parseValueSource();
+
+        return new SolrComparisonBoolFunction(lhsValSource, rhsValSource, "eq", (cmp) -> cmp == 0);
       }
     });
 
