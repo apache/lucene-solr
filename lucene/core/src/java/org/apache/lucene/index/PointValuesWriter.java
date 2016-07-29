@@ -164,6 +164,6 @@ class PointValuesWriter {
       }
     };
 
-    writer.writeField(fieldInfo, reader, Math.max(indexWriterConfig.getRAMBufferSizeMB()/8.0));
+    writer.writeField(fieldInfo, reader);
   }
 }
