@@ -259,12 +259,6 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     writerXlsx.write(xmlBout, req, rsp);
     XSSFWorkbook output = new XSSFWorkbook(new ByteArrayInputStream(xmlBout.toByteArray()));
 
-    //TODO: DELETEME
-    //File file = new File("/Users/tdm/temp/solr.xlsx");
-    //FileOutputStream fod = new FileOutputStream(file);
-    //output.write(fod);
-    //fod.close();
-
     req.close();
     return output.getSheetAt(0);
   }
