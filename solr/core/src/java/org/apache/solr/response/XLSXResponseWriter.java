@@ -45,10 +45,26 @@ import java.util.LinkedHashSet;
  */
 
 public class XLSXResponseWriter extends RawResponseWriter {
+  LinkedHashMap<String,String> colNamesMap = new LinkedHashMap<String,String>();
+  LinkedHashMap<String,Integer> colWidthsMap = new LinkedHashMap<String,Integer>();
 
   @Override
-  public void init(NamedList n) {
-    //solrconfig calls in here
+  public void init(NamedList solrconfig) {
+    NamedList columnNames = (NamedList) solrconfig.get("columnNames");
+    if (columnNames != null && columnNames.size() > 0) {
+      for (Object nameObject: columnNames) {
+        Map.Entry<String, String> namePair = (Map.Entry<String, String>) nameObject;
+        this.colNamesMap.put(namePair.getKey(), namePair.getValue());
+      }
+    }
+
+    NamedList columnWidths = (NamedList) solrconfig.get("columnWidths");
+    if (columnWidths != null && columnWidths.size() > 0) {
+      for (Object widthObject : columnWidths) {
+        Map.Entry<String, Integer> widthPair = (Map.Entry<String, Integer>) widthObject;
+        this.colWidthsMap.put(widthPair.getKey(), widthPair.getValue());
+      }
+    }
   }
 
   @Override
@@ -57,7 +73,7 @@ public class XLSXResponseWriter extends RawResponseWriter {
     // all writes before they go to it anyway
     XLSXWriter w = new XLSXWriter(new CharArrayWriter(), req, rsp);
     try {
-      w.writeResponse(out);
+      w.writeResponse(out, this.colNamesMap, this.colWidthsMap);
     } finally {
       w.close();
     }
@@ -153,7 +169,8 @@ class XLSXWriter extends TextResponseWriter {
     this.rsp = rsp;
   }
 
-  public void writeResponse(OutputStream out) throws IOException {
+  public void writeResponse(OutputStream out, LinkedHashMap<String, String> colNamesMap,
+                            LinkedHashMap<String, Integer> colWidthsMap) throws IOException {
     SolrParams params = req.getParams();
 
     Collection<String> fields = returnFields.getRequestedFieldNames();
@@ -213,36 +230,7 @@ class XLSXWriter extends TextResponseWriter {
       xlFields.put(field, xlField);
     }
 
-    //TODO remove both of these
-    class NameAndWidth {
-      private int width;
-      private String name;
 
-      public NameAndWidth(String name, int width) {
-        this.name = name;
-        this.width = width;
-      }
-
-      public String getName() {
-        return this.name;
-      }
-
-      public int getWidth() {
-        return this.width;
-      }
-    }
-
-    class NiceMetadataNames extends LinkedHashMap<String, NameAndWidth> {
-
-      public NiceMetadataNames() {
-        super();
-        this.put("meta_type_1", new NameAndWidth("Nice Name 1", 14));
-        this.put("long_meta_2", new NameAndWidth("Long Metadata name is long", 128));
-      }
-    }
-
-    //TODO and get this from the xml config
-    NiceMetadataNames niceMap = new NiceMetadataNames();
 
     wb.addRow();
     //write header
@@ -250,10 +238,14 @@ class XLSXWriter extends TextResponseWriter {
       String printName = xlField.name;
       int colWidth = 14;
 
-      NameAndWidth nextField = niceMap.get(xlField.name);
-      if (nextField != null) {
-        printName = nextField.getName();;
-        colWidth = nextField.getWidth();
+      String niceName = colNamesMap.get(xlField.name);
+      if (niceName != null) {
+        printName = niceName;
+      }
+
+      Integer niceWidth = colWidthsMap.get(xlField.name);
+      if (niceWidth != null) {
+        colWidth = niceWidth.intValue();
       }
 
       writeStr(xlField.name, printName, false);
@@ -400,8 +392,7 @@ class XLSXWriter extends TextResponseWriter {
 
   @Override
   public void writeDate(String name, Date val) throws IOException {
-    String outputDate = DateTimeFormatter.ISO_LOCAL_DATE.format(val.toInstant());
-    writeDate(name, outputDate);
+    writeDate(name, val.toInstant().toString());
   }
 
   @Override

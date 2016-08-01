@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrReturnFields;
 import org.junit.AfterClass;
@@ -55,9 +56,20 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-    initCore("solrconfig.xml","schema12.xml");
-    TestCSVResponseWriter.createIndex();
-    writerXlsx = new XLSXResponseWriter();
+    initCore("solrconfig-xlsxresponsewriter.xml","schema12.xml");
+    createIndex();
+    //find a reference to the default response writer so we can redirect its output later
+    SolrCore testCore = h.getCore();
+    writerXlsx = (XLSXResponseWriter)testCore.getQueryResponseWriter("xlsx");
+  }
+
+  public static void createIndex() {
+    assertU(adoc("id","1", "foo_i","-1", "foo_s","hi", "foo_l","12345678987654321", "foo_b","false", "foo_f","1.414","foo_d","-1.0E300","foo_dt","2000-01-02T03:04:05Z"));
+    assertU(adoc("id","2", "v_ss","hi",  "v_ss","there", "v2_ss","nice", "v2_ss","output", "shouldbeunstored","foo"));
+    assertU(adoc("id","3", "shouldbeunstored","foo"));
+    assertU(adoc("id","4", "amount_c", "1.50,EUR"));
+    assertU(adoc("id","5", "store", "12.434,-134.1"));
+    assertU(commit());
   }
 
   @AfterClass
@@ -78,75 +90,39 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     // check Content-Type
     assertEquals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", writerXlsx.getContentType(r, rsp));
 
+    // check it read solrconfig
+    assertEquals("Foo Integer", writerXlsx.colNamesMap.get("foo_i"));
+    assertTrue("1 specific width read in from solrconfig", writerXlsx.colWidthsMap.get("foo_l") == 50);
+
+    assertTrue("All names read in from solrconfig", writerXlsx.colNamesMap.size() == 4);
+    assertTrue("All widths read in from solrconfig", writerXlsx.colWidthsMap.size() == 4);
 
     // test our basic types,and that fields come back in the requested order
     XSSFSheet resultSheet = getWSResultForQuery(req("q","id:1", "wt","xlsx", "fl","id,foo_s,foo_i,foo_l,foo_b,foo_f,foo_d,foo_dt"));
 
-    String result = getStringFromSheet(resultSheet);
-    assertEquals("id,foo_s,foo_i,foo_l,foo_b,foo_f,foo_d,foo_dt\n1,hi,-1,12345678987654321,false,1.414,-1.0E300,2000-01-02T03:04:05Z\n"
-    , result);
-/*
-    // test retrieving score, csv.header
-    assertEquals("1,0.0,hi\n"
-    , h.query(req("q","id:1^0", "wt","csv", "csv.header","false", "fl","id,score,foo_s")));
+    assertEquals("ID,Foo String,Foo Integer,Foo Long,foo_b,foo_f,foo_d,foo_dt\n1,hi,-1,12345678987654321,false,1.414,-1.0E300,2000-01-02T03:04:05Z\n"
+        , getStringFromSheet(resultSheet));
 
+    resultSheet = getWSResultForQuery(req("q","id:1^0", "wt","xlsx", "fl","id,score,foo_s"));
+    // test retrieving score
+    assertEquals("ID,score,Foo String\n1,0.0,hi\n", getStringFromSheet(resultSheet));
+    // test column width (result is in 256ths of a character for some reason)
+    assertEquals(3*256, resultSheet.getColumnWidth(0));
+
+    resultSheet = getWSResultForQuery(req("q","id:2", "wt","xlsx", "fl","id,v_ss"));
     // test multivalued
-    assertEquals("2,\"hi,there\"\n"
-    , h.query(req("q","id:2", "wt","csv", "csv.header","false", "fl","id,v_ss")));
-    
-    // test separator change
-    assertEquals("2|\"hi|there\"\n"
-    , h.query(req("q","id:2", "wt","csv", "csv.header","false", "csv.separator","|", "fl","id,v_ss")));
+    assertEquals("ID,v_ss\n2,hi; there\n", getStringFromSheet(resultSheet));
 
-    // test mv separator change
-    assertEquals("2,hi|there\n"
-    , h.query(req("q","id:2", "wt","csv", "csv.header","false", "csv.mv.separator","|", "fl","id,v_ss")));
-
-    // test mv separator change for a single field
-    assertEquals("2,hi|there,nice:output\n"
-    , h.query(req("q","id:2", "wt","csv", "csv.header","false", "csv.mv.separator","|", "f.v2_ss.csv.separator",":", "fl","id,v_ss,v2_ss")));
-
-    // test csv field for polyfield (currency) SOLR-3959
-    assertEquals("4,\"1.50\\,EUR\"\n"
-    , h.query(req("q","id:4", "wt","csv", "csv.header","false", "fl","id,amount_c")));
- 
-    // test csv field for polyfield (latlon) SOLR-3959
-    assertEquals("5,\"12.434\\,-134.1\"\n"
-    , h.query(req("q","id:5", "wt","csv", "csv.header","false", "fl","id,store")) );
     // test retrieving fields from index
-    String result = h.query(req("q","*:*", "wt","csv", "csv.header","true", "fl","*,score"));
-    for (String field : "id,foo_s,foo_i,foo_l,foo_b,foo_f,foo_d,foo_dt,v_ss,v2_ss,score".split(",")) {
+    resultSheet = getWSResultForQuery(req("q","*:*", "wt","xslx", "fl","*,score"));
+    String result = getStringFromSheet(resultSheet);
+    for (String field : "ID,Foo String,Foo Integer,Foo Long,foo_b,foo_f,foo_d,foo_dt,v_ss,v2_ss,score".split(",")) {
       assertTrue(result.indexOf(field) >= 0);
     }
 
     // test null values
-    assertEquals("2,,hi|there\n"
-    , h.query(req("q","id:2", "wt","csv", "csv.header","false", "csv.mv.separator","|", "fl","id,foo_s,v_ss")));
-
-    // test alternate null value
-    assertEquals("2,NULL,hi|there\n"
-    , h.query(req("q","id:2", "wt","csv", "csv.header","false", "csv.mv.separator","|", "csv.null","NULL","fl","id,foo_s,v_ss")));
-
-    // test alternate newline
-    assertEquals("2,\"hi,there\"\r\n"
-    , h.query(req("q","id:2", "wt","csv", "csv.header","false", "csv.newline","\r\n", "fl","id,v_ss")));
-
-    // test alternate encapsulator
-    assertEquals("2,'hi,there'\n"
-    , h.query(req("q","id:2", "wt","csv", "csv.header","false", "csv.encapsulator","'", "fl","id,v_ss")));
-
-    // test using escape instead of encapsulator
-    assertEquals("2,hi\\,there\n"
-    , h.query(req("q","id:2", "wt","csv", "csv.header","false", "csv.escape","\\", "fl","id,v_ss")));
-
-    // test multiple lines
-    assertEquals("1,,hi\n2,\"hi,there\",\n"
-    , h.query(req("q","id:[1 TO 2]", "wt","csv", "csv.header","false", "fl","id,v_ss,foo_s")));
-
-    // test SOLR-2970 not returning non-stored fields by default. Compare sorted list
-    assertEquals(sortHeader("amount_c,store,v_ss,foo_b,v2_ss,foo_f,foo_i,foo_d,foo_s,foo_dt,id,foo_l\n")
-    , sortHeader(h.query(req("q","id:3", "wt","csv", "csv.header","true", "fl","*", "rows","0"))));
-
+    resultSheet = getWSResultForQuery(req("q","id:2", "wt","xlsx", "fl","id,foo_s,v_ss"));
+    assertEquals("ID,Foo String,v_ss\n2,,hi; there\n", getStringFromSheet(resultSheet));
 
     // now test SolrDocumentList
     SolrDocument d = new SolrDocument();
@@ -176,93 +152,86 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     sdl.add(d2);
     
     SolrQueryRequest req = req("q","*:*");
-    SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp = new SolrQueryResponse();
     rsp.addResponse(sdl);
-    QueryResponseWriter w = new CSVResponseWriter();
-    
+
     rsp.setReturnFields( new SolrReturnFields("id,foo_s", req) );
-    StringWriter buf = new StringWriter();
-    w.write(buf, req, rsp);
-    assertEquals("id,foo_s\n1,hi\n2,\n", buf.toString());
+
+    resultSheet = getWSResultForQuery(req, rsp);
+    assertEquals("ID,Foo String\n1,hi\n2,\n", getStringFromSheet(resultSheet));
 
     // try scores
     rsp.setReturnFields( new SolrReturnFields("id,score,foo_s", req) );
-    buf = new StringWriter();
-    w.write(buf, req, rsp);
-    assertEquals("id,score,foo_s\n1,2.718,hi\n2,89.83,\n", buf.toString());
+
+    resultSheet = getWSResultForQuery(req, rsp);
+    assertEquals("ID,score,Foo String\n1,2.718,hi\n2,89.83,\n", getStringFromSheet(resultSheet));
 
     // get field values from docs... should be ordered and not include score unless requested
     rsp.setReturnFields( new SolrReturnFields("*", req) );
-    buf = new StringWriter();
-    w.write(buf, req, rsp);
-    assertEquals("id,foo_i,foo_s,foo_l,foo_b,foo_f,foo_d,foo_dt,v_ss,v2_ss\n" +
+
+    resultSheet = getWSResultForQuery(req, rsp);
+    assertEquals("ID,Foo Integer,Foo String,Foo Long,foo_b,foo_f,foo_d,foo_dt,v_ss,v2_ss\n" +
         "1,-1,hi,12345678987654321L,false,1.414,-1.0E300,2000-01-02T03:04:05Z,,\n" +
-        "2,,,,,,,,\"hi,there\",\"nice,output\"\n",
-      buf.toString());
+        "2,,,,,,,,hi; there,nice; output\n",
+      getStringFromSheet(resultSheet));
     
 
     // get field values and scores - just check that the scores are there... we don't guarantee where
     rsp.setReturnFields( new SolrReturnFields("*,score", req) );
-    buf = new StringWriter();
-    w.write(buf, req, rsp);
-    String s = buf.toString();
+    resultSheet = getWSResultForQuery(req, rsp);
+    String s = getStringFromSheet(resultSheet);
     assertTrue(s.indexOf("score") >=0 && s.indexOf("2.718") > 0 && s.indexOf("89.83") > 0 );
     
     // Test field globs
     rsp.setReturnFields( new SolrReturnFields("id,foo*", req) );
-    buf = new StringWriter();
-    w.write(buf, req, rsp);
-    assertEquals("id,foo_i,foo_s,foo_l,foo_b,foo_f,foo_d,foo_dt\n" +
+    resultSheet = getWSResultForQuery(req, rsp);
+    assertEquals("ID,Foo Integer,Foo String,Foo Long,foo_b,foo_f,foo_d,foo_dt\n" +
         "1,-1,hi,12345678987654321L,false,1.414,-1.0E300,2000-01-02T03:04:05Z\n" +
         "2,,,,,,,\n",
-      buf.toString());
+       getStringFromSheet(resultSheet));
 
     rsp.setReturnFields( new SolrReturnFields("id,*_d*", req) );
-    buf = new StringWriter();
-    w.write(buf, req, rsp);
-    assertEquals("id,foo_d,foo_dt\n" +
+    resultSheet = getWSResultForQuery(req, rsp);
+    assertEquals("ID,foo_d,foo_dt\n" +
         "1,-1.0E300,2000-01-02T03:04:05Z\n" +
         "2,,\n",
-      buf.toString());
+      getStringFromSheet(resultSheet));
 
     // Test function queries
     rsp.setReturnFields( new SolrReturnFields("sum(1,1),id,exists(foo_i),div(9,1),foo_f", req) );
-    buf = new StringWriter();
-    w.write(buf, req, rsp);
-    assertEquals("\"sum(1,1)\",id,exists(foo_i),\"div(9,1)\",foo_f\n" +
-        "\"\",1,,,1.414\n" +
-        "\"\",2,,,\n",
-        buf.toString());
+    resultSheet = getWSResultForQuery(req, rsp);
+    assertEquals("sum(1,1),ID,exists(foo_i),div(9,1),foo_f\n" +
+        ",1,,,1.414\n" +
+        ",2,,,\n",
+        getStringFromSheet(resultSheet));
 
     // Test transformers
     rsp.setReturnFields( new SolrReturnFields("mydocid:[docid],[explain]", req) );
-    buf = new StringWriter();
-    w.write(buf, req, rsp);
+    resultSheet = getWSResultForQuery(req, rsp);
     assertEquals("mydocid,[explain]\n" +
-        "\"\",\n" +
-        "\"\",\n",
-        buf.toString());
+        ",\n" +
+        ",\n",
+        getStringFromSheet(resultSheet));
 
     req.close();
-    */
   }
   
 
   @Test
   public void testPseudoFields() throws Exception {
     // Use Pseudo Field
-    /*
-    assertEquals("1,hi",
-        h.query(req("q","id:1", "wt","csv", "csv.header","false", "fl","XXX:id,foo_s")).trim());
+    SolrQueryRequest req = req("q","id:1", "wt","xlsx", "fl","XXX:id,foo_s");
+    XSSFSheet resultSheet = getWSResultForQuery(req);
+    assertEquals("XXX,Foo String\n1,hi\n", getStringFromSheet(resultSheet));
     
-    String txt = h.query(req("q","id:1", "wt","csv", "csv.header","true", "fl","XXX:id,YYY:[docid],FOO:foo_s"));
+    String txt = getStringFromSheet(getWSResultForQuery(req("q","id:1", "wt","xlsx", "fl","XXX:id,YYY:[docid],FOO:foo_s")));
     String[] lines = txt.split("\n");
     assertEquals(2, lines.length);
     assertEquals("XXX,YYY,FOO", lines[0] );
     assertEquals("1,0,hi", lines[1] );
 
     //assertions specific to multiple pseudofields functions like abs, div, exists, etc.. (SOLR-5423)
-    String funcText = h.query(req("q","*", "wt","csv", "csv.header","true", "fl","XXX:id,YYY:exists(foo_i),exists(shouldbeunstored)"));
+    String funcText = getStringFromSheet(getWSResultForQuery(req("q","*", "wt","xlsx", "fl","XXX:id,YYY:exists(foo_i),exists(shouldbeunstored)")));
     String[] funcLines = funcText.split("\n");
     assertEquals(6, funcLines.length);
     assertEquals("XXX,YYY,exists(shouldbeunstored)", funcLines[0] );
@@ -271,29 +240,32 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     
     
     //assertions specific to single function without alias (SOLR-5423)
-    String singleFuncText = h.query(req("q","*", "wt","csv", "csv.header","true", "fl","exists(shouldbeunstored),XXX:id"));
+    String singleFuncText = getStringFromSheet(getWSResultForQuery(req("q","*", "wt","xlsx", "fl","exists(shouldbeunstored),XXX:id")));
     String[] singleFuncLines = singleFuncText.split("\n");
     assertEquals(6, singleFuncLines.length);
     assertEquals("exists(shouldbeunstored),XXX", singleFuncLines[0] );
     assertEquals("false,1", singleFuncLines[1] );
     assertEquals("true,3", singleFuncLines[3] );
-    */
   }
 
   // returns first worksheet as XLSXResponseWriter only returns one sheet
-  private XSSFSheet getWSResultForQuery(SolrQueryRequest req) throws IOException {
-    SolrQueryResponse rsp = new SolrQueryResponse();
+  private XSSFSheet getWSResultForQuery(SolrQueryRequest req) throws IOException, Exception {
+    SolrQueryResponse rsp = h.queryAndResponse("standard", req);
+    return getWSResultForQuery(req, rsp);
+  }
+
+  private XSSFSheet getWSResultForQuery(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, Exception {
     ByteArrayOutputStream xmlBout = new ByteArrayOutputStream();
     writerXlsx.write(xmlBout, req, rsp);
     XSSFWorkbook output = new XSSFWorkbook(new ByteArrayInputStream(xmlBout.toByteArray()));
 
     //TODO: DELETEME
-    File file = new File("/Users/tdm/temp/solr.xlsx");
-    FileOutputStream fod = new FileOutputStream(file);
+    //File file = new File("/Users/tdm/temp/solr.xlsx");
+    //FileOutputStream fod = new FileOutputStream(file);
+    //output.write(fod);
+    //fod.close();
 
-    output.write(fod);
-    fod.close();
-
+    req.close();
     return output.getSheetAt(0);
   }
 
@@ -307,7 +279,6 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
       output.setLength(output.length() - 1);
       output.append("\n");
     }
-    output.setLength(output.length() - 1);
     return output.toString();
   }
 }
