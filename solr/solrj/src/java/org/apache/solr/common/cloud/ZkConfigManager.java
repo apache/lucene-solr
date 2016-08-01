@@ -22,13 +22,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -46,76 +45,14 @@ public class ZkConfigManager {
   public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN = Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
 
   private final SolrZkClient zkClient;
-
+  
   /**
    * Creates a new ZkConfigManager
    * @param zkClient the {@link SolrZkClient} to use
    */
-  public ZkConfigManager(SolrZkClient zkClient) {
-    this.zkClient = zkClient;
-  }
+  public ZkConfigManager(SolrZkClient zkClient) { this.zkClient = zkClient; }
 
-  private void uploadToZK(final Path rootPath, final String zkPath,
-      final Pattern filenameExclusions) throws IOException {
 
-    if (!Files.exists(rootPath))
-      throw new IOException("Path " + rootPath + " does not exist");
-
-    Files.walkFileTree(rootPath, new SimpleFileVisitor<Path>(){
-      @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        String filename = file.getFileName().toString();
-        if (filenameExclusions != null && filenameExclusions.matcher(filename).matches()) {
-          logger.info("uploadToZK skipping '{}' due to filenameExclusions '{}'", filename, filenameExclusions);
-          return FileVisitResult.CONTINUE;
-        }
-        String zkNode = createZkNodeName(zkPath, rootPath, file);
-        try {
-          zkClient.makePath(zkNode, file.toFile(), false, true);
-        } catch (KeeperException | InterruptedException e) {
-          throw new IOException("Error uploading file " + file.toString() + " to zookeeper path " + zkNode,
-              SolrZkClient.checkInterrupted(e));
-        }
-        return FileVisitResult.CONTINUE;
-      }
-
-      @Override
-      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-        return (dir.getFileName().toString().startsWith(".")) ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
-      }
-    });
-  }
-
-  private static String createZkNodeName(String zkRoot, Path root, Path file) {
-    String relativePath = root.relativize(file).toString();
-    // Windows shenanigans
-    String separator = root.getFileSystem().getSeparator();
-    if ("\\".equals(separator))
-      relativePath = relativePath.replaceAll("\\\\", "/");
-    return zkRoot + "/" + relativePath;
-  }
-
-  private void downloadFromZK(String zkPath, Path dir) throws IOException {
-    try {
-      List<String> files = zkClient.getChildren(zkPath, null, true);
-      Files.createDirectories(dir);
-      for (String file : files) {
-        List<String> children = zkClient.getChildren(zkPath + "/" + file, null, true);
-        if (children.size() == 0) {
-          byte[] data = zkClient.getData(zkPath + "/" + file, null, null, true);
-          Path filename = dir.resolve(file);
-          logger.info("Writing file {}", filename);
-          Files.write(filename, data);
-        } else {
-          downloadFromZK(zkPath + "/" + file, dir.resolve(file));
-        }
-      }
-    }
-    catch (KeeperException | InterruptedException e) {
-      throw new IOException("Error downloading files from zookeeper path " + zkPath + " to " + dir.toString(),
-          SolrZkClient.checkInterrupted(e));
-    }
-  }
 
   /**
    * Upload files from a given path to a config in Zookeeper
@@ -125,7 +62,7 @@ public class ZkConfigManager {
    *                    if an I/O error occurs or the path does not exist
    */
   public void uploadConfigDir(Path dir, String configName) throws IOException {
-    uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, UPLOAD_FILENAME_EXCLUDE_PATTERN);
+    zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
 
   /**
@@ -138,7 +75,7 @@ public class ZkConfigManager {
    */
   public void uploadConfigDir(Path dir, String configName,
       Pattern filenameExclusions) throws IOException {
-    uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, filenameExclusions);
+    zkClient.uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, filenameExclusions);
   }
 
   /**
@@ -149,7 +86,7 @@ public class ZkConfigManager {
    *                    if an I/O error occurs or the config does not exist
    */
   public void downloadConfigDir(String configName, Path dir) throws IOException {
-    downloadFromZK(CONFIGS_ZKNODE + "/" + configName, dir);
+    zkClient.downloadFromZK(CONFIGS_ZKNODE + "/" + configName, dir);
   }
 
   public List<String> listConfigs() throws IOException {
@@ -239,5 +176,45 @@ public class ZkConfigManager {
    */
   public void copyConfigDir(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
     copyConfigDirFromZk(CONFIGS_ZKNODE + "/" + fromConfig, CONFIGS_ZKNODE + "/" + toConfig, copiedToZkPaths);
+  }
+
+  // This method is used by configSetUploadTool and CreateTool to resolve the configset directory.
+  // Check several possibilities:
+  // 1> confDir/solrconfig.xml exists
+  // 2> confDir/conf/solrconfig.xml exists
+  // 3> configSetDir/confDir/conf/solrconfig.xml exists (canned configs)
+  
+  // Order is important here since "confDir" may be
+  // 1> a full path to the parent of a solrconfig.xml or parent of /conf/solrconfig.xml
+  // 2> one of the canned config sets only, e.g. basic_configs
+  // and trying to assemble a path for configsetDir/confDir is A Bad Idea. if confDir is a full path.
+  
+  public static Path getConfigsetPath(String confDir, String configSetDir) throws IOException {
+
+    // A local path to the source, probably already includes "conf".
+    Path ret = Paths.get(confDir, "solrconfig.xml").normalize();
+    if (Files.exists(ret)) {
+      return Paths.get(confDir).normalize();
+    }
+
+    // a local path to the parent of a "conf" directory 
+    ret = Paths.get(confDir, "conf", "solrconfig.xml").normalize();
+    if (Files.exists(ret)) {
+      return Paths.get(confDir, "conf").normalize();
+    }
+
+    // one of the canned configsets.
+    ret = Paths.get(configSetDir, confDir, "conf", "solrconfig.xml").normalize();
+    if (Files.exists(ret)) {
+      return Paths.get(configSetDir, confDir, "conf").normalize();
+    }
+
+
+    throw new IllegalArgumentException(String.format(Locale.ROOT,
+        "Could not find solrconfig.xml at %s, %s or %s",
+        Paths.get(configSetDir, "solrconfig.xml").normalize().toAbsolutePath().toString(),
+        Paths.get(configSetDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString(),
+        Paths.get(configSetDir, confDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString()
+    ));
   }
 }

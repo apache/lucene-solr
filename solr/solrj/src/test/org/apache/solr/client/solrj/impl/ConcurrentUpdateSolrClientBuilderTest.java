@@ -1,9 +1,3 @@
-package org.apache.solr.client.solrj.impl;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder;
-import org.junit.Test;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,6 +14,12 @@ import org.junit.Test;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.client.solrj.impl;
+
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder;
+import org.junit.Test;
 
 /**
  * Unit tests for {@link Builder}.

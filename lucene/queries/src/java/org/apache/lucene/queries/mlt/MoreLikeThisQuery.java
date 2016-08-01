@@ -69,7 +69,6 @@ public class MoreLikeThisQuery extends Query {
     mlt.setStopWords(stopWords);
     BooleanQuery bq = (BooleanQuery) mlt.like(fieldName, new StringReader(likeText));
     BooleanQuery.Builder newBq = new BooleanQuery.Builder();
-    newBq.setDisableCoord(bq.isCoordDisabled());
     for (BooleanClause clause : bq) {
       newBq.add(clause);
     }

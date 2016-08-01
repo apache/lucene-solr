@@ -354,27 +354,85 @@ function print_usage() {
     echo "                            Solr instance and will use the port of the first server it finds."
     echo ""
   elif [ "$CMD" == "zk" ]; then
-    echo "Usage: solr zk [-upconfig|-downconfig] [-d confdir] [-n configName] [-z zkHost]"
+    print_short_zk_usage ""
+    echo "         Be sure to check the Solr logs in case of errors."
     echo ""
-    echo "     -upconfig to move a configset from the local machine to Zookeeper."
+    echo "             -z zkHost Optional Zookeeper connection string for all commands. If specified it"
+    echo "                        overrides the 'ZK_HOST=...'' defined in solr.in.sh."
     echo ""
-    echo "     -downconfig to move a configset from Zookeeper to the local machine."
+    echo "         upconfig uploads a configset from the local machine to Zookeeper. (Backcompat: -upconfig)"
     echo ""
-    echo "     -n configName    Name of the configset in Zookeeper that will be the destination of"
-    echo "                       'upconfig' and the source for 'downconfig'."
+    echo "         downconfig downloads a configset from Zookeeper to the local machine. (Backcompat: -downconfig)"
     echo ""
-    echo "     -d confdir       The local directory the configuration will be uploaded from for"
-    echo "                      'upconfig' or downloaded to for 'downconfig'. For 'upconfig', this"
-    echo "                      can be one of the example configsets, basic_configs, data_driven_schema_configs or"
-    echo "                      sample_techproducts_configs or an arbitrary directory."
+    echo "             -n configName   Name of the configset in Zookeeper that will be the destination of"
+    echo "                             'upconfig' and the source for 'downconfig'."
     echo ""
-    echo "     -z zkHost        Zookeeper connection string."
+    echo "             -d confdir      The local directory the configuration will be uploaded from for"
+    echo "                             'upconfig' or downloaded to for 'downconfig'. If 'confdir' is a child of"
+    echo "                             ...solr/server/solr/configsets' then the configs will be copied from/to"
+    echo "                             that directory. Otherwise it is interpreted as a simple local path."
     echo ""
-    echo "  NOTE: Solr must have been started least once (or have it running) before using this command."
-    echo "        This initialized Zookeeper for Solr"
+    echo "         cp copies files or folders to/from Zookeeper or Zokeeper -> Zookeeper"
+    echo "             -r   Recursively copy <src> to <dst>. Command will fail if <src> has children and "
+    echo "                        -r is not specified. Optional"
+    echo ""
+    echo "             <src>, <dest> : [file:][/]path/to/local/file or zk:/path/to/zk/node"
+    echo "                             NOTE: <src> and <dest> may both be Zookeeper resources prefixed by 'zk:'"
+    echo "             When <src> is a zk resource, <dest> may be '.'"
+    echo "             If <dest> ends with '/', then <dest> will be a local folder or parent znode and the last"
+    echo "             element of the <src> path will be appended."
+    echo ""
+    echo "             The 'file:' prefix is stripped, thus 'file:/' specifies an absolute local path and"
+    echo "             'file:somewhere' specifies a relative local path. All paths on Zookeeper are absolute"
+    echo "             so the slash is required."
+    echo ""
+    echo "             Zookeeper nodes CAN have data, so moving a single file to a parent znode"
+    echo "             will overlay the data on the parent Znode so specifying the trailing slash"
+    echo "             is important."
+    echo ""
+    echo "             Wildcards are not supported"
+    echo ""
+    echo "         rm deletes files or folders on Zookeeper"
+    echo "             -r     Recursively delete if <path> is a directory. Command will fail if <path>"
+    echo "                    has children and -r is not specified. Optional"
+    echo "             <path> : [zk:]/path/to/zk/node. <path> may not be the root ('/')"
+    echo ""
+    echo "         mv moves (renames) znodes on Zookeeper"
+    echo "             <src>, <dest> : Zookeeper nodes, the 'zk:' prefix is optional."
+    echo "             If <dest> ends with '/', then <dest> will be a parent znode"
+    echo "             and the last element of the <src> path will be appended."
+    echo "             Zookeeper nodes CAN have data, so moving a single file to a parent znode"
+    echo "             will overlay the data on the parent Znode so specifying the trailing slash"
+    echo "             is important."
+    echo ""
+    echo "         ls lists the znodes on Zookeeper"
+    echo "             -r recursively descends the path listing all znodes. Optional"
+    echo "             <path>: The Zookeeper path to use as the root."
+    echo ""
+    echo "             Only the node names are listed, not data"
     echo ""
   fi
 } # end print_usage
+
+function print_short_zk_usage() {
+
+  if [ "$1" != "" ]; then
+    echo -e "\nERROR: $1\n"
+  fi
+
+  echo "  Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost]"
+  echo "         solr zk cp [-r] <src> <dest> [-z zkHost]"
+  echo "         solr zk rm [-r] <path> [-z zkHost]"
+  echo "         solr zk mv <src> <dest> [-z zkHost]"
+  echo "         solr zk ls [-r] <path> [-z zkHost]"
+  echo ""
+
+  if [ "$1" == "" ]; then
+    echo "Type bin/solr zk -help for full usage help"
+  else
+    exit 1
+  fi
+}
 
 # used to show the script is still alive when waiting on work to complete
 function spinner() {
@@ -571,7 +629,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
           ;;
           -z|-zkhost)          
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "ZooKeepeer connection string is required when using the $1 option!"
+                print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
                 exit 1
               fi
               ZK_HOST="$2"
@@ -821,93 +879,131 @@ if [[ "$SCRIPT_CMD" == "delete" ]]; then
   exit $?
 fi
 
-# Upload or download a configset to Zookeeper
+ZK_RECURSE=false
+# Zookeeper file maintenance (upconfig, downconfig, files up/down etc.)
+# It's a little clumsy to have the parsing go round and round for upconfig and downconfig, but that's
+# necessary for back-compat
 if [[ "$SCRIPT_CMD" == "zk" ]]; then
 
   if [ $# -gt 0 ]; then
     while true; do
       case "$1" in
-          -z|-zkhost)          
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "ZooKeepeer connection string is required when using the $1 option!"
-                exit 1
-              fi
-              ZK_HOST="$2"
-              shift 2
-          ;;
-          -n|-confname)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Configuration name is required when using the $1 option!"
-                exit 1
-              fi
-              CONFIGSET_CONFNAME="$2"
-              shift 2
-          ;;
-          -d|-confdir)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Configuration directory is required when using the $1 option!"
-                exit 1
-              fi
-              CONFIGSET_CONFDIR="$2"
-              shift 2
-          ;;
-          -upconfig)
-              ZK_OP="upconfig"
-              shift 1
-          ;;
-          -downconfig)
-              ZK_OP="downconfig"
-              shift 1
-          ;;
-          -help|-usage|-h)
-              print_usage "$SCRIPT_CMD"
-              exit 0
-          ;;
-          --)
-              shift
-              break
-          ;;
-          *)
-              if [ "$1" != "" ]; then
-                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
-                exit 1
+        -upconfig|upconfig|-downconfig|downconfig|cp|rm|mv|ls)
+            if [ "${1:0:1}" == "-" ]; then
+              ZK_OP=${1:1}
+            else
+              ZK_OP=$1
+            fi
+            shift 1
+        ;;
+        -z|-zkhost)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_short_zk_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
+            fi
+            ZK_HOST="$2"
+            shift 2
+        ;;
+        -n|-confname)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_short_zk_usage "$SCRIPT_CMD" "Configuration name is required when using the $1 option!"
+            fi
+            CONFIGSET_CONFNAME="$2"
+            shift 2
+        ;;
+        -d|-confdir)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_short_zk_usage "$SCRIPT_CMD" "Configuration directory is required when using the $1 option!"
+            fi
+            CONFIGSET_CONFDIR="$2"
+            shift 2
+        ;;
+        -r)
+            ZK_RECURSE="true"
+            shift
+        ;;
+        -help|-usage|-h)
+            print_usage "$SCRIPT_CMD"
+            exit 0
+        ;;
+        --)
+            shift
+            break
+        ;;
+        *)  # Pick up <src> <dst> or <path> params for rm, ls, cp, mv.
+            if [ "$1" == "" ]; then
+              break # out-of-args, stop looping
+            fi
+            if [ -z "$ZK_SRC" ]; then
+              ZK_SRC=$1
+            else
+              if [ -z "$ZK_DST" ]; then
+                ZK_DST=$1
               else
-                break # out-of-args, stop looping
+                print_short_zk_usage "Unrecognized or misplaced command $1"
               fi
-          ;;
+            fi
+            shift
+        ;;
       esac
     done
   fi
 
   if [ -z "$ZK_OP" ]; then
-    echo "Zookeeper operation (one of '-upconfig' or  '-downconfig') is required!"
-    print_usage "$SCRIPT_CMD"
-    exit 1
+    print_short_zk_usage "Zookeeper operation (one of 'upconfig', 'downconfig', 'rm', 'mv', 'cp', 'ls') is required!"
   fi
 
   if [ -z "$ZK_HOST" ]; then
-    echo "Zookeeper address (-z) argument is required!"
-    print_usage "$SCRIPT_CMD"
-    exit 1
+    print_short_zk_usage "Zookeeper address (-z) argument is required or ZK_HOST must be specified in the solr.in.sh file."
   fi
 
-  if [ -z "$CONFIGSET_CONFDIR" ]; then
-    echo "Local directory of the configset (-d) argument is required!"
-    print_usage "$SCRIPT_CMD"
-    exit 1
+  if [[ "$ZK_OP" == "upconfig" ||  "$ZK_OP" == "downconfig" ]]; then
+    if [ -z "$CONFIGSET_CONFDIR" ]; then
+      print_short_zk_usage "Local directory of the configset (-d) argument is required!"
+    fi
+
+    if [ -z "$CONFIGSET_CONFNAME" ]; then
+      print_short_zk_usage "Configset name on Zookeeper (-n) argument is required!"
+    fi
   fi
 
-  if [ -z "$CONFIGSET_CONFNAME" ]; then
-    echo "Configset name on Zookeeper (-n) argument is required!"
-    print_usage "$SCRIPT_CMD"
-    exit 1
+  if [[ "$ZK_OP" == "cp" || "$ZK_OP" == "mv" ]]; then
+    if [[ -z "$ZK_SRC" || -z "$ZK_DST" ]]; then
+      print_short_zk_usage "<source> and <destination> must be specified when using either the 'mv' or 'cp' commands."
+    fi
+    if [[ "$ZK_OP" == "cp" && "${ZK_SRC:0:3}" != "zk:" && "${ZK_DST:0:3}" != "zk:" ]]; then
+      print_short_zk_usage "One of the source or desintation paths must be prefixed by 'zk:' for the 'cp' command."
+    fi
   fi
 
-  if [ "$ZK_OP" == "upconfig" ]; then
-    run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" -zkHost "$ZK_HOST" -configsetsDir "$SOLR_TIP/server/solr/configsets"
-  else
-    run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" -zkHost "$ZK_HOST"
-  fi
+  case "$ZK_OP" in
+    upconfig)
+      run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" -zkHost "$ZK_HOST" -configsetsDir "$SOLR_TIP/server/solr/configsets"
+    ;;
+    downconfig)
+      run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" -zkHost "$ZK_HOST"
+    ;;
+    rm)
+      if [ -z "$ZK_SRC" ]; then
+        print_short_zk_usage "Zookeeper path to remove must be specified when using the 'rm' command"
+      fi
+      run_tool "$ZK_OP" -path "$ZK_SRC" -zkHost "$ZK_HOST" -recurse "$ZK_RECURSE"
+    ;;
+    mv)
+      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" -zkHost "$ZK_HOST"
+    ;;
+    cp)
+      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" -zkHost "$ZK_HOST" -recurse "$ZK_RECURSE"
+    ;;
+    ls)
+      if [ -z "$ZK_SRC" ]; then
+        print_short_zk_usage "Zookeeper path to list must be specified when using the 'ls' command"
+      fi
+      run_tool "$ZK_OP" -path "$ZK_SRC" -recurse "$ZK_RECURSE" -zkHost "$ZK_HOST"
+    ;;
+    *)
+      print_short_zk_usage "Unrecognized Zookeeper operation $ZK_OP"
+    ;;
+  esac
 
   exit $?
 fi

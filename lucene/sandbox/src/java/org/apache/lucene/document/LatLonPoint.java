@@ -191,12 +191,12 @@ public class LatLonPoint extends Field {
     // and should not drag in extra bogus junk! TODO: should encodeCeil just throw ArithmeticException to be less trappy here?
     if (minLatitude == 90.0) {
       // range cannot match as 90.0 can never exist
-      return new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("LatLonPoint.newBoxQuery with minLatitude=90.0");
     }
     if (minLongitude == 180.0) {
       if (maxLongitude == 180.0) {
         // range cannot match as 180.0 can never exist
-        return new MatchNoDocsQuery();
+        return new MatchNoDocsQuery("LatLonPoint.newBoxQuery with minLongitude=maxLongitude=180.0");
       } else if (maxLongitude < minLongitude) {
         // encodeCeil() with dateline wrapping!
         minLongitude = -180.0;
@@ -208,7 +208,6 @@ public class LatLonPoint extends Field {
     if (maxLongitude < minLongitude) {
       // Disable coord here because a multi-valued doc could match both rects and get unfairly boosted:
       BooleanQuery.Builder q = new BooleanQuery.Builder();
-      q.setDisableCoord(true);
 
       // E.g.: maxLon = -179, minLon = 179
       byte[] leftOpen = lower.clone();

@@ -534,4 +534,19 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     iw.close();
     dir.close();
   }
+
+  public void testDeleteAll() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    SearcherManager mgr = new SearcherManager(w, new SearcherFactory());
+    nrtDeletesThread = new ControlledRealTimeReopenThread<>(w, mgr, 0.1, 0.01);
+    nrtDeletesThread.setName("NRTDeletes Reopen Thread");
+    nrtDeletesThread.setDaemon(true);
+    nrtDeletesThread.start();
+
+    long gen1 = w.addDocument(new Document());
+    long gen2 = w.deleteAll();
+    nrtDeletesThread.waitForGeneration(gen2);
+    IOUtils.close(nrtDeletesThread, nrtDeletes, w, dir);
+  }
 }

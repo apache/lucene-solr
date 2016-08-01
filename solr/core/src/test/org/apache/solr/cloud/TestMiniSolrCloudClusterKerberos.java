@@ -16,16 +16,13 @@
  */
 package org.apache.solr.cloud;
 
-import javax.security.auth.login.Configuration;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.solr.util.BadZookeeperThreadsFilter;
@@ -52,17 +49,14 @@ import org.junit.rules.TestRule;
 @SuppressSysoutChecks(bugUrl = "Solr logs to JUL")
 public class TestMiniSolrCloudClusterKerberos extends TestMiniSolrCloudCluster {
 
-  private final Configuration originalConfig = Configuration.getConfiguration();
-
   public TestMiniSolrCloudClusterKerberos () {
     NUM_SERVERS = 5;
     NUM_SHARDS = 2;
     REPLICATION_FACTOR = 2;
   }
   
-  private MiniKdc kdc;
+  private KerberosTestServices kerberosTestServices;
 
-  private Locale savedLocale; // in case locale is broken and we need to fill in a working locale
   @Rule
   public TestRule solrTestRules = RuleChain
       .outerRule(new SystemPropertiesRestoreRule());
@@ -74,20 +68,22 @@ public class TestMiniSolrCloudClusterKerberos extends TestMiniSolrCloudCluster {
 
   @Override
   public void setUp() throws Exception {
-    savedLocale = KerberosTestUtil.overrideLocaleIfNotSpportedByMiniKdc();
     super.setUp();
     setupMiniKdc();
   }
   
   private void setupMiniKdc() throws Exception {
     String kdcDir = createTempDir()+File.separator+"minikdc";
-    kdc = KerberosTestUtil.getKdc(new File(kdcDir));
     File keytabFile = new File(kdcDir, "keytabs");
     String principal = "HTTP/127.0.0.1";
     String zkServerPrincipal = "zookeeper/127.0.0.1";
+    KerberosTestServices kerberosTestServices = KerberosTestServices.builder()
+        .withKdc(new File(kdcDir))
+        .withJaasConfiguration(principal, keytabFile, zkServerPrincipal, keytabFile)
+        .build();
 
-    kdc.start();
-    kdc.createPrincipal(keytabFile, principal, zkServerPrincipal);
+    kerberosTestServices.start();
+    kerberosTestServices.getKdc().createPrincipal(keytabFile, principal, zkServerPrincipal);
 
     String jaas = "Client {\n"
         + " com.sun.security.auth.module.Krb5LoginModule required\n"
@@ -109,10 +105,7 @@ public class TestMiniSolrCloudClusterKerberos extends TestMiniSolrCloudCluster {
         + " debug=true\n"
         + " principal=\""+zkServerPrincipal+"\";\n" 
         + "};\n";
-    
-    Configuration conf = new KerberosTestUtil.JaasConfiguration(principal, keytabFile, zkServerPrincipal, keytabFile);
-    javax.security.auth.login.Configuration.setConfiguration(conf);
-    
+
     String jaasFilePath = kdcDir+File.separator + "jaas-client.conf";
     FileUtils.write(new File(jaasFilePath), jaas, StandardCharsets.UTF_8);
     System.setProperty("java.security.auth.login.config", jaasFilePath);
@@ -156,11 +149,7 @@ public class TestMiniSolrCloudClusterKerberos extends TestMiniSolrCloudCluster {
     System.clearProperty("kerberos.principal");
     System.clearProperty("kerberos.keytab");
     System.clearProperty("authenticationPlugin");
-    Configuration.setConfiguration(this.originalConfig);
-    if (kdc != null) {
-      kdc.stop();
-    }
-    Locale.setDefault(savedLocale);
+    kerberosTestServices.stop();
     super.tearDown();
   }
 }

@@ -22,6 +22,7 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -74,7 +75,7 @@ final class DocumentsWriterFlushControl implements Accountable {
 
   DocumentsWriterFlushControl(DocumentsWriter documentsWriter, LiveIndexWriterConfig config, BufferedUpdatesStream bufferedUpdatesStream) {
     this.infoStream = config.getInfoStream();
-    this.stallControl = new DocumentsWriterStallControl(config);
+    this.stallControl = new DocumentsWriterStallControl();
     this.perThreadPool = documentsWriter.perThreadPool;
     this.flushPolicy = documentsWriter.flushPolicy;
     this.config = config;
@@ -230,7 +231,9 @@ final class DocumentsWriterFlushControl implements Accountable {
       }
     }
   }
-  
+
+  private long stallStartNS;
+
   private boolean updateStallState() {
     
     assert Thread.holdsLock(this);
@@ -245,6 +248,20 @@ final class DocumentsWriterFlushControl implements Accountable {
     final boolean stall = (activeBytes + flushBytes) > limit &&
       activeBytes < limit &&
       !closed;
+
+    if (infoStream.isEnabled("DWFC")) {
+      if (stall != stallControl.anyStalledThreads()) {
+        if (stall) {
+          infoStream.message("DW", String.format(Locale.ROOT, "now stalling flushes: netBytes: %.1f MB flushBytes: %.1f MB fullFlush: %b",
+                                                 netBytes()/1024./1024., flushBytes()/1024./1024., fullFlush));
+          stallStartNS = System.nanoTime();
+        } else {
+          infoStream.message("DW", String.format(Locale.ROOT, "done stalling flushes for %.1f msec: netBytes: %.1f MB flushBytes: %.1f MB fullFlush: %b",
+                                                 (System.nanoTime()-stallStartNS)/1000000., netBytes()/1024./1024., flushBytes()/1024./1024., fullFlush));
+        }
+      }
+    }
+
     stallControl.updateStalled(stall);
     return stall;
   }
@@ -687,12 +704,6 @@ final class DocumentsWriterFlushControl implements Accountable {
    * checked out DWPT are available
    */
   void waitIfStalled() {
-    if (infoStream.isEnabled("DWFC")) {
-      infoStream.message("DWFC",
-          "waitIfStalled: numFlushesPending: " + flushQueue.size()
-              + " netBytes: " + netBytes() + " flushBytes: " + flushBytes()
-              + " fullFlush: " + fullFlush);
-    }
     stallControl.waitIfStalled();
   }
 

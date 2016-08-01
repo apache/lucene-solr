@@ -26,6 +26,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
@@ -150,7 +151,7 @@ public class SimpleQueryParser extends QueryBuilder {
     State state = new State(data, buffer, 0, data.length);
     parseSubQuery(state);
     if (state.top == null) {
-      return new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("empty string passed to query parser");
     } else {
       return state.top;
     }
@@ -416,7 +417,6 @@ public class SimpleQueryParser extends QueryBuilder {
 
   private static BooleanQuery addClause(BooleanQuery bq, Query query, BooleanClause.Occur occur) {
     BooleanQuery.Builder newBq = new BooleanQuery.Builder();
-    newBq.setDisableCoord(bq.isCoordDisabled());
     newBq.setMinimumNumberShouldMatch(bq.getMinimumNumberShouldMatch());
     for (BooleanClause clause : bq) {
       newBq.add(clause);
@@ -530,7 +530,6 @@ public class SimpleQueryParser extends QueryBuilder {
    */
   protected Query newDefaultQuery(String text) {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       Query q = createBooleanQuery(entry.getKey(), text, defaultOperator);
       if (q != null) {
@@ -549,9 +548,10 @@ public class SimpleQueryParser extends QueryBuilder {
    */
   protected Query newFuzzyQuery(String text, int fuzziness) {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
-      Query q = new FuzzyQuery(new Term(entry.getKey(), text), fuzziness);
+      final String fieldName = entry.getKey();
+      final BytesRef term = getAnalyzer().normalize(fieldName, text);
+      Query q = new FuzzyQuery(new Term(fieldName, term), fuzziness);
       float boost = entry.getValue();
       if (boost != 1f) {
         q = new BoostQuery(q, boost);
@@ -566,7 +566,6 @@ public class SimpleQueryParser extends QueryBuilder {
    */
   protected Query newPhraseQuery(String text, int slop) {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       Query q = createPhraseQuery(entry.getKey(), text, slop);
       if (q != null) {
@@ -585,9 +584,10 @@ public class SimpleQueryParser extends QueryBuilder {
    */
   protected Query newPrefixQuery(String text) {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
-      Query q = new PrefixQuery(new Term(entry.getKey(), text));
+      final String fieldName = entry.getKey();
+      final BytesRef term = getAnalyzer().normalize(fieldName, text);
+      Query q = new PrefixQuery(new Term(fieldName, term));
       float boost = entry.getValue();
       if (boost != 1f) {
         q = new BoostQuery(q, boost);

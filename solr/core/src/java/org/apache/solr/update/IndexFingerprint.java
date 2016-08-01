@@ -1,5 +1,3 @@
-package org.apache.solr.update;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.solr.update;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -42,6 +42,8 @@ public class IndexFingerprint {
 
   private long maxVersionSpecified;
   private long maxVersionEncountered;
+  // this actually means max versions used in computing the hash.
+  // we cannot change this now because it changes back-compat
   private long maxInHash;
   private long versionsHash;
   private long numVersions;

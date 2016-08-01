@@ -126,6 +126,7 @@ public final class AssertingPointsFormat extends PointsFormat {
           assert false: "point values are out of order";
         }
         System.arraycopy(packedValue, 0, lastDocValue, 0, bytesPerDim);
+        lastDocID = docID;
       }
       in.visit(docID, packedValue);
     }

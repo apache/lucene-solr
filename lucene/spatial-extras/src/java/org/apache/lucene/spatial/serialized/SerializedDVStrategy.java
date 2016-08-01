@@ -135,8 +135,8 @@ public class SerializedDVStrategy extends SpatialStrategy {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      return new RandomAccessWeight(this) {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      return new RandomAccessWeight(this, boost) {
         @Override
         protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
           final FunctionValues predFuncValues = predicateValueSource.getValues(null, context);

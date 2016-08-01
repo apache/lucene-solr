@@ -60,8 +60,8 @@ final class GlobalOrdinalsQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new W(this, toQuery.createWeight(searcher, false));
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new W(this, toQuery.createWeight(searcher, false, 1f), boost);
   }
 
   @Override
@@ -98,8 +98,8 @@ final class GlobalOrdinalsQuery extends Query {
 
     private final Weight approximationWeight;
 
-    W(Query query, Weight approximationWeight) {
-      super(query);
+    W(Query query, Weight approximationWeight, float boost) {
+      super(query, boost);
       this.approximationWeight = approximationWeight;
     }
 

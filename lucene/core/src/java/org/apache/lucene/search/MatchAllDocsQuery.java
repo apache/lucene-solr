@@ -29,8 +29,8 @@ import org.apache.lucene.util.Bits;
 public final class MatchAllDocsQuery extends Query {
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) {
-    return new ConstantScoreWeight(this) {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) {
+    return new ConstantScoreWeight(this, boost) {
       @Override
       public String toString() {
         return "weight(" + MatchAllDocsQuery.this + ")";

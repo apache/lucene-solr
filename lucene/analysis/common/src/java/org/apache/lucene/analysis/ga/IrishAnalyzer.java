@@ -141,4 +141,12 @@ public final class IrishAnalyzer extends StopwordAnalyzerBase {
     result = new SnowballFilter(result, new IrishStemmer());
     return new TokenStreamComponents(source, result);
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new StandardFilter(in);
+    result = new ElisionFilter(result, DEFAULT_ARTICLES);
+    result = new IrishLowerCaseFilter(result);
+    return result;
+  }
 }

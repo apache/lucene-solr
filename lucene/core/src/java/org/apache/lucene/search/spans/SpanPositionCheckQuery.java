@@ -67,17 +67,17 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
   protected abstract AcceptStatus acceptPosition(Spans spans) throws IOException;
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    SpanWeight matchWeight = match.createWeight(searcher, false);
-    return new SpanPositionCheckWeight(matchWeight, searcher, needsScores ? getTermContexts(matchWeight) : null);
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    SpanWeight matchWeight = match.createWeight(searcher, false, boost);
+    return new SpanPositionCheckWeight(matchWeight, searcher, needsScores ? getTermContexts(matchWeight) : null, boost);
   }
 
   public class SpanPositionCheckWeight extends SpanWeight {
 
     final SpanWeight matchWeight;
 
-    public SpanPositionCheckWeight(SpanWeight matchWeight, IndexSearcher searcher, Map<Term, TermContext> terms) throws IOException {
-      super(SpanPositionCheckQuery.this, searcher, terms);
+    public SpanPositionCheckWeight(SpanWeight matchWeight, IndexSearcher searcher, Map<Term, TermContext> terms, float boost) throws IOException {
+      super(SpanPositionCheckQuery.this, searcher, terms, boost);
       this.matchWeight = matchWeight;
     }
 

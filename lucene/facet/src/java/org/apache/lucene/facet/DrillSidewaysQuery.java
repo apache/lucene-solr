@@ -79,8 +79,8 @@ class DrillSidewaysQuery extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    final Weight baseWeight = baseQuery.createWeight(searcher, needsScores);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    final Weight baseWeight = baseQuery.createWeight(searcher, needsScores, boost);
     final Weight[] drillDowns = new Weight[drillDownQueries.length];
     for(int dim=0;dim<drillDownQueries.length;dim++) {
       drillDowns[dim] = searcher.createNormalizedWeight(drillDownQueries[dim], false);
@@ -93,16 +93,6 @@ class DrillSidewaysQuery extends Query {
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         return baseWeight.explain(context, doc);
-      }
-
-      @Override
-      public float getValueForNormalization() throws IOException {
-        return baseWeight.getValueForNormalization();
-      }
-
-      @Override
-      public void normalize(float norm, float boost) {
-        baseWeight.normalize(norm, boost);
       }
 
       @Override

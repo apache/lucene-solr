@@ -59,17 +59,17 @@ public final class BoostedQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new BoostedQuery.BoostedWeight(searcher, needsScores);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new BoostedQuery.BoostedWeight(searcher, needsScores, boost);
   }
 
   private class BoostedWeight extends Weight {
     Weight qWeight;
     Map fcontext;
 
-    public BoostedWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public BoostedWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
       super(BoostedQuery.this);
-      this.qWeight = searcher.createWeight(q, needsScores);
+      this.qWeight = searcher.createWeight(q, needsScores, boost);
       this.fcontext = ValueSource.newContext(searcher);
       boostVal.createWeight(fcontext,searcher);
     }
@@ -77,16 +77,6 @@ public final class BoostedQuery extends Query {
     @Override
     public void extractTerms(Set<Term> terms) {
       qWeight.extractTerms(terms);
-    }
-
-    @Override
-    public float getValueForNormalization() throws IOException {
-      return qWeight.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float norm, float boost) {
-      qWeight.normalize(norm, boost);
     }
 
     @Override

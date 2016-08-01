@@ -110,16 +110,16 @@ public final class SynonymQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     if (needsScores) {
-      return new SynonymWeight(this, searcher);
+      return new SynonymWeight(this, searcher, boost);
     } else {
       // if scores are not needed, let BooleanWeight deal with optimizing that case.
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
       for (Term term : terms) {
         bq.add(new TermQuery(term), BooleanClause.Occur.SHOULD);
       }
-      return searcher.rewrite(bq.build()).createWeight(searcher, needsScores);
+      return searcher.rewrite(bq.build()).createWeight(searcher, needsScores, boost);
     }
   }
   
@@ -128,7 +128,7 @@ public final class SynonymQuery extends Query {
     private final Similarity similarity;
     private final Similarity.SimWeight simWeight;
 
-    SynonymWeight(Query query, IndexSearcher searcher) throws IOException {
+    SynonymWeight(Query query, IndexSearcher searcher, float boost) throws IOException {
       super(query);
       CollectionStatistics collectionStats = searcher.collectionStatistics(terms[0].field());
       long docFreq = 0;
@@ -146,7 +146,7 @@ public final class SynonymQuery extends Query {
       }
       TermStatistics pseudoStats = new TermStatistics(null, docFreq, totalTermFreq);
       this.similarity = searcher.getSimilarity(true);
-      this.simWeight = similarity.computeWeight(collectionStats, pseudoStats);
+      this.simWeight = similarity.computeWeight(boost, collectionStats, pseudoStats);
     }
 
     @Override
@@ -181,16 +181,6 @@ public final class SynonymQuery extends Query {
         }
       }
       return Explanation.noMatch("no matching term");
-    }
-
-    @Override
-    public float getValueForNormalization() throws IOException {
-      return simWeight.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float norm, float boost) {
-      simWeight.normalize(norm, boost);
     }
 
     @Override

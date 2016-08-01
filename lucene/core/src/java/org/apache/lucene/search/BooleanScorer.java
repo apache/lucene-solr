@@ -117,7 +117,6 @@ final class BooleanScorer extends BulkScorer {
   // This is basically an inlined FixedBitSet... seems to help with bound checks
   final long[] matching = new long[SET_SIZE];
 
-  final float[] coordFactors;
   final BulkScorerAndDoc[] leads;
   final HeadPriorityQueue head;
   final TailPriorityQueue tail;
@@ -146,7 +145,7 @@ final class BooleanScorer extends BulkScorer {
 
   final OrCollector orCollector = new OrCollector();
 
-  BooleanScorer(BooleanWeight weight, boolean disableCoord, int maxCoord, Collection<BulkScorer> scorers, int minShouldMatch, boolean needsScores) {
+  BooleanScorer(BooleanWeight weight, Collection<BulkScorer> scorers, int minShouldMatch, boolean needsScores) {
     if (minShouldMatch < 1 || minShouldMatch > scorers.size()) {
       throw new IllegalArgumentException("minShouldMatch should be within 1..num_scorers. Got " + minShouldMatch);
     }
@@ -172,11 +171,6 @@ final class BooleanScorer extends BulkScorer {
       }
     }
     this.cost = cost(scorers, minShouldMatch);
-
-    coordFactors = new float[scorers.size() + 1];
-    for (int i = 0; i < coordFactors.length; i++) {
-      coordFactors[i] = disableCoord ? 1.0f : weight.coord(i, maxCoord);
-    }
   }
 
   @Override
@@ -189,7 +183,7 @@ final class BooleanScorer extends BulkScorer {
     final Bucket bucket = buckets[i];
     if (bucket.freq >= minShouldMatch) {
       fakeScorer.freq = bucket.freq;
-      fakeScorer.score = (float) bucket.score * coordFactors[bucket.freq];
+      fakeScorer.score = (float) bucket.score;
       final int doc = base | i;
       fakeScorer.doc = doc;
       collector.collect(doc);
@@ -275,20 +269,20 @@ final class BooleanScorer extends BulkScorer {
     }
   }
 
-  private void scoreWindowSingleScorer(BulkScorerAndDoc bulkScorer, LeafCollector collector, LeafCollector singleClauseCollector,
+  private void scoreWindowSingleScorer(BulkScorerAndDoc bulkScorer, LeafCollector collector,
       Bits acceptDocs, int windowMin, int windowMax, int max) throws IOException {
     assert tail.size() == 0;
     final int nextWindowBase = head.top().next & ~MASK;
     final int end = Math.max(windowMax, Math.min(max, nextWindowBase));
-    
-    bulkScorer.score(singleClauseCollector, acceptDocs, windowMin, end);
-    
+
+    bulkScorer.score(collector, acceptDocs, windowMin, end);
+
     // reset the scorer that should be used for the general case
     collector.setScorer(fakeScorer);
   }
 
   private BulkScorerAndDoc scoreWindow(BulkScorerAndDoc top, LeafCollector collector,
-      LeafCollector singleClauseCollector, Bits acceptDocs, int min, int max) throws IOException {
+      Bits acceptDocs, int min, int max) throws IOException {
     final int windowBase = top.next & ~MASK; // find the window that the next match belongs to
     final int windowMin = Math.max(min, windowBase);
     final int windowMax = Math.min(max, windowBase + SIZE);
@@ -304,7 +298,7 @@ final class BooleanScorer extends BulkScorer {
       // special case: only one scorer can match in the current window,
       // we can collect directly
       final BulkScorerAndDoc bulkScorer = leads[0];
-      scoreWindowSingleScorer(bulkScorer, collector, singleClauseCollector, acceptDocs, windowMin, windowMax, max);
+      scoreWindowSingleScorer(bulkScorer, collector, acceptDocs, windowMin, windowMax, max);
       return head.add(bulkScorer);
     } else {
       // general case, collect through a bit set first and then replay
@@ -318,21 +312,9 @@ final class BooleanScorer extends BulkScorer {
     fakeScorer.doc = -1;
     collector.setScorer(fakeScorer);
 
-    final LeafCollector singleClauseCollector;
-    if (coordFactors[1] == 1f) {
-      singleClauseCollector = collector;
-    } else {
-      singleClauseCollector = new FilterLeafCollector(collector) {
-        @Override
-        public void setScorer(Scorer scorer) throws IOException {
-          super.setScorer(new BooleanTopLevelScorers.BoostedScorer(scorer, coordFactors[1]));
-        }
-      };
-    }
-
     BulkScorerAndDoc top = advance(min);
     while (top.next < max) {
-      top = scoreWindow(top, collector, singleClauseCollector, acceptDocs, min, max);
+      top = scoreWindow(top, collector, acceptDocs, min, max);
     }
 
     return top.next;

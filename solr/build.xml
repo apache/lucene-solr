@@ -250,7 +250,7 @@
 
   <!-- Solr contrib targets -->
   <target name="test-contrib" description="Run contrib unit tests.">
-    <contrib-crawl target="test" failonerror="true"/>
+    <contrib-crawl target="test"/>
   </target>
 
   <!-- Pitest targets -->
@@ -350,7 +350,7 @@
       <fileset dir="solrj" includes="build.xml"/>
       <fileset dir="test-framework" includes="build.xml"/>
     </subant>
-    <contrib-crawl target="check-forbidden-apis" failonerror="true"/>
+    <contrib-crawl target="check-forbidden-apis"/>
   </target>
 
   <!-- rat sources -->
@@ -363,7 +363,7 @@
       <fileset dir="test-framework" includes="build.xml"/>
       <fileset dir="webapp" includes="build.xml"/>
     </subant>
-    <contrib-crawl target="rat-sources" failonerror="true"/>
+    <contrib-crawl target="rat-sources"/>
   </target>
   
   <!-- Clean targets -->
@@ -426,7 +426,7 @@
   
   <target name="dist-contrib" depends="init-dist"
           description="Make the contribs ready for distribution">
-    <contrib-crawl target="dist" failonerror="true" />
+    <contrib-crawl target="dist"/>
   </target>
   
   <target name="prepare-release-no-sign" depends="clean, package, generate-maven-artifacts"/>

@@ -143,5 +143,13 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
     }
     return new TokenStreamComponents(source, new ArabicStemFilter(result));
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new LowerCaseFilter(in);
+    result = new DecimalDigitFilter(result);
+    result = new ArabicNormalizationFilter(result);
+    return result;
+  }
 }
 

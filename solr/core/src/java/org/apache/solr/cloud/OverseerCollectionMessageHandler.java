@@ -17,13 +17,8 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -84,6 +80,9 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.backup.BackupManager;
+import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
@@ -136,7 +135,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
 public class OverseerCollectionMessageHandler implements OverseerMessageHandler {
 
   public static final String NUM_SLICES = "numShards";
-  
+
   static final boolean CREATE_NODE_SET_SHUFFLE_DEFAULT = true;
   public static final String CREATE_NODE_SET_SHUFFLE = "createNodeSet.shuffle";
   public static final String CREATE_NODE_SET_EMPTY = "EMPTY";
@@ -275,7 +274,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
           processRebalanceLeaders(message);
           break;
         case MODIFYCOLLECTION:
-          overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+          modifyCollection(message, results);
           break;
         case MIGRATESTATEFORMAT:
           migrateStateFormat(message, results);
@@ -579,17 +578,15 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
     //if there are too many nodes this command may time out. And most likely dedicated
     // overseers are created when there are too many nodes  . So , do this operation in a separate thread
-    new Thread(){
-      @Override
-      public void run() {
-        try {
-          overseerPrioritizer.prioritizeOverseerNodes(myId);
-        } catch (Exception e) {
-          log.error("Error in prioritizing Overseer",e);
-        }
-
+    new Thread(() -> {
+      try {
+        overseerPrioritizer.prioritizeOverseerNodes(myId);
+      } catch (Exception e) {
+        log.error("Error in prioritizing Overseer", e);
       }
-    }.start();
+
+    }).start();
+
   }
 
   @SuppressWarnings("unchecked")
@@ -1824,6 +1821,25 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
     return nodeList;
   }
+  
+  
+  private void modifyCollection(ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
+    
+    final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
+    //the rest of the processing is based on writing cluster state properties
+    //remove the property here to avoid any errors down the pipeline due to this property appearing
+    String configName = (String) message.getProperties().remove(COLL_CONF);
+    
+    if(configName != null) {
+      validateConfigOrThrowSolrException(configName);
+      
+      boolean isLegacyCloud =  Overseer.isLegacy(zkStateReader);
+      createConfNode(configName, collectionName, isLegacyCloud);
+      reloadCollection(new ZkNodeProps(NAME, collectionName), results);
+    }
+    
+    overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+  }
 
   private void createCollection(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
     final String collectionName = message.getStr(NAME);
@@ -1835,9 +1851,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     String configName = getConfigName(collectionName, message);
     if (configName == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "No config set found to associate with the collection.");
-    } else if (!validateConfig(configName)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find the specified config set: " + configName);
     }
+    
+    validateConfigOrThrowSolrException(configName);
+    
 
     try {
       // look at the replication factor and see if it matches reality
@@ -2195,21 +2212,28 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   private void processBackupAction(ZkNodeProps message, NamedList results) throws IOException, KeeperException, InterruptedException {
     String collectionName =  message.getStr(COLLECTION_PROP);
     String backupName =  message.getStr(NAME);
-    String location = message.getStr(ZkStateReader.BACKUP_LOCATION);
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     String asyncId = message.getStr(ASYNC);
+    String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
+    String location = message.getStr(CoreAdminParams.BACKUP_LOCATION);
+
     Map<String, String> requestMap = new HashMap<>();
     Instant startTime = Instant.now();
 
-    // note: we assume a shared files system to backup a collection, since a collection is distributed
-    Path backupPath = Paths.get(location).resolve(backupName).toAbsolutePath();
+    CoreContainer cc = this.overseer.getZkController().getCoreContainer();
+    BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
+    BackupManager backupMgr = new BackupManager(repository, zkStateReader, collectionName);
+
+    // Backup location
+    URI backupPath = repository.createURI(location, backupName);
 
     //Validating if the directory already exists.
-    if (Files.exists(backupPath)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Backup directory already exists: " + backupPath);
+    if (repository.exists(backupPath)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "The backup directory already exists: " + backupPath);
     }
-    Files.createDirectory(backupPath); // create now
+
+    // Create a directory to store backup details.
+    repository.createDirectory(backupPath);
 
     log.info("Starting backup of collection={} with backupName={} at location={}", collectionName, backupName,
         backupPath);
@@ -2222,7 +2246,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminAction.BACKUPCORE.toString());
       params.set(NAME, slice.getName());
-      params.set("location", backupPath.toString()); // note: index dir will be here then the "snapshot." + slice name
+      params.set(CoreAdminParams.BACKUP_REPOSITORY, repo);
+      params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.getPath()); // note: index dir will be here then the "snapshot." + slice name
       params.set(CORE_NAME_PROP, coreName);
 
       sendShardRequest(replica.getNodeName(), params, shardHandler, asyncId, requestMap);
@@ -2236,29 +2261,24 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
     //Download the configs
     String configName = zkStateReader.readConfigName(collectionName);
-    Path zkBackup =  backupPath.resolve("zk_backup");
-    zkStateReader.getConfigManager().downloadConfigDir(configName, zkBackup.resolve("configs").resolve(configName));
+    backupMgr.downloadConfigDir(location, backupName, configName);
 
     //Save the collection's state. Can be part of the monolithic clusterstate.json or a individual state.json
     //Since we don't want to distinguish we extract the state and back it up as a separate json
-    DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
-    Files.write(zkBackup.resolve("collection_state.json"),
-        Utils.toJSON(Collections.singletonMap(collectionName, collection)));
+    DocCollection collectionState = zkStateReader.getClusterState().getCollection(collectionName);
+    backupMgr.writeCollectionState(location, backupName, collectionName, collectionState);
 
-    Path propertiesPath = backupPath.resolve("backup.properties");
     Properties properties = new Properties();
 
-    properties.put("backupName", backupName);
-    properties.put("collection", collectionName);
-    properties.put("collection.configName", configName);
-    properties.put("startTime", startTime.toString());
+    properties.put(BackupManager.BACKUP_NAME_PROP, backupName);
+    properties.put(BackupManager.COLLECTION_NAME_PROP, collectionName);
+    properties.put(COLL_CONF, configName);
+    properties.put(BackupManager.START_TIME_PROP, startTime.toString());
     //TODO: Add MD5 of the configset. If during restore the same name configset exists then we can compare checksums to see if they are the same.
     //if they are not the same then we can throw an error or have an 'overwriteConfig' flag
     //TODO save numDocs for the shardLeader. We can use it to sanity check the restore.
 
-    try (Writer os = Files.newBufferedWriter(propertiesPath, StandardCharsets.UTF_8)) {
-      properties.store(os, "Snapshot properties file");
-    }
+    backupMgr.writeBackupProperties(location, backupName, properties);
 
     log.info("Completed backing up ZK data for backupName={}", backupName);
   }
@@ -2267,26 +2287,21 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     // TODO maybe we can inherit createCollection's options/code
     String restoreCollectionName =  message.getStr(COLLECTION_PROP);
     String backupName =  message.getStr(NAME); // of backup
-    String location = message.getStr(ZkStateReader.BACKUP_LOCATION);
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     String asyncId = message.getStr(ASYNC);
+    String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
+    String location = message.getStr(CoreAdminParams.BACKUP_LOCATION);
     Map<String, String> requestMap = new HashMap<>();
 
-    Path backupPath = Paths.get(location).resolve(backupName).toAbsolutePath();
-    if (!Files.exists(backupPath)) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't restore since doesn't exist: " + backupPath);
-    }
-    Path backupZkPath =  backupPath.resolve("zk_backup");
+    CoreContainer cc = this.overseer.getZkController().getCoreContainer();
+    BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
 
-    Properties properties = new Properties();
-    try (Reader in = Files.newBufferedReader(backupPath.resolve("backup.properties"), StandardCharsets.UTF_8)) {
-      properties.load(in);
-    }
+    URI backupPath = repository.createURI(location, backupName);
+    BackupManager backupMgr = new BackupManager(repository, zkStateReader, restoreCollectionName);
 
-    String backupCollection = (String) properties.get("collection");
-    byte[] data = Files.readAllBytes(backupZkPath.resolve("collection_state.json"));
-    ClusterState backupClusterState = ClusterState.load(-1, data, Collections.emptySet());
-    DocCollection backupCollectionState = backupClusterState.getCollection(backupCollection);
+    Properties properties = backupMgr.readBackupProperties(location, backupName);
+    String backupCollection = properties.getProperty(BackupManager.COLLECTION_NAME_PROP);
+    DocCollection backupCollectionState = backupMgr.readCollectionState(location, backupName, backupCollection);
 
     //Upload the configs
     String configName = (String) properties.get(COLL_CONF);
@@ -2296,11 +2311,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       //TODO add overwrite option?
     } else {
       log.info("Uploading config {}", restoreConfigName);
-      zkStateReader.getConfigManager().uploadConfigDir(backupZkPath.resolve("configs").resolve(configName), restoreConfigName);
+      backupMgr.uploadConfigDir(location, backupName, configName, restoreConfigName);
     }
 
     log.info("Starting restore into collection={} with backup_name={} at location={}", restoreCollectionName, backupName,
-        backupPath);
+        location);
 
     //Create core-less collection
     {
@@ -2390,7 +2405,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminAction.RESTORECORE.toString());
       params.set(NAME, "snapshot." + slice.getName());
-      params.set("location", backupPath.toString());
+      params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.getPath());
+      params.set(CoreAdminParams.BACKUP_REPOSITORY, repo);
+
       sliceCmd(clusterState, params, null, slice, shardHandler, asyncId, requestMap);
     }
     processResponses(new NamedList(), shardHandler, true, "Could not restore core", asyncId, requestMap);
@@ -2487,8 +2504,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     return configName;
   }
   
-  private boolean validateConfig(String configName) throws KeeperException, InterruptedException {
-    return zkStateReader.getZkClient().exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, true);
+  private void validateConfigOrThrowSolrException(String configName) throws KeeperException, InterruptedException {
+    boolean isValid = zkStateReader.getZkClient().exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, true);
+    if(!isValid) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find the specified config set: " + configName);
+    }
   }
 
   /**
@@ -2679,34 +2699,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       message.getStr(COLLECTION_PROP) : message.getStr(NAME);
   }
 
-
- /* @Override
-  public void markExclusiveTask(String collectionName, ZkNodeProps message) {
-    if (collectionName != null) {
-      synchronized (collectionWip) {
-        collectionWip.add(collectionName);
-      }
-    }
-  }
-
-  @Override
-  public void unmarkExclusiveTask(String collectionName, String operation, ZkNodeProps message) {
-    if(collectionName != null) {
-      synchronized (collectionWip) {
-        collectionWip.remove(collectionName);
-      }
-    }
-  }*/
-/*
-  @Override
-  public ExclusiveMarking checkExclusiveMarking(String collectionName, ZkNodeProps message) {
-    synchronized (collectionWip) {
-      if(collectionWip.contains(collectionName))
-        return ExclusiveMarking.NONEXCLUSIVE;
-    }
-
-    return ExclusiveMarking.NOTDETERMINED;
-  }*/
 
   private long sessionId = -1;
   private LockTree.Session lockSession;

@@ -18,42 +18,17 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Random;
-import java.util.Set;
-
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 
-class AssertingWeight extends Weight {
+class AssertingWeight extends FilterWeight {
 
   final Random random;
-  final Weight in;
   final boolean needsScores;
 
   AssertingWeight(Random random, Weight in, boolean needsScores) {
-    super(in.getQuery());
+    super(in);
     this.random = random;
-    this.in = in;
     this.needsScores = needsScores;
-  }
-
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    in.extractTerms(terms);
-  }
-
-  @Override
-  public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-    return in.explain(context, doc);
-  }
-
-  @Override
-  public float getValueForNormalization() throws IOException {
-    return in.getValueForNormalization();
-  }
-
-  @Override
-  public void normalize(float norm, float boost) {
-    in.normalize(norm, boost);
   }
 
   @Override

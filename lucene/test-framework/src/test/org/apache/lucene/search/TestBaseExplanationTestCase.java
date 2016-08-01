@@ -17,8 +17,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.Set;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 
@@ -73,16 +71,14 @@ public class TestBaseExplanationTestCase extends BaseExplanationTestCase {
       this.toggleExplainMatch = toggleExplainMatch;
       this.breakExplainScores = breakExplainScores;
     }
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      return new BrokenExplainWeight(this, super.createWeight(searcher,needsScores));
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      return new BrokenExplainWeight(this, super.createWeight(searcher,needsScores, boost));
     }
   }
   
-  public static final class BrokenExplainWeight extends Weight {
-    final Weight in;
+  public static final class BrokenExplainWeight extends FilterWeight {
     public BrokenExplainWeight(BrokenExplainTermQuery q, Weight in) {
-      super(q);
-      this.in = in;
+      super(q, in);
     }
     public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
       return in.bulkScorer(context);
@@ -103,18 +99,6 @@ public class TestBaseExplanationTestCase extends BaseExplanationTestCase {
         }
       }
       return result;
-    }
-    public void extractTerms(Set<Term> terms) {
-      in.extractTerms(terms);
-    }
-    public float getValueForNormalization() throws IOException {
-      return in.getValueForNormalization();
-    }
-    public void normalize(float norm, float boost) {
-      in.normalize(norm, boost);
-    }
-    public Scorer scorer(LeafReaderContext context) throws IOException {
-      return in.scorer(context);
     }
   }
 }

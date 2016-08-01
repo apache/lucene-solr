@@ -194,7 +194,7 @@ final class JustCompileSearch {
   static final class JustCompileSimilarity extends Similarity {
 
     @Override
-    public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
+    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -254,16 +254,6 @@ final class JustCompileSearch {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public void normalize(float norm, float topLevelBoost) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public float getValueForNormalization() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

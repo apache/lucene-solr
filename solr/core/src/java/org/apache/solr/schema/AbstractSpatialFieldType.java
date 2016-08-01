@@ -119,7 +119,23 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
 
-    if(ctx==null) { // subclass can set this directly
+    if (ctx==null) { // subclass can set this directly
+      final String CTX_PARAM = "spatialContextFactory";
+      final String OLD_SPATIAL4J_PREFIX = "com.spatial4j.core";
+      final String NEW_SPATIAL4J_PREFIX = "org.locationtech.spatial4j";
+      for (Map.Entry<String, String> argEntry : args.entrySet()) {
+        // "JTS" is a convenience alias
+        if (argEntry.getKey().equals(CTX_PARAM) && argEntry.getValue().equals("JTS")) {
+          argEntry.setValue("org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory");
+          continue;
+        }
+        // Warn about using old Spatial4j class names
+        if (argEntry.getValue().contains(OLD_SPATIAL4J_PREFIX)) {
+          log.warn("Replace '" + OLD_SPATIAL4J_PREFIX + "' with '" + NEW_SPATIAL4J_PREFIX + "' in your schema.");
+          argEntry.setValue(argEntry.getValue().replace(OLD_SPATIAL4J_PREFIX, NEW_SPATIAL4J_PREFIX));
+        }
+      }
+
       //Solr expects us to remove the parameters we've used.
       MapListener<String, String> argsWrap = new MapListener<>(args);
       ctx = SpatialContextFactory.makeSpatialContext(argsWrap, schema.getResourceLoader().getClassLoader());

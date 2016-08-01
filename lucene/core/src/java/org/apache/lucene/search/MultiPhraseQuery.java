@@ -187,7 +187,7 @@ public class MultiPhraseQuery extends Query {
     private final Map<Term,TermContext> termContexts = new HashMap<>();
     private final boolean needsScores;
 
-    public MultiPhraseWeight(IndexSearcher searcher, boolean needsScores)
+    public MultiPhraseWeight(IndexSearcher searcher, boolean needsScores, float boost)
       throws IOException {
       super(MultiPhraseQuery.this);
       this.needsScores = needsScores;
@@ -207,6 +207,7 @@ public class MultiPhraseQuery extends Query {
         }
       }
       stats = similarity.computeWeight(
+          boost,
           searcher.collectionStatistics(field),
           allTermStats.toArray(new TermStatistics[allTermStats.size()]));
     }
@@ -216,16 +217,6 @@ public class MultiPhraseQuery extends Query {
       for (final Term[] arr : termArrays) {
         Collections.addAll(terms, arr);
       }
-    }
-
-    @Override
-    public float getValueForNormalization() {
-      return stats.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float queryNorm, float boost) {
-      stats.normalize(queryNorm, boost);
     }
 
     @Override
@@ -317,11 +308,10 @@ public class MultiPhraseQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (termArrays.length == 0) {
-      return new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("empty MultiPhraseQuery");
     } else if (termArrays.length == 1) {                 // optimize one-term case
       Term[] terms = termArrays[0];
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      builder.setDisableCoord(true);
       for (Term term : terms) {
         builder.add(new TermQuery(term), BooleanClause.Occur.SHOULD);
       }
@@ -332,8 +322,8 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new MultiPhraseWeight(searcher, needsScores);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new MultiPhraseWeight(searcher, needsScores, boost);
   }
 
   /** Prints a user-readable version of this query. */

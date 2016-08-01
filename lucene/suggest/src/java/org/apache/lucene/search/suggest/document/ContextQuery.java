@@ -164,8 +164,8 @@ public class ContextQuery extends CompletionQuery {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    final CompletionWeight innerWeight = ((CompletionWeight) innerQuery.createWeight(searcher, needsScores));
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    final CompletionWeight innerWeight = ((CompletionWeight) innerQuery.createWeight(searcher, needsScores, boost));
     // if separators are preserved the fst contains a SEP_LABEL
     // behind each gap. To have a matching automaton, we need to
     // include the SEP_LABEL in the query as well

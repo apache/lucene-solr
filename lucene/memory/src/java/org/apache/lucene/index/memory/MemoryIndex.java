@@ -21,11 +21,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -43,10 +41,21 @@ import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.*;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefArray;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
+import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.IntBlockPool.SliceReader;
 import org.apache.lucene.util.IntBlockPool.SliceWriter;
+import org.apache.lucene.util.RecyclingByteBlockAllocator;
+import org.apache.lucene.util.RecyclingIntBlockAllocator;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -746,13 +755,14 @@ public class MemoryIndex {
    * Returns a String representation of the index data for debugging purposes.
    * 
    * @return the string representation
+   * @lucene.experimental
    */
-  @Override
-  public String toString() {
+  public String toStringDebug() {
     StringBuilder result = new StringBuilder(256);
     int sumPositions = 0;
     int sumTerms = 0;
     final BytesRef spare = new BytesRef();
+    final BytesRefBuilder payloadBuilder = storePayloads ? new BytesRefBuilder() : null;
     for (Map.Entry<String, Info> entry : fields.entrySet()) {
       String fieldName = entry.getKey();
       Info info = entry.getValue();
@@ -778,9 +788,16 @@ public class MemoryIndex {
               result.append(", ");
             }
           }
+          if (storePayloads) {
+            int payloadIndex = postingsReader.readInt();
+            if (payloadIndex != -1) {
+                result.append(", " + payloadsBytesRefs.get(payloadBuilder, payloadIndex));
+            }
+          }
           result.append(")");
+
           if (!postingsReader.endOfSlice()) {
-            result.append(",");
+            result.append(", ");
           }
 
         }
@@ -1026,6 +1043,7 @@ public class MemoryIndex {
   private final class MemoryIndexReader extends LeafReader {
 
     private final PointValues pointValues;
+    private Fields memoryFields = new MemoryFields(fields);
 
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
@@ -1179,13 +1197,7 @@ public class MemoryIndex {
 
     @Override
     public Fields fields() {
-      Map<String, Info> filteredFields = fields.entrySet().stream()
-          .filter(entry ->  entry.getValue().numTokens > 0)
-          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
-              (u,v) -> { throw new IllegalStateException(String.format(Locale.ROOT, "Duplicate key %s", u));},
-              TreeMap::new
-          ));
-      return new MemoryFields(filteredFields );
+      return memoryFields;
     }
 
     private class MemoryFields extends Fields {
@@ -1198,13 +1210,16 @@ public class MemoryIndex {
 
       @Override
       public Iterator<String> iterator() {
-        return fields.keySet().iterator();
+        return fields.entrySet().stream()
+            .filter(e -> e.getValue().numTokens > 0)
+            .map(Map.Entry::getKey)
+            .iterator();
       }
 
       @Override
       public Terms terms(final String field) {
         final Info info = fields.get(field);
-        if (info == null) {
+        if (info == null || info.numTokens <= 0) {
           return null;
         }
 
@@ -1259,7 +1274,11 @@ public class MemoryIndex {
 
       @Override
       public int size() {
-        return fields.size();
+        int size = 0;
+        for (String fieldName : this) {
+          size++;
+        }
+        return size;
       }
     }
 

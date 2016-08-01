@@ -85,135 +85,138 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     cloudSolrClient.setDefaultCollection(null);
 
     NamedList<Object> rsp;
-    HttpClient cl = HttpClientUtil.createClient(null);
-    String baseUrl = getRandomReplica(zkStateReader.getClusterState().getCollection(defaultCollName), random()).getStr(BASE_URL_PROP);
-    verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
-    zkClient.setData("/security.json", STD_CONF.replaceAll("'", "\"").getBytes(UTF_8), true);
-    verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
-
-    boolean found = false;
-    for (JettySolrRunner jettySolrRunner : miniCluster.getJettySolrRunners()) {
-      if(baseUrl.contains(String.valueOf(jettySolrRunner.getLocalPort()))){
-        found = true;
-        jettySolrRunner.stop();
-        jettySolrRunner.start();
-        verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
-        break;
-      }
-    }
-
-    assertTrue("No server found to restart , looking for : "+baseUrl , found);
-
-    String command = "{\n" +
-        "'set-user': {'harry':'HarryIsCool'}\n" +
-        "}";
-
-    GenericSolrRequest genericReq = new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix, new ModifiableSolrParams());
-    genericReq.setContentStreams(Collections.singletonList(new ContentStreamBase.ByteArrayStream(command.getBytes(UTF_8), "")));
+    HttpClient cl = null;
     try {
-      cloudSolrClient.request(genericReq);
-      fail("Should have failed with a 401");
-    } catch (HttpSolrClient.RemoteSolrException e) {
-    }
-    command = "{\n" +
-        "'set-user': {'harry':'HarryIsUberCool'}\n" +
-        "}";
+      cl = HttpClientUtil.createClient(null);
+      String baseUrl = getRandomReplica(zkStateReader.getClusterState().getCollection(defaultCollName), random()).getStr(BASE_URL_PROP);
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
+      zkClient.setData("/security.json", STD_CONF.replaceAll("'", "\"").getBytes(UTF_8), true);
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
-    HttpPost httpPost = new HttpPost(baseUrl + authcPrefix);
-    setBasicAuthHeader(httpPost, "solr", "SolrRocks");
-    httpPost.setEntity(new ByteArrayEntity(command.getBytes(UTF_8)));
-    httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
-    verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
-    HttpResponse r = cl.execute(httpPost);
-    int statusCode = r.getStatusLine().getStatusCode();
-    Utils.consumeFully(r.getEntity());
-    assertEquals("proper_cred sent, but access denied", 200, statusCode);
-    baseUrl = getRandomReplica(zkStateReader.getClusterState().getCollection(defaultCollName), random()).getStr(BASE_URL_PROP);
+      boolean found = false;
+      for (JettySolrRunner jettySolrRunner : miniCluster.getJettySolrRunners()) {
+        if(baseUrl.contains(String.valueOf(jettySolrRunner.getLocalPort()))){
+          found = true;
+          jettySolrRunner.stop();
+          jettySolrRunner.start();
+          verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
+          break;
+        }
+      }
 
-    verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/credentials/harry", NOT_NULL_PREDICATE, 20);
-    command = "{\n" +
-        "'set-user-role': {'harry':'admin'}\n" +
-        "}";
+      assertTrue("No server found to restart , looking for : "+baseUrl , found);
 
-    executeCommand(baseUrl + authzPrefix, cl,command, "solr", "SolrRocks");
+      String command = "{\n" +
+          "'set-user': {'harry':'HarryIsCool'}\n" +
+          "}";
 
-    baseUrl = getRandomReplica(zkStateReader.getClusterState().getCollection(defaultCollName), random()).getStr(BASE_URL_PROP);
-    verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/user-role/harry", NOT_NULL_PREDICATE, 20);
-
-    executeCommand(baseUrl + authzPrefix, cl, Utils.toJSONString(singletonMap("set-permission", Utils.makeMap
-        ("collection", "x",
-            "path", "/update/*",
-            "role", "dev"))), "harry", "HarryIsUberCool" );
-
-    verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[1]/collection", "x", 20);
-
-    executeCommand(baseUrl + authzPrefix, cl,Utils.toJSONString(singletonMap("set-permission", Utils.makeMap
-        ("name", "collection-admin-edit", "role", "admin"))), "harry", "HarryIsUberCool"  );
-    verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/name", "collection-admin-edit", 20);
-
-    CollectionAdminRequest.Reload reload = new CollectionAdminRequest.Reload();
-    reload.setCollectionName(defaultCollName);
-
-    try (HttpSolrClient solrClient = getHttpSolrClient(baseUrl)) {
+      GenericSolrRequest genericReq = new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix, new ModifiableSolrParams());
+      genericReq.setContentStreams(Collections.singletonList(new ContentStreamBase.ByteArrayStream(command.getBytes(UTF_8), "")));
       try {
-        rsp = solrClient.request(reload);
-        fail("must have failed");
+        cloudSolrClient.request(genericReq);
+        fail("Should have failed with a 401");
+      } catch (HttpSolrClient.RemoteSolrException e) {
+      }
+      command = "{\n" +
+          "'set-user': {'harry':'HarryIsUberCool'}\n" +
+          "}";
+
+      HttpPost httpPost = new HttpPost(baseUrl + authcPrefix);
+      setBasicAuthHeader(httpPost, "solr", "SolrRocks");
+      httpPost.setEntity(new ByteArrayEntity(command.getBytes(UTF_8)));
+      httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
+      HttpResponse r = cl.execute(httpPost);
+      int statusCode = r.getStatusLine().getStatusCode();
+      Utils.consumeFully(r.getEntity());
+      assertEquals("proper_cred sent, but access denied", 200, statusCode);
+      baseUrl = getRandomReplica(zkStateReader.getClusterState().getCollection(defaultCollName), random()).getStr(BASE_URL_PROP);
+
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/credentials/harry", NOT_NULL_PREDICATE, 20);
+      command = "{\n" +
+          "'set-user-role': {'harry':'admin'}\n" +
+          "}";
+
+      executeCommand(baseUrl + authzPrefix, cl,command, "solr", "SolrRocks");
+
+      baseUrl = getRandomReplica(zkStateReader.getClusterState().getCollection(defaultCollName), random()).getStr(BASE_URL_PROP);
+      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/user-role/harry", NOT_NULL_PREDICATE, 20);
+
+      executeCommand(baseUrl + authzPrefix, cl, Utils.toJSONString(singletonMap("set-permission", Utils.makeMap
+          ("collection", "x",
+              "path", "/update/*",
+              "role", "dev"))), "harry", "HarryIsUberCool" );
+
+      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[1]/collection", "x", 20);
+
+      executeCommand(baseUrl + authzPrefix, cl,Utils.toJSONString(singletonMap("set-permission", Utils.makeMap
+          ("name", "collection-admin-edit", "role", "admin"))), "harry", "HarryIsUberCool"  );
+      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/name", "collection-admin-edit", 20);
+
+      CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(defaultCollName);
+
+      try (HttpSolrClient solrClient = getHttpSolrClient(baseUrl)) {
+        try {
+          rsp = solrClient.request(reload);
+          fail("must have failed");
+        } catch (HttpSolrClient.RemoteSolrException e) {
+
+        }
+        reload.setMethod(SolrRequest.METHOD.POST);
+        try {
+          rsp = solrClient.request(reload);
+          fail("must have failed");
+        } catch (HttpSolrClient.RemoteSolrException e) {
+
+        }
+      }
+      cloudSolrClient.request(CollectionAdminRequest.reloadCollection(defaultCollName)
+          .setBasicAuthCredentials("harry", "HarryIsUberCool"));
+
+      try {
+        cloudSolrClient.request(CollectionAdminRequest.reloadCollection(defaultCollName)
+            .setBasicAuthCredentials("harry", "Cool12345"));
+        fail("This should not succeed");
       } catch (HttpSolrClient.RemoteSolrException e) {
 
       }
-      reload.setMethod(SolrRequest.METHOD.POST);
-      try {
-        rsp = solrClient.request(reload);
-        fail("must have failed");
-      } catch (HttpSolrClient.RemoteSolrException e) {
 
+      cloudSolrClient.setDefaultCollection(old);
+      executeCommand(baseUrl + authzPrefix, cl,"{set-permission : { name : update , role : admin}}", "harry", "HarryIsUberCool");
+
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.setField("id","4");
+      UpdateRequest update = new UpdateRequest();
+      update.setBasicAuthCredentials("harry","HarryIsUberCool");
+      update.add(doc);
+      update.setCommitWithin(100);
+      cloudSolrClient.request(update);
+
+
+      executeCommand(baseUrl + authzPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
+      String[] toolArgs = new String[]{
+          "status", "-solr", baseUrl};
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
+      SolrCLI.StatusTool tool = new SolrCLI.StatusTool(stdoutSim);
+      try {
+        System.setProperty("basicauth", "harry:HarryIsUberCool");
+        tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+        Map obj = (Map) Utils.fromJSON(new ByteArrayInputStream(baos.toByteArray()));
+        assertTrue(obj.containsKey("version"));
+        assertTrue(obj.containsKey("startTime"));
+        assertTrue(obj.containsKey("uptime"));
+        assertTrue(obj.containsKey("memory"));
+      } catch (Exception e) {
+        log.error("RunExampleTool failed due to: " + e +
+            "; stdout from tool prior to failure: " + baos.toString(StandardCharsets.UTF_8.name()));
+      }
+      executeCommand(baseUrl + authzPrefix, cl, "{set-property : { blockUnknown: false}}", "harry", "HarryIsUberCool");
+    } finally {
+      if (cl != null) {
+        HttpClientUtil.close(cl);
       }
     }
-    cloudSolrClient.request(new CollectionAdminRequest.Reload()
-        .setCollectionName(defaultCollName)
-        .setBasicAuthCredentials("harry", "HarryIsUberCool"));
-
-    try {
-      cloudSolrClient.request(new CollectionAdminRequest.Reload()
-          .setCollectionName(defaultCollName)
-          .setBasicAuthCredentials("harry", "Cool12345"));
-      fail("This should not succeed");
-    } catch (HttpSolrClient.RemoteSolrException e) {
-
-    }
-
-    cloudSolrClient.setDefaultCollection(old);
-    executeCommand(baseUrl + authzPrefix, cl,"{set-permission : { name : update , role : admin}}", "harry", "HarryIsUberCool");
-
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.setField("id","4");
-    UpdateRequest update = new UpdateRequest();
-    update.setBasicAuthCredentials("harry","HarryIsUberCool");
-    update.add(doc);
-    update.setCommitWithin(100);
-    cloudSolrClient.request(update);
-
-
-    executeCommand(baseUrl + authzPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
-    String[] toolArgs = new String[]{
-        "status", "-solr", baseUrl};
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
-    SolrCLI.StatusTool tool = new SolrCLI.StatusTool(stdoutSim);
-    try {
-      System.setProperty("basicauth", "harry:HarryIsUberCool");
-      tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
-      Map obj = (Map) Utils.fromJSON(new ByteArrayInputStream(baos.toByteArray()));
-      assertTrue(obj.containsKey("version"));
-      assertTrue(obj.containsKey("startTime"));
-      assertTrue(obj.containsKey("uptime"));
-      assertTrue(obj.containsKey("memory"));
-    } catch (Exception e) {
-      log.error("RunExampleTool failed due to: " + e +
-          "; stdout from tool prior to failure: " + baos.toString(StandardCharsets.UTF_8.name()));
-    }
-    executeCommand(baseUrl + authzPrefix, cl, "{set-property : { blockUnknown: false}}", "harry", "HarryIsUberCool");
-    HttpClientUtil.close(cl);
   }
 
   public static void executeCommand(String url, HttpClient cl, String payload, String user, String pwd) throws IOException {

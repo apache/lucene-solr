@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
 import org.apache.lucene.analysis.core.DecimalDigitFilter;
+import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
@@ -125,7 +126,18 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
      */
     return new TokenStreamComponents(source, new StopFilter(result, stopwords));
   }
-  
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new StandardFilter(in);
+    result = new LowerCaseFilter(result);
+    result = new DecimalDigitFilter(result);
+    result = new ArabicNormalizationFilter(result);
+    /* additional persian-specific normalization */
+    result = new PersianNormalizationFilter(result);
+    return result;
+  }
+
   /** 
    * Wraps the Reader with {@link PersianCharFilter}
    */

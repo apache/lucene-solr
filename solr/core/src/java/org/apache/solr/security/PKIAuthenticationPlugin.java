@@ -89,12 +89,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to compare against time in header")
   @Override
-  public void doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
+  public boolean doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
 
     String requestURI = ((HttpServletRequest) request).getRequestURI();
     if (requestURI.endsWith(PATH)) {
       filterChain.doFilter(request, response);
-      return;
+      return true;
     }
     long receivedTime = System.currentTimeMillis();
     String header = ((HttpServletRequest) request).getHeader(HEADER);
@@ -102,14 +102,14 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       //this must not happen
       log.error("No SolrAuth header present");
       filterChain.doFilter(request, response);
-      return;
+      return true;
     }
 
     List<String> authInfo = StrUtils.splitWS(header, false);
     if (authInfo.size() < 2) {
       log.error("Invalid SolrAuth Header {}", header);
       filterChain.doFilter(request, response);
-      return;
+      return true;
     }
 
     String nodeName = authInfo.get(0);
@@ -119,12 +119,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     if (decipher == null) {
       log.error("Could not decipher a header {} . No principal set", header);
       filterChain.doFilter(request, response);
-      return;
+      return true;
     }
     if ((receivedTime - decipher.timestamp) > MAX_VALIDITY) {
       log.error("Invalid key request timestamp: {} , received timestamp: {} , TTL: {}", decipher.timestamp, receivedTime, MAX_VALIDITY);
         filterChain.doFilter(request, response);
-        return;
+        return true;
     }
 
     final Principal principal = "$".equals(decipher.userName) ?
@@ -132,6 +132,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
         new BasicUserPrincipal(decipher.userName);
 
     filterChain.doFilter(getWrapper((HttpServletRequest) request, principal), response);
+    return true;
   }
 
   private static HttpServletRequestWrapper getWrapper(final HttpServletRequest request, final Principal principal) {

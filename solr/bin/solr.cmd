@@ -137,6 +137,7 @@ IF "%1"=="delete" (
 IF "%1"=="zk" (
   set SCRIPT_CMD=zk
   SHIFT
+  set ZK_RECURSE=false
   goto parse_zk_args
 )
 
@@ -164,7 +165,7 @@ goto done
 :script_usage
 @echo.
 @echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, upconfig, downconfig
+@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, zk
 @echo.
 @echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
@@ -344,26 +345,83 @@ echo.
 goto done
 
 :zk_usage
+set ZK_FULL=true
+goto zk_short_usage
+:zk_full_usage
+echo         Be sure to check the Solr logs in case of errors.
 echo.
-echo Usage: solr zk [-downconfig or -upconfig] [-d confdir] [-n configName] [-z zkHost]
+echo             -z zkHost       Optional Zookeeper connection string for all commands. If specified it
+echo                             overrides the 'ZK_HOST=...'' defined in solr.in.sh.
 echo.
-echo      -upconfig to move a configset from the local machine to Zookeeper
+echo         upconfig uploads a configset from the local machine to Zookeeper. (Backcompat: -upconfig)
 echo.
-echo      -downconfig to move a configset from Zookeeper to the local machine
+echo         downconfig downloads a configset from Zookeeper to the local machine. (Backcompat: -downconfig)
 echo.
-echo      -n configName    Name of the configset in Zookeeper that will be the destination of
-echo                        'upconfig' and the source for 'downconfig'.
+echo             -n configName   Name of the configset in Zookeeper that will be the destination of
+echo                             'upconfig' and the source for 'downconfig'.
 echo.
-echo      -d confdir       The local directory the configuration will be uploaded from for
-echo                       'upconfig' or downloaded to for 'downconfig'. For 'upconfig', this
-echo                       can be one of the example configsets, basic_configs, data_driven_schema_configs or
-echo                       sample_techproducts_configs or an arbitrary directory.
+echo             -d confdir      The local directory the configuration will be uploaded from for
+echo                             'upconfig' or downloaded to for 'downconfig'. If 'confdir' is a child of
+echo                             ...solr/server/solr/configsets' then the configs will be copied from/to
+echo                             that directory. Otherwise it is interpreted as a simple local path.
 echo.
-echo      -z zkHost        Zookeeper connection string.
+echo         cp copies files or folders to/from Zookeeper or Zokeeper -^> Zookeeper
+echo             -r              Recursively copy ^<src^> to ^<dst^>. Command will fail if ^<src^> has children and
+echo                             -r is not specified. Optional
 echo.
-echo   NOTE: Solr must have been started least once (or have it running) before using this command.
-echo         This initialized Zookeeper for Solr
+echo.             ^<src^>, ^<dest^> : [file:][/]path/to/local/file or zk:/path/to/zk/node
+echo                              NOTE: ^<src^> and ^<dest^> may both be Zookeeper resources prefixed by 'zk:'
+echo             When ^<src^> is a zk resource, ^<dest^> may be '.'
+echo             If ^<dest^> ends with '/', then ^<dest^> will be a local folder or parent znode and the last
+echo             element of the ^<src^> path will be appended.
 echo.
+echo             The 'file:' prefix is stripped, thus 'file:/' specifies an absolute local path and
+echo             'file:somewhere' specifies a relative local path. All paths on Zookeeper are absolute
+echo             so the slash is required.
+echo.
+echo             Zookeeper nodes CAN have data, so moving a single file to a parent znode
+echo             will overlay the data on the parent Znode so specifying the trailing slash
+echo             is important.
+echo.
+echo             Wildcards are not supported
+echo.
+echo         rm deletes files or folders on Zookeeper
+echo             -r     Recursively delete if ^<path^> is a directory. Command will fail if ^<path^>
+echo                    has children and -r is not specified. Optional
+echo             ^<path^> : [zk:]/path/to/zk/node. ^<path^> may not be the root ('/')"
+echo.
+echo         mv moves (renames) znodes on Zookeeper
+echo             ^<src^>, ^<dest^> : Zookeeper nodes, the 'zk:' prefix is optional.
+echo             If ^<dest^> ends with '/', then ^<dest^> will be a parent znode
+echo             and the last element of the ^<src^> path will be appended.
+echo             Zookeeper nodes CAN have data, so moving a single file to a parent znode
+echo             will overlay the data on the parent Znode so specifying the trailing slash
+echo             is important.
+echo.
+echo         ls lists the znodes on Zookeeper
+echo             -r recursively descends the path listing all znodes. Optional
+echo             ^<path^>: The Zookeeper path to use as the root.
+echo.
+echo             Only the node names are listed, not data
+echo.
+goto done
+
+:zk_short_usage
+IF NOT "!ERROR_MSG!"=="" (
+  echo  ERROR: !ERROR_MSG!
+  echo.
+)
+echo  Usage: solr zk upconfig^|downconfig -d ^<confdir^> -n ^<configName^> [-z zkHost]
+echo         solr zk cp [-r] ^<src^> ^<dest^> [-z zkHost]
+echo         solr zk rm [-r] ^<path^> [-z zkHost]
+echo         solr zk mv ^<src^> ^<dest^> [-z zkHost]
+echo         solr zk ls [-r] ^<path^> [-z zkHost]
+echo.
+IF "%ZK_FULL%"=="true" (
+  goto zk_full_usage
+) ELSE (
+  echo Type bin/solr zk -help for full usage help
+)
 goto done
 
 
@@ -405,6 +463,7 @@ IF "%1"=="-key" goto set_stop_key
 IF "%1"=="-all" goto set_stop_all
 IF "%firstTwo%"=="-D" goto set_passthru
 IF NOT "%1"=="" goto invalid_cmd_line
+goto invalid_cmd_line
 
 :set_script_cmd
 set SCRIPT_CMD=%1
@@ -1159,27 +1218,63 @@ org.apache.solr.util.SolrCLI delete -name !DELETE_NAME! -deleteConfig !DELETE_CO
 
 goto done
 
+REM Clumsy to do the state machine thing for -d and -n, but that's required for back-compat
 :parse_zk_args
-IF [%1]==[] goto run_zk
-IF "%1"=="-upconfig" goto set_zk_op_up
-IF "%1"=="-downconfig" goto set_zk_op_down
-IF "%1"=="-n" goto set_config_name
-IF "%1"=="-configname" goto set_config_name
-IF "%1"=="-d" goto set_configdir
-IF "%1"=="-confdir" goto set_configdir
-IF "%1"=="-z" goto set_config_zk
-IF "%1"=="/?" goto usage
-IF "%1"=="-h" goto zk_usage
-IF "%1"=="-help" goto zk_usage
+IF "%1"=="-upconfig" (
+  goto set_zk_op
+) ELSE IF "%1"=="upconfig" (
+  goto set_zk_op
+) ELSE IF "%1"=="-downconfig" (
+  goto set_zk_op
+) ELSE IF "%1"=="downconfig" (
+  goto set_zk_op
+) ELSE IF "%1"=="cp" (
+  goto set_zk_op
+) ELSE IF "%1"=="mv" (
+  goto set_zk_op
+) ELSE IF "%1"=="rm" (
+  goto set_zk_op
+) ELSE IF "%1"=="ls" (
+  goto set_zk_op
+) ELSE IF "%1"=="-n" (
+  goto set_config_name
+) ELSE IF "%1"=="-r" (
+  goto set_zk_recurse
+) ELSE IF "%1"=="-configname" (
+  goto set_config_name
+) ELSE IF "%1"=="-d" (
+  goto set_configdir
+) ELSE IF "%1"=="-confdir" (
+  goto set_configdir
+) ELSE IF "%1"=="-z" (
+  goto set_config_zk
+) ELSE IF "%1"=="/?" (
+  goto zk_usage
+) ELSE IF "%1"=="-h" (
+  goto zk_usage
+) ELSE IF "%1"=="-help" (
+  goto zk_usage
+) ELSE IF "!ZK_SRC!"=="" (
+  if not "%~1"=="" (
+    goto set_zk_src
+  )
+  goto zk_usage
+) ELSE IF "!ZK_DST!"=="" (
+  IF "%ZK_OP%"=="cp" (
+    goto set_zk_dst
+  )
+  IF "%ZK_OP%"=="mv" (
+    goto set_zk_dst
+  )
+  set ZK_DST="_"
+) ELSE IF NOT "%1"=="" (
+  set ERROR_MSG="Unrecognized or misplaced zk argument %1%"
+  goto zk_short_usage
+)
 goto run_zk
 
-:set_zk_op_up
-set ZK_OP=upconfig
-SHIFT
-goto parse_zk_args
-
-:set_zk_op_down
-set ZK_OP=downconfig
+:set_zk_op
+set ZK_OP=%~1
 SHIFT
 goto parse_zk_args
 
@@ -1196,43 +1291,118 @@ SHIFT
 goto parse_zk_args
 
 :set_config_zk
-set CONFIGSET_ZK=%~2
+set ZK_HOST=%~2
 SHIFT
 SHIFT
 goto parse_zk_args
 
+:set_zk_src
+set ZK_SRC=%~1
+SHIFT
+goto parse_zk_args
+
+:set_zk_dst
+set ZK_DST=%~1
+SHIFT
+goto parse_zk_args
+
+:set_zk_recurse
+set ZK_RECURSE="true"
+SHIFT
+goto parse_zk_args
 
 :run_zk
 IF "!ZK_OP!"=="" (
-  set "SCRIPT_ERROR=One of '-upconfig' or '-downconfig' is required for %SCRIPT_CMD%"
-  goto invalid_cmd_line
+  set "ERROR_MSG=Invalid command specified for zk sub-command"
+  goto zk_short_usage
 )
 
-IF "!CONFIGSET_NAME!"=="" (
-  set "SCRIPT_ERROR=Name (-n) is a required parameter for %SCRIPT_CMD%"
-  goto invalid_cmd_line
+IF "!ZK_HOST!"=="" (
+  set "ERROR_MSG=Must specify -z zkHost"
+  goto zk_short_usage
 )
 
-if "!CONFIGSET_DIR!"=="" (
-  set "SCRIPT_ERROR=Name (-d) is a required parameter for %SCRIPT_CMD%"
-  goto err
+IF "!ZK_OP!"=="-upconfig" (
+  set ZK_OP="upconfig"
 )
-
-if "!CONFIGSET_ZK!"=="" (
-  set "SCRIPT_ERROR=Name (-z) is a required parameter for %SCRIPT_CMD%"
-  goto err
+IF "!ZK_OP!"=="-downconfig" (
+  set ZK_OP="downconfig"
 )
 
 IF "!ZK_OP!"=="upconfig" (
-   "%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
-   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-   org.apache.solr.util.SolrCLI !ZK_OP! -confname !CONFIGSET_NAME! -confdir !CONFIGSET_DIR! -zkHost !CONFIGSET_ZK! -configsetsDir "%SOLR_TIP%/server/solr/configsets"
+  IF "!CONFIGSET_NAME!"=="" (
+    set ERROR_MSG="-n option must be set for upconfig"
+    goto zk_short_usage
+  )
+  IF "!CONFIGSET_DIR!"=="" (
+    set ERROR_MSG="The -d option must be set for upconfig."
+    goto zk_short_usage
+  )
+  "%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI !ZK_OP! -confname !CONFIGSET_NAME! -confdir !CONFIGSET_DIR! -zkHost !ZK_HOST! -configsetsDir "%SOLR_TIP%/server/solr/configsets"
+) ELSE IF "!ZK_OP!"=="downconfig" (
+  IF "!CONFIGSET_NAME!"=="" (
+    set ERROR_MSG="-n option must be set for downconfig"
+    goto zk_short_usage
+  )
+  IF "!CONFIGSET_DIR!"=="" (
+    set ERROR_MSG="The -d option must be set for downconfig."
+    goto zk_short_usage
+  )
+  "%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI !ZK_OP! -confname !CONFIGSET_NAME! -confdir !CONFIGSET_DIR! -zkHost !ZK_HOST!
+) ELSE IF "!ZK_OP!"=="cp" (
+  IF "%ZK_SRC%"=="" (
+    set ERROR_MSG="<src> must be specified for 'cp' command"
+    goto zk_short_usage
+  )
+  IF "%ZK_DST%"=="" (
+    set ERROR_MSG=<dest> must be specified for 'cp' command"
+    goto zk_short_usage
+  )
+  IF NOT "!ZK_SRC:~0,3!"=="zk:" (
+    IF NOT "!%ZK_DST:~0,3!"=="zk:" (
+      set ERROR_MSG="At least one of src or dst must be prefixed by 'zk:'"
+      goto zk_short_usage
+  )
+  )
+  "%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -src !ZK_SRC! -dst !ZK_DST! -recurse !ZK_RECURSE!
+) ELSE IF "!ZK_OP!"=="mv" (
+  IF "%ZK_SRC%"=="" (
+    set ERROR_MSG="<src> must be specified for 'mv' command"
+    goto zk_short_usage
+  )
+  IF "%ZK_DST%"=="" (
+    set ERROR_MSG="<dest> must be specified for 'mv' command"
+    goto zk_short_usage
+  )
+  "%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -src !ZK_SRC! -dst !ZK_DST!
+) ELSE IF "!ZK_OP!"=="rm" (
+  IF "%ZK_SRC"=="" (
+    set ERROR_MSG="Zookeeper path to remove must be specified when using the 'rm' command"
+    goto zk_short_usage
+  )
+  "%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -path !ZK_SRC! -recurse !ZK_RECURSE!
+) ELSE IF "!ZK_OP!"=="ls" (
+  IF "%ZK_SRC"=="" (
+    set ERROR_MSG="Zookeeper path to remove must be specified when using the 'rm' command"
+    goto zk_short_usage
+  )
+  "%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -path !ZK_SRC! -recurse !ZK_RECURSE!
 ) ELSE (
-   "%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
-   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-   org.apache.solr.util.SolrCLI !ZK_OP! -confname !CONFIGSET_NAME! -confdir !CONFIGSET_DIR! -zkHost !CONFIGSET_ZK!
+  set ERROR_MSG="Unknown zk option !ZK_OP!"
+  goto zk_short_usage
 )
-
 goto done
 
 :invalid_cmd_line
@@ -1260,7 +1430,7 @@ IF "%FIRST_ARG%"=="start" (
 ) ELSE IF "%FIRST_ARG%"=="create_collection" (
   goto create_collection_usage
 ) ELSE IF "%FIRST_ARG%"=="zk" (
-  goto zk_usage
+  goto zk_short_usage
 ) ELSE (
   goto script_usage
 )
@@ -1300,12 +1470,12 @@ for /f "tokens=3" %%a in ("!JAVAVEROUT!") do (
   set JAVA_VERSION_INFO=%%a
   REM Remove surrounding quotes
   set JAVA_VERSION_INFO=!JAVA_VERSION_INFO:"=!
-  
+
   REM Extract the major Java version, e.g. 7, 8, 9, 10 ...
   for /f "tokens=2 delims=." %%a in ("!JAVA_VERSION_INFO!") do (
     set JAVA_MAJOR_VERSION=%%a
   )
-    
+
   REM Don't look for "_{build}" if we're on IBM J9.
   if NOT "%JAVA_VENDOR%" == "IBM J9" (
     for /f "delims=_ tokens=2" %%a in ("!JAVA_VERSION_INFO!") do (

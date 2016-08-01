@@ -107,7 +107,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       case "rule":
         return (List) o;
       default:
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Unknown property " + propName);
+        return o;
     }
 
   }
@@ -197,7 +197,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public String toString() {
-    return "DocCollection("+name+")=" + JSONUtil.toJSON(this);
+    return "DocCollection("+name+"/" + znode + "/" + znodeVersion + ")=" + JSONUtil.toJSON(this);
   }
 
   @Override
@@ -259,4 +259,26 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     }
     return replicas;
   }
+
+  /**
+   * Get the shardId of a core on a specific node
+   */
+  public String getShardId(String nodeName, String coreName) {
+    for (Slice slice : this) {
+      for (Replica replica : slice) {
+        if (Objects.equals(replica.getNodeName(), nodeName) && Objects.equals(replica.getCoreName(), coreName))
+          return slice.getName();
+      }
+    }
+    return null;
+  }
+
+  @Override
+  public boolean equals(Object that) {
+    if (that instanceof DocCollection == false)
+      return false;
+    DocCollection other = (DocCollection) that;
+    return super.equals(that) && Objects.equals(this.znode, other.znode) && this.znodeVersion == other.znodeVersion;
+  }
+
 }

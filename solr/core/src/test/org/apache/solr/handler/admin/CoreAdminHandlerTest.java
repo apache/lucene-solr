@@ -248,7 +248,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     File solrHomeDirectory = new File(initCoreDataDir, getClass().getName() + "-corex-"
         + System.nanoTime());
     solrHomeDirectory.mkdirs();
-    copySolrHomeToTemp(solrHomeDirectory, "corex", true);
+    copySolrHomeToTemp(solrHomeDirectory, "corex");
     File corex = new File(solrHomeDirectory, "corex");
     FileUtils.write(new File(corex, "core.properties"), "", Charsets.UTF_8.toString());
     JettySolrRunner runner = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), buildJettyConfig("/solr"));

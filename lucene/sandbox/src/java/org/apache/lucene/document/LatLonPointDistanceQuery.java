@@ -67,7 +67,7 @@ final class LatLonPointDistanceQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     Rectangle box = Rectangle.fromPointDistance(latitude, longitude, radiusMeters);
     // create bounding box(es) for the distance range
     // these are pre-encoded with LatLonPoint's encoding
@@ -100,7 +100,7 @@ final class LatLonPointDistanceQuery extends Query {
 
     final double axisLat = Rectangle.axisLat(latitude, radiusMeters);
 
-    return new ConstantScoreWeight(this) {
+    return new ConstantScoreWeight(this, boost) {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {

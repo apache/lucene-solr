@@ -139,7 +139,6 @@ public class CloudMLTQParser extends QParser {
 
       if (boostFields.size() > 0) {
         BooleanQuery.Builder newQ = new BooleanQuery.Builder();
-        newQ.setDisableCoord(boostedMLTQuery.isCoordDisabled());
         newQ.setMinimumNumberShouldMatch(boostedMLTQuery.getMinimumNumberShouldMatch());
 
         for (BooleanClause clause : boostedMLTQuery) {
@@ -160,7 +159,6 @@ public class CloudMLTQParser extends QParser {
 
       // exclude current document from results
       BooleanQuery.Builder realMLTQuery = new BooleanQuery.Builder();
-      realMLTQuery.setDisableCoord(true);
       realMLTQuery.add(boostedMLTQuery, BooleanClause.Occur.MUST);
       realMLTQuery.add(createIdQuery(req.getSchema().getUniqueKeyField().getName(), id), BooleanClause.Occur.MUST_NOT);
 

@@ -26,6 +26,7 @@ import java.util.Set;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequestInterceptor;
@@ -51,12 +52,21 @@ public class Krb5HttpClientBuilder  {
   public static final String LOGIN_CONFIG_PROP = "java.security.auth.login.config";
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  private static final Configuration jaasConfig = new SolrJaasConfiguration();
+  private static Configuration jaasConfig = new SolrJaasConfiguration();
 
   public Krb5HttpClientBuilder() {
 
   }
-  
+
+  /**
+   * The jaasConfig is static, which makes it problematic for testing in the same jvm.
+   * Call this function to regenerate the static config (this is not thread safe).
+   */
+  @VisibleForTesting
+  public static void regenerateJaasConfiguration() {
+    jaasConfig = new SolrJaasConfiguration();
+  }
+
   public SolrHttpClientBuilder getBuilder() {
     return getBuilder(HttpClientUtil.getHttpClientBuilder());
   }
@@ -104,9 +114,9 @@ public class Krb5HttpClientBuilder  {
             return null;
           }
         };
-        
+
         HttpClientUtil.setCookiePolicy(SolrPortAwareCookieSpecFactory.POLICY_NAME);
-        
+
         builder.setCookieSpecRegistryProvider(() -> {
           SolrPortAwareCookieSpecFactory cookieFactory = new SolrPortAwareCookieSpecFactory();
 

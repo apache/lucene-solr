@@ -254,7 +254,8 @@ public class ReplicaAssigner {
         Integer n = nodeNames.get(liveNode);
         n = n == null ? 1 : n + 1;
         nodeNames.put(liveNode, n);
-        Number coreCount = (Number) nodeVsTagsCopy.get(liveNode).get(ImplicitSnitch.CORES);
+        Map<String, Object> tagsMap = nodeVsTagsCopy.get(liveNode);
+        Number coreCount = tagsMap == null ? null: (Number) tagsMap.get(ImplicitSnitch.CORES);
         if (coreCount != null) {
           nodeVsTagsCopy.get(liveNode).put(ImplicitSnitch.CORES, coreCount.intValue() + 1);
         }
@@ -398,7 +399,7 @@ public class ReplicaAssigner {
       //now use the Snitch to get the tags
       for (SnitchInfoImpl info : snitches.values()) {
         if (!info.myTags.isEmpty()) {
-          SnitchContext context = new SnitchContext(info, node);
+          SnitchContext context = getSnitchCtx(node, info);
           info.nodeVsContext.put(node, context);
           try {
             info.snitch.getTags(node, info.myTags, context);
@@ -439,6 +440,11 @@ public class ReplicaAssigner {
     }
     return result;
 
+  }
+
+  private Map<String, Object> snitchSession = new HashMap<>();
+  protected SnitchContext getSnitchCtx( String node, SnitchInfoImpl info) {
+    return new SnitchContext(info, node, snitchSession);
   }
 
   public static void verifySnitchConf(CoreContainer cc, List snitchConf) {

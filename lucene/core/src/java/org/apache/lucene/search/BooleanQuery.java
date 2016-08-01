@@ -32,7 +32,6 @@ import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.similarities.Similarity;
 
 /** A Query that matches documents matching boolean combinations of other
   * queries, e.g. {@link TermQuery}s, {@link PhraseQuery}s or other
@@ -74,23 +73,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   /** A builder for boolean queries. */
   public static class Builder {
 
-    private boolean disableCoord;
     private int minimumNumberShouldMatch;
     private final List<BooleanClause> clauses = new ArrayList<>();
 
     /** Sole constructor. */
     public Builder() {}
-
-    /**
-     * {@link Similarity#coord(int,int)} may be disabled in scoring, as
-     * appropriate. For example, this score factor does not make sense for most
-     * automatically generated queries, like {@link WildcardQuery} and {@link
-     * FuzzyQuery}.
-     */
-    public Builder setDisableCoord(boolean disableCoord) {
-      this.disableCoord = disableCoord;
-      return this;
-    }
 
     /**
      * Specifies a minimum number of the optional BooleanClauses
@@ -142,19 +129,17 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     /** Create a new {@link BooleanQuery} based on the parameters that have
      *  been set on this builder. */
     public BooleanQuery build() {
-      return new BooleanQuery(disableCoord, minimumNumberShouldMatch, clauses.toArray(new BooleanClause[0]));
+      return new BooleanQuery(minimumNumberShouldMatch, clauses.toArray(new BooleanClause[0]));
     }
 
   }
 
-  private final boolean disableCoord;
   private final int minimumNumberShouldMatch;
   private final List<BooleanClause> clauses;              // used for toString() and getClauses()
   private final Map<Occur, Collection<Query>> clauseSets; // used for equals/hashcode
 
-  private BooleanQuery(boolean disableCoord, int minimumNumberShouldMatch,
+  private BooleanQuery(int minimumNumberShouldMatch,
       BooleanClause[] clauses) {
-    this.disableCoord = disableCoord;
     this.minimumNumberShouldMatch = minimumNumberShouldMatch;
     this.clauses = Collections.unmodifiableList(Arrays.asList(clauses));
     clauseSets = new EnumMap<>(Occur.class);
@@ -167,13 +152,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     for (BooleanClause clause : clauses) {
       clauseSets.get(clause.getOccur()).add(clause.getQuery());
     }
-  }
-
-  /**
-   * Return whether the coord factor is disabled.
-   */
-  public boolean isCoordDisabled() {
-    return disableCoord;
   }
 
   /**
@@ -218,18 +196,18 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     BooleanQuery query = this;
     if (needsScores == false) {
       query = rewriteNoScoring();
     }
-    return new BooleanWeight(query, searcher, needsScores, disableCoord);
+    return new BooleanWeight(query, searcher, needsScores, boost);
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (clauses.size() == 0) {
-      return new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("empty BooleanQuery");
     }
     
     // optimize 1-clause queries
@@ -248,7 +226,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
             return new BoostQuery(new ConstantScoreQuery(query), 0);
           case MUST_NOT:
             // no positive clauses
-            return new MatchNoDocsQuery();
+            return new MatchNoDocsQuery("pure negative BooleanQuery");
           default:
             throw new AssertionError();
         }
@@ -258,7 +236,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     // recursively rewrite
     {
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      builder.setDisableCoord(isCoordDisabled());
       builder.setMinimumNumberShouldMatch(getMinimumNumberShouldMatch());
       boolean actuallyRewritten = false;
       for (BooleanClause clause : this) {
@@ -284,7 +261,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         // since clauseSets implicitly deduplicates FILTER and MUST_NOT
         // clauses, this means there were duplicates
         BooleanQuery.Builder rewritten = new BooleanQuery.Builder();
-        rewritten.setDisableCoord(disableCoord);
         rewritten.setMinimumNumberShouldMatch(minimumNumberShouldMatch);
         for (Map.Entry<Occur, Collection<Query>> entry : clauseSets.entrySet()) {
           final Occur occur = entry.getKey();
@@ -304,7 +280,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       modified |= filters.removeAll(clauseSets.get(Occur.MUST));
       if (modified) {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        builder.setDisableCoord(isCoordDisabled());
         builder.setMinimumNumberShouldMatch(getMinimumNumberShouldMatch());
         for (BooleanClause clause : clauses) {
           if (clause.getOccur() != Occur.FILTER) {
@@ -355,7 +330,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
           // now add back the SHOULD clauses
           builder = new BooleanQuery.Builder()
-            .setDisableCoord(isCoordDisabled())
             .setMinimumNumberShouldMatch(getMinimumNumberShouldMatch())
             .add(rewritten, Occur.MUST);
           for (Query query : clauseSets.get(Occur.SHOULD)) {
@@ -414,7 +388,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
    * Compares the specified object with this boolean query for equality.
    * Returns true if and only if the provided object<ul>
    * <li>is also a {@link BooleanQuery},</li>
-   * <li>has the same value of {@link #isCoordDisabled()}</li>
    * <li>has the same value of {@link #getMinimumNumberShouldMatch()}</li>
    * <li>has the same {@link Occur#SHOULD} clauses, regardless of the order</li>
    * <li>has the same {@link Occur#MUST} clauses, regardless of the order</li>
@@ -431,12 +404,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
   private boolean equalsTo(BooleanQuery other) {
     return getMinimumNumberShouldMatch() == other.getMinimumNumberShouldMatch() && 
-           disableCoord == other.disableCoord &&
            clauseSets.equals(other.clauseSets);
   }
 
   private int computeHashCode() {
-    int hashCode = Objects.hash(disableCoord, minimumNumberShouldMatch, clauseSets);
+    int hashCode = Objects.hash(minimumNumberShouldMatch, clauseSets);
     if (hashCode == 0) {
       hashCode = 1;
     }

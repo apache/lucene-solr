@@ -21,6 +21,9 @@ import java.io.FileOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.analysis.util.FilesystemResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
@@ -80,9 +83,19 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
 
     RuleBasedCollator tailoredCollator = new RuleBasedCollator(baseCollator.getRules() + DIN5007_2_tailorings);
     String tailoredRules = tailoredCollator.getRules();
-    FileOutputStream os = new FileOutputStream(new File(confDir, "customrules.dat"));
+    final String osFileName = "customrules.dat";
+    final FileOutputStream os = new FileOutputStream(new File(confDir, osFileName));
     IOUtils.write(tailoredRules, os, "UTF-8");
     os.close();
+
+    final ResourceLoader loader;
+    if (random().nextBoolean()) {
+      loader = new StringMockResourceLoader(tailoredRules);
+    } else {
+      loader = new FilesystemResourceLoader(confDir.toPath());
+    }
+    final Collator readCollator = ICUCollationField.createFromRules(osFileName, loader);
+    assertEquals(tailoredCollator, readCollator);
 
     return tmpFile;
   }

@@ -328,7 +328,7 @@ public class QueryParsing {
       BooleanQuery q = (BooleanQuery) query;
       boolean needParens = false;
 
-      if (q.getMinimumNumberShouldMatch() != 0 || q.isCoordDisabled() || (flags & (FLAG_IS_CLAUSE | FLAG_BOOSTED)) != 0 ) {
+      if (q.getMinimumNumberShouldMatch() != 0 || (flags & (FLAG_IS_CLAUSE | FLAG_BOOSTED)) != 0 ) {
         needParens = true;
       }
       if (needParens) {
@@ -359,9 +359,6 @@ public class QueryParsing {
       if (q.getMinimumNumberShouldMatch() > 0) {
         out.append('~');
         out.append(Integer.toString(q.getMinimumNumberShouldMatch()));
-      }
-      if (q.isCoordDisabled()) {
-        out.append("/no_coord");
       }
 
     } else if (query instanceof PrefixQuery) {

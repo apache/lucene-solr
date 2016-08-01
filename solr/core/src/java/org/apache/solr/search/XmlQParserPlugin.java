@@ -25,11 +25,20 @@ import org.apache.lucene.search.Query;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 
 public class XmlQParserPlugin extends QParserPlugin {
   public static final String NAME = "xmlparser";
+
+  private NamedList args;
+
+  @Override
+  public void init( NamedList args ) {
+    super.init(args);
+    this.args = args;
+  }
 
   private class XmlQParser extends QParser {
 
@@ -46,7 +55,9 @@ public class XmlQParserPlugin extends QParserPlugin {
       final IndexSchema schema = req.getSchema();
       final String defaultField = QueryParsing.getDefaultField(schema, getParam(CommonParams.DF));
       final Analyzer analyzer = schema.getQueryAnalyzer();
+
       final SolrCoreParser solrParser = new SolrCoreParser(defaultField, analyzer, req);
+      solrParser.init(args);
       try {
         return solrParser.parse(new ByteArrayInputStream(qstr.getBytes(StandardCharsets.UTF_8)));
       } catch (ParserException e) {

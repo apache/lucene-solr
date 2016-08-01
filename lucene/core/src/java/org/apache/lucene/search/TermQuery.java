@@ -29,6 +29,7 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
@@ -48,11 +49,13 @@ public class TermQuery extends Query {
     private final TermContext termStates;
     private final boolean needsScores;
 
-    public TermWeight(IndexSearcher searcher, boolean needsScores, TermContext termStates)
-        throws IOException {
+    public TermWeight(IndexSearcher searcher, boolean needsScores,
+        float boost, TermContext termStates) throws IOException {
       super(TermQuery.this);
+      if (needsScores && termStates == null) {
+        throw new IllegalStateException("termStates are required when scores are needed");
+      }
       this.needsScores = needsScores;
-      assert termStates != null : "TermContext must not be null";
       this.termStates = termStates;
       this.similarity = searcher.getSimilarity(needsScores);
 
@@ -62,15 +65,13 @@ public class TermQuery extends Query {
         collectionStats = searcher.collectionStatistics(term.field());
         termStats = searcher.termStatistics(term, termStates);
       } else {
-        // do not bother computing actual stats, scores are not needed
+        // we do not need the actual stats, use fake stats with docFreq=maxDoc and ttf=-1
         final int maxDoc = searcher.getIndexReader().maxDoc();
-        final int docFreq = termStates.docFreq();
-        final long totalTermFreq = termStates.totalTermFreq();
         collectionStats = new CollectionStatistics(term.field(), maxDoc, -1, -1, -1);
-        termStats = new TermStatistics(term.bytes(), docFreq, totalTermFreq);
+        termStats = new TermStatistics(term.bytes(), maxDoc, -1);
       }
      
-      this.stats = similarity.computeWeight(collectionStats, termStats);
+      this.stats = similarity.computeWeight(boost, collectionStats, termStats);
     }
 
     @Override
@@ -84,18 +85,8 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public float getValueForNormalization() {
-      return stats.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float queryNorm, float boost) {
-      stats.normalize(queryNorm, boost);
-    }
-
-    @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      assert termStates.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termStates.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
+      assert termStates == null || termStates.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termStates.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);;
       final TermsEnum termsEnum = getTermsEnum(context);
       if (termsEnum == null) {
         return null;
@@ -110,17 +101,30 @@ public class TermQuery extends Query {
      * the term does not exist in the given context
      */
     private TermsEnum getTermsEnum(LeafReaderContext context) throws IOException {
-      final TermState state = termStates.get(context.ord);
-      if (state == null) { // term is not present in that reader
-        assert termNotInReader(context.reader(), term) : "no termstate found but term exists in reader term=" + term;
-        return null;
+      if (termStates != null) {
+        // TermQuery either used as a Query or the term states have been provided at construction time
+        assert termStates.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termStates.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
+        final TermState state = termStates.get(context.ord);
+        if (state == null) { // term is not present in that reader
+          assert termNotInReader(context.reader(), term) : "no termstate found but term exists in reader term=" + term;
+          return null;
+        }
+        final TermsEnum termsEnum = context.reader().terms(term.field()).iterator();
+        termsEnum.seekExact(term.bytes(), state);
+        return termsEnum;
+      } else {
+        // TermQuery used as a filter, so the term states have not been built up front
+        Terms terms = context.reader().terms(term.field());
+        if (terms == null) {
+          return null;
+        }
+        final TermsEnum termsEnum = terms.iterator();
+        if (termsEnum.seekExact(term.bytes())) {
+          return termsEnum;
+        } else {
+          return null;
+        }
       }
-      // System.out.println("LD=" + reader.getLiveDocs() + " set?=" +
-      // (reader.getLiveDocs() != null ? reader.getLiveDocs().get(0) : "null"));
-      final TermsEnum termsEnum = context.reader().terms(term.field())
-          .iterator();
-      termsEnum.seekExact(term.bytes(), state);
-      return termsEnum;
     }
 
     private boolean termNotInReader(LeafReader reader, Term term) throws IOException {
@@ -173,20 +177,26 @@ public class TermQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     final IndexReaderContext context = searcher.getTopReaderContext();
     final TermContext termState;
     if (perReaderTermState == null
         || perReaderTermState.topReaderContext != context) {
-      // make TermQuery single-pass if we don't have a PRTS or if the context
-      // differs!
-      termState = TermContext.build(context, term);
+      if (needsScores) {
+        // make TermQuery single-pass if we don't have a PRTS or if the context
+        // differs!
+        termState = TermContext.build(context, term);
+      } else {
+        // do not compute the term state, this will help save seeks in the terms
+        // dict on segments that have a cache entry for this query
+        termState = null;
+      }
     } else {
       // PRTS was pre-build for this IS
       termState = this.perReaderTermState;
     }
 
-    return new TermWeight(searcher, needsScores, termState);
+    return new TermWeight(searcher, needsScores, boost, termState);
   }
 
   /** Prints a user-readable version of this query. */

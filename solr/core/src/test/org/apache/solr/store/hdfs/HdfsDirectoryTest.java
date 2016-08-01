@@ -128,7 +128,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     IndexOutput output = directory.createOutput("testing.test", new IOContext());
     output.writeInt(12345);
     output.close();
-    directory.renameFile("testing.test", "testing.test.renamed");
+    directory.rename("testing.test", "testing.test.renamed");
     assertFalse(slowFileExists(directory, "testing.test"));
     assertTrue(slowFileExists(directory, "testing.test.renamed"));
     IndexInput input = directory.openInput("testing.test.renamed", new IOContext());

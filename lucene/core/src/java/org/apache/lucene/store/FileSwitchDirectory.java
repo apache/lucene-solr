@@ -182,14 +182,20 @@ public class FileSwitchDirectory extends Directory {
   }
 
   @Override
-  public void renameFile(String source, String dest) throws IOException {
+  public void rename(String source, String dest) throws IOException {
     Directory sourceDir = getDirectory(source);
     // won't happen with standard lucene index files since pending and commit will
     // always have the same extension ("")
     if (sourceDir != getDirectory(dest)) {
       throw new AtomicMoveNotSupportedException(source, dest, "source and dest are in different directories");
     }
-    sourceDir.renameFile(source, dest);
+    sourceDir.rename(source, dest);
+  }
+
+  @Override
+  public void syncMetaData() throws IOException {
+    primaryDir.syncMetaData();
+    secondaryDir.syncMetaData();
   }
 
   @Override

@@ -112,25 +112,13 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   
   @Test
   @Nightly
-  public void test15SecondsOld() throws Exception {
+  public void test15Seconds() throws Exception {
     doStress(15);
   }
 
   @Test
   @Nightly
-  public void test15SecondsNew() throws Exception {
-    doStress(15);
-  }
-
-  @Test
-  @Nightly
-  public void test10MinutesOld() throws Exception {
-    doStress(300);
-  }
-
-  @Test
-  @Nightly
-  public void test10MinutesNew() throws Exception {
+  public void test10Minutes() throws Exception {
     doStress(300);
   }
 

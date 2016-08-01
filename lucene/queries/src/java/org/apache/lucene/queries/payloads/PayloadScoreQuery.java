@@ -86,11 +86,11 @@ public class PayloadScoreQuery extends SpanQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    SpanWeight innerWeight = wrappedQuery.createWeight(searcher, needsScores);
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    SpanWeight innerWeight = wrappedQuery.createWeight(searcher, needsScores, boost);
     if (!needsScores)
       return innerWeight;
-    return new PayloadSpanWeight(searcher, innerWeight);
+    return new PayloadSpanWeight(searcher, innerWeight, boost);
   }
 
   @Override
@@ -116,8 +116,8 @@ public class PayloadScoreQuery extends SpanQuery {
 
     private final SpanWeight innerWeight;
 
-    public PayloadSpanWeight(IndexSearcher searcher, SpanWeight innerWeight) throws IOException {
-      super(PayloadScoreQuery.this, searcher, null);
+    public PayloadSpanWeight(IndexSearcher searcher, SpanWeight innerWeight, float boost) throws IOException {
+      super(PayloadScoreQuery.this, searcher, null, boost);
       this.innerWeight = innerWeight;
     }
 
@@ -144,16 +144,6 @@ public class PayloadScoreQuery extends SpanQuery {
     @Override
     public void extractTerms(Set<Term> terms) {
       innerWeight.extractTerms(terms);
-    }
-
-    @Override
-    public float getValueForNormalization() throws IOException {
-      return innerWeight.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float queryNorm, float topLevelBoost) {
-      innerWeight.normalize(queryNorm, topLevelBoost);
     }
 
     @Override

@@ -112,7 +112,7 @@ public class HashQParserPlugin extends QParserPlugin {
       this.worker = worker;
     }
 
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
 
       String[] keys = keysParam.split(",");
       SolrIndexSearcher solrIndexSearcher = (SolrIndexSearcher)searcher;
@@ -132,7 +132,7 @@ public class HashQParserPlugin extends QParserPlugin {
       }
 
       ConstantScoreQuery constantScoreQuery = new ConstantScoreQuery(new BitsFilter(fixedBitSets));
-      return searcher.rewrite(constantScoreQuery).createWeight(searcher, false);
+      return searcher.rewrite(constantScoreQuery).createWeight(searcher, false, boost);
     }
 
     public class BitsFilter extends Filter {

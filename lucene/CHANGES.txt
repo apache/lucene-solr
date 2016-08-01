@@ -5,6 +5,19 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 7.0.0 =======================
 
+API Changes
+
+* LUCENE-2605: Classic QueryParser no longer splits on whitespace by default.
+  Use setSplitOnWhitespace(true) to get the old behavior.  (Steve Rowe)
+
+* LUCENE-7369: Similarity.coord and BooleanQuery.disableCoord are removed.
+  (Adrien Grand)
+
+* LUCENE-7368: Removed query normalization. (Adrien Grand)
+
+* LUCENE-7355: AnalyzingQueryParser has been removed as its functionality has
+  been folded into the classic QueryParser. (Adrien Grand)
+
 Bug Fixes
 
 Improvements
@@ -15,9 +28,18 @@ Other
 
 * LUCENE-6968: LSH Filter (Tommaso Teofili, Andy Hind, Cao Manh Dat)
 
+* LUCENE-7360: Remove Explanation.toHtml() (Alan Woodward)
+
 ======================= Lucene 6.2.0 =======================
 
+API Changes
+
+* ScoringWrapperSpans was removed since it had no purpose or effect as of Lucene 5.5.
+
 New Features
+
+* LUCENE-7381: Add point based DoubleRangeField and RangeFieldQuery for
+  indexing and querying on Ranges up to 4 dimensions (Nick Knize)
 
 * LUCENE-7302: IndexWriter methods that change the index now return a
   long "sequence number" indicating the effective equivalent
@@ -31,9 +53,37 @@ New Features
   analyzer for the Ukrainian language (Andriy Rysin via Mike
   McCandless)
 
+* LUCENE-7373: Directory.renameFile, which did both renaming and fsync
+  of the directory metadata, has been deprecated; use the new separate
+  methods Directory.rename and Directory.syncMetaData instead (Robert Muir,
+  Uwe Schindler, Mike McCandless)
+
+* LUCENE-7355: Added Analyzer#normalize(), which only applies normalization to
+  an input string. (Adrien Grand)
+
+* LUCENE-7380: Add Polygon.fromGeoJSON for more easily creating
+  Polygon instances from a standard GeoJSON string (Robert Muir, Mike
+  McCandless)
+
+* SOLR-9279: Queries module: new ComparisonBoolFunction base class
+  (Doug Turnbull via David Smiley)
+
 Bug Fixes
 
 * LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
+
+* LUCENE-7340: MemoryIndex.toString() could throw NPE; fixed. Renamed to toStringDebug().
+  (Daniel Collins, David Smiley)
+
+* LUCENE-7382: Fix bug introduced by LUCENE-7355 that used the
+  wrong default AttributeFactory for new Tokenizers.
+  (Terry Smith, Uwe Schindler)
+
+* LUCENE-7389: Fix FieldType.setDimensions(...) validation for the dimensionNumBytes
+  parameter. (Martijn van Groningen)
+
+* LUCENE-7391: Fix performance regression in MemoryIndex's fields() introduced
+  in Lucene 6. (Steve Mason via David Smiley)
 
 Improvements
 
@@ -66,11 +116,47 @@ Improvements
   and empty boolean queries now rewrite to MatchNoDocsQuery instead of
   vice/versa (Jim Ferenczi via Mike McCandless)
 
+* LUCENE-7359: Add equals() and hashCode() to Explanation (Alan Woodward)
+
+* LUCENE-7353: ScandinavianFoldingFilterFactory and
+  ScandinavianNormalizationFilterFactory now implement MultiTermAwareComponent.
+  (Adrien Grand)
+
+* LUCENE-2605: Add classic QueryParser option setSplitOnWhitespace() to
+  control whether to split on whitespace prior to text analysis.  Default
+  behavior remains unchanged: split-on-whitespace=true. (Steve Rowe)
+
+* LUCENE-7276: MatchNoDocsQuery now includes an optional reason for
+  why it was used (Jim Ferenczi via Mike McCandless)
+
+* LUCENE-7355: AnalyzingQueryParser now only applies the subset of the analysis
+  chain that is about normalization for range/fuzzy/wildcard queries.
+  (Adrien Grand)
+
+* LUCENE-7376: Add support for ToParentBlockJoinQuery to fast vector highlighter's
+  FieldQuery. (Martijn van Groningen)
+
+* LUCENE-7385: Improve/fix assert messages in SpanScorer. (David Smiley)
+
+* LUCENE-7393: Add ICUTokenizer option to parse Myanmar text as syllables instead of words,
+  because the ICU word-breaking algorithm has some issues. This allows for the previous 
+  tokenization used before Lucene 5. (AM, Robert Muir)
+
 Optimizations
 
 * LUCENE-7330, LUCENE-7339: Speed up conjunction queries. (Adrien Grand)
 
 * LUCENE-7356: SearchGroup tweaks. (Christine Poerschke)
+
+* LUCENE-7351: Doc id compression for points. (Adrien Grand)
+
+* LUCENE-7371: Point values are now better compressed using run-length
+  encoding. (Adrien Grand)
+
+* LUCENE-7311: Cached term queries do not seek the terms dictionary anymore.
+  (Adrien Grand)
+
+* LUCENE-7396: Faster flush of points. (Adrien Grand, Mike McCandless)
 
 Other
 
@@ -81,7 +167,15 @@ Other
 
 * LUCENE-7346: Update forbiddenapis to version 2.2.
   (Uwe Schindler)
+
+* LUCENE-7360: Explanation.toHtml() is deprecated. (Alan Woodward)
   
+* LUCENE-7372: Factor out an org.apache.lucene.search.FilterWeight class.
+  (Christine Poerschke, Adrien Grand, David Smiley)
+
+* LUCENE-7384: Removed ScoringWrapperSpans. And tweaked SpanWeight.buildSimWeight() to
+  reuse the existing Similarity instead of creating a new one. (David Smiley)
+
 ======================= Lucene 6.1.0 =======================
 
 New Features

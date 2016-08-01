@@ -118,6 +118,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       if (!zkClient.isClosed()) {
         zkClient.close();
       }
+      zkStateReader.close();
     }
   }
 

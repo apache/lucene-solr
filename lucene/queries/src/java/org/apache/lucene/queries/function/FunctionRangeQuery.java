@@ -114,7 +114,7 @@ public class FunctionRangeQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     return new FunctionRangeWeight(searcher);
   }
 
@@ -131,17 +131,6 @@ public class FunctionRangeQuery extends Query {
     @Override
     public void extractTerms(Set<Term> terms) {
       //none
-    }
-
-    //Note: this uses the functionValue's floatVal() as the score; queryNorm/boost is ignored.
-    @Override
-    public float getValueForNormalization() throws IOException {
-      return 1f;
-    }
-
-    @Override
-    public void normalize(float norm, float topLevelBoost) {
-      //no-op
     }
 
     @Override

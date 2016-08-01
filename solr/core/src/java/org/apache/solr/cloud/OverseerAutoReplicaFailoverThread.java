@@ -451,7 +451,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       // for now, the collections API will use unique names
       createCmd.setCoreName(coreName);
       createCmd.setDataDir(dataDir);
-      createCmd.setUlogDir(ulogDir);
+      createCmd.setUlogDir(ulogDir.substring(0, ulogDir.length() - "/tlog".length()));
       client.request(createCmd);
     } catch (Exception e) {
       SolrException.log(log, "Exception trying to create new replica on " + createUrl, e);

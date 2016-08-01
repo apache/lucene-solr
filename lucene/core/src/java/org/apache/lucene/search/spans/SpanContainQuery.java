@@ -62,8 +62,8 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
     final SpanWeight littleWeight;
 
     public SpanContainWeight(IndexSearcher searcher, Map<Term, TermContext> terms,
-                             SpanWeight bigWeight, SpanWeight littleWeight) throws IOException {
-      super(SpanContainQuery.this, searcher, terms);
+                             SpanWeight bigWeight, SpanWeight littleWeight, float boost) throws IOException {
+      super(SpanContainQuery.this, searcher, terms, boost);
       this.bigWeight = bigWeight;
       this.littleWeight = littleWeight;
     }

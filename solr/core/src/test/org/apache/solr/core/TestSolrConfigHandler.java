@@ -168,7 +168,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   public static void runConfigCommand(RestTestHarness harness, String uri, String payload) throws IOException {
     String json = SolrTestCaseJ4.json(payload);
-    log.info("going to send config command. path {} , payload: ", uri, payload);
+    log.info("going to send config command. path {} , payload: {}", uri, payload);
     String response = harness.post(uri, json);
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(response, map.get("errors"));

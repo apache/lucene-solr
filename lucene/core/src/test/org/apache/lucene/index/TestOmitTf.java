@@ -46,10 +46,6 @@ public class TestOmitTf extends LuceneTestCase {
   public static class SimpleSimilarity extends TFIDFSimilarity {
     @Override public float decodeNormValue(long norm) { return norm; }
     @Override public long encodeNormValue(float f) { return (long) f; }
-    @Override
-    public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
-    @Override
-    public float coord(int overlap, int maxOverlap) { return 1.0f; }
     @Override public float lengthNorm(FieldInvertState state) { return state.getBoost(); }
     @Override public float tf(float freq) { return freq; }
     @Override public float sloppyFreq(int distance) { return 2.0f; }

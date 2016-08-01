@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
 
 public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
@@ -386,5 +387,10 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     };
     checkRandomData(random, analyzer, 100*RANDOM_MULTIPLIER, 8192);
     analyzer.close();
+  }
+
+  public void testNormalize() {
+    Analyzer a = new StandardAnalyzer();
+    assertEquals(new BytesRef("\"\\à3[]()! cz@"), a.normalize("dummy", "\"\\À3[]()! Cz@"));
   }
 }

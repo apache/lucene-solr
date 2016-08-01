@@ -45,7 +45,6 @@ public class BooleanQueryBuilder implements QueryBuilder {
   @Override
   public Query getQuery(Element e) throws ParserException {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(DOMUtils.getAttribute(e, "disableCoord", false));
     bq.setMinimumNumberShouldMatch(DOMUtils.getAttribute(e, "minimumNumberShouldMatch", 0));
 
     NodeList nl = e.getChildNodes();

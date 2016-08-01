@@ -97,4 +97,9 @@ public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
       }
     };
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    return new LowerCaseFilter(in);
+  }
 }

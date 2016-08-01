@@ -54,9 +54,7 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
   public final static ScoringRewrite<BooleanQuery.Builder> SCORING_BOOLEAN_REWRITE = new ScoringRewrite<BooleanQuery.Builder>() {
     @Override
     protected BooleanQuery.Builder getTopLevelBuilder() {
-      BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      builder.setDisableCoord(true);
-      return builder;
+      return new BooleanQuery.Builder();
     }
 
     @Override

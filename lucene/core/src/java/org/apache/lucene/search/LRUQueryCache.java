@@ -688,7 +688,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     private final AtomicBoolean used;
 
     CachingWrapperWeight(Weight in, QueryCachingPolicy policy) {
-      super(in.getQuery());
+      super(in.getQuery(), 1f);
       this.in = in;
       this.policy = policy;
       used = new AtomicBoolean(false);

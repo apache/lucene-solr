@@ -100,4 +100,9 @@ public final class ClassicAnalyzer extends StopwordAnalyzerBase {
       }
     };
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    return new LowerCaseFilter(in);
+  }
 }

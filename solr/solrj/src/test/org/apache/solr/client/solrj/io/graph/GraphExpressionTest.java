@@ -1,5 +1,3 @@
-package org.apache.solr.client.solrj.io.graph;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.solr.client.solrj.io.graph;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.client.solrj.io.graph;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -40,6 +40,8 @@ import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.HashJoinStream;
+import org.apache.solr.client.solrj.io.stream.ScoreNodesStream;
+import org.apache.solr.client.solrj.io.stream.SortStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -384,6 +386,130 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
   }
 
+
+  @Test
+  public void testScoreNodesStream() throws Exception {
+
+
+    new UpdateRequest()
+        .add(id, "0", "basket_s", "basket1", "product_s", "product1", "price_f", "1")
+        .add(id, "1", "basket_s", "basket1", "product_s", "product3", "price_f", "1")
+        .add(id, "2", "basket_s", "basket1", "product_s", "product5", "price_f", "100")
+        .add(id, "3", "basket_s", "basket2", "product_s", "product1", "price_f", "1")
+        .add(id, "4", "basket_s", "basket2", "product_s", "product6", "price_f", "1")
+        .add(id, "5", "basket_s", "basket2", "product_s", "product7", "price_f", "1")
+        .add(id, "6", "basket_s", "basket3", "product_s", "product4", "price_f", "1")
+        .add(id, "7", "basket_s", "basket3", "product_s", "product3", "price_f", "1")
+        .add(id, "8", "basket_s", "basket3", "product_s", "product1", "price_f", "1")
+        .add(id, "9", "basket_s", "basket4", "product_s", "product4", "price_f", "1")
+        .add(id, "10", "basket_s", "basket4", "product_s", "product3", "price_f", "1")
+        .add(id, "11", "basket_s", "basket4", "product_s", "product1", "price_f", "1")
+        .add(id, "12", "basket_s", "basket5", "product_s", "product1", "price_f", "1")
+        .add(id, "13", "basket_s", "basket6", "product_s", "product1", "price_f", "1")
+        .add(id, "14", "basket_s", "basket7", "product_s", "product1", "price_f", "1")
+        .add(id, "15", "basket_s", "basket4", "product_s", "product1", "price_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTION);
+
+    List<Tuple> tuples = null;
+    TupleStream stream = null;
+    StreamContext context = new StreamContext();
+    SolrClientCache cache = new SolrClientCache();
+    context.setSolrClientCache(cache);
+
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+        .withDefaultZkHost(cluster.getZkServer().getZkAddress())
+        .withFunctionName("gatherNodes", GatherNodesStream.class)
+        .withFunctionName("scoreNodes", ScoreNodesStream.class)
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("sort", SortStream.class)
+        .withFunctionName("count", CountMetric.class)
+        .withFunctionName("avg", MeanMetric.class)
+        .withFunctionName("sum", SumMetric.class)
+        .withFunctionName("min", MinMetric.class)
+        .withFunctionName("max", MaxMetric.class);
+
+    String expr = "gatherNodes(collection1, " +
+                               "walk=\"product3->product_s\"," +
+                               "gather=\"basket_s\")";
+
+
+    String expr2 = "sort(by=\"nodeScore desc\", " +
+                         "scoreNodes(gatherNodes(collection1, " +
+                                                 expr+","+
+                                                 "walk=\"node->basket_s\"," +
+                                                 "gather=\"product_s\", " +
+                                                 "count(*), " +
+                                                 "avg(price_f), " +
+                                                 "sum(price_f), " +
+                                                 "min(price_f), " +
+                                                 "max(price_f))))";
+
+    stream = factory.constructStream(expr2);
+
+    context = new StreamContext();
+    context.setSolrClientCache(cache);
+
+    stream.setStreamContext(context);
+
+    tuples = getTuples(stream);
+
+    Tuple tuple0 = tuples.get(0);
+    assert(tuple0.getString("node").equals("product4"));
+    assert(tuple0.getLong("docFreq") == 2);
+    assert(tuple0.getLong("count(*)") == 2);
+
+    Tuple tuple1 = tuples.get(1);
+    assert(tuple1.getString("node").equals("product1"));
+    assert(tuple1.getLong("docFreq") == 8);
+    assert(tuple1.getLong("count(*)") == 3);
+
+    Tuple tuple2 = tuples.get(2);
+    assert(tuple2.getString("node").equals("product5"));
+    assert(tuple2.getLong("docFreq") == 1);
+    assert(tuple2.getLong("count(*)") == 1);
+
+
+    //Test using a different termFreq field then the default count(*)
+    expr2 = "sort(by=\"nodeScore desc\", " +
+                 "scoreNodes(termFreq=\"avg(price_f)\",gatherNodes(collection1, " +
+                                                                   expr+","+
+                                                                   "walk=\"node->basket_s\"," +
+                                                                   "gather=\"product_s\", " +
+                                                                   "count(*), " +
+                                                                   "avg(price_f), " +
+                                                                   "sum(price_f), " +
+                                                                   "min(price_f), " +
+                                                                   "max(price_f))))";
+
+    stream = factory.constructStream(expr2);
+
+    context = new StreamContext();
+    context.setSolrClientCache(cache);
+
+    stream.setStreamContext(context);
+
+    tuples = getTuples(stream);
+
+    tuple0 = tuples.get(0);
+    assert(tuple0.getString("node").equals("product5"));
+    assert(tuple0.getLong("docFreq") == 1);
+    assert(tuple0.getDouble("avg(price_f)") == 100);
+
+    tuple1 = tuples.get(1);
+    assert(tuple1.getString("node").equals("product4"));
+    assert(tuple1.getLong("docFreq") == 2);
+    assert(tuple1.getDouble("avg(price_f)") == 1);
+
+    tuple2 = tuples.get(2);
+    assert(tuple2.getString("node").equals("product1"));
+    assert(tuple2.getLong("docFreq") == 8);
+    assert(tuple2.getDouble("avg(price_f)") == 1);
+
+    cache.close();
+  }
+
+
   @Test
   public void testGatherNodesFriendsStream() throws Exception {
 
@@ -706,6 +832,11 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     client.close();
   }
+
+
+
+
+
 
   private String readString(InputStreamReader reader) throws Exception{
     StringBuilder builder = new StringBuilder();

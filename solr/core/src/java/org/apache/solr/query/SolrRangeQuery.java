@@ -138,8 +138,8 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needScores) throws IOException {
-    return new ConstWeight(searcher, needScores);
+  public Weight createWeight(IndexSearcher searcher, boolean needScores, float boost) throws IOException {
+    return new ConstWeight(searcher, needScores, boost);
     /*
     DocSet docs = createDocSet(searcher.getIndexReader().leaves(), searcher.getIndexReader().maxDoc());
     SolrConstantScoreQuery csq = new SolrConstantScoreQuery( docs.getTopFilter() );
@@ -324,8 +324,8 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     final SegState[] segStates;
 
 
-    protected ConstWeight(IndexSearcher searcher, boolean needScores) {
-      super( SolrRangeQuery.this );
+    protected ConstWeight(IndexSearcher searcher, boolean needScores, float boost) {
+      super( SolrRangeQuery.this, boost );
       this.searcher = searcher;
       this.segStates = new SegState[ searcher.getIndexReader().leaves().size() ];
       this.needScores = needScores;
@@ -371,12 +371,13 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
             filter = answer.getTopFilter();
           }
         }
+      } else {
+        doCheck = false;
       }
-
+      
       if (filter != null) {
         return segStates[context.ord] = new SegState(filter.getDocIdSet(context, null));
       }
-
 
       final Terms terms = context.reader().terms(SolrRangeQuery.this.getField());
       if (terms == null) {
@@ -397,8 +398,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
           bq.add(new TermQuery(new Term( SolrRangeQuery.this.getField(), t.term), termContext), BooleanClause.Occur.SHOULD);
         }
         Query q = new ConstantScoreQuery(bq.build());
-        final Weight weight = searcher.rewrite(q).createWeight(searcher, needScores);
-        weight.normalize(1f, score());
+        final Weight weight = searcher.rewrite(q).createWeight(searcher, needScores, score());
         return segStates[context.ord] = new SegState(weight);
       }
 

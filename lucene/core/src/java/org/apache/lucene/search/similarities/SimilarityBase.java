@@ -83,18 +83,18 @@ public abstract class SimilarityBase extends Similarity {
   }
   
   @Override
-  public final SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
+  public final SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
     BasicStats stats[] = new BasicStats[termStats.length];
     for (int i = 0; i < termStats.length; i++) {
-      stats[i] = newStats(collectionStats.field());
+      stats[i] = newStats(collectionStats.field(), boost);
       fillBasicStats(stats[i], collectionStats, termStats[i]);
     }
     return stats.length == 1 ? stats[0] : new MultiSimilarity.MultiStats(stats);
   }
   
   /** Factory method to return a custom stats object */
-  protected BasicStats newStats(String field) {
-    return new BasicStats(field);
+  protected BasicStats newStats(String field, float boost) {
+    return new BasicStats(field, boost);
   }
   
   /** Fills all member fields defined in {@code BasicStats} in {@code stats}. 

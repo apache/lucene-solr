@@ -225,6 +225,7 @@ public class JDBCStream extends TupleStream implements Expressible {
       final int columnNumber = columnIdx + 1; // cause it starts at 1        
       final String columnName = metadata.getColumnName(columnNumber);
       String className = metadata.getColumnClassName(columnNumber);
+      String typeName = metadata.getColumnTypeName(columnNumber);
             
       if(directSupportedTypes.contains(className)){
         valueSelectors[columnIdx] = new ResultSetValueSelector() {
@@ -273,6 +274,9 @@ public class JDBCStream extends TupleStream implements Expressible {
             return columnName;
           }
         };
+      }
+      else{
+        throw new SQLException(String.format(Locale.ROOT, "Unable to determine the valueSelector for column '%s' (col #%d) of java class '%s' and type '%s'", columnName, columnNumber, className, typeName));
       }
     }
     

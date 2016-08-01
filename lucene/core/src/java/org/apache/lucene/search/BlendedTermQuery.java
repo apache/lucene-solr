@@ -125,16 +125,14 @@ public final class BlendedTermQuery extends Query {
   }
 
   /**
-   * A {@link RewriteMethod} that adds all sub queries to a {@link BooleanQuery}
-   * which has {@link BooleanQuery#isCoordDisabled() coords disabled}. This
-   * {@link RewriteMethod} is useful when matching on several fields is
+   * A {@link RewriteMethod} that adds all sub queries to a {@link BooleanQuery}.
+   * This {@link RewriteMethod} is useful when matching on several fields is
    * considered better than having a good match on a single field.
    */
   public static final RewriteMethod BOOLEAN_REWRITE = new RewriteMethod() {
     @Override
     public Query rewrite(Query[] subQueries) {
       BooleanQuery.Builder merged = new BooleanQuery.Builder();
-      merged.setDisableCoord(true);
       for (Query query : subQueries) {
         merged.add(query, Occur.SHOULD);
       }

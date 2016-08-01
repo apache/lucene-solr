@@ -18,17 +18,10 @@ package org.apache.lucene.search.spans;
 
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.TreeMap;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.BoostQuery;
-import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
@@ -115,51 +108,8 @@ public final class SpanBoostQuery extends SpanQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    final SpanWeight weight = query.createWeight(searcher, needsScores);
-    if (needsScores == false) {
-      return weight;
-    }
-    Map<Term, TermContext> terms = new TreeMap<>();
-    weight.extractTermContexts(terms);
-    weight.normalize(1f, boost);
-    return new SpanWeight(this, searcher, terms) {
-      
-      @Override
-      public void extractTerms(Set<Term> terms) {
-        weight.extractTerms(terms);
-      }
-
-      @Override
-      public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        return weight.explain(context, doc);
-      }
-
-      @Override
-      public float getValueForNormalization() throws IOException {
-        return weight.getValueForNormalization();
-      }
-
-      @Override
-      public void normalize(float norm, float boost) {
-        weight.normalize(norm, SpanBoostQuery.this.boost * boost);
-      }
-      
-      @Override
-      public Spans getSpans(LeafReaderContext ctx, Postings requiredPostings) throws IOException {
-        return weight.getSpans(ctx, requiredPostings);
-      }
-
-      @Override
-      public SpanScorer scorer(LeafReaderContext context) throws IOException {
-        return weight.scorer(context);
-      }
-
-      @Override
-      public void extractTermContexts(Map<Term,TermContext> contexts) {
-        weight.extractTermContexts(contexts);
-      }
-    };
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return query.createWeight(searcher, needsScores, SpanBoostQuery.this.boost * boost);
   }
 
 }

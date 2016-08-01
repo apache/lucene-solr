@@ -23,11 +23,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -214,78 +212,6 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     }
   }
 
-  @Test
-  public void testBoost() throws IOException {
-    // NOTE: uses index build in *this* setUp
-
-    IndexSearcher search = newSearcher(reader);
-
-    // test for correct application of query normalization
-    // must use a non score normalizing method for this.
-    
-    search.setSimilarity(new ClassicSimilarity());
-    Query q = csrq("data", "1", "6", T, T);
-    search.search(new BoostQuery(q, 100), new SimpleCollector() {
-      private int base = 0;
-      private Scorer scorer;
-      @Override
-      public void setScorer(Scorer scorer) {
-        this.scorer = scorer;
-      }
-      @Override
-      public void collect(int doc) throws IOException {
-        assertEquals("score for doc " + (doc + base) + " was not correct", 1.0f, scorer.score(), SCORE_COMP_THRESH);
-      }
-      @Override
-      protected void doSetNextReader(LeafReaderContext context) throws IOException {
-        base = context.docBase;
-      }
-      
-      @Override
-      public boolean needsScores() {
-        return true;
-      }
-    });
-
-    //
-    // Ensure that boosting works to score one clause of a query higher
-    // than another.
-    //
-    Query q1 = new BoostQuery(csrq("data", "A", "A", T, T), .1f); // matches document #0
-    Query q2 = csrq("data", "Z", "Z", T, T); // matches document #1
-    BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
-    bq.add(q1, BooleanClause.Occur.SHOULD);
-    bq.add(q2, BooleanClause.Occur.SHOULD);
-
-    ScoreDoc[] hits = search.search(bq.build(), 1000).scoreDocs;
-    Assert.assertEquals(1, hits[0].doc);
-    Assert.assertEquals(0, hits[1].doc);
-    assertTrue(hits[0].score > hits[1].score);
-
-    q1 = new BoostQuery(csrq("data", "A", "A", T, T, MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE), .1f); // matches document #0
-    q2 = csrq("data", "Z", "Z", T, T, MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE); // matches document #1
-    bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
-    bq.add(q1, BooleanClause.Occur.SHOULD);
-    bq.add(q2, BooleanClause.Occur.SHOULD);
-
-    hits = search.search(bq.build(), 1000).scoreDocs;
-    Assert.assertEquals(1, hits[0].doc);
-    Assert.assertEquals(0, hits[1].doc);
-    assertTrue(hits[0].score > hits[1].score);
-
-    q1 = new BoostQuery(csrq("data", "A", "A", T, T), 10f); // matches document #0
-    q2 = csrq("data", "Z", "Z", T, T); // matches document #1
-    bq = new BooleanQuery.Builder();
-    bq.add(q1, BooleanClause.Occur.SHOULD);
-    bq.add(q2, BooleanClause.Occur.SHOULD);
-
-    hits = search.search(bq.build(), 1000).scoreDocs;
-    Assert.assertEquals(0, hits[0].doc);
-    Assert.assertEquals(1, hits[1].doc);
-    assertTrue(hits[0].score > hits[1].score);
-  }
 
   @Test
   public void testBooleanOrderUnAffected() throws IOException {

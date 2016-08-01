@@ -27,8 +27,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
@@ -394,48 +392,26 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
       }
     }
 
-    public void testRewriteCoord1() throws Exception {
-      final Similarity oldSimilarity = s.getSimilarity(true);
-      try {
-        s.setSimilarity(new ClassicSimilarity() {
-          @Override
-          public float coord(int overlap, int maxOverlap) {
-            return overlap / ((float)maxOverlap + 1);
-          }
-        });
-        BooleanQuery.Builder q1 = new BooleanQuery.Builder();
-        q1.add(new TermQuery(new Term("data", "1")), BooleanClause.Occur.SHOULD);
-        BooleanQuery.Builder q2 = new BooleanQuery.Builder();
-        q2.add(new TermQuery(new Term("data", "1")), BooleanClause.Occur.SHOULD);
-        q2.setMinimumNumberShouldMatch(1);
-        TopDocs top1 = s.search(q1.build(),100);
-        TopDocs top2 = s.search(q2.build(),100);
-        assertSubsetOfSameScores(q2.build(), top1, top2);
-      } finally {
-        s.setSimilarity(oldSimilarity);
-      }
+    public void testRewriteMSM1() throws Exception {
+      BooleanQuery.Builder q1 = new BooleanQuery.Builder();
+      q1.add(new TermQuery(new Term("data", "1")), BooleanClause.Occur.SHOULD);
+      BooleanQuery.Builder q2 = new BooleanQuery.Builder();
+      q2.add(new TermQuery(new Term("data", "1")), BooleanClause.Occur.SHOULD);
+      q2.setMinimumNumberShouldMatch(1);
+      TopDocs top1 = s.search(q1.build(),100);
+      TopDocs top2 = s.search(q2.build(),100);
+      assertSubsetOfSameScores(q2.build(), top1, top2);
     }
     
     public void testRewriteNegate() throws Exception {
-      final Similarity oldSimilarity = s.getSimilarity(true);
-      try {
-        s.setSimilarity(new ClassicSimilarity() {
-          @Override
-          public float coord(int overlap, int maxOverlap) {
-            return overlap / ((float)maxOverlap + 1);
-          }
-        });
-        BooleanQuery.Builder q1 = new BooleanQuery.Builder();
-        q1.add(new TermQuery(new Term("data", "1")), BooleanClause.Occur.SHOULD);
-        BooleanQuery.Builder q2 = new BooleanQuery.Builder();
-        q2.add(new TermQuery(new Term("data", "1")), BooleanClause.Occur.SHOULD);
-        q2.add(new TermQuery(new Term("data", "Z")), BooleanClause.Occur.MUST_NOT);
-        TopDocs top1 = s.search(q1.build(),100);
-        TopDocs top2 = s.search(q2.build(),100);
-        assertSubsetOfSameScores(q2.build(), top1, top2);
-      } finally {
-        s.setSimilarity(oldSimilarity);
-      }
+      BooleanQuery.Builder q1 = new BooleanQuery.Builder();
+      q1.add(new TermQuery(new Term("data", "1")), BooleanClause.Occur.SHOULD);
+      BooleanQuery.Builder q2 = new BooleanQuery.Builder();
+      q2.add(new TermQuery(new Term("data", "1")), BooleanClause.Occur.SHOULD);
+      q2.add(new TermQuery(new Term("data", "Z")), BooleanClause.Occur.MUST_NOT);
+      TopDocs top1 = s.search(q1.build(),100);
+      TopDocs top2 = s.search(q2.build(),100);
+      assertSubsetOfSameScores(q2.build(), top1, top2);
     }
 
     protected void printHits(String test, ScoreDoc[] h, IndexSearcher searcher) throws Exception {

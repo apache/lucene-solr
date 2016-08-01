@@ -89,6 +89,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -146,7 +148,7 @@ public class SolrCLI {
         // since this is a CLI, spare the user the stacktrace
         String excMsg = exc.getMessage();
         if (excMsg != null) {
-          System.err.println("\nERROR: "+excMsg+"\n");
+          System.err.println("\nERROR: " + excMsg + "\n");
           toolExitStatus = 1;
         } else {
           throw exc;
@@ -165,53 +167,13 @@ public class SolrCLI {
         HttpClientUtil.addRequestInterceptor((httpRequest, httpContext) -> {
           String pair = ss.get(0) + ":" + ss.get(1);
           byte[] encodedBytes = Base64.encodeBase64(pair.getBytes(UTF_8));
-          httpRequest.addHeader(new BasicHeader("Authorization", "Basic "+ new String(encodedBytes, UTF_8)));
+          httpRequest.addHeader(new BasicHeader("Authorization", "Basic " + new String(encodedBytes, UTF_8)));
         });
       }
     }
 
     protected abstract void runImpl(CommandLine cli) throws Exception;
-
-    // It's a little awkward putting this in ToolBase, but to re-use it in upconfig and create, _and_ have access
-    // to the (possibly) redirected "stdout", it needs to go here unless we reorganize things a bit.
-    protected void upconfig(CloudSolrClient cloudSolrClient, CommandLine cli, String confname, String configSet) throws IOException {
-
-      File configSetDir = null;
-      // we try to be flexible and allow the user to specify a configuration directory instead of a configset name
-      File possibleConfigDir = new File(configSet);
-      if (possibleConfigDir.isDirectory()) {
-        configSetDir = possibleConfigDir;
-      } else {
-        File configsetsDir = new File(cli.getOptionValue("configsetsDir"));
-        if (!configsetsDir.isDirectory())
-          throw new FileNotFoundException(configsetsDir.getAbsolutePath() + " not found!");
-
-        // upload the configset if it exists
-        configSetDir = new File(configsetsDir, configSet);
-        if (!configSetDir.isDirectory()) {
-          throw new FileNotFoundException("Specified config " + configSet +
-              " not found in " + configsetsDir.getAbsolutePath());
-        }
-      }
-
-      File confDir = new File(configSetDir, "conf");
-      if (!confDir.isDirectory()) {
-        // config dir should contain a conf sub-directory but if not and there's a solrconfig.xml, then use it
-        if ((new File(configSetDir, "solrconfig.xml")).isFile()) {
-          confDir = configSetDir;
-        } else {
-          throw new IllegalArgumentException("Specified configuration directory " + configSetDir.getAbsolutePath() +
-              " is invalid;\nit should contain either conf sub-directory or solrconfig.xml");
-        }
-      }
-
-      //
-      echo("Uploading " + confDir.getAbsolutePath() +
-          " for config " + confname + " to ZooKeeper at " + cloudSolrClient.getZkHost());
-      cloudSolrClient.uploadConfig(confDir.toPath(), confname);
-    }
   }
-  
   /**
    * Helps build SolrCloud aware tools by initializing a CloudSolrClient
    * instance before running the tool.
@@ -236,6 +198,9 @@ public class SolrCLI {
         
         cloudSolrClient.connect();
         runCloudTool(cloudSolrClient, cli);
+      } catch (Exception e) {
+        log.error("Could not complete mv operation for reason: " + e.getMessage());
+        throw (e);
       }
     }
     
@@ -301,6 +266,7 @@ public class SolrCLI {
         HttpClientUtil.setHttpClientBuilder(builder);
         log.info("Set HttpClientConfigurer from: "+builderClassName);
       } catch (Exception ex) {
+        log.error(ex.getMessage());
         throw new RuntimeException("Error during loading of configurer '"+builderClassName+"'.", ex);
       }
     }
@@ -391,6 +357,14 @@ public class SolrCLI {
       return new ConfigSetUploadTool();
     else if ("downconfig".equals(toolType))
       return new ConfigSetDownloadTool();
+    else if ("rm".equals(toolType))
+      return new ZkRmTool();
+    else if ("mv".equals(toolType))
+      return new ZkMvTool();
+    else if ("cp".equals(toolType))
+      return new ZkCpTool();
+    else if ("ls".equals(toolType))
+      return new ZkLsTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -417,6 +391,10 @@ public class SolrCLI {
     formatter.printHelp("run_example", getToolOptions(new RunExampleTool()));
     formatter.printHelp("upconfig", getToolOptions(new ConfigSetUploadTool()));
     formatter.printHelp("downconfig", getToolOptions(new ConfigSetDownloadTool()));
+    formatter.printHelp("rm", getToolOptions(new ZkRmTool()));
+    formatter.printHelp("cp", getToolOptions(new ZkCpTool()));
+    formatter.printHelp("mv", getToolOptions(new ZkMvTool()));
+    formatter.printHelp("ls", getToolOptions(new ZkLsTool()));
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
@@ -1461,7 +1439,12 @@ public class SolrCLI {
       } else if (configExistsInZk) {
         echo("Re-using existing configuration directory "+confname);
       } else {
-        upconfig(cloudSolrClient, cli, confname, cli.getOptionValue("confdir", DEFAULT_CONFIG_SET));
+        Path confPath = ZkConfigManager.getConfigsetPath(cli.getOptionValue("confdir", DEFAULT_CONFIG_SET),
+            cli.getOptionValue("configsetsDir"));
+
+        echo("Uploading " + confPath.toAbsolutePath().toString() +
+            " for config " + confname + " to ZooKeeper at " + cloudSolrClient.getZkHost());
+        cloudSolrClient.uploadConfig(confPath, confname);
       }
 
       // since creating a collection is a heavy-weight operation, check for existence first
@@ -1702,7 +1685,7 @@ public class SolrCLI {
           OptionBuilder
               .withArgName("configsetsDir")
               .hasArg()
-              .isRequired()
+              .isRequired(false)
               .withDescription("Parent directory of example configsets")
               .create("configsetsDir"),
           OptionBuilder
@@ -1726,11 +1709,20 @@ public class SolrCLI {
             " is running in standalone server mode, upconfig can only be used when running in SolrCloud mode.\n");
       }
 
-      try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zkHost).build()) {
+      String confName = cli.getOptionValue("confname");
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
         echo("\nConnecting to ZooKeeper at " + zkHost + " ...");
-        cloudSolrClient.connect();
-        upconfig(cloudSolrClient, cli, cli.getOptionValue("confname"), cli.getOptionValue("confdir"));
+        Path confPath = ZkConfigManager.getConfigsetPath(cli.getOptionValue("confdir"), cli.getOptionValue("configsetsDir"));
+
+        echo("Uploading " + confPath.toAbsolutePath().toString() +
+            " for config " + cli.getOptionValue("confname") + " to ZooKeeper at " + zkHost);
+
+        zkClient.upConfig(confPath, confName);
+      } catch (Exception e) {
+        log.error("Could not complete upconfig operation for reason: " + e.getMessage());
+        throw (e);
       }
+
     }
   }
 
@@ -1781,31 +1773,329 @@ public class SolrCLI {
       }
 
 
-      try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zkHost).build()) {
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
         echo("\nConnecting to ZooKeeper at " + zkHost + " ...");
-        cloudSolrClient.connect();
-        downconfig(cloudSolrClient, cli.getOptionValue("confname"), cli.getOptionValue("confdir"));
-      }
-    }
+        String confName = cli.getOptionValue("confname");
+        String confDir = cli.getOptionValue("confdir");
+        Path configSetPath = Paths.get(confDir);
+        // we try to be nice about having the "conf" in the directory, and we create it if it's not there.
+        if (configSetPath.endsWith("/conf") == false) {
+          configSetPath = Paths.get(configSetPath.toString(), "conf");
+        }
+        if (Files.exists(configSetPath) == false) {
+          Files.createDirectories(configSetPath);
+        }
+        echo("Downloading configset " + confName + " from ZooKeeper at " + zkHost +
+            " to directory " + configSetPath.toAbsolutePath());
 
-    protected void downconfig(CloudSolrClient cloudSolrClient, String confname, String confdir) throws IOException {
-
-      Path configSetPath = Paths.get(confdir);
-      // we try to be nice about having the "conf" in the directory, and we create it if it's not there.
-      if (configSetPath.endsWith("/conf") == false) {
-        configSetPath = Paths.get(configSetPath.toString(), "conf");
-      }
-      if (Files.exists(configSetPath) == false) {
-        Files.createDirectories(configSetPath);
+        zkClient.downConfig(confName, configSetPath);
+      } catch (Exception e) {
+        log.error("Could not complete downconfig operation for reason: " + e.getMessage());
+        throw (e);
       }
 
-      // Try to download the configset
-      echo("Downloading configset " + confname + " from ZooKeeper at " + cloudSolrClient.getZkHost() +
-          " to directory " + configSetPath.toAbsolutePath());
-      cloudSolrClient.downloadConfig(confname, configSetPath);
     }
 
   } // End ConfigSetDownloadTool class
+
+  public static class ZkRmTool extends ToolBase {
+
+    public ZkRmTool() {
+      this(System.out);
+      }
+
+    public ZkRmTool(PrintStream stdout) {
+      super(stdout);
+      }
+
+    @SuppressWarnings("static-access")
+    public Option[] getOptions() {
+      return new Option[]{
+          OptionBuilder
+              .withArgName("path")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Path to remove")
+              .create("path"),
+          OptionBuilder
+              .withArgName("recurse")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Recurse (true|false, default is false)")
+              .create("recurse"),
+          OptionBuilder
+              .withArgName("HOST")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .create("zkHost")
+      };
+    }
+
+    public String getName() {
+      return "rm";
+    }
+
+    protected void runImpl(CommandLine cli) throws Exception {
+
+      String zkHost = getZkHost(cli);
+
+      if (zkHost == null) {
+        throw new IllegalStateException("Solr at " + cli.getOptionValue("zkHost") +
+            " is running in standalone server mode, 'zk rm' can only be used when running in SolrCloud mode.\n");
+      }
+      String target = cli.getOptionValue("path");
+      Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
+
+      String znode = target;
+      if (target.toLowerCase(Locale.ROOT).startsWith("zk:")) {
+        znode = target.substring(3);
+      }
+      if (znode.equals("/")) {
+        throw new SolrServerException("You may not remove the root ZK node ('/')!");
+      }
+      echo("\nConnecting to ZooKeeper at " + zkHost + " ...");
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+        if (recurse == false && zkClient.getChildren(znode, null, true).size() != 0) {
+          throw new SolrServerException("Zookeeper node " + znode + " has children and recurse has NOT been specified");
+        }
+        echo("Removing Zookeeper node " + znode + " from ZooKeeper at " + zkHost +
+            " recurse: " + Boolean.toString(recurse));
+        zkClient.clean(znode);
+      } catch (Exception e) {
+        log.error("Could not complete rm operation for reason: " + e.getMessage());
+        throw (e);
+      }
+
+    }
+
+  } // End RmTool class
+
+  public static class ZkLsTool extends ToolBase {
+
+    public ZkLsTool() {
+      this(System.out);
+    }
+
+    public ZkLsTool(PrintStream stdout) {
+      super(stdout);
+    }
+
+    @SuppressWarnings("static-access")
+    public Option[] getOptions() {
+      return new Option[]{
+          OptionBuilder
+              .withArgName("path")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Path to list")
+              .create("path"),
+          OptionBuilder
+              .withArgName("recurse")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Recurse (true|false, default is false)")
+              .create("recurse"),
+          OptionBuilder
+              .withArgName("HOST")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .create("zkHost")
+      };
+    }
+
+    public String getName() {
+      return "ls";
+    }
+
+    protected void runImpl(CommandLine cli) throws Exception {
+
+      String zkHost = getZkHost(cli);
+
+      if (zkHost == null) {
+        throw new IllegalStateException("Solr at " + cli.getOptionValue("zkHost") +
+            " is running in standalone server mode, 'zk rm' can only be used when running in SolrCloud mode.\n");
+      }
+
+
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+        echo("\nConnecting to ZooKeeper at " + zkHost + " ...");
+
+        String znode = cli.getOptionValue("path");
+        Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
+        echo("Getting listing for Zookeeper node " + znode + " from ZooKeeper at " + zkHost +
+            " recurse: " + Boolean.toString(recurse));
+        stdout.print(zkClient.listZnode(znode, recurse));
+      } catch (Exception e) {
+        log.error("Could not complete rm operation for reason: " + e.getMessage());
+        throw (e);
+      }
+    }
+  } // End zkLsTool class
+
+  public static class ZkCpTool extends ToolBase {
+
+    public ZkCpTool() {
+      this(System.out);
+    }
+
+    public ZkCpTool(PrintStream stdout) {
+      super(stdout);
+    }
+
+    @SuppressWarnings("static-access")
+    public Option[] getOptions() {
+      return new Option[]{
+          OptionBuilder
+              .withArgName("src")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Source file or directory, may be local or a Znode")
+              .create("src"),
+          OptionBuilder
+              .withArgName("dst")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Destination of copy, may be local or a Znode.")
+              .create("dst"),
+          OptionBuilder
+              .withArgName("recurse")
+              .hasArg()
+              .isRequired(false)
+              .withDescription("Recurse (true|false, default is false)")
+              .create("recurse"),
+          OptionBuilder
+              .withArgName("HOST")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .create("zkHost")
+      };
+    }
+
+    public String getName() {
+      return "cp";
+    }
+
+    protected void runImpl(CommandLine cli) throws Exception {
+
+      String zkHost = getZkHost(cli);
+      if (zkHost == null) {
+        throw new IllegalStateException("Solr at " + cli.getOptionValue("solrUrl") +
+            " is running in standalone server mode, cp can only be used when running in SolrCloud mode.\n");
+      }
+
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+        echo("\nConnecting to ZooKeeper at " + zkHost + " ...");
+        String src = cli.getOptionValue("src");
+        String dst = cli.getOptionValue("dst");
+        Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
+        echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
+
+        boolean srcIsZk = src.toLowerCase(Locale.ROOT).startsWith("zk:");
+        boolean dstIsZk = dst.toLowerCase(Locale.ROOT).startsWith("zk:");
+
+        String srcName = src;
+        if (srcIsZk) {
+          srcName = src.substring(3);
+        } else if (srcName.toLowerCase(Locale.ROOT).startsWith("file:")) {
+          srcName = srcName.substring(5);
+        }
+
+        String dstName = dst;
+        if (dstIsZk) {
+          dstName = dst.substring(3);
+        } else {
+          if (dstName.toLowerCase(Locale.ROOT).startsWith("file:")) {
+            dstName = dstName.substring(5);
+          }
+        }
+        zkClient.zkTransfer(srcName, srcIsZk, dstName, dstIsZk, recurse);
+      } catch (Exception e) {
+        log.error("Could not complete the zk operation for reason: " + e.getMessage());
+        throw (e);
+      }
+    }
+  } // End CpTool class 
+
+
+  public static class ZkMvTool extends ToolBase {
+
+    public ZkMvTool() {
+      this(System.out);
+    }
+
+    public ZkMvTool(PrintStream stdout) {
+      super(stdout);
+    }
+
+    @SuppressWarnings("static-access")
+    public Option[] getOptions() {
+      return new Option[]{
+          OptionBuilder
+              .withArgName("src")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Source Znode to movej from.")
+              .create("src"),
+          OptionBuilder
+              .withArgName("dst")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Destination Znode to move to.")
+              .create("dst"),
+          OptionBuilder
+              .withArgName("HOST")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .create("zkHost")
+      };
+    }
+
+    public String getName() {
+      return "mv";
+    }
+
+    protected void runImpl(CommandLine cli) throws Exception {
+
+      String zkHost = getZkHost(cli);
+      if (zkHost == null) {
+        throw new IllegalStateException("Solr at " + cli.getOptionValue("solrUrl") +
+            " is running in standalone server mode, downconfig can only be used when running in SolrCloud mode.\n");
+      }
+
+      
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+        echo("\nConnecting to ZooKeeper at " + zkHost + " ...");
+        String src = cli.getOptionValue("src");
+        String dst = cli.getOptionValue("dst");
+        
+        if (src.toLowerCase(Locale.ROOT).startsWith("file:") || dst.toLowerCase(Locale.ROOT).startsWith("file:")) {
+          throw new SolrServerException("mv command operates on znodes and 'file:' has been specified.");
+        }
+        String source = src;
+        if (src.toLowerCase(Locale.ROOT).startsWith("zk")) {
+          source = src.substring(3);
+        }
+
+        String dest = dst;
+        if (dst.toLowerCase(Locale.ROOT).startsWith("zk")) {
+          dest = dst.substring(3);
+        }
+
+        echo("Moving Znode " + source + " to " + dest + " on ZooKeeper at " + zkHost);
+        zkClient.moveZnode(source, dest);
+      } catch (Exception e) {
+        log.error("Could not complete mv operation for reason: " + e.getMessage());
+        throw (e);
+      }
+
+    }
+  } // End MvTool class
+
+
 
   public static class DeleteTool extends ToolBase {
 

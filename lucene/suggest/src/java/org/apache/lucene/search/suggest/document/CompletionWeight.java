@@ -143,12 +143,4 @@ public class CompletionWeight extends Weight {
     return null;
   }
 
-  @Override
-  public float getValueForNormalization() throws IOException {
-    return 0;
-  }
-
-  @Override
-  public void normalize(float norm, float boost) {
-  }
 }

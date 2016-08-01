@@ -25,8 +25,20 @@ import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +53,25 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.BeforeReconnect;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ClusterStateUtil;
+import org.apache.solr.common.cloud.DefaultConnectionStrategy;
+import org.apache.solr.common.cloud.DefaultZkACLProvider;
+import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.OnReconnect;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkACLProvider;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkCredentialsProvider;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -85,7 +115,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
  * <p>
  * TODO: exceptions during close on attempts to update cloud state
  */
-public final class ZkController {
+public class ZkController {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final int WAIT_DOWN_STATES_TIMEOUT_SECONDS = 60;
@@ -642,6 +672,8 @@ public final class ZkController {
       zkStateReader.createClusterStateWatchersAndUpdate();
       this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
 
+      checkForExistingEphemeralNode();
+
       // start the overseer first as following code may need it's processing
       if (!zkRunOnly) {
         overseerElector = new LeaderElector(zkClient);
@@ -678,39 +710,73 @@ public final class ZkController {
 
   }
 
+  private void checkForExistingEphemeralNode() throws KeeperException, InterruptedException {
+    if (zkRunOnly) {
+      return;
+    }
+    String nodeName = getNodeName();
+    String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
+
+    if (!zkClient.exists(nodePath, true)) {
+      return;
+    }
+
+    final CountDownLatch deletedLatch = new CountDownLatch(1);
+    Stat stat = zkClient.exists(nodePath, event -> {
+      if (Watcher.Event.EventType.None.equals(event.getType())) {
+        return;
+      }
+      if (Watcher.Event.EventType.NodeDeleted.equals(event.getType())) {
+        deletedLatch.countDown();
+      }
+    }, true);
+
+    if (stat == null) {
+      // znode suddenly disappeared but that's okay
+      return;
+    }
+
+    boolean deleted = deletedLatch.await(zkClient.getSolrZooKeeper().getSessionTimeout() * 2, TimeUnit.MILLISECONDS);
+    if (!deleted) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "A previous ephemeral live node still exists. " +
+          "Solr cannot continue. Please ensure that no other Solr process using the same port is running already.");
+    }
+  }
+
   public void publishAndWaitForDownStates() throws KeeperException,
       InterruptedException {
 
     publishNodeAsDown(getNodeName());
-    
-    // now wait till the updates are in our state
-    long now = System.nanoTime();
-    long timeout = now + TimeUnit.NANOSECONDS.convert(WAIT_DOWN_STATES_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-    while (System.nanoTime() < timeout) {
-      boolean foundStates = true;
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Map<String, DocCollection> collections = clusterState.getCollectionsMap();
-      for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
-        DocCollection collection = entry.getValue();
-        Collection<Slice> slices = collection.getSlices();
-        for (Slice slice : slices) {
-          Collection<Replica> replicas = slice.getReplicas();
-          for (Replica replica : replicas) {
-            if (getNodeName().equals(replica.getNodeName()) && replica.getState() != Replica.State.DOWN) {
+    Set<String> collectionsWithLocalReplica = ConcurrentHashMap.newKeySet();
+    for (SolrCore core : cc.getCores()) {
+      collectionsWithLocalReplica.add(core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
+    }
+
+    CountDownLatch latch = new CountDownLatch(collectionsWithLocalReplica.size());
+    for (String collectionWithLocalReplica : collectionsWithLocalReplica) {
+      zkStateReader.registerCollectionStateWatcher(collectionWithLocalReplica, (liveNodes, collectionState) -> {
+        boolean foundStates = true;
+        for (SolrCore core : cc.getCores()) {
+          if (core.getCoreDescriptor().getCloudDescriptor().getCollectionName().equals(collectionWithLocalReplica))  {
+            Replica replica = collectionState.getReplica(core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+            if (replica.getState() != Replica.State.DOWN) {
               foundStates = false;
             }
           }
         }
-      }
 
-      Thread.sleep(1000);
-      if (foundStates) {
-        return;
-      }
+        if (foundStates && collectionsWithLocalReplica.remove(collectionWithLocalReplica))  {
+          latch.countDown();
+        }
+        return foundStates;
+      });
     }
 
-    log.warn("Timed out waiting to see all nodes published as DOWN in our cluster state.");
+    boolean allPublishedDown = latch.await(WAIT_DOWN_STATES_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    if (!allPublishedDown) {
+      log.warn("Timed out waiting to see all nodes published as DOWN in our cluster state.");
+    }
   }
 
   /**
@@ -752,33 +818,7 @@ public final class ZkController {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:" + nodePath);
-
-    try {
-      boolean nodeDeleted = true;
-      try {
-        // we attempt a delete in the case of a quick server bounce -
-        // if there was not a graceful close, the node may exist
-        // until expiration timeout - so a node won't be created here because
-        // it exists, but eventually the node will be removed. So delete
-        // in case it exists and create a new node.
-        zkClient.delete(nodePath, -1, true);
-      } catch (KeeperException.NoNodeException e) {
-        // fine if there is nothing to delete
-        // TODO: annoying that ZK logs a warning on us
-        nodeDeleted = false;
-      }
-      if (nodeDeleted) {
-        log
-            .info("Found a previous node that still exists while trying to register a new live node "
-                + nodePath + " - removing existing node to create another.");
-      }
-      zkClient.makePath(nodePath, CreateMode.EPHEMERAL, true);
-    } catch (KeeperException e) {
-      // it's okay if the node already exists
-      if (e.code() != KeeperException.Code.NODEEXISTS) {
-        throw e;
-      }
-    }
+    zkClient.makePath(nodePath, CreateMode.EPHEMERAL, true);
   }
 
   public String getNodeName() {
@@ -2220,8 +2260,8 @@ public final class ZkController {
     String errMsg = "Failed to persist resource at {0} - old {1}";
     try {
       try {
-        zkClient.setData(resourceLocation, content, znodeVersion, true);
-        latestVersion = znodeVersion + 1;// if the set succeeded , it should have incremented the version by one always
+        Stat stat = zkClient.setData(resourceLocation, content, znodeVersion, true);
+        latestVersion = stat.getVersion();// if the set succeeded , it should have incremented the version by one always
         log.info("Persisted config data to node {} ", resourceLocation);
         touchConfDir(zkLoader);
       } catch (NoNodeException e) {
@@ -2395,20 +2435,18 @@ public final class ZkController {
       final Set<Runnable> listeners = confDirectoryListeners.get(zkDir);
       if (listeners != null && !listeners.isEmpty()) {
         final Set<Runnable> listenersCopy = new HashSet<>(listeners);
-        new Thread() {
-          // run these in a separate thread because this can be long running
-          @Override
-          public void run() {
-            log.info("Running listeners for {}", zkDir);
-            for (final Runnable listener : listenersCopy) {
-              try {
-                listener.run();
-              } catch (Exception e) {
-                log.warn("listener throws error", e);
-              }
+        // run these in a separate thread because this can be long running
+        new Thread(() -> {
+          log.info("Running listeners for {}", zkDir);
+          for (final Runnable listener : listenersCopy) {
+            try {
+              listener.run();
+            } catch (Exception e) {
+              log.warn("listener throws error", e);
             }
           }
-        }.start();
+        }).start();
+
       }
     }
     return true;

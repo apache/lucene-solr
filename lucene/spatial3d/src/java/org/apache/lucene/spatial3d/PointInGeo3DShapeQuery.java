@@ -60,12 +60,12 @@ final class PointInGeo3DShapeQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
 
     // I don't use RandomAccessWeight here: it's no good to approximate with "match all docs"; this is an inverted structure and should be
     // used in the first pass:
 
-    return new ConstantScoreWeight(this) {
+    return new ConstantScoreWeight(this, boost) {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {

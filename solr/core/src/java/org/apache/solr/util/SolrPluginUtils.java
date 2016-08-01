@@ -664,7 +664,6 @@ public class SolrPluginUtils {
 
   public static BooleanQuery setMinShouldMatch(BooleanQuery q, String spec, boolean mmAutoRelax) {
     BooleanQuery.Builder builder = new BooleanQuery.Builder();
-    builder.setDisableCoord(q.isCoordDisabled());
     for (BooleanClause clause : q) {
       builder.add(clause);
     }

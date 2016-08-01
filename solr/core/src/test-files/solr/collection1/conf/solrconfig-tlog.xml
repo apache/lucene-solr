@@ -46,6 +46,10 @@
 
   <requestHandler name="standard" class="solr.StandardRequestHandler">
   </requestHandler>
+  
+  <peerSync>
+    <useRangeVersions>${solr.peerSync.useRangeVersions:false}</useRangeVersions>
+  </peerSync>
 
   <updateHandler class="solr.DirectUpdateHandler2">
     <updateLog>
@@ -57,12 +61,12 @@
     
       
     <autoCommit> 
-      <maxTime>${solr.autoCommit.maxTime:-1}</maxTime> 
+      <maxTime>${solr.autoCommit.maxTime:-1}</maxTime>
       <openSearcher>false</openSearcher> 
     </autoCommit>
 
     <autoSoftCommit> 
-      <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime> 
+      <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime>
     </autoSoftCommit>
   </updateHandler>
 

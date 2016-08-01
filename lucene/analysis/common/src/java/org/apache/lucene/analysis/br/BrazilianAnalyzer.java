@@ -127,5 +127,12 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
       result = new SetKeywordMarkerFilter(result, excltable);
     return new TokenStreamComponents(source, new BrazilianStemFilter(result));
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new StandardFilter(in);
+    result = new LowerCaseFilter(result);
+    return result;
+  }
 }
 

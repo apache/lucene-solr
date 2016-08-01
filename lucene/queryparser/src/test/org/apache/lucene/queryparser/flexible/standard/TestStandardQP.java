@@ -88,12 +88,6 @@ public class TestStandardQP extends QueryParserTestBase {
   }
   
   @Override
-  public void setAnalyzeRangeTerms(CommonQueryParserConfiguration cqpC,
-      boolean value) {
-    throw new UnsupportedOperationException();
-  }
-  
-  @Override
   public void setAutoGeneratePhraseQueries(CommonQueryParserConfiguration cqpC,
       boolean value) {
     throw new UnsupportedOperationException();
@@ -149,15 +143,6 @@ public class TestStandardQP extends QueryParserTestBase {
     WildcardQuery q = new WildcardQuery(new Term("field", "foo?ba?r"));//TODO not correct!!
     assertEquals(q, getQuery("foo\\?ba?r", qp));
   }
-
-  
-  @Override
-  public void testCollatedRange() throws Exception {
-    expectThrows(UnsupportedOperationException.class, () -> {
-      setAnalyzeRangeTerms(getParser(null), true);
-      super.testCollatedRange();
-    });
-  }
   
   @Override
   public void testAutoGeneratePhraseQueriesOn() throws Exception {
@@ -188,7 +173,6 @@ public class TestStandardQP extends QueryParserTestBase {
     /** ordinary behavior, synonyms form uncoordinated boolean query */
     StandardQueryParser dumb = getParser(new Analyzer1());
     BooleanQuery.Builder expanded = new BooleanQuery.Builder();
-    expanded.setDisableCoord(true);
     expanded.add(new TermQuery(new Term("field", "dogs")),
         BooleanClause.Occur.SHOULD);
     expanded.add(new TermQuery(new Term("field", "dog")),
@@ -203,4 +187,15 @@ public class TestStandardQP extends QueryParserTestBase {
     //TODO test something like "SmartQueryParser()"
   }
 
+  // TODO: Remove this specialization once the flexible standard parser gets multi-word synonym support
+  @Override
+  public void testQPA() throws Exception {
+    super.testQPA();
+
+    assertQueryEquals("term phrase term", qpAnalyzer, "term (phrase1 phrase2) term");
+
+    CommonQueryParserConfiguration cqpc = getParserConfig(qpAnalyzer);
+    setDefaultOperatorAND(cqpc);
+    assertQueryEquals(cqpc, "field", "term phrase term", "+term +(+phrase1 +phrase2) +term");
+  }
 }

@@ -129,12 +129,12 @@ public final class LongRange extends Range {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
       final Weight fastMatchWeight = fastMatchQuery == null
           ? null
-          : searcher.createWeight(fastMatchQuery, false);
+          : searcher.createWeight(fastMatchQuery, false, 1f);
 
-      return new ConstantScoreWeight(this) {
+      return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           final int maxDoc = context.reader().maxDoc();

@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -78,6 +79,11 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new LowerCaseTokenizer();
     return new TokenStreamComponents(source, new StopFilter(source, stopwords));
+  }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    return new LowerCaseFilter(in);
   }
 }
 

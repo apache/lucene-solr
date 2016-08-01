@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -121,24 +120,20 @@ public final class Explanation {
     return buffer.toString();
   }
 
-
-  /** Render an explanation as HTML. */
-  public String toHtml() {
-    StringBuilder buffer = new StringBuilder();
-    buffer.append("<ul>\n");
-
-    buffer.append("<li>");
-    buffer.append(getSummary());
-    buffer.append("<br />\n");
-
-    Explanation[] details = getDetails();
-    for (int i = 0 ; i < details.length; i++) {
-      buffer.append(details[i].toHtml());
-    }
-
-    buffer.append("</li>\n");
-    buffer.append("</ul>\n");
-
-    return buffer.toString();
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Explanation that = (Explanation) o;
+    return match == that.match &&
+        Float.compare(that.value, value) == 0 &&
+        Objects.equals(description, that.description) &&
+        Objects.equals(details, that.details);
   }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(match, value, description, details);
+  }
+
 }

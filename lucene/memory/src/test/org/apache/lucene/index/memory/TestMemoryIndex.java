@@ -45,6 +45,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
@@ -128,6 +129,19 @@ public class TestMemoryIndex extends LuceneTestCase {
     terms.seekExact(0);
     assertEquals("be", terms.term().utf8ToString());
     TestUtil.checkReader(reader);
+  }
+
+  public void testFieldsOnlyReturnsIndexedFields() throws IOException {
+    Document doc = new Document();
+
+    doc.add(new NumericDocValuesField("numeric", 29L));
+    doc.add(new TextField("text", "some text", Field.Store.NO));
+
+    MemoryIndex mi = MemoryIndex.fromDocument(doc, analyzer);
+    IndexSearcher searcher = mi.createSearcher();
+    IndexReader reader = searcher.getIndexReader();
+
+    assertEquals(reader.getTermVectors(0).size(), 1);
   }
   
   public void testReaderConsistency() throws IOException {
@@ -462,6 +476,28 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertArrayEquals(packedPoint, leafReader.getPointValues().getMaxPackedValue("field"));
 
     assertEquals("term", leafReader.getBinaryDocValues("field").get(0).utf8ToString());
+  }
+
+  public void testToStringDebug() {
+    MemoryIndex mi = new MemoryIndex(true, true);
+    Analyzer analyzer = new MockPayloadAnalyzer();
+
+    mi.addField("analyzedField", "aa bb aa", analyzer);
+
+    FieldType type = new FieldType();
+    type.setDimensions(1, 4);
+    type.setDocValuesType(DocValuesType.BINARY);
+    type.freeze();
+    mi.addField(new BinaryPoint("pointAndDvField", "term".getBytes(StandardCharsets.UTF_8), type), analyzer);
+
+    assertEquals("analyzedField:\n" +
+        "\t'[61 61]':2: [(0, 0, 2, [70 6f 73 3a 20 30]), (1, 6, 8, [70 6f 73 3a 20 32])]\n" +
+        "\t'[62 62]':1: [(1, 3, 5, [70 6f 73 3a 20 31])]\n" +
+        "\tterms=2, positions=3\n" +
+        "pointAndDvField:\n" +
+        "\tterms=0, positions=0\n" +
+        "\n" +
+        "fields=2, terms=2, positions=3", mi.toStringDebug());
   }
 
 }

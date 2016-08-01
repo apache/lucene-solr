@@ -31,7 +31,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.Weight.DefaultBulkScorer;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
@@ -78,7 +77,7 @@ public class TestBooleanScorer extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
       return new Weight(CrazyMustUseBulkScorerQuery.this) {
         @Override
         public void extractTerms(Set<Term> terms) {
@@ -88,15 +87,6 @@ public class TestBooleanScorer extends LuceneTestCase {
         @Override
         public Explanation explain(LeafReaderContext context, int doc) {
           throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public float getValueForNormalization() {
-          return 1.0f;
-        }
-
-        @Override
-        public void normalize(float norm, float topLevelBoost) {
         }
 
         @Override
@@ -181,25 +171,14 @@ public class TestBooleanScorer extends LuceneTestCase {
     BulkScorer scorer = ((BooleanWeight) weight).booleanScorer(ctx);
     assertTrue(scorer instanceof DefaultBulkScorer); // term scorer
 
-    // disabled coords -> term scorer
+    // scores -> term scorer too
     query = new BooleanQuery.Builder()
       .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD) // existing term
       .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD) // missing term
-      .setDisableCoord(true)
       .build();
     weight = searcher.createNormalizedWeight(query, true);
     scorer = ((BooleanWeight) weight).booleanScorer(ctx);
     assertTrue(scorer instanceof DefaultBulkScorer); // term scorer
-
-    // enabled coords -> BoostedBulkScorer
-    searcher.setSimilarity(new ClassicSimilarity());
-    query = new BooleanQuery.Builder()
-      .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD) // existing term
-      .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD) // missing term
-      .build();
-    weight = searcher.createNormalizedWeight(query, true);
-    scorer = ((BooleanWeight) weight).booleanScorer(ctx);
-    assertTrue(scorer instanceof BooleanTopLevelScorers.BoostedBulkScorer);
 
     w.close();
     reader.close();
@@ -291,7 +270,6 @@ public class TestBooleanScorer extends LuceneTestCase {
       .add(new BoostQuery(new TermQuery(new Term("field", "foo")), 3), Occur.SHOULD)
       .add(new BoostQuery(new TermQuery(new Term("field", "bar")), 3), Occur.SHOULD)
       .add(new BoostQuery(new TermQuery(new Term("field", "baz")), 3), Occur.SHOULD)
-      .setDisableCoord(random().nextBoolean())
       .build();
 
     // duel BS1 vs. BS2

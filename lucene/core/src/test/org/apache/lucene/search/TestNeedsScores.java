@@ -101,8 +101,8 @@ public class TestNeedsScores extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      final Weight w = in.createWeight(searcher, needsScores);
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      final Weight w = in.createWeight(searcher, needsScores, boost);
       return new Weight(AssertNeedsScores.this) {
         @Override
         public void extractTerms(Set<Term> terms) {
@@ -112,16 +112,6 @@ public class TestNeedsScores extends LuceneTestCase {
         @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
           return w.explain(context, doc);
-        }
-
-        @Override
-        public float getValueForNormalization() throws IOException {
-          return w.getValueForNormalization();
-        }
-
-        @Override
-        public void normalize(float norm, float topLevelBoost) {
-          w.normalize(norm, topLevelBoost);
         }
 
         @Override

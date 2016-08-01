@@ -412,21 +412,12 @@ public class TestQueryRescorer extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
 
       return new Weight(FixedScoreQuery.this) {
 
         @Override
         public void extractTerms(Set<Term> terms) {
-        }
-
-        @Override
-        public float getValueForNormalization() {
-          return 1.0f;
-        }
-
-        @Override
-        public void normalize(float queryNorm, float topLevelBoost) {
         }
 
         @Override

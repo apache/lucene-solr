@@ -26,6 +26,9 @@ import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -371,22 +374,27 @@ public abstract class SolrParams implements Serializable {
     return result;
   }
 
-  /**Copy all params to the given map or if the given map is null
-   * create a new one
-   */
-  public Map<String, Object> getAll(Map<String, Object> sink, String... params){
-    if(sink == null) sink = new LinkedHashMap<>();
+  public Map<String, Object> getAll(Map<String, Object> sink, Collection<String> params) {
+    if (sink == null) sink = new LinkedHashMap<>();
     for (String param : params) {
       String[] v = getParams(param);
-      if(v != null && v.length>0 ) {
-        if(v.length == 1) {
+      if (v != null && v.length > 0) {
+        if (v.length == 1) {
           sink.put(param, v[0]);
         } else {
-          sink.put(param,v);
+          sink.put(param, v);
         }
       }
     }
     return sink;
+  }
+
+
+  /**Copy all params to the given map or if the given map is null
+   * create a new one
+   */
+  public Map<String, Object> getAll(Map<String, Object> sink, String... params){
+    return getAll(sink, params == null ? Collections.emptyList() : Arrays.asList(params));
   }
   
   /** Returns this SolrParams as a properly URL encoded string, starting with {@code "?"}, if not empty. */

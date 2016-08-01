@@ -261,13 +261,8 @@ public class Overseer implements Closeable {
         }
       } finally {
         log.info("Overseer Loop exiting : {}", LeaderElector.getNodeName(myId));
-        new Thread("OverseerExitThread"){
-          //do this in a separate thread because any wait is interrupted in this main thread
-          @Override
-          public void run() {
-            checkIfIamStillLeader();
-          }
-        }.start();
+        //do this in a separate thread because any wait is interrupted in this main thread
+        new Thread(this::checkIfIamStillLeader, "OverseerExitThread").start();
       }
     }
 

@@ -146,4 +146,11 @@ public final class PolishAnalyzer extends StopwordAnalyzerBase {
     result = new StempelFilter(result, new StempelStemmer(stemTable));
     return new TokenStreamComponents(source, result);
   }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = new StandardFilter(in);
+    result = new LowerCaseFilter(result);
+    return result;
+  }
 }

@@ -1,5 +1,3 @@
-package org.apache.lucene.replicator.nrt;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.replicator.nrt;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.lucene.replicator.nrt;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -126,6 +126,11 @@ public abstract class PrimaryNode extends Node {
       t.printStackTrace(printStream);
       throw new RuntimeException(t);
     }
+  }
+
+  /** Returns the current primary generation, which is incremented each time a new primary is started for this index */
+  public long getPrimaryGen() {
+    return primaryGen;
   }
 
   // TODO: in the future, we should separate "flush" (returns an incRef'd SegmentInfos) from "refresh" (open new NRT reader from

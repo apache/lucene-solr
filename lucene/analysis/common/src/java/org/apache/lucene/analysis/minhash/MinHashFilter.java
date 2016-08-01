@@ -1,5 +1,3 @@
-package org.apache.lucene.analysis.minhash;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,9 @@ package org.apache.lucene.analysis.minhash;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.lucene.analysis.minhash;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -401,6 +402,7 @@ public class MinHashFilter extends TokenFilter {
   }
 
   /** Returns the MurmurHash3_x64_128 hash, placing the result in "out". */
+  @SuppressWarnings("fallthrough") // the huge switch is designed to use fall through into cases!
   static void murmurhash3_x64_128(byte[] key, int offset, int len, int seed, LongPair out) {
     // The original algorithm does have a 32 bit unsigned seed.
     // We have to mask to match the behavior of the unsigned types and prevent sign extension.

@@ -59,8 +59,8 @@ public final class FieldValueQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new RandomAccessWeight(this) {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new RandomAccessWeight(this, boost) {
 
       @Override
       protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {

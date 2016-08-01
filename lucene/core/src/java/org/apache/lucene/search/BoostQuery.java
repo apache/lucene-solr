@@ -19,11 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 
 /**
  * A {@link Query} wrapper that allows to give a boost to the wrapped query.
@@ -113,45 +110,8 @@ public final class BoostQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    final Weight weight = query.createWeight(searcher, needsScores);
-    if (needsScores == false) {
-      return weight;
-    }
-    // Apply the query boost, this may impact the return value of getValueForNormalization()
-    weight.normalize(1f, boost);
-    return new Weight(this) {
-
-      @Override
-      public void extractTerms(Set<Term> terms) {
-        weight.extractTerms(terms);
-      }
-
-      @Override
-      public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        return weight.explain(context, doc);
-      }
-
-      @Override
-      public float getValueForNormalization() throws IOException {
-        return weight.getValueForNormalization();
-      }
-
-      @Override
-      public void normalize(float norm, float boost) {
-        weight.normalize(norm, BoostQuery.this.boost * boost);
-      }
-
-      @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
-        return weight.scorer(context);
-      }
-      
-      @Override
-      public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
-        return weight.bulkScorer(context);
-      }
-    };
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return query.createWeight(searcher, needsScores, BoostQuery.this.boost * boost);
   }
 
 }

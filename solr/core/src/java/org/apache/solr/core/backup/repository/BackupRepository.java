@@ -1,5 +1,3 @@
-package org.apache.solr.core.backup.repository;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,31 +14,41 @@ package org.apache.solr.core.backup.repository;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.core.backup.repository;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.Optional;
+
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
  * This interface defines the functionality required to backup/restore Solr indexes to an arbitrary storage system.
  */
 public interface BackupRepository extends NamedListInitializedPlugin, Closeable {
-  /**
-   * A parameter to specify the name of the backup repository to be used.
-   */
-  String REPOSITORY_PROPERTY_NAME = "repository";
-
 
   /**
    * This enumeration defines the type of a given path.
    */
   enum PathType {
     DIRECTORY, FILE
+  }
+
+  /**
+   * This method returns the location where the backup should be stored (or restored from).
+   *
+   * @param override The location parameter supplied by the user.
+   * @return If <code>override</code> is not null then return the same value
+   *         Otherwise return the default configuration value for the {@linkplain CoreAdminParams#BACKUP_LOCATION} parameter.
+   */
+  default String getBackupLocation(String override) {
+    return Optional.ofNullable(override).orElse(getConfigProperty(CoreAdminParams.BACKUP_LOCATION));
   }
 
   /**

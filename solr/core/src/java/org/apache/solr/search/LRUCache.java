@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -61,11 +61,11 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
    * of an LRUCache at the same time.  Make sure everything is thread safe.
    */
   private static class CumulativeStats {
-    AtomicLong lookups = new AtomicLong();
-    AtomicLong hits = new AtomicLong();
-    AtomicLong inserts = new AtomicLong();
-    AtomicLong evictions = new AtomicLong();
-    AtomicLong evictionsRamUsage = new AtomicLong();
+    LongAdder lookups = new LongAdder();
+    LongAdder hits = new LongAdder();
+    LongAdder inserts = new LongAdder();
+    LongAdder evictions = new LongAdder();
+    LongAdder evictionsRamUsage = new LongAdder();
   }
 
   private CumulativeStats stats;
@@ -124,8 +124,8 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
                 iterator.remove();
                 evictions++;
                 evictionsRamUsage++;
-                stats.evictions.incrementAndGet();
-                stats.evictionsRamUsage.incrementAndGet();
+                stats.evictions.increment();
+                stats.evictionsRamUsage.increment();
               } while (iterator.hasNext() && ramBytesUsed > maxRamBytes);
               // must return false according to javadocs of removeEldestEntry if we're modifying
               // the map ourselves
@@ -135,7 +135,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
               // this doesn't need to be synchronized because it will
               // only be called in the context of a higher level synchronized block.
               evictions++;
-              stats.evictions.incrementAndGet();
+              stats.evictions.increment();
               return true;
             }
           }
@@ -180,7 +180,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   public V put(K key, V value) {
     synchronized (map) {
       if (getState() == State.LIVE) {
-        stats.inserts.incrementAndGet();
+        stats.inserts.increment();
       }
 
       // increment local inserts regardless of state???
@@ -232,10 +232,10 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       if (getState() == State.LIVE) {
         // only increment lookups and hits if we are live.
         lookups++;
-        stats.lookups.incrementAndGet();
+        stats.lookups.increment();
         if (val!=null) {
           hits++;
-          stats.hits.incrementAndGet();
+          stats.hits.increment();
         }
       }
       return val;
@@ -341,15 +341,15 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     }
     lst.add("warmupTime", warmupTime);
     
-    long clookups = stats.lookups.get();
-    long chits = stats.hits.get();
+    long clookups = stats.lookups.longValue();
+    long chits = stats.hits.longValue();
     lst.add("cumulative_lookups", clookups);
     lst.add("cumulative_hits", chits);
     lst.add("cumulative_hitratio", calcHitRatio(clookups, chits));
-    lst.add("cumulative_inserts", stats.inserts.get());
-    lst.add("cumulative_evictions", stats.evictions.get());
+    lst.add("cumulative_inserts", stats.inserts.longValue());
+    lst.add("cumulative_evictions", stats.evictions.longValue());
     if (maxRamBytes != Long.MAX_VALUE)  {
-      lst.add("cumulative_evictionsRamUsage", stats.evictionsRamUsage.get());
+      lst.add("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
     }
     
     return lst;

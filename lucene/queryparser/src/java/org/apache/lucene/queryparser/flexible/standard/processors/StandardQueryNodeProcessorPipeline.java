@@ -47,16 +47,16 @@ public class StandardQueryNodeProcessorPipeline extends
   public StandardQueryNodeProcessorPipeline(QueryConfigHandler queryConfig) {
     super(queryConfig);
 
-    add(new WildcardQueryNodeProcessor());    
+    add(new WildcardQueryNodeProcessor());   
     add(new MultiFieldQueryNodeProcessor());
     add(new FuzzyQueryNodeProcessor());
+    add(new RegexpQueryNodeProcessor());
     add(new MatchAllDocsQueryNodeProcessor());
     add(new OpenRangeQueryNodeProcessor());
     add(new LegacyNumericQueryNodeProcessor());
     add(new LegacyNumericRangeQueryNodeProcessor());
     add(new PointQueryNodeProcessor());
     add(new PointRangeQueryNodeProcessor());
-    add(new LowercaseExpandedTermsQueryNodeProcessor());
     add(new TermRangeQueryNodeProcessor());
     add(new AllowLeadingWildcardProcessor());    
     add(new AnalyzerQueryNodeProcessor());

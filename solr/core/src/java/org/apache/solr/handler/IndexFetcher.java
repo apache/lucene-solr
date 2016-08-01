@@ -82,6 +82,9 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.snapshots.SolrSnapshotManager;
+import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
+import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.ReplicationHandler.*;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -468,9 +471,18 @@ public class IndexFetcher {
                 // let the system know we are changing dir's and the old one
                 // may be closed
                 if (indexDir != null) {
-                  LOG.info("removing old index directory " + indexDir);
                   solrCore.getDirectoryFactory().doneWithDirectory(indexDir);
-                  solrCore.getDirectoryFactory().remove(indexDir);
+
+                  SolrSnapshotMetaDataManager snapshotsMgr = solrCore.getSnapshotMetaDataManager();
+                  Collection<SnapshotMetaData> snapshots = snapshotsMgr.listSnapshotsInIndexDir(indexDirPath);
+
+                  // Delete the old index directory only if no snapshot exists in that directory.
+                  if(snapshots.isEmpty()) {
+                    LOG.info("removing old index directory " + indexDir);
+                    solrCore.getDirectoryFactory().remove(indexDir);
+                  } else {
+                    SolrSnapshotManager.deleteNonSnapshotIndexFiles(indexDir, snapshots);
+                  }
                 }
               }
 
@@ -768,18 +780,15 @@ public class IndexFetcher {
 
   private void reloadCore() {
     final CountDownLatch latch = new CountDownLatch(1);
-    new Thread() {
-      @Override
-      public void run() {
-        try {
-          solrCore.getCoreDescriptor().getCoreContainer().reload(solrCore.getName());
-        } catch (Exception e) {
-          LOG.error("Could not reload core ", e);
-        } finally {
-          latch.countDown();
-        }
+    new Thread(() -> {
+      try {
+        solrCore.getCoreDescriptor().getCoreContainer().reload(solrCore.getName());
+      } catch (Exception e) {
+        LOG.error("Could not reload core ", e);
+      } finally {
+        latch.countDown();
       }
-    }.start();
+    }).start();
     try {
       latch.await();
     } catch (InterruptedException e) {
