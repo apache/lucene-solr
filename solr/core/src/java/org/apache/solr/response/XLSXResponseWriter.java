@@ -30,7 +30,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
-import org.apache.solr.core.SolrCore;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -40,7 +39,6 @@ import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 
-import java.time.format.DateTimeFormatter;
 import java.io.IOException;
 import java.io.Writer;
 import java.io.CharArrayWriter;
