@@ -89,11 +89,15 @@ public class StatsValuesFactory {
  */
 abstract class AbstractStatsValues<T> implements StatsValues {
   private static final String FACETS = "facets";
-  
-  /** Tracks all data about tthe stats we need to collect */
+
+  /**
+   * Tracks all data about tthe stats we need to collect
+   */
   final protected StatsField statsField;
 
-  /** may be null if we are collecting stats directly from a function ValueSource */
+  /**
+   * may be null if we are collecting stats directly from a function ValueSource
+   */
   final protected SchemaField sf;
   /**
    * may be null if we are collecting stats directly from a function ValueSource
@@ -107,11 +111,12 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   final protected boolean computeMin;
   final protected boolean computeMax;
   final protected boolean computeMinOrMax;
-  final protected boolean computeCardinality; 
+  final protected boolean computeCardinality;
+  final protected boolean isFenced;
 
-  /** 
-   * Either a function value source to collect from, or the ValueSource associated 
-   * with a single valued field we are collecting from.  Will be null until/unless 
+  /**
+   * Either a function value source to collect from, or the ValueSource associated
+   * with a single valued field we are collecting from.  Will be null until/unless
    * {@link #setNextReader} is called at least once
    */
   private ValueSource valueSource;
@@ -125,10 +130,11 @@ abstract class AbstractStatsValues<T> implements StatsValues {
    * called at least once
    */
   protected FunctionValues values;
-  
+
   protected T max;
   protected T min;
   protected long missing;
+  protected long fenced;
   protected long count;
   protected long countDistinct;
   protected final Set<T> distinctValues;
@@ -136,27 +142,28 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   /**
    * Hash function that must be used by implementations of {@link #hash}
    */
-  protected final HashFunction hasher; 
+  protected final HashFunction hasher;
   // if null, no HLL logic can be computed; not final because of "union" optimization (see below)
-  private HLL hll; 
+  private HLL hll;
 
   // facetField facetValue
-  protected Map<String,Map<String, StatsValues>> facets = new HashMap<>();
-  
+  protected Map<String, Map<String, StatsValues>> facets = new HashMap<>();
+
   protected AbstractStatsValues(StatsField statsField) {
     this.statsField = statsField;
     this.computeCount = statsField.calculateStats(Stat.count);
     this.computeMissing = statsField.calculateStats(Stat.missing);
-    this.computeCalcDistinct = statsField.calculateStats(Stat.countDistinct) 
-      || statsField.calculateStats(Stat.distinctValues);
+    this.computeCalcDistinct = statsField.calculateStats(Stat.countDistinct)
+        || statsField.calculateStats(Stat.distinctValues);
     this.computeMin = statsField.calculateStats(Stat.min);
     this.computeMax = statsField.calculateStats(Stat.max);
+    this.isFenced = statsField.isFenced();
     this.computeMinOrMax = computeMin || computeMax;
-    
+
     this.distinctValues = computeCalcDistinct ? new TreeSet<>() : null;
 
     this.computeCardinality = statsField.calculateStats(Stat.cardinality);
-    if ( computeCardinality ) {
+    if (computeCardinality) {
 
       hasher = statsField.getHllOptions().getHasher();
       hll = statsField.getHllOptions().newHLL();
@@ -188,7 +195,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       this.ft = null;
     }
   }
-  
+
   /**
    * {@inheritDoc}
    */
@@ -204,7 +211,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       distinctValues.addAll((Collection<T>) stv.get("distinctValues"));
       countDistinct = distinctValues.size();
     }
-    
+
     if (computeMinOrMax) {
       updateMinMax((T) stv.get("min"), (T) stv.get("max"));
     }
@@ -225,12 +232,12 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     }
 
     updateTypeSpecificStats(stv);
-    
+
     NamedList f = (NamedList) stv.get(FACETS);
     if (f == null) {
       return;
     }
-    
+
     for (int i = 0; i < f.size(); i++) {
       String field = f.getName(i);
       NamedList vals = (NamedList) f.getVal(i);
@@ -250,7 +257,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       }
     }
   }
-  
+
   /**
    * {@inheritDoc}
    */
@@ -265,7 +272,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     accumulate(typedValue, count);
   }
 
-  public void accumulate(T value, int count) { 
+  public void accumulate(T value, int count) {
     assert null != value : "Can't accumulate null";
 
     if (computeCount) {
@@ -281,14 +288,14 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     if (computeCardinality) {
       if (null == hasher) {
         assert value instanceof Number : "pre-hashed value support only works with numeric longs";
-        hll.addRaw(((Number)value).longValue());
+        hll.addRaw(((Number) value).longValue());
       } else {
         hll.addRaw(hash(value));
       }
     }
     updateTypeSpecificStats(value, count);
   }
-  
+
   /**
    * {@inheritDoc}
    */
@@ -298,6 +305,11 @@ abstract class AbstractStatsValues<T> implements StatsValues {
       missing++;
     }
   }
+
+  public void fenced() {
+    fenced++;
+  }
+
   
   /**
    * {@inheritDoc}
@@ -490,8 +502,11 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
       double minFence = statsField.getMinFence();
       double maxFence = statsField.getMaxFence();
       Number value = (Number) values.objectVal(docID);
-      if (value.doubleValue() >= minFence && value.doubleValue() <= maxFence) {
+      double dVal = value.doubleValue();
+      if (dVal >= minFence && dVal <= maxFence) {
         accumulate(value, 1);
+      } else if (this.isFenced) {
+        fenced();
       }
     } else {
       missing();
@@ -575,6 +590,9 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
   protected void addTypeSpecificStats(NamedList<Object> res) {
     if (statsField.includeInResponse(Stat.sum)) {
       res.add("sum", sum);
+    }
+    if (isFenced) {
+      res.add("fenced", fenced);
     }
     if (statsField.includeInResponse(Stat.sumOfSquares)) {
       res.add("sumOfSquares", sumOfSquares);

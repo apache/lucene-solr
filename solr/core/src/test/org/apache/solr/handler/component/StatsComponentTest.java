@@ -871,12 +871,15 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(commit());
     assertU(adoc("id", "3", "foo_i", "6"));
     assertU(adoc("id", "4", "foo_i", "7"));
+    assertU(adoc("id", "5"));
     assertU(commit());
 
     assertQ("min fence"
         , req("q","*:*", "stats", "true", "stats.field", "{!minFence=5}foo_i")
         ,"//lst[@name='foo_i']/double[@name='min'][.='5.0']"
         ,"//lst[@name='foo_i']/double[@name='max'][.='7.0']"
+        ,"//lst[@name='foo_i']/long[@name='fenced'][.='1']"
+        ,"//lst[@name='foo_i']/long[@name='missing'][.='1']"
     );
 
 
@@ -884,9 +887,12 @@ public class StatsComponentTest extends AbstractSolrTestCase {
         , req("q","*:*", "stats", "true", "stats.field", "{!maxFence=6}foo_i")
         ,"//lst[@name='foo_i']/double[@name='min'][.='4.0']"
         ,"//lst[@name='foo_i']/double[@name='max'][.='6.0']"
+        ,"//lst[@name='foo_i']/long[@name='fenced'][.='1']"
+        ,"//lst[@name='foo_i']/long[@name='missing'][.='1']"
     );
 
   }
+
 
   //SOLR-3177
   public void testStatsExcludeFilterQuery() throws Exception {

@@ -209,8 +209,9 @@ public class StatsField {
   private final List<Double> percentilesList= new ArrayList<Double>();
   private final boolean isShard;
 
-  private double minFence = Double.MIN_VALUE;
+  private double minFence = -Double.MAX_VALUE;
   private double maxFence = Double.MAX_VALUE;
+  private boolean isFenced = false;
   private double tdigestCompression = 100.0D;
   private HllOptions hllOpts;
   
@@ -303,6 +304,9 @@ public class StatsField {
       ? Collections.<String>emptyList()
       : StrUtils.splitSmart(excludeStr,',');
 
+    if (localParams.get("minFence") != null || localParams.get("maxFence") != null ) {
+      isFenced = true;
+    }
     this.minFence = localParams.getDouble("minFence", this.minFence);
     this.maxFence = localParams.getDouble("maxFence", this.maxFence);
 
@@ -520,6 +524,8 @@ public class StatsField {
   public double getMinFence() {return minFence; }
 
   public double getMaxFence() {return maxFence; }
+
+  public boolean isFenced() {return isFenced; }
 
   public String toString() {
     return "StatsField<" + originalParam + ">";
