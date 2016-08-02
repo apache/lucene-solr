@@ -52,12 +52,13 @@ public class KerberosTestServices {
   }
 
   public void start() throws Exception {
-    if (kdc != null) kdc.start();
-    Configuration.setConfiguration(jaasConfiguration);
-    Krb5HttpClientBuilder.regenerateJaasConfiguration();
     if (brokenLanguagesWithMiniKdc.contains(Locale.getDefault().getLanguage())) {
       Locale.setDefault(Locale.US);
     }
+
+    if (kdc != null) kdc.start();
+    Configuration.setConfiguration(jaasConfiguration);
+    Krb5HttpClientBuilder.regenerateJaasConfiguration();
   }
 
   public void stop() {
