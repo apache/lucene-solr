@@ -95,8 +95,15 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       new GlobValidator("*_i"),
       new GlobValidator("*_s"),
       new GlobValidator("a*"),
+      new DocIdValidator(),
+      new DocIdValidator("my_docid_alias"),
       new SimpleFieldValueValidator("aaa_i"),
       new SimpleFieldValueValidator("ccc_s"),
+      new FunctionValidator("aaa_i"), // fq field
+      new FunctionValidator("aaa_i", "func_aaa_alias"),
+      new RenameFieldValueValidator("id", "my_id_alias"),
+      new RenameFieldValueValidator("bbb_i", "my_int_field_alias"),
+      new RenameFieldValueValidator("ddd_s", "my_str_field_alias"),
       new NotIncludedValidator("bogus_unused_field_ss"),
       new NotIncludedValidator("bogus_alias","bogus_alias:other_bogus_field_i"),
       new NotIncludedValidator("explain_alias","explain_alias:[explain]"),
@@ -111,20 +118,12 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     //  - 50% runs use multi node/shard with FL_VALIDATORS only containing stuff that works in cloud
     final boolean singleCoreMode = random().nextBoolean();
     if (singleCoreMode) {
-      // these don't work in distrib cloud mode due to SOLR-9286
-      FL_VALIDATORS.addAll(Arrays.asList
-                           (new FunctionValidator("aaa_i"), // fq field
-                            new FunctionValidator("aaa_i", "func_aaa_alias"),
-                            new RenameFieldValueValidator("id", "my_id_alias"),
-                            new RenameFieldValueValidator("bbb_i", "my_int_field_alias"),
-                            new RenameFieldValueValidator("ddd_s", "my_str_field_alias")));
-      // SOLR-9289...
-      FL_VALIDATORS.add(new DocIdValidator());
-      FL_VALIDATORS.add(new DocIdValidator("my_docid_alias"));
+      // No-Op
+      // At the moment, there are no known transformers that (we have FlValidators for and) only
+      // work in single core mode.
     } else {
       // No-Op
       // No known transformers that only work in distrib cloud but fail in singleCoreMode
-
     }
     // TODO: SOLR-9314: programatically compare FL_VALIDATORS with all known transformers.
     // (ala QueryEqualityTest) can't be done until we eliminate the need for "singleCodeMode"
@@ -301,15 +300,11 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     // NOTE: not using SolrClient.getById or getByIds because we want to force choice of "id" vs "ids" params
     final ModifiableSolrParams params = params("qt","/get");
     
-    // TODO: fq testing blocked by SOLR-9308
-    //
-    // // random fq -- nothing fancy, secondary concern for our test
-    final Integer FQ_MAX = null;                                           // TODO: replace this...
-    // final Integer FQ_MAX = usually() ? null : random().nextInt();       //       ... with this
-    // if (null != FQ_MAX) {
-    //   params.add("fq", "aaa_i:[* TO " + FQ_MAX + "]");
-    // }
-    // TODO: END
+    // random fq -- nothing fancy, secondary concern for our test
+    final Integer FQ_MAX = usually() ? null : random().nextInt();
+    if (null != FQ_MAX) {
+      params.add("fq", "aaa_i:[* TO " + FQ_MAX + "]");
+    }
     
     final Set<FlValidator> validators = new HashSet<>();
     validators.add(ID_VALIDATOR); // always include id so we can be confident which doc we're looking at

@@ -320,7 +320,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       // sometimes include an fq on the expected value to ensure the updated values
       // are "visible" for searching
       final SolrParams p = (0 != TestUtil.nextInt(random(), 0,15))
-        ? params() : params("fq",numericFieldName + ":" + expect);
+        ? params() : params("fq",numericFieldName + ":\"" + expect + "\"");
       SolrDocument doc = getRandClient(random()).getById(docId, p);
       
       final boolean foundWithFilter = (null != doc);
