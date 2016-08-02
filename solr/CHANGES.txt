@@ -182,6 +182,8 @@ Bug Fixes
 
 * SOLR-8379: UI Cloud->Tree view now shows .txt files correctly (Alexandre Rafalovitch via janhoy)
 
+* SOLR-9308: Fix distributed RTG to forward request params, fixes fq and non-default fl params (hossman)
+
 Optimizations
 ----------------------
 
