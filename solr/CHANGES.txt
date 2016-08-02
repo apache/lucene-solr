@@ -111,7 +111,7 @@ New Features
 * SOLR-9279: New boolean comparison function queries comparing numeric arguments: gt, gte, lt, lte, eq
   (Doug Turnbull, David Smiley)
 
-* SOLR-9346: Support Secure Impersonation / Proxy User for solr authentication
+* SOLR-9324: Support Secure Impersonation / Proxy User for solr authentication
   (Gregory Chanan)
 
 Bug Fixes
