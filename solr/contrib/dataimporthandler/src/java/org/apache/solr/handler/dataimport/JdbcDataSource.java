@@ -280,8 +280,12 @@ public class JdbcDataSource extends
       resultSetIterator.close();
       resultSetIterator = null;
     }
-    resultSetIterator = new ResultSetIterator(query);
+    resultSetIterator = createResultSetIterator(query);
     return resultSetIterator.getIterator();
+  }
+
+  protected ResultSetIterator createResultSetIterator(String query) {
+    return new ResultSetIterator(query);
   }
 
   private void logError(String msg, Exception e) {
