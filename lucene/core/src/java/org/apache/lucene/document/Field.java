@@ -257,7 +257,7 @@ public class Field implements IndexableField {
   /**
    * The value of the field as a String, or null. If null, the Reader value or
    * binary value is used. Exactly one of stringValue(), readerValue(), and
-   * getBinaryValue() must be set.
+   * binaryValue() must be set.
    */
   @Override
   public String stringValue() {
@@ -271,7 +271,7 @@ public class Field implements IndexableField {
   /**
    * The value of the field as a Reader, or null. If null, the String value or
    * binary value is used. Exactly one of stringValue(), readerValue(), and
-   * getBinaryValue() must be set.
+   * binaryValue() must be set.
    */
   @Override
   public Reader readerValue() {
@@ -420,7 +420,7 @@ public class Field implements IndexableField {
   /**
    * Expert: sets the token stream to be used for indexing and causes
    * isIndexed() and isTokenized() to return true. May be combined with stored
-   * values from stringValue() or getBinaryValue()
+   * values from stringValue() or binaryValue()
    */
   public void setTokenStream(TokenStream tokenStream) {
     if (type.indexOptions() == IndexOptions.NONE || !type.tokenized()) {
