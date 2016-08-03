@@ -77,6 +77,8 @@ New Features
 * SOLR-9200: Add Delegation Token Support to Solr.
   (Gregory Chanan)
 
+* SOLR-9252: Feature selection and logistic regression on text (Cao Manh Dat, Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
