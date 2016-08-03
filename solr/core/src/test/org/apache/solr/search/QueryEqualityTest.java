@@ -175,6 +175,24 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testTlogitQuery() throws Exception {
+    SolrQueryRequest req = req("q", "*:*", "feature", "f", "terms","a,b,c", "weights", "100,200,300", "idfs","1,5,7","iteration","1", "outcome","a","positiveLabel","1");
+    try {
+      assertQueryEquals("tlogit", req, "{!tlogit}");
+    } finally {
+      req.close();
+    }
+  }
+
+  public void testIGainQuery() throws Exception {
+    SolrQueryRequest req = req("q", "*:*", "outcome", "b", "positiveLabel", "1", "field", "x", "numTerms","200");
+    try {
+      assertQueryEquals("igain", req, "{!igain}");
+    } finally {
+      req.close();
+    }
+  }
+
   public void testQuerySwitch() throws Exception {
     SolrQueryRequest req = req("myXXX", "XXX", 
                                "myField", "foo_s",
