@@ -114,6 +114,8 @@ New Features
 * SOLR-9324: Support Secure Impersonation / Proxy User for solr authentication
   (Gregory Chanan)
 
+* SOLR-9252: Feature selection and logistic regression on text (Cao Manh Dat, Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
