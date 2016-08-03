@@ -118,6 +118,11 @@ public abstract class CoreAdminParams
    */
   public static final String BACKUP_LOCATION = "location";
 
+  /**
+   * A parameter to specify the name of the commit to be stored during the backup operation.
+   */
+  public static final String COMMIT_NAME = "commitName";
+
   public enum CoreAdminAction {
     STATUS(true),
     UNLOAD,
@@ -141,7 +146,10 @@ public abstract class CoreAdminParams
     INVOKE,
     //Internal APIs to backup and restore a core
     BACKUPCORE,
-    RESTORECORE;
+    RESTORECORE,
+    CREATESNAPSHOT,
+    DELETESNAPSHOT,
+    LISTSNAPSHOTS;
 
     public final boolean isRead;
 

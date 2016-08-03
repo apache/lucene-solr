@@ -61,9 +61,13 @@ solrAdminApp.controller('QueryController',
       if ($scope.rawParams) {
         var rawParams = $scope.rawParams.split(/[&\n]/);
         for (var i in rawParams) {
-            var param = rawParams[i];
-            var parts = param.split("=");
-            set(parts[0], parts[1]);
+          var param = rawParams[i];
+          var equalPos = param.indexOf("=");
+          if (equalPos > -1) {
+            set(param.substring(0, equalPos), param.substring(equalPos+1));
+          } else {
+            set(param, ""); // Use empty value for params without "="
+          }
         }
       }
 

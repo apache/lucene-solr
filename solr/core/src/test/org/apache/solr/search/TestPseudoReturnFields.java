@@ -30,6 +30,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 
 import org.apache.commons.lang.StringUtils;
 
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 
@@ -61,9 +62,14 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     assertU(adoc("id", "46", "val_i", "3", "ssto", "X", "subject", "ggg"));
     assertU(commit());
 
-    // uncommitted doc in transaction log
+  }
+  
+  @Before
+  private void addUncommittedDoc99() throws Exception {
+    // uncommitted doc in transaction log at start of every test
+    // Even if an RTG causes ulog to re-open realtime searcher, next test method
+    // will get another copy of doc 99 in the ulog
     assertU(adoc("id", "99", "val_i", "1", "ssto", "X", "subject", "uncommitted"));
-
   }
 
   public void testMultiValued() throws Exception {
@@ -140,8 +146,19 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
                 );
       }
     }
-
-    
+  }
+  
+  public void testFilterAndOneRealFieldRTG() throws Exception {
+    // shouldn't matter if we use RTG (committed or otherwise)
+    // only one of these docs should match...
+    assertQ("RTG w/ 2 ids & fq that only matches 1 uncommitted doc",
+            req("qt","/get","ids","42,99", "wt","xml","fl","id,val_i",
+                "fq","{!field f='subject' v=$my_var}","my_var","uncommitted")
+            ,"//result[@numFound='1']"
+            ,"//result/doc/str[@name='id'][.='99']"
+            ,"//result/doc/int[@name='val_i'][.='1']"
+            ,"//result/doc[count(*)=2]"
+            );
   }
 
   public void testScoreAndAllRealFields() throws Exception {

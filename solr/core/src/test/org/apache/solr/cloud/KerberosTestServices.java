@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -24,18 +26,57 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.security.auth.login.AppConfigurationEntry;
-import javax.security.auth.login.Configuration;
-
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.minikdc.MiniKdc;
+import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 
-public class KerberosTestUtil {
+public class KerberosTestServices {
+
+  private MiniKdc kdc;
+  private JaasConfiguration jaasConfiguration;
+  private Configuration savedConfig;
+  private Locale savedLocale;
+
+  private KerberosTestServices(MiniKdc kdc,
+                               JaasConfiguration jaasConfiguration,
+                               Configuration savedConfig,
+                               Locale savedLocale) {
+    this.kdc = kdc;
+    this.jaasConfiguration = jaasConfiguration;
+    this.savedConfig = savedConfig;
+    this.savedLocale = savedLocale;
+  }
+
+  public MiniKdc getKdc() {
+    return kdc;
+  }
+
+  public void start() throws Exception {
+    if (brokenLanguagesWithMiniKdc.contains(Locale.getDefault().getLanguage())) {
+      Locale.setDefault(Locale.US);
+    }
+
+    if (kdc != null) kdc.start();
+    Configuration.setConfiguration(jaasConfiguration);
+    Krb5HttpClientBuilder.regenerateJaasConfiguration();
+  }
+
+  public void stop() {
+    if (kdc != null) kdc.stop();
+    Configuration.setConfiguration(savedConfig);
+    Krb5HttpClientBuilder.regenerateJaasConfiguration();
+    Locale.setDefault(savedLocale);
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
 
   /**
    * Returns a MiniKdc that can be used for creating kerberos principals
    * and keytabs.  Caller is responsible for starting/stopping the kdc.
    */
-  public static MiniKdc getKdc(File workDir) throws Exception {
+  private static MiniKdc getKdc(File workDir) throws Exception {
     Properties conf = MiniKdc.createConf();
     return new MiniKdc(conf, workDir);
   }
@@ -44,7 +85,7 @@ public class KerberosTestUtil {
    * Programmatic version of a jaas.conf file suitable for connecting
    * to a SASL-configured zookeeper.
    */
-  public static class JaasConfiguration extends Configuration {
+  private static class JaasConfiguration extends Configuration {
 
     private static AppConfigurationEntry[] clientEntry;
     private static AppConfigurationEntry[] serverEntry;
@@ -60,7 +101,7 @@ public class KerberosTestUtil {
      * @param serverKeytab The location of the keytab with the serverPrincipal
      */
     public JaasConfiguration(String clientPrincipal, File clientKeytab,
-        String serverPrincipal, File serverKeytab) {
+                             String serverPrincipal, File serverKeytab) {
       Map<String, String> clientOptions = new HashMap();
       clientOptions.put("principal", clientPrincipal);
       clientOptions.put("keyTab", clientKeytab.getAbsolutePath());
@@ -73,9 +114,9 @@ public class KerberosTestUtil {
         clientOptions.put("debug", "true");
       }
       clientEntry = new AppConfigurationEntry[]{
-        new AppConfigurationEntry(getKrb5LoginModuleName(),
-        AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-        clientOptions)};
+          new AppConfigurationEntry(getKrb5LoginModuleName(),
+              AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+              clientOptions)};
       if(serverPrincipal!=null && serverKeytab!=null) {
         Map<String, String> serverOptions = new HashMap(clientOptions);
         serverOptions.put("principal", serverPrincipal);
@@ -88,9 +129,9 @@ public class KerberosTestUtil {
     }
 
     /**
-     * Add an entry to the jaas configuration with the passed in principal and keytab, 
+     * Add an entry to the jaas configuration with the passed in principal and keytab,
      * along with the app name.
-     * 
+     *
      * @param principal The principal
      * @param keytab The keytab containing credentials for the principal
      * @param appName The app name of the configuration
@@ -127,21 +168,62 @@ public class KerberosTestUtil {
    */
   private final static List<String> brokenLanguagesWithMiniKdc =
       Arrays.asList(
-          new Locale("th").getLanguage(), 
-          new Locale("ja").getLanguage(), 
+          new Locale("th").getLanguage(),
+          new Locale("ja").getLanguage(),
           new Locale("hi").getLanguage()
-          );
-  /** 
-   *returns the currently set locale, and overrides it with {@link Locale#US} if it's 
-   * currently something MiniKdc can not handle
-   *
-   * @see Locale#setDefault
-   */
-  public static final Locale overrideLocaleIfNotSpportedByMiniKdc() {
-    Locale old = Locale.getDefault();
-    if (brokenLanguagesWithMiniKdc.contains(Locale.getDefault().getLanguage())) {
-      Locale.setDefault(Locale.US);
+      );
+
+  public static class Builder {
+    private File kdcWorkDir;
+    private String clientPrincipal;
+    private File clientKeytab;
+    private String serverPrincipal;
+    private File serverKeytab;
+    private String appName;
+    private Locale savedLocale;
+
+    public Builder() {
+      savedLocale = Locale.getDefault();
     }
-    return old;
+
+    public Builder withKdc(File kdcWorkDir) {
+      this.kdcWorkDir = kdcWorkDir;
+      return this;
+    }
+
+    public Builder withJaasConfiguration(String clientPrincipal, File clientKeytab,
+                                         String serverPrincipal, File serverKeytab) {
+      Preconditions.checkNotNull(clientPrincipal);
+      Preconditions.checkNotNull(clientKeytab);
+      this.clientPrincipal = clientPrincipal;
+      this.clientKeytab = clientKeytab;
+      this.serverPrincipal = serverPrincipal;
+      this.serverKeytab = serverKeytab;
+      this.appName = null;
+      return this;
+    }
+
+    public Builder withJaasConfiguration(String principal, File keytab, String appName) {
+      Preconditions.checkNotNull(principal);
+      Preconditions.checkNotNull(keytab);
+      this.clientPrincipal = principal;
+      this.clientKeytab = keytab;
+      this.serverPrincipal = null;
+      this.serverKeytab = null;
+      this.appName = appName;
+      return this;
+    }
+
+    public KerberosTestServices build() throws Exception {
+      final MiniKdc kdc = kdcWorkDir != null ? getKdc(kdcWorkDir) : null;
+      final Configuration oldConfig = clientPrincipal != null ? Configuration.getConfiguration() : null;
+      JaasConfiguration jaasConfiguration = null;
+      if (clientPrincipal != null) {
+        jaasConfiguration = (appName == null) ?
+            new JaasConfiguration(clientPrincipal, clientKeytab, serverPrincipal, serverKeytab) :
+            new JaasConfiguration(clientPrincipal, clientKeytab, appName);
+      }
+      return new KerberosTestServices(kdc, jaasConfiguration, oldConfig, savedLocale);
+    }
   }
 }

@@ -67,6 +67,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.bkd.BKDWriter;
 
 /**
  * Abstract class to do basic tests for a geospatial impl (high level
@@ -1247,7 +1248,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         return new PointsFormat() {
           @Override
           public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
-            return new Lucene60PointsWriter(writeState, pointsInLeaf);
+            return new Lucene60PointsWriter(writeState, pointsInLeaf, BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
           }
   
           @Override

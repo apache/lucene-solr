@@ -34,6 +34,7 @@ import java.util.concurrent.Future;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -59,9 +60,13 @@ import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.core.snapshots.SolrSnapshotManager;
+import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
+import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.RestoreCore;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
@@ -794,22 +799,26 @@ enum CoreAdminOperation implements CoreAdminOp {
           + " parameter or as a default repository property");
     }
 
-    try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
-      SnapShooter snapShooter = new SnapShooter(repository, core, location, name);
-      // validateCreateSnapshot will create parent dirs instead of throw; that choice is dubious.
-      //  But we want to throw. One reason is that
-      //  this dir really should, in fact must, already exist here if triggered via a collection backup on a shared
-      //  file system. Otherwise, perhaps the FS location isn't shared -- we want an error.
-      if (!snapShooter.getBackupRepository().exists(snapShooter.getLocation())) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-            "Directory to contain snapshots doesn't exist: " + snapShooter.getLocation());
+      // An optional parameter to describe the snapshot to be backed-up. If this
+      // parameter is not supplied, the latest index commit is backed-up.
+      String commitName = params.get(CoreAdminParams.COMMIT_NAME);
+
+      try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
+        SnapShooter snapShooter = new SnapShooter(repository, core, location, name, commitName);
+        // validateCreateSnapshot will create parent dirs instead of throw; that choice is dubious.
+        //  But we want to throw. One reason is that
+        //  this dir really should, in fact must, already exist here if triggered via a collection backup on a shared
+        //  file system. Otherwise, perhaps the FS location isn't shared -- we want an error.
+        if (!snapShooter.getBackupRepository().exists(snapShooter.getLocation())) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Directory to contain snapshots doesn't exist: " + snapShooter.getLocation());
+        }
+        snapShooter.validateCreateSnapshot();
+        snapShooter.createSnapshot();
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Failed to backup core=" + cname + " because " + e, e);
       }
-      snapShooter.validateCreateSnapshot();
-      snapShooter.createSnapshot();
-    } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Failed to backup core=" + cname + " because " + e, e);
-    }
   }),
 
   RESTORECORE_OP(RESTORECORE, it -> {
@@ -844,6 +853,92 @@ enum CoreAdminOperation implements CoreAdminOp {
       if (!success) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to restore core=" + core.getName());
       }
+    }
+  }),
+  CREATESNAPSHOT_OP(CREATESNAPSHOT, it -> {
+    CoreContainer cc = it.handler.getCoreContainer();
+    final SolrParams params = it.req.getParams();
+
+    String commitName = params.required().get(CoreAdminParams.COMMIT_NAME);
+    String cname = params.required().get(CoreAdminParams.CORE);
+    try (SolrCore core = cc.getCore(cname)) {
+      if (core == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
+      }
+
+      String indexDirPath = core.getIndexDir();
+      IndexCommit ic = core.getDeletionPolicy().getLatestCommit();
+      if (ic == null) {
+        RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
+        try {
+          ic = searcher.get().getIndexReader().getIndexCommit();
+        } finally {
+          searcher.decref();
+        }
+      }
+      SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
+      mgr.snapshot(commitName, indexDirPath, ic.getGeneration());
+
+      it.rsp.add("core", core.getName());
+      it.rsp.add("commitName", commitName);
+      it.rsp.add("indexDirPath", indexDirPath);
+      it.rsp.add("generation", ic.getGeneration());
+    }
+  }),
+  DELETESNAPSHOT_OP(DELETESNAPSHOT, it -> {
+    CoreContainer cc = it.handler.getCoreContainer();
+    final SolrParams params = it.req.getParams();
+
+    String commitName = params.required().get(CoreAdminParams.COMMIT_NAME);
+    String cname = params.required().get(CoreAdminParams.CORE);
+    try (SolrCore core = cc.getCore(cname)) {
+      if (core == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
+      }
+
+      SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
+      Optional<SnapshotMetaData> metadata = mgr.release(commitName);
+      if (metadata.isPresent()) {
+        long gen = metadata.get().getGenerationNumber();
+        String indexDirPath = metadata.get().getIndexDirPath();
+
+        // If the directory storing the snapshot is not the same as the *current* core
+        // index directory, then delete the files corresponding to this snapshot.
+        // Otherwise we leave the index files related to snapshot as is (assuming the
+        // underlying Solr IndexDeletionPolicy will clean them up appropriately).
+        if (!indexDirPath.equals(core.getIndexDir())) {
+          Directory d = core.getDirectoryFactory().get(indexDirPath, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_NONE);
+          try {
+            SolrSnapshotManager.deleteIndexFiles(d, mgr.listSnapshotsInIndexDir(indexDirPath), gen);
+          } finally {
+            core.getDirectoryFactory().release(d);
+          }
+        }
+      }
+    }
+  }),
+  LISTSNAPSHOTS_OP(LISTSNAPSHOTS, it -> {
+    CoreContainer cc = it.handler.getCoreContainer();
+    final SolrParams params = it.req.getParams();
+
+    String cname = params.required().get(CoreAdminParams.CORE);
+    try ( SolrCore core = cc.getCore(cname) ) {
+      if (core == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
+      }
+
+      SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
+      NamedList result = new NamedList();
+      for (String name : mgr.listSnapshots()) {
+        Optional<SnapshotMetaData> metadata = mgr.getSnapshotMetaData(name);
+        if ( metadata.isPresent() ) {
+          NamedList<String> props = new NamedList<>();
+          props.add("generation", String.valueOf(metadata.get().getGenerationNumber()));
+          props.add("indexDirPath", metadata.get().getIndexDirPath());
+          result.add(name, props);
+        }
+      }
+      it.rsp.add("snapshots", result);
     }
   });
 
