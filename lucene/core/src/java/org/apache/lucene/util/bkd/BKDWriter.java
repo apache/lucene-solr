@@ -562,11 +562,10 @@ public class BKDWriter implements Closeable {
   private class OneDimensionBKDWriter {
 
     final IndexOutput out;
-    final int pointsPerLeafBlock = (int) (0.75 * maxPointsInLeafNode);
     final List<Long> leafBlockFPs = new ArrayList<>();
     final List<byte[]> leafBlockStartValues = new ArrayList<>();
-    final byte[] leafValues = new byte[pointsPerLeafBlock * packedBytesLength];
-    final int[] leafDocs = new int[pointsPerLeafBlock];
+    final byte[] leafValues = new byte[maxPointsInLeafNode * packedBytesLength];
+    final int[] leafDocs = new int[maxPointsInLeafNode];
     long valueCount;
     int leafCount;
 
@@ -608,7 +607,7 @@ public class BKDWriter implements Closeable {
         throw new IllegalStateException("totalPointCount=" + totalPointCount + " was passed when we were created, but we just hit " + pointCount + " values");
       }
 
-      if (leafCount == pointsPerLeafBlock) {
+      if (leafCount == maxPointsInLeafNode) {
         // We write a block once we hit exactly the max count ... this is different from
         // when we flush a new segment, where we write between max/2 and max per leaf block,
         // so merged segments will behave differently from newly flushed segments:
