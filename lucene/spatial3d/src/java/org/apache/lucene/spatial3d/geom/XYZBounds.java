@@ -293,6 +293,17 @@ public class XYZBounds implements Bounds {
   }
 
   @Override
+  public Bounds noBound(final PlanetModel planetModel) {
+    minX = planetModel.getMinimumXValue();
+    maxX = planetModel.getMaximumXValue();
+    minY = planetModel.getMinimumYValue();
+    maxY = planetModel.getMaximumYValue();
+    minZ = planetModel.getMinimumZValue();
+    maxZ = planetModel.getMaximumZValue();
+    return this;
+  }
+
+  @Override
   public String toString() {
     return "XYZBounds: [xmin="+minX+" xmax="+maxX+" ymin="+minY+" ymax="+maxY+" zmin="+minZ+" zmax="+maxZ+"]";
   }

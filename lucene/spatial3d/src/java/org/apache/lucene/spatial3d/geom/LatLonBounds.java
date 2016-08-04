@@ -253,6 +253,11 @@ public class LatLonBounds implements Bounds {
     return this;
   }
 
+  @Override
+  public Bounds noBound(final PlanetModel planetModel) {
+    return noLongitudeBound().noTopLatitudeBound().noBottomLatitudeBound();
+  }
+  
   // Protected methods
   
   /** Update latitude bound.
