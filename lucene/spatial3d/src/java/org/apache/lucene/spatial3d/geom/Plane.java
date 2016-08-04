@@ -1003,13 +1003,14 @@ public class Plane extends Vector {
    * D - MINIMUM_RESOLUTION.  Both are examined and intersection points determined.
    */
   protected void findIntersectionBounds(final PlanetModel planetModel, final Bounds boundsInfo, final Plane q, final Membership... bounds) {
+    //System.out.println("Finding intersection bounds");
     // Unnormalized, unchecked...
     final double lineVectorX = y * q.z - z * q.y;
     final double lineVectorY = z * q.x - x * q.z;
     final double lineVectorZ = x * q.y - y * q.x;
     if (Math.abs(lineVectorX) < MINIMUM_RESOLUTION && Math.abs(lineVectorY) < MINIMUM_RESOLUTION && Math.abs(lineVectorZ) < MINIMUM_RESOLUTION) {
       // Degenerate case: parallel planes
-      //System.err.println(" planes are parallel - no intersection");
+      //System.out.println(" planes are parallel - no intersection");
       return;
     }
 
@@ -1037,9 +1038,10 @@ public class Plane extends Vector {
     final double denomXZ = this.x * q.z - this.z * q.x;
     final double denomXY = this.x * q.y - this.y * q.x;
     if (Math.abs(denomYZ) >= Math.abs(denomXZ) && Math.abs(denomYZ) >= Math.abs(denomXY)) {
+      //System.out.println("X biggest");
       // X is the biggest, so our point will have x0 = 0.0
       if (Math.abs(denomYZ) < MINIMUM_RESOLUTION_SQUARED) {
-        //System.err.println(" Denominator is zero: no intersection");
+        //System.out.println(" Denominator is zero: no intersection");
         return;
       }
       final double denom = 1.0 / denomYZ;
@@ -1061,9 +1063,10 @@ public class Plane extends Vector {
         0.0, (-(this.D-MINIMUM_RESOLUTION) * q.z - this.z * -(q.D-MINIMUM_RESOLUTION)) * denom, (this.y * -(q.D-MINIMUM_RESOLUTION) + (this.D-MINIMUM_RESOLUTION) * q.y) * denom,
         bounds);
     } else if (Math.abs(denomXZ) >= Math.abs(denomXY) && Math.abs(denomXZ) >= Math.abs(denomYZ)) {
+      //System.out.println("Y biggest");
       // Y is the biggest, so y0 = 0.0
       if (Math.abs(denomXZ) < MINIMUM_RESOLUTION_SQUARED) {
-        //System.err.println(" Denominator is zero: no intersection");
+        //System.out.println(" Denominator is zero: no intersection");
         return;
       }
       final double denom = 1.0 / denomXZ;
@@ -1084,9 +1087,10 @@ public class Plane extends Vector {
         (-(this.D-MINIMUM_RESOLUTION) * q.z - this.z * -(q.D-MINIMUM_RESOLUTION)) * denom, 0.0, (this.x * -(q.D-MINIMUM_RESOLUTION) + (this.D-MINIMUM_RESOLUTION) * q.x) * denom,
         bounds);
     } else {
+      //System.out.println("Z biggest");
       // Z is the biggest, so Z0 = 0.0
       if (Math.abs(denomXY) < MINIMUM_RESOLUTION_SQUARED) {
-        //System.err.println(" Denominator is zero: no intersection");
+        //System.out.println(" Denominator is zero: no intersection");
         return;
       }
       final double denom = 1.0 / denomXY;
@@ -1178,6 +1182,10 @@ public class Plane extends Vector {
       if (point2Valid) {
         boundsInfo.addPoint(new GeoPoint(point2X, point2Y, point2Z));
       }
+    } else {
+      // If we can't intersect line with world, then it's outside the world, so
+      // we have to assume everything is included.
+      boundsInfo.noBound(planetModel);
     }
   }
 

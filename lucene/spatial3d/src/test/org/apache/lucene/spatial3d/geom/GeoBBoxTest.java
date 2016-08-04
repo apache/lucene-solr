@@ -372,4 +372,19 @@ public class GeoBBoxTest {
     assertTrue(box.isWithin(point)?solid.isWithin(point):true);
   }
   
+  @Test
+  public void testFailureCase2() {
+    //final GeoPoint point = new GeoPoint(-0.7375647084975573, -2.3309121299774915E-10, 0.6746626163258577);
+    final GeoPoint point = new GeoPoint(-0.737564708579924, -9.032562595264542E-17, 0.6746626165197899);
+    final GeoBBox box = new GeoRectangle(PlanetModel.WGS84, 0.7988584710911523, 0.25383311815493353, -1.2236144735575564E-12, 7.356011300929654E-49);
+    final XYZBounds bounds = new XYZBounds();
+    box.getBounds(bounds);
+    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, bounds.getMinimumX(), bounds.getMaximumX(), bounds.getMinimumY(), bounds.getMaximumY(), bounds.getMinimumZ(), bounds.getMaximumZ());
+
+    //System.out.println("Is within Y value? "+(point.y >= bounds.getMinimumY() && point.y <= bounds.getMaximumY()));
+    //System.out.println("Shape = "+box+" is within? "+box.isWithin(point));
+    //System.out.println("XYZBounds = "+bounds+" is within? "+solid.isWithin(point)+" solid="+solid);
+    assertTrue(box.isWithin(point) == solid.isWithin(point));
+  }
+  
 }
