@@ -189,6 +189,8 @@ Bug Fixes
 
 * SOLR-9308: Fix distributed RTG to forward request params, fixes fq and non-default fl params (hossman)
 
+* SOLR-9179: NPE in IndexSchema using IBM JDK (noble, Colvin Cowie)
+
 Optimizations
 ----------------------
 

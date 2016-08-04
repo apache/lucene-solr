@@ -1500,9 +1500,11 @@ public class IndexSchema {
               (v1, v2) -> v2,
               LinkedHashMap::new));
     }
-    public static Map<String,String> nameMapping = Collections.unmodifiableMap(Stream.of(Handler.values())
-        .collect(Collectors.toMap(Handler::getNameLower , Handler::getRealName)));
   }
+
+  public static Map<String,String> nameMapping = Collections.unmodifiableMap(Stream.of(SchemaProps.Handler.values())
+      .collect(Collectors.toMap(SchemaProps.Handler::getNameLower , SchemaProps.Handler::getRealName)));
+
 
   public Map<String, Object> getNamedPropertyValues(String name, SolrParams params) {
     return new SchemaProps(name, params, this).toMap();
