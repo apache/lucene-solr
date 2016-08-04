@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.Constants;
 import org.junit.BeforeClass;
 
 /**
@@ -27,6 +28,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    assumeFalse("Backup/Restore is currently buggy on Windows. Tracking the fix on SOLR-9242", Constants.WINDOWS);
     configureCluster(NUM_SHARDS)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();

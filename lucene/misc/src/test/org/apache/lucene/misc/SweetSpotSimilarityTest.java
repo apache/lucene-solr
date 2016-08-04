@@ -91,7 +91,7 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     final SweetSpotSimilarity ssB = new SweetSpotSimilarity();
     ssB.setLengthNormFactors(5,8,0.1f, false);
     
-    Similarity sp = new PerFieldSimilarityWrapper() {
+    Similarity sp = new PerFieldSimilarityWrapper(ss) {
       @Override
       public Similarity get(String field) {
         if (field.equals("bar"))

@@ -38,5 +38,10 @@ public class FileMetaData {
     this.length = length;
     this.checksum = checksum;
   }
+
+  @Override
+  public String toString() {
+    return "FileMetaData(length=" + length + ")";
+  }
 }
 

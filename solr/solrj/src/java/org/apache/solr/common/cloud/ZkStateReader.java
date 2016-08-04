@@ -825,6 +825,18 @@ public class ZkStateReader implements Closeable {
     this.aliases = ClusterState.load(data);
   }
 
+  /**
+   * Get a cluster property
+   *
+   * N.B. Cluster properties are updated via ZK watchers, and so may not necessarily
+   * be completely up-to-date.  If you need to get the latest version, then use a
+   * {@link ClusterProperties} instance.
+   *
+   * @param key           the property to read
+   * @param defaultValue  a default value to use if no such property exists
+   * @param <T>           the type of the property
+   * @return the cluster property, or a default if the property is not set
+   */
   @SuppressWarnings("unchecked")
   public <T> T getClusterProperty(String key, T defaultValue) {
     T value = (T) clusterProperties.get(key);
@@ -833,6 +845,15 @@ public class ZkStateReader implements Closeable {
     return value;
   }
 
+  /**
+   * Get all cluster properties for this cluster
+   *
+   * N.B. Cluster properties are updated via ZK watchers, and so may not necessarily
+   * be completely up-to-date.  If you need to get the latest version, then use a
+   * {@link ClusterProperties} instance.
+   *
+   * @return a Map of cluster properties
+   */
   public Map<String, Object> getClusterProperties() {
     return Collections.unmodifiableMap(clusterProperties);
   }

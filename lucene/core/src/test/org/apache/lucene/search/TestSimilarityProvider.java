@@ -89,9 +89,13 @@ public class TestSimilarityProvider extends LuceneTestCase {
   }
   
   private class ExampleSimilarityProvider extends PerFieldSimilarityWrapper {
-    private Similarity sim1 = new Sim1();
-    private Similarity sim2 = new Sim2();
+    private final Similarity sim1 = new Sim1();
+    private final Similarity sim2 = new Sim2();
     
+    public ExampleSimilarityProvider() {
+      super(new Sim1());
+    }
+
     @Override
     public Similarity get(String field) {
       if (field.equals("foo")) {

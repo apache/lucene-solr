@@ -249,7 +249,8 @@ public class RealTimeGetComponent extends SearchComponent
          docid = segid + ctx.docBase;
 
          if (rb.getFilters() != null) {
-           for (Query q : rb.getFilters()) {
+           for (Query raw : rb.getFilters()) {
+             Query q = raw.rewrite(searcher.getIndexReader());
              Scorer scorer = searcher.createWeight(q, false).scorer(ctx);
              if (scorer == null || segid != scorer.iterator().advance(segid)) {
                // filter doesn't match.
@@ -448,7 +449,7 @@ public class RealTimeGetComponent extends SearchComponent
     ZkController zkController = rb.req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
 
     // if shards=... then use that
-    if (zkController != null && params.get("shards") == null) {
+    if (zkController != null && params.get(ShardParams.SHARDS) == null) {
       CloudDescriptor cloudDescriptor = rb.req.getCore().getCoreDescriptor().getCloudDescriptor();
 
       String collection = cloudDescriptor.getCollectionName();
@@ -470,37 +471,45 @@ public class RealTimeGetComponent extends SearchComponent
 
       for (Map.Entry<String,List<String>> entry : sliceToId.entrySet()) {
         String shard = entry.getKey();
-        String shardIdList = StrUtils.join(entry.getValue(), ',');
 
-        ShardRequest sreq = new ShardRequest();
-
-        sreq.purpose = 1;
+        ShardRequest sreq = createShardRequest(rb, entry.getValue());
         // sreq.shards = new String[]{shard};    // TODO: would be nice if this would work...
         sreq.shards = sliceToShards(rb, collection, shard);
         sreq.actualShards = sreq.shards;
-        sreq.params = new ModifiableSolrParams();
-        sreq.params.set(ShardParams.SHARDS_QT,"/get");      // TODO: how to avoid hardcoding this and hit the same handler?
-        sreq.params.set("distrib",false);
-        sreq.params.set("ids", shardIdList);
-
+        
         rb.addRequest(this, sreq);
       }      
     } else {
-      String shardIdList = StrUtils.join(reqIds.allIds, ',');
-      ShardRequest sreq = new ShardRequest();
-
-      sreq.purpose = 1;
+      ShardRequest sreq = createShardRequest(rb, reqIds.allIds);
       sreq.shards = null;  // ALL
       sreq.actualShards = sreq.shards;
-      sreq.params = new ModifiableSolrParams();
-      sreq.params.set(ShardParams.SHARDS_QT,"/get");      // TODO: how to avoid hardcoding this and hit the same handler?
-      sreq.params.set("distrib",false);
-      sreq.params.set("ids", shardIdList);
 
       rb.addRequest(this, sreq);
     }
 
     return ResponseBuilder.STAGE_DONE;
+  }
+
+  /**
+   * Helper method for creating a new ShardRequest for the specified ids, based on the params 
+   * specified for the current request.  The new ShardRequest does not yet know anything about 
+   * which shard/slice it will be sent to.
+   */
+  private ShardRequest createShardRequest(final ResponseBuilder rb, final List<String> ids) {
+    final ShardRequest sreq = new ShardRequest();
+    sreq.purpose = 1;
+    sreq.params = new ModifiableSolrParams(rb.req.getParams());
+
+    // TODO: how to avoid hardcoding this and hit the same handler?
+    sreq.params.set(ShardParams.SHARDS_QT,"/get");      
+    sreq.params.set("distrib",false);
+
+    sreq.params.remove(ShardParams.SHARDS);
+    sreq.params.remove("id");
+    sreq.params.remove("ids");
+    sreq.params.set("ids", StrUtils.join(ids, ','));
+    
+    return sreq;
   }
   
   private String[] sliceToShards(ResponseBuilder rb, String collection, String slice) {

@@ -16,6 +16,11 @@
  */
 package org.apache.solr.search;
 
+import java.net.URL;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoMBean;
@@ -25,11 +30,6 @@ import org.apache.solr.search.join.BlockJoinParentQParserPlugin;
 import org.apache.solr.search.join.GraphQParserPlugin;
 import org.apache.solr.search.mlt.MLTQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
-
-import java.net.URL;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrInfoMBean {
   /** internal use - name of the default parser */
@@ -77,6 +77,8 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(GraphQParserPlugin.NAME, GraphQParserPlugin.class);
     map.put(XmlQParserPlugin.NAME, XmlQParserPlugin.class);
     map.put(GraphTermsQParserPlugin.NAME, GraphTermsQParserPlugin.class);
+    map.put(IGainTermsQParserPlugin.NAME, IGainTermsQParserPlugin.class);
+    map.put(TextLogisticRegressionQParserPlugin.NAME, TextLogisticRegressionQParserPlugin.class);
     standardPlugins = Collections.unmodifiableMap(map);
   }
 
