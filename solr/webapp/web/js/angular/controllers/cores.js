@@ -129,10 +129,10 @@ solrAdminApp.controller('CoreAdminController',
       };
 
       $scope.swapCores = function() {
-        if ($scope.swapOther) {
-          $swapMessage = "Please select a core to swap with";
+        if (!$scope.swapOther) {
+          $scope.swapMessage = "Please select a core to swap with";
         } else if ($scope.swapOther == $scope.selectedCore) {
-          $swapMessage = "Cannot swap with the same core";
+          $scope.swapMessage = "Cannot swap with the same core";
         } else {
           Cores.swap({core: $scope.selectedCore, other: $scope.swapOther}, function(data) {
             $location.path("/~cores/" + $scope.swapOther);
