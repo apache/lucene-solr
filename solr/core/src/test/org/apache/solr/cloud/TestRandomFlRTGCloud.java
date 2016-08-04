@@ -26,11 +26,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -47,7 +48,10 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.response.transform.DocTransformer; // jdocs
+import org.apache.solr.response.transform.DocTransformer; // jdoc
+import org.apache.solr.response.transform.RawValueTransformerFactory; // jdoc
+import org.apache.solr.response.transform.TransformerFactory;
+
 
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.lucene.util.TestUtil;
@@ -78,57 +82,58 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   /** 
    * Types of things we will randomly ask for in fl param, and validate in response docs.
    *
-   * This list starts out with the things we know concretely should work for any type of request,
-   * {@link #createMiniSolrCloudCluster} will add too it with additional validators that are expected 
-   * to work dependingon hte random cluster creation
-   * 
    * @see #addRandomFlValidators
    */
-  private static final List<FlValidator> FL_VALIDATORS = new ArrayList<>
-    // TODO: SOLR-9314: once all the known bugs are fixed, and this list can be constant
-    // regardless of single/multi node, change this to Collections.unmodifiableList
-    // (and adjust jdocs accordingly)
+  private static final List<FlValidator> FL_VALIDATORS = Collections.unmodifiableList
     (Arrays.<FlValidator>asList(
-      // TODO: SOLR-9314: add more of these for other various transformers
-      //
       new GlobValidator("*"),
       new GlobValidator("*_i"),
       new GlobValidator("*_s"),
       new GlobValidator("a*"),
       new DocIdValidator(),
       new DocIdValidator("my_docid_alias"),
-      new SimpleFieldValueValidator("aaa_i"),
-      new SimpleFieldValueValidator("ccc_s"),
-      new FunctionValidator("aaa_i"), // fq field
-      new FunctionValidator("aaa_i", "func_aaa_alias"),
+      new ShardValidator(),
+      new ShardValidator("my_shard_alias"),
+      new ValueAugmenterValidator(42),
+      new ValueAugmenterValidator(1976, "val_alias"),
+      //
       new RenameFieldValueValidator("id", "my_id_alias"),
+      new SimpleFieldValueValidator("aaa_i"),
       new RenameFieldValueValidator("bbb_i", "my_int_field_alias"),
+      new SimpleFieldValueValidator("ccc_s"),
       new RenameFieldValueValidator("ddd_s", "my_str_field_alias"),
+      //
+      // SOLR-9376: RawValueTransformerFactory doesn't work in cloud mode 
+      //
+      // new RawFieldValueValidator("json", "eee_s", "my_json_field_alias"),
+      // new RawFieldValueValidator("json", "fff_s"),
+      // new RawFieldValueValidator("xml", "ggg_s", "my_xml_field_alias"),
+      // new RawFieldValueValidator("xml", "hhh_s"),
+      //
       new NotIncludedValidator("bogus_unused_field_ss"),
       new NotIncludedValidator("bogus_alias","bogus_alias:other_bogus_field_i"),
-      new NotIncludedValidator("explain_alias","explain_alias:[explain]"),
-      new NotIncludedValidator("score")));
+      new NotIncludedValidator("bogus_raw_alias","bogus_raw_alias:[xml f=bogus_raw_field_ss]"),
+      //
+      new FunctionValidator("aaa_i"), // fq field
+      new FunctionValidator("aaa_i", "func_aaa_alias"),
+      new GeoTransformerValidator("geo_1_srpt"),
+      new GeoTransformerValidator("geo_2_srpt","my_geo_alias"),
+      new ExplainValidator(),
+      new ExplainValidator("explain_alias"),
+      //
+      // SOLR-9377: SubQueryValidator fails on uncommited docs because not using RT seacher for sub query
+      //
+      // new SubQueryValidator(),
+      //
+      new NotIncludedValidator("score"),
+      new NotIncludedValidator("score","score_alias:score")));
   
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {
 
-    // Due to known bugs with some transformers in either multi vs single node, we want
-    // to test both possible cases explicitly and modify the List of FL_VALIDATORS we use accordingly:
-    //  - 50% runs use single node/shard a FL_VALIDATORS with all validators known to work on single node
-    //  - 50% runs use multi node/shard with FL_VALIDATORS only containing stuff that works in cloud
+    // 50% runs use single node/shard a FL_VALIDATORS with all validators known to work on single node
+    // 50% runs use multi node/shard with FL_VALIDATORS only containing stuff that works in cloud
     final boolean singleCoreMode = random().nextBoolean();
-    if (singleCoreMode) {
-      // No-Op
-      // At the moment, there are no known transformers that (we have FlValidators for and) only
-      // work in single core mode.
-    } else {
-      // No-Op
-      // No known transformers that only work in distrib cloud but fail in singleCoreMode
-    }
-    // TODO: SOLR-9314: programatically compare FL_VALIDATORS with all known transformers.
-    // (ala QueryEqualityTest) can't be done until we eliminate the need for "singleCodeMode"
-    // conditional logic (might still want 'singleCoreMode' on the MiniSolrCloudCluster side,
-    // but shouldn't have conditional FlValidators
 
     // (asuming multi core multi replicas shouldn't matter (assuming multi node) ...
     final int repFactor = singleCoreMode ? 1 : (usually() ? 1 : 2);
@@ -167,7 +172,51 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
     CLIENTS = null;
   }
-  
+
+  /** 
+   * Tests thta all TransformerFactories that are implicitly provided by Solr are tested in this class
+   *
+   * @see FlValidator#getDefaultTransformerFactoryName
+   * @see #FL_VALIDATORS
+   * @see TransformerFactory#defaultFactories
+   */
+  public void testCoverage() throws Exception {
+    final Set<String> implicit = new LinkedHashSet<>();
+    for (String t :  TransformerFactory.defaultFactories.keySet()) {
+      implicit.add(t);
+    }
+    
+    final Set<String> covered = new LinkedHashSet<>();
+    for (FlValidator v : FL_VALIDATORS) {
+      String t = v.getDefaultTransformerFactoryName();
+      if (null != t) {
+        covered.add(t);
+      }
+    }
+
+    // items should only be added to this list if it's known that they do not work with RTG
+    // and a specific Jira for fixing this is listed as a comment
+    final List<String> knownBugs = Arrays.asList
+      ( SubQueryValidator.NAME, // SOLR-9377
+        "xml","json", // SOLR-9376
+        "child" // way to complicatd to vet with this test, see SOLR-9379 instead
+      );
+
+    for (String buggy : knownBugs) {
+      assertFalse(buggy + " is listed as a being a known bug, " +
+                  "but it exists in the set of 'covered' TransformerFactories",
+                  covered.contains(buggy));
+      assertTrue(buggy + " is listed as a known bug, " +
+                 "but it does not even exist in the set of 'implicit' TransformerFactories",
+                  implicit.remove(buggy));
+    }
+    
+    implicit.removeAll(covered);
+    assertEquals("Some implicit TransformerFactories are not yet tested by this class: " + implicit,
+                 0, implicit.size());
+  }
+
+
   public void testRandomizedUpdatesAndRTGs() throws Exception {
 
     final int maxNumDocs = atLeast(100);
@@ -273,14 +322,21 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    */
   private SolrInputDocument addRandomDocument(final int docId) throws IOException, SolrServerException {
     final SolrClient client = getRandClient(random());
-    
+
     final SolrInputDocument doc = sdoc("id", "" + docId,
                                        "aaa_i", random().nextInt(),
                                        "bbb_i", random().nextInt(),
                                        //
                                        "ccc_s", TestUtil.randomSimpleString(random()),
                                        "ddd_s", TestUtil.randomSimpleString(random()),
+                                       "eee_s", TestUtil.randomSimpleString(random()),
+                                       "fff_s", TestUtil.randomSimpleString(random()),
+                                       "ggg_s", TestUtil.randomSimpleString(random()),
+                                       "hhh_s", TestUtil.randomSimpleString(random()),
                                        //
+                                       "geo_1_srpt", GeoTransformerValidator.getValueForIndexing(random()),
+                                       "geo_2_srpt", GeoTransformerValidator.getValueForIndexing(random()),
+                                       // for testing prefix globbing
                                        "axx_i", random().nextInt(),
                                        "ayy_i", random().nextInt(),
                                        "azz_s", TestUtil.randomSimpleString(random()));
@@ -306,10 +362,14 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       params.add("fq", "aaa_i:[* TO " + FQ_MAX + "]");
     }
     
-    final Set<FlValidator> validators = new HashSet<>();
+    final Set<FlValidator> validators = new LinkedHashSet<>();
     validators.add(ID_VALIDATOR); // always include id so we can be confident which doc we're looking at
     addRandomFlValidators(random(), validators);
     FlValidator.addFlParams(validators, params);
+
+    // HACK: [subquery] expects this to be top level params
+    params.add(SubQueryValidator.SUBQ_KEY + ".q",
+               "{!field f=" + SubQueryValidator.SUBQ_FIELD + " v=$row." + SubQueryValidator.SUBQ_FIELD + "}");
     
     final List<String> idsToRequest = new ArrayList<>(docIds.length);
     final List<SolrInputDocument> docsToExpect = new ArrayList<>(docIds.length);
@@ -365,13 +425,13 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         final SolrInputDocument expected = knownDocs[actualId];
         assertNotNull("expected null doc but RTG returned: " + actual, expected);
         
-        Set<String> expectedFieldNames = new HashSet<>();
+        Set<String> expectedFieldNames = new TreeSet<>();
         for (FlValidator v : validators) {
           expectedFieldNames.addAll(v.assertRTGResults(validators, expected, actual));
         }
         // ensure only expected field names are in the actual document
-        Set<String> actualFieldNames = new HashSet<>(actual.getFieldNames());
-        assertEquals("More actual fields then expected", expectedFieldNames, actualFieldNames);
+        Set<String> actualFieldNames = new TreeSet<>(actual.getFieldNames());
+        assertEquals("Actual field names returned differs from expected", expectedFieldNames, actualFieldNames);
       } catch (AssertionError ae) {
         throw new AssertionError(params + " => " + actual + ": " + ae.getMessage(), ae);
       }
@@ -448,6 +508,16 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public default boolean requiresRealtimeSearcherReOpen() {
       return false;
     }
+
+    /**
+     * the name of a transformer listed in {@link TransformerFactory#defaultFactories} that this validator
+     * corrisponds to, or null if not applicable.  Used for testing coverage of 
+     * Solr's implicitly supported transformers.
+     *
+     * Default behavior is to return null
+     * @see #testCoverage
+     */
+    public default String getDefaultTransformerFactoryName() { return null; }
     
     /** 
      * Must return a non null String that can be used in an fl param -- either by itself, 
@@ -468,6 +538,14 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
                                                final SolrInputDocument expected,
                                                final SolrDocument actual);
+  }
+  
+  /** 
+   * Some validators behave in a way that "suppresses" real fields even when they would otherwise match a glob
+   * @see GlobValidator
+   */
+  private interface SuppressRealFields {
+    public Set<String> getSuppressedFields();
   }
 
   private abstract static class FieldValueValidator implements FlValidator {
@@ -494,14 +572,44 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public String getFlParam() { return expectedFieldName; }
   }
   
-  private static class RenameFieldValueValidator extends FieldValueValidator {
-    /** @see GlobValidator */
-    public String getRealFieldName() { return expectedFieldName; }
+  private static class RenameFieldValueValidator extends FieldValueValidator implements SuppressRealFields {
     public RenameFieldValueValidator(final String origFieldName, final String alias) {
       super(origFieldName, alias);
     }
     public String getFlParam() { return actualFieldName + ":" + expectedFieldName; }
+    public Set<String> getSuppressedFields() { return Collections.singleton(expectedFieldName); }
   }
+
+  /**
+   * Validator for {@link RawValueTransformerFactory}
+   *
+   * This validator is fairly weak, because it doesn't do anything to verify the conditional logic
+   * in RawValueTransformerFactory realted to the output format -- but that's out of the scope of 
+   * this randomized testing.  
+   * 
+   * What we're primarily concerned with is that the transformer does it's job and puts the string 
+   * in the response, regardless of cloud/RTG/uncommited state of the document.
+   */
+  private static class RawFieldValueValidator extends RenameFieldValueValidator {
+    final String type;
+    final String alias;
+    public RawFieldValueValidator(final String type, final String fieldName, final String alias) {
+      // transformer is weird, default result key doesn't care what params are used...
+      super(fieldName, null == alias ? "["+type+"]" : alias);
+      this.type = type;
+      this.alias = alias;
+    }
+    public RawFieldValueValidator(final String type, final String fieldName) {
+      this(type, fieldName, null);
+    }
+    public String getFlParam() {
+      return (null == alias ? "" : (alias + ":")) + "[" + type + " f=" + expectedFieldName + "]";
+    }
+    public String getDefaultTransformerFactoryName() {
+      return type;
+    }
+  }
+ 
 
   /** 
    * enforces that a valid <code>[docid]</code> is present in the response, possibly using a 
@@ -511,20 +619,23 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * be greater than or equal to <code>0</code> 
    */
   private static class DocIdValidator implements FlValidator {
+    private static final String NAME = "docid";
+    private static final String USAGE = "["+NAME+"]";
     private final String resultKey;
     public DocIdValidator(final String resultKey) {
       this.resultKey = resultKey;
     }
     public DocIdValidator() {
-      this("[docid]");
+      this(USAGE);
     }
-    public String getFlParam() { return "[docid]".equals(resultKey) ? resultKey : resultKey+":[docid]"; }
+    public String getDefaultTransformerFactoryName() { return NAME; }
+    public String getFlParam() { return USAGE.equals(resultKey) ? resultKey : resultKey+":"+USAGE; }
     public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
                                                final SolrInputDocument expected,
                                                final SolrDocument actual) {
       final Object value =  actual.getFirstValue(resultKey);
       assertNotNull(getFlParam() + " => no value in actual doc", value);
-      assertTrue("[docid] must be an Integer: " + value, value instanceof Integer);
+      assertTrue(USAGE + " must be an Integer: " + value, value instanceof Integer);
 
       int minValidDocId = -1; // if it comes from update log
       for (FlValidator other : validators) {
@@ -533,11 +644,70 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           break;
         }
       }
-      assertTrue("[docid] must be >= " + minValidDocId + ": " + value,
+      assertTrue(USAGE + " must be >= " + minValidDocId + ": " + value,
                  minValidDocId <= ((Integer)value).intValue());
       return Collections.<String>singleton(resultKey);
     }
   }
+
+  /** Trivial validator of ShardAugmenterFactory */
+  private static class ShardValidator implements FlValidator {
+    private static final String NAME = "shard";
+    private static final String USAGE = "["+NAME+"]";
+    private final String resultKey;
+    public ShardValidator(final String resultKey) {
+      this.resultKey = resultKey;
+    }
+    public ShardValidator() {
+      this(USAGE);
+    }
+    public String getDefaultTransformerFactoryName() { return NAME; }
+    public String getFlParam() { return USAGE.equals(resultKey) ? resultKey : resultKey+":"+USAGE; }
+    public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
+                                               final SolrInputDocument expected,
+                                               final SolrDocument actual) {
+      final Object value =  actual.getFirstValue(resultKey);
+      assertNotNull(getFlParam() + " => no value in actual doc", value);
+      assertTrue(USAGE + " must be an String: " + value, value instanceof String);
+
+      // trivial sanity check
+      assertFalse(USAGE + " => blank string", value.toString().trim().isEmpty());
+      return Collections.<String>singleton(resultKey);
+    }
+  }
+
+  /** Trivial validator of ValueAugmenter */
+  private static class ValueAugmenterValidator implements FlValidator {
+    private static final String NAME = "value";
+    private static String trans(final int value) { return "[" + NAME + " v=" + value + " t=int]"; }
+    
+    private final String resultKey;
+    private final String fl;
+    private final Integer expectedVal;
+    private ValueAugmenterValidator(final String fl, final int expectedVal, final String resultKey) {
+      this.resultKey = resultKey;
+      this.expectedVal = expectedVal;
+      this.fl = fl;
+    }
+    public ValueAugmenterValidator(final int expectedVal, final String resultKey) {
+      this(resultKey + ":" +trans(expectedVal), expectedVal, resultKey);
+    }
+    public ValueAugmenterValidator(final int expectedVal) {
+      // value transformer is weird, default result key doesn't care what params are used...
+      this(trans(expectedVal), expectedVal, "["+NAME+"]");
+    }
+    public String getDefaultTransformerFactoryName() { return NAME; }
+    public String getFlParam() { return fl; }
+    public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
+                                               final SolrInputDocument expected,
+                                               final SolrDocument actual) {
+      final Object actualVal =  actual.getFirstValue(resultKey);
+      assertNotNull(getFlParam() + " => no value in actual doc", actualVal);
+      assertEquals(getFlParam(), expectedVal, actualVal);
+      return Collections.<String>singleton(resultKey);
+    }
+  }
+
   
   /** Trivial validator of a ValueSourceAugmenter */
   private static class FunctionValidator implements FlValidator {
@@ -572,10 +742,105 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
   }
 
+  
+  /** 
+   * Trivial validator of a SubQueryAugmenter.  
+   *
+   * This validator ignores 90% of the features/complexity
+   * of SubQueryAugmenter, and instead just focuses on the basics of 
+   * "did we match at least one doc based on a field value of the requested doc?"
+   */
+  private static class SubQueryValidator implements FlValidator {
+    public final static String NAME = "subquery";
+    public final static String SUBQ_KEY = "subq";
+    public final static String SUBQ_FIELD = "aaa_i";
+    /** always returns true */
+    public boolean requiresRealtimeSearcherReOpen() { return true; }
+    public String getFlParam() { return SUBQ_KEY+":["+NAME+"]"; }
+    public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
+                                               final SolrInputDocument expected,
+                                               final SolrDocument actual) {
+      final Object origVal = expected.getFieldValue(SUBQ_FIELD);
+      final Object actualVal = actual.getFieldValue(SUBQ_KEY);
+      assertTrue("Expected a doclist: " + actualVal,
+                 actualVal instanceof SolrDocumentList);
+      SolrDocumentList subList = (SolrDocumentList) actualVal;
+      assertTrue("sub query should have producted at least one result (this doc)",
+                 1 <= subList.getNumFound());
+      for (SolrDocument subDoc : subList) {
+        assertEquals("orig doc value doesn't match subquery doc value",
+                     origVal, subDoc.getFirstValue(SUBQ_FIELD));
+      }
+    
+      return Collections.<String>singleton(SUBQ_KEY);
+    }
+    public String getDefaultTransformerFactoryName() { return NAME; }
+  }
+  
+  /** Trivial validator of a GeoTransformer */
+  private static class GeoTransformerValidator implements FlValidator, SuppressRealFields{
+    private static final String NAME = "geo";
+    /** 
+     * we're not worried about testing the actual geo parsing/formatting of values,
+     * just that the transformer gets called with the expected field value.
+     * so have a small set of fixed input values we use when indexing docs,
+     * and the expected output for each
+     */
+    private static final Map<String,String> VALUES = new HashMap<>();
+    /** 
+     * The set of legal field values this validator is willing to test as a list so we can
+     * reliably index into it with random ints
+     */
+    private static final List<String> ALLOWED_FIELD_VALUES;
+    static {
+      for (int i = -42; i < 66; i+=13) {
+        VALUES.put("POINT( 42 "+i+" )", "{\"type\":\"Point\",\"coordinates\":[42,"+i+"]}");
+      }
+      ALLOWED_FIELD_VALUES = Collections.unmodifiableList(new ArrayList<>(VALUES.keySet()));
+    }
+    /** 
+     * returns a random field value usable when indexing a document that this validator will
+     * be able to handle.
+     */
+    public static String getValueForIndexing(final Random rand) {
+      return ALLOWED_FIELD_VALUES.get(rand.nextInt(ALLOWED_FIELD_VALUES.size()));
+    }
+    private static String trans(String fieldName) {
+      return "["+NAME+" f="+fieldName+"]";
+    }
+    protected final String fl;
+    protected final String resultKey;
+    protected final String fieldName;
+    public GeoTransformerValidator(final String fieldName) {
+      // geo transformer is weird, default result key doesn't care what params are used...
+      this(trans(fieldName), fieldName, "["+NAME+"]");
+    }
+    public GeoTransformerValidator(final String fieldName, final String resultKey) {
+      this(resultKey + ":" + trans(fieldName), fieldName, resultKey);
+    }
+    private GeoTransformerValidator(final String fl, final String fieldName, final String resultKey) {
+      this.fl = fl;
+      this.resultKey = resultKey;
+      this.fieldName = fieldName;
+    }
+    public String getDefaultTransformerFactoryName() { return NAME; }
+    public String getFlParam() { return fl; }
+    public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
+                                               final SolrInputDocument expected,
+                                               final SolrDocument actual) {
+      final Object origVal = expected.getFieldValue(fieldName);
+      assertTrue(fl + ": orig field value is not supported: " + origVal, VALUES.containsKey(origVal));
+      
+      assertEquals(fl, VALUES.get(origVal), actual.getFirstValue(resultKey));
+      return Collections.<String>singleton(resultKey);
+    }
+    public Set<String> getSuppressedFields() { return Collections.singleton(fieldName); }
+  }
+
   /** 
    * Glob based validator.
    * This class checks that every field in the expected doc exists in the actual doc with the expected 
-   * value -- with special exceptions for fields that are "renamed" with an alias. 
+   * value -- with special exceptions for fields that are "suppressed" (usually via an alias)
    *
    * By design, fields that are aliased are "moved" unless the original field name was explicitly included 
    * in the fl, globs don't count.
@@ -587,7 +852,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public GlobValidator(final String glob) {
       this.glob = glob;
     }
-    private final Set<String> matchingFieldsCache = new HashSet<>();
+    private final Set<String> matchingFieldsCache = new LinkedHashSet<>();
     
     public String getFlParam() { return glob; }
     
@@ -603,15 +868,15 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
                                                final SolrInputDocument expected,
                                                final SolrDocument actual) {
 
-      final Set<String> renamed = new HashSet<>(validators.size());
+      final Set<String> renamed = new LinkedHashSet<>(validators.size());
       for (FlValidator v : validators) {
-        if (v instanceof RenameFieldValueValidator) {
-          renamed.add(((RenameFieldValueValidator)v).getRealFieldName());
+        if (v instanceof SuppressRealFields) {
+          renamed.addAll(((SuppressRealFields)v).getSuppressedFields());
         }
       }
       
       // every real field name matching the glob that is not renamed should be in the results
-      Set<String> result = new HashSet<>(expected.getFieldNames().size());
+      Set<String> result = new LinkedHashSet<>(expected.getFieldNames().size());
       for (String f : expected.getFieldNames()) {
         if ( matchesGlob(f) && (! renamed.contains(f) ) ) {
           result.add(f);
@@ -643,6 +908,19 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       assertEquals(fl, null, actual.getFirstValue(fieldName));
       return Collections.emptySet();
     }
+  }
+
+  /** explain should always be ignored when using RTG */
+  private static class ExplainValidator extends NotIncludedValidator {
+    private final static String NAME = "explain";
+    private final static String USAGE = "[" + NAME + "]";
+    public ExplainValidator() {
+      super(USAGE);
+    }
+    public ExplainValidator(final String resultKey) {
+      super(USAGE, resultKey + ":" + USAGE);
+    }
+    public String getDefaultTransformerFactoryName() { return NAME; }
   }
 
   /** helper method for adding a random number (may be 0) of items from {@link #FL_VALIDATORS} */

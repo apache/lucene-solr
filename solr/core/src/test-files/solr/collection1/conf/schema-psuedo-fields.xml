@@ -23,6 +23,7 @@
   <field name="subject" type="text" indexed="true" stored="true"/>
   <field name="ssto" type="string" indexed="false" stored="true"/>
 
+  <dynamicField name="*_srpt" type="location_rpt" indexed="true" stored="true"/>  
   <dynamicField name="*_i" type="int" indexed="true" stored="true"/>
   <!-- for testing if score psuedofield is erroneously treated as multivalued
        when a matching dynamic field exists 
@@ -40,6 +41,8 @@
   <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
+  <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
+             geo="true" distErrPct="0.025" maxDistErr="0.001" distanceUnits="kilometers" />
   <fieldType name="text" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="true">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
