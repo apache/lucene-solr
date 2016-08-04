@@ -133,6 +133,8 @@ Bug Fixes
 * SOLR-9334: CloudSolrClient.collectionStateCache is unbounded (noble)
 
 
+* SOLR-9179: NPE in IndexSchema using IBM JDK (noble, Colvin Cowie)
+
 Optimizations
 ----------------------
 

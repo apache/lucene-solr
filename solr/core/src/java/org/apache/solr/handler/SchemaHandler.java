@@ -185,7 +185,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
           if (parts.get(0).isEmpty()) parts.remove(0);
           if (parts.size() > 1 && level2.containsKey(parts.get(1))) {
             String realName = parts.get(1);
-            String fieldName = IndexSchema.SchemaProps.nameMapping.get(realName);
+            String fieldName = IndexSchema.nameMapping.get(realName);
 
             String pathParam = level2.get(realName);
             if (parts.size() > 2) {
