@@ -714,10 +714,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
       if (location == null) {
         //Refresh the cluster property file to make sure the value set for location is the latest
-        h.coreContainer.getZkController().getZkStateReader().forceUpdateClusterProperties();
-
         // Check if the location is specified in the cluster property.
-        location = h.coreContainer.getZkController().getZkStateReader().getClusterProperty(CoreAdminParams.BACKUP_LOCATION, null);
+        location = new ClusterProperties(h.coreContainer.getZkController().getZkClient()).getClusterProperty(CoreAdminParams.BACKUP_LOCATION, null);
         if (location == null) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
               + " parameter or as a default repository property or as a cluster property.");
@@ -755,10 +753,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
       if (location == null) {
         //Refresh the cluster property file to make sure the value set for location is the latest
-        h.coreContainer.getZkController().getZkStateReader().forceUpdateClusterProperties();
-
         // Check if the location is specified in the cluster property.
-        location = h.coreContainer.getZkController().getZkStateReader().getClusterProperty("location", null);
+        location = new ClusterProperties(h.coreContainer.getZkController().getZkClient()).getClusterProperty("location", null);
         if (location == null) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
               + " parameter or as a default repository property or as a cluster property.");
