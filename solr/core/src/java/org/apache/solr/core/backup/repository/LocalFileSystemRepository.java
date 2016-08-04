@@ -32,6 +32,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 
@@ -59,10 +60,22 @@ public class LocalFileSystemRepository implements BackupRepository {
   @Override
   public URI createURI(String... pathComponents) {
     Preconditions.checkArgument(pathComponents.length > 0);
-    Path result = Paths.get(pathComponents[0]);
+
+    String basePath = Preconditions.checkNotNull(pathComponents[0]);
+    // Note the URI.getPath() invocation on Windows platform generates an invalid URI.
+    // Refer to http://stackoverflow.com/questions/9834776/java-nio-file-path-issue
+    // Since the caller may have used this method to generate the string representation
+    // for the pathComponents, we implement a work-around specifically for Windows platform
+    // to remove the leading '/' character.
+    if (Constants.WINDOWS) {
+      basePath = basePath.replaceFirst("^/(.:/)", "$1");
+    }
+
+    Path result = Paths.get(basePath);
     for (int i = 1; i < pathComponents.length; i++) {
       result = result.resolve(pathComponents[i]);
     }
+
     return result.toUri();
   }
 
