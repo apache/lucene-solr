@@ -234,6 +234,8 @@ Other Changes
 
 * SOLR-9209: extracting JdbcDataSource.createResultSetIterator() for extension (Kristine Jetzke via Mikhai Khludnev)
 
+* SOLR-9353: Factor out ReRankQParserPlugin.ReRankQueryRescorer private class. (Christine Poerschke)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
