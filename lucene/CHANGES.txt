@@ -159,6 +159,9 @@ Optimizations
 * LUCENE-7396, LUCENE-7399: Faster flush of points.
   (Adrien Grand, Mike McCandless)
 
+* LUCENE-7406: Automaton and PrefixQuery tweaks (fewer object (re)allocations).
+  (Christine Poerschke)
+
 Other
 
 * LUCENE-4787: Fixed some highlighting javadocs. (Michael Dodsworth via Adrien
