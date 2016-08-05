@@ -32,6 +32,7 @@ import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryRescorer;
+import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
@@ -97,12 +98,32 @@ public class ReRankQParserPlugin extends QParserPlugin {
     }
   }
 
+  private final class ReRankQueryRescorer extends QueryRescorer {
+
+    final double reRankWeight;
+
+    public ReRankQueryRescorer(Query reRankQuery, double reRankWeight) {
+      super(reRankQuery);
+      this.reRankWeight = reRankWeight;
+    }
+
+    @Override
+    protected float combine(float firstPassScore, boolean secondPassMatches, float secondPassScore) {
+      float score = firstPassScore;
+      if (secondPassMatches) {
+        score += reRankWeight * secondPassScore;
+      }
+      return score;
+    }
+  }
+
   private final class ReRankQuery extends RankQuery {
     private Query mainQuery = defaultQuery;
-    private Query reRankQuery;
-    private int reRankDocs;
-    private int length;
-    private double reRankWeight;
+    final private Query reRankQuery;
+    final private int reRankDocs;
+    final private int length;
+    final private double reRankWeight;
+    final private Rescorer reRankQueryRescorer;
     private Map<BytesRef, Integer> boostedPriority;
 
     public int hashCode() {
@@ -126,6 +147,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
       this.reRankDocs = reRankDocs;
       this.reRankWeight = reRankWeight;
       this.length = length;
+      this.reRankQueryRescorer = new ReRankQueryRescorer(reRankQuery, reRankWeight);
     }
 
     public RankQuery wrap(Query _mainQuery) {
@@ -149,7 +171,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
         }
       }
 
-      return new ReRankCollector(reRankDocs, length, reRankQuery, reRankWeight, cmd, searcher, boostedPriority);
+      return new ReRankCollector(reRankDocs, length, reRankQueryRescorer, cmd, searcher, boostedPriority);
     }
 
     @Override
@@ -172,57 +194,43 @@ public class ReRankQParserPlugin extends QParserPlugin {
     }
 
     public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException{
-      return new ReRankWeight(mainQuery, reRankQuery, reRankWeight, searcher, needsScores);
+      return new ReRankWeight(mainQuery, reRankQueryRescorer, searcher, needsScores);
     }
   }
 
   private class ReRankWeight extends FilterWeight {
-    private Query reRankQuery;
     private IndexSearcher searcher;
-    private double reRankWeight;
+    final private Rescorer reRankQueryRescorer;
 
-    public ReRankWeight(Query mainQuery, Query reRankQuery, double reRankWeight, IndexSearcher searcher, boolean needsScores) throws IOException {
+    public ReRankWeight(Query mainQuery, Rescorer reRankQueryRescorer, IndexSearcher searcher, boolean needsScores) throws IOException {
       super(mainQuery, mainQuery.createWeight(searcher, needsScores));
-      this.reRankQuery = reRankQuery;
       this.searcher = searcher;
-      this.reRankWeight = reRankWeight;
+      this.reRankQueryRescorer = reRankQueryRescorer;
     }
 
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Explanation mainExplain = in.explain(context, doc);
-      return new QueryRescorer(reRankQuery) {
-        @Override
-        protected float combine(float firstPassScore, boolean secondPassMatches, float secondPassScore) {
-          float score = firstPassScore;
-          if (secondPassMatches) {
-            score += reRankWeight * secondPassScore;
-          }
-          return score;
-        }
-      }.explain(searcher, mainExplain, context.docBase+doc);
+      return reRankQueryRescorer.explain(searcher, mainExplain, context.docBase+doc);
     }
   }
 
   private class ReRankCollector extends TopDocsCollector {
 
-    private Query reRankQuery;
-    private TopDocsCollector  mainCollector;
-    private IndexSearcher searcher;
-    private int reRankDocs;
-    private int length;
-    private double reRankWeight;
-    private Map<BytesRef, Integer> boostedPriority;
+    final private TopDocsCollector  mainCollector;
+    final private IndexSearcher searcher;
+    final private int reRankDocs;
+    final private int length;
+    final private Map<BytesRef, Integer> boostedPriority;
+    final private Rescorer reRankQueryRescorer;
 
 
     public ReRankCollector(int reRankDocs,
                            int length,
-                           Query reRankQuery,
-                           double reRankWeight,
+                           Rescorer reRankQueryRescorer,
                            QueryCommand cmd,
                            IndexSearcher searcher,
                            Map<BytesRef, Integer> boostedPriority) throws IOException {
       super(null);
-      this.reRankQuery = reRankQuery;
       this.reRankDocs = reRankDocs;
       this.length = length;
       this.boostedPriority = boostedPriority;
@@ -234,7 +242,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
         this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), false, true, true);
       }
       this.searcher = searcher;
-      this.reRankWeight = reRankWeight;
+      this.reRankQueryRescorer = reRankQueryRescorer;
     }
 
     public int getTotalHits() {
@@ -276,16 +284,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
           mainDocs.scoreDocs = reRankScoreDocs;
 
-          TopDocs rescoredDocs = new QueryRescorer(reRankQuery) {
-            @Override
-            protected float combine(float firstPassScore, boolean secondPassMatches, float secondPassScore) {
-              float score = firstPassScore;
-              if (secondPassMatches) {
-                score += reRankWeight * secondPassScore;
-              }
-              return score;
-            }
-          }.rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
+          TopDocs rescoredDocs = reRankQueryRescorer
+              .rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
 
           Arrays.sort(rescoredDocs.scoreDocs, new BoostedComp(boostedDocs, mainDocs.scoreDocs, rescoredDocs.getMaxScore()));
 
@@ -325,16 +325,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
           mainDocs.scoreDocs = reRankScoreDocs;
 
-          TopDocs rescoredDocs = new QueryRescorer(reRankQuery) {
-            @Override
-            protected float combine(float firstPassScore, boolean secondPassMatches, float secondPassScore) {
-              float score = firstPassScore;
-              if (secondPassMatches) {
-                score += reRankWeight * secondPassScore;
-              }
-              return score;
-            }
-          }.rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
+          TopDocs rescoredDocs = reRankQueryRescorer
+              .rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
 
           //Lower howMany to return if we've collected fewer documents.
           howMany = Math.min(howMany, mainScoreDocs.length);
