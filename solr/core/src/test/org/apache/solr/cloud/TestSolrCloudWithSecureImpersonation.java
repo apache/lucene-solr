@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
+import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -42,6 +43,7 @@ import org.apache.solr.security.HttpParamDelegationTokenPlugin;
 import org.apache.solr.security.KerberosPlugin;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -57,8 +59,16 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   private static String getUsersFirstGroup() throws Exception {
     org.apache.hadoop.security.Groups hGroups =
         new org.apache.hadoop.security.Groups(new Configuration());
-    List<String> g = hGroups.getGroups(System.getProperty("user.name"));
-    return g.get(0);
+    String group = "*"; // accept any group if a group can't be found
+    try {
+      List<String> g = hGroups.getGroups(System.getProperty("user.name"));
+      if (g != null && g.size() > 0) {
+        group = g.get(0);
+      }
+    } catch (NullPointerException npe) {
+      // if user/group doesn't exist on test box
+    }
+    return group;
   }
 
   private static Map<String, String> getImpersonatorSettings() throws Exception {
@@ -70,7 +80,9 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "wrongHost.groups", "*");
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "noHosts.groups", "*");
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "localHostAnyGroup.groups", "*");
-    filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "localHostAnyGroup.hosts", "127.0.0.1");
+    InetAddress loopback = InetAddress.getLoopbackAddress();
+    filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "localHostAnyGroup.hosts",
+        loopback.getCanonicalHostName() + "," + loopback.getHostName() + "," + loopback.getHostAddress());
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "anyHostUsersGroup.groups", getUsersFirstGroup());
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "anyHostUsersGroup.hosts", "*");
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "bogusGroup.groups", "__some_bogus_group");
@@ -126,6 +138,11 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
         assertEquals(user, httpRequest.getAttribute(KerberosPlugin.IMPERSONATOR_USER_NAME));
       }
     }
+  }
+
+  @Before
+  public void clearCalledIndicator() throws Exception {
+    ImpersonatorCollectionsHandler.called.set(false);
   }
 
   @AfterClass
