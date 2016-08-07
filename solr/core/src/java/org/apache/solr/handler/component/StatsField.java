@@ -209,9 +209,8 @@ public class StatsField {
   private final List<Double> percentilesList= new ArrayList<Double>();
   private final boolean isShard;
 
-  private double minFence = -Double.MAX_VALUE;
-  private double maxFence = Double.MAX_VALUE;
-  private boolean isFenced = false;
+  private String floor;
+  private String ceil;
   private double tdigestCompression = 100.0D;
   private HllOptions hllOpts;
   
@@ -304,11 +303,10 @@ public class StatsField {
       ? Collections.<String>emptyList()
       : StrUtils.splitSmart(excludeStr,',');
 
-    if (localParams.get("minFence") != null || localParams.get("maxFence") != null ) {
-      isFenced = true;
-    }
-    this.minFence = localParams.getDouble("minFence", this.minFence);
-    this.maxFence = localParams.getDouble("maxFence", this.maxFence);
+    // schema-type specific, so these are pulled out as strings and
+    // dealt with by the stats values
+    this.floor = localParams.get("floor");
+    this.ceil = localParams.get("ceil");
 
     assert ( (null == this.valueSource) ^ (null == this.schemaField) ) 
       : "exactly one of valueSource & schemaField must be null";
@@ -521,11 +519,9 @@ public class StatsField {
     return tagList;
   }
 
-  public double getMinFence() {return minFence; }
+  public String getFloor() {return floor;}
 
-  public double getMaxFence() {return maxFence; }
-
-  public boolean isFenced() {return isFenced; }
+  public String getCeil() {return ceil; }
 
   public String toString() {
     return "StatsField<" + originalParam + ">";

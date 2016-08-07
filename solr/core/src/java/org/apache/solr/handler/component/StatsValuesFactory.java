@@ -112,7 +112,16 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   final protected boolean computeMax;
   final protected boolean computeMinOrMax;
   final protected boolean computeCardinality;
-  final protected boolean isFenced;
+
+  interface Boundable<T> {
+    boolean isWithinBounds(T value);
+  }
+
+  protected Boundable<T> bounds = new Boundable<T>() {
+    public boolean isWithinBounds(T value) {
+      return true;
+    }
+  };
 
   /**
    * Either a function value source to collect from, or the ValueSource associated
@@ -134,7 +143,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   protected T max;
   protected T min;
   protected long missing;
-  protected long fenced;
+  protected long outOfBounds;
   protected long count;
   protected long countDistinct;
   protected final Set<T> distinctValues;
@@ -157,7 +166,6 @@ abstract class AbstractStatsValues<T> implements StatsValues {
         || statsField.calculateStats(Stat.distinctValues);
     this.computeMin = statsField.calculateStats(Stat.min);
     this.computeMax = statsField.calculateStats(Stat.max);
-    this.isFenced = statsField.isFenced();
     this.computeMinOrMax = computeMin || computeMax;
 
     this.distinctValues = computeCalcDistinct ? new TreeSet<>() : null;
@@ -275,6 +283,11 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   public void accumulate(T value, int count) {
     assert null != value : "Can't accumulate null";
 
+    if (!bounds.isWithinBounds(value)) {
+      outOfBounds();
+      return;
+    }
+
     if (computeCount) {
       this.count += count;
     }
@@ -306,8 +319,8 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     }
   }
 
-  public void fenced() {
-    fenced++;
+  public void outOfBounds() {
+    outOfBounds++;
   }
 
   
@@ -456,7 +469,7 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
 
   double minD; // perf optimization, only valid if (null != this.min)
   double maxD; // perf optimization, only valid if (null != this.max)
-  
+
   final protected boolean computeSum;
   final protected boolean computeSumOfSquares;
   final protected boolean computePercentiles;
@@ -471,6 +484,25 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
     if ( computePercentiles ) {
       tdigest = new AVLTreeDigest(statsField.getTdigestCompression()); 
     }
+
+
+    if (statsField.getCeil() != null || statsField.getFloor() != null) {
+      double floor = statsField.getFloor() != null ? Double.parseDouble(statsField.getFloor()) : -Double.MAX_VALUE;
+      double ceil  = statsField.getCeil() != null ? Double.parseDouble(statsField.getCeil()) : +Double.MAX_VALUE;
+
+      bounds = new Boundable<Number>() {
+        @Override
+        public boolean isWithinBounds(Number value) {
+          // really we should think harder about when things are longs, but in accumulate
+          // stats component only cares about double, so we do here as well
+          if (value.doubleValue() >= floor && value.doubleValue() <=  ceil) {
+            return true;
+          }
+          return false;
+        }
+      };
+    }
+
 
   }
 
@@ -499,15 +531,9 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
   @Override
   public void accumulate(int docID) {
     if (values.exists(docID)) {
-      double minFence = statsField.getMinFence();
-      double maxFence = statsField.getMaxFence();
       Number value = (Number) values.objectVal(docID);
       double dVal = value.doubleValue();
-      if (dVal >= minFence && dVal <= maxFence) {
-        accumulate(value, 1);
-      } else if (this.isFenced) {
-        fenced();
-      }
+      accumulate(value, 1);
     } else {
       missing();
     }
@@ -591,8 +617,8 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
     if (statsField.includeInResponse(Stat.sum)) {
       res.add("sum", sum);
     }
-    if (isFenced) {
-      res.add("fenced", fenced);
+    if (outOfBounds > 0) {
+      res.add("outOfBounds", outOfBounds);
     }
     if (statsField.includeInResponse(Stat.sumOfSquares)) {
       res.add("sumOfSquares", sumOfSquares);
@@ -726,7 +752,8 @@ class DateStatsValues extends AbstractStatsValues<Date> {
   
   private double sum = 0.0;
   double sumOfSquares = 0;
-  
+
+
   final protected boolean computeSum;
   final protected boolean computeSumOfSquares;
 
