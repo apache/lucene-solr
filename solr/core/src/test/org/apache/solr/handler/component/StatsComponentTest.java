@@ -910,8 +910,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
-    args.put(StatsParams.STATS_FIELD, "{!maxFence=" + dateFormat.format(new Date(987654320)) + "Z}active_dt");
-    args.put("f.active_dt.stats.calcdistinct","true");
+    args.put(StatsParams.STATS_FIELD, "{!ceil=" + dateFormat.format(new Date(987654320)) + "Z}active_dt");
     args.put("indent", "true");
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
@@ -920,9 +919,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
         "//long[@name='missing'][.='1']",
         "//long[@name='outOfBounds'][.='1']",
         "//date[@name='min'][.='1970-01-02T10:17:36Z']",
-        "//date[@name='max'][.='1970-01-02T10:17:36Z']",
-        "//long[@name='countDistinct'][.='2']",
-        "count(//arr[@name='distinctValues']/date)=2");
+        "//date[@name='max'][.='1970-01-02T10:17:36Z']");
 
 
   }

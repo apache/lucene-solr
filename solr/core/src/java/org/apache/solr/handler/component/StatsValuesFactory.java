@@ -33,6 +33,7 @@ import org.apache.solr.schema.*;
 import com.tdunning.math.stats.AVLTreeDigest;
 import com.google.common.hash.HashFunction;
 
+import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.hll.HLL;
 import org.apache.solr.util.hll.HLLType;
 
@@ -372,6 +373,9 @@ abstract class AbstractStatsValues<T> implements StatsValues {
         res.add("cardinality", hll.cardinality());
       }
     }
+    if (outOfBounds > 0) {
+      res.add("outOfBounds", outOfBounds);
+    }
     
     addTypeSpecificStats(res);
     
@@ -617,9 +621,6 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
     if (statsField.includeInResponse(Stat.sum)) {
       res.add("sum", sum);
     }
-    if (outOfBounds > 0) {
-      res.add("outOfBounds", outOfBounds);
-    }
     if (statsField.includeInResponse(Stat.sumOfSquares)) {
       res.add("sumOfSquares", sumOfSquares);
     }
@@ -761,6 +762,27 @@ class DateStatsValues extends AbstractStatsValues<Date> {
     super(statsField);
     this.computeSum = statsField.calculateStats(Stat.sum);
     this.computeSumOfSquares = statsField.calculateStats(Stat.sumOfSquares);
+
+    if (statsField.getCeil() != null || statsField.getFloor() != null) {
+      Date floor = statsField.getFloor() != null ? DateMathParser.parseMath(null, statsField.getFloor()) : null;
+      Date ceil  = statsField.getCeil() != null ? DateMathParser.parseMath(null, statsField.getCeil()) : null;
+
+      bounds = new Boundable<Date>() {
+        @Override
+        public boolean isWithinBounds(Date value) {
+          // really we should think harder about when things are longs, but in accumulate
+          // stats component only cares about double, so we do here as well
+          if (floor != null && (value.compareTo(floor) <= 0)) {
+            return false;
+          }
+
+          if (ceil != null && value.compareTo(ceil) >= 0) {
+            return false;
+          }
+          return true;
+        }
+      };
+    }
   }
 
   @Override
