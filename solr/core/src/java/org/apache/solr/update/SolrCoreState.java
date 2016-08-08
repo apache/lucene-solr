@@ -163,4 +163,6 @@ public abstract class SolrCoreState {
       super(s);
     }
   }
+
+  public abstract Lock getRecoveryLock();
 }

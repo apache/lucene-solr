@@ -300,9 +300,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         rsp.add("message","No slave configured");
       }
     } else if (command.equalsIgnoreCase(CMD_ABORT_FETCH)) {
-      IndexFetcher fetcher = currentIndexFetcher;
-      if (fetcher != null){
-        fetcher.abortFetch();
+      if (abortFetch()){
         rsp.add(STATUS, OK_STATUS);
       } else {
         rsp.add(STATUS,ERR_STATUS);
@@ -318,6 +316,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (CMD_DISABLE_REPL.equalsIgnoreCase(command)) {
       replicationEnabled.set(false);
       rsp.add(STATUS, OK_STATUS);
+    }
+  }
+
+  public boolean abortFetch() {
+    IndexFetcher fetcher = currentIndexFetcher;
+    if (fetcher != null){
+      fetcher.abortFetch();
+      return true;
+    } else {
+      return false;
     }
   }
 
@@ -658,7 +666,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(CMD_GET_FILE_LIST, result);
 
     // fetch list of tlog files only if cdcr is activated
-    if (core.getUpdateHandler().getUpdateLog() != null && core.getUpdateHandler().getUpdateLog() instanceof CdcrUpdateLog) {
+    if (solrParams.getBool(TLOG_FILES, true) && core.getUpdateHandler().getUpdateLog() != null
+        && core.getUpdateHandler().getUpdateLog() instanceof CdcrUpdateLog) {
       try {
         List<Map<String, Object>> tlogfiles = getTlogFileList(commit);
         LOG.info("Adding tlog files to list: " + tlogfiles);

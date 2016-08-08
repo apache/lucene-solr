@@ -116,6 +116,9 @@ New Features
 
 * SOLR-9252: Feature selection and logistic regression on text (Cao Manh Dat, Joel Bernstein)
 
+* SOLR-6465: CDCR: fall back to whole-index replication when tlogs are insufficient.
+  (Noble Paul, Renaud Delbru, shalin)
+
 Bug Fixes
 ----------------------
 

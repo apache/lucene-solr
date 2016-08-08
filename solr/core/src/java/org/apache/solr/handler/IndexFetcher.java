@@ -750,14 +750,14 @@ public class IndexFetcher {
   }
 
   private void openNewSearcherAndUpdateCommitPoint() throws IOException {
-    SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
-        new ModifiableSolrParams());
-
     RefCounted<SolrIndexSearcher> searcher = null;
     IndexCommit commitPoint;
+    // must get the latest solrCore object because the one we have might be closed because of a reload
+    // todo stop keeping solrCore around
+    SolrCore core = solrCore.getCoreDescriptor().getCoreContainer().getCore(solrCore.getName());
     try {
       Future[] waitSearcher = new Future[1];
-      searcher = solrCore.getSearcher(true, true, waitSearcher, true);
+      searcher = core.getSearcher(true, true, waitSearcher, true);
       if (waitSearcher[0] != null) {
         try {
           waitSearcher[0].get();
@@ -767,10 +767,10 @@ public class IndexFetcher {
       }
       commitPoint = searcher.get().getIndexReader().getIndexCommit();
     } finally {
-      req.close();
       if (searcher != null) {
         searcher.decref();
       }
+      core.close();
     }
 
     // update the commit point in replication handler
