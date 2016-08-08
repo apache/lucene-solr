@@ -236,6 +236,8 @@ Other Changes
 
 * SOLR-9353: Factor out ReRankQParserPlugin.ReRankQueryRescorer private class. (Christine Poerschke)
 
+* SOLR-9392: Fixed CDCR Test failures which were due to leaked resources. (shalin)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
