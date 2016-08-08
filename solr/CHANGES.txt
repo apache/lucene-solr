@@ -205,6 +205,10 @@ Optimizations
 * SOLR-9335: Solr cache/search/update stats counters now use LongAdder which are supposed to have higher throughput
   under high contention. (Varun Thacker)
 
+* SOLR-9350: JSON Facets: method="stream" will no longer always uses & populates the filter cache, likely
+  flushing it.  'cacheDf' can be configured to set a doc frequency threshold, now defaulting to 1/16th doc count.
+  Using -1 Disables use of the cache. (David Smiley, yonik)
+
 Other Changes
 ----------------------
 

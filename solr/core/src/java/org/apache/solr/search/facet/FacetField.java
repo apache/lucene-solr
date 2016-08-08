@@ -839,9 +839,13 @@ class FacetFieldProcessorStream extends FacetFieldProcessor implements Closeable
     createAccs(-1, 1);
 
     // Minimum term docFreq in order to use the filterCache for that term.
-    int defaultMinDf = Math.max(fcontext.searcher.maxDoc() >> 4, 3);  // (minimum of 3 is for test coverage purposes)
-    int minDfFilterCache = freq.cacheDf == 0 ? defaultMinDf : freq.cacheDf;
-    if (minDfFilterCache == -1) minDfFilterCache = Integer.MAX_VALUE;  // -1 means never cache
+    if (freq.cacheDf == -1) { // -1 means never cache
+      minDfFilterCache = Integer.MAX_VALUE;
+    } else if (freq.cacheDf == 0) { // default; compute as fraction of maxDoc
+      minDfFilterCache = Math.max(fcontext.searcher.maxDoc() >> 4, 3);  // (minimum of 3 is for test coverage purposes)
+    } else {
+      minDfFilterCache = freq.cacheDf;
+    }
 
     docs = fcontext.base;
     fastForRandomSet = null;
