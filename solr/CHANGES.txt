@@ -200,6 +200,8 @@ Other Changes
 
 * SOLR-9209: extracting JdbcDataSource.createResultSetIterator() for extension (Kristine Jetzke via Mikhai Khludnev)
 
+* SOLR-9392: Fixed CDCR Test failures which were due to leaked resources. (shalin)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

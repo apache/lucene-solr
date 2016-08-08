@@ -50,6 +50,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -662,6 +663,14 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
               break nextJetty;
             }
           }
+        }
+      }
+
+      List<CloudJettyRunner> oldRunners = this.cloudJettys.putIfAbsent(collection, cloudJettys);
+      if (oldRunners != null)  {
+        // must close resources for the old entries
+        for (CloudJettyRunner oldRunner : oldRunners) {
+          IOUtils.closeQuietly(oldRunner.client);
         }
       }
 
