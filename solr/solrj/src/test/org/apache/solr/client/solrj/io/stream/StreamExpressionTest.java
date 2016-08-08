@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -26,6 +27,7 @@ import java.util.Map;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.io.ClassificationEvaluation;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -71,6 +73,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     configureCluster(4)
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .addConfig("ml", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
@@ -2773,6 +2776,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assert(tuple.getDouble("a_f") == 4.0);
     assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
     assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
+
+    CollectionAdminRequest.deleteCollection("destinationCollection").process(cluster.getSolrClient());
   }
 
   @Test
@@ -2863,6 +2868,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
     assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
 
+    CollectionAdminRequest.deleteCollection("parallelDestinationCollection").process(cluster.getSolrClient());
   }
 
   @Test
@@ -3025,6 +3031,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
     assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
 
+    CollectionAdminRequest.deleteCollection("parallelDestinationCollection1").process(cluster.getSolrClient());
   }
 
   @Test
@@ -3061,9 +3068,124 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     
     assert(tuples.size() == 5);
-    assertOrder(tuples, 0,7,3,4,8);
+    assertOrder(tuples, 0, 7, 3, 4, 8);
 
   }
+
+
+  @Test
+  public void testBasicTextLogitStream() throws Exception {
+    CollectionAdminRequest.createCollection("destinationCollection", "ml", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish("destinationCollection", cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
+
+    UpdateRequest updateRequest = new UpdateRequest();
+    for (int i = 0; i < 5000; i+=2) {
+      updateRequest.add(id, String.valueOf(i), "tv_text", "a b c c d", "out_i", "1");
+      updateRequest.add(id, String.valueOf(i+1), "tv_text", "a b e e f", "out_i", "0");
+    }
+    updateRequest.commit(cluster.getSolrClient(), COLLECTION);
+
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+        .withCollectionZkHost("destinationCollection", cluster.getZkServer().getZkAddress())
+        .withFunctionName("features", FeaturesSelectionStream.class)
+        .withFunctionName("train", TextLogitStream.class)
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("update", UpdateStream.class);
+
+    expression = StreamExpressionParser.parse("features(collection1, q=\"*:*\", featureSet=\"first\", field=\"tv_text\", outcome=\"out_i\", numTerms=4)");
+    stream = new FeaturesSelectionStream(expression, factory);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 4);
+    HashSet<String> terms = new HashSet<>();
+    for (Tuple tuple : tuples) {
+      terms.add((String) tuple.get("term_s"));
+    }
+    assertTrue(terms.contains("d"));
+    assertTrue(terms.contains("c"));
+    assertTrue(terms.contains("e"));
+    assertTrue(terms.contains("f"));
+
+    String textLogitExpression = "train(" +
+        "collection1, " +
+        "features(collection1, q=\"*:*\", featureSet=\"first\", field=\"tv_text\", outcome=\"out_i\", numTerms=4),"+
+        "q=\"*:*\", " +
+        "name=\"model\", " +
+        "field=\"tv_text\", " +
+        "outcome=\"out_i\", " +
+        "maxIterations=100)";
+    stream = factory.constructStream(textLogitExpression);
+    tuples = getTuples(stream);
+    Tuple lastTuple = tuples.get(tuples.size() - 1);
+    List<Double> lastWeights = lastTuple.getDoubles("weights_ds");
+    Double[] lastWeightsArray = lastWeights.toArray(new Double[lastWeights.size()]);
+
+    // first feature is bias value
+    Double[] testRecord = {1.0, 1.17, 0.691, 0.0, 0.0};
+    double d = sum(multiply(testRecord, lastWeightsArray));
+    double prob = sigmoid(d);
+    assertEquals(prob, 1.0, 0.1);
+
+    // first feature is bias value
+    Double[] testRecord2 = {1.0, 0.0, 0.0, 1.17, 0.691};
+    d = sum(multiply(testRecord2, lastWeightsArray));
+    prob = sigmoid(d);
+    assertEquals(prob, 0, 0.1);
+
+    stream = factory.constructStream("update(destinationCollection, batchSize=5, "+textLogitExpression+")");
+    getTuples(stream);
+    cluster.getSolrClient().commit("destinationCollection");
+
+    stream = factory.constructStream("search(destinationCollection, " +
+        "q=*:*, " +
+        "fl=\"iteration_i,* \", " +
+        "rows=100, " +
+        "sort=\"iteration_i desc\")");
+    tuples = getTuples(stream);
+    assertEquals(100, tuples.size());
+    Tuple lastModel = tuples.get(0);
+    ClassificationEvaluation evaluation = ClassificationEvaluation.create(lastModel.fields);
+    assertTrue(evaluation.getF1() >= 1.0);
+    assertEquals(Math.log( 5000.0 / (2500 + 1)), lastModel.getDoubles("idfs_ds").get(0), 0.0001);
+    // make sure the tuples is retrieved in correct order
+    Tuple firstTuple = tuples.get(99);
+    assertEquals(1L, (long) firstTuple.getLong("iteration_i"));
+
+    CollectionAdminRequest.deleteCollection("destinationCollection").process(cluster.getSolrClient());
+  }
+
+  private double sigmoid(double in) {
+
+    double d = 1.0 / (1+Math.exp(-in));
+    return d;
+  }
+
+  private double[] multiply(Double[] vec1, Double[] vec2) {
+    double[] working = new double[vec1.length];
+    for(int i=0; i<vec1.length; i++) {
+      working[i]= vec1[i]*vec2[i];
+    }
+
+    return working;
+  }
+
+
+  private double sum(double[] vec) {
+    double d = 0.0;
+
+    for(double v : vec) {
+      d += v;
+    }
+
+    return d;
+  }
+
 
   @Test
   public void testParallelIntersectStream() throws Exception {
@@ -3101,6 +3223,62 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assert(tuples.size() == 5);
     assertOrder(tuples, 0,7,3,4,8);
 
+  }
+
+  @Test
+  public void testFeaturesSelectionStream() throws Exception {
+
+    CollectionAdminRequest.createCollection("destinationCollection", "ml", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish("destinationCollection", cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
+
+    UpdateRequest updateRequest = new UpdateRequest();
+    for (int i = 0; i < 5000; i+=2) {
+      updateRequest.add(id, String.valueOf(i), "whitetok", "a b c d", "out_i", "1");
+      updateRequest.add(id, String.valueOf(i+1), "whitetok", "a b e f", "out_i", "0");
+    }
+    updateRequest.commit(cluster.getSolrClient(), COLLECTION);
+
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+        .withCollectionZkHost("destinationCollection", cluster.getZkServer().getZkAddress())
+        .withFunctionName("featuresSelection", FeaturesSelectionStream.class)
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("update", UpdateStream.class);
+
+    String featuresExpression = "featuresSelection(collection1, q=\"*:*\", featureSet=\"first\", field=\"whitetok\", outcome=\"out_i\", numTerms=4)";
+    // basic
+    expression = StreamExpressionParser.parse(featuresExpression);
+    stream = new FeaturesSelectionStream(expression, factory);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 4);
+
+    assertTrue(tuples.get(0).get("term_s").equals("c"));
+    assertTrue(tuples.get(1).get("term_s").equals("d"));
+    assertTrue(tuples.get(2).get("term_s").equals("e"));
+    assertTrue(tuples.get(3).get("term_s").equals("f"));
+
+    // update
+    expression = StreamExpressionParser.parse("update(destinationCollection, batchSize=5, "+featuresExpression+")");
+    stream = new UpdateStream(expression, factory);
+    getTuples(stream);
+    cluster.getSolrClient().commit("destinationCollection");
+
+    expression = StreamExpressionParser.parse("search(destinationCollection, q=featureSet_s:first, fl=\"index_i, term_s\", sort=\"index_i asc\")");
+    stream = new CloudSolrStream(expression, factory);
+    tuples = getTuples(stream);
+    assertEquals(4, tuples.size());
+    assertTrue(tuples.get(0).get("term_s").equals("c"));
+    assertTrue(tuples.get(1).get("term_s").equals("d"));
+    assertTrue(tuples.get(2).get("term_s").equals("e"));
+    assertTrue(tuples.get(3).get("term_s").equals("f"));
+
+    CollectionAdminRequest.deleteCollection("destinationCollection").process(cluster.getSolrClient());
   }
 
   @Test

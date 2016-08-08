@@ -26,7 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
-import com.carrotsearch.ant.tasks.junit4.dependencies.com.google.common.base.Preconditions;
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 
@@ -52,12 +52,13 @@ public class KerberosTestServices {
   }
 
   public void start() throws Exception {
-    if (kdc != null) kdc.start();
-    Configuration.setConfiguration(jaasConfiguration);
-    Krb5HttpClientBuilder.regenerateJaasConfiguration();
     if (brokenLanguagesWithMiniKdc.contains(Locale.getDefault().getLanguage())) {
       Locale.setDefault(Locale.US);
     }
+
+    if (kdc != null) kdc.start();
+    Configuration.setConfiguration(jaasConfiguration);
+    Krb5HttpClientBuilder.regenerateJaasConfiguration();
   }
 
   public void stop() {

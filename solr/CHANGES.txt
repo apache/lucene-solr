@@ -108,6 +108,17 @@ New Features
   doing a core backup, and in replication.  Snapshot metadata is stored in a new snapshot_metadata/ dir.
   (Hrishikesh Gadre via David Smiley)
 
+* SOLR-9279: New boolean comparison function queries comparing numeric arguments: gt, gte, lt, lte, eq
+  (Doug Turnbull, David Smiley)
+
+* SOLR-9324: Support Secure Impersonation / Proxy User for solr authentication
+  (Gregory Chanan)
+
+* SOLR-9252: Feature selection and logistic regression on text (Cao Manh Dat, Joel Bernstein)
+
+* SOLR-6465: CDCR: fall back to whole-index replication when tlogs are insufficient.
+  (Noble Paul, Renaud Delbru, shalin)
+
 Bug Fixes
 ----------------------
 
@@ -175,6 +186,14 @@ Bug Fixes
 
 * SOLR-8596: Web UI doesn't correctly generate queries which include local parameters (Alexandre Rafalovitch, janhoy)
 
+* SOLR-8645: managed-schema is now syntax highlighted in cloud->Tree view (Alexandre Rafalovitch via janhoy)
+
+* SOLR-8379: UI Cloud->Tree view now shows .txt files correctly (Alexandre Rafalovitch via janhoy)
+
+* SOLR-9308: Fix distributed RTG to forward request params, fixes fq and non-default fl params (hossman)
+
+* SOLR-9179: NPE in IndexSchema using IBM JDK (noble, Colvin Cowie)
+
 Optimizations
 ----------------------
 
@@ -185,6 +204,10 @@ Optimizations
 
 * SOLR-9335: Solr cache/search/update stats counters now use LongAdder which are supposed to have higher throughput
   under high contention. (Varun Thacker)
+
+* SOLR-9350: JSON Facets: method="stream" will no longer always uses & populates the filter cache, likely
+  flushing it.  'cacheDf' can be configured to set a doc frequency threshold, now defaulting to 1/16th doc count.
+  Using -1 Disables use of the cache. (David Smiley, yonik)
 
 Other Changes
 ----------------------
@@ -211,6 +234,16 @@ Other Changes
 
 * SOLR-9340: Change ZooKeeper disconnect and session expiry related logging from INFO to WARN to
   make debugging easier (Varun Thacker)
+
+* SOLR-9358: [AngularUI] In Cloud->Tree file view area, collapse metadata by default (janhoy)
+
+* SOLR-9256: asserting hasNext() contract in JdbcDataSource in DataImportHandler (Kristine Jetzke via Mikhai Khludnev)
+
+* SOLR-9209: extracting JdbcDataSource.createResultSetIterator() for extension (Kristine Jetzke via Mikhai Khludnev)
+
+* SOLR-9353: Factor out ReRankQParserPlugin.ReRankQueryRescorer private class. (Christine Poerschke)
+
+* SOLR-9392: Fixed CDCR Test failures which were due to leaked resources. (shalin)
 
 ==================  6.1.0 ==================
 

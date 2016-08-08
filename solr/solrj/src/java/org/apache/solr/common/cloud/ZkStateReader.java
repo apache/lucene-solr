@@ -866,14 +866,6 @@ public class ZkStateReader implements Closeable {
     loadClusterProperties();
   };
 
-  /**
-   * We should try keeping this to a minimum. Only in scenarios where the value being read is a user facing property
-   * should we force update to make sure we are reading the latest value.
-   */
-  public void forceUpdateClusterProperties() {
-    loadClusterProperties();
-  }
-
   @SuppressWarnings("unchecked")
   private void loadClusterProperties() {
     try {
