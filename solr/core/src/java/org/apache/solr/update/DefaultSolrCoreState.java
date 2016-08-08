@@ -395,5 +395,9 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   public void setLastReplicateIndexSuccess(boolean success) {
     this.lastReplicationSuccess = success;
   }
-  
+
+  @Override
+  public Lock getRecoveryLock() {
+    return recoveryLock;
+  }
 }

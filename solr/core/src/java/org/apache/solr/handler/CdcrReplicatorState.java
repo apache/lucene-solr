@@ -27,6 +27,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.update.CdcrUpdateLog;
@@ -52,6 +54,9 @@ class CdcrReplicatorState {
   private BenchmarkTimer benchmarkTimer;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private final AtomicBoolean bootstrapInProgress = new AtomicBoolean(false);
+  private final AtomicInteger numBootstraps = new AtomicInteger();
 
   CdcrReplicatorState(final String targetCollection, final String zkHost, final CloudSolrClient targetClient) {
     this.targetCollection = targetCollection;
@@ -162,6 +167,24 @@ class CdcrReplicatorState {
    */
   BenchmarkTimer getBenchmarkTimer() {
     return this.benchmarkTimer;
+  }
+
+  /**
+   * @return true if a bootstrap operation is in progress, false otherwise
+   */
+  boolean isBootstrapInProgress() {
+    return bootstrapInProgress.get();
+  }
+
+  void setBootstrapInProgress(boolean inProgress) {
+    if (bootstrapInProgress.compareAndSet(true, false)) {
+      numBootstraps.incrementAndGet();
+    }
+    bootstrapInProgress.set(inProgress);
+  }
+
+  public int getNumBootstraps() {
+    return numBootstraps.get();
   }
 
   enum ErrorType {
