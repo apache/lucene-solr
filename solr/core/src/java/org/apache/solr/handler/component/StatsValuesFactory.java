@@ -118,12 +118,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
     boolean isWithinBounds(T value);
   }
 
-  protected Boundable<T> bounds = new Boundable<T>() {
-    public boolean isWithinBounds(T value) {
-      return true;
-    }
-  };
-
+  protected Boundable<T> bounds = (T) -> true;
   /**
    * Either a function value source to collect from, or the ValueSource associated
    * with a single valued field we are collecting from.  Will be null until/unless
@@ -494,16 +489,13 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
       double floor = statsField.getFloor() != null ? Double.parseDouble(statsField.getFloor()) : -Double.MAX_VALUE;
       double ceil  = statsField.getCeil() != null ? Double.parseDouble(statsField.getCeil()) : +Double.MAX_VALUE;
 
-      bounds = new Boundable<Number>() {
-        @Override
-        public boolean isWithinBounds(Number value) {
+      bounds = (Number value) -> {
           // really we should think harder about when things are longs, but in accumulate
           // stats component only cares about double, so we do here as well
           if (value.doubleValue() >= floor && value.doubleValue() <=  ceil) {
             return true;
           }
           return false;
-        }
       };
     }
 
@@ -767,20 +759,17 @@ class DateStatsValues extends AbstractStatsValues<Date> {
       Date floor = statsField.getFloor() != null ? DateMathParser.parseMath(null, statsField.getFloor()) : null;
       Date ceil  = statsField.getCeil() != null ? DateMathParser.parseMath(null, statsField.getCeil()) : null;
 
-      bounds = new Boundable<Date>() {
-        @Override
-        public boolean isWithinBounds(Date value) {
-          // really we should think harder about when things are longs, but in accumulate
-          // stats component only cares about double, so we do here as well
-          if (floor != null && (value.compareTo(floor) <= 0)) {
-            return false;
-          }
-
-          if (ceil != null && value.compareTo(ceil) >= 0) {
-            return false;
-          }
-          return true;
+      bounds = (Date value) -> {
+        // really we should think harder about when things are longs, but in accumulate
+        // stats component only cares about double, so we do here as well
+        if (floor != null && (value.compareTo(floor) <= 0)) {
+          return false;
         }
+
+        if (ceil != null && value.compareTo(ceil) >= 0) {
+          return false;
+        }
+        return true;
       };
     }
   }
