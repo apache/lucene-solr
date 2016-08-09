@@ -399,7 +399,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     Query q;
     try {
       // move this higher in the stack?
-      QParser parser = QParser.getParser(cmd.getQuery(), "lucene", cmd.req);
+      QParser parser = QParser.getParser(cmd.getQuery(), cmd.req);
       q = parser.getQuery();
       q = QueryUtils.makeQueryable(q);
 

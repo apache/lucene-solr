@@ -158,7 +158,7 @@ public class RealTimeGetComponent extends SearchComponent
         filters = filters == null ? new ArrayList<Query>(fqs.length) : new ArrayList<>(filters);
         for (String fq : fqs) {
           if (fq != null && fq.trim().length()!=0) {
-            QParser fqp = QParser.getParser(fq, null, req);
+            QParser fqp = QParser.getParser(fq, req);
             filters.add(fqp.getQuery());
           }
         }

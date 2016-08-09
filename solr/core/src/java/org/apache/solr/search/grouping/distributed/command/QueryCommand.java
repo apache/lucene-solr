@@ -62,7 +62,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
      * @return this
      */
     public Builder setQuery(String groupQueryString, SolrQueryRequest request) throws SyntaxError {
-      QParser parser = QParser.getParser(groupQueryString, null, request);
+      QParser parser = QParser.getParser(groupQueryString, request);
       this.queryString = groupQueryString;
       return setQuery(parser.getQuery());
     }

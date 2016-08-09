@@ -160,7 +160,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         } else {
           String q = "blobName:{0}";
           if (version != -1) q = "id:{0}/{1}";
-          QParser qparser = QParser.getParser(StrUtils.formatString(q, blobName, version), "lucene", req);
+          QParser qparser = QParser.getParser(StrUtils.formatString(q, blobName, version), req);
           final TopDocs docs = req.getSearcher().search(qparser.parse(), 1, new Sort(new SortField("version", SortField.Type.LONG, true)));
           if (docs.totalHits > 0) {
             rsp.add(ReplicationHandler.FILE_STREAM, new SolrCore.RawWriter() {
