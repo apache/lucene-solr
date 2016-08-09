@@ -30,7 +30,7 @@ class SlowClosingMockIndexInputWrapper extends MockIndexInputWrapper {
 
   public SlowClosingMockIndexInputWrapper(MockDirectoryWrapper dir,
       String name, IndexInput delegate) {
-    super(dir, name, delegate);
+    super(dir, name, delegate, null);
   }
   
   @Override
