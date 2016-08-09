@@ -176,7 +176,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       query = rb.getQuery();
     } else {
       try {
-        QParser parser = QParser.getParser(qs, null, req);
+        QParser parser = QParser.getParser(qs, req);
         query = parser.getQuery();
       } catch (Exception e) {
         throw new IOException(e);
@@ -198,7 +198,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       try {
         for (String fq : fqs) {
           if (fq != null && fq.trim().length() != 0 && !fq.equals("*:*")) {
-            QParser fqp = QParser.getParser(fq, null, req);
+            QParser fqp = QParser.getParser(fq, req);
             newFilters.add(fqp.getQuery());
           }
         }

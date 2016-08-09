@@ -478,7 +478,7 @@ class FacetQueryParser extends FacetParser<FacetQuery> {
     // TODO: substats that are from defaults!!!
 
     if (qstring != null) {
-      QParser parser = QParser.getParser(qstring, null, getSolrRequest());
+      QParser parser = QParser.getParser(qstring, getSolrRequest());
       facet.q = parser.getQuery();
     }
 

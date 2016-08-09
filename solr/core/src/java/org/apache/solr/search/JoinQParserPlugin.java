@@ -98,7 +98,7 @@ public class JoinQParserPlugin extends QParserPlugin {
           RefCounted<SolrIndexSearcher> fromHolder = null;
           LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, params);
           try {
-            QParser parser = QParser.getParser(v, "lucene", otherReq);
+            QParser parser = QParser.getParser(v, otherReq);
             fromQuery = parser.getQuery();
             fromHolder = fromCore.getRegisteredSearcher();
             if (fromHolder != null) fromCoreOpenTime = fromHolder.get().getOpenNanoTime();

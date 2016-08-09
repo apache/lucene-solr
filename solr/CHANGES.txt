@@ -245,6 +245,8 @@ Other Changes
 
 * SOLR-9392: Fixed CDCR Test failures which were due to leaked resources. (shalin)
 
+* SOLR-9385: Add QParser.getParser(String,SolrQueryRequest) variant. (Christine Poerschke)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
