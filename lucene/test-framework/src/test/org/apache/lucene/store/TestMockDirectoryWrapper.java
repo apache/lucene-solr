@@ -179,7 +179,7 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
     out.close();
     final IndexInput in = dir.openInput("foo", IOContext.DEFAULT);
     in.close();
-    expectThrows(RuntimeException.class, () -> {in.readByte();});
+    expectThrows(RuntimeException.class, in::readByte);
     dir.close();
   }
 
@@ -191,7 +191,7 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
     IndexInput in = dir.openInput("foo", IOContext.DEFAULT);
     final IndexInput clone = in.clone();
     in.close();
-    expectThrows(RuntimeException.class, () -> {clone.readByte();});
+    expectThrows(RuntimeException.class, clone::readByte);
     dir.close();
   }
 
@@ -204,7 +204,7 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
     IndexInput clone1 = in.clone();
     IndexInput clone2 = clone1.clone();
     in.close();
-    expectThrows(RuntimeException.class, () -> {clone2.readByte();});
+    expectThrows(RuntimeException.class, clone2::readByte);
     dir.close();
   }
 }
