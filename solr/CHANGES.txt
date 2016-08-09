@@ -247,6 +247,8 @@ Other Changes
 
 * SOLR-9385: Add QParser.getParser(String,SolrQueryRequest) variant. (Christine Poerschke)
 
+* SOLR-9367: Improved TestInjection's randomization logic to use LuceneTestCase.random() (hossman)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

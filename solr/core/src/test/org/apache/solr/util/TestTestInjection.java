@@ -98,4 +98,8 @@ public class TestTestInjection extends LuceneTestCase {
       assertFalse(e.getMessage().toLowerCase(Locale.ENGLISH).contains("bad syntax"));
     }
   }
+
+  public void testUsingConsistentRandomization() {
+    assertSame(random(), TestInjection.random());
+  }
 }
