@@ -405,6 +405,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     lock.lock();
     try {
       cache.clear();
+      // Note that this also clears the uniqueQueries map since mostRecentlyUsedQueries is the uniqueQueries.keySet view:
       mostRecentlyUsedQueries.clear();
       onClear();
     } finally {
