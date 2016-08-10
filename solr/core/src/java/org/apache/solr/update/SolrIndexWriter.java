@@ -77,6 +77,15 @@ public class SolrIndexWriter extends IndexWriter {
     }
   }
 
+  public SolrIndexWriter(String name, Directory d, IndexWriterConfig conf) throws IOException {
+    super(d, conf);
+    this.name = name;
+    this.infoStream = conf.getInfoStream();
+    this.directory = d;
+    numOpens.incrementAndGet();
+    log.debug("Opened Writer " + name);
+  }
+
   private SolrIndexWriter(SolrCore core, String name, String path, Directory directory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec) throws IOException {
     super(directory,
           config.toIndexWriterConfig(core).
@@ -182,7 +191,10 @@ public class SolrIndexWriter extends IndexWriter {
         IOUtils.closeQuietly(infoStream);
       }
       numCloses.incrementAndGet();
-      directoryFactory.release(directory);
+
+      if (directoryFactory != null) {
+        directoryFactory.release(directory);
+      }
     }
   }
 
