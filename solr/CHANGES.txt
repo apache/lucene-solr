@@ -196,6 +196,8 @@ Bug Fixes
 
 * SOLR-9179: NPE in IndexSchema using IBM JDK (noble, Colvin Cowie)
 
+* SOLR-9397: Config API does not support adding caches (noble)
+
 Optimizations
 ----------------------
 
