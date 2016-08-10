@@ -236,7 +236,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
           LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, params);
 
           try {
-            QParser fromQueryParser = QParser.getParser(fromQueryStr, "lucene", otherReq);
+            QParser fromQueryParser = QParser.getParser(fromQueryStr, otherReq);
             Query fromQuery = fromQueryParser.getQuery();
 
             fromHolder = fromCore.getRegisteredSearcher();

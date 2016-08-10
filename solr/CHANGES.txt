@@ -205,6 +205,10 @@ Optimizations
 * SOLR-9335: Solr cache/search/update stats counters now use LongAdder which are supposed to have higher throughput
   under high contention. (Varun Thacker)
 
+* SOLR-9350: JSON Facets: method="stream" will no longer always uses & populates the filter cache, likely
+  flushing it.  'cacheDf' can be configured to set a doc frequency threshold, now defaulting to 1/16th doc count.
+  Using -1 Disables use of the cache. (David Smiley, yonik)
+
 Other Changes
 ----------------------
 
@@ -240,6 +244,10 @@ Other Changes
 * SOLR-9353: Factor out ReRankQParserPlugin.ReRankQueryRescorer private class. (Christine Poerschke)
 
 * SOLR-9392: Fixed CDCR Test failures which were due to leaked resources. (shalin)
+
+* SOLR-9385: Add QParser.getParser(String,SolrQueryRequest) variant. (Christine Poerschke)
+
+* SOLR-9367: Improved TestInjection's randomization logic to use LuceneTestCase.random() (hossman)
 
 ==================  6.1.0 ==================
 

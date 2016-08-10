@@ -168,7 +168,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       
       {
-        final Query query = QParser.getParser(req.getParams().get("q"), null, req).getQuery();
+        final Query query = QParser.getParser(req.getParams().get("q"), req).getQuery();
         final Query rewrittenQuery = query.rewrite(req.getSearcher().getIndexReader());
         assertTrue(
             rewrittenQuery+" should be Lucene's",
@@ -178,7 +178,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
       {
         final Query query = QParser.getParser(
             "{!join from=dept_id_s to=dept_ss}text_t:develop"
-            , null, req).getQuery();
+            , req).getQuery();
         final Query rewrittenQuery = query.rewrite(req.getSearcher().getIndexReader());
         assertEquals(rewrittenQuery+" is expected to be from Solr",
               JoinQParserPlugin.class.getPackage().getName(), 

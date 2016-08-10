@@ -120,11 +120,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       new GeoTransformerValidator("geo_2_srpt","my_geo_alias"),
       new ExplainValidator(),
       new ExplainValidator("explain_alias"),
-      //
-      // SOLR-9377: SubQueryValidator fails on uncommited docs because not using RT seacher for sub query
-      //
-      // new SubQueryValidator(),
-      //
+      new SubQueryValidator(),
       new NotIncludedValidator("score"),
       new NotIncludedValidator("score","score_alias:score")));
   
@@ -197,8 +193,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     // items should only be added to this list if it's known that they do not work with RTG
     // and a specific Jira for fixing this is listed as a comment
     final List<String> knownBugs = Arrays.asList
-      ( SubQueryValidator.NAME, // SOLR-9377
-        "xml","json", // SOLR-9376
+      ( "xml","json", // SOLR-9376
         "child" // way to complicatd to vet with this test, see SOLR-9379 instead
       );
 
@@ -336,6 +331,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
                                        //
                                        "geo_1_srpt", GeoTransformerValidator.getValueForIndexing(random()),
                                        "geo_2_srpt", GeoTransformerValidator.getValueForIndexing(random()),
+                                       // for testing subqueries
+                                       "next_2_ids_ss", String.valueOf(docId + 1),
+                                       "next_2_ids_ss", String.valueOf(docId + 2),
                                        // for testing prefix globbing
                                        "axx_i", random().nextInt(),
                                        "ayy_i", random().nextInt(),
@@ -365,12 +363,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     final Set<FlValidator> validators = new LinkedHashSet<>();
     validators.add(ID_VALIDATOR); // always include id so we can be confident which doc we're looking at
     addRandomFlValidators(random(), validators);
-    FlValidator.addFlParams(validators, params);
+    FlValidator.addParams(validators, params);
 
-    // HACK: [subquery] expects this to be top level params
-    params.add(SubQueryValidator.SUBQ_KEY + ".q",
-               "{!field f=" + SubQueryValidator.SUBQ_FIELD + " v=$row." + SubQueryValidator.SUBQ_FIELD + "}");
-    
     final List<String> idsToRequest = new ArrayList<>(docIds.length);
     final List<SolrInputDocument> docsToExpect = new ArrayList<>(docIds.length);
     for (int docId : docIds) {
@@ -421,7 +415,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     // NOTE: RTG makes no garuntees about the order docs will be returned in when multi requested
     for (SolrDocument actual : docs) {
       try {
-        int actualId = Integer.parseInt(actual.getFirstValue("id").toString());
+        int actualId = assertParseInt("id", actual.getFirstValue("id"));
         final SolrInputDocument expected = knownDocs[actualId];
         assertNotNull("expected null doc but RTG returned: " + actual, expected);
         
@@ -485,10 +479,14 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    */
   private interface FlValidator {
     
-    /** Given a list of FlValidators, adds one or more fl params that corrispond to the entire set */
-    public static void addFlParams(final Collection<FlValidator> validators, final ModifiableSolrParams params) {
+    /** 
+     * Given a list of FlValidators, adds one or more fl params that corrispond to the entire set, 
+     * as well as any other special case top level params required by the validators.
+     */
+    public static void addParams(final Collection<FlValidator> validators, final ModifiableSolrParams params) {
       final List<String> fls = new ArrayList<>(validators.size());
       for (FlValidator v : validators) {
+        params.add(v.getExtraRequestParams());
         fls.add(v.getFlParam());
       }
       params.add(buildCommaSepParams(random(), "fl", fls));
@@ -518,6 +516,11 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
      * @see #testCoverage
      */
     public default String getDefaultTransformerFactoryName() { return null; }
+    
+    /**
+     * Any special case params that must be added to the request for this validator
+     */
+    public default SolrParams getExtraRequestParams() { return params(); }
     
     /** 
      * Must return a non null String that can be used in an fl param -- either by itself, 
@@ -747,34 +750,50 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * Trivial validator of a SubQueryAugmenter.  
    *
    * This validator ignores 90% of the features/complexity
-   * of SubQueryAugmenter, and instead just focuses on the basics of 
-   * "did we match at least one doc based on a field value of the requested doc?"
+   * of SubQueryAugmenter, and instead just focuses on the basics of:
+   * <ul>
+   *  <li>do a subquery for docs where SUBQ_FIELD contains the id of the top level doc</li>
+   *  <li>verify that any subquery match is expected based on indexing pattern</li>
+   * </ul>
    */
   private static class SubQueryValidator implements FlValidator {
+
+    // HACK to work around SOLR-9396...
+    // 
+    // we're using "id" (and only "id") in the subquery.q as a workarround limitation in
+    // "$rows.foo" parsing -- it only works reliably if "foo" is in fl, so we only use "$rows.id",
+    // which we know is in every request (and is a valid integer)
+    
     public final static String NAME = "subquery";
     public final static String SUBQ_KEY = "subq";
-    public final static String SUBQ_FIELD = "aaa_i";
-    /** always returns true */
-    public boolean requiresRealtimeSearcherReOpen() { return true; }
+    public final static String SUBQ_FIELD = "next_2_ids_i";
     public String getFlParam() { return SUBQ_KEY+":["+NAME+"]"; }
     public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
                                                final SolrInputDocument expected,
                                                final SolrDocument actual) {
-      final Object origVal = expected.getFieldValue(SUBQ_FIELD);
+      final int compVal = assertParseInt("expected id", expected.getFieldValue("id"));
+      
       final Object actualVal = actual.getFieldValue(SUBQ_KEY);
       assertTrue("Expected a doclist: " + actualVal,
                  actualVal instanceof SolrDocumentList);
-      SolrDocumentList subList = (SolrDocumentList) actualVal;
-      assertTrue("sub query should have producted at least one result (this doc)",
-                 1 <= subList.getNumFound());
-      for (SolrDocument subDoc : subList) {
-        assertEquals("orig doc value doesn't match subquery doc value",
-                     origVal, subDoc.getFirstValue(SUBQ_FIELD));
+      assertTrue("should be at most 2 docs in doc list: " + actualVal,
+                 ((SolrDocumentList) actualVal).getNumFound() <= 2);
+      
+      for (SolrDocument subDoc : (SolrDocumentList) actualVal) {
+        final int subDocIdVal = assertParseInt("subquery id", subDoc.getFirstValue("id"));
+        assertTrue("subDocId="+subDocIdVal+" not in valid range for id="+compVal+" (expected "
+                   + (compVal-1) + " or " + (compVal-2) + ")",
+                   ((subDocIdVal < compVal) && ((compVal-2) <= subDocIdVal)));
+        
       }
     
       return Collections.<String>singleton(SUBQ_KEY);
     }
     public String getDefaultTransformerFactoryName() { return NAME; }
+    public SolrParams getExtraRequestParams() {
+      return params(SubQueryValidator.SUBQ_KEY + ".q",
+                    "{!field f=" + SubQueryValidator.SUBQ_FIELD + " v=$row.id}");
+    }
   }
   
   /** Trivial validator of a GeoTransformer */
@@ -944,5 +963,16 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       slice.clear();
     }
     return result;
+  }
+
+  /** helper method for asserting an object is a non-null String can be parsed as an int */
+  public static int assertParseInt(String msg, Object orig) {
+    assertNotNull(msg + ": is null", orig);
+    assertTrue(msg + ": is not a string: " + orig, orig instanceof String);
+    try {
+      return Integer.parseInt(orig.toString());
+    } catch (NumberFormatException nfe) {
+      throw new AssertionError(msg + ": can't be parsed as a number: " + orig, nfe);
+    }
   }
 }
