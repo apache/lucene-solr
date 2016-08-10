@@ -190,6 +190,8 @@ Bug Fixes
 
 * SOLR-8379: UI Cloud->Tree view now shows .txt files correctly (Alexandre Rafalovitch via janhoy)
 
+* SOLR-9003: New Admin UI's Dataimport screen now correctly displays DIH Debug output (Alexandre Rafalovitch)
+
 * SOLR-9308: Fix distributed RTG to forward request params, fixes fq and non-default fl params (hossman)
 
 * SOLR-9179: NPE in IndexSchema using IBM JDK (noble, Colvin Cowie)

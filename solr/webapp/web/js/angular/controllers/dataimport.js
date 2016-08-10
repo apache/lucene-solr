@@ -61,6 +61,10 @@ solrAdminApp.controller('DataImportController',
 
         $scope.toggleDebug = function () {
             $scope.isDebugMode = !$scope.isDebugMode;
+            if ($scope.isDebugMode) {
+                // also enable Debug checkbox
+                $scope.form.showDebug = true;
+            }
             $scope.showConfiguration = true;
         }
 
@@ -100,7 +104,13 @@ solrAdminApp.controller('DataImportController',
         $scope.submit = function () {
             var params = {};
             for (var key in $scope.form) {
-                params[key] = $scope.form[key];
+                if (key == "showDebug") {
+                    if ($scope.form.showDebug) {
+                        params["debug"] = true;
+                    }
+                } else {
+                    params[key] = $scope.form[key];
+                }
             }
             if (params.custom.length) {
                 var customParams = $scope.form.custom.split("&");
@@ -111,10 +121,10 @@ solrAdminApp.controller('DataImportController',
             }
             delete params.custom;
 
-            if (params.isDebugMode) {
-                params.dataConfig = $scope.rawConfig;
+            if ($scope.isDebugMode) {
+                params.dataConfig = $scope.config;
             }
-            delete params.showDebug;
+
             params.core = $routeParams.core;
 
             DataImport.post(params, function (data) {
