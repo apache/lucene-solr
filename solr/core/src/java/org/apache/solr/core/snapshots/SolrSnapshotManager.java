@@ -19,18 +19,18 @@ package org.apache.solr.core.snapshots;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import com.google.common.annotations.VisibleForTesting;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexDeletionPolicy;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
+import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,92 +43,78 @@ public class SolrSnapshotManager {
   /**
    * This method deletes index files of the {@linkplain IndexCommit} for the specified generation number.
    *
+   * @param core The Solr core
    * @param dir The index directory storing the snapshot.
-   * @param gen The generation number for the {@linkplain IndexCommit}
+   * @param gen The generation number of the {@linkplain IndexCommit} to be deleted.
    * @throws IOException in case of I/O errors.
    */
-  public static void deleteIndexFiles ( Directory dir, Collection<SnapshotMetaData> snapshots, long gen ) throws IOException {
-    List<IndexCommit> commits = DirectoryReader.listCommits(dir);
-    Map<String, Integer> refCounts = buildRefCounts(snapshots, commits);
-    for (IndexCommit ic : commits) {
-      if (ic.getGeneration() == gen) {
-        deleteIndexFiles(dir,refCounts, ic);
-        break;
-      }
-    }
-  }
-
-  /**
-   * This method deletes all files not corresponding to a configured snapshot in the specified index directory.
-   *
-   * @param dir The index directory to search for.
-   * @throws IOException in case of I/O errors.
-   */
-  public static void deleteNonSnapshotIndexFiles (Directory dir, Collection<SnapshotMetaData> snapshots) throws IOException {
-    List<IndexCommit> commits = DirectoryReader.listCommits(dir);
-    Map<String, Integer> refCounts = buildRefCounts(snapshots, commits);
-    Set<Long> snapshotGenNumbers = snapshots.stream()
-                                            .map(SnapshotMetaData::getGenerationNumber)
-                                            .collect(Collectors.toSet());
-    for (IndexCommit ic : commits) {
-      if (!snapshotGenNumbers.contains(ic.getGeneration())) {
-        deleteIndexFiles(dir,refCounts, ic);
-      }
-    }
-  }
-
-  /**
-   * This method computes reference count for the index files by taking into consideration
-   * (a) configured snapshots and (b) files sharing between two or more {@linkplain IndexCommit} instances.
-   *
-   * @param snapshots A collection of user configured snapshots
-   * @param commits A list of {@linkplain IndexCommit} instances
-   * @return A map containing reference count for each index file referred in one of the {@linkplain IndexCommit} instances.
-   * @throws IOException in case of I/O error.
-   */
-  @VisibleForTesting
-  static Map<String, Integer> buildRefCounts (Collection<SnapshotMetaData> snapshots, List<IndexCommit> commits) throws IOException {
-    Map<String, Integer> result = new HashMap<>();
-    Map<Long, IndexCommit> commitsByGen = commits.stream().collect(
-        Collectors.toMap(IndexCommit::getGeneration, Function.identity()));
-
-    for(SnapshotMetaData md : snapshots) {
-      IndexCommit ic = commitsByGen.get(md.getGenerationNumber());
-      if (ic != null) {
-        Collection<String> fileNames = ic.getFileNames();
-        for(String fileName : fileNames) {
-          int refCount = result.getOrDefault(fileName, 0);
-          result.put(fileName, refCount+1);
+  public static void deleteSnapshotIndexFiles(SolrCore core, Directory dir, final long gen) throws IOException {
+    deleteSnapshotIndexFiles(core, dir, new IndexDeletionPolicy() {
+      @Override
+      public void onInit(List<? extends IndexCommit> commits) throws IOException {
+        for (IndexCommit ic : commits) {
+          if (gen == ic.getGeneration()) {
+            log.info("Deleting non-snapshotted index commit with generation {}", ic.getGeneration());
+            ic.delete();
+          }
         }
       }
-    }
 
-    return result;
+      @Override
+      public void onCommit(List<? extends IndexCommit> commits)
+          throws IOException {}
+    });
   }
 
   /**
-   * This method deletes the index files associated with specified <code>indexCommit</code> provided they
-   * are not referred by some other {@linkplain IndexCommit}.
+   * This method deletes index files not associated with the specified <code>snapshots</code>.
    *
-   * @param dir The index directory containing the {@linkplain IndexCommit} to be deleted.
-   * @param refCounts A map containing reference counts for each file associated with every {@linkplain IndexCommit}
-   *                  in the specified directory.
-   * @param indexCommit The {@linkplain IndexCommit} whose files need to be deleted.
+   * @param core The Solr core
+   * @param dir The index directory storing the snapshot.
+   * @param snapshots The snapshots to be preserved.
    * @throws IOException in case of I/O errors.
    */
-  private static void deleteIndexFiles ( Directory dir, Map<String, Integer> refCounts, IndexCommit indexCommit ) throws IOException {
-    log.info("Deleting index files for index commit with generation {} in directory {}", indexCommit.getGeneration(), dir);
-    for (String fileName : indexCommit.getFileNames()) {
-      try {
-        // Ensure that a file being deleted is not referred by some other commit.
-        int ref = refCounts.getOrDefault(fileName, 0);
-        log.debug("Reference count for file {} is {}", fileName, ref);
-        if (ref == 0) {
-          dir.deleteFile(fileName);
+  public static void deleteNonSnapshotIndexFiles(SolrCore core, Directory dir, Collection<SnapshotMetaData> snapshots) throws IOException {
+    final Set<Long> genNumbers = new HashSet<>();
+    for (SnapshotMetaData m : snapshots) {
+      genNumbers.add(m.getGenerationNumber());
+    }
+
+    deleteSnapshotIndexFiles(core, dir, new IndexDeletionPolicy() {
+      @Override
+      public void onInit(List<? extends IndexCommit> commits) throws IOException {
+        for (IndexCommit ic : commits) {
+          if (!genNumbers.contains(ic.getGeneration())) {
+            log.info("Deleting non-snapshotted index commit with generation {}", ic.getGeneration());
+            ic.delete();
+          }
         }
-      } catch (IOException e) {
-        log.warn("Unable to delete file {} in directory {} due to exception {}", fileName, dir, e.getMessage());
       }
+
+      @Override
+      public void onCommit(List<? extends IndexCommit> commits)
+          throws IOException {}
+    });
+  }
+
+  /**
+   * This method deletes index files of the {@linkplain IndexCommit} for the specified generation number.
+   *
+   * @param core The Solr core
+   * @param dir The index directory storing the snapshot.
+   * @throws IOException in case of I/O errors.
+   */
+  private static void deleteSnapshotIndexFiles(SolrCore core, Directory dir, IndexDeletionPolicy delPolicy) throws IOException {
+    IndexWriterConfig conf = core.getSolrConfig().indexConfig.toIndexWriterConfig(core);
+    conf.setOpenMode(OpenMode.APPEND);
+    conf.setMergePolicy(NoMergePolicy.INSTANCE);//Don't want to merge any commits here!
+    conf.setIndexDeletionPolicy(delPolicy);
+    conf.setCodec(core.getCodec());
+
+    try (SolrIndexWriter iw = new SolrIndexWriter("SolrSnapshotCleaner", dir, conf)) {
+      // Do nothing. The only purpose of opening index writer is to invoke the Lucene IndexDeletionPolicy#onInit
+      // method so that we can cleanup the files associated with specified index commit.
+      // Note the index writer creates a new commit during the close() operation (which is harmless).
     }
   }
 }

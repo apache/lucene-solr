@@ -279,6 +279,8 @@ Other Changes
 
 * SOLR-9625: Add HelloWorldSolrCloudTestCase class (Christine Poerschke, Alan Woodward, Alexandre Rafalovitch)
 
+* SOLR-9642: Refactor the core level snapshot cleanup mechanism to rely on Lucene (Hrishikesh Gadre via yonik)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
