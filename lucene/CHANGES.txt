@@ -65,6 +65,9 @@ New Features
   Polygon instances from a standard GeoJSON string (Robert Muir, Mike
   McCandless)
 
+* SOLR-9279: Queries module: new ComparisonBoolFunction base class
+  (Doug Turnbull via David Smiley)
+
 Bug Fixes
 
 * LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
@@ -135,10 +138,9 @@ Improvements
 
 * LUCENE-7385: Improve/fix assert messages in SpanScorer. (David Smiley)
 
-* LUCENE-7390: Improve performance of indexing points by allowing the
-  codec to use transient heap in proportion to IndexWriter's RAM
-  buffer, instead of a fixed 16.0 MB.  A custom codec can still
-  override the buffer size itself. (Mike McCandless)
+* LUCENE-7393: Add ICUTokenizer option to parse Myanmar text as syllables instead of words,
+  because the ICU word-breaking algorithm has some issues. This allows for the previous 
+  tokenization used before Lucene 5. (AM, Robert Muir)
 
 Optimizations
 
@@ -153,6 +155,12 @@ Optimizations
 
 * LUCENE-7311: Cached term queries do not seek the terms dictionary anymore.
   (Adrien Grand)
+
+* LUCENE-7396, LUCENE-7399: Faster flush of points.
+  (Adrien Grand, Mike McCandless)
+
+* LUCENE-7406: Automaton and PrefixQuery tweaks (fewer object (re)allocations).
+  (Christine Poerschke)
 
 Other
 

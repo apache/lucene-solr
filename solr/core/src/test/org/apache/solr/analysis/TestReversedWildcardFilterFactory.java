@@ -131,7 +131,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
         "//result[@numFound=1]");
 
     SolrQueryRequest req = req();
-    QParser qparser = QParser.getParser("id:1", "lucene", req);
+    QParser qparser = QParser.getParser("id:1", req);
 
     SolrQueryParser parserTwo = new SolrQueryParser(qparser, "two");
     assertTrue(parserTwo.getAllowLeadingWildcard());

@@ -41,8 +41,9 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     if (random().nextBoolean()) {
       // randomize parameters
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 500);
+      double maxMBSortInHeap = 3.0 + (3*random().nextDouble());
       if (VERBOSE) {
-        System.out.println("TEST: using Lucene60PointsFormat with maxPointsInLeafNode=" + maxPointsInLeafNode);
+        System.out.println("TEST: using Lucene60PointsFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
       }
 
       // sneaky impersonation!
@@ -52,7 +53,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
           return new PointsFormat() {
             @Override
             public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
-              return new Lucene60PointsWriter(writeState, maxPointsInLeafNode);
+              return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
             }
 
             @Override

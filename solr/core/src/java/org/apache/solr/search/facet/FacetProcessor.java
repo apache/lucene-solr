@@ -96,7 +96,7 @@ public class FacetProcessor<FacetRequestT extends FacetRequest>  {
     String parentStr = freq.domain.parents;
     Query parentQuery;
     try {
-      QParser parser = QParser.getParser(parentStr, null, fcontext.req);
+      QParser parser = QParser.getParser(parentStr, fcontext.req);
       parentQuery = parser.getQuery();
     } catch (SyntaxError err) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing block join parent specification: " + parentStr);

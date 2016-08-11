@@ -171,4 +171,40 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
 
     assertTrue("MockDirectoryWrapper on dir=" + dir + " failed to corrupt an unsync'd file", changed);
   }
+
+  public void testAbuseClosedIndexInput() throws Exception {
+    MockDirectoryWrapper dir = newMockDirectory();
+    IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT);
+    out.writeByte((byte) 42);
+    out.close();
+    final IndexInput in = dir.openInput("foo", IOContext.DEFAULT);
+    in.close();
+    expectThrows(RuntimeException.class, in::readByte);
+    dir.close();
+  }
+
+  public void testAbuseCloneAfterParentClosed() throws Exception {
+    MockDirectoryWrapper dir = newMockDirectory();
+    IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT);
+    out.writeByte((byte) 42);
+    out.close();
+    IndexInput in = dir.openInput("foo", IOContext.DEFAULT);
+    final IndexInput clone = in.clone();
+    in.close();
+    expectThrows(RuntimeException.class, clone::readByte);
+    dir.close();
+  }
+
+  public void testAbuseCloneOfCloneAfterParentClosed() throws Exception {
+    MockDirectoryWrapper dir = newMockDirectory();
+    IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT);
+    out.writeByte((byte) 42);
+    out.close();
+    IndexInput in = dir.openInput("foo", IOContext.DEFAULT);
+    IndexInput clone1 = in.clone();
+    IndexInput clone2 = clone1.clone();
+    in.close();
+    expectThrows(RuntimeException.class, clone2::readByte);
+    dir.close();
+  }
 }

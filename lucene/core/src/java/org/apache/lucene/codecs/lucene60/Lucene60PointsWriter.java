@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.MutablePointsReader;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.index.FieldInfo;
@@ -39,9 +40,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDReader;
 import org.apache.lucene.util.bkd.BKDWriter;
 
-/** Writes dimensional values
- *
- * @lucene.experimental */
+/** Writes dimensional values */
 public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
   /** Output used to write the BKD tree data file */
@@ -52,13 +51,15 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
   final SegmentWriteState writeState;
   final int maxPointsInLeafNode;
+  final double maxMBSortInHeap;
   private boolean finished;
 
   /** Full constructor */
-  public Lucene60PointsWriter(SegmentWriteState writeState, int maxPointsInLeafNode) throws IOException {
+  public Lucene60PointsWriter(SegmentWriteState writeState, int maxPointsInLeafNode, double maxMBSortInHeap) throws IOException {
     assert writeState.fieldInfos.hasPointValues();
     this.writeState = writeState;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
+    this.maxMBSortInHeap = maxMBSortInHeap;
     String dataFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
                                                          writeState.segmentSuffix,
                                                          Lucene60PointsFormat.DATA_EXTENSION);
@@ -80,11 +81,11 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
   /** Uses the defaults values for {@code maxPointsInLeafNode} (1024) and {@code maxMBSortInHeap} (16.0) */
   public Lucene60PointsWriter(SegmentWriteState writeState) throws IOException {
-    this(writeState, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    this(writeState, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE, BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
   }
 
   @Override
-  public void writeField(FieldInfo fieldInfo, PointsReader values, double maxMBSortInHeap) throws IOException {
+  public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
 
     boolean singleValuePerDoc = values.size(fieldInfo.name) == values.getDocCount(fieldInfo.name);
 
@@ -97,6 +98,14 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                           maxMBSortInHeap,
                                           values.size(fieldInfo.name),
                                           singleValuePerDoc)) {
+
+      if (values instanceof MutablePointsReader) {
+        final long fp = writer.writeField(dataOut, fieldInfo.name, (MutablePointsReader) values);
+        if (fp != -1) {
+          indexFPs.put(fieldInfo.name, fp);
+        }
+        return;
+      }
 
       values.intersect(fieldInfo.name, new IntersectVisitor() {
           @Override
@@ -173,8 +182,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                                 fieldInfo.getPointDimensionCount(),
                                                 fieldInfo.getPointNumBytes(),
                                                 maxPointsInLeafNode,
-                                                // NOTE: not used, since BKDWriter.merge does a merge sort:
-                                                BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
+                                                maxMBSortInHeap,
                                                 totMaxSize,
                                                 singleValuePerDoc)) {
             List<BKDReader> bkdReaders = new ArrayList<>();

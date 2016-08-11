@@ -486,7 +486,7 @@ public class SolrPluginUtils {
 
     String qs = commands.size() >= 1 ? commands.get(0) : "";
     try {
-    Query query = QParser.getParser(qs, null, req).getQuery();
+    Query query = QParser.getParser(qs, req).getQuery();
 
     // If the first non-query, non-filter command is a simple sort on an indexed field, then
     // we can use the Lucene sort ability.
@@ -978,7 +978,7 @@ public class SolrPluginUtils {
     List<Query> out = new ArrayList<>(queries.length);
     for (String q : queries) {
       if (null != q && 0 != q.trim().length()) {
-        out.add(QParser.getParser(q, null, req).getQuery());
+        out.add(QParser.getParser(q, req).getQuery());
       }
     }
     return out;

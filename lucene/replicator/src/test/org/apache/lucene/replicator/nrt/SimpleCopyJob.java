@@ -118,6 +118,8 @@ class SimpleCopyJob extends CopyJob {
       return highPriority ? -1 : 1;
     } else if (ord < other.ord) {
       return -1;
+    } else if (ord > other.ord) {
+      return 1;
     } else {
       return 0;
     }

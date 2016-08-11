@@ -100,6 +100,25 @@ New Features
 * SOLR-9275: XML QueryParser support (defType=xmlparser) now extensible via configuration.
   (Christine Poerschke)
 
+* SOLR-9200: Add Delegation Token Support to Solr.
+  (Gregory Chanan)
+
+* SOLR-9038: Solr core snapshots: The current commit can be snapshotted which retains the commit and associates it with
+  a name.  The core admin API can create snapshots, list them, and delete them. Snapshot names can be referenced in
+  doing a core backup, and in replication.  Snapshot metadata is stored in a new snapshot_metadata/ dir.
+  (Hrishikesh Gadre via David Smiley)
+
+* SOLR-9279: New boolean comparison function queries comparing numeric arguments: gt, gte, lt, lte, eq
+  (Doug Turnbull, David Smiley)
+
+* SOLR-9324: Support Secure Impersonation / Proxy User for solr authentication
+  (Gregory Chanan)
+
+* SOLR-9252: Feature selection and logistic regression on text (Cao Manh Dat, Joel Bernstein)
+
+* SOLR-6465: CDCR: fall back to whole-index replication when tlogs are insufficient.
+  (Noble Paul, Renaud Delbru, shalin)
+
 * SOLR-9320: A REPLACENODE command to decommission an existing node with another new node
    (noble, Nitin Sharma, Varun Thacker)
 
@@ -170,6 +189,19 @@ Bug Fixes
 
 * SOLR-9339: NPE in CloudSolrClient when the response is null (noble)
 
+* SOLR-8596: Web UI doesn't correctly generate queries which include local parameters (Alexandre Rafalovitch, janhoy)
+
+* SOLR-8645: managed-schema is now syntax highlighted in cloud->Tree view (Alexandre Rafalovitch via janhoy)
+
+* SOLR-8379: UI Cloud->Tree view now shows .txt files correctly (Alexandre Rafalovitch via janhoy)
+
+* SOLR-9003: New Admin UI's Dataimport screen now correctly displays DIH Debug output (Alexandre Rafalovitch)
+
+* SOLR-9308: Fix distributed RTG to forward request params, fixes fq and non-default fl params (hossman)
+
+* SOLR-9179: NPE in IndexSchema using IBM JDK (noble, Colvin Cowie)
+
+* SOLR-9397: Config API does not support adding caches (noble)
 
 Optimizations
 ----------------------
@@ -178,6 +210,13 @@ Optimizations
 
 * SOLR-9264: Optimize ZkController.publishAndWaitForDownStates to not read all collection states and
   watch relevant collections instead. (Hrishikesh Gadre, shalin)
+
+* SOLR-9335: Solr cache/search/update stats counters now use LongAdder which are supposed to have higher throughput
+  under high contention. (Varun Thacker)
+
+* SOLR-9350: JSON Facets: method="stream" will no longer always uses & populates the filter cache, likely
+  flushing it.  'cacheDf' can be configured to set a doc frequency threshold, now defaulting to 1/16th doc count.
+  Using -1 Disables use of the cache. (David Smiley, yonik)
 
 Other Changes
 ----------------------
@@ -201,6 +240,25 @@ Other Changes
 
 * SOLR-9163: Sync up basic_configs and data_driven_schema_configs, removing almost all differences
   except what is required for schemaless. (yonik)
+
+* SOLR-9340: Change ZooKeeper disconnect and session expiry related logging from INFO to WARN to
+  make debugging easier (Varun Thacker)
+
+* SOLR-9358: [AngularUI] In Cloud->Tree file view area, collapse metadata by default (janhoy)
+
+* SOLR-9256: asserting hasNext() contract in JdbcDataSource in DataImportHandler (Kristine Jetzke via Mikhai Khludnev)
+
+* SOLR-9209: extracting JdbcDataSource.createResultSetIterator() for extension (Kristine Jetzke via Mikhai Khludnev)
+
+* SOLR-9353: Factor out ReRankQParserPlugin.ReRankQueryRescorer private class. (Christine Poerschke)
+
+* SOLR-9392: Fixed CDCR Test failures which were due to leaked resources. (shalin)
+
+* SOLR-9385: Add QParser.getParser(String,SolrQueryRequest) variant. (Christine Poerschke)
+
+* SOLR-9367: Improved TestInjection's randomization logic to use LuceneTestCase.random() (hossman)
+
+* SOLR-9331: Remove ReRankQuery's length constructor argument and member. (Christine Poerschke)
 
 ==================  6.1.0 ==================
 

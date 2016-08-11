@@ -60,7 +60,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.AbstractLuceneSpellChecker;
@@ -242,7 +241,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         try {
           if (maxResultsFilterQueryString != null) {
             // Get the default Lucene query parser
-            QParser parser = QParser.getParser(maxResultsFilterQueryString, QParserPlugin.DEFAULT_QTYPE, rb.req);              
+            QParser parser = QParser.getParser(maxResultsFilterQueryString, rb.req);
             DocSet s = searcher.getDocSet(parser.getQuery());
             maxResultsByFilters = s.size();
           } else {
