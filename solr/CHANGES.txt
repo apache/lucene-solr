@@ -100,6 +100,11 @@ New Features
 * SOLR-9275: XML QueryParser support (defType=xmlparser) now extensible via configuration.
   (Christine Poerschke)
 
+* SOLR-9320: A REPLACENODE command to decommission an existing node with another new node
+   (noble, Nitin Sharma, Varun Thacker)
+
+* SOLR-9318: A DELETENODE command to delete all replicas in that node (noble, Nitin Sharma, Varun Thacker)
+
 Bug Fixes
 ----------------------
 

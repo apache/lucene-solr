@@ -781,7 +781,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       req.getParams().getAll(params, COLL_CONF, REPLICATION_FACTOR, MAX_SHARDS_PER_NODE, STATE_FORMAT, AUTO_ADD_REPLICAS);
       copyPropertiesWithPrefix(req.getParams(), params, COLL_PROP_PREFIX);
       return params;
-    });
+    }),
+
+    REPLACENODE_OP(REPLACENODE, (req, rsp, h) -> req.getParams().required().getAll(req.getParams().getAll(null, "parallel"), "source", "target")),
+    DELETENODE_OP(DELETENODE, (req, rsp, h) -> req.getParams().required().getAll(null, "node"));
     public final CollectionOp fun;
     CollectionAction action;
     long timeOut;
