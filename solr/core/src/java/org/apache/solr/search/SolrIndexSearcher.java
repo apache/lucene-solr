@@ -529,62 +529,50 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   //
   public static void initRegenerators(SolrConfig solrConfig) {
     if (solrConfig.fieldValueCacheConfig != null && solrConfig.fieldValueCacheConfig.getRegenerator() == null) {
-      solrConfig.fieldValueCacheConfig.setRegenerator(new CacheRegenerator() {
-        @Override
-        public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
-          if (oldVal instanceof UnInvertedField) {
-            UnInvertedField.getUnInvertedField((String) oldKey, newSearcher);
-          }
-          return true;
+      solrConfig.fieldValueCacheConfig.setRegenerator((newSearcher, newCache, oldCache, oldKey, oldVal) -> {
+        if (oldVal instanceof UnInvertedField) {
+          UnInvertedField.getUnInvertedField((String) oldKey, newSearcher);
         }
+        return true;
       });
     }
 
     if (solrConfig.filterCacheConfig != null && solrConfig.filterCacheConfig.getRegenerator() == null) {
-      solrConfig.filterCacheConfig.setRegenerator(new CacheRegenerator() {
-        @Override
-        public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
-          newSearcher.cacheDocSet((Query) oldKey, null, false);
-          return true;
-        }
+      solrConfig.filterCacheConfig.setRegenerator((newSearcher, newCache, oldCache, oldKey, oldVal) -> {
+        newSearcher.cacheDocSet((Query) oldKey, null, false);
+        return true;
       });
     }
 
     if (solrConfig.queryResultCacheConfig != null && solrConfig.queryResultCacheConfig.getRegenerator() == null) {
       final int queryResultWindowSize = solrConfig.queryResultWindowSize;
-      solrConfig.queryResultCacheConfig.setRegenerator(new CacheRegenerator() {
-        @Override
-        public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
-          QueryResultKey key = (QueryResultKey) oldKey;
-          int nDocs = 1;
-          // request 1 doc and let caching round up to the next window size...
-          // unless the window size is <=1, in which case we will pick
-          // the minimum of the number of documents requested last time and
-          // a reasonable number such as 40.
-          // TODO: make more configurable later...
+      solrConfig.queryResultCacheConfig.setRegenerator((newSearcher, newCache, oldCache, oldKey, oldVal) -> {
+        QueryResultKey key = (QueryResultKey) oldKey;
+        int nDocs = 1;
+        // request 1 doc and let caching round up to the next window size...
+        // unless the window size is <=1, in which case we will pick
+        // the minimum of the number of documents requested last time and
+        // a reasonable number such as 40.
+        // TODO: make more configurable later...
 
-          if (queryResultWindowSize <= 1) {
-            DocList oldList = (DocList) oldVal;
-            int oldnDocs = oldList.offset() + oldList.size();
-            // 40 has factors of 2,4,5,10,20
-            nDocs = Math.min(oldnDocs, 40);
-          }
-
-          int flags = NO_CHECK_QCACHE | key.nc_flags;
-          QueryCommand qc = new QueryCommand();
-          qc.setQuery(key.query)
-              .setFilterList(key.filters)
-              .setSort(key.sort)
-              .setLen(nDocs)
-              .setSupersetMaxDoc(nDocs)
-              .setFlags(flags);
-          QueryResult qr = new QueryResult();
-          newSearcher.getDocListC(qr, qc);
-          return true;
+        if (queryResultWindowSize <= 1) {
+          DocList oldList = (DocList) oldVal;
+          int oldnDocs = oldList.offset() + oldList.size();
+          // 40 has factors of 2,4,5,10,20
+          nDocs = Math.min(oldnDocs, 40);
         }
+
+        int flags = NO_CHECK_QCACHE | key.nc_flags;
+        QueryCommand qc = new QueryCommand();
+        qc.setQuery(key.query)
+            .setFilterList(key.filters)
+            .setSort(key.sort)
+            .setLen(nDocs)
+            .setSupersetMaxDoc(nDocs)
+            .setFlags(flags);
+        QueryResult qr = new QueryResult();
+        newSearcher.getDocListC(qr, qc);
+        return true;
       });
     }
   }
