@@ -203,6 +203,9 @@ Bug Fixes
 
 * SOLR-9397: Config API does not support adding caches (noble)
 
+* SOLR-9405: ConcurrentModificationException in ZkStateReader.getStateWatchers.
+  (Alan Woodward, Edward Ribeiro, shalin)
+
 Optimizations
 ----------------------
 
