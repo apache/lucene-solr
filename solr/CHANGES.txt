@@ -206,6 +206,8 @@ Bug Fixes
 * SOLR-9405: ConcurrentModificationException in ZkStateReader.getStateWatchers.
   (Alan Woodward, Edward Ribeiro, shalin)
 
+* SOLR-9232: Admin UI now fully implements Swap Cores interface (Alexandre Rafalovitch)
+
 Optimizations
 ----------------------
 
