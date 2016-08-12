@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Ignore;
@@ -47,8 +48,9 @@ public class TestMmapDirectory extends BaseDirectoryTestCase {
     for (int iter = 0; iter < 10; iter++) {
       Directory dir = getDirectory(createTempDir("testAceWithThreads"));
       IndexOutput out = dir.createOutput("test", IOContext.DEFAULT);
+      Random random = random();
       for (int i = 0; i < 8 * 1024 * 1024; i++) {
-        out.writeInt(random().nextInt());
+        out.writeInt(random.nextInt());
       }
       out.close();
       IndexInput in = dir.openInput("test", IOContext.DEFAULT);
