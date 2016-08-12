@@ -26,10 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * of this is used for the original and all clones, so once the original is closed and unmapped
  * all clones also throw {@link AlreadyClosedException}, triggered by a {@link NullPointerException}.
  * <p>
- * This code uses the trick that is also used in
- * {@link java.lang.invoke.MutableCallSite#syncAll(java.lang.invoke.MutableCallSite[])} to
- * invalidate switch points. It also yields the current thread to give other threads a chance
- * to finish in-flight requests...
+ * This code tries to hopefully flush any CPU caches using a store-store barrier. It also yields the
+ * current thread to give other threads a chance to finish in-flight requests...
  */
 final class ByteBufferGuard {
   
@@ -45,10 +43,10 @@ final class ByteBufferGuard {
   private final String resourceDescription;
   private final BufferCleaner cleaner;
   
-  /** not volatile, we use store-store barrier! */
+  /** Not volatile; see comments on visibility below! */
   private boolean invalidated = false;
   
-  /** the actual store-store barrier. */
+  /** Used as a store-store barrier; see comments below! */
   private final AtomicInteger barrier = new AtomicInteger();
   
   /**
@@ -66,9 +64,17 @@ final class ByteBufferGuard {
   public void invalidateAndUnmap(ByteBuffer... bufs) throws IOException {
     if (cleaner != null) {
       invalidated = true;
-      // this should trigger a happens-before - so flushes all caches
+      // This call should hopefully flush any CPU caches and as a result make
+      // the "invalidated" field update visible to other threads. We specifically
+      // don't make "invalidated" field volatile for performance reasons, hoping the
+      // JVM won't optimize away reads of that field and hardware should ensure
+      // caches are in sync after this call. This isn't entirely "fool-proof" 
+      // (see LUCENE-7409 discussion), but it has been shown to work in practice
+      // and we count on this behavior.
       barrier.lazySet(0);
+      // we give other threads a bit of time to finish reads on their ByteBuffer...:
       Thread.yield();
+      // finally unmap the ByteBuffers:
       for (ByteBuffer b : bufs) {
         cleaner.freeBuffer(resourceDescription, b);
       }
