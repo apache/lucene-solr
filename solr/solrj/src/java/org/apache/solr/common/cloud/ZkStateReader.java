@@ -147,7 +147,7 @@ public class ZkStateReader implements Closeable {
   private class CollectionWatch {
 
     int coreRefCount = 0;
-    Set<CollectionStateWatcher> stateWatchers = new HashSet<>();
+    Set<CollectionStateWatcher> stateWatchers = ConcurrentHashMap.newKeySet();
 
     public boolean canBeRemoved() {
       return coreRefCount + stateWatchers.size() == 0;
@@ -1273,10 +1273,14 @@ public class ZkStateReader implements Closeable {
 
   /* package-private for testing */
   Set<CollectionStateWatcher> getStateWatchers(String collection) {
-    CollectionWatch watch = collectionWatches.get(collection);
-    if (watch == null)
-      return null;
-    return new HashSet<>(watch.stateWatchers);
+    final Set<CollectionStateWatcher> watchers = new HashSet<>();
+    collectionWatches.compute(collection, (k, v) -> {
+      if (v != null) {
+        watchers.addAll(v.stateWatchers);
+      }
+      return v;
+    });
+    return watchers;
   }
 
   // returns true if the state has changed
