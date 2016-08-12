@@ -208,6 +208,8 @@ Bug Fixes
 
 * SOLR-9232: Admin UI now fully implements Swap Cores interface (Alexandre Rafalovitch)
 
+* SOLR-8715: Admin UI's Schema screen now works for fields with stored=false and some content indexed (Alexandre Rafalovitch)
+
 Optimizations
 ----------------------
 
