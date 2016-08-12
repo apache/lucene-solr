@@ -47,7 +47,7 @@ solrAdminServices.factory('System',
     "add": {params:{action: "CREATE"}},
     "unload": {params:{action: "UNLOAD", core: "@core"}},
     "rename": {params:{action: "RENAME"}},
-    "swap": {params:{}},
+    "swap": {params:{action: "SWAP"}},
     "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}, headers:{doNotIntercept: "true"}},
     "optimize": {params:{}}
     });
