@@ -21,6 +21,7 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +36,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +53,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public Object call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     ocmh.checkRequired(message, "source", "target");
     String source = message.getStr("source");
@@ -76,23 +76,25 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
     for (ZkNodeProps sourceReplica : sourceReplicas) {
       NamedList nl = new NamedList();
-      log.info("going to create replica {}", Utils.toJSONString(sourceReplica));
+      log.info("Going to create replica for collection={} shard={} on node={}", sourceReplica.getStr(COLLECTION_PROP), sourceReplica.getStr(SHARD_ID_PROP), target);
       ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, target);
       final ZkNodeProps addedReplica = ocmh.addReplica(clusterState,
           msg, nl, () -> {
             countDownLatch.countDown();
             if (nl.get("failure") != null) {
-              log.warn("failed to create : " + Utils.toJSONString(msg));
+              String errorString = String.format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" +
+                  " on node=%s", sourceReplica.getStr(COLLECTION_PROP), sourceReplica.getStr(SHARD_ID_PROP), target);
+              log.warn(errorString);
               // one replica creation failed. Make the best attempt to
               // delete all the replicas created so far in the target
               // and exit
               synchronized (results) {
-                results.add("failure", "Could not create copy of replica " + Utils.toJSONString(sourceReplica));
+                results.add("failure", errorString);
                 anyOneFailed.set(true);
               }
             } else {
-              log.info("successfully created : " + Utils.toJSONString(msg));
-
+              log.debug("Successfully created replica for collection={} shard={} on node={}",
+                  sourceReplica.getStr(COLLECTION_PROP), sourceReplica.getStr(SHARD_ID_PROP), target);
             }
           });
 
@@ -101,12 +103,12 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     }
 
-    log.info("Waiting for creates to complete ");
+    log.debug("Waiting for replace node action to complete");
     countDownLatch.await(5, TimeUnit.MINUTES);
-    log.info("Waiting over for creates to complete ");
+    log.debug("Finished waiting for replace node action to complete");
 
     if (anyOneFailed.get()) {
-      log.info("failed to create some cores delete all " + Utils.toJSONString(createdReplicas));
+      log.info("Failed to create some replicas. Cleaning up all replicas on target node");
       CountDownLatch cleanupLatch = new CountDownLatch(createdReplicas.size());
       for (ZkNodeProps createdReplica : createdReplicas) {
         NamedList deleteResult = new NamedList();
@@ -115,29 +117,27 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
             cleanupLatch.countDown();
             if (deleteResult.get("failure") != null) {
               synchronized (results) {
-                results.add("failure", "could not cleanup, because  : " + deleteResult.get("failure") + "  " + Utils.toJSONString(createdReplica));
+                results.add("failure", "Could not cleanup, because of : " + deleteResult.get("failure"));
               }
             }
           });
         } catch (KeeperException e) {
           cleanupLatch.countDown();
-          log.info("Error deleting ", e);
+          log.warn("Error deleting replica ", e);
         } catch (Exception e) {
-          log.error("Unknown Error deleteing", e);
+          log.warn("Error deleting replica ", e);
           cleanupLatch.countDown();
           throw e;
         }
       }
       cleanupLatch.await(5, TimeUnit.MINUTES);
-      return null;
     }
 
 
     // we have reached this far means all replicas could be recreated
     //now cleanup the replicas in the source node
-    DeleteNodeCmd.cleanupReplicas(results, state, sourceReplicas, ocmh);
-    results.add("success", "REPLACENODE completed successfully from  : " + source + " to : " + target);
-    return null;
+    DeleteNodeCmd.cleanupReplicas(results, state, sourceReplicas, ocmh, source);
+    results.add("success", "REPLACENODE action completed successfully from  : " + source + " to : " + target);
   }
 
   static List<ZkNodeProps> getReplicasOfNode(String source, ClusterState state) {
@@ -152,7 +152,6 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
                 ZkStateReader.CORE_NAME_PROP, replica.getCoreName(),
                 ZkStateReader.REPLICA_PROP, replica.getName(),
                 CoreAdminParams.NODE, source);
-            log.info("src_core : {}", Utils.toJSONString(props));
             sourceReplicas.add(props
             );
           }
