@@ -207,6 +207,8 @@ solrAdminServices.factory('System',
       "list": {},
       "get": {method: "GET", interceptor: {
           response: function(config) {return config;}
+      }, transformResponse: function(data) {
+          return data;
       }}
     });
   }])
