@@ -210,6 +210,7 @@ Bug Fixes
 
 * SOLR-8715: Admin UI's Schema screen now works for fields with stored=false and some content indexed (Alexandre Rafalovitch)
 
+* SOLR-8911: In Admin UI, enable scrolling for overflowing Versions and JVM property values
 Optimizations
 ----------------------
 

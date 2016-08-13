@@ -110,6 +110,17 @@ limitations under the License.
   width: 40%;
 }
 
+#content #index .data
+{
+  padding-bottom: 12px;
+  overflow: hidden;
+}
+
+#content #index .data:hover
+{
+  overflow-x: auto;
+}
+
 #content #index .data li
 {
   padding-top: 3px;
@@ -127,7 +138,6 @@ limitations under the License.
 {
   float: right;
   text-overflow: ellipsis;
-  overflow: hidden;
   white-space: nowrap;
   width: 80%
 }
