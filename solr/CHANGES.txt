@@ -267,6 +267,9 @@ Other Changes
 
 * SOLR-9331: Remove ReRankQuery's length constructor argument and member. (Christine Poerschke)
 
+* SOLR-9092: For the delete replica command we attempt to send the core admin delete request only
+  if that node is actually up. (Jessica Cheng Mallet, Varun Thacker)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

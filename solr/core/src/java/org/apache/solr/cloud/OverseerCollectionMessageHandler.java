@@ -662,14 +662,19 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     params.set(CoreAdminParams.DELETE_INSTANCE_DIR, message.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, true));
     params.set(CoreAdminParams.DELETE_DATA_DIR, message.getBool(CoreAdminParams.DELETE_DATA_DIR, true));
 
-    sendShardRequest(replica.getNodeName(), params, shardHandler, asyncId, requestMap.get());
+    boolean isLive = zkStateReader.getClusterState().getLiveNodes().contains(replica.getNodeName());
+    if (isLive) {
+      sendShardRequest(replica.getNodeName(), params, shardHandler, asyncId, requestMap.get());
+    }
 
     Callable<Boolean> callable = () -> {
       try {
-        processResponses(results, shardHandler, false, null, asyncId, requestMap.get());
+        if (isLive) {
+          processResponses(results, shardHandler, false, null, asyncId, requestMap.get());
 
-        //check if the core unload removed the corenode zk entry
-        if (waitForCoreNodeGone(collectionName, shard, replicaName, 5000)) return Boolean.TRUE;
+          //check if the core unload removed the corenode zk entry
+          if (waitForCoreNodeGone(collectionName, shard, replicaName, 5000)) return Boolean.TRUE;
+        }
 
         // try and ensure core info is removed from cluster state
         deleteCoreNode(collectionName, replicaName, replica, core);
