@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -27,10 +28,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
 public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -42,43 +45,44 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public Object call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     ocmh.checkRequired(message, "node");
     String node = message.getStr("node");
     if (!state.liveNodesContain(node)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Source Node: " + node + " is not live");
     }
     List<ZkNodeProps> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);
-    cleanupReplicas(results, state, sourceReplicas, ocmh);
-    return null;
+    cleanupReplicas(results, state, sourceReplicas, ocmh, node);
   }
 
   static void cleanupReplicas(NamedList results,
                               ClusterState clusterState,
                               List<ZkNodeProps> sourceReplicas,
-                              OverseerCollectionMessageHandler ocmh) throws InterruptedException {
+                              OverseerCollectionMessageHandler ocmh, String node) throws InterruptedException {
     CountDownLatch cleanupLatch = new CountDownLatch(sourceReplicas.size());
     for (ZkNodeProps sourceReplica : sourceReplicas) {
-      log.info("deleting replica from from node {} ", Utils.toJSONString(sourceReplica));
+      log.info("Deleting replica for collection={} shard={} on node={}", sourceReplica.getStr(COLLECTION_PROP), sourceReplica.getStr(SHARD_ID_PROP), node);
       NamedList deleteResult = new NamedList();
       try {
         ocmh.deleteReplica(clusterState, sourceReplica.plus("parallel", "true"), deleteResult, () -> {
           cleanupLatch.countDown();
           if (deleteResult.get("failure") != null) {
             synchronized (results) {
-              results.add("failure", "could not delete because  " + deleteResult.get("failure") + "  " + Utils.toJSONString(sourceReplica));
+              results.add("failure", String.format(Locale.ROOT, "Failed to delete replica for collection=%s shard=%s" +
+                  " on node=%s", sourceReplica.getStr(COLLECTION_PROP), sourceReplica.getStr(SHARD_ID_PROP), node));
             }
           }
         });
       } catch (KeeperException e) {
-        log.info("Error deleting ", e);
+        log.warn("Error deleting ", e);
         cleanupLatch.countDown();
       } catch (Exception e) {
+        log.warn("Error deleting ", e);
         cleanupLatch.countDown();
         throw e;
       }
     }
-    log.info("Waiting for deletes to complete");
+    log.debug("Waiting for delete node action to complete");
     cleanupLatch.await(5, TimeUnit.MINUTES);
   }
 

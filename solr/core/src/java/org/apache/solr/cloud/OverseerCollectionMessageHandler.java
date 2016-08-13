@@ -316,7 +316,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         default: {
           Cmd command = commandMap.get(action);
           if (command != null) {
-            command.call(zkStateReader.getClusterState(),message, results);
+            command.call(zkStateReader.getClusterState(), message, results);
           } else {
             throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
                 + operation);
@@ -617,7 +617,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   @SuppressWarnings("unchecked")
   void deleteReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
       throws KeeperException, InterruptedException {
-    log.info("deleteReplica() : {}", Utils.toJSONString(message));
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP);
     String collectionName = message.getStr(COLLECTION_PROP);
     String shard = message.getStr(SHARD_ID_PROP);
@@ -664,7 +663,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     params.set(CoreAdminParams.DELETE_DATA_DIR, message.getBool(CoreAdminParams.DELETE_DATA_DIR, true));
 
     sendShardRequest(replica.getNodeName(), params, shardHandler, asyncId, requestMap.get());
-    AtomicReference<Exception> exp = new AtomicReference<>();
 
     Callable<Boolean> callable = () -> {
       try {
@@ -2809,7 +2807,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   interface Cmd {
 
-    Object call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception;
+    void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception;
 
   }
 
