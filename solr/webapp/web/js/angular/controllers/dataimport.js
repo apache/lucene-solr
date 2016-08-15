@@ -52,6 +52,7 @@ solrAdminApp.controller('DataImportController',
                         $('document > entity', xml).each(function (i, element) {
                             $scope.entities.push($(element).attr('name'));
                         });
+                        $scope.refreshStatus();
                     } catch (err) {
                         console.log(err);
                     }
@@ -59,8 +60,6 @@ solrAdminApp.controller('DataImportController',
             }
             $scope.lastUpdate = "unknown";
             $scope.lastUpdateUTC = "";
-
-            $scope.refreshStatus();
         };
 
         $scope.toggleDebug = function () {
