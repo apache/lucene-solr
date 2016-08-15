@@ -25,7 +25,6 @@ parent.iml
 **/pom.xml
 /nbproject
 /nb-build
-/test-data
 
 /solr/package
 
