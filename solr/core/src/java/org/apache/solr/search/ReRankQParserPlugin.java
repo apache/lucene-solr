@@ -25,8 +25,6 @@ import com.carrotsearch.hppc.IntIntHashMap;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.FilterWeight;
-import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -188,23 +186,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
     }
 
     public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException{
-      return new ReRankWeight(mainQuery, reRankQueryRescorer, searcher, needsScores);
-    }
-  }
-
-  private class ReRankWeight extends FilterWeight {
-    private IndexSearcher searcher;
-    final private Rescorer reRankQueryRescorer;
-
-    public ReRankWeight(Query mainQuery, Rescorer reRankQueryRescorer, IndexSearcher searcher, boolean needsScores) throws IOException {
-      super(mainQuery, mainQuery.createWeight(searcher, needsScores));
-      this.searcher = searcher;
-      this.reRankQueryRescorer = reRankQueryRescorer;
-    }
-
-    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Explanation mainExplain = in.explain(context, doc);
-      return reRankQueryRescorer.explain(searcher, mainExplain, context.docBase+doc);
+      final Weight mainWeight = mainQuery.createWeight(searcher, needsScores);
+      return new ReRankWeight(mainQuery, reRankQueryRescorer, searcher, mainWeight);
     }
   }
 
