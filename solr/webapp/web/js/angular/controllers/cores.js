@@ -17,7 +17,7 @@
 
 // @todo test optimize (delete stuff, watch button appear, test button/form)
 solrAdminApp.controller('CoreAdminController',
-    function($scope, $routeParams, $location, $timeout, Cores, Update, Constants){
+    function($scope, $routeParams, $location, $timeout, $route, Cores, Update, Constants){
       $scope.resetMenu("cores", Constants.IS_ROOT_PAGE);
       $scope.selectedCore = $routeParams.corename; // use 'corename' not 'core' to distinguish from /solr/:core/
       $scope.refresh = function() {

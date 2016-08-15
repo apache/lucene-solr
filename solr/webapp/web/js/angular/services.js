@@ -162,7 +162,7 @@ solrAdminServices.factory('System',
   }])
 .factory('DataImport',
   ['$resource', function($resource) {
-    return $resource('/solr/:core/dataimport', {core: '@core', indent:'on', wt:'json', _:Date.now()}, {
+    return $resource('/solr/:core/:name', {core: '@core', name: '@name', indent:'on', wt:'json', _:Date.now()}, {
       "config": {params: {command: "show-config"}, headers: {doNotIntercept: "true"},
                  transformResponse: function(data) {
                     return {config: data};

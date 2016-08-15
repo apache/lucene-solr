@@ -214,6 +214,8 @@ Bug Fixes
 
 * SOLR-9002: Admin UI now correctly displays json and text files in the collection/Files screen (Upayavira, Alexandre Rafalovitch)
 
+* SOLR-8993: Admin UI now correctly supports multiple DIH handler end-points (Upayavira, Alexandre Rafalovitch)
+
 Optimizations
 ----------------------
 
