@@ -32,10 +32,15 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 
-class FacetFieldProcessorNumeric extends FacetFieldProcessor {
+/**
+ * Facets numbers into a hash table.
+ * It currently only works with {@link NumericDocValues} (single-valued).
+ */
+class FacetFieldProcessorByHashNumeric extends FacetFieldProcessor {
   static int MAXIMUM_STARTING_TABLE_SIZE=1024;  // must be a power of two, non-final to support setting by tests
 
-  static class LongCounts {
+  /** a hash table with long keys (what we're counting) and integer values (counts) */
+  private static class LongCounts {
 
     static final float LOAD_FACTOR = 0.7f;
 
@@ -55,7 +60,7 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
     }
 
     /** Current number of slots in the hash table */
-    public int numSlots() {
+    int numSlots() {
       return vals.length;
     }
 
@@ -130,13 +135,11 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
 
   }
 
+  int allBucketsSlot = -1;
 
-
-  FacetFieldProcessorNumeric(FacetContext fcontext, FacetField freq, SchemaField sf) {
+  FacetFieldProcessorByHashNumeric(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);
   }
-
-  int allBucketsSlot = -1;
 
   @Override
   public void process() throws IOException {
@@ -144,54 +147,9 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
     response = calcFacets();
   }
 
-  private void doRehash(LongCounts table) {
-    if (collectAcc == null && allBucketsAcc == null) return;
-
-    // Our "count" acc is backed by the hash table and will already be rehashed
-    // otherAccs don't need to be rehashed
-
-    int newTableSize = table.numSlots();
-    int numSlots = newTableSize;
-    final int oldAllBucketsSlot = allBucketsSlot;
-    if (oldAllBucketsSlot >= 0) {
-      allBucketsSlot = numSlots++;
-    }
-
-    final int finalNumSlots = numSlots;
-    final int[] mapping = table.oldToNewMapping;
-
-    SlotAcc.Resizer resizer = new SlotAcc.Resizer() {
-      @Override
-      public int getNewSize() {
-        return finalNumSlots;
-      }
-
-      @Override
-      public int getNewSlot(int oldSlot) {
-        if (oldSlot < mapping.length) {
-          return mapping[oldSlot];
-        }
-        if (oldSlot == oldAllBucketsSlot) {
-          return allBucketsSlot;
-        }
-        return -1;
-      }
-    };
-
-    // NOTE: resizing isn't strictly necessary for missing/allBuckets... we could just set the new slot directly
-    if (collectAcc != null) {
-      collectAcc.resize(resizer);
-    }
-    if (allBucketsAcc != null) {
-      allBucketsAcc.resize(resizer);
-    }
-  }
-
-  public SimpleOrderedMap<Object> calcFacets() throws IOException {
-
+  private SimpleOrderedMap<Object> calcFacets() throws IOException {
 
     final FacetRangeProcessor.Calc calc = FacetRangeProcessor.getNumericCalc(sf);
-
 
     // TODO: it would be really nice to know the number of unique values!!!!
 
@@ -211,7 +169,6 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
     int numSlots = currHashSize;
 
     int numMissing = 0;
-
 
     if (freq.allBuckets) {
       allBucketsSlot = numSlots++;
@@ -325,7 +282,6 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
       }
     }
 
-
     //
     // collection done, time to find the top slots
     //
@@ -333,7 +289,7 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
     int numBuckets = 0;
     List<Object> bucketVals = null;
     if (freq.numBuckets && fcontext.isShard()) {
-      bucketVals = new ArrayList(100);
+      bucketVals = new ArrayList<>(100);
     }
 
     int off = fcontext.isShard() ? 0 : (int) freq.offset;
@@ -378,13 +334,12 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
       bottom = queue.insertWithOverflow(bottom);
     }
 
-
-    SimpleOrderedMap res = new SimpleOrderedMap();
+    SimpleOrderedMap<Object> res = new SimpleOrderedMap<>();
     if (freq.numBuckets) {
       if (!fcontext.isShard()) {
         res.add("numBuckets", numBuckets);
       } else {
-        SimpleOrderedMap map = new SimpleOrderedMap(2);
+        SimpleOrderedMap<Object> map = new SimpleOrderedMap<>(2);
         map.add("numBuckets", numBuckets);
         map.add("vals", bucketVals);
         res.add("numBuckets", map);
@@ -392,7 +347,7 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
     }
 
     FacetDebugInfo fdebug = fcontext.getDebugInfo();
-    if (fdebug != null) fdebug.putInfoItem("numBuckets", new Long(numBuckets));
+    if (fdebug != null) fdebug.putInfoItem("numBuckets", (long) numBuckets);
 
     if (freq.allBuckets) {
       SimpleOrderedMap<Object> allBuckets = new SimpleOrderedMap<>();
@@ -419,7 +374,7 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
       sortedSlots[i] = queue.pop().slot;
     }
 
-    ArrayList bucketList = new ArrayList(collectCount);
+    ArrayList<SimpleOrderedMap> bucketList = new ArrayList<>(collectCount);
     res.add("buckets", bucketList);
 
     boolean needFilter = deferredAggs != null || freq.getSubFacets().size() > 0;
@@ -436,8 +391,49 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
       bucketList.add(bucket);
     }
 
-
-
     return res;
+  }
+
+  private void doRehash(LongCounts table) {
+    if (collectAcc == null && allBucketsAcc == null) return;
+
+    // Our "count" acc is backed by the hash table and will already be rehashed
+    // otherAccs don't need to be rehashed
+
+    int newTableSize = table.numSlots();
+    int numSlots = newTableSize;
+    final int oldAllBucketsSlot = allBucketsSlot;
+    if (oldAllBucketsSlot >= 0) {
+      allBucketsSlot = numSlots++;
+    }
+
+    final int finalNumSlots = numSlots;
+    final int[] mapping = table.oldToNewMapping;
+
+    SlotAcc.Resizer resizer = new SlotAcc.Resizer() {
+      @Override
+      public int getNewSize() {
+        return finalNumSlots;
+      }
+
+      @Override
+      public int getNewSlot(int oldSlot) {
+        if (oldSlot < mapping.length) {
+          return mapping[oldSlot];
+        }
+        if (oldSlot == oldAllBucketsSlot) {
+          return allBucketsSlot;
+        }
+        return -1;
+      }
+    };
+
+    // NOTE: resizing isn't strictly necessary for missing/allBuckets... we could just set the new slot directly
+    if (collectAcc != null) {
+      collectAcc.resize(resizer);
+    }
+    if (allBucketsAcc != null) {
+      allBucketsAcc.resize(resizer);
+    }
   }
 }

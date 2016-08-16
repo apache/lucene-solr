@@ -93,11 +93,6 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     response = getRangeCounts();
   }
 
-  @Override
-  public Object getResponse() {
-    return response;
-  }
-
   private static class Range {
     Object label;
     Comparable low;
