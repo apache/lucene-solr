@@ -216,6 +216,8 @@ Bug Fixes
 
 * SOLR-8993: Admin UI now correctly supports multiple DIH handler end-points (Upayavira, Alexandre Rafalovitch)
 
+* SOLR-9032: Admin UI now correctly implements Create Alias command (Upayavira, Alexandre Rafalovitch)
+
 Optimizations
 ----------------------
 
