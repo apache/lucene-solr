@@ -280,6 +280,8 @@ Other Changes
 
 * SOLR-9410: Make ReRankQParserPlugin's private ReRankWeight a public class of its own. (Christine Poerschke)
 
+* SOLR-9404: Refactor move/renames in JSON FacetProcessor and FacetFieldProcessor. (David Smiley)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
