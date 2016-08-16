@@ -177,11 +177,14 @@ public final class TestUtil {
       assert hasNext;
       T v = iterator.next();
       assert allowNull || v != null;
-      try {
-        iterator.remove();
-        throw new AssertionError("broken iterator (supports remove): " + iterator);
-      } catch (UnsupportedOperationException expected) {
-        // ok
+      // for the first element, check that remove is not supported
+      if (i == 0) {
+        try {
+          iterator.remove();
+          throw new AssertionError("broken iterator (supports remove): " + iterator);
+        } catch (UnsupportedOperationException expected) {
+          // ok
+        }
       }
     }
     assert !iterator.hasNext();
