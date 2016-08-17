@@ -19,8 +19,6 @@ package org.apache.lucene.search.join;
 import java.io.IOException;
 import java.util.function.LongConsumer;
 
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
@@ -28,10 +26,11 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.legacy.LegacyNumericType;
+import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.LegacyNumericUtils;
 
 abstract class DocValuesTermsCollector<DV> extends SimpleCollector {
   
@@ -85,13 +84,13 @@ abstract class DocValuesTermsCollector<DV> extends SimpleCollector {
         return (l) -> LegacyNumericUtils.longToPrefixCoded(l, 0, bytes);
       default:
         throw new IllegalArgumentException("Unsupported "+type+
-            ". Only "+ LegacyNumericType.INT+" and "+ FieldType.LegacyNumericType.LONG+" are supported."
+            ". Only "+ LegacyNumericType.INT+" and "+ LegacyNumericType.LONG+" are supported."
             + "Field "+fieldName );
     }
   }
   
   /** this adapter is quite weird. ords are per doc index, don't use ords across different docs*/
-  static Function<SortedSetDocValues> sortedNumericAsSortedSetDocValues(String field, FieldType.LegacyNumericType numTyp) {
+  static Function<SortedSetDocValues> sortedNumericAsSortedSetDocValues(String field, LegacyNumericType numTyp) {
     return (ctx) -> {
       final SortedNumericDocValues numerics = DocValues.getSortedNumeric(ctx, field);
       final BytesRefBuilder bytes = new BytesRefBuilder();

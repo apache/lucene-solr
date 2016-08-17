@@ -32,15 +32,15 @@ import java.util.TimeZone;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType.LegacyNumericType;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LegacyFloatField;
-import org.apache.lucene.document.LegacyIntField;
-import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.legacy.LegacyDoubleField;
+import org.apache.lucene.legacy.LegacyFieldType;
+import org.apache.lucene.legacy.LegacyFloatField;
+import org.apache.lucene.legacy.LegacyIntField;
+import org.apache.lucene.legacy.LegacyLongField;
+import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 import org.apache.lucene.queryparser.flexible.standard.config.NumberDateFormat;
@@ -179,7 +179,7 @@ public class TestLegacyNumericQueryParser extends LuceneTestCase {
       ;
     
     randomNumberMap.put(LegacyNumericType.LONG.name(), randomLong);
-    randomNumberMap.put(FieldType.LegacyNumericType.INT.name(), randomInt);
+    randomNumberMap.put(LegacyNumericType.INT.name(), randomInt);
     randomNumberMap.put(LegacyNumericType.FLOAT.name(), randomFloat);
     randomNumberMap.put(LegacyNumericType.DOUBLE.name(), randomDouble);
     randomNumberMap.put(DATE_FIELD_NAME, randomDate);
@@ -201,7 +201,7 @@ public class TestLegacyNumericQueryParser extends LuceneTestCase {
       numericConfigMap.put(type.name(), new LegacyNumericConfig(PRECISION_STEP,
           NUMBER_FORMAT, type));
 
-      FieldType ft = new FieldType(LegacyIntField.TYPE_NOT_STORED);
+      LegacyFieldType ft = new LegacyFieldType(LegacyIntField.TYPE_NOT_STORED);
       ft.setNumericType(type);
       ft.setStored(true);
       ft.setNumericPrecisionStep(PRECISION_STEP);
@@ -231,7 +231,7 @@ public class TestLegacyNumericQueryParser extends LuceneTestCase {
     
     numericConfigMap.put(DATE_FIELD_NAME, new LegacyNumericConfig(PRECISION_STEP,
         DATE_FORMAT, LegacyNumericType.LONG));
-    FieldType ft = new FieldType(LegacyLongField.TYPE_NOT_STORED);
+    LegacyFieldType ft = new LegacyFieldType(LegacyLongField.TYPE_NOT_STORED);
     ft.setStored(true);
     ft.setNumericPrecisionStep(PRECISION_STEP);
     LegacyLongField dateField = new LegacyLongField(DATE_FIELD_NAME, 0l, ft);
@@ -268,10 +268,10 @@ public class TestLegacyNumericQueryParser extends LuceneTestCase {
             || DATE_FIELD_NAME.equals(fieldName)) {
           number = -number.longValue();
           
-        } else if (FieldType.LegacyNumericType.DOUBLE.name().equals(fieldName)) {
+        } else if (LegacyNumericType.DOUBLE.name().equals(fieldName)) {
           number = -number.doubleValue();
           
-        } else if (FieldType.LegacyNumericType.FLOAT.name().equals(fieldName)) {
+        } else if (LegacyNumericType.FLOAT.name().equals(fieldName)) {
           number = -number.floatValue();
           
         } else if (LegacyNumericType.INT.name().equals(fieldName)) {
@@ -299,16 +299,16 @@ public class TestLegacyNumericQueryParser extends LuceneTestCase {
     numericFieldMap.get(LegacyNumericType.DOUBLE.name()).setDoubleValue(
         number.doubleValue());
     
-    number = getNumberType(numberType, FieldType.LegacyNumericType.INT.name());
-    numericFieldMap.get(FieldType.LegacyNumericType.INT.name()).setIntValue(
+    number = getNumberType(numberType, LegacyNumericType.INT.name());
+    numericFieldMap.get(LegacyNumericType.INT.name()).setIntValue(
         number.intValue());
     
     number = getNumberType(numberType, LegacyNumericType.LONG.name());
-    numericFieldMap.get(FieldType.LegacyNumericType.LONG.name()).setLongValue(
+    numericFieldMap.get(LegacyNumericType.LONG.name()).setLongValue(
         number.longValue());
     
-    number = getNumberType(numberType, FieldType.LegacyNumericType.FLOAT.name());
-    numericFieldMap.get(FieldType.LegacyNumericType.FLOAT.name()).setFloatValue(
+    number = getNumberType(numberType, LegacyNumericType.FLOAT.name());
+    numericFieldMap.get(LegacyNumericType.FLOAT.name()).setFloatValue(
         number.floatValue());
     
     number = getNumberType(numberType, DATE_FIELD_NAME);
@@ -456,7 +456,7 @@ public class TestLegacyNumericQueryParser extends LuceneTestCase {
 
     StringBuilder sb = new StringBuilder();
     
-    for (LegacyNumericType type : FieldType.LegacyNumericType.values()) {
+    for (LegacyNumericType type : LegacyNumericType.values()) {
       String boundStr = numberToString(getNumberType(boundType, type.name()));
       
       sb.append("+").append(type.name()).append(operator).append('"').append(boundStr).append('"').append(' ');

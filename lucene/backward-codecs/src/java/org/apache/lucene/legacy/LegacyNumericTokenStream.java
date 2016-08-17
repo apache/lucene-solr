@@ -14,11 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis;
+package org.apache.lucene.legacy;
 
 
 import java.util.Objects;
 
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -29,16 +30,15 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.NumericUtils;
 
 /**
  * <b>Expert:</b> This class provides a {@link TokenStream}
  * for indexing numeric values that can be used by {@link
- * org.apache.lucene.search.LegacyNumericRangeQuery}.
+ * org.apache.lucene.legacy.LegacyNumericRangeQuery}.
  *
- * <p>Note that for simple usage, {@link org.apache.lucene.document.LegacyIntField}, {@link
- * org.apache.lucene.document.LegacyLongField}, {@link org.apache.lucene.document.LegacyFloatField} or {@link org.apache.lucene.document.LegacyDoubleField} is
+ * <p>Note that for simple usage, {@link org.apache.lucene.legacy.LegacyIntField}, {@link
+ * org.apache.lucene.legacy.LegacyLongField}, {@link org.apache.lucene.legacy.LegacyFloatField} or {@link org.apache.lucene.legacy.LegacyDoubleField} is
  * recommended.  These fields disable norms and
  * term freqs, as they are not usually needed during
  * searching.  If you need to change these settings, you
@@ -81,9 +81,9 @@ import org.apache.lucene.util.NumericUtils;
  * than one numeric field, use a separate <code>LegacyNumericTokenStream</code>
  * instance for each.</p>
  *
- * <p>See {@link org.apache.lucene.search.LegacyNumericRangeQuery} for more details on the
+ * <p>See {@link org.apache.lucene.legacy.LegacyNumericRangeQuery} for more details on the
  * <a
- * href="../search/LegacyNumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
+ * href="LegacyNumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
  * parameter as well as how numeric fields work under the hood.</p>
  *
  * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
@@ -140,7 +140,7 @@ public final class LegacyNumericTokenStream extends TokenStream {
     }
   }
 
-  /** Implementation of {@link org.apache.lucene.analysis.LegacyNumericTokenStream.LegacyNumericTermAttribute}.
+  /** Implementation of {@link org.apache.lucene.legacy.LegacyNumericTokenStream.LegacyNumericTermAttribute}.
    * @lucene.internal
    * @since 4.0
    */
@@ -240,7 +240,7 @@ public final class LegacyNumericTokenStream extends TokenStream {
   
   /**
    * Creates a token stream for numeric values using the default <code>precisionStep</code>
-   * {@link org.apache.lucene.util.LegacyNumericUtils#PRECISION_STEP_DEFAULT} (16). The stream is not yet initialized,
+   * {@link org.apache.lucene.legacy.LegacyNumericUtils#PRECISION_STEP_DEFAULT} (16). The stream is not yet initialized,
    * before using set a value using the various set<em>???</em>Value() methods.
    */
   public LegacyNumericTokenStream() {

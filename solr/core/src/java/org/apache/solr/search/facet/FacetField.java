@@ -19,6 +19,7 @@ package org.apache.solr.search.facet;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -94,7 +95,7 @@ public class FacetField extends FacetRequest {
       return new FacetFieldProcessorByEnumTermsStream(fcontext, this, sf);
     }
 
-    org.apache.lucene.document.FieldType.LegacyNumericType ntype = ft.getNumericType();
+    LegacyNumericType ntype = ft.getNumericType();
 
     if (!multiToken) {
       if (ntype != null) {

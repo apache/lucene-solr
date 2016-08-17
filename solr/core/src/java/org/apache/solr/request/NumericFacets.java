@@ -33,6 +33,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.Bits;
@@ -132,7 +133,7 @@ final class NumericFacets {
     mincount = Math.max(mincount, 1);
     final SchemaField sf = searcher.getSchema().getField(fieldName);
     final FieldType ft = sf.getType();
-    final org.apache.lucene.document.FieldType.LegacyNumericType numericType = ft.getNumericType();
+    final LegacyNumericType numericType = ft.getNumericType();
     if (numericType == null) {
       throw new IllegalStateException();
     }

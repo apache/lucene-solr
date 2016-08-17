@@ -26,24 +26,25 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.lucene.document.FieldType.LegacyNumericType;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LegacyDoubleField;
-import org.apache.lucene.document.LegacyFloatField;
-import org.apache.lucene.document.LegacyIntField;
-import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.legacy.LegacyDoubleField;
+import org.apache.lucene.legacy.LegacyFieldType;
+import org.apache.lucene.legacy.LegacyFloatField;
+import org.apache.lucene.legacy.LegacyIntField;
+import org.apache.lucene.legacy.LegacyLongField;
+import org.apache.lucene.legacy.LegacyNumericRangeQuery;
+import org.apache.lucene.legacy.LegacyNumericType;
+import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.search.DocValuesRangeQuery;
-import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
@@ -51,7 +52,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.mutable.MutableValueDate;
 import org.apache.lucene.util.mutable.MutableValueLong;
@@ -67,9 +67,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provides field types to support for Lucene's {@link
- * org.apache.lucene.document.LegacyIntField}, {@link org.apache.lucene.document.LegacyLongField}, {@link org.apache.lucene.document.LegacyFloatField} and
- * {@link org.apache.lucene.document.LegacyDoubleField}.
- * See {@link org.apache.lucene.search.LegacyNumericRangeQuery} for more details.
+ * org.apache.lucene.legacy.LegacyIntField}, {@link org.apache.lucene.legacy.LegacyLongField}, {@link org.apache.lucene.legacy.LegacyFloatField} and
+ * {@link org.apache.lucene.legacy.LegacyDoubleField}.
+ * See {@link org.apache.lucene.legacy.LegacyNumericRangeQuery} for more details.
  * It supports integer, float, long, double and date types.
  * <p>
  * For each number being added to this field, multiple terms are generated as per the algorithm described in the above
@@ -82,7 +82,7 @@ import org.slf4j.LoggerFactory;
  * generated, range search will be no faster than any other number field, but sorting will still be possible.
  *
  *
- * @see org.apache.lucene.search.LegacyNumericRangeQuery
+ * @see org.apache.lucene.legacy.LegacyNumericRangeQuery
  * @since solr 1.4
  */
 public class TrieField extends PrimitiveFieldType {
@@ -349,17 +349,17 @@ public class TrieField extends PrimitiveFieldType {
   }
 
   @Override
-  public FieldType.LegacyNumericType getNumericType() {
+  public LegacyNumericType getNumericType() {
     switch (type) {
       case INTEGER:
-        return FieldType.LegacyNumericType.INT;
+        return LegacyNumericType.INT;
       case LONG:
       case DATE:
-        return FieldType.LegacyNumericType.LONG;
+        return LegacyNumericType.LONG;
       case FLOAT:
-        return FieldType.LegacyNumericType.FLOAT;
+        return LegacyNumericType.FLOAT;
       case DOUBLE:
-        return FieldType.LegacyNumericType.DOUBLE;
+        return LegacyNumericType.DOUBLE;
       default:
         throw new AssertionError();
     }
@@ -666,7 +666,7 @@ public class TrieField extends PrimitiveFieldType {
       return null;
     }
     
-    FieldType ft = new FieldType();
+    LegacyFieldType ft = new LegacyFieldType();
     ft.setStored(stored);
     ft.setTokenized(true);
     ft.setOmitNorms(field.omitNorms());
@@ -677,16 +677,16 @@ public class TrieField extends PrimitiveFieldType {
         ft.setNumericType(LegacyNumericType.INT);
         break;
       case FLOAT:
-        ft.setNumericType(FieldType.LegacyNumericType.FLOAT);
+        ft.setNumericType(LegacyNumericType.FLOAT);
         break;
       case LONG:
-        ft.setNumericType(FieldType.LegacyNumericType.LONG);
+        ft.setNumericType(LegacyNumericType.LONG);
         break;
       case DOUBLE:
-        ft.setNumericType(FieldType.LegacyNumericType.DOUBLE);
+        ft.setNumericType(LegacyNumericType.DOUBLE);
         break;
       case DATE:
-        ft.setNumericType(FieldType.LegacyNumericType.LONG);
+        ft.setNumericType(LegacyNumericType.LONG);
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);

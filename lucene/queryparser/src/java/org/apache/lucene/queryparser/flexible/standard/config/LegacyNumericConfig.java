@@ -19,14 +19,13 @@ package org.apache.lucene.queryparser.flexible.standard.config;
 import java.text.NumberFormat;
 import java.util.Objects;
 
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.FieldType.LegacyNumericType;
+import org.apache.lucene.legacy.LegacyNumericType;
 
 /**
  * This class holds the configuration used to parse numeric queries and create
- * {@link org.apache.lucene.search.LegacyNumericRangeQuery}s.
+ * {@link org.apache.lucene.legacy.LegacyNumericRangeQuery}s.
  * 
- * @see org.apache.lucene.search.LegacyNumericRangeQuery
+ * @see org.apache.lucene.legacy.LegacyNumericRangeQuery
  * @see NumberFormat
  * @deprecated Index with Points instead and use {@link PointsConfig}
  */
@@ -37,7 +36,7 @@ public class LegacyNumericConfig {
   
   private NumberFormat format;
   
-  private FieldType.LegacyNumericType type;
+  private LegacyNumericType type;
   
   /**
    * Constructs a {@link LegacyNumericConfig} object.
@@ -52,7 +51,7 @@ public class LegacyNumericConfig {
    * 
    * @see LegacyNumericConfig#setPrecisionStep(int)
    * @see LegacyNumericConfig#setNumberFormat(NumberFormat)
-   * @see #setType(org.apache.lucene.document.FieldType.LegacyNumericType)
+   * @see #setType(LegacyNumericType)
    */
   public LegacyNumericConfig(int precisionStep, NumberFormat format,
       LegacyNumericType type) {
@@ -67,7 +66,7 @@ public class LegacyNumericConfig {
    * 
    * @return the precision used to index the numeric values
    * 
-   * @see org.apache.lucene.search.LegacyNumericRangeQuery#getPrecisionStep()
+   * @see org.apache.lucene.legacy.LegacyNumericRangeQuery#getPrecisionStep()
    */
   public int getPrecisionStep() {
     return precisionStep;
@@ -79,7 +78,7 @@ public class LegacyNumericConfig {
    * @param precisionStep
    *          the precision used to index the numeric values
    * 
-   * @see org.apache.lucene.search.LegacyNumericRangeQuery#getPrecisionStep()
+   * @see org.apache.lucene.legacy.LegacyNumericRangeQuery#getPrecisionStep()
    */
   public void setPrecisionStep(int precisionStep) {
     this.precisionStep = precisionStep;

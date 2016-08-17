@@ -14,28 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.legacy;
 
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LegacyDoubleField;
-import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.TestLegacyNumericUtils;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -63,37 +61,37 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
         .setMergePolicy(newLogMergePolicy()));
 
-    final FieldType storedLong = new FieldType(LegacyLongField.TYPE_NOT_STORED);
+    final LegacyFieldType storedLong = new LegacyFieldType(LegacyLongField.TYPE_NOT_STORED);
     storedLong.setStored(true);
     storedLong.freeze();
 
-    final FieldType storedLong8 = new FieldType(storedLong);
+    final LegacyFieldType storedLong8 = new LegacyFieldType(storedLong);
     storedLong8.setNumericPrecisionStep(8);
 
-    final FieldType storedLong4 = new FieldType(storedLong);
+    final LegacyFieldType storedLong4 = new LegacyFieldType(storedLong);
     storedLong4.setNumericPrecisionStep(4);
 
-    final FieldType storedLong6 = new FieldType(storedLong);
+    final LegacyFieldType storedLong6 = new LegacyFieldType(storedLong);
     storedLong6.setNumericPrecisionStep(6);
 
-    final FieldType storedLong2 = new FieldType(storedLong);
+    final LegacyFieldType storedLong2 = new LegacyFieldType(storedLong);
     storedLong2.setNumericPrecisionStep(2);
 
-    final FieldType storedLongNone = new FieldType(storedLong);
+    final LegacyFieldType storedLongNone = new LegacyFieldType(storedLong);
     storedLongNone.setNumericPrecisionStep(Integer.MAX_VALUE);
 
-    final FieldType unstoredLong = LegacyLongField.TYPE_NOT_STORED;
+    final LegacyFieldType unstoredLong = LegacyLongField.TYPE_NOT_STORED;
 
-    final FieldType unstoredLong8 = new FieldType(unstoredLong);
+    final LegacyFieldType unstoredLong8 = new LegacyFieldType(unstoredLong);
     unstoredLong8.setNumericPrecisionStep(8);
 
-    final FieldType unstoredLong6 = new FieldType(unstoredLong);
+    final LegacyFieldType unstoredLong6 = new LegacyFieldType(unstoredLong);
     unstoredLong6.setNumericPrecisionStep(6);
 
-    final FieldType unstoredLong4 = new FieldType(unstoredLong);
+    final LegacyFieldType unstoredLong4 = new LegacyFieldType(unstoredLong);
     unstoredLong4.setNumericPrecisionStep(4);
 
-    final FieldType unstoredLong2 = new FieldType(unstoredLong);
+    final LegacyFieldType unstoredLong2 = new LegacyFieldType(unstoredLong);
     unstoredLong2.setNumericPrecisionStep(2);
 
     LegacyLongField
@@ -372,137 +370,6 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
 
     r.close();
     dir.close();
-  }
-  
-  private void testRandomTrieAndClassicRangeQuery(int precisionStep) throws Exception {
-    String field="field"+precisionStep;
-    int totalTermCountT=0,totalTermCountC=0,termCountT,termCountC;
-    int num = TestUtil.nextInt(random(), 10, 20);
-    for (int i = 0; i < num; i++) {
-      long lower=(long)(random().nextDouble()*noDocs*distance)+startOffset;
-      long upper=(long)(random().nextDouble()*noDocs*distance)+startOffset;
-      if (lower>upper) {
-        long a=lower; lower=upper; upper=a;
-      }
-      final BytesRef lowerBytes, upperBytes;
-      BytesRefBuilder b = new BytesRefBuilder();
-      LegacyNumericUtils.longToPrefixCoded(lower, 0, b);
-      lowerBytes = b.toBytesRef();
-      LegacyNumericUtils.longToPrefixCoded(upper, 0, b);
-      upperBytes = b.toBytesRef();
-      
-      // test inclusive range
-      LegacyNumericRangeQuery<Long> tq= LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);
-      TermRangeQuery cq=new TermRangeQuery(field, lowerBytes, upperBytes, true, true);
-      TopDocs tTopDocs = searcher.search(tq, 1);
-      TopDocs cTopDocs = searcher.search(cq, 1);
-      assertEquals("Returned count for LegacyNumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
-      totalTermCountT += termCountT = countTerms(tq);
-      totalTermCountC += termCountC = countTerms(cq);
-      checkTermCounts(precisionStep, termCountT, termCountC);
-      // test exclusive range
-      tq= LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, false, false);
-      cq=new TermRangeQuery(field, lowerBytes, upperBytes, false, false);
-      tTopDocs = searcher.search(tq, 1);
-      cTopDocs = searcher.search(cq, 1);
-      assertEquals("Returned count for LegacyNumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
-      totalTermCountT += termCountT = countTerms(tq);
-      totalTermCountC += termCountC = countTerms(cq);
-      checkTermCounts(precisionStep, termCountT, termCountC);
-      // test left exclusive range
-      tq= LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, false, true);
-      cq=new TermRangeQuery(field, lowerBytes, upperBytes, false, true);
-      tTopDocs = searcher.search(tq, 1);
-      cTopDocs = searcher.search(cq, 1);
-      assertEquals("Returned count for LegacyNumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
-      totalTermCountT += termCountT = countTerms(tq);
-      totalTermCountC += termCountC = countTerms(cq);
-      checkTermCounts(precisionStep, termCountT, termCountC);
-      // test right exclusive range
-      tq= LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, false);
-      cq=new TermRangeQuery(field, lowerBytes, upperBytes, true, false);
-      tTopDocs = searcher.search(tq, 1);
-      cTopDocs = searcher.search(cq, 1);
-      assertEquals("Returned count for LegacyNumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
-      totalTermCountT += termCountT = countTerms(tq);
-      totalTermCountC += termCountC = countTerms(cq);
-      checkTermCounts(precisionStep, termCountT, termCountC);
-    }
-    
-    checkTermCounts(precisionStep, totalTermCountT, totalTermCountC);
-    if (VERBOSE && precisionStep != Integer.MAX_VALUE) {
-      System.out.println("Average number of terms during random search on '" + field + "':");
-      System.out.println(" Numeric query: " + (((double)totalTermCountT)/(num * 4)));
-      System.out.println(" Classical query: " + (((double)totalTermCountC)/(num * 4)));
-    }
-  }
-  
-  @Test
-  public void testEmptyEnums() throws Exception {
-    int count=3000;
-    long lower=(distance*3/2)+startOffset, upper=lower + count*distance + (distance/3);
-    // test empty enum
-    assert lower < upper;
-    assertTrue(0 < countTerms(LegacyNumericRangeQuery.newLongRange("field4", 4, lower, upper, true, true)));
-    assertEquals(0, countTerms(LegacyNumericRangeQuery.newLongRange("field4", 4, upper, lower, true, true)));
-    // test empty enum outside of bounds
-    lower = distance*noDocs+startOffset;
-    upper = 2L * lower;
-    assert lower < upper;
-    assertEquals(0, countTerms(LegacyNumericRangeQuery.newLongRange("field4", 4, lower, upper, true, true)));
-  }
-  
-  private int countTerms(MultiTermQuery q) throws Exception {
-    final Terms terms = MultiFields.getTerms(reader, q.getField());
-    if (terms == null)
-      return 0;
-    final TermsEnum termEnum = q.getTermsEnum(terms);
-    assertNotNull(termEnum);
-    int count = 0;
-    BytesRef cur, last = null;
-    while ((cur = termEnum.next()) != null) {
-      count++;
-      if (last != null) {
-        assertTrue(last.compareTo(cur) < 0);
-      }
-      last = BytesRef.deepCopyOf(cur);
-    } 
-    // LUCENE-3314: the results after next() already returned null are undefined,
-    // assertNull(termEnum.next());
-    return count;
-  }
-  
-  private void checkTermCounts(int precisionStep, int termCountT, int termCountC) {
-    if (precisionStep == Integer.MAX_VALUE) {
-      assertEquals("Number of terms should be equal for unlimited precStep", termCountC, termCountT);
-    } else {
-      assertTrue("Number of terms for NRQ should be <= compared to classical TRQ", termCountT <= termCountC);
-    }
-  }
-
-  @Test
-  public void testRandomTrieAndClassicRangeQuery_8bit() throws Exception {
-    testRandomTrieAndClassicRangeQuery(8);
-  }
-  
-  @Test
-  public void testRandomTrieAndClassicRangeQuery_6bit() throws Exception {
-    testRandomTrieAndClassicRangeQuery(6);
-  }
-  
-  @Test
-  public void testRandomTrieAndClassicRangeQuery_4bit() throws Exception {
-    testRandomTrieAndClassicRangeQuery(4);
-  }
-  
-  @Test
-  public void testRandomTrieAndClassicRangeQuery_2bit() throws Exception {
-    testRandomTrieAndClassicRangeQuery(2);
-  }
-  
-  @Test
-  public void testRandomTrieAndClassicRangeQuery_NoTrie() throws Exception {
-    testRandomTrieAndClassicRangeQuery(Integer.MAX_VALUE);
   }
   
   private void testRangeSplit(int precisionStep) throws Exception {
