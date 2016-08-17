@@ -68,6 +68,9 @@ Bug Fixes
   norm and coordination factor using a default similarity added as ctor param.
   (Uwe Schindler, Sascha Markus)
 
+* SOLR-9413: Fix analysis/kuromoji's CSVUtil.quoteEscape logic, add TestCSVUtil test.
+  (AppChecker, Christine Poerschke)
+
 Improvements
 
 * LUCENE-7323: Compound file writing now verifies the incoming
