@@ -61,7 +61,7 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
-public class XLSXResponseWriter extends RawResponseWriter implements SolrCoreAware {
+public class XLSXResponseWriter extends RawResponseWriter {
   LinkedHashMap<String,String> colNamesMap = new LinkedHashMap<String,String>();
   LinkedHashMap<String,Integer> colWidthsMap = new LinkedHashMap<String,Integer>();
 
@@ -94,19 +94,6 @@ public class XLSXResponseWriter extends RawResponseWriter implements SolrCoreAwa
     } finally {
       w.close();
     }
-  }
-
-  @Override
-  public void inform(SolrCore core) {
-    PluginBag<QueryResponseWriter> writerBag = core.getResponseWriters();
-    for( String writerKey : writerBag.keySet() ) {
-      if( writerBag.get(writerKey) == this ) {
-        //already registered
-        return;
-      }
-    }
-
-    core.registerResponseWriter("xlsx", this);
   }
 
   @Override
