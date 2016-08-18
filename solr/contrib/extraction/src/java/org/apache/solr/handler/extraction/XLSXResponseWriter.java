@@ -14,51 +14,54 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.response;
+package org.apache.solr.handler.extraction;
+
+import java.io.CharArrayWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.apache.lucene.index.IndexableField;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.PluginBag;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.BasicResultContext;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.RawResponseWriter;
+import org.apache.solr.response.ResultContext;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.util.plugin.SolrCoreAware;
 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFCellStyle;
-
-import java.io.IOException;
-import java.io.Writer;
-import java.io.CharArrayWriter;
-import java.io.StringWriter;
-import java.io.PrintWriter;
-import java.io.OutputStream;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-
-/**
- *
- */
-
-public class XLSXResponseWriter extends RawResponseWriter {
+public class XLSXResponseWriter extends RawResponseWriter implements SolrCoreAware {
   LinkedHashMap<String,String> colNamesMap = new LinkedHashMap<String,String>();
   LinkedHashMap<String,Integer> colWidthsMap = new LinkedHashMap<String,Integer>();
 
@@ -91,6 +94,19 @@ public class XLSXResponseWriter extends RawResponseWriter {
     } finally {
       w.close();
     }
+  }
+
+  @Override
+  public void inform(SolrCore core) {
+    PluginBag<QueryResponseWriter> writerBag = core.getResponseWriters();
+    for( String writerKey : writerBag.keySet() ) {
+      if( writerBag.get(writerKey) == this ) {
+        //already registered
+        return;
+      }
+    }
+
+    core.registerResponseWriter("xlsx", this);
   }
 
   @Override
@@ -362,7 +378,11 @@ class XLSXWriter extends TextResponseWriter {
       Object v = val.next();
       if (v instanceof IndexableField) {
         IndexableField f = (IndexableField)v;
-        output.append(f.stringValue() + "; ");
+        if (v instanceof Date) {
+          output.append(((Date) val).toInstant().toString() + "; ");
+        } else {
+          output.append(f.stringValue() + "; ");
+        }
       } else {
         output.append(v.toString() + "; ");
       }

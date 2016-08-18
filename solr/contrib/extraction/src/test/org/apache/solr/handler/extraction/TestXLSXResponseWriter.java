@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.response;
+package org.apache.solr.handler.extraction;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -44,6 +44,8 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.search.SolrReturnFields;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -56,7 +58,7 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-    initCore("solrconfig-xlsxresponsewriter.xml","schema12.xml");
+    initCore("solrconfig.xml","schema.xml",getFile("extraction/solr").getAbsolutePath());
     createIndex();
     //find a reference to the default response writer so we can redirect its output later
     SolrCore testCore = h.getCore();
@@ -64,11 +66,10 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
   }
 
   public static void createIndex() {
-    assertU(adoc("id","1", "foo_i","-1", "foo_s","hi", "foo_l","12345678987654321", "foo_b","false", "foo_f","1.414","foo_d","-1.0E300","foo_dt","2000-01-02T03:04:05Z"));
+    assertU(adoc("id","1", "foo_i","-1", "foo_s","hi", "foo_l","12345678987654321", "foo_b","false", "foo_f","1.414","foo_d","-1.0E300","foo_dt1","2000-01-02T03:04:05Z"));
     assertU(adoc("id","2", "v_ss","hi",  "v_ss","there", "v2_ss","nice", "v2_ss","output", "shouldbeunstored","foo"));
     assertU(adoc("id","3", "shouldbeunstored","foo"));
-    assertU(adoc("id","4", "amount_c", "1.50,EUR"));
-    assertU(adoc("id","5", "store", "12.434,-134.1"));
+    assertU(adoc("id","4", "foo_s1","foo"));
     assertU(commit());
   }
 
@@ -98,9 +99,9 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     assertTrue("All widths read in from solrconfig", writerXlsx.colWidthsMap.size() == 4);
 
     // test our basic types,and that fields come back in the requested order
-    XSSFSheet resultSheet = getWSResultForQuery(req("q","id:1", "wt","xlsx", "fl","id,foo_s,foo_i,foo_l,foo_b,foo_f,foo_d,foo_dt"));
+    XSSFSheet resultSheet = getWSResultForQuery(req("q","id:1", "wt","xlsx", "fl","id,foo_s,foo_i,foo_l,foo_b,foo_f,foo_d,foo_dt1"));
 
-    assertEquals("ID,Foo String,Foo Integer,Foo Long,foo_b,foo_f,foo_d,foo_dt\n1,hi,-1,12345678987654321,false,1.414,-1.0E300,2000-01-02T03:04:05Z\n"
+    assertEquals("ID,Foo String,Foo Integer,Foo Long,foo_b,foo_f,foo_d,foo_dt1\n1,hi,-1,12345678987654321,F,1.414,-1.0E300,2000-01-02T03:04:05Z\n"
         , getStringFromSheet(resultSheet));
 
     resultSheet = getWSResultForQuery(req("q","id:1^0", "wt","xlsx", "fl","id,score,foo_s"));
@@ -116,7 +117,7 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     // test retrieving fields from index
     resultSheet = getWSResultForQuery(req("q","*:*", "wt","xslx", "fl","*,score"));
     String result = getStringFromSheet(resultSheet);
-    for (String field : "ID,Foo String,Foo Integer,Foo Long,foo_b,foo_f,foo_d,foo_dt,v_ss,v2_ss,score".split(",")) {
+    for (String field : "ID,Foo String,Foo Integer,Foo Long,foo_b,foo_f,foo_d,foo_dt1,v_ss,v2_ss,score".split(",")) {
       assertTrue(result.indexOf(field) >= 0);
     }
 
@@ -134,7 +135,7 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     d.addField("foo_b",false);
     d.addField("foo_f",1.414f);
     d.addField("foo_d",-1.0E300);
-    d.addField("foo_dt", new Date(Instant.parse("2000-01-02T03:04:05Z").toEpochMilli()));
+    d.addField("foo_dt1", new Date(Instant.parse("2000-01-02T03:04:05Z").toEpochMilli()));
     d.addField("score", "2.718");
 
     d = new SolrDocument();
@@ -170,7 +171,7 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     rsp.setReturnFields( new SolrReturnFields("*", req) );
 
     resultSheet = getWSResultForQuery(req, rsp);
-    assertEquals("ID,Foo Integer,Foo String,Foo Long,foo_b,foo_f,foo_d,foo_dt,v_ss,v2_ss\n" +
+    assertEquals("ID,Foo Integer,Foo String,Foo Long,foo_b,foo_f,foo_d,foo_dt1,v_ss,v2_ss\n" +
         "1,-1,hi,12345678987654321L,false,1.414,-1.0E300,2000-01-02T03:04:05Z,,\n" +
         "2,,,,,,,,hi; there,nice; output\n",
       getStringFromSheet(resultSheet));
@@ -185,22 +186,22 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     // Test field globs
     rsp.setReturnFields( new SolrReturnFields("id,foo*", req) );
     resultSheet = getWSResultForQuery(req, rsp);
-    assertEquals("ID,Foo Integer,Foo String,Foo Long,foo_b,foo_f,foo_d,foo_dt\n" +
+    assertEquals("ID,Foo Integer,Foo String,Foo Long,foo_b,foo_f,foo_d,foo_dt1\n" +
         "1,-1,hi,12345678987654321L,false,1.414,-1.0E300,2000-01-02T03:04:05Z\n" +
         "2,,,,,,,\n",
        getStringFromSheet(resultSheet));
 
     rsp.setReturnFields( new SolrReturnFields("id,*_d*", req) );
     resultSheet = getWSResultForQuery(req, rsp);
-    assertEquals("ID,foo_d,foo_dt\n" +
+    assertEquals("ID,foo_d,foo_dt1\n" +
         "1,-1.0E300,2000-01-02T03:04:05Z\n" +
         "2,,\n",
       getStringFromSheet(resultSheet));
 
     // Test function queries
-    rsp.setReturnFields( new SolrReturnFields("sum(1,1),id,exists(foo_i),div(9,1),foo_f", req) );
+    rsp.setReturnFields( new SolrReturnFields("sum(1,1),id,exists(foo_s1),div(9,1),foo_f", req) );
     resultSheet = getWSResultForQuery(req, rsp);
-    assertEquals("sum(1,1),ID,exists(foo_i),div(9,1),foo_f\n" +
+    assertEquals("sum(1,1),ID,exists(foo_s1),div(9,1),foo_f\n" +
         ",1,,,1.414\n" +
         ",2,,,\n",
         getStringFromSheet(resultSheet));
@@ -231,21 +232,12 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     assertEquals("1,0,hi", lines[1] );
 
     //assertions specific to multiple pseudofields functions like abs, div, exists, etc.. (SOLR-5423)
-    String funcText = getStringFromSheet(getWSResultForQuery(req("q","*", "wt","xlsx", "fl","XXX:id,YYY:exists(foo_i),exists(shouldbeunstored)")));
+    String funcText = getStringFromSheet(getWSResultForQuery(req("q","*", "wt","xlsx", "fl","XXX:id,YYY:exists(foo_s1)")));
     String[] funcLines = funcText.split("\n");
-    assertEquals(6, funcLines.length);
-    assertEquals("XXX,YYY,exists(shouldbeunstored)", funcLines[0] );
-    assertEquals("1,true,false", funcLines[1] );
-    assertEquals("3,false,true", funcLines[3] );
-    
-    
-    //assertions specific to single function without alias (SOLR-5423)
-    String singleFuncText = getStringFromSheet(getWSResultForQuery(req("q","*", "wt","xlsx", "fl","exists(shouldbeunstored),XXX:id")));
-    String[] singleFuncLines = singleFuncText.split("\n");
-    assertEquals(6, singleFuncLines.length);
-    assertEquals("exists(shouldbeunstored),XXX", singleFuncLines[0] );
-    assertEquals("false,1", singleFuncLines[1] );
-    assertEquals("true,3", singleFuncLines[3] );
+    assertEquals(5, funcLines.length);
+    assertEquals("XXX,YYY", funcLines[0] );
+    assertEquals("1,false", funcLines[1] );
+    assertEquals("3,false", funcLines[3] );
   }
 
   // returns first worksheet as XLSXResponseWriter only returns one sheet
