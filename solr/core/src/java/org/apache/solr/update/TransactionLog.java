@@ -87,7 +87,7 @@ public class TransactionLog implements Closeable {
   int snapshot_numRecords;
 
   // write a BytesRef as a byte array
-  JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
+  static final JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
     @Override
     public Object resolve(Object o, JavaBinCodec codec) throws IOException {
       if (o instanceof BytesRef) {
