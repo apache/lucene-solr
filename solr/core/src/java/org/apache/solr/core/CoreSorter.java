@@ -36,7 +36,6 @@ import static java.util.stream.Collectors.toList;
  * This is a utility class that sorts cores in such a way as to minimize other cores
  * waiting for replicas in the current node. This helps in avoiding leaderVote timeouts
  * happening in other nodes of the cluster
- *
  */
 public class CoreSorter {
   Map<String, CountsForEachShard> shardsVsReplicaCounts = new LinkedHashMap<>();
