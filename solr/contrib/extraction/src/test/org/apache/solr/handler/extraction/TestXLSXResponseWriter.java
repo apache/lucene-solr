@@ -44,6 +44,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.search.SolrReturnFields;
@@ -57,12 +58,17 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty("enable.update.log", "false");
     initCore("solrconfig.xml","schema.xml",getFile("extraction/solr").getAbsolutePath());
     createIndex();
     //find a reference to the default response writer so we can redirect its output later
     SolrCore testCore = h.getCore();
-    writerXlsx = (XLSXResponseWriter)testCore.getQueryResponseWriter("xlsx");
+    QueryResponseWriter writer = testCore.getQueryResponseWriter("xlsx");
+    if (writer instanceof XLSXResponseWriter) {
+      writerXlsx = (XLSXResponseWriter) testCore.getQueryResponseWriter("xlsx");
+    } else {
+      throw new Exception("XLSXResponseWriter not registered - are you using the right solrconfig?");
+    }
   }
 
   public static void createIndex() {
