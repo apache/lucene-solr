@@ -45,11 +45,8 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.PluginBag;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BasicResultContext;
-import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
@@ -59,7 +56,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
-import org.apache.solr.util.plugin.SolrCoreAware;
 
 public class XLSXResponseWriter extends RawResponseWriter {
   LinkedHashMap<String,String> colNamesMap = new LinkedHashMap<String,String>();
