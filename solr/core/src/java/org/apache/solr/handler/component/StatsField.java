@@ -29,8 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.FieldType.LegacyNumericType;
+import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -637,13 +636,13 @@ public class StatsField {
         return null;
       }
 
-      final FieldType.LegacyNumericType hashableNumType = getHashableNumericType(field);
+      final LegacyNumericType hashableNumType = getHashableNumericType(field);
 
       // some sane defaults
       int log2m = 13;   // roughly equivilent to "cardinality='0.33'"
       int regwidth = 6; // with decent hash, this is plenty for all valid long hashes
 
-      if (LegacyNumericType.FLOAT.equals(hashableNumType) || FieldType.LegacyNumericType.INT.equals(hashableNumType)) {
+      if (LegacyNumericType.FLOAT.equals(hashableNumType) || LegacyNumericType.INT.equals(hashableNumType)) {
         // for 32bit values, we can adjust our default regwidth down a bit
         regwidth--;
 
@@ -707,7 +706,7 @@ public class StatsField {
       if (null == hasher) {
         // if this is a function, or a non Long field, pre-hashed is invalid
         // NOTE: we ignore hashableNumType - it's LONG for non numerics like Strings
-        if (null == field || !FieldType.LegacyNumericType.LONG.equals(field.getType().getNumericType())) {
+        if (null == field || !LegacyNumericType.LONG.equals(field.getType().getNumericType())) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "hllPreHashed is only supported with Long based fields");
         }
       }
@@ -740,16 +739,16 @@ public class StatsField {
   }
 
   /**
-   * Returns the effective {@link org.apache.lucene.document.FieldType.LegacyNumericType} for the field for the purposes of hash values.
+   * Returns the effective {@link LegacyNumericType} for the field for the purposes of hash values.
    * ie: If the field has an explict LegacyNumericType that is returned; If the field has no explicit
-   * LegacyNumericType then {@link org.apache.lucene.document.FieldType.LegacyNumericType#LONG} is returned;  If field is null, then
-   * {@link org.apache.lucene.document.FieldType.LegacyNumericType#FLOAT} is assumed for ValueSource.
+   * LegacyNumericType then {@link LegacyNumericType#LONG} is returned;  If field is null, then
+   * {@link LegacyNumericType#FLOAT} is assumed for ValueSource.
    */
   private static LegacyNumericType getHashableNumericType(SchemaField field) {
     if (null == field) {
       return LegacyNumericType.FLOAT;
     }
     final LegacyNumericType result = field.getType().getNumericType();
-    return null == result ? FieldType.LegacyNumericType.LONG : result;
+    return null == result ? LegacyNumericType.LONG : result;
   }
 }

@@ -771,7 +771,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       }
       ii = new SlowOpeningMockIndexInputWrapper(this, name, delegateInput);
     } else {
-      ii = new MockIndexInputWrapper(this, name, delegateInput);
+      ii = new MockIndexInputWrapper(this, name, delegateInput, null);
     }
     addFileHandle(ii, name, Handle.Input);
     return ii;

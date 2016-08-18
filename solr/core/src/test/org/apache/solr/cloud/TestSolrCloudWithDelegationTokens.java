@@ -30,10 +30,10 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import static org.apache.solr.security.HttpParamDelegationTokenAuthenticationHandler.USER_PARAM;
+import static org.apache.solr.security.HttpParamDelegationTokenPlugin.USER_PARAM;
 
 import org.apache.http.HttpStatus;
-import org.apache.solr.security.HttpParamDelegationTokenAuthenticationHandler;
+import org.apache.solr.security.HttpParamDelegationTokenPlugin;
 import org.apache.solr.security.KerberosPlugin;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -59,10 +59,8 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void startup() throws Exception {
-    System.setProperty("authenticationPlugin", KerberosPlugin.class.getName());
+    System.setProperty("authenticationPlugin", HttpParamDelegationTokenPlugin.class.getName());
     System.setProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED, "true");
-    System.setProperty(KerberosPlugin.AUTH_HANDLER_PARAM,
-        HttpParamDelegationTokenAuthenticationHandler.class.getName());
     System.setProperty("solr.kerberos.cookie.domain", "127.0.0.1");
 
     miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
@@ -88,7 +86,6 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     solrClientSecondary = null;
     System.clearProperty("authenticationPlugin");
     System.clearProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED);
-    System.clearProperty(KerberosPlugin.AUTH_HANDLER_PARAM);
     System.clearProperty("solr.kerberos.cookie.domain");
   }
 

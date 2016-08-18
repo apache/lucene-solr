@@ -38,6 +38,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.DocValuesRewriteMethod;
@@ -621,7 +622,7 @@ public abstract class FieldType extends FieldProperties {
 
   /** Return the numeric type of this field, or null if this field is not a
    *  numeric field. */
-  public org.apache.lucene.document.FieldType.LegacyNumericType getNumericType() {
+  public LegacyNumericType getNumericType() {
     return null;
   }
 

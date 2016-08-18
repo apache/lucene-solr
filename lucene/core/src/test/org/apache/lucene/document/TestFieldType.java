@@ -18,7 +18,6 @@ package org.apache.lucene.document;
 
 
 import java.lang.reflect.Method;
-import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.PointValues;
@@ -57,14 +56,6 @@ public class TestFieldType extends LuceneTestCase {
     FieldType ft7 = new FieldType();
     ft7.setOmitNorms(true);
     assertFalse(ft7.equals(ft));
-    
-    FieldType ft8 = new FieldType();
-    ft8.setNumericType(LegacyNumericType.DOUBLE);
-    assertFalse(ft8.equals(ft));
-    
-    FieldType ft9 = new FieldType();
-    ft9.setNumericPrecisionStep(3);
-    assertFalse(ft9.equals(ft));
     
     FieldType ft10 = new FieldType();
     ft10.setStoreTermVectors(true);

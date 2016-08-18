@@ -14,11 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.document;
+package org.apache.lucene.legacy;
 
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.util.LegacyNumericUtils;
 
 /**
  * <p>
@@ -49,7 +50,7 @@ import org.apache.lucene.util.LegacyNumericUtils;
  * LegacyDoubleField}.
  *
  * <p>To perform range querying or filtering against a
- * <code>LegacyIntField</code>, use {@link org.apache.lucene.search.LegacyNumericRangeQuery}.
+ * <code>LegacyIntField</code>, use {@link org.apache.lucene.legacy.LegacyNumericRangeQuery}.
  * To sort according to a
  * <code>LegacyIntField</code>, use the normal numeric sort types, eg
  * {@link org.apache.lucene.search.SortField.Type#INT}. <code>LegacyIntField</code>
@@ -79,11 +80,11 @@ import org.apache.lucene.util.LegacyNumericUtils;
  * but may result in faster range search performance.  The
  * default value, 8, was selected for a reasonable tradeoff
  * of disk space consumption versus performance.  You can
- * create a custom {@link FieldType} and invoke the {@link
- * FieldType#setNumericPrecisionStep} method if you'd
+ * create a custom {@link LegacyFieldType} and invoke the {@link
+ * LegacyFieldType#setNumericPrecisionStep} method if you'd
  * like to change the value.  Note that you must also
  * specify a congruent value when creating {@link
- * org.apache.lucene.search.LegacyNumericRangeQuery}.
+ * org.apache.lucene.legacy.LegacyNumericRangeQuery}.
  * For low cardinality fields larger precision steps are good.
  * If the cardinality is &lt; 100, it is fair
  * to use {@link Integer#MAX_VALUE}, which produces one
@@ -91,9 +92,9 @@ import org.apache.lucene.util.LegacyNumericUtils;
  *
  * <p>For more information on the internals of numeric trie
  * indexing, including the <a
- * href="../search/LegacyNumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
- * configuration, see {@link org.apache.lucene.search.LegacyNumericRangeQuery}. The format of
- * indexed values is described in {@link org.apache.lucene.util.LegacyNumericUtils}.
+ * href="LegacyNumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
+ * configuration, see {@link org.apache.lucene.legacy.LegacyNumericRangeQuery}. The format of
+ * indexed values is described in {@link org.apache.lucene.legacy.LegacyNumericUtils}.
  *
  * <p>If you only need to sort by numeric value, and never
  * run range querying/filtering, you can index using a
@@ -101,7 +102,7 @@ import org.apache.lucene.util.LegacyNumericUtils;
  * This will minimize disk space consumed. </p>
  *
  * <p>More advanced users can instead use {@link
- * org.apache.lucene.analysis.LegacyNumericTokenStream} directly, when indexing numbers. This
+ * org.apache.lucene.legacy.LegacyNumericTokenStream} directly, when indexing numbers. This
  * class is a wrapper around this token stream type for
  * easier, more intuitive usage.</p>
  *
@@ -111,18 +112,18 @@ import org.apache.lucene.util.LegacyNumericUtils;
  */
 
 @Deprecated
-public final class LegacyIntField extends Field {
+public final class LegacyIntField extends LegacyField {
   
   /** 
    * Type for an LegacyIntField that is not stored:
    * normalization factors, frequencies, and positions are omitted.
    */
-  public static final FieldType TYPE_NOT_STORED = new FieldType();
+  public static final LegacyFieldType TYPE_NOT_STORED = new LegacyFieldType();
   static {
     TYPE_NOT_STORED.setTokenized(true);
     TYPE_NOT_STORED.setOmitNorms(true);
     TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS);
-    TYPE_NOT_STORED.setNumericType(FieldType.LegacyNumericType.INT);
+    TYPE_NOT_STORED.setNumericType(LegacyNumericType.INT);
     TYPE_NOT_STORED.setNumericPrecisionStep(LegacyNumericUtils.PRECISION_STEP_DEFAULT_32);
     TYPE_NOT_STORED.freeze();
   }
@@ -131,12 +132,12 @@ public final class LegacyIntField extends Field {
    * Type for a stored LegacyIntField:
    * normalization factors, frequencies, and positions are omitted.
    */
-  public static final FieldType TYPE_STORED = new FieldType();
+  public static final LegacyFieldType TYPE_STORED = new LegacyFieldType();
   static {
     TYPE_STORED.setTokenized(true);
     TYPE_STORED.setOmitNorms(true);
     TYPE_STORED.setIndexOptions(IndexOptions.DOCS);
-    TYPE_STORED.setNumericType(FieldType.LegacyNumericType.INT);
+    TYPE_STORED.setNumericType(LegacyNumericType.INT);
     TYPE_STORED.setNumericPrecisionStep(LegacyNumericUtils.PRECISION_STEP_DEFAULT_32);
     TYPE_STORED.setStored(true);
     TYPE_STORED.freeze();
@@ -144,7 +145,7 @@ public final class LegacyIntField extends Field {
 
   /** Creates a stored or un-stored LegacyIntField with the provided value
    *  and default <code>precisionStep</code> {@link
-   *  org.apache.lucene.util.LegacyNumericUtils#PRECISION_STEP_DEFAULT_32} (8).
+   *  org.apache.lucene.legacy.LegacyNumericUtils#PRECISION_STEP_DEFAULT_32} (8).
    *  @param name field name
    *  @param value 32-bit integer value
    *  @param stored Store.YES if the content should also be stored
@@ -156,17 +157,17 @@ public final class LegacyIntField extends Field {
   }
   
   /** Expert: allows you to customize the {@link
-   *  FieldType}. 
+   *  LegacyFieldType}. 
    *  @param name field name
    *  @param value 32-bit integer value
-   *  @param type customized field type: must have {@link FieldType#numericType()}
-   *         of {@link org.apache.lucene.document.FieldType.LegacyNumericType#INT}.
+   *  @param type customized field type: must have {@link LegacyFieldType#numericType()}
+   *         of {@link LegacyNumericType#INT}.
    *  @throws IllegalArgumentException if the field name or type is null, or
    *          if the field type does not have a INT numericType()
    */
-  public LegacyIntField(String name, int value, FieldType type) {
+  public LegacyIntField(String name, int value, LegacyFieldType type) {
     super(name, type);
-    if (type.numericType() != FieldType.LegacyNumericType.INT) {
+    if (type.numericType() != LegacyNumericType.INT) {
       throw new IllegalArgumentException("type.numericType() must be INT but got " + type.numericType());
     }
     fieldsData = Integer.valueOf(value);

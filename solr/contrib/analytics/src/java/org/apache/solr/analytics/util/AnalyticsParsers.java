@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 
+import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieDateField;

@@ -38,6 +38,9 @@ API Changes
 
 New Features
 
+* LUCENE-7388: Add point based IntRangeField, FloatRangeField, LongRangeField along with
+  supporting queries and tests (Nick Knize)
+
 * LUCENE-7381: Add point based DoubleRangeField and RangeFieldQuery for
   indexing and querying on Ranges up to 4 dimensions (Nick Knize)
 
@@ -84,6 +87,9 @@ Bug Fixes
 
 * LUCENE-7391: Fix performance regression in MemoryIndex's fields() introduced
   in Lucene 6. (Steve Mason via David Smiley)
+
+* SOLR-9413: Fix analysis/kuromoji's CSVUtil.quoteEscape logic, add TestCSVUtil test.
+  (AppChecker, Christine Poerschke)
 
 Improvements
 
@@ -142,6 +148,13 @@ Improvements
   because the ICU word-breaking algorithm has some issues. This allows for the previous 
   tokenization used before Lucene 5. (AM, Robert Muir)
 
+* LUCENE-7409: Changed MMapDirectory's unmapping to work safer, but still with
+  no guarantees. This uses a store-store barrier and yields the current thread
+  before unmapping to allow in-flight requests to finish. The new code no longer
+  uses WeakIdentityMap as it delegates all ByteBuffer reads throgh a new
+  ByteBufferGuard wrapper that is shared between all ByteBufferIndexInput clones.
+  (Robert Muir, Uwe Schindler)
+
 Optimizations
 
 * LUCENE-7330, LUCENE-7339: Speed up conjunction queries. (Adrien Grand)
@@ -156,7 +169,11 @@ Optimizations
 * LUCENE-7311: Cached term queries do not seek the terms dictionary anymore.
   (Adrien Grand)
 
-* LUCENE-7396: Faster flush of points. (Adrien Grand, Mike McCandless)
+* LUCENE-7396, LUCENE-7399: Faster flush of points.
+  (Adrien Grand, Mike McCandless)
+
+* LUCENE-7406: Automaton and PrefixQuery tweaks (fewer object (re)allocations).
+  (Christine Poerschke)
 
 Other
 

@@ -321,7 +321,7 @@ public class SimpleFacets {
   public void getFacetQueryCount(ParsedParams parsed, NamedList<Integer> res) throws SyntaxError, IOException {
     // TODO: slight optimization would prevent double-parsing of any localParams
     // TODO: SOLR-7753
-    Query qobj = QParser.getParser(parsed.facetValue, null, req).getQuery();
+    Query qobj = QParser.getParser(parsed.facetValue, req).getQuery();
 
     if (qobj == null) {
       res.add(parsed.key, 0);

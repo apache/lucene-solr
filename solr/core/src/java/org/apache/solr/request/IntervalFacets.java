@@ -25,7 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
-import org.apache.lucene.document.FieldType.LegacyNumericType;
+import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;

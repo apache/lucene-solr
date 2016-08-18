@@ -223,7 +223,7 @@ public class Grouping {
   }
 
   public void addQueryCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
-    QParser parser = QParser.getParser(groupByStr, null, request);
+    QParser parser = QParser.getParser(groupByStr, request);
     Query gq = parser.getQuery();
     Grouping.CommandQuery gc = new CommandQuery();
     gc.query = gq;

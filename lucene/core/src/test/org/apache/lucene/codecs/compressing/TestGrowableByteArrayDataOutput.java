@@ -58,7 +58,7 @@ public class TestGrowableByteArrayDataOutput extends LuceneTestCase {
   public void testWriteLargeStrings() throws Exception {
     int minSizeForDoublePass = GrowableByteArrayDataOutput.MIN_UTF8_SIZE_TO_ENABLE_DOUBLE_PASS_ENCODING;
 
-    int num = atLeast(1000);
+    int num = atLeast(100);
     for (int i = 0; i < num; i++) {
       String unicode = TestUtil.randomRealisticUnicodeString(random(), minSizeForDoublePass, 10 * minSizeForDoublePass);
       byte[] utf8 = new byte[unicode.length() * UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR];

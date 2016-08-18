@@ -295,7 +295,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
-      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS);
+      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, VERSION_FIELD);
     
     CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
     

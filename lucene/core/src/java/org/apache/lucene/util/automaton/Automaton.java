@@ -357,13 +357,13 @@ public class Automaton implements Accountable {
   }
 
   private void growStates() {
-    if (nextState+2 >= states.length) {
+    if (nextState+2 > states.length) {
       states = ArrayUtil.grow(states, nextState+2);
     }
   }
 
   private void growTransitions() {
-    if (nextTransition+3 >= transitions.length) {
+    if (nextTransition+3 > transitions.length) {
       transitions = ArrayUtil.grow(transitions, nextTransition+3);
     }
   }

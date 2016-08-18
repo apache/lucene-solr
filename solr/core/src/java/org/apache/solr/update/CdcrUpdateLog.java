@@ -151,7 +151,12 @@ public class CdcrUpdateLog extends UpdateLog {
     if (id != -1) return id;
     if (tlogFiles.length == 0) return -1;
     String last = tlogFiles[tlogFiles.length - 1];
-    return Long.parseLong(last.substring(TLOG_NAME.length() + 1, last.lastIndexOf('.')));
+    if (TLOG_NAME.length() + 1 > last.lastIndexOf('.'))  {
+      // old tlog created by default UpdateLog impl
+      return Long.parseLong(last.substring(TLOG_NAME.length() + 1));
+    } else  {
+      return Long.parseLong(last.substring(TLOG_NAME.length() + 1, last.lastIndexOf('.')));
+    }
   }
 
   @Override

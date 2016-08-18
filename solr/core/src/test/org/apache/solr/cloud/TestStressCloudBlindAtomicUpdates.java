@@ -97,6 +97,14 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
    * larger index is used (so tested docs are more likeely to be spread out in multiple segments)
    */
   private static int DOC_ID_INCR;
+
+  /**
+   * The TestInjection configuration to be used for the current test method.
+   *
+   * Value is set by {@link #clearCloudCollection}, and used by {@link #startTestInjection} -- but only once 
+   * initial index seeding has finished (we're focusing on testing atomic updates, not basic indexing).
+   */
+  private String testInjection = null;
   
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {
@@ -161,9 +169,17 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     assertEquals(0, CLOUD_CLIENT.optimize().getStatus());
 
     TestInjection.reset();
-
+    
     final int injectionPercentage = (int)Math.ceil(atLeast(1) / 2);
-    final String testInjection = usually() ? "false:0" : ("true:" + injectionPercentage);
+    testInjection = usually() ? "false:0" : ("true:" + injectionPercentage);
+  }
+
+  /**
+   * Assigns {@link #testInjection} to various TestInjection variables.  Calling this 
+   * method multiple times in the same method should always result in the same setting being applied 
+   * (even if {@link TestInjection#reset} was called in between.
+   */
+  private void startTestInjection() {
     log.info("TestInjection: fail replica, update pause, tlog pauses: " + testInjection);
     TestInjection.failReplicaRequests = testInjection;
     TestInjection.updateLogReplayRandomPause = testInjection;
@@ -249,10 +265,13 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     
     
     // sanity check index contents
+    waitForRecoveriesToFinish(CLOUD_CLIENT);
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
     assertEquals(numDocsInIndex,
                  CLOUD_CLIENT.query(params("q", "*:*")).getResults().getNumFound());
 
+    startTestInjection();
+    
     // spin up parallel workers to hammer updates
     List<Future<Worker>> results = new ArrayList<Future<Worker>>(NUM_THREADS);
     for (int workerId = 0; workerId < NUM_THREADS; workerId++) {
@@ -301,7 +320,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       // sometimes include an fq on the expected value to ensure the updated values
       // are "visible" for searching
       final SolrParams p = (0 != TestUtil.nextInt(random(), 0,15))
-        ? params() : params("fq",numericFieldName + ":" + expect);
+        ? params() : params("fq",numericFieldName + ":\"" + expect + "\"");
       SolrDocument doc = getRandClient(random()).getById(docId, p);
       
       final boolean foundWithFilter = (null != doc);

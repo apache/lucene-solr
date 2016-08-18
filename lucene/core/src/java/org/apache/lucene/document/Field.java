@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.LegacyNumericTokenStream;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -257,7 +256,7 @@ public class Field implements IndexableField {
   /**
    * The value of the field as a String, or null. If null, the Reader value or
    * binary value is used. Exactly one of stringValue(), readerValue(), and
-   * getBinaryValue() must be set.
+   * binaryValue() must be set.
    */
   @Override
   public String stringValue() {
@@ -271,7 +270,7 @@ public class Field implements IndexableField {
   /**
    * The value of the field as a Reader, or null. If null, the String value or
    * binary value is used. Exactly one of stringValue(), readerValue(), and
-   * getBinaryValue() must be set.
+   * binaryValue() must be set.
    */
   @Override
   public Reader readerValue() {
@@ -420,14 +419,11 @@ public class Field implements IndexableField {
   /**
    * Expert: sets the token stream to be used for indexing and causes
    * isIndexed() and isTokenized() to return true. May be combined with stored
-   * values from stringValue() or getBinaryValue()
+   * values from stringValue() or binaryValue()
    */
   public void setTokenStream(TokenStream tokenStream) {
     if (type.indexOptions() == IndexOptions.NONE || !type.tokenized()) {
       throw new IllegalArgumentException("TokenStream fields must be indexed and tokenized");
-    }
-    if (type.numericType() != null) {
-      throw new IllegalArgumentException("cannot set private TokenStream on numeric fields");
     }
     this.tokenStream = tokenStream;
   }
@@ -509,35 +505,6 @@ public class Field implements IndexableField {
     if (fieldType().indexOptions() == IndexOptions.NONE) {
       // Not indexed
       return null;
-    }
-
-    final FieldType.LegacyNumericType numericType = fieldType().numericType();
-    if (numericType != null) {
-      if (!(reuse instanceof LegacyNumericTokenStream && ((LegacyNumericTokenStream)reuse).getPrecisionStep() == type.numericPrecisionStep())) {
-        // lazy init the TokenStream as it is heavy to instantiate
-        // (attributes,...) if not needed (stored field loading)
-        reuse = new LegacyNumericTokenStream(type.numericPrecisionStep());
-      }
-      final LegacyNumericTokenStream nts = (LegacyNumericTokenStream) reuse;
-      // initialize value in TokenStream
-      final Number val = (Number) fieldsData;
-      switch (numericType) {
-      case INT:
-        nts.setIntValue(val.intValue());
-        break;
-      case LONG:
-        nts.setLongValue(val.longValue());
-        break;
-      case FLOAT:
-        nts.setFloatValue(val.floatValue());
-        break;
-      case DOUBLE:
-        nts.setDoubleValue(val.doubleValue());
-        break;
-      default:
-        throw new AssertionError("Should never get here");
-      }
-      return reuse;
     }
 
     if (!fieldType().tokenized()) {

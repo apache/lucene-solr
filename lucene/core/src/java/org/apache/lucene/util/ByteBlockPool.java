@@ -379,6 +379,27 @@ public final class ByteBlockPool {
     } while (true);
   }
 
+  /**
+   * Set the given {@link BytesRef} so that its content is equal to the
+   * {@code ref.length} bytes starting at {@code offset}. Most of the time this
+   * method will set pointers to internal data-structures. However, in case a
+   * value crosses a boundary, a fresh copy will be returned.
+   * On the contrary to {@link #setBytesRef(BytesRef, int)}, this does not
+   * expect the length to be encoded with the data.
+   */
+  public void setRawBytesRef(BytesRef ref, final long offset) {
+    int bufferIndex = (int) (offset >> BYTE_BLOCK_SHIFT);
+    int pos = (int) (offset & BYTE_BLOCK_MASK);
+    if (pos + ref.length <= BYTE_BLOCK_SIZE) {
+      ref.bytes = buffers[bufferIndex];
+      ref.offset = pos;
+    } else {
+      ref.bytes = new byte[ref.length];
+      ref.offset = 0;
+      readBytes(offset, ref.bytes, 0, ref.length);
+    }
+  }
+
   /** Read a single byte at the given {@code offset}. */
   public byte readByte(long offset) {
     int bufferIndex = (int) (offset >> BYTE_BLOCK_SHIFT);

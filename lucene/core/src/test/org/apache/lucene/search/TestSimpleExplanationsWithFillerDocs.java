@@ -23,6 +23,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 
 import org.junit.BeforeClass;
 import org.junit.Assume;
@@ -34,6 +35,7 @@ import org.junit.Assume;
  * all use terms from same set of source data as our regular docs (to emphasis the DocFreq factor in scoring), 
  * in which case the queries will be wrapped so they can be excluded.
  */
+@Slow // can this be sped up to be non-slow? filler docs make it quite a bit slower and many test methods...
 public class TestSimpleExplanationsWithFillerDocs extends TestSimpleExplanations {
 
   /** num of empty docs injected between every doc in the index */

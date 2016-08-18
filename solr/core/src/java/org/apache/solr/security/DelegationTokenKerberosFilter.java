@@ -18,6 +18,7 @@ package org.apache.solr.security;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -36,8 +37,11 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationFilter;
+import org.apache.hadoop.security.token.delegation.web.HttpUserGroupInformation;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkACLProvider;
@@ -62,6 +66,27 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
     super.init(conf);
   }
 
+  /**
+   * Return the ProxyUser Configuration.  FilterConfig properties beginning with
+   * "solr.impersonator.user.name" will be added to the configuration.
+   */
+  @Override
+  protected Configuration getProxyuserConfiguration(FilterConfig filterConf)
+      throws ServletException {
+    Configuration conf = new Configuration(false);
+
+    Enumeration<?> names = filterConf.getInitParameterNames();
+    while (names.hasMoreElements()) {
+      String name = (String) names.nextElement();
+      if (name.startsWith(KerberosPlugin.IMPERSONATOR_PREFIX)) {
+        String value = filterConf.getInitParameter(name);
+        conf.set(PROXYUSER_PREFIX + "." + name.substring(KerberosPlugin.IMPERSONATOR_PREFIX.length()), value);
+        conf.set(name, value);
+      }
+    }
+    return conf;
+  }
+
   @Override
   public void doFilter(ServletRequest request, ServletResponse response,
       FilterChain filterChain) throws IOException, ServletException {
@@ -76,7 +101,26 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
         return nonNullQueryString;
       }
     };
-    super.doFilter(requestNonNullQueryString, response, filterChain);
+
+    // include Impersonator User Name in case someone (e.g. logger) wants it
+    FilterChain filterChainWrapper = new FilterChain() {
+      @Override
+      public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse)
+          throws IOException, ServletException {
+        HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
+
+        UserGroupInformation ugi = HttpUserGroupInformation.get();
+        if (ugi != null && ugi.getAuthenticationMethod() == UserGroupInformation.AuthenticationMethod.PROXY) {
+          UserGroupInformation realUserUgi = ugi.getRealUser();
+          if (realUserUgi != null) {
+            httpRequest.setAttribute(KerberosPlugin.IMPERSONATOR_USER_NAME, realUserUgi.getShortUserName());
+          }
+        }
+        filterChain.doFilter(servletRequest, servletResponse);
+      }
+    };
+
+    super.doFilter(requestNonNullQueryString, response, filterChainWrapper);
   }
 
   @Override

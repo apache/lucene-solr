@@ -34,6 +34,8 @@ public abstract class IntroSelector extends Selector {
   }
 
   // heap sort
+  // TODO: use median of median instead to have linear worst-case rather than
+  // n*log(n)
   void slowSelect(int from, int to, int k) {
     new Sorter() {
 
