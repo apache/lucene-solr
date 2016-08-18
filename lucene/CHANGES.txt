@@ -11,6 +11,9 @@ API Changes
 
 New Features
 
+* LUCENE-7388: Add point based IntRangeField, FloatRangeField, LongRangeField along with
+  supporting queries and tests (Nick Knize)
+
 * LUCENE-7381: Add point based DoubleRangeField and RangeFieldQuery for
   indexing and querying on Ranges up to 4 dimensions (Nick Knize)
 
@@ -68,6 +71,9 @@ Bug Fixes
   norm and coordination factor using a default similarity added as ctor param.
   (Uwe Schindler, Sascha Markus)
 
+* SOLR-9413: Fix analysis/kuromoji's CSVUtil.quoteEscape logic, add TestCSVUtil test.
+  (AppChecker, Christine Poerschke)
+
 Improvements
 
 * LUCENE-7323: Compound file writing now verifies the incoming
@@ -124,6 +130,13 @@ Improvements
 * LUCENE-7393: Add ICUTokenizer option to parse Myanmar text as syllables instead of words,
   because the ICU word-breaking algorithm has some issues. This allows for the previous 
   tokenization used before Lucene 5. (AM, Robert Muir)
+
+* LUCENE-7409: Changed MMapDirectory's unmapping to work safer, but still with
+  no guarantees. This uses a store-store barrier and yields the current thread
+  before unmapping to allow in-flight requests to finish. The new code no longer
+  uses WeakIdentityMap as it delegates all ByteBuffer reads throgh a new
+  ByteBufferGuard wrapper that is shared between all ByteBufferIndexInput clones.
+  (Robert Muir, Uwe Schindler)
 
 Optimizations
 

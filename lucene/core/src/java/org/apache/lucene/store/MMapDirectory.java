@@ -36,7 +36,7 @@ import java.util.concurrent.Future;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 
-import org.apache.lucene.store.ByteBufferIndexInput.BufferCleaner;
+import org.apache.lucene.store.ByteBufferGuard.BufferCleaner;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.SuppressForbidden;
 
@@ -240,7 +240,7 @@ public class MMapDirectory extends FSDirectory {
       final boolean useUnmap = getUseUnmap();
       return ByteBufferIndexInput.newInstance(resourceDescription,
           map(resourceDescription, c, 0, c.size()), 
-          c.size(), chunkSizePower, useUnmap ? CLEANER : null, useUnmap);
+          c.size(), chunkSizePower, new ByteBufferGuard(resourceDescription, useUnmap ? CLEANER : null));
     }
   }
 
@@ -370,7 +370,7 @@ public class MMapDirectory extends FSDirectory {
       final MethodHandle unmapper = filterReturnValue(directBufferCleanerMethod, guardWithTest(nonNullTest, cleanMethod, noop))
           .asType(methodType(void.class, ByteBuffer.class));
       
-      return (BufferCleaner) (ByteBufferIndexInput parent, ByteBuffer buffer) -> {
+      return (BufferCleaner) (String resourceDescription, ByteBuffer buffer) -> {
         if (directBufferClass.isInstance(buffer)) {
           final Throwable error = AccessController.doPrivileged((PrivilegedAction<Throwable>) () -> {
             try {
@@ -381,7 +381,7 @@ public class MMapDirectory extends FSDirectory {
             }
           });
           if (error != null) {
-            throw new IOException("Unable to unmap the mapped buffer: " + parent.toString(), error);
+            throw new IOException("Unable to unmap the mapped buffer: " + resourceDescription, error);
           }
         }
       };

@@ -96,6 +96,9 @@ public interface CollectionParams {
     // but the overseer is aware of these tasks
     MOCK_COLL_TASK(false, LockLevel.COLLECTION),
     MOCK_SHARD_TASK(false, LockLevel.SHARD),
+    //TODO when we have a node level lock use it here
+    REPLACENODE(true, LockLevel.NONE),
+    DELETENODE(true, LockLevel.NONE),
     MOCK_REPLICA_TASK(false, LockLevel.REPLICA)
     ;
     public final boolean isWrite;

@@ -19,6 +19,10 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+
+import org.junit.Ignore;
 
 /**
  * Tests MMapDirectory
@@ -39,4 +43,38 @@ public class TestMmapDirectory extends BaseDirectoryTestCase {
         MMapDirectory.UNMAP_SUPPORTED);
   }
   
+  @Ignore("This test is for JVM testing purposes. There are no guarantees that it may not fail with SIGSEGV!")
+  public void testAceWithThreads() throws Exception {
+    for (int iter = 0; iter < 10; iter++) {
+      Directory dir = getDirectory(createTempDir("testAceWithThreads"));
+      IndexOutput out = dir.createOutput("test", IOContext.DEFAULT);
+      Random random = random();
+      for (int i = 0; i < 8 * 1024 * 1024; i++) {
+        out.writeInt(random.nextInt());
+      }
+      out.close();
+      IndexInput in = dir.openInput("test", IOContext.DEFAULT);
+      IndexInput clone = in.clone();
+      final byte accum[] = new byte[32 * 1024 * 1024];
+      final CountDownLatch shotgun = new CountDownLatch(1);
+      Thread t1 = new Thread(() -> {
+        try {
+          shotgun.await();
+          for (int i = 0; i < 10; i++) {
+            clone.seek(0);
+            clone.readBytes(accum, 0, accum.length);
+          }
+        } catch (IOException | AlreadyClosedException ok) {
+          // OK
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+      });
+      t1.start();
+      shotgun.countDown();
+      in.close();
+      t1.join();
+      dir.close();
+    }
+  }
 }
