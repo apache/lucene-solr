@@ -16,19 +16,19 @@
  */
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.LegacyNumericUtils;
+import org.apache.lucene.legacy.LegacyNumericRangeQuery;
+import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.w3c.dom.Element;
 
 /**
- * Creates a {@link org.apache.lucene.search.LegacyNumericRangeQuery}. The table below specifies the required
+ * Creates a {@link org.apache.lucene.legacy.LegacyNumericRangeQuery}. The table below specifies the required
  * attributes and the defaults if optional attributes are omitted. For more
  * detail on what each of the attributes actually do, consult the documentation
- * for {@link org.apache.lucene.search.LegacyNumericRangeQuery}:
+ * for {@link org.apache.lucene.legacy.LegacyNumericRangeQuery}:
  * <table summary="supported attributes">
  * <tr>
  * <th>Attribute name</th>

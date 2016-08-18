@@ -22,6 +22,7 @@ import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.legacy.LegacyFieldType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.prefix.RandomSpatialOpStrategyTestCase;
@@ -100,7 +101,12 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
     }
     //test we can disable docValues for predicate tests
     if (random().nextBoolean()) {
-      FieldType fieldType = new FieldType(((BBoxStrategy)strategy).getFieldType());
+      FieldType fieldType = ((BBoxStrategy)strategy).getFieldType();
+      if (fieldType instanceof LegacyFieldType) {
+        fieldType = new LegacyFieldType((LegacyFieldType)fieldType);
+      } else {
+        fieldType = new FieldType(fieldType);
+      }
       fieldType.setDocValuesType(DocValuesType.NONE);
       strategy = new BBoxStrategy(ctx, strategy.getFieldName(), fieldType);
     }

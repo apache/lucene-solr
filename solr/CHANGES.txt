@@ -203,6 +203,21 @@ Bug Fixes
 
 * SOLR-9397: Config API does not support adding caches (noble)
 
+* SOLR-9405: ConcurrentModificationException in ZkStateReader.getStateWatchers.
+  (Alan Woodward, Edward Ribeiro, shalin)
+
+* SOLR-9232: Admin UI now fully implements Swap Cores interface (Alexandre Rafalovitch)
+
+* SOLR-8715: Admin UI's Schema screen now works for fields with stored=false and some content indexed (Alexandre Rafalovitch)
+
+* SOLR-8911: In Admin UI, enable scrolling for overflowing Versions and JVM property values (Alexandre Rafalovitch)
+
+* SOLR-9002: Admin UI now correctly displays json and text files in the collection/Files screen (Upayavira, Alexandre Rafalovitch)
+
+* SOLR-8993: Admin UI now correctly supports multiple DIH handler end-points (Upayavira, Alexandre Rafalovitch)
+
+* SOLR-9032: Admin UI now correctly implements Create Alias command (Upayavira, Alexandre Rafalovitch)
+
 Optimizations
 ----------------------
 
@@ -259,6 +274,13 @@ Other Changes
 * SOLR-9367: Improved TestInjection's randomization logic to use LuceneTestCase.random() (hossman)
 
 * SOLR-9331: Remove ReRankQuery's length constructor argument and member. (Christine Poerschke)
+
+* SOLR-9092: For the delete replica command we attempt to send the core admin delete request only
+  if that node is actually up. (Jessica Cheng Mallet, Varun Thacker)
+
+* SOLR-9410: Make ReRankQParserPlugin's private ReRankWeight a public class of its own. (Christine Poerschke)
+
+* SOLR-9404: Refactor move/renames in JSON FacetProcessor and FacetFieldProcessor. (David Smiley)
 
 ==================  6.1.0 ==================
 

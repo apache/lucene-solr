@@ -16,8 +16,7 @@
  */
 package org.apache.lucene.queryparser.flexible.standard.nodes;
 
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.FieldType.LegacyNumericType;
+import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
@@ -57,13 +56,13 @@ public class LegacyNumericRangeQueryNode extends
   private static LegacyNumericType getNumericDataType(Number number) throws QueryNodeException {
     
     if (number instanceof Long) {
-      return FieldType.LegacyNumericType.LONG;
+      return LegacyNumericType.LONG;
     } else if (number instanceof Integer) {
-      return FieldType.LegacyNumericType.INT;
+      return LegacyNumericType.INT;
     } else if (number instanceof Double) {
       return LegacyNumericType.DOUBLE;
     } else if (number instanceof Float) {
-      return FieldType.LegacyNumericType.FLOAT;
+      return LegacyNumericType.FLOAT;
     } else {
       throw new QueryNodeException(
           new MessageImpl(

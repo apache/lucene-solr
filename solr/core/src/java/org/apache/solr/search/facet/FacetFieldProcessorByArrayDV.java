@@ -34,23 +34,22 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.Filter;
 
-class FacetFieldProcessorDV extends FacetFieldProcessorFCBase {
+/**
+ * Grabs values from {@link DocValues}.
+ */
+class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
   static boolean unwrap_singleValued_multiDv = true;  // only set to false for test coverage
 
   boolean multiValuedField;
   SortedSetDocValues si;  // only used for term lookups (for both single and multi-valued)
   MultiDocValues.OrdinalMap ordinalMap = null; // maps per-segment ords to global ords
 
-
-  public FacetFieldProcessorDV(FacetContext fcontext, FacetField freq, SchemaField sf) {
+  FacetFieldProcessorByArrayDV(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);
     multiValuedField = sf.multiValued() || sf.getType().multiValuedFieldCache();
   }
 
-  protected BytesRef lookupOrd(int ord) throws IOException {
-    return si.lookupOrd(ord);
-  }
-
+  @Override
   protected void findStartAndEndOrds() throws IOException {
     if (multiValuedField) {
       si = FieldUtil.getSortedSetDocValues(fcontext.qcontext, sf, null);
@@ -175,16 +174,9 @@ class FacetFieldProcessorDV extends FacetFieldProcessorFCBase {
     reuse = null;  // better GC
   }
 
-  private int[] reuse;
-  private int[] getCountArr(int maxNeeded) {
-    if (reuse == null) {
-      // make the count array large enough for any segment
-      // FUTURE: (optionally) directly use the array of the CountAcc for an optimized index..
-      reuse = new int[(int) si.getValueCount() + 1];
-    } else {
-      Arrays.fill(reuse, 0, maxNeeded, 0);
-    }
-    return reuse;
+  @Override
+  protected BytesRef lookupOrd(int ord) throws IOException {
+    return si.lookupOrd(ord);
   }
 
   private void collectPerSeg(SortedDocValues singleDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
@@ -204,7 +196,6 @@ class FacetFieldProcessorDV extends FacetFieldProcessorFCBase {
       }
     }
   }
-
 
   private void collectPerSeg(SortedSetDocValues multiDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
     int segMax = (int)multiDv.getValueCount();
@@ -227,6 +218,18 @@ class FacetFieldProcessorDV extends FacetFieldProcessorFCBase {
         countAcc.incrementCount(slot, segCount);
       }
     }
+  }
+
+  private int[] reuse;
+  private int[] getCountArr(int maxNeeded) {
+    if (reuse == null) {
+      // make the count array large enough for any segment
+      // FUTURE: (optionally) directly use the array of the CountAcc for an optimized index..
+      reuse = new int[(int) si.getValueCount() + 1];
+    } else {
+      Arrays.fill(reuse, 0, maxNeeded, 0);
+    }
+    return reuse;
   }
 
   private void collectDocs(SortedDocValues singleDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {

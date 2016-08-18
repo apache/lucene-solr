@@ -26,6 +26,7 @@
 
   <path id="classpath">
     <pathelement path="${grouping.jar}"/>
+    <pathelement path="${backward-codecs.jar}"/>
     <path refid="base.classpath"/>
   </path>
 
@@ -34,13 +35,14 @@
     <pathelement location="${build.dir}/classes/java"/>
   </path>
 
-  <target name="init" depends="module-build.init,jar-grouping"/>
+  <target name="init" depends="module-build.init,jar-grouping,jar-backward-codecs"/>
 
-  <target name="javadocs" depends="javadocs-grouping,compile-core,check-javadocs-uptodate"
+  <target name="javadocs" depends="javadocs-grouping,javadocs-backward-codecs,compile-core,check-javadocs-uptodate"
           unless="javadocs-uptodate-${name}">
     <invoke-module-javadoc>
       <links>
         <link href="../grouping"/>
+        <link href="../backward-codecs"/>
       </links>
     </invoke-module-javadoc>
   </target>

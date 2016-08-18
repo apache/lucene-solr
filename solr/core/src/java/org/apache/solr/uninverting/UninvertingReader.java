@@ -86,7 +86,7 @@ public class UninvertingReader extends FilterLeafReader {
      */
     DOUBLE_POINT,
     /** 
-     * Single-valued Integer, (e.g. indexed with {@link org.apache.lucene.document.LegacyIntField})
+     * Single-valued Integer, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyIntField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
@@ -95,7 +95,7 @@ public class UninvertingReader extends FilterLeafReader {
     @Deprecated
     LEGACY_INTEGER,
     /** 
-     * Single-valued Long, (e.g. indexed with {@link org.apache.lucene.document.LegacyLongField})
+     * Single-valued Long, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyLongField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
@@ -104,7 +104,7 @@ public class UninvertingReader extends FilterLeafReader {
     @Deprecated
     LEGACY_LONG,
     /** 
-     * Single-valued Float, (e.g. indexed with {@link org.apache.lucene.document.LegacyFloatField})
+     * Single-valued Float, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyFloatField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
@@ -113,7 +113,7 @@ public class UninvertingReader extends FilterLeafReader {
     @Deprecated
     LEGACY_FLOAT,
     /** 
-     * Single-valued Double, (e.g. indexed with {@link org.apache.lucene.document.LegacyDoubleField})
+     * Single-valued Double, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyDoubleField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
@@ -143,28 +143,28 @@ public class UninvertingReader extends FilterLeafReader {
      */
     SORTED_SET_BINARY,
     /** 
-     * Multi-valued Integer, (e.g. indexed with {@link org.apache.lucene.document.LegacyIntField})
+     * Multi-valued Integer, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyIntField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link SortedSetDocValuesField}.
      */
     SORTED_SET_INTEGER,
     /** 
-     * Multi-valued Float, (e.g. indexed with {@link org.apache.lucene.document.LegacyFloatField})
+     * Multi-valued Float, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyFloatField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link SortedSetDocValuesField}.
      */
     SORTED_SET_FLOAT,
     /** 
-     * Multi-valued Long, (e.g. indexed with {@link org.apache.lucene.document.LegacyLongField})
+     * Multi-valued Long, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyLongField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link SortedSetDocValuesField}.
      */
     SORTED_SET_LONG,
     /** 
-     * Multi-valued Double, (e.g. indexed with {@link org.apache.lucene.document.LegacyDoubleField})
+     * Multi-valued Double, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyDoubleField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link SortedSetDocValuesField}.

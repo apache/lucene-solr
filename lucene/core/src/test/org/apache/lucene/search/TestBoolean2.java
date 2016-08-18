@@ -25,6 +25,8 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -66,7 +68,7 @@ public class TestBoolean2 extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // in some runs, test immediate adjacency of matches - in others, force a full bucket gap betwen docs
+    // in some runs, test immediate adjacency of matches - in others, force a full bucket gap between docs
     NUM_FILLER_DOCS = random().nextBoolean() ? 0 : BooleanScorer.SIZE;
     PRE_FILLER_DOCS = TestUtil.nextInt(random(), 0, (NUM_FILLER_DOCS / 2));
 
@@ -77,13 +79,16 @@ public class TestBoolean2 extends LuceneTestCase {
     }
     
     RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    // we'll make a ton of docs, disable store/norms/vectors
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setOmitNorms(true);
     
     Document doc = new Document();
     for (int filler = 0; filler < PRE_FILLER_DOCS; filler++) {
       writer.addDocument(doc);
     }
     for (int i = 0; i < docFields.length; i++) {
-      doc.add(newTextField(field, docFields[i], Field.Store.NO));
+      doc.add(new Field(field, docFields[i], ft));
       writer.addDocument(doc);
       
       doc = new Document();
@@ -148,12 +153,12 @@ public class TestBoolean2 extends LuceneTestCase {
         newIndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     doc = new Document();
-    doc.add(newTextField("field2", "xxx", Field.Store.NO));
+    doc.add(new Field("field2", "xxx", ft));
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
       w.addDocument(doc);
     }
     doc = new Document();
-    doc.add(newTextField("field2", "big bad bug", Field.Store.NO));
+    doc.add(new Field("field2", "big bad bug", ft));
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
       w.addDocument(doc);
     }

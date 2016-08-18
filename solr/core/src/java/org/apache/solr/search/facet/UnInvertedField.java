@@ -305,7 +305,7 @@ public class UnInvertedField extends DocTermOrds {
 
 
 
-  private void getCounts(FacetFieldProcessorUIF processor, CountSlotAcc counts) throws IOException {
+  private void getCounts(FacetFieldProcessorByArrayUIF processor, CountSlotAcc counts) throws IOException {
     DocSet docs = processor.fcontext.base;
     int baseSize = docs.size();
     int maxDoc = searcher.maxDoc();
@@ -397,7 +397,7 @@ public class UnInvertedField extends DocTermOrds {
 
 
 
-  public void collectDocs(FacetFieldProcessorUIF processor) throws IOException {
+  public void collectDocs(FacetFieldProcessorByArrayUIF processor) throws IOException {
     if (processor.collectAcc==null && processor.allBucketsAcc == null && processor.startTermIndex == 0 && processor.endTermIndex >= numTermsInField) {
       getCounts(processor, processor.countAcc);
       return;
@@ -408,7 +408,7 @@ public class UnInvertedField extends DocTermOrds {
 
   // called from FieldFacetProcessor
   // TODO: do a callback version that can be specialized!
-  public void collectDocsGeneric(FacetFieldProcessorUIF processor) throws IOException {
+  public void collectDocsGeneric(FacetFieldProcessorByArrayUIF processor) throws IOException {
     use.incrementAndGet();
 
     int startTermIndex = processor.startTermIndex;

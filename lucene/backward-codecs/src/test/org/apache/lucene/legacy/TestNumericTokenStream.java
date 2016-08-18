@@ -14,15 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis;
+package org.apache.lucene.legacy;
 
 
+import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LegacyNumericUtils;
-import org.apache.lucene.analysis.LegacyNumericTokenStream.LegacyNumericTermAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.analysis.tokenattributes.TestCharTermAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.legacy.LegacyNumericTokenStream;
+import org.apache.lucene.legacy.LegacyNumericUtils;
+import org.apache.lucene.legacy.LegacyNumericTokenStream.LegacyNumericTermAttributeImpl;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
 
@@ -150,20 +152,37 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
   public void testAttributeClone() throws Exception {
     LegacyNumericTermAttributeImpl att = new LegacyNumericTermAttributeImpl();
     att.init(lvalue, 64, 8, 0); // set some value, to make getBytesRef() work
-    LegacyNumericTermAttributeImpl copy = TestCharTermAttributeImpl.assertCloneIsEqual(att);
+    LegacyNumericTermAttributeImpl copy = assertCloneIsEqual(att);
     assertNotSame(att.getBytesRef(), copy.getBytesRef());
-    LegacyNumericTermAttributeImpl copy2 = TestCharTermAttributeImpl.assertCopyIsEqual(att);
+    LegacyNumericTermAttributeImpl copy2 = assertCopyIsEqual(att);
     assertNotSame(att.getBytesRef(), copy2.getBytesRef());
     
     // LUCENE-7027 test
     att.init(lvalue, 64, 8, 64); // Exhausted TokenStream -> should return empty BytesRef
     assertEquals(new BytesRef(), att.getBytesRef());
-    copy = TestCharTermAttributeImpl.assertCloneIsEqual(att);
+    copy = assertCloneIsEqual(att);
     assertEquals(new BytesRef(), copy.getBytesRef());
     assertNotSame(att.getBytesRef(), copy.getBytesRef());
-    copy2 = TestCharTermAttributeImpl.assertCopyIsEqual(att);
+    copy2 = assertCopyIsEqual(att);
     assertEquals(new BytesRef(), copy2.getBytesRef());
     assertNotSame(att.getBytesRef(), copy2.getBytesRef());
+  }
+  
+  public static <T extends AttributeImpl> T assertCloneIsEqual(T att) {
+    @SuppressWarnings("unchecked")
+    T clone = (T) att.clone();
+    assertEquals("Clone must be equal", att, clone);
+    assertEquals("Clone's hashcode must be equal", att.hashCode(), clone.hashCode());
+    return clone;
+  }
+
+  public static <T extends AttributeImpl> T assertCopyIsEqual(T att) throws Exception {
+    @SuppressWarnings("unchecked")
+    T copy = (T) att.getClass().newInstance();
+    att.copyTo(copy);
+    assertEquals("Copied instance must be equal", att, copy);
+    assertEquals("Copied instance's hashcode must be equal", att.hashCode(), copy.hashCode());
+    return copy;
   }
   
 }
