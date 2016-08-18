@@ -203,6 +203,22 @@
     </lst>
   </requestHandler>
 
+  <queryResponseWriter name="xlsx"
+               class="org.apache.solr.handler.extraction.XLSXResponseWriter">
+    <lst name="columnWidths">
+      <int name="id">3</int>
+      <int name="foo_s">10</int>
+      <int name="foo_i">10</int>
+      <int name="foo_l">50</int>
+    </lst>
+    <lst name="columnNames">
+      <str name="id">ID</str>
+      <str name="foo_s">Foo String</str>
+      <str name="foo_i">Foo Integer</str>
+      <str name="foo_l">Foo Long</str>
+    </lst>
+  </queryResponseWriter>
+
   <highlighting>
    <!-- Configure the standard fragmenter -->
    <fragmenter name="gap" class="org.apache.solr.highlight.GapFragmenter" default="true">
