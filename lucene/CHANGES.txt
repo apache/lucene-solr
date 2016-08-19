@@ -91,6 +91,9 @@ Bug Fixes
 * SOLR-9413: Fix analysis/kuromoji's CSVUtil.quoteEscape logic, add TestCSVUtil test.
   (AppChecker, Christine Poerschke)
 
+* LUCENE-7419: Fix performance bug with TokenStream.end(), where it would lookup
+  PositionIncrementAttribute every time. (Mike McCandless, Robert Muir)
+
 Improvements
 
 * LUCENE-7323: Compound file writing now verifies the incoming
