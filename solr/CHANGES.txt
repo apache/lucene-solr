@@ -552,6 +552,7 @@ Other Changes
 
 * SOLR-2199: DataImportHandler (DIH) JdbcDataSource supports multiple resultsets per query (Kristine Jetzke, Mark Waddle via Mikhail Khludnev)
 
+* SOLR-8643: BlockJoinFacetComponent is substituted by BlockJoinFacetDocSetComponent. No need to change solrconfig.xml (Mikhail Khludnev)
 ==================  6.0.1 ==================
 
 Upgrade Notes
