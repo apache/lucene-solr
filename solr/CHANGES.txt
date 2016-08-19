@@ -282,6 +282,8 @@ Other Changes
 
 * SOLR-9404: Refactor move/renames in JSON FacetProcessor and FacetFieldProcessor. (David Smiley)
 
+* SOLR-9421: Refactored out OverseerCollectionMessageHandler to smaller classes (noble)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
