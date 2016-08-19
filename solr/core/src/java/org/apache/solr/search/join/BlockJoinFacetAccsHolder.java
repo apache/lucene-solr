@@ -17,15 +17,11 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.Queue;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery.ChildrenMatchesScorer;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.DelegatingCollector;
 import org.apache.solr.search.join.BlockJoinFieldFacetAccumulator.AggregatableDocIter;
 import org.apache.solr.search.join.BlockJoinFieldFacetAccumulator.SortedIntsAggDocIterator;
 
@@ -33,14 +29,14 @@ import org.apache.solr.search.join.BlockJoinFieldFacetAccumulator.SortedIntsAggD
  * For each collected parent document creates matched block, which is a docSet with matched children and parent doc
  * itself. Then updates each BlockJoinFieldFacetAccumulator with the created matched block.
  */
-class BlockJoinFacetCollector extends DelegatingCollector {
+class BlockJoinFacetAccsHolder {
   private BlockJoinFieldFacetAccumulator[] blockJoinFieldFacetAccumulators;
   private boolean firstSegment = true;
   private ChildrenMatchesScorer blockJoinScorer;
   private int[] childDocs = new int[0];
   
-  BlockJoinFacetCollector(SolrQueryRequest req) throws IOException {
-    String[] facetFieldNames = BlockJoinFacetComponent.getChildFacetFields(req);
+  BlockJoinFacetAccsHolder(SolrQueryRequest req) throws IOException {
+    String[] facetFieldNames = BlockJoinFacetComponentSupport.getChildFacetFields(req);
     assert facetFieldNames != null;
     blockJoinFieldFacetAccumulators = new BlockJoinFieldFacetAccumulator[facetFieldNames.length];
     for (int i = 0; i < facetFieldNames.length; i++) {
@@ -48,28 +44,7 @@ class BlockJoinFacetCollector extends DelegatingCollector {
     }
   }
   
-  @Override
-  public void setScorer(Scorer scorer) throws IOException {
-    super.setScorer(scorer);
-    blockJoinScorer = getToParentScorer(scorer, new LinkedList<Scorer>());
-    if (blockJoinScorer != null) {
-      // instruct scorer to keep track of the child docIds for retrieval purposes.
-      blockJoinScorer.trackPendingChildHits();
-    }
-  }
-  
-  private ChildrenMatchesScorer getToParentScorer(Scorer scorer, Queue<Scorer> queue) {
-    if (scorer == null || scorer instanceof ChildrenMatchesScorer) {
-      return (ChildrenMatchesScorer) scorer;
-    } else {
-      for (Scorer.ChildScorer child : scorer.getChildren()) {
-        queue.add(child.child);
-      }
-      return getToParentScorer(queue.poll(), queue);
-    }
-  }
-  
-  @Override
+
   protected void doSetNextReader(LeafReaderContext context) throws IOException {
     for (BlockJoinFieldFacetAccumulator blockJoinFieldFacetAccumulator : blockJoinFieldFacetAccumulators) {
       if(!firstSegment){
@@ -78,21 +53,12 @@ class BlockJoinFacetCollector extends DelegatingCollector {
       blockJoinFieldFacetAccumulator.setNextReader(context);
     }
     firstSegment = false;
-    super.doSetNextReader(context);
   }
   
-  @Override
-  public void collect(int doc) throws IOException {
-    incrementFacets(doc);
-    super.collect(doc);
-  }
-  
-  @Override
   public void finish() throws IOException {
     for (BlockJoinFieldFacetAccumulator blockJoinFieldFacetAccumulator : blockJoinFieldFacetAccumulators) {
         blockJoinFieldFacetAccumulator.migrateGlobal();
     }
-    super.finish();
   }
 
   protected void incrementFacets(int parent) throws IOException {

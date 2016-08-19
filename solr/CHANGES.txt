@@ -252,6 +252,8 @@ Other Changes
 
 * SOLR-9421: Refactored out OverseerCollectionMessageHandler to smaller classes (noble)
 
+* SOLR-8643: BlockJoinFacetComponent is substituted by BlockJoinFacetDocSetComponent. It doesn't need to change solrconfig.xml (Mikhail Khludnev)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
