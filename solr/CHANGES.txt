@@ -218,6 +218,9 @@ Bug Fixes
 
 * SOLR-9032: Admin UI now correctly implements Create Alias command (Upayavira, Alexandre Rafalovitch)
 
+* SOLR-9391: LBHttpSolrClient.request now correctly returns Rsp.server when
+  previously skipped servers were successfully tried. (Christine Poerschke)
+
 Optimizations
 ----------------------
 
