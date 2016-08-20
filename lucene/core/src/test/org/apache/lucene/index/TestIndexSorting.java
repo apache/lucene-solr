@@ -1217,7 +1217,7 @@ public class TestIndexSorting extends LuceneTestCase {
     if (TEST_NIGHTLY) {
       numDocs = atLeast(100000);
     } else {
-      numDocs = atLeast(10000);
+      numDocs = atLeast(1000);
     }
     List<RandomDoc> docs = new ArrayList<>();
 

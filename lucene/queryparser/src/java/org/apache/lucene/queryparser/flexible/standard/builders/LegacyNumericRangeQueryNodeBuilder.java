@@ -16,7 +16,8 @@
  */
 package org.apache.lucene.queryparser.flexible.standard.builders;
 
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.legacy.LegacyNumericRangeQuery;
+import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
@@ -25,12 +26,11 @@ import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.LegacyNumericConfig;
 import org.apache.lucene.queryparser.flexible.standard.nodes.LegacyNumericQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.LegacyNumericRangeQueryNode;
-import org.apache.lucene.search.LegacyNumericRangeQuery;
 
 /**
- * Builds {@link org.apache.lucene.search.LegacyNumericRangeQuery}s out of {@link LegacyNumericRangeQueryNode}s.
+ * Builds {@link org.apache.lucene.legacy.LegacyNumericRangeQuery}s out of {@link LegacyNumericRangeQueryNode}s.
  *
- * @see org.apache.lucene.search.LegacyNumericRangeQuery
+ * @see org.apache.lucene.legacy.LegacyNumericRangeQuery
  * @see LegacyNumericRangeQueryNode
  * @deprecated Index with points and use {@link PointRangeQueryNodeBuilder} instead.
  */
@@ -56,7 +56,7 @@ public class LegacyNumericRangeQueryNodeBuilder implements StandardQueryBuilder 
     Number upperNumber = upperNumericNode.getValue();
     
     LegacyNumericConfig numericConfig = numericRangeNode.getNumericConfig();
-    FieldType.LegacyNumericType numberType = numericConfig.getType();
+    LegacyNumericType numberType = numericConfig.getType();
     String field = StringUtils.toString(numericRangeNode.getField());
     boolean minInclusive = numericRangeNode.isLowerInclusive();
     boolean maxInclusive = numericRangeNode.isUpperInclusive();

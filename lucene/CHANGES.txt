@@ -30,6 +30,9 @@ Other
 
 * LUCENE-7360: Remove Explanation.toHtml() (Alan Woodward)
 
+======================= Lucene 6.3.0 =======================
+(No Changes)
+
 ======================= Lucene 6.2.0 =======================
 
 API Changes
@@ -37,6 +40,9 @@ API Changes
 * ScoringWrapperSpans was removed since it had no purpose or effect as of Lucene 5.5.
 
 New Features
+
+* LUCENE-7388: Add point based IntRangeField, FloatRangeField, LongRangeField along with
+  supporting queries and tests (Nick Knize)
 
 * LUCENE-7381: Add point based DoubleRangeField and RangeFieldQuery for
   indexing and querying on Ranges up to 4 dimensions (Nick Knize)
@@ -84,6 +90,12 @@ Bug Fixes
 
 * LUCENE-7391: Fix performance regression in MemoryIndex's fields() introduced
   in Lucene 6. (Steve Mason via David Smiley)
+
+* SOLR-9413: Fix analysis/kuromoji's CSVUtil.quoteEscape logic, add TestCSVUtil test.
+  (AppChecker, Christine Poerschke)
+
+* LUCENE-7419: Fix performance bug with TokenStream.end(), where it would lookup
+  PositionIncrementAttribute every time. (Mike McCandless, Robert Muir)
 
 Improvements
 
@@ -141,6 +153,13 @@ Improvements
 * LUCENE-7393: Add ICUTokenizer option to parse Myanmar text as syllables instead of words,
   because the ICU word-breaking algorithm has some issues. This allows for the previous 
   tokenization used before Lucene 5. (AM, Robert Muir)
+
+* LUCENE-7409: Changed MMapDirectory's unmapping to work safer, but still with
+  no guarantees. This uses a store-store barrier and yields the current thread
+  before unmapping to allow in-flight requests to finish. The new code no longer
+  uses WeakIdentityMap as it delegates all ByteBuffer reads throgh a new
+  ByteBufferGuard wrapper that is shared between all ByteBufferIndexInput clones.
+  (Robert Muir, Uwe Schindler)
 
 Optimizations
 

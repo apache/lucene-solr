@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
@@ -115,7 +116,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   private final Object waitLock = new Object();
 
-  private OverseerMessageHandlerSelector selector;
+  protected OverseerMessageHandlerSelector selector;
 
   private OverseerNodePrioritizer prioritizer;
 
@@ -328,6 +329,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
       }
     }
+    IOUtils.closeQuietly(selector);
   }
 
   public static List<String> getSortedOverseerNodeNames(SolrZkClient zk) throws KeeperException, InterruptedException {
@@ -588,7 +590,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
    * messages only) , or a different handler could be selected based on the
    * contents of the message.
    */
-  public interface OverseerMessageHandlerSelector {
+  public interface OverseerMessageHandlerSelector extends Closeable {
     OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message);
   }
 

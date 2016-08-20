@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.search;
 
+import java.util.Arrays;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleRangeField;
 import org.apache.lucene.index.IndexReader;
@@ -23,25 +25,50 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 
 /**
- * Random testing for RangeFieldQueries. Testing rigor inspired by {@code BaseGeoPointTestCase}
+ * Random testing for RangeFieldQueries.
  */
 public class TestDoubleRangeFieldQueries extends BaseRangeFieldQueryTestCase {
-  private static final String FIELD_NAME = "rangeField";
+  private static final String FIELD_NAME = "doubleRangeField";
 
-  protected DoubleRangeField newRangeField(double[] min, double[] max) {
-    return new DoubleRangeField(FIELD_NAME, min, max);
+  private double nextDoubleInternal() {
+    if (rarely()) {
+      return random().nextBoolean() ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
+    }
+    double max = Double.MAX_VALUE / 2;
+    return (max + max) * random().nextDouble() - max;
   }
 
-  protected Query newIntersectsQuery(double[] min, double[] max) {
-    return DoubleRangeField.newIntersectsQuery(FIELD_NAME, min, max);
+  @Override
+  protected Range nextRange(int dimensions) {
+    double[] min = new double[dimensions];
+    double[] max = new double[dimensions];
+
+    for (int d=0; d<dimensions; ++d) {
+      min[d] = nextDoubleInternal();
+      max[d] = nextDoubleInternal();
+    }
+
+    return new DoubleRange(min, max);
   }
 
-  protected Query newContainsQuery(double[] min, double[] max) {
-    return DoubleRangeField.newContainsQuery(FIELD_NAME, min, max);
+  @Override
+  protected DoubleRangeField newRangeField(Range r) {
+    return new DoubleRangeField(FIELD_NAME, ((DoubleRange)r).min, ((DoubleRange)r).max);
   }
 
-  protected Query newWithinQuery(double[] min, double[] max) {
-    return DoubleRangeField.newWithinQuery(FIELD_NAME, min, max);
+  @Override
+  protected Query newIntersectsQuery(Range r) {
+    return DoubleRangeField.newIntersectsQuery(FIELD_NAME, ((DoubleRange)r).min, ((DoubleRange)r).max);
+  }
+
+  @Override
+  protected Query newContainsQuery(Range r) {
+    return DoubleRangeField.newContainsQuery(FIELD_NAME, ((DoubleRange)r).min, ((DoubleRange)r).max);
+  }
+
+  @Override
+  protected Query newWithinQuery(Range r) {
+    return DoubleRangeField.newWithinQuery(FIELD_NAME, ((DoubleRange)r).min, ((DoubleRange)r).max);
   }
 
   /** Basic test */
@@ -102,5 +129,112 @@ public class TestDoubleRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     reader.close();
     writer.close();
     dir.close();
+  }
+
+  /** DoubleRange test class implementation - use to validate DoubleRangeField */
+  private class DoubleRange extends Range {
+    double[] min;
+    double[] max;
+
+    DoubleRange(double[] min, double[] max) {
+      assert min != null && max != null && min.length > 0 && max.length > 0
+          : "test box: min/max cannot be null or empty";
+      assert min.length == max.length : "test box: min/max length do not agree";
+      this.min = new double[min.length];
+      this.max = new double[max.length];
+      for (int d=0; d<min.length; ++d) {
+        if (min[d] > max[d]) {
+          // swap if max < min:
+          double temp = min[d];
+          min[d] = max[d];
+          max[d] = temp;
+        }
+      }
+    }
+
+    @Override
+    protected int numDimensions() {
+      return min.length;
+    }
+
+    @Override
+    protected Double getMin(int dim) {
+      return min[dim];
+    }
+
+    @Override
+    protected void setMin(int dim, Object val) {
+      min[dim] = (Double)val;
+    }
+
+    @Override
+    protected Double getMax(int dim) {
+      return max[dim];
+    }
+
+    @Override
+    protected void setMax(int dim, Object val) {
+      max[dim] = (Double)val;
+    }
+
+    @Override
+    protected boolean isEqual(Range other) {
+      DoubleRange o = (DoubleRange)other;
+      return Arrays.equals(min, o.min) && Arrays.equals(max, o.max);
+    }
+
+    @Override
+    protected boolean isDisjoint(Range o) {
+      DoubleRange other = (DoubleRange)o;
+      for (int d=0; d<this.min.length; ++d) {
+        if (this.min[d] > other.max[d] || this.max[d] < other.min[d]) {
+          // disjoint:
+          return true;
+        }
+      }
+      return false;
+    }
+
+    @Override
+    protected boolean isWithin(Range o) {
+      DoubleRange other = (DoubleRange)o;
+      for (int d=0; d<this.min.length; ++d) {
+        if ((this.min[d] >= other.min[d] && this.max[d] <= other.max[d]) == false) {
+          // not within:
+          return false;
+        }
+      }
+      return true;
+    }
+
+    @Override
+    protected boolean contains(Range o) {
+      DoubleRange other = (DoubleRange) o;
+      for (int d=0; d<this.min.length; ++d) {
+        if ((this.min[d] <= other.min[d] && this.max[d] >= other.max[d]) == false) {
+          // not contains:
+          return false;
+        }
+      }
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder b = new StringBuilder();
+      b.append("Box(");
+      b.append(min[0]);
+      b.append(" TO ");
+      b.append(max[0]);
+      for (int d=1; d<min.length; ++d) {
+        b.append(", ");
+        b.append(min[d]);
+        b.append(" TO ");
+        b.append(max[d]);
+      }
+      b.append(")");
+
+      return b.toString();
+    }
   }
 }

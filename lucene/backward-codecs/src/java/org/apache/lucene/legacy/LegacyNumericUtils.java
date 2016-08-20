@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.util;
+package org.apache.lucene.legacy;
 
 
 import java.io.IOException;
@@ -23,6 +23,8 @@ import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 
 /**
  * This is a helper class to generate prefix-encoded representations for numerical values
@@ -41,9 +43,9 @@ import org.apache.lucene.index.TermsEnum;
  * during encoding.
  *
  * <p>For easy usage, the trie algorithm is implemented for indexing inside
- * {@link org.apache.lucene.analysis.LegacyNumericTokenStream} that can index <code>int</code>, <code>long</code>,
+ * {@link org.apache.lucene.legacy.LegacyNumericTokenStream} that can index <code>int</code>, <code>long</code>,
  * <code>float</code>, and <code>double</code>. For querying,
- * {@link org.apache.lucene.search.LegacyNumericRangeQuery} implements the query part
+ * {@link org.apache.lucene.legacy.LegacyNumericRangeQuery} implements the query part
  * for the same data types.
  *
  * @lucene.internal
@@ -59,15 +61,15 @@ public final class LegacyNumericUtils {
   private LegacyNumericUtils() {} // no instance!
   
   /**
-   * The default precision step used by {@link org.apache.lucene.document.LegacyLongField},
-   * {@link org.apache.lucene.document.LegacyDoubleField}, {@link org.apache.lucene.analysis.LegacyNumericTokenStream}, {@link
-   * org.apache.lucene.search.LegacyNumericRangeQuery}.
+   * The default precision step used by {@link org.apache.lucene.legacy.LegacyLongField},
+   * {@link org.apache.lucene.legacy.LegacyDoubleField}, {@link org.apache.lucene.legacy.LegacyNumericTokenStream}, {@link
+   * org.apache.lucene.legacy.LegacyNumericRangeQuery}.
    */
   public static final int PRECISION_STEP_DEFAULT = 16;
   
   /**
-   * The default precision step used by {@link org.apache.lucene.document.LegacyIntField} and
-   * {@link org.apache.lucene.document.LegacyFloatField}.
+   * The default precision step used by {@link org.apache.lucene.legacy.LegacyIntField} and
+   * {@link org.apache.lucene.legacy.LegacyFloatField}.
    */
   public static final int PRECISION_STEP_DEFAULT_32 = 8;
   
@@ -99,7 +101,7 @@ public final class LegacyNumericUtils {
 
   /**
    * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
-   * This is method is used by {@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
+   * This is method is used by {@link org.apache.lucene.legacy.LegacyNumericTokenStream}.
    * After encoding, {@code bytes.offset} will always be 0. 
    * @param val the numeric value
    * @param shift how many bits to strip from the right
@@ -126,7 +128,7 @@ public final class LegacyNumericUtils {
 
   /**
    * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
-   * This is method is used by {@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
+   * This is method is used by {@link org.apache.lucene.legacy.LegacyNumericTokenStream}.
    * After encoding, {@code bytes.offset} will always be 0.
    * @param val the numeric value
    * @param shift how many bits to strip from the right
@@ -230,7 +232,7 @@ public final class LegacyNumericUtils {
    * {@link org.apache.lucene.search.BooleanQuery} for each call to its
    * {@link LongRangeBuilder#addRange(BytesRef,BytesRef)}
    * method.
-   * <p>This method is used by {@link org.apache.lucene.search.LegacyNumericRangeQuery}.
+   * <p>This method is used by {@link org.apache.lucene.legacy.LegacyNumericRangeQuery}.
    */
   public static void splitLongRange(final LongRangeBuilder builder,
     final int precisionStep,  final long minBound, final long maxBound
@@ -244,7 +246,7 @@ public final class LegacyNumericUtils {
    * {@link org.apache.lucene.search.BooleanQuery} for each call to its
    * {@link IntRangeBuilder#addRange(BytesRef,BytesRef)}
    * method.
-   * <p>This method is used by {@link org.apache.lucene.search.LegacyNumericRangeQuery}.
+   * <p>This method is used by {@link org.apache.lucene.legacy.LegacyNumericRangeQuery}.
    */
   public static void splitIntRange(final IntRangeBuilder builder,
     final int precisionStep,  final int minBound, final int maxBound

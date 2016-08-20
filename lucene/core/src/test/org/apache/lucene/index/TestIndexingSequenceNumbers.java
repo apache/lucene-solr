@@ -72,6 +72,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     dir.close();
   }
 
+  @Slow
   public void testStressUpdateSameID() throws Exception {
     int iters = atLeast(100);
     for(int iter=0;iter<iters;iter++) {
@@ -144,6 +145,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     long seqNo;
   }
 
+  @Slow
   public void testStressConcurrentCommit() throws Exception {
     final int opCount = atLeast(10000);
     final int idCount = TestUtil.nextInt(random(), 10, 1000);
@@ -303,6 +305,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     dir.close();
   }
 
+  @Slow
   public void testStressConcurrentDocValuesUpdatesCommit() throws Exception {
     final int opCount = atLeast(10000);
     final int idCount = TestUtil.nextInt(random(), 10, 1000);
@@ -459,6 +462,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     dir.close();
   }
 
+  @Slow
   public void testStressConcurrentAddAndDeleteAndCommit() throws Exception {
     final int opCount = atLeast(10000);
     final int idCount = TestUtil.nextInt(random(), 10, 1000);

@@ -112,7 +112,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
      * @deprecated Use {@link #processAsync(String, SolrClient)} or {@link #processAsync(SolrClient)}
      */
     @Deprecated
-    public abstract AsyncCollectionAdminRequest setAsyncId(String id);
+    public  AsyncCollectionAdminRequest setAsyncId(String id){return this;};
 
     /**
      * Process this request asynchronously, generating and returning a request id
@@ -489,6 +489,56 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.asyncId = id;
       return this;
     }
+  }
+
+  public static class DeleteNode extends AsyncCollectionAdminRequest {
+    String node;
+
+    /**
+     * @param node The node to be deleted
+     */
+    public DeleteNode(String node) {
+      super(CollectionAction.DELETENODE);
+      this.node = node;
+    }
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set("node", node);
+      return params;
+    }
+
+
+  }
+
+  public static class ReplaceNode extends AsyncCollectionAdminRequest {
+    String source, target;
+    Boolean parallel;
+
+    /**
+     * @param source node to be cleaned up
+     * @param target node where the new replicas are to be created
+     */
+    public ReplaceNode(String source, String target) {
+      super(CollectionAction.REPLACENODE);
+      this.source = source;
+      this.target = target;
+    }
+
+    public ReplaceNode setParallel(Boolean flag) {
+      this.parallel = flag;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set("source", source);
+      params.set("target", target);
+      if (parallel != null) params.set("parallel", parallel.toString());
+      return params;
+    }
+
   }
 
   /*

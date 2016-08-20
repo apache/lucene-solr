@@ -50,6 +50,23 @@ Optimizations
   check on every request and move connection lifecycle management towards the client.
   (Ryan Zezeski, Mark Miller, Shawn Heisey, Steve Davids)
 
+==================  6.3.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.12.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.8.v20160314
+
+
+(No Changes)
+
+
 ==================  6.2.0 ==================
 
 Versions of Major Components
@@ -118,6 +135,11 @@ New Features
 
 * SOLR-6465: CDCR: fall back to whole-index replication when tlogs are insufficient.
   (Noble Paul, Renaud Delbru, shalin)
+
+* SOLR-9320: A REPLACENODE command to decommission an existing node with another new node
+   (noble, Nitin Sharma, Varun Thacker)
+
+* SOLR-9318: A DELETENODE command to delete all replicas in that node (noble, Nitin Sharma, Varun Thacker)
 
 Bug Fixes
 ----------------------
@@ -190,9 +212,31 @@ Bug Fixes
 
 * SOLR-8379: UI Cloud->Tree view now shows .txt files correctly (Alexandre Rafalovitch via janhoy)
 
+* SOLR-9003: New Admin UI's Dataimport screen now correctly displays DIH Debug output (Alexandre Rafalovitch)
+
 * SOLR-9308: Fix distributed RTG to forward request params, fixes fq and non-default fl params (hossman)
 
 * SOLR-9179: NPE in IndexSchema using IBM JDK (noble, Colvin Cowie)
+
+* SOLR-9397: Config API does not support adding caches (noble)
+
+* SOLR-9405: ConcurrentModificationException in ZkStateReader.getStateWatchers.
+  (Alan Woodward, Edward Ribeiro, shalin)
+
+* SOLR-9232: Admin UI now fully implements Swap Cores interface (Alexandre Rafalovitch)
+
+* SOLR-8715: Admin UI's Schema screen now works for fields with stored=false and some content indexed (Alexandre Rafalovitch)
+
+* SOLR-8911: In Admin UI, enable scrolling for overflowing Versions and JVM property values (Alexandre Rafalovitch)
+
+* SOLR-9002: Admin UI now correctly displays json and text files in the collection/Files screen (Upayavira, Alexandre Rafalovitch)
+
+* SOLR-8993: Admin UI now correctly supports multiple DIH handler end-points (Upayavira, Alexandre Rafalovitch)
+
+* SOLR-9032: Admin UI now correctly implements Create Alias command (Upayavira, Alexandre Rafalovitch)
+
+* SOLR-9391: LBHttpSolrClient.request now correctly returns Rsp.server when
+  previously skipped servers were successfully tried. (Christine Poerschke)
 
 Optimizations
 ----------------------
@@ -248,6 +292,21 @@ Other Changes
 * SOLR-9385: Add QParser.getParser(String,SolrQueryRequest) variant. (Christine Poerschke)
 
 * SOLR-9367: Improved TestInjection's randomization logic to use LuceneTestCase.random() (hossman)
+
+* SOLR-9331: Remove ReRankQuery's length constructor argument and member. (Christine Poerschke)
+
+* SOLR-9092: For the delete replica command we attempt to send the core admin delete request only
+  if that node is actually up. (Jessica Cheng Mallet, Varun Thacker)
+
+* SOLR-9410: Make ReRankQParserPlugin's private ReRankWeight a public class of its own. (Christine Poerschke)
+
+* SOLR-9404: Refactor move/renames in JSON FacetProcessor and FacetFieldProcessor. (David Smiley)
+
+* SOLR-9421: Refactored out OverseerCollectionMessageHandler to smaller classes (noble)
+
+* SOLR-8643: BlockJoinFacetComponent is substituted by BlockJoinFacetDocSetComponent. It doesn't need to change solrconfig.xml (Mikhail Khludnev)
+
+* SOLR-8644: Test asserts that block join facets work with parent level fq exclusions. (Dr. Oleg Savrasov via Mikhail Khludnev) 
 
 ==================  6.1.0 ==================
 

@@ -270,6 +270,16 @@ public class AttributeSource {
       state.attribute.clear();
     }
   }
+  
+  /**
+   * Resets all Attributes in this AttributeSource by calling
+   * {@link AttributeImpl#end()} on each Attribute implementation.
+   */
+  public final void endAttributes() {
+    for (State state = getCurrentState(); state != null; state = state.next) {
+      state.attribute.end();
+    }
+  }
 
   /**
    * Removes all attributes and their implementations from this AttributeSource.

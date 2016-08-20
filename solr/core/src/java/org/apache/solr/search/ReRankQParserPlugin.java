@@ -25,8 +25,6 @@ import com.carrotsearch.hppc.IntIntHashMap;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.FilterWeight;
-import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -42,7 +40,6 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.QueryElevationComponent;
@@ -91,10 +88,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
       double reRankWeight = localParams.getDouble(RERANK_WEIGHT, RERANK_WEIGHT_DEFAULT);
 
-      int start = params.getInt(CommonParams.START,CommonParams.START_DEFAULT);
-      int rows = params.getInt(CommonParams.ROWS,CommonParams.ROWS_DEFAULT);
-      int length = start+rows;
-      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, length);
+      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight);
     }
   }
 
@@ -121,7 +115,6 @@ public class ReRankQParserPlugin extends QParserPlugin {
     private Query mainQuery = defaultQuery;
     final private Query reRankQuery;
     final private int reRankDocs;
-    final private int length;
     final private double reRankWeight;
     final private Rescorer reRankQueryRescorer;
     private Map<BytesRef, Integer> boostedPriority;
@@ -142,11 +135,10 @@ public class ReRankQParserPlugin extends QParserPlugin {
              reRankDocs == rrq.reRankDocs;
     }
 
-    public ReRankQuery(Query reRankQuery, int reRankDocs, double reRankWeight, int length) {
+    public ReRankQuery(Query reRankQuery, int reRankDocs, double reRankWeight) {
       this.reRankQuery = reRankQuery;
       this.reRankDocs = reRankDocs;
       this.reRankWeight = reRankWeight;
-      this.length = length;
       this.reRankQueryRescorer = new ReRankQueryRescorer(reRankQuery, reRankWeight);
     }
 
@@ -171,7 +163,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
         }
       }
 
-      return new ReRankCollector(reRankDocs, length, reRankQueryRescorer, cmd, searcher, boostedPriority);
+      return new ReRankCollector(reRankDocs, len, reRankQueryRescorer, cmd, searcher, boostedPriority);
     }
 
     @Override
@@ -188,29 +180,14 @@ public class ReRankQParserPlugin extends QParserPlugin {
     public Query rewrite(IndexReader reader) throws IOException {
       Query q = mainQuery.rewrite(reader);
       if (q != mainQuery) {
-        return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, length).wrap(q);
+        return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight).wrap(q);
       }
       return super.rewrite(reader);
     }
 
     public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException{
-      return new ReRankWeight(mainQuery, reRankQueryRescorer, searcher, needsScores, boost);
-    }
-  }
-
-  private class ReRankWeight extends FilterWeight {
-    private IndexSearcher searcher;
-    final private Rescorer reRankQueryRescorer;
-
-    public ReRankWeight(Query mainQuery, Rescorer reRankQueryRescorer, IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-      super(mainQuery, mainQuery.createWeight(searcher, needsScores, boost));
-      this.searcher = searcher;
-      this.reRankQueryRescorer = reRankQueryRescorer;
-    }
-
-    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Explanation mainExplain = in.explain(context, doc);
-      return reRankQueryRescorer.explain(searcher, mainExplain, context.docBase+doc);
+      final Weight mainWeight = mainQuery.createWeight(searcher, needsScores, boost);
+      return new ReRankWeight(mainQuery, reRankQueryRescorer, searcher, mainWeight);
     }
   }
 

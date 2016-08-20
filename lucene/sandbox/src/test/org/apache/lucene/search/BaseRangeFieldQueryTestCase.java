@@ -17,7 +17,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -41,16 +40,18 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Abstract class to do basic tests for a RangeField query.
+ * Abstract class to do basic tests for a RangeField query. Testing rigor inspired by {@code BaseGeoPointTestCase}
  */
 public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
-  protected abstract Field newRangeField(double[] min, double[] max);
+  protected abstract Field newRangeField(Range box);
 
-  protected abstract Query newIntersectsQuery(double[] min, double[] max);
+  protected abstract Query newIntersectsQuery(Range box);
 
-  protected abstract Query newContainsQuery(double[] min, double[] max);
+  protected abstract Query newContainsQuery(Range box);
 
-  protected abstract Query newWithinQuery(double[] min, double[] max);
+  protected abstract Query newWithinQuery(Range box);
+
+  protected abstract Range nextRange(int dimensions);
 
   protected int dimension() {
     return random().nextInt(4) + 1;
@@ -82,18 +83,18 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
       System.out.println("TEST: numDocs=" + numDocs);
     }
 
-    Box[][] boxes = new Box[numDocs][];
+    Range[][] ranges = new Range[numDocs][];
 
     boolean haveRealDoc = true;
 
     nextdoc: for (int id=0; id<numDocs; ++id) {
       int x = random().nextInt(20);
-      if (boxes[id] == null) {
-        boxes[id] = new Box[] {nextBox(dimensions)};
+      if (ranges[id] == null) {
+        ranges[id] = new Range[] {nextRange(dimensions)};
       }
       if (x == 17) {
         // dome docs don't have a box:
-        boxes[id][0].min[0] = Double.NaN;
+        ranges[id][0].isMissing = true;
         if (VERBOSE) {
           System.out.println("  id=" + id + " is missing");
         }
@@ -103,19 +104,19 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
       if (multiValued == true && random().nextBoolean()) {
         // randomly add multi valued documents (up to 2 fields)
         int n = random().nextInt(2) + 1;
-        boxes[id] = new Box[n];
+        ranges[id] = new Range[n];
         for (int i=0; i<n; ++i) {
-          boxes[id][i] = nextBox(dimensions);
+          ranges[id][i] = nextRange(dimensions);
         }
       }
 
       if (id > 0 && x < 9 && haveRealDoc) {
         int oldID;
         int i=0;
-        // don't step on missing boxes:
+        // don't step on missing ranges:
         while (true) {
           oldID = random().nextInt(id);
-          if (Double.isNaN(boxes[oldID][0].min[0]) == false) {
+          if (ranges[oldID][0].isMissing == false) {
             break;
           } else if (++i > id) {
             continue nextdoc;
@@ -125,11 +126,11 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
         if (x == dimensions*2) {
           // Fully identical box (use first box in case current is multivalued but old is not)
           for (int d=0; d<dimensions; ++d) {
-            boxes[id][0].min[d] = boxes[oldID][0].min[d];
-            boxes[id][0].max[d] = boxes[oldID][0].max[d];
+            ranges[id][0].setMin(d, ranges[oldID][0].getMin(d));
+            ranges[id][0].setMax(d, ranges[oldID][0].getMax(d));
           }
           if (VERBOSE) {
-            System.out.println("  id=" + id + " box=" + boxes[id] + " (same box as doc=" + oldID + ")");
+            System.out.println("  id=" + id + " box=" + ranges[id] + " (same box as doc=" + oldID + ")");
           }
         } else {
           for (int m = 0, even = dimensions % 2; m < dimensions * 2; ++m) {
@@ -137,14 +138,14 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
               int d = (int)Math.floor(m/2);
               // current could be multivalue but old may not be, so use first box
               if (even == 0) {
-                boxes[id][0].setVal(d, boxes[oldID][0].min[d]);
+                ranges[id][0].setMin(d, ranges[oldID][0].getMin(d));
                 if (VERBOSE) {
-                  System.out.println("  id=" + id + " box=" + boxes[id] + " (same min[" + d + "] as doc=" + oldID + ")");
+                  System.out.println("  id=" + id + " box=" + ranges[id] + " (same min[" + d + "] as doc=" + oldID + ")");
                 }
               } else {
-                boxes[id][0].setVal(d, boxes[oldID][0].max[d]);
+                ranges[id][0].setMax(d, ranges[oldID][0].getMax(d));
                 if (VERBOSE) {
-                  System.out.println("  id=" + id + " box=" + boxes[id] + " (same max[" + d + "] as doc=" + oldID + ")");
+                  System.out.println("  id=" + id + " box=" + ranges[id] + " (same max[" + d + "] as doc=" + oldID + ")");
                 }
               }
             }
@@ -152,20 +153,20 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
         }
       }
     }
-    verify(boxes);
+    verify(ranges);
   }
 
-  private void verify(Box[][] boxes) throws Exception {
+  private void verify(Range[][] ranges) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
     // Else seeds may not reproduce:
     iwc.setMergeScheduler(new SerialMergeScheduler());
     // Else we can get O(N^2) merging
     int mbd = iwc.getMaxBufferedDocs();
-    if (mbd != -1 && mbd < boxes.length/100) {
-      iwc.setMaxBufferedDocs(boxes.length/100);
+    if (mbd != -1 && mbd < ranges.length/100) {
+      iwc.setMaxBufferedDocs(ranges.length/100);
     }
     Directory dir;
-    if (boxes.length > 50000) {
+    if (ranges.length > 50000) {
       dir = newFSDirectory(createTempDir(getClass().getSimpleName()));
     } else {
       dir = newDirectory();
@@ -173,13 +174,13 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
 
     Set<Integer> deleted = new HashSet<>();
     IndexWriter w = new IndexWriter(dir, iwc);
-    for (int id=0; id < boxes.length; ++id) {
+    for (int id=0; id < ranges.length; ++id) {
       Document doc = new Document();
       doc.add(newStringField("id", ""+id, Field.Store.NO));
       doc.add(new NumericDocValuesField("id", id));
-      if (Double.isNaN(boxes[id][0].min[0]) == false) {
-        for (int n=0; n<boxes[id].length; ++n) {
-          doc.add(newRangeField(boxes[id][n].min, boxes[id][n].max));
+      if (ranges[id][0].isMissing == false) {
+        for (int n=0; n<ranges[id].length; ++n) {
+          doc.add(newRangeField(ranges[id][n]));
         }
       }
       w.addDocument(doc);
@@ -200,7 +201,7 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
     w.close();
     IndexSearcher s = newSearcher(r);
 
-    int dimensions = boxes[0][0].min.length;
+    int dimensions = ranges[0][0].numDimensions();
     int iters = atLeast(25);
     NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
     Bits liveDocs = MultiFields.getLiveDocs(s.getIndexReader());
@@ -211,20 +212,20 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
         System.out.println("\nTEST: iter=" + iter + " s=" + s);
       }
 
-      // occasionally test open ended bounding boxes
-      Box queryBox = nextBox(dimensions);
+      // occasionally test open ended bounding ranges
+      Range queryRange = nextRange(dimensions);
       int rv = random().nextInt(3);
       Query query;
-      Box.QueryType queryType;
+      Range.QueryType queryType;
       if (rv == 0) {
-        queryType = Box.QueryType.INTERSECTS;
-        query = newIntersectsQuery(queryBox.min, queryBox.max);
+        queryType = Range.QueryType.INTERSECTS;
+        query = newIntersectsQuery(queryRange);
       } else if (rv == 1)  {
-        queryType = Box.QueryType.CONTAINS;
-        query = newContainsQuery(queryBox.min, queryBox.max);
+        queryType = Range.QueryType.CONTAINS;
+        query = newContainsQuery(queryRange);
       } else {
-        queryType = Box.QueryType.WITHIN;
-        query = newWithinQuery(queryBox.min, queryBox.max);
+        queryType = Range.QueryType.WITHIN;
+        query = newWithinQuery(queryRange);
       }
 
       if (VERBOSE) {
@@ -255,25 +256,25 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
         if (liveDocs != null && liveDocs.get(docID) == false) {
           // document is deleted
           expected = false;
-        } else if (Double.isNaN(boxes[id][0].min[0])) {
+        } else if (ranges[id][0].isMissing) {
           expected = false;
         } else {
-          expected = expectedResult(queryBox, boxes[id], queryType);
+          expected = expectedResult(queryRange, ranges[id], queryType);
         }
 
         if (hits.get(docID) != expected) {
           StringBuilder b = new StringBuilder();
           b.append("FAIL (iter " + iter + "): ");
           if (expected == true) {
-            b.append("id=" + id + (boxes[id].length > 1 ? " (MultiValue) " : " ") + "should match but did not\n");
+            b.append("id=" + id + (ranges[id].length > 1 ? " (MultiValue) " : " ") + "should match but did not\n");
           } else {
             b.append("id=" + id + " should not match but did\n");
           }
-          b.append(" queryBox=" + queryBox + "\n");
-          b.append(" box" + ((boxes[id].length > 1) ? "es=" : "=" ) + boxes[id][0]);
-          for (int n=1; n<boxes[id].length; ++n) {
+          b.append(" queryRange=" + queryRange + "\n");
+          b.append(" box" + ((ranges[id].length > 1) ? "es=" : "=" ) + ranges[id][0]);
+          for (int n=1; n<ranges[id].length; ++n) {
             b.append(", ");
-            b.append(boxes[id][n]);
+            b.append(ranges[id][n]);
           }
           b.append("\n queryType=" + queryType + "\n");
           b.append(" deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
@@ -284,144 +285,51 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
     IOUtils.close(r, dir);
   }
 
-  protected boolean expectedResult(Box queryBox, Box[] box, Box.QueryType queryType) {
-    for (int i=0; i<box.length; ++i) {
-      if (expectedBBoxQueryResult(queryBox, box[i], queryType) == true) {
+  protected boolean expectedResult(Range queryRange, Range[] range, Range.QueryType queryType) {
+    for (int i=0; i<range.length; ++i) {
+      if (expectedBBoxQueryResult(queryRange, range[i], queryType) == true) {
         return true;
       }
     }
     return false;
   }
 
-  protected boolean expectedBBoxQueryResult(Box queryBox, Box box, Box.QueryType queryType) {
-    if (box.equals(queryBox)) {
+  protected boolean expectedBBoxQueryResult(Range queryRange, Range range, Range.QueryType queryType) {
+    if (queryRange.isEqual(range)) {
       return true;
     }
-    Box.QueryType relation = box.relate(queryBox);
-    if (queryType == Box.QueryType.INTERSECTS) {
+    Range.QueryType relation = range.relate(queryRange);
+    if (queryType == Range.QueryType.INTERSECTS) {
       return relation != null;
     }
     return relation == queryType;
   }
 
-  protected double nextDoubleInternal() {
-    if (rarely()) {
-      return random().nextBoolean() ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
-    }
-    double max = 100 / 2;
-    return (max + max) * random().nextDouble() - max;
-  }
-
-  protected Box nextBox(int dimensions) {
-    double[] min = new double[dimensions];
-    double[] max = new double[dimensions];
-
-    for (int d=0; d<dimensions; ++d) {
-      min[d] = nextDoubleInternal();
-      max[d] = nextDoubleInternal();
-    }
-
-    return new Box(min, max);
-  }
-
-  protected static class Box {
-    double[] min;
-    double[] max;
+  abstract static class Range {
+    protected boolean isMissing = false;
 
     enum QueryType { INTERSECTS, WITHIN, CONTAINS }
 
-    Box(double[] min, double[] max) {
-      assert min != null && max != null && min.length > 0 && max.length > 0
-          : "test box: min/max cannot be null or empty";
-      assert min.length == max.length : "test box: min/max length do not agree";
-      this.min = new double[min.length];
-      this.max = new double[max.length];
-      for (int d=0; d<min.length; ++d) {
-        this.min[d] = Math.min(min[d], max[d]);
-        this.max[d] = Math.max(min[d], max[d]);
-      }
-    }
+    protected abstract int numDimensions();
+    protected abstract Object getMin(int dim);
+    protected abstract void setMin(int dim, Object val);
+    protected abstract Object getMax(int dim);
+    protected abstract void setMax(int dim, Object val);
+    protected abstract boolean isEqual(Range other);
+    protected abstract boolean isDisjoint(Range other);
+    protected abstract boolean isWithin(Range other);
+    protected abstract boolean contains(Range other);
 
-    protected void setVal(int dimension, double val) {
-      if (val <= min[dimension]) {
-        min[dimension] = val;
-      } else {
-        max[dimension] = val;
-      }
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      return o != null
-          && getClass() == o.getClass()
-          && equalTo(getClass().cast(o));
-    }
-
-    private boolean equalTo(Box o) {
-      return Arrays.equals(min, o.min)
-          && Arrays.equals(max, o.max);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = Arrays.hashCode(min);
-      result = 31 * result + Arrays.hashCode(max);
-      return result;
-    }
-
-    QueryType relate(Box other) {
-      // check disjoint
-      for (int d=0; d<this.min.length; ++d) {
-        if (this.min[d] > other.max[d] || this.max[d] < other.min[d]) {
-          // disjoint:
-          return null;
-        }
-      }
-
-      // check within
-      boolean within = true;
-      for (int d=0; d<this.min.length; ++d) {
-        if ((this.min[d] >= other.min[d] && this.max[d] <= other.max[d]) == false) {
-          // not within:
-          within = false;
-          break;
-        }
-      }
-      if (within == true) {
+    protected QueryType relate(Range other) {
+      if (isDisjoint(other)) {
+        // if disjoint; return null:
+        return null;
+      } else if (isWithin(other)) {
         return QueryType.WITHIN;
-      }
-
-      // check contains
-      boolean contains = true;
-      for (int d=0; d<this.min.length; ++d) {
-        if ((this.min[d] <= other.min[d] && this.max[d] >= other.max[d]) == false) {
-          // not contains:
-          contains = false;
-          break;
-        }
-      }
-      if (contains == true) {
+      } else if (contains(other)) {
         return QueryType.CONTAINS;
       }
       return QueryType.INTERSECTS;
-    }
-
-    @Override
-    public String toString() {
-      StringBuilder b = new StringBuilder();
-      b.append("Box(");
-      b.append(min[0]);
-      b.append(" TO ");
-      b.append(max[0]);
-      for (int d=1; d<min.length; ++d) {
-        b.append(", ");
-        b.append(min[d]);
-        b.append(" TO ");
-        b.append(max[d]);
-      }
-      b.append(")");
-
-      return b.toString();
     }
   }
 }

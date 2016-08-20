@@ -28,10 +28,10 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -161,8 +161,8 @@ interface FieldCache {
   };
   
   /**
-   * A parser instance for int values encoded by {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
-   * via {@link org.apache.lucene.document.LegacyIntField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
+   * A parser instance for int values encoded by {@link org.apache.lucene.legacy.LegacyNumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.legacy.LegacyIntField}/{@link org.apache.lucene.legacy.LegacyNumericTokenStream}.
    * @deprecated Index with points and use {@link #INT_POINT_PARSER} instead.
    */
   @Deprecated
@@ -184,8 +184,8 @@ interface FieldCache {
   };
 
   /**
-   * A parser instance for float values encoded with {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
-   * via {@link org.apache.lucene.document.LegacyFloatField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
+   * A parser instance for float values encoded with {@link org.apache.lucene.legacy.LegacyNumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.legacy.LegacyFloatField}/{@link org.apache.lucene.legacy.LegacyNumericTokenStream}.
    * @deprecated Index with points and use {@link #FLOAT_POINT_PARSER} instead.
    */
   @Deprecated
@@ -209,8 +209,8 @@ interface FieldCache {
   };
 
   /**
-   * A parser instance for long values encoded by {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
-   * via {@link org.apache.lucene.document.LegacyLongField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
+   * A parser instance for long values encoded by {@link org.apache.lucene.legacy.LegacyNumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.legacy.LegacyLongField}/{@link org.apache.lucene.legacy.LegacyNumericTokenStream}.
    * @deprecated Index with points and use {@link #LONG_POINT_PARSER} instead.
    */
   @Deprecated
@@ -231,8 +231,8 @@ interface FieldCache {
   };
 
   /**
-   * A parser instance for double values encoded with {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
-   * via {@link org.apache.lucene.document.LegacyDoubleField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
+   * A parser instance for double values encoded with {@link org.apache.lucene.legacy.LegacyNumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.legacy.LegacyDoubleField}/{@link org.apache.lucene.legacy.LegacyNumericTokenStream}.
    * @deprecated Index with points and use {@link #DOUBLE_POINT_PARSER} instead.
    */
   @Deprecated
@@ -279,7 +279,7 @@ interface FieldCache {
    * @param parser
    *          Computes long for string values. May be {@code null} if the
    *          requested field was indexed as {@link NumericDocValuesField} or
-   *          {@link org.apache.lucene.document.LegacyLongField}.
+   *          {@link org.apache.lucene.legacy.LegacyLongField}.
    * @param setDocsWithField
    *          If true then {@link #getDocsWithField} will also be computed and
    *          stored in the FieldCache.
