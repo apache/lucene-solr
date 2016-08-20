@@ -30,6 +30,9 @@ Other
 
 * LUCENE-7360: Remove Explanation.toHtml() (Alan Woodward)
 
+======================= Lucene 6.3.0 =======================
+(No Changes)
+
 ======================= Lucene 6.2.0 =======================
 
 API Changes
