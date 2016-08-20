@@ -230,7 +230,21 @@ class GeoConvexPolygon extends GeoBasePolygon {
       while (edges[legalIndex(bound2Index)].isNumericallyIdentical(edge)) {
         bound2Index--;
       }
-      eitherBounds.put(edge, new EitherBound(edges[legalIndex(bound1Index)], edges[legalIndex(bound2Index)]));
+      bound1Index = legalIndex(bound1Index);
+      bound2Index = legalIndex(bound2Index);
+      // Also confirm that all interior points are within the bounds
+      int startingIndex = bound2Index;
+      while (true) {
+        startingIndex = legalIndex(startingIndex+1);
+        if (startingIndex == bound1Index) {
+          break;
+        }
+        final GeoPoint interiorPoint = points.get(startingIndex);
+        if (!edges[bound1Index].isWithin(interiorPoint) || !edges[bound2Index].isWithin(interiorPoint)) {
+          throw new IllegalArgumentException("Convex polygon has a side that is more than 180 degrees");
+        }
+      }
+      eitherBounds.put(edge, new EitherBound(edges[bound1Index], edges[bound2Index]));
       // For intersections, we look at the point at the intersection between the previous edge and this one.  We need to locate the 
       // Intersection bounds needs to look even further forwards/backwards
       if (otherEdge != null) {
