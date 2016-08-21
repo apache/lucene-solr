@@ -32,6 +32,7 @@ grant {
   permission java.io.FilePermission "${junit4.childvm.cwd}${/}jacoco.db", "write";
   permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,execute,write,delete";
   permission java.io.FilePermission "${clover.db.dir}${/}-", "read,execute,write,delete";
+  permission java.io.FilePermission "${tests.linedocsfile}", "read";
   
   // all possibilities of accepting/binding connections on localhost with ports >=1024:
   permission java.net.SocketPermission "localhost:1024-", "accept,listen";
