@@ -192,10 +192,8 @@ public class ZkStateReader implements Closeable {
       } else {
         throw new ZooKeeperException(ErrorCode.INVALID_STATE, "No config data found at path: " + path);
       }
-    } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading config name for collection " + collection, e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+    } catch (KeeperException| InterruptedException e) {
+      SolrZkClient.checkInterrupted(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading config name for collection " + collection, e);
     }
 
