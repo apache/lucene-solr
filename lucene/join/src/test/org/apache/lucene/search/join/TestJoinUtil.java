@@ -56,9 +56,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
-import org.apache.lucene.legacy.LegacyIntField;
-import org.apache.lucene.legacy.LegacyLongField;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NumericDocValues;
@@ -971,7 +968,7 @@ public class TestJoinUtil extends LuceneTestCase {
           final String fromField = from ? "from":"to";
           final String toField = from ? "to":"from";
 
-          int surpriseMe = random().nextInt(3);
+          int surpriseMe = random().nextInt(2);
           switch (surpriseMe) {
             case 0:
               Class<? extends Number> numType;
@@ -992,10 +989,6 @@ public class TestJoinUtil extends LuceneTestCase {
               joinQuery = JoinUtil.createJoinQuery(fromField + suffix, muliValsQuery, toField + suffix, numType, actualQuery, indexSearcher, scoreMode);
               break;
             case 1:
-              final LegacyNumericType legacyNumType = random().nextBoolean() ? LegacyNumericType.INT: LegacyNumericType.LONG ;
-              joinQuery = JoinUtil.createJoinQuery(fromField+legacyNumType, muliValsQuery, toField+legacyNumType, legacyNumType, actualQuery, indexSearcher, scoreMode);
-              break;
-            case 2:
               joinQuery = JoinUtil.createJoinQuery(fromField, muliValsQuery, toField, actualQuery, indexSearcher, scoreMode);
               break;
             default:
@@ -1336,26 +1329,24 @@ public class TestJoinUtil extends LuceneTestCase {
     document.add(newTextField(random, fieldName, linkValue, Field.Store.NO));
 
     final int linkInt = Integer.parseUnsignedInt(linkValue,16);
-    document.add(new LegacyIntField(fieldName + LegacyNumericType.INT, linkInt, Field.Store.NO));
-    document.add(new IntPoint(fieldName + LegacyNumericType.INT, linkInt));
+    document.add(new IntPoint(fieldName + "INT", linkInt));
     document.add(new FloatPoint(fieldName + "FLOAT", linkInt));
 
     final long linkLong = linkInt<<32 | linkInt;
-    document.add(new LegacyLongField(fieldName +  LegacyNumericType.LONG, linkLong, Field.Store.NO));
-    document.add(new LongPoint(fieldName + LegacyNumericType.LONG, linkLong));
+    document.add(new LongPoint(fieldName + "LONG", linkLong));
     document.add(new DoublePoint(fieldName + "DOUBLE", linkLong));
 
     if (multipleValuesPerDocument) {
       document.add(new SortedSetDocValuesField(fieldName, new BytesRef(linkValue)));
-      document.add(new SortedNumericDocValuesField(fieldName+ LegacyNumericType.INT, linkInt));
+      document.add(new SortedNumericDocValuesField(fieldName+ "INT", linkInt));
       document.add(new SortedNumericDocValuesField(fieldName+ "FLOAT", Float.floatToRawIntBits(linkInt)));
-      document.add(new SortedNumericDocValuesField(fieldName+ LegacyNumericType.LONG, linkLong));
+      document.add(new SortedNumericDocValuesField(fieldName+ "LONG", linkLong));
       document.add(new SortedNumericDocValuesField(fieldName+ "DOUBLE", Double.doubleToRawLongBits(linkLong)));
     } else {
       document.add(new SortedDocValuesField(fieldName, new BytesRef(linkValue)));
-      document.add(new NumericDocValuesField(fieldName+ LegacyNumericType.INT, linkInt));
+      document.add(new NumericDocValuesField(fieldName+ "INT", linkInt));
       document.add(new FloatDocValuesField(fieldName+ "FLOAT", linkInt));
-      document.add(new NumericDocValuesField(fieldName+ LegacyNumericType.LONG, linkLong));
+      document.add(new NumericDocValuesField(fieldName+ "LONG", linkLong));
       document.add(new DoubleDocValuesField(fieldName+ "DOUBLE", linkLong));
     }
     if (globalOrdinalJoin) {

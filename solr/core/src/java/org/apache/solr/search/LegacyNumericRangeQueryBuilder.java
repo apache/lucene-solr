@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.queryparser.xml.builders;
+package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.legacy.LegacyNumericRangeQuery;
@@ -22,6 +22,7 @@ import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.PointRangeQueryBuilder;
 import org.w3c.dom.Element;
 
 /**
