@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
 package org.apache.solr.cloud;
 
 import java.io.IOException;
@@ -7,12 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.RandomStringUtils;
@@ -32,27 +45,9 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 /**
  * Test sync peer sync when a node restarts and documents are indexed when node was down.
- * 
+ *
  * This test is modeled after SyncSliceTest
  */
 @Slow
@@ -177,23 +172,23 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  
-  private Future<Void> indexInBackground(int numDocs) {
-    ExecutorService executorService = Executors.newSingleThreadExecutor();
-    Future<Void> f = (Future<Void>) executorService.submit(new Callable<Void>() {
 
-      @Override
-      public Void call() throws Exception {
-          for (int i = 0; i < numDocs; i++) {
-            indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
-            // slow down adds, to get documents indexed while in PeerSync
-            Thread.sleep(100);
-          }
-        return null;
+  private void indexInBackground(int numDocs) {
+    new Thread(() -> {
+      try {
+        for (int i = 0; i < numDocs; i++) {
+          indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
+          // slow down adds, to get documents indexed while in PeerSync
+          Thread.sleep(100);
+        }
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+
       }
-    });
+    }, getClassName())
+        .start();
 
-    return f;
+
   }
    
 
@@ -343,7 +338,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     SolrInputDocument doc = new SolrInputDocument();
 
     addFields(doc, fields);
-    addFields(doc, "rnd_s", RandomStringUtils.random(new Random().nextInt(100) + 100));
+    addFields(doc, "rnd_s", RandomStringUtils.random(random().nextInt(100) + 100));
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
