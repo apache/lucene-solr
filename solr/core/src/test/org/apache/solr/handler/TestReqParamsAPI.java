@@ -22,9 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -32,37 +33,48 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.RestTestHarness;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
-public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
+public class TestReqParamsAPI extends SolrCloudTestCase {
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 
+  private static String COLL_NAME = "collection1";
+
   private void setupHarnesses() {
-    for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient) client).getBaseURL());
+    for (final JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
+      RestTestHarness harness = new RestTestHarness(() -> jettySolrRunner.getBaseUrl().toString() + "/" + COLL_NAME);
       restTestHarnesses.add(harness);
     }
   }
 
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    for (RestTestHarness r : restTestHarnesses) {
-      r.close();
-    }
+  @BeforeClass
+  public static void createCluster() throws Exception {
+    System.setProperty("managed.schema.mutable", "true");
+    configureCluster(2)
+        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
+        .configure();
+    cluster.createCollection(COLL_NAME, 1, 2, "conf1", null);
   }
 
   @Test
   public void test() throws Exception {
-    setupHarnesses();
-    testReqParams();
+    try {
+      setupHarnesses();
+      testReqParams();
+    } finally {
+      for (RestTestHarness r : restTestHarnesses) {
+        r.close();
+      }
+    }
   }
 
   private void testReqParams() throws Exception {
-    DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(COLL_NAME);
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
@@ -70,13 +82,26 @@ public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
     }
 
     RestTestHarness writeHarness = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
-    String payload = " {\n" +
+
+    String payload = "{\n" +
+        "'create-requesthandler' : { 'name' : '/dump0', 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n" +
+        "}";
+
+    TestSolrConfigHandler.runConfigCommand(writeHarness, "/config?wt=json", payload);
+
+    payload = "{\n" +
+        "'create-requesthandler' : { 'name' : '/dump1', 'class': 'org.apache.solr.handler.DumpRequestHandler', 'useParams':'x' }\n" +
+        "}";
+    TestSolrConfigHandler.runConfigCommand(writeHarness, "/config?wt=json", payload);
+
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(COLL_NAME, cloudClient.getZkStateReader(), false, true, 90);
+
+    payload = " {\n" +
         "  'set' : {'x': {" +
         "                    'a':'A val',\n" +
         "                    'b': 'B val'}\n" +
         "             }\n" +
         "  }";
-
 
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config/params?wt=json", payload);
 
@@ -88,12 +113,6 @@ public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
         "A val",
         10);
     compareValues(result, "B val", asList("response", "params", "x", "b"));
-
-    payload = "{\n" +
-        "'create-requesthandler' : { 'name' : '/dump0', 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n" +
-        "}";
-
-    TestSolrConfigHandler.runConfigCommand(writeHarness, "/config?wt=json", payload);
 
     TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
@@ -119,12 +138,6 @@ public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
         asList("params", "a"),
         "fomrequest",
         5);
-
-    payload = "{\n" +
-        "'create-requesthandler' : { 'name' : '/dump1', 'class': 'org.apache.solr.handler.DumpRequestHandler', 'useParams':'x' }\n" +
-        "}";
-
-    TestSolrConfigHandler.runConfigCommand(writeHarness, "/config?wt=json", payload);
 
     result = TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
@@ -263,9 +276,5 @@ public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
         asList("response", "params", "y", "p"),
         null,
         10);
-
-
   }
-
-
 }
