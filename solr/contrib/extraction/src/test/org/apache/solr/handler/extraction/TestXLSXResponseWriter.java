@@ -55,7 +55,7 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     if (writer instanceof XLSXResponseWriter) {
       writerXlsx = (XLSXResponseWriter) testCore.getQueryResponseWriter("xlsx");
     } else {
-      throw new Exception("XLSXResponseWriter not registered - are you using the right solrconfig?");
+      throw new Exception("XLSXResponseWriter not registered with solr core");
     }
   }
 
@@ -103,6 +103,12 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     assertEquals("ID,score,Foo String\n1,0.0,hi\n", getStringFromSheet(resultSheet));
     // test column width (result is in 256ths of a character for some reason)
     assertEquals(3*256, resultSheet.getColumnWidth(0));
+
+    resultSheet = getWSResultForQuery(req("q","id:1^0", "wt","xlsx", "colname.id", "I.D.", "colwidth.id", "10",
+                                      "fl","id,score,foo_s"));
+    // test override colname/width
+    assertEquals("I.D.,score,Foo String\n1,0.0,hi\n", getStringFromSheet(resultSheet));
+    assertEquals(10*256, resultSheet.getColumnWidth(0));
 
     resultSheet = getWSResultForQuery(req("q","id:2", "wt","xlsx", "fl","id,v_ss"));
     // test multivalued
@@ -167,9 +173,7 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     resultSheet = getWSResultForQuery(req, rsp);
     assertEquals("ID,Foo Integer,Foo String,Foo Long,foo_b,foo_f,foo_d,foo_dt1,v_ss,v2_ss\n" +
         "1,-1,hi,12345678987654321L,false,1.414,-1.0E300,2000-01-02T03:04:05Z,,\n" +
-        "2,,,,,,,,hi; there,nice; output\n",
-      getStringFromSheet(resultSheet));
-    
+        "2,,,,,,,,hi; there,nice; output\n", getStringFromSheet(resultSheet));
 
     // get field values and scores - just check that the scores are there... we don't guarantee where
     rsp.setReturnFields( new SolrReturnFields("*,score", req) );
@@ -182,31 +186,27 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     resultSheet = getWSResultForQuery(req, rsp);
     assertEquals("ID,Foo Integer,Foo String,Foo Long,foo_b,foo_f,foo_d,foo_dt1\n" +
         "1,-1,hi,12345678987654321L,false,1.414,-1.0E300,2000-01-02T03:04:05Z\n" +
-        "2,,,,,,,\n",
-       getStringFromSheet(resultSheet));
+        "2,,,,,,,\n", getStringFromSheet(resultSheet));
 
     rsp.setReturnFields( new SolrReturnFields("id,*_d*", req) );
     resultSheet = getWSResultForQuery(req, rsp);
     assertEquals("ID,foo_d,foo_dt1\n" +
         "1,-1.0E300,2000-01-02T03:04:05Z\n" +
-        "2,,\n",
-      getStringFromSheet(resultSheet));
+        "2,,\n", getStringFromSheet(resultSheet));
 
     // Test function queries
     rsp.setReturnFields( new SolrReturnFields("sum(1,1),id,exists(foo_s1),div(9,1),foo_f", req) );
     resultSheet = getWSResultForQuery(req, rsp);
     assertEquals("sum(1,1),ID,exists(foo_s1),div(9,1),foo_f\n" +
         ",1,,,1.414\n" +
-        ",2,,,\n",
-        getStringFromSheet(resultSheet));
+        ",2,,,\n", getStringFromSheet(resultSheet));
 
     // Test transformers
     rsp.setReturnFields( new SolrReturnFields("mydocid:[docid],[explain]", req) );
     resultSheet = getWSResultForQuery(req, rsp);
     assertEquals("mydocid,[explain]\n" +
         ",\n" +
-        ",\n",
-        getStringFromSheet(resultSheet));
+        ",\n", getStringFromSheet(resultSheet));
 
     req.close();
   }
