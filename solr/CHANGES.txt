@@ -69,6 +69,12 @@ Bug Fixes
 
 * SOLR-9310: PeerSync fails on a node restart due to IndexFingerPrint mismatch (Pushkar Raste, noble)
 
+Other Changes
+----------------------
+
+* SOLR-9412: Add failOnMissingParams option to MacroExpander, add TestMacroExpander class.
+  (Jon Dorando, Christine Poerschke)
+
 ==================  6.2.0 ==================
 
 Versions of Major Components
