@@ -64,8 +64,10 @@ Apache ZooKeeper 3.4.6
 Jetty 9.3.8.v20160314
 
 
-(No Changes)
+Bug Fixes
+----------------------
 
+* SOLR-9310: PeerSync fails on a node restart due to IndexFingerPrint mismatch (Pushkar Raste, noble)
 
 ==================  6.2.0 ==================
 

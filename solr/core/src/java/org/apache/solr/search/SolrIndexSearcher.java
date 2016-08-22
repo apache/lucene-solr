@@ -147,7 +147,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final String path;
   private boolean releaseDirectory;
 
-  private volatile IndexFingerprint fingerprint;
+  private volatile Map<Long,IndexFingerprint> maxVersionFingerprintCache = new HashMap<>();
   private final Object fingerprintLock = new Object();
 
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory,
@@ -2380,9 +2380,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    **/
   public IndexFingerprint getIndexFingerprint(long maxVersion) throws IOException {
     // possibly expensive, so prevent more than one thread from calculating it for this searcher
-    synchronized (fingerprintLock) {
-      if (fingerprint == null) {
-        fingerprint = IndexFingerprint.getFingerprint(this, maxVersion);
+    
+    // TODO what happens if updates came out of order, would cached fingerprint still be valid?
+    // May be caching fingerprint may lead more problems
+    IndexFingerprint fingerprint = maxVersionFingerprintCache.get(maxVersionFingerprintCache);
+    if(fingerprint == null) {
+      synchronized (fingerprintLock) {
+        if (maxVersionFingerprintCache.get(maxVersionFingerprintCache) == null) {
+          log.info("Fingerprint for max version: " + maxVersion + " not found in cache" );
+          maxVersionFingerprintCache.put(maxVersion, IndexFingerprint.getFingerprint(this, maxVersion));
+        }
+        fingerprint = maxVersionFingerprintCache.get(maxVersion) ;
       }
     }
 
