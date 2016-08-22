@@ -87,8 +87,8 @@ public class XLSXResponseWriter extends RawResponseWriter {
     XLSXWriter w = new XLSXWriter(new CharArrayWriter(), req, rsp);
 
     // copy these as each request may modify them within its context
-    LinkedHashMap<String,String> reqNamesMap = colNamesMap;//.copy();
-    LinkedHashMap<String,Integer> reqWidthsMap = colWidthsMap;//.copy();
+    LinkedHashMap<String,String> reqNamesMap = new LinkedHashMap<>(colNamesMap);
+    LinkedHashMap<String,Integer> reqWidthsMap = new LinkedHashMap<>(colWidthsMap);
 
     Iterator<String> paramNamesIter = req.getParams().getParameterNamesIterator();
     while (paramNamesIter.hasNext()) {
