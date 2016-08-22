@@ -63,7 +63,7 @@ public class XLSXResponseWriter extends RawResponseWriter {
 
   @Override
   public void init(NamedList solrconfig) {
-    NamedList columnNames = (NamedList) solrconfig.get("columnNames");
+    NamedList columnNames = (NamedList) solrconfig.get("colnames");
     if (columnNames != null && columnNames.size() > 0) {
       for (Object nameObject: columnNames) {
         Map.Entry<String, String> namePair = (Map.Entry<String, String>) nameObject;
@@ -71,7 +71,7 @@ public class XLSXResponseWriter extends RawResponseWriter {
       }
     }
 
-    NamedList columnWidths = (NamedList) solrconfig.get("columnWidths");
+    NamedList columnWidths = (NamedList) solrconfig.get("colwidths");
     if (columnWidths != null && columnWidths.size() > 0) {
       for (Object widthObject : columnWidths) {
         Map.Entry<String, Integer> widthPair = (Map.Entry<String, Integer>) widthObject;
@@ -85,8 +85,25 @@ public class XLSXResponseWriter extends RawResponseWriter {
     // throw away arraywriter just to satisfy super requirements; we're grabbing
     // all writes before they go to it anyway
     XLSXWriter w = new XLSXWriter(new CharArrayWriter(), req, rsp);
+
+    // copy these as each request may modify them within its context
+    LinkedHashMap<String,String> reqNamesMap = colNamesMap;//.copy();
+    LinkedHashMap<String,Integer> reqWidthsMap = colWidthsMap;//.copy();
+
+    Iterator<String> paramNamesIter = req.getParams().getParameterNamesIterator();
+    while (paramNamesIter.hasNext()) {
+      String nextParam = paramNamesIter.next();
+      if (nextParam.startsWith("colname.")) {
+        String field = nextParam.substring("colname.".length());
+        reqNamesMap.put(field, req.getParams().get(nextParam));
+      } else if (nextParam.startsWith("colwidth.")) {
+        String field = nextParam.substring("colwidth.".length());
+        reqWidthsMap.put(field, req.getParams().getInt(nextParam));
+      }
+    }
+
     try {
-      w.writeResponse(out, this.colNamesMap, this.colWidthsMap);
+      w.writeResponse(out, reqNamesMap, reqWidthsMap);
     } finally {
       w.close();
     }
