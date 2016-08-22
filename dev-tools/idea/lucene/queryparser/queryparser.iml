@@ -17,6 +17,5 @@
     <orderEntry type="module" module-name="lucene-core" />
     <orderEntry type="module" module-name="queries" />
     <orderEntry type="module" module-name="sandbox" />
-    <orderEntry type="module" module-name="backward-codecs" />
   </component>
 </module>

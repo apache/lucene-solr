@@ -26,7 +26,6 @@ import java.util.function.BiConsumer;
 import java.util.function.LongFunction;
 
 import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
@@ -111,50 +110,6 @@ public final class JoinUtil {
     
   }
   
-  /**
-   * @deprecated Because {@link LegacyNumericType} is deprecated, instead use {@link #createJoinQuery(String, boolean, String, Class, Query, IndexSearcher, ScoreMode)}
-   *
-   * Method for query time joining for numeric fields. It supports multi- and single- values longs and ints. 
-   * All considerations from {@link JoinUtil#createJoinQuery(String, boolean, String, Query, IndexSearcher, ScoreMode)} are applicable here too,
-   * though memory consumption might be higher.
-   * <p>
-   *
-   * @param fromField                 The from field to join from
-   * @param multipleValuesPerDocument Whether the from field has multiple terms per document
-   *                                  when true fromField might be {@link DocValuesType#SORTED_NUMERIC},
-   *                                  otherwise fromField should be {@link DocValuesType#NUMERIC}
-   * @param toField                   The to field to join to, should be {@link org.apache.lucene.legacy.LegacyIntField} or {@link org.apache.lucene.legacy.LegacyLongField}
-   * @param numericType               either {@link LegacyNumericType#INT} or {@link LegacyNumericType#LONG}, it should correspond to fromField and toField types
-   * @param fromQuery                 The query to match documents on the from side
-   * @param fromSearcher              The searcher that executed the specified fromQuery
-   * @param scoreMode                 Instructs how scores from the fromQuery are mapped to the returned query
-   * @return a {@link Query} instance that can be used to join documents based on the
-   *         terms in the from and to field
-   * @throws IOException If I/O related errors occur
-   */
-  @Deprecated
-  public static Query createJoinQuery(String fromField,
-      boolean multipleValuesPerDocument,
-      String toField, LegacyNumericType numericType,
-      Query fromQuery,
-      IndexSearcher fromSearcher,
-      ScoreMode scoreMode) throws IOException {
-    
-    final GenericTermsCollector termsCollector;
-     
-    if (multipleValuesPerDocument) {
-      Function<SortedSetDocValues> mvFunction = DocValuesTermsCollector.sortedNumericAsSortedSetDocValues(fromField,numericType);
-      termsCollector = GenericTermsCollector.createCollectorMV(mvFunction, scoreMode);
-    } else {
-      Function<BinaryDocValues> svFunction = DocValuesTermsCollector.numericAsBinaryDocValues(fromField,numericType);
-      termsCollector =  GenericTermsCollector.createCollectorSV(svFunction, scoreMode);
-    }
-    
-    return createJoinQuery(multipleValuesPerDocument, toField, fromQuery, fromSearcher, scoreMode,
-        termsCollector);
-    
-  }
-
   /**
    * Method for query time joining for numeric fields. It supports multi- and single- values longs, ints, floats and longs.
    * All considerations from {@link JoinUtil#createJoinQuery(String, boolean, String, Query, IndexSearcher, ScoreMode)} are applicable here too,

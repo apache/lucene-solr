@@ -27,7 +27,6 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -245,14 +244,6 @@ class TermsIncludingScoreQuery extends Query {
     for (int i = 0; i < terms.size(); i++) {
       terms.get(ords[i], ref);
       out.print(ref+" "+ref.utf8ToString()+" ");
-      try {
-        out.print(Long.toHexString(LegacyNumericUtils.prefixCodedToLong(ref))+"L");
-      } catch (Exception e) {
-        try {
-          out.print(Integer.toHexString(LegacyNumericUtils.prefixCodedToInt(ref))+"i");
-        } catch (Exception ee) {
-        }
-      }
       out.println(" score="+scores[ords[i]]);
       out.println("");
     }
