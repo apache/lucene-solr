@@ -63,6 +63,11 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.3.8.v20160314
 
+Detailed Change List
+----------------------
+
+New Features
+----------------------
 
 Bug Fixes
 ----------------------
@@ -74,6 +79,14 @@ Other Changes
 
 * SOLR-9412: Add failOnMissingParams option to MacroExpander, add TestMacroExpander class.
   (Jon Dorando, Christine Poerschke)
+
+Optimizations
+----------------------
+
+Other Changes
+----------------------
+
+* SOLR-7362: Fix TestReqParamsAPI test failures (noble, Varun Thacker)
 
 ==================  6.2.0 ==================
 
