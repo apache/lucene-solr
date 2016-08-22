@@ -205,13 +205,13 @@
 
   <queryResponseWriter name="xlsx"
                class="org.apache.solr.handler.extraction.XLSXResponseWriter">
-    <lst name="columnWidths">
+    <lst name="colwidths">
       <int name="id">3</int>
       <int name="foo_s">10</int>
       <int name="foo_i">10</int>
       <int name="foo_l">50</int>
     </lst>
-    <lst name="columnNames">
+    <lst name="colnames">
       <str name="id">ID</str>
       <str name="foo_s">Foo String</str>
       <str name="foo_i">Foo Integer</str>
