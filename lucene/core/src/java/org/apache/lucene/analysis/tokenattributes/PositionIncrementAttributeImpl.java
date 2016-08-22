@@ -47,6 +47,11 @@ public class PositionIncrementAttributeImpl extends AttributeImpl implements Pos
   }
   
   @Override
+  public void end() {
+    this.positionIncrement = 0;
+  }
+
+  @Override
   public boolean equals(Object other) {
     if (other == this) {
       return true;

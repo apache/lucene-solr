@@ -190,16 +190,23 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
       'Implementation-Vendor: The Apache Software Foundation',
       # Make sure 1.8 compiler was used to build release bits:
       'X-Compile-Source-JDK: 8',
-      # Make sure 1.8 ant was used to build release bits: (this will match 1.8+)
-      'Ant-Version: Apache Ant 1.8',
+      # Make sure 1.8 or 1.9 ant was used to build release bits: (this will match 1.8.x, 1.9.x)
+      ('Ant-Version: Apache Ant 1.8', 'Ant-Version: Apache Ant 1.9'),
       # Make sure .class files are 1.8 format:
       'X-Compile-Target-JDK: 8',
       'Specification-Version: %s' % version,
       # Make sure the release was compiled with 1.8:
       'Created-By: 1.8'):
-      if s.find(verify) == -1:
-        raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF' % \
-                           (desc, verify))
+      if type(verify) is not tuple:
+        verify = (verify,)
+      for x in verify:
+        if s.find(x) != -1:
+          break
+      else:
+        if len(verify) == 1:
+          raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF' % (desc, verify[0]))
+        else:
+          raise RuntimeError('%s is missing one of "%s" inside its META-INF/MANIFEST.MF' % (desc, verify))
 
     if gitRevision != 'skip':
       # Make sure this matches the version and git revision we think we are releasing:

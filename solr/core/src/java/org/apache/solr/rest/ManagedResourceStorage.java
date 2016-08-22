@@ -84,7 +84,7 @@ public abstract class ManagedResourceStorage {
    * whether the core is running in cloud mode as well as initArgs. 
    */
   public static StorageIO newStorageIO(String collection, SolrResourceLoader resourceLoader, NamedList<String> initArgs) {
-    StorageIO storageIO = null;
+    StorageIO storageIO;
 
     SolrZkClient zkClient = null;
     String zkConfigName = null;
@@ -94,9 +94,10 @@ public abstract class ManagedResourceStorage {
         zkConfigName = ((ZkSolrResourceLoader)resourceLoader).getZkController().
             getZkStateReader().readConfigName(collection);
       } catch (Exception e) {
-        log.error("Failed to get config name for collection {} due to: {}", 
-            collection, e.toString());
-      } 
+        log.error("Failed to get config name due to", e);
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+            "Failed to load config name for collection:" + collection  + " due to: ", e);
+      }
       if (zkConfigName == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, 
             "Could not find config name for collection:" + collection);

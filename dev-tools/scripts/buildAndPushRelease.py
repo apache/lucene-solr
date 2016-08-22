@@ -218,7 +218,7 @@ def check_cmdline_tools():  # Fail fast if there are cmdline tool problems
   if os.system('git --version >/dev/null 2>/dev/null'):
     raise RuntimeError('"git --version" returned a non-zero exit code.')
   antVersion = os.popen('ant -version').read().strip()
-  if not antVersion.startswith('Apache Ant(TM) version 1.8'):
+  if not antVersion.startswith('Apache Ant(TM) version 1.8') and not antVersion.startswith('Apache Ant(TM) version 1.9'):
     raise RuntimeError('ant version is not 1.8.X: "%s"' % antVersion)
   
 def main():

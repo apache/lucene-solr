@@ -692,7 +692,7 @@ shape:
     polyList.add(p5);
     
     GeoPolygon p = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, polyList);
-    System.out.println("p = "+p);
+    //System.out.println("p = "+p);
 
     XYZBounds bounds = new XYZBounds();
     p.getBounds(bounds);
@@ -733,8 +733,8 @@ shape:
     
     final GeoPoint point = new GeoPoint(PlanetModel.WGS84, -0.41518838180529244, 3.141592653589793);
     final GeoPoint encodedPoint = new GeoPoint(-0.9155623168963972, 2.3309121299774915E-10, -0.40359240449795253);
-    System.out.println("point = "+point);
-    System.out.println("encodedPoint = "+encodedPoint);
+    //System.out.println("point = "+point);
+    //System.out.println("encodedPoint = "+encodedPoint);
     
     assertTrue(p.isWithin(point));
     assertTrue(solid.isWithin(point));
@@ -905,6 +905,27 @@ shape:
     assertTrue(p.isWithin(checkPoint));
     assertTrue(solid.isWithin(checkPoint));
     
+  }
+
+  @Test
+  public void testPolygonFailureCase1() {
+    final List<GeoPoint> poly2List = new ArrayList<>();
+    poly2List.add(new GeoPoint(PlanetModel.WGS84, -0.6370451769779303, 2.5318373679431616));
+    poly2List.add(new GeoPoint(PlanetModel.WGS84, 1.5707963267948966, -3.141592653589793));
+    poly2List.add(new GeoPoint(PlanetModel.WGS84, -1.0850383189690824, 2.4457272005608357E-47));
+    poly2List.add(new GeoPoint(PlanetModel.WGS84, -0.5703530503197992, -3.141592653589793));
+    final BitSet poly2Bitset = new BitSet();
+    poly2Bitset.set(1);
+    
+    boolean result;
+    try {
+      final GeoConvexPolygon poly2 = new GeoConvexPolygon(PlanetModel.WGS84, poly2List);
+      result = true;
+    } catch (IllegalArgumentException e) {
+      result = false;
+    }
+    
+    assertTrue(!result);
   }
   
 }

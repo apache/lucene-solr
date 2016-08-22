@@ -217,7 +217,9 @@ def main():
   update_changes('lucene/CHANGES.txt', c.version)
   update_changes('solr/CHANGES.txt', c.version, get_solr_init_changes())
 
-  if current_version.is_back_compat_with(c.version):
+  is_back_compat = current_version.major == c.version.major or current_version.is_back_compat_with(c.version)
+
+  if is_back_compat:
     add_constant(c.version, not c.is_latest_version)
   else:
     print('\nNot adding constant for version %s because it is no longer supported' % c.version)
@@ -232,7 +234,7 @@ def main():
     print('\nTODO: ')
     print('  - Move backcompat oldIndexes to unsupportedIndexes in TestBackwardsCompatibility')
     print('  - Update IndexFormatTooOldException throw cases')
-  elif current_version.is_back_compat_with(c.version):
+  elif is_back_compat:
     print('\nTesting changes')
     check_lucene_version_tests()
     check_solr_version_tests()
