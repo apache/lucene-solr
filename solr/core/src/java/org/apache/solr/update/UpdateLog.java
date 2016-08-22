@@ -952,7 +952,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
       for (List<Update> singleList : updateList) {
         for (Update ptr : singleList) {
-          if(ptr.version > maxVersion) continue;
+          if(Math.abs(ptr.version) > Math.abs(maxVersion)) continue;
           ret.add(ptr.version);
           if (--n <= 0) return ret;
         }
