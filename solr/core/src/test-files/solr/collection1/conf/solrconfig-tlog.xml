@@ -48,7 +48,7 @@
   </requestHandler>
   
   <peerSync>
-    <useRangeVersions>${solr.peerSync.useRangeVersions:false}</useRangeVersions>
+    <useRangeVersions>${solr.peerSync.useRangeVersions:true}</useRangeVersions>
   </peerSync>
 
   <updateHandler class="solr.DirectUpdateHandler2">
