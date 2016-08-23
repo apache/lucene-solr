@@ -49,6 +49,8 @@ Bug Fixes
 * SOLR-7280: Load cores in sorted order & limit threads to improve cluster stability (noble, Erick Erickson, shalin)
 
 
+* SOLR-9310: PeerSync fails on a node restart due to IndexFingerPrint mismatch (Pushkar Raste, noble)
+
 ======================= 5.5.2 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
