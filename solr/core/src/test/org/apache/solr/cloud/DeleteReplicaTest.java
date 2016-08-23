@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -120,6 +121,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     }
   }
 
+
   protected void tryToRemoveOnlyIfDown(String collectionName, CloudSolrClient client, Replica replica, String shard) throws IOException, SolrServerException {
     Map m = makeMap("collection", collectionName,
         "action", DELETEREPLICA.toLower(),
@@ -133,10 +135,10 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
   }
 
   static void removeAndWaitForReplicaGone(String COLL_NAME,
-      CloudSolrClient client, Replica replica, String shard)
-      throws SolrServerException, IOException, InterruptedException {
+                                          CloudSolrClient client, Replica replica, String shard)
+          throws SolrServerException, IOException, InterruptedException {
     Map m = makeMap("collection", COLL_NAME, "action", DELETEREPLICA.toLower(), "shard",
-        shard, "replica", replica.getName());
+            shard, "replica", replica.getName());
     SolrParams params = new MapSolrParams(m);
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
@@ -146,11 +148,11 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     DocCollection testcoll = null;
     while (! timeout.hasTimedOut()) {
       testcoll = client.getZkStateReader()
-          .getClusterState().getCollection(COLL_NAME);
+              .getClusterState().getCollection(COLL_NAME);
       success = testcoll.getSlice(shard).getReplica(replica.getName()) == null;
       if (success) {
         log.info("replica cleaned up {}/{} core {}",
-            shard + "/" + replica.getName(), replica.getStr("core"));
+                shard + "/" + replica.getName(), replica.getStr("core"));
         log.info("current state {}", testcoll);
         break;
       }
@@ -158,6 +160,29 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     }
     assertTrue("Replica not cleaned up", success);
   }
+
+
+  protected void tryRemoveReplicaByCountAndShard(String collectionName, CloudSolrClient client, int count, String shard) throws IOException, SolrServerException {
+    Map m = makeMap("collection", collectionName,
+            "action", DELETEREPLICA.toLower(),
+            "shard", shard,
+            "count", count);
+    SolrParams params = new MapSolrParams(m);
+    SolrRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    client.request(request);
+  }
+
+  protected void tryRemoveReplicaByCount(String collectionName, CloudSolrClient client, int count) throws IOException, SolrServerException {
+    Map m = makeMap("collection", collectionName,
+            "action", DELETEREPLICA.toLower(),
+            "count", count);
+    SolrParams params = new MapSolrParams(m);
+    SolrRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    client.request(request);
+  }
+
 
   protected void createCollection(String COLL_NAME, CloudSolrClient client) throws Exception {
     int replicationFactor = 2;
@@ -212,4 +237,78 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     assertFalse("Instance directory still exists", FileUtils.fileExists(instanceDir));
     assertFalse("DataDirectory still exists", FileUtils.fileExists(dataDir));
   }
+
+  @Test
+  @ShardsFixed(num = 4)
+  public void deleteReplicaByCount() throws Exception {
+    String collectionName = "deleteByCount";
+    try (CloudSolrClient client = createCloudClient(null)) {
+      createCollection(collectionName, 1, 3, 5);
+
+      waitForRecoveriesToFinish(collectionName, false);
+
+      DocCollection testcoll = getCommonCloudSolrClient().getZkStateReader()
+              .getClusterState().getCollection(collectionName);
+      Collection<Slice> slices = testcoll.getActiveSlices();
+      assertEquals(slices.size(), 1);
+      for (Slice individualShard:  slices) {
+        assertEquals(individualShard.getReplicas().size(),3);
+      }
+
+
+      try {
+        // Should not be able to delete 2 replicas (non leader ones for a given shard
+        tryRemoveReplicaByCountAndShard(collectionName, client, 2, "shard1");
+        testcoll = getCommonCloudSolrClient().getZkStateReader()
+                .getClusterState().getCollection(collectionName);
+        slices = testcoll.getActiveSlices();
+        assertEquals(slices.size(), 1);
+        for (Slice individualShard:  slices) {
+          assertEquals(individualShard.getReplicas().size(),1);
+        }
+
+      } catch (SolrException se) {
+        fail("Should have been able to remove the replica successfully");
+      }
+
+    }
+  }
+
+  @Test
+  @ShardsFixed(num = 4)
+  public void deleteReplicaByCountForAllShards() throws Exception {
+    String collectionName = "deleteByCountNew";
+    try (CloudSolrClient client = createCloudClient(null)) {
+      createCollection(collectionName, 2, 2, 5);
+
+      waitForRecoveriesToFinish(collectionName, false);
+
+      DocCollection testcoll = getCommonCloudSolrClient().getZkStateReader()
+              .getClusterState().getCollection(collectionName);
+      Collection<Slice> slices = testcoll.getActiveSlices();
+      assertEquals(slices.size(), 2);
+      for (Slice individualShard:  slices) {
+        assertEquals(individualShard.getReplicas().size(),2);
+      }
+
+
+      try {
+        // Should not be able to delete 2 replicas from all shards (non leader ones)
+        tryRemoveReplicaByCount(collectionName, client, 1);
+        testcoll = getCommonCloudSolrClient().getZkStateReader()
+                .getClusterState().getCollection(collectionName);
+        slices = testcoll.getActiveSlices();
+        assertEquals(slices.size(), 2);
+        for (Slice individualShard:  slices) {
+          assertEquals(individualShard.getReplicas().size(),1);
+        }
+
+      } catch (SolrException se) {
+        fail("Should have been able to remove the replica successfully");
+      }
+
+    }
+  }
+
 }
+
