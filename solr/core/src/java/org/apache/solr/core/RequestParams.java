@@ -29,6 +29,7 @@ import java.util.Map;
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
@@ -156,10 +157,8 @@ public class RequestParams implements MapSerializable {
           requestParams = new RequestParams((Map) o[0], (Integer) o[1]);
           log.info("request params refreshed to version {}", requestParams.getZnodeVersion());
         }
-      } catch (KeeperException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+      } catch (KeeperException | InterruptedException e) {
+        SolrZkClient.checkInterrupted(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 

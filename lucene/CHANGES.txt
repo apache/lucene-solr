@@ -30,6 +30,9 @@ Other
 
 * LUCENE-7360: Remove Explanation.toHtml() (Alan Woodward)
 
+======================= Lucene 6.3.0 =======================
+(No Changes)
+
 ======================= Lucene 6.2.0 =======================
 
 API Changes
@@ -90,6 +93,9 @@ Bug Fixes
 
 * SOLR-9413: Fix analysis/kuromoji's CSVUtil.quoteEscape logic, add TestCSVUtil test.
   (AppChecker, Christine Poerschke)
+
+* LUCENE-7419: Fix performance bug with TokenStream.end(), where it would lookup
+  PositionIncrementAttribute every time. (Mike McCandless, Robert Muir)
 
 Improvements
 

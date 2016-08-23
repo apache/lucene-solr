@@ -358,7 +358,6 @@ public class LBHttpSolrClient extends SolrClient {
         }
         continue;
       }
-      rsp.server = serverStr;
       try {
         MDC.put("LBHttpSolrClient.url", serverStr);
         HttpSolrClient client = makeSolrClient(serverStr);
@@ -410,6 +409,7 @@ public class LBHttpSolrClient extends SolrClient {
       boolean isZombie, String zombieKey) throws SolrServerException, IOException {
     Exception ex = null;
     try {
+      rsp.server = client.getBaseURL();
       rsp.rsp = client.request(req.getRequest(), (String) null);
       if (isZombie) {
         zombieServers.remove(zombieKey);

@@ -138,6 +138,17 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
     startOffset = endOffset = 0;
     type = DEFAULT_TYPE;
   }
+  
+  /** Resets the attributes at end
+   */
+  @Override
+  public void end() {
+    super.end();
+    positionIncrement = 0;
+    positionLength = 1;
+    startOffset = endOffset = 0;
+    type = DEFAULT_TYPE;
+  }
 
   @Override
   public PackedTokenAttributeImpl clone() {

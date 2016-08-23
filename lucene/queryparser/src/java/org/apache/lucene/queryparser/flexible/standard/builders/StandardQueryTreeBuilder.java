@@ -32,8 +32,6 @@ import org.apache.lucene.queryparser.flexible.core.nodes.TokenizedPhraseQueryNod
 import org.apache.lucene.queryparser.flexible.standard.nodes.MultiPhraseQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.PointQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.PointRangeQueryNode;
-import org.apache.lucene.queryparser.flexible.standard.nodes.LegacyNumericQueryNode;
-import org.apache.lucene.queryparser.flexible.standard.nodes.LegacyNumericRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.PrefixWildcardQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;
@@ -59,8 +57,6 @@ public class StandardQueryTreeBuilder extends QueryTreeBuilder implements
     setBuilder(FieldQueryNode.class, new FieldQueryNodeBuilder());
     setBuilder(BooleanQueryNode.class, new BooleanQueryNodeBuilder());
     setBuilder(FuzzyQueryNode.class, new FuzzyQueryNodeBuilder());
-    setBuilder(LegacyNumericQueryNode.class, new DummyQueryNodeBuilder());
-    setBuilder(LegacyNumericRangeQueryNode.class, new LegacyNumericRangeQueryNodeBuilder());
     setBuilder(PointQueryNode.class, new DummyQueryNodeBuilder());
     setBuilder(PointRangeQueryNode.class, new PointRangeQueryNodeBuilder());
     setBuilder(BoostQueryNode.class, new BoostQueryNodeBuilder());

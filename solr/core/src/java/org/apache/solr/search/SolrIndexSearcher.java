@@ -33,6 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -147,8 +148,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final String path;
   private boolean releaseDirectory;
 
-  private volatile IndexFingerprint fingerprint;
-  private final Object fingerprintLock = new Object();
+  private final Map<Long, IndexFingerprint> maxVersionFingerprintCache = new ConcurrentHashMap<>();
 
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory,
       String path) throws IOException {
@@ -2379,14 +2379,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * gets a cached version of the IndexFingerprint for this searcher
    **/
   public IndexFingerprint getIndexFingerprint(long maxVersion) throws IOException {
+    IndexFingerprint fingerprint = maxVersionFingerprintCache.get(maxVersion);
+    if (fingerprint != null) return fingerprint;
     // possibly expensive, so prevent more than one thread from calculating it for this searcher
-    synchronized (fingerprintLock) {
-      if (fingerprint == null) {
-        fingerprint = IndexFingerprint.getFingerprint(this, maxVersion);
-      }
+    synchronized (maxVersionFingerprintCache) {
+      fingerprint = maxVersionFingerprintCache.get(maxVersionFingerprintCache);
+      if (fingerprint != null) return fingerprint;
+      fingerprint = IndexFingerprint.getFingerprint(this, maxVersion);
+      maxVersionFingerprintCache.put(maxVersion, fingerprint);
+      return fingerprint;
     }
-
-    return fingerprint;
   }
 
   /////////////////////////////////////////////////////////////////////

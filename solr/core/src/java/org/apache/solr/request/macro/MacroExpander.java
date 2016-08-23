@@ -34,10 +34,16 @@ public class MacroExpander {
   private String macroStart = MACRO_START;
   private char escape = '\\';
   private int level;
+  private final boolean failOnMissingParams;
 
 
   public MacroExpander(Map<String,String[]> orig) {
+    this(orig, false);
+  }
+
+  public MacroExpander(Map<String,String[]> orig, boolean failOnMissingParams) {
     this.orig = orig;
+    this.failOnMissingParams = failOnMissingParams;
   }
 
   public static Map<String,String[]> expand(Map<String,String[]> params) {
@@ -163,7 +169,13 @@ public class MacroExpander {
         String replacement = replacementList!=null ? replacementList[0] : defVal;
         if (replacement != null) {
           String expandedReplacement = expand(replacement);
+          if (failOnMissingParams && expandedReplacement == null) {
+            return null;
+          }
           sb.append(expandedReplacement);
+        }
+        else if (failOnMissingParams) {
+          return null;
         }
 
       } catch (SyntaxError syntaxError) {

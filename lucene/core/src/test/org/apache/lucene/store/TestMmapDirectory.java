@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
-// import org.junit.Ignore;
+import org.junit.Ignore;
 
 /**
  * Tests MMapDirectory
@@ -43,7 +43,7 @@ public class TestMmapDirectory extends BaseDirectoryTestCase {
         MMapDirectory.UNMAP_SUPPORTED);
   }
   
-  // TODO: @Ignore("This test is for JVM testing purposes. There are no guarantees that it may not fail with SIGSEGV!")
+  @Ignore("This test is for JVM testing purposes. There are no guarantees that it may not fail with SIGSEGV!")
   public void testAceWithThreads() throws Exception {
     for (int iter = 0; iter < 10; iter++) {
       Directory dir = getDirectory(createTempDir("testAceWithThreads"));
