@@ -1022,7 +1022,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
             // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
             if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
-                && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+                && isReplayOrPeersync == false) {
               // we're not in an active state, and this update isn't from a replay, so buffer it.
               log.info("Leader logic applied but update log is buffering: " + cmd.getPrintableId());
               cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
@@ -1050,7 +1050,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // The leader forwarded us this update.
             cmd.setVersion(versionOnUpdate);
 
-            if (ulog.getState() != UpdateLog.State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
               // we're not in an active state, and this update isn't from a replay, so buffer it.
               cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
               ulog.add(cmd);
@@ -1077,9 +1077,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             }
           }
         }
-        
+
         boolean willDistrib = isLeader && nodes != null && nodes.size() > 0;
-        
+
         SolrInputDocument clonedDoc = null;
         if (willDistrib) {
           clonedDoc = cmd.solrDoc.deepCopy();
@@ -1087,7 +1087,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         // TODO: possibly set checkDeleteByQueries as a flag on the command?
         doLocalAdd(cmd);
-        
+
         if (willDistrib) {
           cmd.solrDoc = clonedDoc;
         }
@@ -1119,7 +1119,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     } else {
       oldDoc.remove(VERSION_FIELD);
     }
-    
+
 
     cmd.solrDoc = docMerger.merge(sdoc, oldDoc);
     return true;
@@ -1127,9 +1127,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
-    
+
     assert TestInjection.injectFailUpdateRequests();
-    
+
     updateCommand = cmd;
 
     if (!cmd.isDeleteById()) {
@@ -1143,12 +1143,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     } else {
       isLeader = getNonZkLeaderAssumption(req);
     }
-    
+
     boolean dropCmd = false;
     if (!forwardToLeader) {
       dropCmd  = versionDelete(cmd);
     }
-    
+
     if (dropCmd) {
       // TODO: do we need to add anything to the response?
       return;
@@ -1241,10 +1241,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     //       - log + execute the local DBQ
     // FROM: we are a replica receiving a DBQ from our leader
     //       - log + execute the local DBQ
-    DistribPhase phase = 
+    DistribPhase phase =
     DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
 
-    DocCollection coll = zkEnabled 
+    DocCollection coll = zkEnabled
       ? zkController.getClusterState().getCollection(collection) : null;
 
     if (zkEnabled && DistribPhase.NONE == phase) {
@@ -1468,7 +1468,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (!zkController.getZkClient().getConnectionManager().isLikelyExpired()) {
       return;
     }
-    
+
     throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Cannot talk to ZooKeeper - Updates are disabled.");
   }
 
@@ -1524,7 +1524,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
             // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
             if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
-                && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+                && !isReplayOrPeersync) {
               // we're not in an active state, and this update isn't from a replay, so buffer it.
               log.info("Leader logic applied but update log is buffering: " + cmd.getId());
               cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
@@ -1549,7 +1549,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           } else {
             cmd.setVersion(-versionOnUpdate);
 
-            if (ulog.getState() != UpdateLog.State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
               // we're not in an active state, and this update isn't from a replay, so buffer it.
               cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
               ulog.delete(cmd);

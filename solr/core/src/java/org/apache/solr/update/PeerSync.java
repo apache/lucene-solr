@@ -86,7 +86,7 @@ public class PeerSync  {
   private SolrCore core;
 
   // comparator that sorts by absolute value, putting highest first
-  private static Comparator<Long> absComparator = new Comparator<Long>() {
+  public static Comparator<Long> absComparator = new Comparator<Long>() {
     @Override
     public int compare(Long o1, Long o2) {
       long l1 = Math.abs(o1);
@@ -140,7 +140,7 @@ public class PeerSync  {
     this.maxUpdates = nUpdates;
     this.cantReachIsSuccess = cantReachIsSuccess;
     this.getNoVersionsIsSuccess = getNoVersionsIsSuccess;
-    this.doFingerprint = doFingerprint;
+    this.doFingerprint = doFingerprint && !("true".equals(System.getProperty("solr.disableFingerprint")));
     this.client = core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getHttpClient();
     this.onlyIfActive = onlyIfActive;
     
@@ -458,9 +458,14 @@ public class PeerSync  {
   private boolean compareFingerprint(SyncShardRequest sreq) {
     if (sreq.fingerprint == null) return true;
     try {
-      IndexFingerprint ourFingerprint = IndexFingerprint.getFingerprint(core, Long.MAX_VALUE);
-      int cmp = IndexFingerprint.compare(ourFingerprint, sreq.fingerprint);
-      log.info("Fingerprint comparison: " + cmp);
+      // check our fingerprint only upto the max version in the other fingerprint.
+      // Otherwise for missed updates (look at missed update test in PeerSyncTest) ourFingerprint won't match with otherFingerprint
+      IndexFingerprint ourFingerprint = IndexFingerprint.getFingerprint(core, sreq.fingerprint.getMaxVersionSpecified());
+      int cmp = IndexFingerprint.compare(sreq.fingerprint, ourFingerprint);
+      log.info("Fingerprint comparison: {}" , cmp);
+      if(cmp != 0) {
+        log.info("Other fingerprint: {}, Our fingerprint: {}", sreq.fingerprint , ourFingerprint);
+      }
       return cmp == 0;  // currently, we only check for equality...
     } catch(IOException e){
       log.error(msg() + "Error getting index fingerprint", e);
@@ -482,6 +487,12 @@ public class PeerSync  {
     sreq.params.set("distrib", false);
     sreq.params.set("getUpdates", StrUtils.join(toRequest, ','));
     sreq.params.set("onlyIfActive", onlyIfActive);
+
+    // fingerprint should really be requested only for the maxversion  we are requesting updates for
+    // In case updates are coming in while node is coming up after restart, node would have already
+    // buffered some of the updates. fingerprint we requested with versions would reflect versions
+    // in our buffer as well and will definitely cause a mismatch
+    sreq.params.set("fingerprint",doFingerprint);
     sreq.responses.clear();  // needs to be zeroed for correct correlation to occur
 
     shardHandler.submit(sreq, sreq.shards[0], sreq.params);
@@ -499,6 +510,14 @@ public class PeerSync  {
       log.error(msg() + " Requested " + sreq.requestedUpdates.size() + " updates from " + sreq.shards[0] + " but retrieved " + updates.size());
       return false;
     }
+
+    // overwrite fingerprint we saved in 'handleVersions()'
+    Object fingerprint = srsp.getSolrResponse().getResponse().get("fingerprint");
+
+    if (fingerprint != null) {
+      sreq.fingerprint = IndexFingerprint.fromObject(fingerprint);
+    }
+
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DISTRIB_UPDATE_PARAM, FROMLEADER.toString());

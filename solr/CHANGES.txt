@@ -33,6 +33,8 @@ Bug Fixes
 
 * SOLR-9334: CloudSolrClient.collectionStateCache is unbounded (noble)
 
+* SOLR-9310: PeerSync fails on a node restart due to IndexFingerPrint mismatch (Pushkar Raste, noble)
+
 ======================= 5.5.2 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

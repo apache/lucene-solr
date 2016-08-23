@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -557,13 +559,14 @@ public class RealTimeGetComponent extends SearchComponent
     UpdateLog ulog = req.getCore().getUpdateHandler().getUpdateLog();
     if (ulog == null) return;
 
-    try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-      rb.rsp.add("versions", recentUpdates.getVersions(nVersions));
-    }
-
     if (doFingerprint) {
       IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Long.MAX_VALUE);
       rb.rsp.add("fingerprint", fingerprint.toObject());
+    }
+
+    try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
+      List<Long> versions = recentUpdates.getVersions(nVersions);
+      rb.rsp.add("versions", versions);
     }
   }
 
@@ -610,6 +613,18 @@ public class RealTimeGetComponent extends SearchComponent
 
     List<String> versions = StrUtils.splitSmart(versionsStr, ",", true);
 
+    // find fingerprint for max version for which updates are requested
+    boolean doFingerprint = params.getBool("fingerprint", false);
+    if (doFingerprint) {
+      String maxVersionForUpdate = Collections.min(versions, new Comparator<String>() {
+        @Override
+        public int compare(String s1, String s2) {
+          return PeerSync.absComparator.compare(Long.parseLong(s1), Long.parseLong(s2));
+        }
+      });
+      IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Math.abs(Long.parseLong(maxVersionForUpdate)));
+      rb.rsp.add("fingerprint", fingerprint.toObject());
+    }
 
     List<Object> updates = new ArrayList<>(versions.size());
 
