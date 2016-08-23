@@ -1,16 +1,3 @@
-package org.apache.solr.search.facet;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.solr.common.util.SimpleOrderedMap;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,6 +14,19 @@ import org.apache.solr.common.util.SimpleOrderedMap;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.search.facet;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 // base class for facets that create a list of buckets that can be sorted
 abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted> extends FacetBucketMerger<FacetRequestT> {

@@ -17,16 +17,10 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
@@ -586,7 +580,7 @@ class FacetBucket {
   }
 
   public Map<String, Object> getRefinement2(FacetMerger.Context mcontext, Collection<String> refineTags) {
-    // TODO nocommit - partial results should turn off refining!!!
+    // TODO - partial results should turn off refining!!!
 
     boolean parentMissing = mcontext.bucketWasMissing();
 

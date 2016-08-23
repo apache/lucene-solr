@@ -1,11 +1,3 @@
-package org.apache.solr.search.facet;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-
-import org.apache.solr.common.params.FacetParams;
-import org.apache.solr.common.util.SimpleOrderedMap;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,6 +15,14 @@ import org.apache.solr.common.util.SimpleOrderedMap;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.search.facet;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
   FacetBucket beforeBucket;
