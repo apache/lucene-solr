@@ -207,7 +207,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetField.SortDirection direction) {
+    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
       return Double.compare(getSortVal(), ((Merger) other).getSortVal());
     }
 

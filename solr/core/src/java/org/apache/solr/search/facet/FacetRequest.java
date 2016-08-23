@@ -35,10 +35,48 @@ import org.apache.solr.search.QueryContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 
+import static org.apache.solr.search.facet.FacetRequest.RefineMethod.NONE;
+
 
 public abstract class FacetRequest {
+
+  public static enum SortDirection {
+    asc(-1) ,
+    desc(1);
+
+    private final int multiplier;
+    private SortDirection(int multiplier) {
+      this.multiplier = multiplier;
+    }
+
+    // asc==-1, desc==1
+    public int getMultiplier() {
+      return multiplier;
+    }
+  }
+
+  public static enum RefineMethod {
+    NONE,
+    SIMPLE;
+    // NONE is distinct from null since we may want to know if refinement was explicitly turned off.
+    public static FacetRequest.RefineMethod fromObj(Object method) {
+      if (method == null) return null;
+      if (method instanceof  Boolean) {
+        return ((Boolean)method) ? SIMPLE : NONE;
+      }
+      if ("simple".equals(method)) {
+        return SIMPLE;
+      } else if ("none".equals(method)) {
+        return NONE;
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown RefineMethod method " + method);
+      }
+    }
+  }
+
+
   protected Map<String,AggValueSource> facetStats;  // per-bucket statistics
-  protected Map<String,FacetRequest> subFacets;     // list of facets
+  protected Map<String,FacetRequest> subFacets;     // per-bucket sub-facets
   protected List<String> filters;
   protected boolean processEmpty;
   protected Domain domain;
@@ -62,6 +100,22 @@ public abstract class FacetRequest {
 
   public Map<String, FacetRequest> getSubFacets() {
     return subFacets;
+  }
+
+  /** Returns null if unset */
+  public RefineMethod getRefineMethod() {
+    return null;
+  }
+
+  public boolean doRefine() {
+    return !(getRefineMethod()==null || getRefineMethod()==NONE);
+  }
+
+  /** Returns true if this facet can return just some of the facet buckets that match all the criteria.
+   * This is normally true only for facets with a limit.
+   */
+  public boolean returnsPartial() {
+    return false;
   }
 
   public void addStat(String key, AggValueSource stat) {
@@ -541,6 +595,9 @@ class FacetFieldParser extends FacetParser<FacetField> {
       facet.method = FacetField.FacetMethod.fromString(getString(m, "method", null));
       facet.cacheDf = (int)getLong(m, "cacheDf", facet.cacheDf);
 
+      // TODO: pull up to higher level?
+      facet.refine = FacetField.RefineMethod.fromObj(m.get("refine"));
+
       facet.perSeg = (Boolean)m.get("perSeg");
 
       // facet.sort may depend on a facet stat...
@@ -562,18 +619,18 @@ class FacetFieldParser extends FacetParser<FacetField> {
   private void parseSort(Object sort) {
     if (sort == null) {
       facet.sortVariable = "count";
-      facet.sortDirection = FacetField.SortDirection.desc;
+      facet.sortDirection = FacetRequest.SortDirection.desc;
     } else if (sort instanceof String) {
       String sortStr = (String)sort;
       if (sortStr.endsWith(" asc")) {
         facet.sortVariable = sortStr.substring(0, sortStr.length()-" asc".length());
-        facet.sortDirection = FacetField.SortDirection.asc;
+        facet.sortDirection = FacetRequest.SortDirection.asc;
       } else if (sortStr.endsWith(" desc")) {
         facet.sortVariable = sortStr.substring(0, sortStr.length()-" desc".length());
-        facet.sortDirection = FacetField.SortDirection.desc;
+        facet.sortDirection = FacetRequest.SortDirection.desc;
       } else {
         facet.sortVariable = sortStr;
-        facet.sortDirection = "index".equals(facet.sortVariable) ? FacetField.SortDirection.asc : FacetField.SortDirection.desc;  // default direction for "index" is ascending
+        facet.sortDirection = "index".equals(facet.sortVariable) ? FacetRequest.SortDirection.asc : FacetRequest.SortDirection.desc;  // default direction for "index" is ascending
       }
     } else {
      // sort : { myvar : 'desc' }
@@ -583,7 +640,7 @@ class FacetFieldParser extends FacetParser<FacetField> {
       String k = entry.getKey();
       Object v = entry.getValue();
       facet.sortVariable = k;
-      facet.sortDirection = FacetField.SortDirection.valueOf(v.toString());
+      facet.sortDirection = FacetRequest.SortDirection.valueOf(v.toString());
     }
 
   }
