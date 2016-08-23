@@ -177,13 +177,14 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     new Thread(() -> {
       try {
         for (int i = 0; i < numDocs; i++) {
-          indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
+          indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId);
+          docId++;
           // slow down adds, to get documents indexed while in PeerSync
           Thread.sleep(100);
         }
       } catch (Exception e) {
-        throw new RuntimeException(e);
-
+        log.error("Error indexing doc in background", e);
+        //Throwing an error here will kill the thread
       }
     }, getClassName())
         .start();
