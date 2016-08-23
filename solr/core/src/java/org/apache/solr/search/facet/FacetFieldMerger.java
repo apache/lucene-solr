@@ -1,15 +1,3 @@
-package org.apache.solr.search.facet;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.solr.common.util.SimpleOrderedMap;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,6 +14,16 @@ import org.apache.solr.common.util.SimpleOrderedMap;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.search.facet;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.solr.common.util.SimpleOrderedMap;
+
 
 // TODO: refactor more out to base class
 public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
