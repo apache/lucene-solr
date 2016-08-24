@@ -85,6 +85,8 @@ Other Changes
 * SOLR-9412: Add failOnMissingParams option to MacroExpander, add TestMacroExpander class.
   (Jon Dorando, Christine Poerschke)
 
+* SOLR-9406: SolrSuggester should selectively register close hook (Gethin James, Joel Bernstein)
+
 ==================  6.2.0 ==================
 
 Versions of Major Components
