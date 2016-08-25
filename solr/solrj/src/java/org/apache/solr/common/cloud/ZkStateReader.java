@@ -72,6 +72,7 @@ public class ZkStateReader implements Closeable {
   public static final String STATE_PROP = "state";
   public static final String CORE_NAME_PROP = "core";
   public static final String COLLECTION_PROP = "collection";
+  public static final String COUNT_PROP = "count";
   public static final String ELECTION_NODE_PROP = "election_node";
   public static final String SHARD_ID_PROP = "shard";
   public static final String REPLICA_PROP = "replica";
