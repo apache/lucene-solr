@@ -4685,24 +4685,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     testPoint("finishStartCommit");
   }
 
-  /**
-   * Returns <code>true</code> iff the index in the named directory is
-   * currently locked.
-   * @param directory the directory to check for a lock
-   * @throws IOException if there is a low-level IO error
-   * @deprecated Use of this method can only lead to race conditions. Try
-   *             to actually obtain a lock instead.
-   */
-  @Deprecated
-  public static boolean isLocked(Directory directory) throws IOException {
-    try {
-      directory.obtainLock(WRITE_LOCK_NAME).close();
-      return false;
-    } catch (LockObtainFailedException failed) {
-      return true;
-    }
-  }
-
   /** If {@link DirectoryReader#open(IndexWriter)} has
    *  been called (ie, this writer is in near real-time
    *  mode), then after a merge completes, this class can be
