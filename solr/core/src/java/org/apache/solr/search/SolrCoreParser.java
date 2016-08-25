@@ -21,7 +21,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.xml.CoreParser;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
-
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -38,6 +37,7 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
   public SolrCoreParser(String defaultField, Analyzer analyzer,
       SolrQueryRequest req) {
     super(defaultField, analyzer);
+    queryFactory.addBuilder("LegacyNumericRangeQuery", new LegacyNumericRangeQueryBuilder());
     this.req = req;
   }
 

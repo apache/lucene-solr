@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.queryparser.xml.builders;
+package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.LuceneTestCase;
@@ -32,7 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-public class TestNumericRangeQueryBuilder extends LuceneTestCase {
+public class TestLegacyNumericRangeQueryBuilder extends LuceneTestCase {
 
   public void testGetFilterHandleNumericParseErrorStrict() throws Exception {
     LegacyNumericRangeQueryBuilder filterBuilder = new LegacyNumericRangeQueryBuilder();

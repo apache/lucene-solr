@@ -63,9 +63,29 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.3.8.v20160314
 
+Detailed Change List
+----------------------
 
-(No Changes)
+New Features
+----------------------
 
+Bug Fixes
+----------------------
+
+* SOLR-9310: PeerSync fails on a node restart due to IndexFingerPrint mismatch (Pushkar Raste, noble)
+
+Optimizations
+----------------------
+
+Other Changes
+----------------------
+
+* SOLR-7362: Fix TestReqParamsAPI test failures (noble, Varun Thacker)
+
+* SOLR-9412: Add failOnMissingParams option to MacroExpander, add TestMacroExpander class.
+  (Jon Dorando, Christine Poerschke)
+
+* SOLR-9406: SolrSuggester should selectively register close hook (Gethin James, Joel Bernstein)
 
 ==================  6.2.0 ==================
 
