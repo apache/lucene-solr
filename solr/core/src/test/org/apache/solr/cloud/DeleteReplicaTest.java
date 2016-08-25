@@ -319,11 +319,9 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
         String requestStatus = trackRequestStatus(client, requestIdAsync);
 
         while ((!requestStatus.equals(RequestStatusState.COMPLETED.getKey()))  && (!requestStatus.equals(RequestStatusState.FAILED.getKey()))) {
-          log.info("Status is " + requestStatus);
           requestStatus = trackRequestStatus(client, requestIdAsync);
         }
 
-        log.info("Status outside loop is " + requestStatus);
 
         testcoll = getCommonCloudSolrClient().getZkStateReader()
                 .getClusterState().getCollection(collectionName);
