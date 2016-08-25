@@ -927,5 +927,44 @@ shape:
     
     assertTrue(!result);
   }
+
+  @Test
+  public void testPolygonFailureCase2() {
+    /*
+   [junit4]   1>   shape=GeoCompositeMembershipShape: {[GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=[
+   [lat=1.079437865394857, lon=-1.720224083538152E-11([X=0.47111944719262044, Y=-8.104310192839264E-12, Z=0.8803759987367299])], 
+   [lat=-1.5707963267948966, lon=0.017453291479645996([X=6.108601474971234E-17, Y=1.066260290095308E-18, Z=-0.997762292022105])], 
+   [lat=0.017453291479645996, lon=2.4457272005608357E-47([X=1.0009653513901666, Y=2.448088186713865E-47, Z=0.01747191415779267])]], internalEdges={2}},
+   GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=[
+   [lat=1.079437865394857, lon=-1.720224083538152E-11([X=0.47111944719262044, Y=-8.104310192839264E-12, Z=0.8803759987367299])], 
+   [lat=0.017453291479645996, lon=2.4457272005608357E-47([X=1.0009653513901666, Y=2.448088186713865E-47, Z=0.01747191415779267])], 
+   [lat=0.0884233366943164, lon=0.4323234231678824([X=0.9054355304510789, Y=0.4178006803188124, Z=0.08840463683725623])]], internalEdges={0}}]}
+    */
+    final List<GeoPoint> poly1List = new ArrayList<>();
+    poly1List.add(new GeoPoint(PlanetModel.WGS84, 1.079437865394857, -1.720224083538152E-11));
+    poly1List.add(new GeoPoint(PlanetModel.WGS84, -1.5707963267948966, 0.017453291479645996));
+    poly1List.add(new GeoPoint(PlanetModel.WGS84, 0.017453291479645996, 2.4457272005608357E-47));
+    
+    final GeoConvexPolygon poly1 = new GeoConvexPolygon(PlanetModel.WGS84, poly1List);
+    
+    /*
+   [junit4]   1>       unquantized=[lat=-1.5316724989005415, lon=3.141592653589793([X=-0.03902652216795768, Y=4.779370545484258E-18, Z=-0.9970038705813589])]
+   [junit4]   1>       quantized=[X=-0.03902652216283731, Y=2.3309121299774915E-10, Z=-0.9970038706538652]
+    */
+    
+    final GeoPoint point = new GeoPoint(PlanetModel.WGS84, -1.5316724989005415, 3.141592653589793);
+
+    assertTrue(poly1.isWithin(point));
+    
+    final XYZBounds actualBounds1 = new XYZBounds();
+    poly1.getBounds(actualBounds1);
+    
+    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84,
+      actualBounds1.getMinimumX(), actualBounds1.getMaximumX(),
+      actualBounds1.getMinimumY(), actualBounds1.getMaximumY(),
+      actualBounds1.getMinimumZ(), actualBounds1.getMaximumZ());
+
+    assertTrue(solid.isWithin(point));
+  }
   
 }
