@@ -52,6 +52,9 @@ import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_IF_DOW
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 import static org.apache.solr.common.util.Utils.makeMap;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REQUESTSTATUS;
+import org.apache.solr.client.solrj.response.RequestStatusState;
+
 
 public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
 
@@ -173,15 +176,30 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     client.request(request);
   }
 
-  protected void tryRemoveReplicaByCount(String collectionName, CloudSolrClient client, int count) throws IOException, SolrServerException {
+
+  protected void tryRemoveReplicaByCountAsync(String collectionName, CloudSolrClient client, int count, String requestid) throws IOException, SolrServerException {
     Map m = makeMap("collection", collectionName,
             "action", DELETEREPLICA.toLower(),
-            "count", count);
+            "count", count,
+            "async", requestid);
     SolrParams params = new MapSolrParams(m);
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     client.request(request);
   }
+
+
+  protected String trackRequestStatus(CloudSolrClient client, String requestId) throws IOException, SolrServerException {
+    Map m = makeMap("action", REQUESTSTATUS.toLower(),
+            "requestid", requestId);
+    SolrParams params = new MapSolrParams(m);
+    SolrRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    NamedList<Object> resultsList = client.request(request);
+    NamedList innerResponse = (NamedList) resultsList.get("status");
+    return (String) innerResponse.get("state");
+  }
+
 
 
   protected void createCollection(String COLL_NAME, CloudSolrClient client) throws Exception {
@@ -291,10 +309,22 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
         assertEquals(individualShard.getReplicas().size(),2);
       }
 
+      String requestIdAsync = "1000";
 
       try {
         // Should not be able to delete 2 replicas from all shards (non leader ones)
-        tryRemoveReplicaByCount(collectionName, client, 1);
+        tryRemoveReplicaByCountAsync(collectionName, client, 1, requestIdAsync);
+
+        //Make sure request completes
+        String requestStatus = trackRequestStatus(client, requestIdAsync);
+
+        while ((!requestStatus.equals(RequestStatusState.COMPLETED.getKey()))  && (!requestStatus.equals(RequestStatusState.FAILED.getKey()))) {
+          log.info("Status is " + requestStatus);
+          requestStatus = trackRequestStatus(client, requestIdAsync);
+        }
+
+        log.info("Status outside loop is " + requestStatus);
+
         testcoll = getCommonCloudSolrClient().getZkStateReader()
                 .getClusterState().getCollection(collectionName);
         slices = testcoll.getActiveSlices();
@@ -308,6 +338,8 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
       }
 
     }
+
+
   }
 
 }
