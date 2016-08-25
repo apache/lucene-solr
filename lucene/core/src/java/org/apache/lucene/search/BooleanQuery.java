@@ -296,17 +296,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
     }
 
-    // Check whether some clauses are both required and excluded
-    if (clauseSets.get(Occur.MUST_NOT).size() > 0) {
-      final Set<Query> reqAndExclQueries = new HashSet<Query>(clauseSets.get(Occur.FILTER));
-      reqAndExclQueries.addAll(clauseSets.get(Occur.MUST));
-      reqAndExclQueries.retainAll(clauseSets.get(Occur.MUST_NOT));
-
-      if (reqAndExclQueries.isEmpty() == false) {
-        return new MatchNoDocsQuery("FILTER or MUST clause also in MUST_NOT");
-      }
-    }
-
     // remove FILTER clauses that are also MUST clauses
     // or that match all documents
     if (clauseSets.get(Occur.MUST).size() > 0 && clauseSets.get(Occur.FILTER).size() > 0) {

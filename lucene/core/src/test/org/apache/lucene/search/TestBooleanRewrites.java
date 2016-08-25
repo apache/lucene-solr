@@ -246,35 +246,6 @@ public class TestBooleanRewrites extends LuceneTestCase {
     assertEquals(expected, searcher.rewrite(bq));
   }
 
-  // Duplicate Must or Filter with MustNot returns no match
-  public void testDuplicateMustOrFilterWithMustNot() throws IOException {
-    IndexSearcher searcher = newSearcher(new MultiReader());
-
-    // Test Must with MustNot
-    BooleanQuery bq = new BooleanQuery.Builder()
-            .add(new TermQuery(new Term("foo", "bar")), Occur.MUST)
-            // other terms
-            .add(new TermQuery(new Term("foo", "baz")), Occur.MUST)
-            .add(new TermQuery(new Term("foo", "bad")), Occur.SHOULD)
-            //
-            .add(new TermQuery(new Term("foo", "bar")), Occur.MUST_NOT)
-            .build();
-
-    assertEquals(new MatchNoDocsQuery(), searcher.rewrite(bq));
-
-    // Test Filter with MustNot
-    BooleanQuery bq2 = new BooleanQuery.Builder()
-            .add(new TermQuery(new Term("foo", "bar")), Occur.FILTER)
-            // other terms
-            .add(new TermQuery(new Term("foo", "baz")), Occur.MUST)
-            .add(new TermQuery(new Term("foo", "bad")), Occur.SHOULD)
-            //
-            .add(new TermQuery(new Term("foo", "bar")), Occur.MUST_NOT)
-            .build();
-
-    assertEquals(new MatchNoDocsQuery(), searcher.rewrite(bq2));
-  }
-
   public void testRemoveMatchAllFilter() throws IOException {
     IndexSearcher searcher = newSearcher(new MultiReader());
 
