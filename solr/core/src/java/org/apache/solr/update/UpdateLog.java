@@ -821,11 +821,13 @@ public class UpdateLog implements PluginInfoInitialized {
 
       try {
         if (ll.endsWithCommit()) {
+          ll.closeOutput();
           ll.decref();
           continue;
         }
       } catch (IOException e) {
         log.error("Error inspecting tlog " + ll, e);
+        ll.closeOutput();
         ll.decref();
         continue;
       }
