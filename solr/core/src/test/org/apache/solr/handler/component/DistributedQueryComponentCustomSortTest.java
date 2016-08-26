@@ -60,12 +60,19 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
     index(id, "12", "text", "d", "payload", ByteBuffer.wrap(new byte[] { 0x34, (byte)0xdd, 0x4d }));             //  7 
     index(id, "13", "text", "d", "payload", ByteBuffer.wrap(new byte[] { (byte)0x80, 0x11, 0x33 }));             // 12 
     commit();
-                                                                                          
+
     QueryResponse rsp;
+
     rsp = query("q", "*:*", "fl", "id", "sort", "payload asc", "rows", "20");
     assertFieldValues(rsp.getResults(), id, 7, 1, 6, 4, 2, 10, 12, 3, 5, 9, 8, 13, 11); 
     rsp = query("q", "*:*", "fl", "id", "sort", "payload desc", "rows", "20");
     assertFieldValues(rsp.getResults(), id, 11, 13, 8, 9, 5, 3, 12, 10, 2, 4, 6, 1, 7);
+
+    // SOLR-6744
+    rsp = query("q", "*:*", "fl", "key:id", "sort", "payload asc", "rows", "20");
+    assertFieldValues(rsp.getResults(), "key", 7, 1, 6, 4, 2, 10, 12, 3, 5, 9, 8, 13, 11);
+    rsp = query("q", "*:*", "fl", "key:id,id:text", "sort", "payload asc", "rows", "20");
+    assertFieldValues(rsp.getResults(), "key", 7, 1, 6, 4, 2, 10, 12, 3, 5, 9, 8, 13, 11);
     
     rsp = query("q", "text:a", "fl", "id", "sort", "payload asc", "rows", "20");
     assertFieldValues(rsp.getResults(), id, 1, 3, 5, 9);
@@ -76,7 +83,11 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
     assertFieldValues(rsp.getResults(), id, 4, 2, 10);
     rsp = query("q", "text:b", "fl", "id", "sort", "payload desc", "rows", "20");
     assertFieldValues(rsp.getResults(), id, 10, 2, 4);
-    
+
+    // SOLR-6744
+    rsp = query("q", "text:b", "fl", "key:id", "sort", "payload asc", "rows", "20");
+    assertFieldValues(rsp.getResults(), id, null, null, null);
+
     rsp = query("q", "text:c", "fl", "id", "sort", "payload asc", "rows", "20");
     assertFieldValues(rsp.getResults(), id, 7, 6, 8);
     rsp = query("q", "text:c", "fl", "id", "sort", "payload desc", "rows", "20");

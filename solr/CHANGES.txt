@@ -76,6 +76,9 @@ Bug Fixes
 
 * SOLR-9389: HDFS Transaction logs stay open for writes which leaks Xceivers. (Tim Owen via Mark Miller)
 
+* SOLR-6744: fl renaming / alias of uniqueKey field generates null pointer exception in SolrCloud configuration
+  (Mike Drob via Tomás Fernández Löbbe)
+
 Optimizations
 ----------------------
 
