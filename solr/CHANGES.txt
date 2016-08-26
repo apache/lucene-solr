@@ -74,6 +74,8 @@ Bug Fixes
 
 * SOLR-9310: PeerSync fails on a node restart due to IndexFingerPrint mismatch (Pushkar Raste, noble)
 
+* SOLR-9389: HDFS Transaction logs stay open for writes which leaks Xceivers. (Tim Owen via Mark Miller)
+
 Optimizations
 ----------------------
 

@@ -64,7 +64,7 @@ public class HdfsTransactionLog extends TransactionLog {
 
   Path tlogFile;
 
-  
+  private long finalLogSize;
   private FSDataOutputStream tlogOutStream;
   private FileSystem fs;
 
@@ -144,13 +144,8 @@ public class HdfsTransactionLog extends TransactionLog {
 
   @Override
   public boolean endsWithCommit() throws IOException {
-    long size;
-    synchronized (this) {
-      fos.flush();
-      tlogOutStream.hflush();
-      size = fos.size();
-    }
-
+    ensureFlushed();
+    long size = getLogSize();
     
     // the end of the file should have the end message (added during a commit) plus a 4 byte size
     byte[] buf = new byte[ END_MESSAGE.length() ];
@@ -159,11 +154,10 @@ public class HdfsTransactionLog extends TransactionLog {
     
     FSDataFastInputStream dis = new FSDataFastInputStream(fs.open(tlogFile), pos);
     try {
-    //ChannelFastInputStream is = new ChannelFastInputStream(channel, pos);
-    dis.read(buf);
-    for (int i=0; i<buf.length; i++) {
-      if (buf[i] != END_MESSAGE.charAt(i)) return false;
-    }
+      dis.read(buf);
+      for (int i=0; i<buf.length; i++) {
+        if (buf[i] != END_MESSAGE.charAt(i)) return false;
+      }
     } finally {
       dis.close();
     }
@@ -176,10 +170,8 @@ public class HdfsTransactionLog extends TransactionLog {
   public void rollback(long pos) throws IOException {
     synchronized (this) {
       assert snapshot_size == pos;
-      fos.flush();
-      tlogOutStream.hflush();
+      ensureFlushed();
       // TODO: how do we rollback with hdfs?? We need HDFS-3107
-      //raf.setLength(pos);
       fos.setWritten(pos);
       assert fos.size() == pos;
       numRecords = snapshot_numRecords;
@@ -233,8 +225,10 @@ public class HdfsTransactionLog extends TransactionLog {
 
         endRecord(pos);
         
-        fos.flush();  // flush since this will be the last record in a log fill
-        tlogOutStream.hflush();
+        ensureFlushed();  // flush since this will be the last record in a log fill
+
+        // now the commit command is written we will never write to this log again
+        closeOutput();
 
         //assert fos.size() == channel.size();
 
@@ -255,19 +249,7 @@ public class HdfsTransactionLog extends TransactionLog {
 
     try {
       // make sure any unflushed buffer has been flushed
-      synchronized (this) {
-        // TODO: optimize this by keeping track of what we have flushed up to
-        fos.flushBuffer();
-        
-        // flush to hdfs
-        tlogOutStream.hflush();
-        /***
-         System.out.println("###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
-        if (fos.size() != raf.length() || pos >= fos.size() ) {
-          throw new RuntimeException("ERROR" + "###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
-        }
-        ***/
-      }
+      ensureFlushed();
 
       FSDataFastInputStream dis = new FSDataFastInputStream(fs.open(tlogFile),
           pos);
@@ -280,6 +262,52 @@ public class HdfsTransactionLog extends TransactionLog {
       }
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "pos=" + pos, e);
+    }
+  }
+
+  @Override
+  public void closeOutput() {
+    try {
+      doCloseOutput();
+    } catch (IOException e) {
+      log.error("Could not close tlog output", e);
+      // This situation is not fatal to the caller
+    }
+  }
+
+  private void doCloseOutput() throws IOException {
+    synchronized (this) {
+      if (fos == null) return;
+      if (debug) {
+        log.debug("Closing output for " + tlogFile);
+      }
+      fos.flushBuffer();
+      finalLogSize = fos.size();
+      fos = null;
+    }
+
+    tlogOutStream.hflush();
+    tlogOutStream.close();
+    tlogOutStream = null;
+  }
+
+  private void ensureFlushed() throws IOException {
+    synchronized (this) {
+      if (fos != null) {
+        fos.flush();
+        tlogOutStream.hflush();
+      }
+    }
+  }
+
+  @Override
+  public long getLogSize() {
+    synchronized (this) {
+      if (fos != null) {
+        return fos.size();
+      } else {
+        return finalLogSize;
+      }
     }
   }
 
@@ -309,12 +337,7 @@ public class HdfsTransactionLog extends TransactionLog {
         log.debug("Closing tlog" + this);
       }
 
-      synchronized (this) {
-        fos.flushBuffer();
-      }
-      
-      tlogOutStream.hflush();
-      tlogOutStream.close();
+      doCloseOutput();
 
     } catch (IOException e) {
       log.error("Exception closing tlog.", e);
@@ -359,17 +382,19 @@ public class HdfsTransactionLog extends TransactionLog {
     public HDFSLogReader(long startingPos) {
       super();
       incref();
+      initStream(startingPos);
+    }
+
+    private void initStream(long pos) {
       try {
         
         synchronized (HdfsTransactionLog.this) {
-          fos.flushBuffer();
-          sz = fos.size();
+          ensureFlushed();
+          sz = getLogSize();
         }
-        
-        tlogOutStream.hflush();
-        
+
         FSDataInputStream fdis = fs.open(tlogFile);
-        fis = new FSDataFastInputStream(fdis, startingPos);
+        fis = new FSDataFastInputStream(fdis, pos);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -385,10 +410,10 @@ public class HdfsTransactionLog extends TransactionLog {
 
       synchronized (HdfsTransactionLog.this) {
         if (trace) {
-          log.trace("Reading log record.  pos="+pos+" currentSize="+fos.size());
+          log.trace("Reading log record.  pos="+pos+" currentSize="+getLogSize());
         }
 
-        if (pos >= fos.size()) {
+        if (pos >= getLogSize()) {
           return null;
         }
       }
@@ -398,16 +423,8 @@ public class HdfsTransactionLog extends TransactionLog {
       if (pos >= sz) {
         log.info("Read available inputstream data, opening new inputstream pos={} sz={}", pos, sz);
         
-        synchronized (HdfsTransactionLog.this) {
-          fos.flushBuffer();
-          sz = fos.size();
-        }
-        
-        tlogOutStream.hflush();
         fis.close();
-   
-        FSDataInputStream fdis = fs.open(tlogFile);
-        fis = new FSDataFastInputStream(fdis, pos);
+        initStream(pos);
       }
       
       if (pos == 0) {
@@ -415,7 +432,7 @@ public class HdfsTransactionLog extends TransactionLog {
 
         // shouldn't currently happen - header and first record are currently written at the same time
         synchronized (HdfsTransactionLog.this) {
-          if (fis.position() >= fos.size()) {
+          if (fis.position() >= getLogSize()) {
             return null;
           }
           pos = fis.position();
@@ -443,7 +460,7 @@ public class HdfsTransactionLog extends TransactionLog {
     @Override
     public String toString() {
       synchronized (HdfsTransactionLog.this) {
-        return "LogReader{" + "file=" + tlogFile + ", position=" + fis.position() + ", end=" + fos.size() + "}";
+        return "LogReader{" + "file=" + tlogFile + ", position=" + fis.position() + ", end=" + getLogSize() + "}";
       }
     }
     
@@ -454,7 +471,7 @@ public class HdfsTransactionLog extends TransactionLog {
     
     @Override
     public long currentSize() {
-      return fos.size();
+      return getLogSize();
     }
 
   }
@@ -478,12 +495,8 @@ public class HdfsTransactionLog extends TransactionLog {
 
       long sz;
       synchronized (HdfsTransactionLog.this) {
-        fos.flushBuffer();
-        
-        // this must be an hflush
-        tlogOutStream.hflush();
-        sz = fos.size();
-        //assert sz == channel.size();
+        ensureFlushed();
+        sz = getLogSize();
       }
 
       fis = new FSDataFastInputStream(fs.open(tlogFile), 0);
@@ -554,7 +567,7 @@ public class HdfsTransactionLog extends TransactionLog {
     @Override
     public String toString() {
       synchronized (HdfsTransactionLog.this) {
-        return "LogReader{" + "file=" + tlogFile + ", position=" + fis.position() + ", end=" + fos.size() + "}";
+        return "LogReader{" + "file=" + tlogFile + ", position=" + fis.position() + ", end=" + getLogSize() + "}";
       }
     }
 
