@@ -22,6 +22,12 @@ Bug Fixes
 
 Improvements
 
+Optimizations
+
+* LUCENE-7416: BooleanQuery optimizes queries that have queries that occur both
+  in the sets of SHOULD and FILTER clauses, or both in MUST/FILTER and MUST_NOT
+  clauses. (Spyros Kapnissis via Adrien Grand)
+
 Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
@@ -32,11 +38,7 @@ Other
 
 ======================= Lucene 6.3.0 =======================
 
-Optimizations
-
-* LUCENE-7416: BooleanQuery optimizes queries that have queries that occur both
-  in the sets of SHOULD and FILTER clauses, or both in MUST/FILTER and MUST_NOT
-  clauses. (Spyros Kapnissis via Adrien Grand)
+(No changes)
 
 ======================= Lucene 6.2.0 =======================
 
