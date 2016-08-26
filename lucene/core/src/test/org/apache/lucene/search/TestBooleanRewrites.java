@@ -215,36 +215,6 @@ public class TestBooleanRewrites extends LuceneTestCase {
         .build();
     assertEquals(expected, searcher.rewrite(bq));
   }
-  
-  // Duplicate Should and Filter query is converted to Must (with minShouldMatch -1)
-  public void testConvertShouldAndFilterToMust() throws IOException {
-    IndexSearcher searcher = newSearcher(new MultiReader());
-
-    // no minShouldMatch
-    BooleanQuery bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
-        .add(new TermQuery(new Term("foo", "bar")), Occur.FILTER)
-        .build();
-    assertEquals(new TermQuery(new Term("foo", "bar")), searcher.rewrite(bq));
-
-
-    // minShouldMatch is set to -1
-    bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
-        .add(new TermQuery(new Term("foo", "bar")), Occur.FILTER)
-        .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD)
-        .add(new TermQuery(new Term("foo", "quz")), Occur.SHOULD)
-        .setMinimumNumberShouldMatch(2)
-        .build();
-
-    BooleanQuery expected = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("foo", "bar")), Occur.MUST)
-        .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD)
-        .add(new TermQuery(new Term("foo", "quz")), Occur.SHOULD)
-        .setMinimumNumberShouldMatch(1)
-        .build();
-    assertEquals(expected, searcher.rewrite(bq));
-  }
 
   public void testRemoveMatchAllFilter() throws IOException {
     IndexSearcher searcher = newSearcher(new MultiReader());
