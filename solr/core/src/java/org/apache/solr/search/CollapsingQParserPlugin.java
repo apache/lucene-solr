@@ -909,11 +909,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
-    public boolean acceptsDocsOutOfOrder() {
-      //Documents must be sent in order to this collector.
-      return false;
-    }
-
     public void setScorer(Scorer scorer) {
       this.collapseStrategy.setScorer(scorer);
     }
@@ -1072,11 +1067,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           throw new IOException("min/max must be TrieInt or TrieFloat when collapsing on numeric fields .");
         }
       }
-    }
-
-    public boolean acceptsDocsOutOfOrder() {
-      //Documents must be sent in order to this collector.
-      return false;
     }
 
     public void setScorer(Scorer scorer) {
