@@ -26,7 +26,7 @@ Optimizations
 
 * LUCENE-7416: BooleanQuery optimizes queries that have queries that occur both
   in the sets of SHOULD and FILTER clauses, or both in MUST/FILTER and MUST_NOT
-  clauses. (Spyros Kapnissis via Adrien Grand)
+  clauses. (Spyros Kapnissis via Adrien Grand, Uwe Schindler)
 
 Other
 
