@@ -22,6 +22,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -38,11 +39,13 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -60,6 +63,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -80,10 +86,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   private static final String id = "id";
 
   private static final int TIMEOUT = 30;
+  private static final int NODE_COUNT = 3;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(3)
+    configureCluster(NODE_COUNT)
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
 
@@ -384,6 +391,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   private Long getNumRequests(String baseUrl, String collectionName) throws
       SolrServerException, IOException {
+    return getNumRequests(baseUrl, collectionName, "QUERYHANDLER", "standard", false);
+  }
+
+  private Long getNumRequests(String baseUrl, String collectionName, String category, String key, boolean returnNumErrors) throws
+      SolrServerException, IOException {
 
     NamedList<Object> resp;
     try (HttpSolrClient client = getHttpSolrClient(baseUrl + "/"+ collectionName)) {
@@ -392,14 +404,60 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/admin/mbeans");
       params.set("stats", "true");
-      params.set("key", "standard");
-      params.set("cat", "QUERYHANDLER");
+      params.set("key", key);
+      params.set("cat", category);
       // use generic request to avoid extra processing of queries
       QueryRequest req = new QueryRequest(params);
       resp = client.request(req);
     }
-    return (Long) resp.findRecursive("solr-mbeans", "QUERYHANDLER",
-        "standard", "stats", "requests");
+    return (Long) resp.findRecursive("solr-mbeans", category, key, "stats", returnNumErrors ? "errors" : "requests");
+  }
+
+  @Test
+  public void testNonRetryableRequests() throws Exception {
+    try (CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
+      // important to have one replica on each node
+      RequestStatusState state = CollectionAdminRequest.createCollection("foo", "conf", 1, NODE_COUNT).processAndWait(client, 60);
+      if (state == RequestStatusState.COMPLETED) {
+        AbstractDistribZkTestBase.waitForRecoveriesToFinish("foo", client.getZkStateReader(), true, true, TIMEOUT);
+        client.setDefaultCollection("foo");
+
+        Map<String, String> adminPathToMbean = new HashMap<>(CommonParams.ADMIN_PATHS.size());
+        adminPathToMbean.put(CommonParams.COLLECTIONS_HANDLER_PATH, CollectionsHandler.class.getName());
+        adminPathToMbean.put(CommonParams.CORES_HANDLER_PATH, CoreAdminHandler.class.getName());
+        adminPathToMbean.put(CommonParams.CONFIGSETS_HANDLER_PATH, ConfigSetsHandler.class.getName());
+        // we do not add the authc/authz handlers because they do not currently expose any mbeans
+
+        for (String adminPath : adminPathToMbean.keySet()) {
+          long errorsBefore = 0;
+          for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "QUERYHANDLER", adminPathToMbean.get(adminPath), true);
+            errorsBefore += numRequests;
+            log.info("Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
+          }
+
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.set("qt", adminPath);
+          params.set("action", "foobar"); // this should cause an error
+          QueryRequest req = new QueryRequest(params);
+          try {
+            NamedList<Object> resp = client.request(req);
+            fail("call to foo for admin path " + adminPath + " should have failed");
+          } catch (Exception e) {
+            // expected
+          }
+          long errorsAfter = 0;
+          for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "QUERYHANDLER", adminPathToMbean.get(adminPath), true);
+            errorsAfter += numRequests;
+            log.info("Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
+          }
+          assertEquals(errorsBefore + 1, errorsAfter);
+        }
+      } else {
+        fail("Collection could not be created within 60 seconds");
+      }
+    }
   }
 
   @Test
