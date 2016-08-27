@@ -81,6 +81,8 @@ Bug Fixes
 
 * SOLR-9445: Admin requests are retried by CloudSolrClient and LBHttpSolrClient on failure. (shalin)
 
+* SOLR-9439: Shard split clean up logic for older failed splits is faulty. (shalin)
+
 Optimizations
 ----------------------
 
