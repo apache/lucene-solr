@@ -92,6 +92,8 @@ Bug Fixes
 Optimizations
 ----------------------
 
+* SOLR-9374: Speed up Jmx MBean retrieval for FieldCache. (Tim Owen via shalin)
+
 Other Changes
 ----------------------
 
