@@ -996,8 +996,11 @@ public class CoreContainer {
     }
 
     CoreDescriptor cd = solrCores.getCoreDescriptor(name);
-    if (cd == null)
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
+    if (cd == null) {
+      SolrException solrException = new SolrException(ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
+      solrException.setMetadata("cause", "NonExistentCore");
+      throw solrException;
+    }
 
     boolean close = solrCores.isLoadedNotPendingClose(name);
     SolrCore core = solrCores.remove(name);
