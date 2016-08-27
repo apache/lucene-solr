@@ -299,7 +299,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     boolean requestContinues = false;
     final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
     AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
-    if (authenticationPlugin == null) {
+    if (authenticationPlugin == null ||
+        PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest)request).getPathInfo())) {
       return true;
     } else {
       //special case when solr is securing inter-node requests

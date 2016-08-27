@@ -87,6 +87,8 @@ Bug Fixes
   to be consistent with other places in Solr. Language names still work for backwards
   compatibility. (Uwe Schindler, Boris Steiner)
 
+* SOLR-9188: blockUnknown property makes inter-node communication impossible (noble)
+
 Optimizations
 ----------------------
 

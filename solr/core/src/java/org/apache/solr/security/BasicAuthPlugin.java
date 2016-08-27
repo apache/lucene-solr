@@ -71,6 +71,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
         for (Map.Entry<String, Object> e : command.getDataMap().entrySet()) {
           if (PROPS.contains(e.getKey())) {
             latestConf.put(e.getKey(), e.getValue());
+            return latestConf;
           } else {
             command.addError("Unknown property " + e.getKey());
           }
@@ -140,7 +141,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
       }
     } else {
       if (blockUnknown) {
-        authenticationFailure(response, "require authentication");
+        authenticationFailure(response, "require authentication for pathinfo :"+ request.getPathInfo());
       } else {
         request.setAttribute(AuthenticationPlugin.class.getName(), zkAuthentication.getPromptHeaders());
         filterChain.doFilter(request, response);
