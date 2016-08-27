@@ -2285,6 +2285,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return all.andNotSize(positiveA.union(positiveB));
   }
 
+  /** @lucene.internal */
+  public boolean intersects(DocSet a, DocsEnumState deState) throws IOException {
+    return a.intersects(getDocSet(deState));
+  }
+
   /**
    * Takes a list of document IDs, and returns an array of Documents containing all of the stored fields.
    */
