@@ -79,6 +79,8 @@ Bug Fixes
 * SOLR-6744: fl renaming / alias of uniqueKey field generates null pointer exception in SolrCloud configuration
   (Mike Drob via Tomás Fernández Löbbe)
 
+* SOLR-9445: Admin requests are retried by CloudSolrClient and LBHttpSolrClient on failure. (shalin)
+
 Optimizations
 ----------------------
 

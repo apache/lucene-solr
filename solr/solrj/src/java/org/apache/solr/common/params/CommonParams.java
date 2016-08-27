@@ -16,7 +16,10 @@
  */
 package org.apache.solr.common.params;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
 
 /**
@@ -177,6 +180,13 @@ public interface CommonParams {
   public static final String AUTHZ_PATH = "/admin/authorization";
   public static final String AUTHC_PATH = "/admin/authentication";
   public static final String ZK_PATH = "/admin/zookeeper";
+
+  public static final Set<String> ADMIN_PATHS = new HashSet<>(Arrays.asList(
+      CORES_HANDLER_PATH,
+      COLLECTIONS_HANDLER_PATH,
+      CONFIGSETS_HANDLER_PATH,
+      AUTHC_PATH,
+      AUTHZ_PATH));
 
   /** valid values for: <code>echoParams</code> */
   public enum EchoParamStyle {
