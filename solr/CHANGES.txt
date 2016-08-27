@@ -83,6 +83,10 @@ Bug Fixes
 
 * SOLR-9439: Shard split clean up logic for older failed splits is faulty. (shalin)
 
+* SOLR-9430: Fix locale lookup in DIH <propertyWriter/> to use BCP47 language tags
+  to be consistent with other places in Solr. Language names still work for backwards
+  compatibility. (Uwe Schindler, Boris Steiner)
+
 Optimizations
 ----------------------
 
