@@ -62,7 +62,6 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
     String asyncId = message.getStr(ASYNC);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
-    String location = message.getStr(CoreAdminParams.BACKUP_LOCATION);
 
     Map<String, String> requestMap = new HashMap<>();
     Instant startTime = Instant.now();
@@ -72,7 +71,8 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     BackupManager backupMgr = new BackupManager(repository, ocmh.zkStateReader, collectionName);
 
     // Backup location
-    URI backupPath = repository.createURI(location, backupName);
+    URI location = repository.createURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
+    URI backupPath = repository.resolve(location, backupName);
 
     //Validating if the directory already exists.
     if (repository.exists(backupPath)) {
@@ -94,7 +94,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString());
       params.set(NAME, slice.getName());
       params.set(CoreAdminParams.BACKUP_REPOSITORY, repo);
-      params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.getPath()); // note: index dir will be here then the "snapshot." + slice name
+      params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString()); // note: index dir will be here then the "snapshot." + slice name
       params.set(CORE_NAME_PROP, coreName);
 
       ocmh.sendShardRequest(replica.getNodeName(), params, shardHandler, asyncId, requestMap);
