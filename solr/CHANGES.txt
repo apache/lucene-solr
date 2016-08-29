@@ -94,6 +94,9 @@ Optimizations
 
 * SOLR-9374: Speed up Jmx MBean retrieval for FieldCache. (Tim Owen via shalin)
 
+* SOLR-9449: Example schemas do not index _version_ field anymore because the field
+  has DocValues enabled already. (shalin)
+
 Other Changes
 ----------------------
 

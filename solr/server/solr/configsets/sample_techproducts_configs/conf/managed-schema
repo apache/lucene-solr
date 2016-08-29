@@ -112,7 +112,8 @@
    <!-- If you remove this field, you must _also_ disable the update log in solrconfig.xml
       or Solr won't start. _version_ and update log are required for SolrCloud
    --> 
-   <field name="_version_" type="long" indexed="true" stored="false" />
+   <!-- doc values are enabled by default for primitive types such as long so we don't index the version field  -->
+   <field name="_version_" type="long" indexed="false" stored="false"/>
    
    <!-- points to the root document of a block of nested documents. Required for nested
       document support, may be removed otherwise
