@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
+import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -73,6 +74,19 @@ public class DeleteShardCmd implements Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The slice: " + slice.getName() + " is currently " + state
           + ". Only non-active (or custom-hashed) slices can be deleted.");
     }
+
+    if (state == Slice.State.RECOVERY)  {
+      // mark the slice as 'construction' and only then try to delete the cores
+      // see SOLR-9455
+      DistributedQueue inQueue = Overseer.getStateUpdateQueue(ocmh.zkStateReader.getZkClient());
+      Map<String, Object> propMap = new HashMap<>();
+      propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
+      propMap.put(sliceId, Slice.State.CONSTRUCTION.toString());
+      propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
+      ZkNodeProps m = new ZkNodeProps(propMap);
+      inQueue.offer(Utils.toJSON(m));
+    }
+
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
 
     String asyncId = message.getStr(ASYNC);

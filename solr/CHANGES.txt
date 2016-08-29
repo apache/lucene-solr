@@ -89,6 +89,8 @@ Bug Fixes
 
 * SOLR-9188: blockUnknown property makes inter-node communication impossible (noble)
 
+* SOLR-9455: Deleting a sub-shard in recovery state can mark parent shard as inactive. (shalin)
+
 Optimizations
 ----------------------
 
