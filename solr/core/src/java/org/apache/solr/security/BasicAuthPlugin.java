@@ -141,7 +141,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
       }
     } else {
       if (blockUnknown) {
-        authenticationFailure(response, "require authentication for pathinfo :"+ request.getPathInfo());
+        authenticationFailure(response, "require authentication");
       } else {
         request.setAttribute(AuthenticationPlugin.class.getName(), zkAuthentication.getPromptHeaders());
         filterChain.doFilter(request, response);
