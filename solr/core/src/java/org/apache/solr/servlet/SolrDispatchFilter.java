@@ -299,10 +299,15 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     boolean requestContinues = false;
     final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
     AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
-    if (authenticationPlugin == null ||
-        PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest)request).getPathInfo())) {
+    if (authenticationPlugin == null) {
       return true;
     } else {
+      try {
+        if (PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getPathInfo())) return true;
+      } catch (Exception e) {
+        log.error("Unexpected error ", e);
+      }
+
       //special case when solr is securing inter-node requests
       String header = ((HttpServletRequest) request).getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
