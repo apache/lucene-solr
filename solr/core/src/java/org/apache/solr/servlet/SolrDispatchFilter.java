@@ -302,6 +302,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (authenticationPlugin == null) {
       return true;
     } else {
+      if( PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getPathInfo()) ) return true;
       //special case when solr is securing inter-node requests
       String header = ((HttpServletRequest) request).getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
