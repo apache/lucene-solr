@@ -219,8 +219,6 @@ public class SplitShardCmd implements Cmd {
             ZkNodeProps m = new ZkNodeProps(propMap);
             try {
               ocmh.commandMap.get(DELETESHARD).call(clusterState, m, new NamedList());
-            } catch (SolrException e) {
-              throwIfNotNonExistentCoreException(subSlice, e);
             } catch (Exception e) {
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to delete already existing sub shard: " + subSlice,
                   e);
@@ -233,7 +231,7 @@ public class SplitShardCmd implements Cmd {
 
       if (oldShardsDeleted) {
         // refresh the locally cached cluster state
-        zkStateReader.forceUpdateCollection(collectionName);
+        // we know we have the latest because otherwise deleteshard would have failed
         clusterState = zkStateReader.getClusterState();
         collection = clusterState.getCollection(collectionName);
       }
@@ -469,26 +467,6 @@ public class SplitShardCmd implements Cmd {
     } catch (Exception e) {
       log.error("Error executing split operation for collection: " + collectionName + " parent shard: " + slice, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e);
-    }
-  }
-
-  private void throwIfNotNonExistentCoreException(String subSlice, SolrException e) {
-    Throwable t = e;
-    String cause = null;
-    while (t != null) {
-      if (t instanceof SolrException) {
-        SolrException solrException = (SolrException) t;
-        cause = solrException.getMetadata("cause");
-        if (cause != null && !"NonExistentCore".equals(cause)) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to delete already existing sub shard: " + subSlice,
-              e);
-        }
-      }
-      t = t.getCause();
-    }
-    if (!"NonExistentCore".equals(cause)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to delete already existing sub shard: " + subSlice,
-          e);
     }
   }
 }
