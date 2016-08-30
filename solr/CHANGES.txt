@@ -100,6 +100,9 @@ Optimizations
 * SOLR-9449: Example schemas do not index _version_ field anymore because the field
   has DocValues enabled already. (shalin)
 
+* SOLR-9447: Do not clone SolrInputDocument if update processor chain does not contain custom processors.
+  (shalin)
+
 Other Changes
 ----------------------
 
