@@ -103,6 +103,8 @@ Optimizations
 * SOLR-9447: Do not clone SolrInputDocument if update processor chain does not contain custom processors.
   (shalin)
 
+* SOLR-9452: JsonRecordReader should not deep copy document before handler.handle(). (noble, shalin)
+
 Other Changes
 ----------------------
 
