@@ -31,7 +31,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -79,6 +81,7 @@ import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
 import org.apache.solr.search.facet.UnInvertedField;
 import org.apache.solr.search.stats.StatsSource;
+import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,8 +161,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   
   private String path;
   private final boolean reserveDirectory;
-  private boolean createdDirectory; 
-  
+  private boolean createdDirectory;
+  private final Map<Long, IndexFingerprint> maxVersionFingerprintCache = new ConcurrentHashMap<>();
+
+
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory, String path) throws IOException {
     DirectoryReader reader = null;
     Directory dir = directoryFactory.get(path, DirContext.DEFAULT, config.lockType);
@@ -2390,6 +2395,22 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   @Override
   public Explanation explain(Query query, int doc) throws IOException {
     return super.explain(QueryUtils.makeQueryable(query), doc);
+  }
+
+  /** @lucene.internal
+   * gets a cached version of the IndexFingerprint for this searcher
+   **/
+  public IndexFingerprint getIndexFingerprint(long maxVersion) throws IOException {
+    IndexFingerprint fingerprint = maxVersionFingerprintCache.get(maxVersion);
+    if (fingerprint != null) return fingerprint;
+    // possibly expensive, so prevent more than one thread from calculating it for this searcher
+    synchronized (maxVersionFingerprintCache) {
+      fingerprint = maxVersionFingerprintCache.get(maxVersionFingerprintCache);
+      if (fingerprint != null) return fingerprint;
+      fingerprint = IndexFingerprint.getFingerprint(this, maxVersion);
+      maxVersionFingerprintCache.put(maxVersion, fingerprint);
+      return fingerprint;
+    }
   }
 
   /////////////////////////////////////////////////////////////////////
