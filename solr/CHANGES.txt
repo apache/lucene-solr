@@ -40,8 +40,36 @@ Bug Fixes
 
 * SOLR-9310: PeerSync fails on a node restart due to IndexFingerPrint mismatch (Pushkar Raste, noble)
 
+* SOLR-6744: fl renaming / alias of uniqueKey field generates null pointer exception in SolrCloud configuration
+  (Mike Drob via Tomás Fernández Löbbe)
+
+* SOLR-9445: Admin requests are retried by CloudSolrClient and LBHttpSolrClient on failure. (shalin)
+
+* SOLR-9439: Shard split clean up logic for older failed splits is faulty. The delete shard API
+  has also been made more resilient against failures resulting from non-existent cores. (shalin)
+
+* SOLR-9430: Fix locale lookup in DIH <propertyWriter/> to use BCP47 language tags
+  to be consistent with other places in Solr. Language names still work for backwards
+  compatibility. (Uwe Schindler, Boris Steiner)
+
+* SOLR-9389: HDFS Transaction logs stay open for writes which leaks Xceivers. (Tim Owen via Mark Miller)
+
+* SOLR-9188: blockUnknown property makes inter-node communication impossible (noble)
+
+* SOLR-9455: Deleting a sub-shard in recovery state can mark parent shard as inactive. (shalin)
+
 Optimizations
 ----------------------
+
+* SOLR-9374: Speed up Jmx MBean retrieval for FieldCache. (Tim Owen via shalin)
+
+* SOLR-9449: Example schemas do not index _version_ field anymore because the field
+  has DocValues enabled already. (shalin)
+
+* SOLR-9447: Do not clone SolrInputDocument if update processor chain does not contain custom processors.
+  (shalin)
+
+* SOLR-9452: JsonRecordReader should not deep copy document before handler.handle(). (noble, shalin)
 
 Other Changes
 ----------------------
@@ -50,6 +78,8 @@ Other Changes
 
 * SOLR-9412: Add failOnMissingParams option to MacroExpander, add TestMacroExpander class.
   (Jon Dorando, Christine Poerschke)
+
+* SOLR-9406: SolrSuggester should selectively register close hook (Gethin James, Joel Bernstein)
 
 ==================  6.2.0 ==================
 

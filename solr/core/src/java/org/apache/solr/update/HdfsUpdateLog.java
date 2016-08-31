@@ -219,8 +219,13 @@ public class HdfsUpdateLog extends UpdateLog {
     // It's possible that at abnormal close both "tlog" and "prevTlog" were
     // uncapped.
     for (TransactionLog ll : logs) {
-      newestLogsOnStartup.addFirst(ll);
-      if (newestLogsOnStartup.size() >= 2) break;
+      if (newestLogsOnStartup.size() < 2) {
+        newestLogsOnStartup.addFirst(ll);
+      } else {
+        // We're never going to modify old non-recovery logs - no need to hold their output open
+        log.info("Closing output for old non-recovery log " + ll);
+        ll.closeOutput();
+      }
     }
     
     try {

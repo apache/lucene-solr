@@ -520,6 +520,11 @@ public class TransactionLog implements Closeable {
     }
   }
 
+  /** Move to a read-only state, closing and releasing resources while keeping the log available for reads */
+  public void closeOutput() {
+
+  }
+
   public void finish(UpdateLog.SyncLevel syncLevel) {
     if (syncLevel == UpdateLog.SyncLevel.NONE) return;
     try {

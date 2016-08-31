@@ -119,9 +119,8 @@ public class JsonRecordReader {
    */
   public List<Map<String, Object>> getAllRecords(Reader r) throws IOException {
     final List<Map<String, Object>> results = new ArrayList<>();
-    streamRecords(r, (record, path) -> {
-      results.add(record);
-    });
+    // Deep copy is required here because the stream might hold on to the map
+    streamRecords(r, (record, path) -> results.add(Utils.getDeepCopy(record, 2)));
     return results;
   }
 
@@ -279,23 +278,6 @@ public class JsonRecordReader {
       return n;
     }
 
-    /**
-     * Copies a supplied Map to a new Map which is returned. Used to copy a
-     * records values. If a fields value is a List then they have to be
-     * deep-copied for thread safety
-     */
-    private static Map<String, Object> getDeepCopy(Map<String, Object> values) {
-      Map<String, Object> result = new LinkedHashMap<>();
-      for (Map.Entry<String, Object> entry : values.entrySet()) {
-        if (entry.getValue() instanceof List) {
-          result.put(entry.getKey(), new ArrayList((List) entry.getValue()));
-        } else {
-          result.put(entry.getKey(), entry.getValue());
-        }
-      }
-      return result;
-    }
-
     private void parse(JSONParser parser,
                        Handler handler,
                        Map<String, Object> values) throws IOException {
@@ -394,7 +376,7 @@ public class JsonRecordReader {
           int event = parser.nextEvent();
           if (event == OBJECT_END) {
             if (isRecord()) {
-              handler.handle(getDeepCopy(values), splitPath);
+              handler.handle(values, splitPath);
             }
             return;
           }
@@ -456,6 +438,7 @@ public class JsonRecordReader {
     }
 
     private void addChildDoc2ParentDoc(Map<String, Object> record, Map<String, Object> values) {
+      record =  Utils.getDeepCopy(record, 2);
       Object oldVal = values.get(null);
       if (oldVal == null) {
         values.put(null, record);
