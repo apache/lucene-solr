@@ -50,8 +50,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public static void beforeTests() throws Exception {
     JSONTestUtil.failRepeatedKeys = true;
 
-    origTableSize = FacetFieldProcessorByHashNumeric.MAXIMUM_STARTING_TABLE_SIZE;
-    FacetFieldProcessorByHashNumeric.MAXIMUM_STARTING_TABLE_SIZE=2; // stress test resizing
+    origTableSize = FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE;
+    FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=2; // stress test resizing
 
     origDefaultFacetMethod = FacetField.FacetMethod.DEFAULT_METHOD;
     // instead of the following, see the constructor
@@ -69,7 +69,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   @AfterClass
   public static void afterTests() throws Exception {
     JSONTestUtil.failRepeatedKeys = false;
-    FacetFieldProcessorByHashNumeric.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
+    FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
     FacetField.FacetMethod.DEFAULT_METHOD = origDefaultFacetMethod;
     if (servers != null) {
       servers.stop();
