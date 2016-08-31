@@ -32,7 +32,12 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-
+/**
+ * Accumulates statistics separated by a slot number.
+ * There is a separate statistic per slot. The slot is usually an ordinal into a set of values, e.g. tracking a count
+ * frequency <em>per term</em>.
+ * Sometimes there doesn't need to be a slot distinction, in which case there is just one nominal slot.
+ */
 public abstract class SlotAcc implements Closeable {
   String key; // todo...
   protected final FacetContext fcontext;
@@ -210,9 +215,7 @@ abstract class DoubleFuncSlotAcc extends FuncSlotAcc {
 
   @Override
   public void reset() {
-    for (int i=0; i<result.length; i++) {
-      result[i] = initialValue;
-    }
+    Arrays.fill(result, initialValue);
   }
 
   @Override
@@ -246,9 +249,7 @@ abstract class IntSlotAcc extends SlotAcc {
 
   @Override
   public void reset() {
-    for (int i=0; i<result.length; i++) {
-      result[i] = initialValue;
-    }
+    Arrays.fill(result, initialValue);
   }
 
   @Override

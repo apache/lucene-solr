@@ -66,6 +66,15 @@ Jetty 9.3.8.v20160314
 Detailed Change List
 ----------------------
 
+Upgrade Notes
+----------------------
+
+* If you use the JSON Facet API (json.facet) with method=stream, you must now set sort='index asc' to get the streaming
+behavior; otherwise it won't stream.  Reminder: "method" is a hint that doesn't change defaults of other parameters.
+
+* If you use the JSON Facet API (json.facet) to facet on a numeric field and if you use mincount=0 or if you set the
+prefix, then you will now get an error as these options are incompatible with numeric faceting.
+
 New Features
 ----------------------
 
@@ -104,6 +113,8 @@ Optimizations
   (shalin)
 
 * SOLR-9452: JsonRecordReader should not deep copy document before handler.handle(). (noble, shalin)
+
+* SOLR-9142: JSON Facet API: new method=dvhash can be chosen for fields with high cardinality. (David Smiley)
 
 Other Changes
 ----------------------
