@@ -17,10 +17,12 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -29,7 +31,9 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.Bits;
@@ -206,6 +210,35 @@ public class DocSetUtil {
       docs[i] = doc;
     }
     return new SortedIntDocSet(docs);
+  }
+
+  public static void collectSortedDocSet(DocSet docs, IndexReader reader, Collector collector) throws IOException {
+    // TODO add SortedDocSet sub-interface and take that.
+    // TODO collectUnsortedDocSet: iterate segment, then all docSet per segment.
+
+    final List<LeafReaderContext> leaves = reader.leaves();
+    final Iterator<LeafReaderContext> ctxIt = leaves.iterator();
+    int segBase = 0;
+    int segMax;
+    int adjustedMax = 0;
+    LeafReaderContext ctx = null;
+    LeafCollector leafCollector = null;
+    for (DocIterator docsIt = docs.iterator(); docsIt.hasNext(); ) {
+      final int doc = docsIt.nextDoc();
+      if (doc >= adjustedMax) {
+        do {
+          ctx = ctxIt.next();
+          segBase = ctx.docBase;
+          segMax = ctx.reader().maxDoc();
+          adjustedMax = segBase + segMax;
+        } while (doc >= adjustedMax);
+        leafCollector = collector.getLeafCollector(ctx);
+      }
+      if (doc < segBase) {
+        throw new IllegalStateException("algorithm expects sorted DocSet but wasn't: " + docs.getClass());
+      }
+      leafCollector.collect(doc - segBase);  // per-seg collectors
+    }
   }
 
 }
