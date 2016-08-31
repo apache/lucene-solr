@@ -126,7 +126,7 @@ public class FacetField extends FacetRequestSorted {
       if (mincount > 0 && prefix == null && (ntype != null || method == FacetMethod.DVHASH)) {
         // TODO can we auto-pick for strings when term cardinality is much greater than DocSet cardinality?
         //   or if we don't know cardinality but DocSet size is very small
-        return new FacetFieldProcessorByHashNumeric(fcontext, this, sf);
+        return new FacetFieldProcessorByHashDV(fcontext, this, sf);
       } else if (ntype == null) {
         // single valued string...
         return new FacetFieldProcessorByArrayDV(fcontext, this, sf);

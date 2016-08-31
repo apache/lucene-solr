@@ -47,8 +47,7 @@ import org.apache.solr.search.DocSetUtil;
  *   <li>doesn't handle mincount==0 -- you're better off with an array alg</li>
  * </ul>
  */
-// TODO rename: FacetFieldProcessorByHashDV
-class FacetFieldProcessorByHashNumeric extends FacetFieldProcessor {
+class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
   static int MAXIMUM_STARTING_TABLE_SIZE=1024;  // must be a power of two, non-final to support setting by tests
 
   /** a hash table with long keys (what we're counting) and integer values (counts) */
@@ -189,7 +188,7 @@ class FacetFieldProcessorByHashNumeric extends FacetFieldProcessor {
   LongCounts table;
   int allBucketsSlot = -1;
 
-  FacetFieldProcessorByHashNumeric(FacetContext fcontext, FacetField freq, SchemaField sf) {
+  FacetFieldProcessorByHashDV(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);
     if (freq.mincount == 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
