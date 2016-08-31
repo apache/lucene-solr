@@ -16,19 +16,9 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TextField;
-import org.apache.solr.schema.StrField;
-
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-
-import org.apache.commons.lang.StringUtils;
 
 /**
  * <p>

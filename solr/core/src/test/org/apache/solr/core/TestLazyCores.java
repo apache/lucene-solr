@@ -668,7 +668,9 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   @Test
   public void testMidUseUnload() throws Exception {
-    final int maximumSleepMillis = random().nextInt(10000); // sleep for up to 10 s
+    final int maximumSleepMillis = random().nextInt(9999) + 1; // sleep for up to 10 s Must add 1 because using
+                                                               // this as a seed will rea few lines down will
+                                                               // throw an exception if this is zero
     if (VERBOSE) {
       System.out.println("TestLazyCores.testMidUseUnload maximumSleepMillis="+maximumSleepMillis);
     }

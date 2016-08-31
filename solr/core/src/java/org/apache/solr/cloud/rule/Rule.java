@@ -137,7 +137,8 @@ public class Rule {
       if (replica.isWildCard()) {
         //this means for each replica, the value must match
         //shard match is already tested
-        if (tag.canMatch(nodeVsTags.get(testNode).get(tag.name), phase)) return NODE_CAN_BE_ASSIGNED;
+        Map<String, Object> tags = nodeVsTags.get(testNode);
+        if (tag.canMatch(tags == null ? null : tags.get(tag.name), phase)) return NODE_CAN_BE_ASSIGNED;
         else return CANNOT_ASSIGN_FAIL;
       } else {
         int v = getNumberOfNodesWithSameTagVal(shard, nodeVsTags, shardVsNodeSet, shardName, tag, phase);
@@ -367,7 +368,12 @@ public class Rule {
     }
 
     public int compare(String n1, String n2, Map<String, Map<String, Object>> nodeVsTags) {
-      return isWildCard() ? 0 : operand.compare(nodeVsTags.get(n1).get(name), nodeVsTags.get(n2).get(name));
+      Map<String, Object> tags = nodeVsTags.get(n1);
+      Object n1Val = tags == null ? null : tags.get(name);
+      tags = nodeVsTags.get(n2);
+      Object n2Val = tags == null ? null : tags.get(name);
+      if (n1Val == null || n2Val == null) return -1;
+      return isWildCard() ? 0 : operand.compare(n1Val, n2Val);
     }
 
   }

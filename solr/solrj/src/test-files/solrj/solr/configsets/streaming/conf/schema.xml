@@ -387,7 +387,7 @@
     -->
 
 
-    <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+    <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
     <field name="signatureField" type="string" indexed="true" stored="false"/>
 
     <field name="s_multi" type="string" indexed="true" stored="true" docValues="true" multiValued="true"/>
@@ -395,8 +395,19 @@
     <field name="f_multi" type="float" indexed="true" stored="true" docValues="true" multiValued="true"/>
     <field name="l_multi" type="long" indexed="true" stored="true" docValues="true" multiValued="true"/>
     <field name="d_multi" type="double" indexed="true" stored="true" docValues="true" multiValued="true"/>
+    <field name="dt_multi" type="date" indexed="true" stored="true" docValues="true" multiValued="true"/>
+    <field name="b_multi" type="boolean" indexed="true" stored="true" docValues="true" multiValued="true"/>
 
-    <field name="uuid" type="uuid" stored="true" />
+    <field name="s_sing" type="string" indexed="true" stored="true" docValues="true" multiValued="false"/>
+    <field name="i_sing" type="int" indexed="true" stored="true" docValues="true" multiValued="false"/>
+    <field name="f_sing" type="float" indexed="true" stored="true" docValues="true" multiValued="false"/>
+    <field name="l_sing" type="long" indexed="true" stored="true" docValues="true" multiValued="false"/>
+    <field name="d_sing" type="double" indexed="true" stored="true" docValues="true" multiValued="false"/>
+    <field name="dt_sing" type="tdate" indexed="true" stored="true" docValues="true" multiValued="false"/>
+    <field name="b_sing" type="boolean" indexed="true" stored="true" docValues="true" multiValued="false"/>
+
+
+  <field name="uuid" type="uuid" stored="true" />
     <field name="name" type="nametext" indexed="true" stored="true"/>
     <field name="text" type="text" indexed="true" stored="false"/>
     <field name="subject" type="text" indexed="true" stored="true"/>

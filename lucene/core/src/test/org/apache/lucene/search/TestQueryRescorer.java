@@ -412,21 +412,12 @@ public class TestQueryRescorer extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
 
       return new Weight(FixedScoreQuery.this) {
 
         @Override
         public void extractTerms(Set<Term> terms) {
-        }
-
-        @Override
-        public float getValueForNormalization() {
-          return 1.0f;
-        }
-
-        @Override
-        public void normalize(float queryNorm, float topLevelBoost) {
         }
 
         @Override
@@ -503,30 +494,27 @@ public class TestQueryRescorer extends LuceneTestCase {
     }
 
     @Override
-    public boolean equals(Object o) {
-      if ((o instanceof FixedScoreQuery) == false) {
-        return false;
-      }
-      FixedScoreQuery other = (FixedScoreQuery) o;
-      return super.equals(o) &&
-        reverse == other.reverse &&
-        Arrays.equals(idToNum, other.idToNum);
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+
+    private boolean equalsTo(FixedScoreQuery other) {
+      return reverse == other.reverse && 
+             Arrays.equals(idToNum, other.idToNum);
+    }
+
+    @Override
+    public int hashCode() {
+      int hash = classHash();
+      hash = 31 * hash + (reverse ? 0 : 1);
+      hash = 31 * hash + Arrays.hashCode(idToNum);
+      return hash;
     }
 
     @Override
     public Query clone() {
       return new FixedScoreQuery(idToNum, reverse);
-    }
-
-    @Override
-    public int hashCode() {
-      int PRIME = 31;
-      int hash = super.hashCode();
-      if (reverse) {
-        hash = PRIME * hash + 3623;
-      }
-      hash = PRIME * hash + Arrays.hashCode(idToNum);
-      return hash;
     }
   }
 }

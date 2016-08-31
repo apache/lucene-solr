@@ -821,11 +821,13 @@ public class UpdateLog implements PluginInfoInitialized {
 
       try {
         if (ll.endsWithCommit()) {
+          ll.closeOutput();
           ll.decref();
           continue;
         }
       } catch (IOException e) {
         log.error("Error inspecting tlog " + ll, e);
+        ll.closeOutput();
         ll.decref();
         continue;
       }
@@ -943,11 +945,16 @@ public class UpdateLog implements PluginInfoInitialized {
       }
     }
 
-    public List<Long> getVersions(int n) {
+    public  List<Long> getVersions(int n){
+      return getVersions(n, Long.MAX_VALUE);
+    }
+
+    public List<Long> getVersions(int n, long maxVersion) {
       List<Long> ret = new ArrayList<>(n);
 
       for (List<Update> singleList : updateList) {
         for (Update ptr : singleList) {
+          if(Math.abs(ptr.version) > Math.abs(maxVersion)) continue;
           ret.add(ptr.version);
           if (--n <= 0) return ret;
         }

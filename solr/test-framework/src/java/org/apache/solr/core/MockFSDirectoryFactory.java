@@ -49,7 +49,6 @@ public class MockFSDirectoryFactory extends StandardDirectoryFactory {
     
     if (cdir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)cdir).setAssertNoUnrefencedFilesOnClose(false);
-      ((MockDirectoryWrapper)cdir).setPreventDoubleWrite(false);
     }
     return dir;
   }

@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -177,12 +178,9 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
     RAMFile file = newRAMFile();
-    RAMFile existing = fileMap.remove(name);
-    if (existing != null) {
-      sizeInBytes.addAndGet(-existing.sizeInBytes);
-      existing.directory = null;
+    if (fileMap.putIfAbsent(name, file) != null) {
+      throw new FileAlreadyExistsException(name);
     }
-    fileMap.put(name, file);
     return new RAMOutputStream(name, file, true);
   }
 
@@ -216,16 +214,26 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
   }
 
   @Override
-  public void renameFile(String source, String dest) throws IOException {
+  public void rename(String source, String dest) throws IOException {
     ensureOpen();
     RAMFile file = fileMap.get(source);
     if (file == null) {
       throw new FileNotFoundException(source);
     }
-    fileMap.put(dest, file);
+    if (fileMap.putIfAbsent(dest, file) != null) {
+      throw new FileAlreadyExistsException(dest);
+    }
+    if (!fileMap.remove(source, file)) {
+      throw new IllegalStateException("file was unexpectedly replaced: " + source);
+    }
     fileMap.remove(source);
   }
 
+  @Override
+  public void syncMetaData() throws IOException {
+    // we are by definition not durable!
+  }
+  
   /** Returns a stream reading an existing file. */
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {

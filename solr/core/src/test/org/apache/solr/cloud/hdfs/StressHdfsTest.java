@@ -91,7 +91,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   }
   
   protected String getSolrXml() {
-    return "solr-no-core.xml";
+    return "solr.xml";
   }
 
   @Test

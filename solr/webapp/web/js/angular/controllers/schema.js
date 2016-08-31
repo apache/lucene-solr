@@ -477,6 +477,10 @@ var getFieldProperties = function(data, core, is, field) {
         var row = display.rows[i];
         row.cells = [];
 
+        if (!row.flags) {
+            continue; // Match the special case in the LukeRequestHandler
+        }
+
         for (var j in display.columns) {
             var flag = display.columns[j].key;
             row.cells.push({key: flag, value: row.flags.indexOf(flag)>=0});

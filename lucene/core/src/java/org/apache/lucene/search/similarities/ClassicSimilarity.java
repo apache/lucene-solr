@@ -56,18 +56,6 @@ public class ClassicSimilarity extends TFIDFSimilarity {
   /** Sole constructor: parameter-free */
   public ClassicSimilarity() {}
   
-  /** Implemented as <code>overlap / maxOverlap</code>. */
-  @Override
-  public float coord(int overlap, int maxOverlap) {
-    return overlap / (float)maxOverlap;
-  }
-
-  /** Implemented as <code>1/sqrt(sumOfSquaredWeights)</code>. */
-  @Override
-  public float queryNorm(float sumOfSquaredWeights) {
-    return (float)(1.0 / Math.sqrt(sumOfSquaredWeights));
-  }
-  
   /**
    * Encodes a normalization factor for storage in an index.
    * <p>

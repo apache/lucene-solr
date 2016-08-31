@@ -1,5 +1,3 @@
-package org.apache.lucene.replicator.nrt;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,20 +15,16 @@ package org.apache.lucene.replicator.nrt;
  * limitations under the License.
  */
 
+package org.apache.lucene.replicator.nrt;
+
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
@@ -39,20 +33,17 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.RAMOutputStream;
-import org.apache.lucene.util.StringHelper;
 
 /** Common base class for {@link PrimaryNode} and {@link ReplicaNode}.
  *
  * @lucene.experimental */
 
-abstract class Node implements Closeable {
+public abstract class Node implements Closeable {
 
-  static boolean VERBOSE_FILES = true;
-  static boolean VERBOSE_CONNECTIONS = false;
+  public static boolean VERBOSE_FILES = true;
+  public static boolean VERBOSE_CONNECTIONS = false;
 
   // Keys we store into IndexWriter's commit user data:
 
@@ -97,6 +88,16 @@ abstract class Node implements Closeable {
     this.printStream = printStream;
   }
 
+  /** Returns the {@link ReferenceManager} to use for acquiring and releasing searchers */
+  public ReferenceManager<IndexSearcher> getSearcherManager() {
+    return mgr;
+  }
+
+  /** Returns the {@link Directory} this node is writing to */
+  public Directory getDirectory() {
+    return dir;
+  }
+
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(id=" + id + ")";
@@ -129,7 +130,7 @@ abstract class Node implements Closeable {
     }
   }
 
-  protected void message(String message) {
+  public void message(String message) {
     if (printStream != null) {
       long now = System.nanoTime();
       printStream.println(String.format(Locale.ROOT,

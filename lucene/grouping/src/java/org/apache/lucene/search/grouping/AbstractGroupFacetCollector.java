@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search.grouping;
 
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.BytesRef;

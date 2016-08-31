@@ -16,30 +16,9 @@
  */
 package org.apache.solr.index;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergePolicyWrapper;
-import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.MergeTrigger;
-import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.index.SegmentCommitInfo;
-import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.packed.PackedInts;
-import org.apache.lucene.util.packed.PackedLongValues;
 
 // TODO: remove this and add indexSort specification directly to solrconfig.xml?  But for BWC, also accept SortingMergePolicy specifiction?
 

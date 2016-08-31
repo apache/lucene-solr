@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.join;
 
+import java.util.Objects;
+
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.solr.search.DelegatingCollector;
@@ -69,5 +71,20 @@ class BlockJoinFacetFilter extends Query implements PostFilter {
   @Override
   public void setCacheSep(boolean cacheSep) {
 
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(BlockJoinFacetFilter other) {
+    return Objects.equals(blockJoinFacetCollector, other.blockJoinFacetCollector);
+  }
+
+  @Override
+  public int hashCode() {
+    return classHash() * 31 + blockJoinFacetCollector.hashCode();
   }
 }

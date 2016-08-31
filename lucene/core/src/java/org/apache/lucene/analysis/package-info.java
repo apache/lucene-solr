@@ -156,7 +156,7 @@
  *   over and over in many places, you can make a subclass of
  *   {@link org.apache.lucene.analysis.Analyzer}. In fact, Apache Lucene
  *   supplies a large family of <code>Analyzer</code> classes that deliver useful
- *   analysis chains. The most common of these is the <a href="{@docRoot}/../analyzers-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a>.
+ *   analysis chains. The most common of these is the <a href="{@docRoot}/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a>.
  *   Many applications will have a long and industrious life with nothing more
  *   than the <code>StandardAnalyzer</code>. The <a href="{@docRoot}/../analyzers-common/overview-summary.html">analyzers-common</a>
  *   library provides many pre-existing analyzers for various languages.

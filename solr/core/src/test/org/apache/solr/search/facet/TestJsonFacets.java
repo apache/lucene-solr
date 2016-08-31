@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,8 +29,6 @@ import com.tdunning.math.stats.AVLTreeDigest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.hll.HLL;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.packed.GrowableWriter;
-import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrInputDocument;
@@ -50,8 +47,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
   @BeforeClass
   public static void beforeTests() throws Exception {
     JSONTestUtil.failRepeatedKeys = true;
-    origTableSize = FacetFieldProcessorNumeric.MAXIMUM_STARTING_TABLE_SIZE;
-    FacetFieldProcessorNumeric.MAXIMUM_STARTING_TABLE_SIZE=2; // stress test resizing
+    origTableSize = FacetFieldProcessorByHashNumeric.MAXIMUM_STARTING_TABLE_SIZE;
+    FacetFieldProcessorByHashNumeric.MAXIMUM_STARTING_TABLE_SIZE=2; // stress test resizing
     initCore("solrconfig-tlog.xml","schema_latest.xml");
   }
 
@@ -64,7 +61,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   @AfterClass
   public static void afterTests() throws Exception {
     JSONTestUtil.failRepeatedKeys = false;
-    FacetFieldProcessorNumeric.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
+    FacetFieldProcessorByHashNumeric.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
     if (servers != null) {
       servers.stop();
       servers = null;
@@ -352,11 +349,11 @@ public class TestJsonFacets extends SolrTestCaseHS {
     doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sd",  "cat_s","cat_sd", "where_s","where_sd", "num_d","num_dd", "num_i","num_id", "num_is","num_lds", "num_fs","num_dds", "super_s","super_sd", "val_b","val_b", "date","date_dtd", "sparse_s","sparse_sd"    ,"multi_ss","multi_sds") );
 
     // multi-valued docvalues
-    FacetFieldProcessorDV.unwrap_singleValued_multiDv = false;  // better multi-valued coverage
+    FacetFieldProcessorByArrayDV.unwrap_singleValued_multiDv = false;  // better multi-valued coverage
     doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sds",  "cat_s","cat_sds", "where_s","where_sds", "num_d","num_d", "num_i","num_i", "num_is","num_ids", "num_fs","num_fds",    "super_s","super_sds", "val_b","val_b", "date","date_dtds", "sparse_s","sparse_sds"    ,"multi_ss","multi_sds") );
 
     // multi-valued docvalues
-    FacetFieldProcessorDV.unwrap_singleValued_multiDv = true;
+    FacetFieldProcessorByArrayDV.unwrap_singleValued_multiDv = true;
     doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sds",  "cat_s","cat_sds", "where_s","where_sds", "num_d","num_d", "num_i","num_i", "num_is","num_ids", "num_fs","num_fds",   "super_s","super_sds", "val_b","val_b", "date","date_dtds", "sparse_s","sparse_sds"    ,"multi_ss","multi_sds") );
   }
 

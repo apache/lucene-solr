@@ -186,7 +186,7 @@ public class TermAutomatonQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     IndexReaderContext context = searcher.getTopReaderContext();
     Map<Integer,TermContext> termStates = new HashMap<>();
 
@@ -196,7 +196,7 @@ public class TermAutomatonQuery extends Query {
       }
     }
 
-    return new TermAutomatonWeight(det, searcher, termStates);
+    return new TermAutomatonWeight(det, searcher, termStates, boost);
   }
 
   @Override
@@ -232,33 +232,31 @@ public class TermAutomatonQuery extends Query {
 
   /** Returns true iff <code>o</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof TermAutomatonQuery)) {
-      return false;
-    }
-    TermAutomatonQuery other = (TermAutomatonQuery) o;
-
-    if (det == null) {
-      throw new IllegalStateException("please call finish first");
-    }
-    if (other.det == null) {
-      throw new IllegalStateException("please call other.finish first");
-    }
-
-    // NOTE: not quite correct, because if terms were added in different
-    // order in each query but the language is the same, we return false:
-    return super.equals(o)
-      && this.termToID.equals(other.termToID) &&
-      Operations.sameLanguage(det, other.det);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
   }
 
-  /** Returns a hash code value for this object.  This is very costly! */
+  private static boolean checkFinished(TermAutomatonQuery q) {
+    if (q.det == null) {
+      throw new IllegalStateException("Call finish first on: " + q);
+    }
+    return true;
+  }
+
+  private boolean equalsTo(TermAutomatonQuery other) {
+    return checkFinished(this) &&
+           checkFinished(other) &&
+           other == this;
+  }
+
   @Override
   public int hashCode() {
-    if (det == null) {
-      throw new IllegalStateException("please call finish first");
-    }
-    return super.hashCode() ^ termToID.hashCode() + det.toDot().hashCode();
+    checkFinished(this);
+    // LUCENE-7295: this used to be very awkward toDot() call; it is safer to assume
+    // that no two instances are equivalent instead (until somebody finds a better way to check
+    // on automaton equivalence quickly).
+    return System.identityHashCode(this);
   }
 
   /** Returns the dot (graphviz) representation of this automaton.
@@ -329,16 +327,14 @@ public class TermAutomatonQuery extends Query {
   }
 
   final class TermAutomatonWeight extends Weight {
-    private final IndexSearcher searcher;
     final Automaton automaton;
     private final Map<Integer,TermContext> termStates;
     private final Similarity.SimWeight stats;
     private final Similarity similarity;
 
-    public TermAutomatonWeight(Automaton automaton, IndexSearcher searcher, Map<Integer,TermContext> termStates) throws IOException {
+    public TermAutomatonWeight(Automaton automaton, IndexSearcher searcher, Map<Integer,TermContext> termStates, float boost) throws IOException {
       super(TermAutomatonQuery.this);
       this.automaton = automaton;
-      this.searcher = searcher;
       this.termStates = termStates;
       this.similarity = searcher.getSimilarity(true);
       List<TermStatistics> allTermStats = new ArrayList<>();
@@ -349,7 +345,7 @@ public class TermAutomatonQuery extends Query {
         }
       }
 
-      stats = similarity.computeWeight(searcher.collectionStatistics(field),
+      stats = similarity.computeWeight(boost, searcher.collectionStatistics(field),
                                        allTermStats.toArray(new TermStatistics[allTermStats.size()]));
     }
 
@@ -365,16 +361,6 @@ public class TermAutomatonQuery extends Query {
     @Override
     public String toString() {
       return "weight(" + TermAutomatonQuery.this + ")";
-    }
-
-    @Override
-    public float getValueForNormalization() {
-      return stats.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float queryNorm, float boost) {
-      stats.normalize(queryNorm, boost);
     }
 
     @Override

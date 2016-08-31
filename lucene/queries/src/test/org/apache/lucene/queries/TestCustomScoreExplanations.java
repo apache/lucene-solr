@@ -32,7 +32,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
 
 public class TestCustomScoreExplanations extends BaseExplanationTestCase {
   public void testOneTerm() throws Exception {
@@ -63,36 +62,30 @@ public class TestCustomScoreExplanations extends BaseExplanationTestCase {
     searcher.setSimilarity(new BM25Similarity());
 
     Explanation expl = searcher.explain(query, 0);
+    assertEquals(2, expl.getDetails().length);
     // function
     assertEquals(5f, expl.getDetails()[0].getValue(), 0f);
     // boost
     assertEquals("boost", expl.getDetails()[1].getDescription());
     assertEquals(1f, expl.getDetails()[1].getValue(), 0f);
-    // norm
-    assertEquals("queryNorm", expl.getDetails()[2].getDescription());
-    assertEquals(1f, expl.getDetails()[2].getValue(), 0f);
 
     query = new BoostQuery(query, 2);
     expl = searcher.explain(query, 0);
+    assertEquals(2, expl.getDetails().length);
     // function
     assertEquals(5f, expl.getDetails()[0].getValue(), 0f);
     // boost
     assertEquals("boost", expl.getDetails()[1].getDescription());
     assertEquals(2f, expl.getDetails()[1].getValue(), 0f);
-    // norm
-    assertEquals("queryNorm", expl.getDetails()[2].getDescription());
-    assertEquals(1f, expl.getDetails()[2].getValue(), 0f);
 
     searcher.setSimilarity(new ClassicSimilarity()); // in order to have a queryNorm != 1
     expl = searcher.explain(query, 0);
+    assertEquals(2, expl.getDetails().length);
     // function
     assertEquals(5f, expl.getDetails()[0].getValue(), 0f);
     // boost
     assertEquals("boost", expl.getDetails()[1].getDescription());
     assertEquals(2f, expl.getDetails()[1].getValue(), 0f);
-    // norm
-    assertEquals("queryNorm", expl.getDetails()[2].getDescription());
-    assertEquals(0.5f, expl.getDetails()[2].getValue(), 0f);
   }
 }
 

@@ -44,7 +44,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldValueQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;

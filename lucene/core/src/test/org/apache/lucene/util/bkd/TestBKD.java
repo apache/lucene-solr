@@ -507,6 +507,35 @@ public class TestBKD extends LuceneTestCase {
     verify(docValues, null, numDims, numBytesPerDim);
   }
 
+  // this should trigger run-length compression with lengths that are greater than 255
+  public void testOneDimTwoValues() throws Exception {
+    int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
+    int numDims = TestUtil.nextInt(random(), 1, 5);
+
+    int numDocs = atLeast(1000);
+    int theDim = random().nextInt(numDims);
+    byte[] value1 = new byte[numBytesPerDim];
+    random().nextBytes(value1);
+    byte[] value2 = new byte[numBytesPerDim];
+    random().nextBytes(value2);
+    byte[][][] docValues = new byte[numDocs][][];
+
+    for(int docID=0;docID<numDocs;docID++) {
+      byte[][] values = new byte[numDims][];
+      for(int dim=0;dim<numDims;dim++) {
+        if (dim == theDim) {
+          values[dim] = random().nextBoolean() ? value1 : value2;
+        } else {
+          values[dim] = new byte[numBytesPerDim];
+          random().nextBytes(values[dim]);
+        }
+      }
+      docValues[docID] = values;
+    }
+
+    verify(docValues, null, numDims, numBytesPerDim);
+  }
+
   public void testMultiValued() throws Exception {
     int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
     int numDims = TestUtil.nextInt(random(), 1, 5);
@@ -808,9 +837,6 @@ public class TestBKD extends LuceneTestCase {
     }
 
     try (Directory dir0 = newMockDirectory()) {
-      if (dir0 instanceof MockDirectoryWrapper) {
-        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
-      }
 
       Directory dir = new FilterDirectory(dir0) {
         boolean corrupted;
@@ -857,9 +883,6 @@ public class TestBKD extends LuceneTestCase {
     }
 
     try (Directory dir0 = newMockDirectory()) {
-      if (dir0 instanceof MockDirectoryWrapper) {
-        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
-      }
 
       Directory dir = new FilterDirectory(dir0) {
         boolean corrupted;

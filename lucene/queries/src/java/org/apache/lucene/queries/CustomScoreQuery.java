@@ -26,7 +26,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
@@ -48,7 +47,6 @@ public class CustomScoreQuery extends Query implements Cloneable {
 
   private Query subQuery;
   private Query[] scoringQueries; // never null (empty array if there are no valSrcQueries).
-  private boolean strict = false; // if true, valueSource part of query does not take part in weights normalization.
 
   /**
    * Create a CustomScoreQuery over input subQuery.
@@ -131,31 +129,29 @@ public class CustomScoreQuery extends Query implements Cloneable {
       sb.append(", ").append(scoringQuery.toString(field));
     }
     sb.append(")");
-    sb.append(strict?" STRICT" : "");
     return sb.toString();
   }
 
   /** Returns true if <code>o</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (!super.equals(o))
-      return false;
-    CustomScoreQuery other = (CustomScoreQuery)o;
-    if (!this.subQuery.equals(other.subQuery) ||
-        this.strict != other.strict ||
-        this.scoringQueries.length != other.scoringQueries.length) {
-      return false;
-    }
-    return Arrays.equals(scoringQueries, other.scoringQueries);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(CustomScoreQuery other) {
+    return subQuery.equals(other.subQuery) &&
+           scoringQueries.length == other.scoringQueries.length &&
+           Arrays.equals(scoringQueries, other.scoringQueries);
   }
 
   /** Returns a hash code value for this object. */
   @Override
   public int hashCode() {
-    return (getClass().hashCode() + subQuery.hashCode() + Arrays.hashCode(scoringQueries))
-      ^ (strict ? 1234 : 4321);
+    // Didn't change this hashcode, but it looks suspicious.
+    return (classHash() + 
+        subQuery.hashCode() + 
+        Arrays.hashCode(scoringQueries));
   }
   
   /**
@@ -171,19 +167,23 @@ public class CustomScoreQuery extends Query implements Cloneable {
   //=========================== W E I G H T ============================
   
   private class CustomWeight extends Weight {
-    Weight subQueryWeight;
-    Weight[] valSrcWeights;
-    boolean qStrict;
-    float queryWeight;
+    final Weight subQueryWeight;
+    final Weight[] valSrcWeights;
+    final float queryWeight;
 
-    public CustomWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public CustomWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
       super(CustomScoreQuery.this);
-      this.subQueryWeight = subQuery.createWeight(searcher, needsScores);
+      // note we DONT incorporate our boost, nor pass down any boost 
+      // (e.g. from outer BQ), as there is no guarantee that the CustomScoreProvider's 
+      // function obeys the distributive law... it might call sqrt() on the subQuery score
+      // or some other arbitrary function other than multiplication.
+      // so, instead boosts are applied directly in score()
+      this.subQueryWeight = subQuery.createWeight(searcher, needsScores, 1f);
       this.valSrcWeights = new Weight[scoringQueries.length];
       for(int i = 0; i < scoringQueries.length; i++) {
-        this.valSrcWeights[i] = scoringQueries[i].createWeight(searcher, needsScores);
+        this.valSrcWeights[i] = scoringQueries[i].createWeight(searcher, needsScores, 1f);
       }
-      this.qStrict = strict;
+      this.queryWeight = boost;
     }
 
     @Override
@@ -192,36 +192,6 @@ public class CustomScoreQuery extends Query implements Cloneable {
       for (Weight scoringWeight : valSrcWeights) {
         scoringWeight.extractTerms(terms);
       }
-    }
-
-    @Override
-    public float getValueForNormalization() throws IOException {
-      float sum = subQueryWeight.getValueForNormalization();
-      for (Weight valSrcWeight : valSrcWeights) {
-        if (qStrict == false) { // otherwise do not include ValueSource part in the query normalization
-          sum += valSrcWeight.getValueForNormalization();
-        }
-      }
-      return sum;
-    }
-
-    /*(non-Javadoc) @see org.apache.lucene.search.Weight#normalize(float) */
-    @Override
-    public void normalize(float norm, float boost) {
-      // note we DONT incorporate our boost, nor pass down any boost 
-      // (e.g. from outer BQ), as there is no guarantee that the CustomScoreProvider's 
-      // function obeys the distributive law... it might call sqrt() on the subQuery score
-      // or some other arbitrary function other than multiplication.
-      // so, instead boosts are applied directly in score()
-      subQueryWeight.normalize(norm, 1f);
-      for (Weight valSrcWeight : valSrcWeights) {
-        if (qStrict) {
-          valSrcWeight.normalize(1, 1); // do not normalize the ValueSource part
-        } else {
-          valSrcWeight.normalize(norm, 1f);
-        }
-      }
-      queryWeight = boost;
     }
 
     @Override
@@ -311,30 +281,8 @@ public class CustomScoreQuery extends Query implements Cloneable {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new CustomWeight(searcher, needsScores);
-  }
-
-  /**
-   * Checks if this is strict custom scoring.
-   * In strict custom scoring, the {@link ValueSource} part does not participate in weight normalization.
-   * This may be useful when one wants full control over how scores are modified, and does 
-   * not care about normalizing by the {@link ValueSource} part.
-   * One particular case where this is useful if for testing this query.   
-   * <P>
-   * Note: only has effect when the {@link ValueSource} part is not null.
-   */
-  public boolean isStrict() {
-    return strict;
-  }
-
-  /**
-   * Set the strict mode of this query. 
-   * @param strict The strict mode to set.
-   * @see #isStrict()
-   */
-  public void setStrict(boolean strict) {
-    this.strict = strict;
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new CustomWeight(searcher, needsScores, boost);
   }
 
   /** The sub-query that CustomScoreQuery wraps, affecting both the score and which documents match. */

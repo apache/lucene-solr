@@ -29,8 +29,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.Bits;
-
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /** 

@@ -88,7 +88,6 @@ public class QueryUtils {
       return negClause;
     } else {
       BooleanQuery.Builder newBqB = new BooleanQuery.Builder();
-      newBqB.setDisableCoord(bq.isCoordDisabled());
       // ignore minNrShouldMatch... it doesn't make sense for a negative query
 
       // the inverse of -a -b is a OR b
@@ -121,7 +120,6 @@ public class QueryUtils {
     }
     BooleanQuery bq = (BooleanQuery) q;
     BooleanQuery.Builder newBqB = new BooleanQuery.Builder();
-    newBqB.setDisableCoord(bq.isCoordDisabled());
     newBqB.setMinimumNumberShouldMatch(bq.getMinimumNumberShouldMatch());
     for (BooleanClause clause : bq) {
       newBqB.add(clause);

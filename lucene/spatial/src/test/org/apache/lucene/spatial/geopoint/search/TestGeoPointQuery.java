@@ -17,12 +17,14 @@
 package org.apache.lucene.spatial.geopoint.search;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.geo.BaseGeoPointTestCase;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
+import org.apache.lucene.store.Directory;
 
 /**
  * random testing for GeoPoint query logic
@@ -43,43 +45,41 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
 
   @Override
   protected void addPointToDoc(String field, Document doc, double lat, double lon) {
-    doc.add(new GeoPointField(field, lat, lon, GeoPointField.PREFIX_TYPE_NOT_STORED));
+    doc.add(new GeoPointField(field, lat, lon, GeoPointField.TYPE_NOT_STORED));
   }
 
   @Override
   protected Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
-    return new GeoPointInBBoxQuery(field, TermEncoding.PREFIX, minLat, maxLat, minLon, maxLon);
+    return new GeoPointInBBoxQuery(field, minLat, maxLat, minLon, maxLon);
   }
 
   @Override
   protected Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters) {
-    return new GeoPointDistanceQuery(field, TermEncoding.PREFIX, centerLat, centerLon, radiusMeters);
+    return new GeoPointDistanceQuery(field, centerLat, centerLon, radiusMeters);
   }
 
   @Override
   protected Query newPolygonQuery(String field, Polygon... polygons) {
-    return new GeoPointInPolygonQuery(field, TermEncoding.PREFIX, polygons);
+    return new GeoPointInPolygonQuery(field, polygons);
   }
 
-  // TODO: remove these once we get tests passing!
+  /** explicit test failure for LUCENE-7325 */
+  public void testInvalidShift() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-  @Override
-  protected double nextLongitude() {
-    return GeoPointTestUtil.nextLongitude();
-  }
+    // add a doc with a point
+    Document document = new Document();
+    addPointToDoc("field", document, 80, -65);
+    writer.addDocument(document);
 
-  @Override
-  protected double nextLatitude() {
-    return GeoPointTestUtil.nextLatitude();
-  }
+    // search and verify we found our doc
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    assertEquals(0, searcher.count(newRectQuery("field", 90, 90, -180, 0)));
 
-  @Override
-  protected Rectangle nextBox() {
-    return GeoPointTestUtil.nextBox();
-  }
-
-  @Override
-  protected Polygon nextPolygon() {
-    return GeoPointTestUtil.nextPolygon();
+    reader.close();
+    writer.close();
+    dir.close();
   }
 }

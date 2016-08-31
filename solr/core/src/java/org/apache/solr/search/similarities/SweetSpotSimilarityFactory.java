@@ -20,7 +20,6 @@ import org.apache.lucene.misc.SweetSpotSimilarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity; // jdoc
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.common.SolrException;
 import static org.apache.solr.common.SolrException.ErrorCode.*;
 /**

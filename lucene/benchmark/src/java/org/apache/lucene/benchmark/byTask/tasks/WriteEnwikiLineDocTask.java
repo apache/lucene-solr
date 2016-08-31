@@ -17,7 +17,6 @@
 package org.apache.lucene.benchmark.byTask.tasks;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;

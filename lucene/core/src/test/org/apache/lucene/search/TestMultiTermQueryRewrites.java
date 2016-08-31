@@ -196,9 +196,15 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     }
     assertEquals("The multi-segment case must produce same rewritten query", q1, q2);
     assertEquals("The multi-segment case with duplicates must produce same rewritten query", q1, q3);
-    checkBooleanQueryBoosts((BooleanQuery) q1);
-    checkBooleanQueryBoosts((BooleanQuery) q2);
-    checkBooleanQueryBoosts((BooleanQuery) q3);
+    if (q1 instanceof MatchNoDocsQuery) {
+      assertTrue(q1 instanceof MatchNoDocsQuery);
+      assertTrue(q3 instanceof MatchNoDocsQuery);
+    } else {
+      checkBooleanQueryBoosts((BooleanQuery) q1);
+      checkBooleanQueryBoosts((BooleanQuery) q2);
+      checkBooleanQueryBoosts((BooleanQuery) q3);
+      assert false;
+    }
   }
   
   public void testBoosts() throws Exception {

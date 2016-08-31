@@ -18,13 +18,22 @@ package org.apache.lucene.queryparser.classic;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockBytesAnalyzer;
+import org.apache.lucene.analysis.MockLowerCaseFilter;
+import org.apache.lucene.analysis.MockSynonymAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.DateTools.Resolution;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser.Operator;
 import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
@@ -32,10 +41,14 @@ import org.apache.lucene.queryparser.util.QueryParserTestBase;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
 
 import java.io.IOException;
@@ -44,7 +57,10 @@ import java.io.IOException;
  * Tests QueryParser.
  */
 public class TestQueryParser extends QueryParserTestBase {
-  
+
+  protected boolean splitOnWhitespace = QueryParser.DEFAULT_SPLIT_ON_WHITESPACE;
+  private static final String FIELD = "field";
+
   public static class QPTestParser extends QueryParser {
     public QPTestParser(String f, Analyzer a) {
       super(f, a);
@@ -67,6 +83,7 @@ public class TestQueryParser extends QueryParserTestBase {
     if (a == null) a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
     QueryParser qp = new QueryParser(getDefaultField(), a);
     qp.setDefaultOperator(QueryParserBase.OR_OPERATOR);
+    qp.setSplitOnWhitespace(splitOnWhitespace);
     return qp;
   }
   
@@ -107,14 +124,6 @@ public class TestQueryParser extends QueryParserTestBase {
     assert (cqpC instanceof QueryParser);
     QueryParser qp = (QueryParser) cqpC;
     qp.setDefaultOperator(Operator.AND);
-  }
-  
-  @Override
-  public void setAnalyzeRangeTerms(CommonQueryParserConfiguration cqpC,
-      boolean value) {
-    assert (cqpC instanceof QueryParser);
-    QueryParser qp = (QueryParser) cqpC;
-    qp.setAnalyzeRangeTerms(value);
   }
   
   @Override
@@ -195,7 +204,7 @@ public class TestQueryParser extends QueryParserTestBase {
   @Override
   public void testStarParsing() throws Exception {
     final int[] type = new int[1];
-    QueryParser qp = new QueryParser("field",
+    QueryParser qp = new QueryParser(FIELD,
         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)) {
       @Override
       protected Query getWildcardQuery(String field, String termStr) {
@@ -280,7 +289,7 @@ public class TestQueryParser extends QueryParserTestBase {
     Analyzer morePrecise = new Analyzer2();
     
     public SmartQueryParser() {
-      super("field", new Analyzer1());
+      super(FIELD, new Analyzer1());
     }
     
     @Override
@@ -294,9 +303,9 @@ public class TestQueryParser extends QueryParserTestBase {
   @Override
   public void testNewFieldQuery() throws Exception {
     /** ordinary behavior, synonyms form uncoordinated boolean query */
-    QueryParser dumb = new QueryParser("field",
+    QueryParser dumb = new QueryParser(FIELD,
         new Analyzer1());
-    Query expanded = new SynonymQuery(new Term("field", "dogs"), new Term("field", "dog"));
+    Query expanded = new SynonymQuery(new Term(FIELD, "dogs"), new Term(FIELD, "dog"));
     assertEquals(expanded, dumb.parse("\"dogs\""));
     /** even with the phrase operator the behavior is the same */
     assertEquals(expanded, dumb.parse("dogs"));
@@ -307,25 +316,14 @@ public class TestQueryParser extends QueryParserTestBase {
     QueryParser smart = new SmartQueryParser();
     assertEquals(expanded, smart.parse("dogs"));
     
-    Query unexpanded = new TermQuery(new Term("field", "dogs"));
+    Query unexpanded = new TermQuery(new Term(FIELD, "dogs"));
     assertEquals(unexpanded, smart.parse("\"dogs\""));
   }
-  
-  // TODO: fold these into QueryParserTestBase
-  
-  /** adds synonym of "dog" for "dogs". */
-  static class MockSynonymAnalyzer extends Analyzer {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      MockTokenizer tokenizer = new MockTokenizer();
-      return new TokenStreamComponents(tokenizer, new MockSynonymFilter(tokenizer));
-    }
-  }
-  
+
   /** simple synonyms test */
   public void testSynonyms() throws Exception {
-    Query expected = new SynonymQuery(new Term("field", "dogs"), new Term("field", "dog"));
-    QueryParser qp = new QueryParser("field", new MockSynonymAnalyzer());
+    Query expected = new SynonymQuery(new Term(FIELD, "dogs"), new Term(FIELD, "dog"));
+    QueryParser qp = new QueryParser(FIELD, new MockSynonymAnalyzer());
     assertEquals(expected, qp.parse("dogs"));
     assertEquals(expected, qp.parse("\"dogs\""));
     qp.setDefaultOperator(Operator.AND);
@@ -339,9 +337,9 @@ public class TestQueryParser extends QueryParserTestBase {
   /** forms multiphrase query */
   public void testSynonymsPhrase() throws Exception {
     MultiPhraseQuery.Builder expectedQBuilder = new MultiPhraseQuery.Builder();
-    expectedQBuilder.add(new Term("field", "old"));
-    expectedQBuilder.add(new Term[] { new Term("field", "dogs"), new Term("field", "dog") });
-    QueryParser qp = new QueryParser("field", new MockSynonymAnalyzer());
+    expectedQBuilder.add(new Term(FIELD, "old"));
+    expectedQBuilder.add(new Term[] { new Term(FIELD, "dogs"), new Term(FIELD, "dog") });
+    QueryParser qp = new QueryParser(FIELD, new MockSynonymAnalyzer());
     assertEquals(expectedQBuilder.build(), qp.parse("\"old dogs\""));
     qp.setDefaultOperator(Operator.AND);
     assertEquals(expectedQBuilder.build(), qp.parse("\"old dogs\""));
@@ -393,8 +391,8 @@ public class TestQueryParser extends QueryParserTestBase {
   
   /** simple CJK synonym test */
   public void testCJKSynonym() throws Exception {
-    Query expected = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
-    QueryParser qp = new QueryParser("field", new MockCJKSynonymAnalyzer());
+    Query expected = new SynonymQuery(new Term(FIELD, "国"), new Term(FIELD, "國"));
+    QueryParser qp = new QueryParser(FIELD, new MockCJKSynonymAnalyzer());
     assertEquals(expected, qp.parse("国"));
     qp.setDefaultOperator(Operator.AND);
     assertEquals(expected, qp.parse("国"));
@@ -405,11 +403,11 @@ public class TestQueryParser extends QueryParserTestBase {
   /** synonyms with default OR operator */
   public void testCJKSynonymsOR() throws Exception {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
-    expectedB.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
-    Query inner = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
+    expectedB.add(new TermQuery(new Term(FIELD, "中")), BooleanClause.Occur.SHOULD);
+    Query inner = new SynonymQuery(new Term(FIELD, "国"), new Term(FIELD, "國"));
     expectedB.add(inner, BooleanClause.Occur.SHOULD);
     Query expected = expectedB.build();
-    QueryParser qp = new QueryParser("field", new MockCJKSynonymAnalyzer());
+    QueryParser qp = new QueryParser(FIELD, new MockCJKSynonymAnalyzer());
     assertEquals(expected, qp.parse("中国"));
     expected = new BoostQuery(expected, 2f);
     assertEquals(expected, qp.parse("中国^2"));
@@ -418,13 +416,13 @@ public class TestQueryParser extends QueryParserTestBase {
   /** more complex synonyms with default OR operator */
   public void testCJKSynonymsOR2() throws Exception {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
-    expectedB.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
-    SynonymQuery inner = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
+    expectedB.add(new TermQuery(new Term(FIELD, "中")), BooleanClause.Occur.SHOULD);
+    SynonymQuery inner = new SynonymQuery(new Term(FIELD, "国"), new Term(FIELD, "國"));
     expectedB.add(inner, BooleanClause.Occur.SHOULD);
-    SynonymQuery inner2 = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
+    SynonymQuery inner2 = new SynonymQuery(new Term(FIELD, "国"), new Term(FIELD, "國"));
     expectedB.add(inner2, BooleanClause.Occur.SHOULD);
     Query expected = expectedB.build();
-    QueryParser qp = new QueryParser("field", new MockCJKSynonymAnalyzer());
+    QueryParser qp = new QueryParser(FIELD, new MockCJKSynonymAnalyzer());
     assertEquals(expected, qp.parse("中国国"));
     expected = new BoostQuery(expected, 2f);
     assertEquals(expected, qp.parse("中国国^2"));
@@ -433,11 +431,11 @@ public class TestQueryParser extends QueryParserTestBase {
   /** synonyms with default AND operator */
   public void testCJKSynonymsAND() throws Exception {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
-    expectedB.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.MUST);
-    Query inner = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
+    expectedB.add(new TermQuery(new Term(FIELD, "中")), BooleanClause.Occur.MUST);
+    Query inner = new SynonymQuery(new Term(FIELD, "国"), new Term(FIELD, "國"));
     expectedB.add(inner, BooleanClause.Occur.MUST);
     Query expected = expectedB.build();
-    QueryParser qp = new QueryParser("field", new MockCJKSynonymAnalyzer());
+    QueryParser qp = new QueryParser(FIELD, new MockCJKSynonymAnalyzer());
     qp.setDefaultOperator(Operator.AND);
     assertEquals(expected, qp.parse("中国"));
     expected = new BoostQuery(expected, 2f);
@@ -447,13 +445,13 @@ public class TestQueryParser extends QueryParserTestBase {
   /** more complex synonyms with default AND operator */
   public void testCJKSynonymsAND2() throws Exception {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
-    expectedB.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.MUST);
-    Query inner = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
+    expectedB.add(new TermQuery(new Term(FIELD, "中")), BooleanClause.Occur.MUST);
+    Query inner = new SynonymQuery(new Term(FIELD, "国"), new Term(FIELD, "國"));
     expectedB.add(inner, BooleanClause.Occur.MUST);
-    Query inner2 = new SynonymQuery(new Term("field", "国"), new Term("field", "國"));
+    Query inner2 = new SynonymQuery(new Term(FIELD, "国"), new Term(FIELD, "國"));
     expectedB.add(inner2, BooleanClause.Occur.MUST);
     Query expected = expectedB.build();
-    QueryParser qp = new QueryParser("field", new MockCJKSynonymAnalyzer());
+    QueryParser qp = new QueryParser(FIELD, new MockCJKSynonymAnalyzer());
     qp.setDefaultOperator(Operator.AND);
     assertEquals(expected, qp.parse("中国国"));
     expected = new BoostQuery(expected, 2f);
@@ -463,9 +461,9 @@ public class TestQueryParser extends QueryParserTestBase {
   /** forms multiphrase query */
   public void testCJKSynonymsPhrase() throws Exception {
     MultiPhraseQuery.Builder expectedQBuilder = new MultiPhraseQuery.Builder();
-    expectedQBuilder.add(new Term("field", "中"));
-    expectedQBuilder.add(new Term[] { new Term("field", "国"), new Term("field", "國")});
-    QueryParser qp = new QueryParser("field", new MockCJKSynonymAnalyzer());
+    expectedQBuilder.add(new Term(FIELD, "中"));
+    expectedQBuilder.add(new Term[] { new Term(FIELD, "国"), new Term(FIELD, "國")});
+    QueryParser qp = new QueryParser(FIELD, new MockCJKSynonymAnalyzer());
     qp.setDefaultOperator(Operator.AND);
     assertEquals(expectedQBuilder.build(), qp.parse("\"中国\""));
     Query expected = new BoostQuery(expectedQBuilder.build(), 2f);
@@ -477,10 +475,395 @@ public class TestQueryParser extends QueryParserTestBase {
 
   /** LUCENE-6677: make sure wildcard query respects maxDeterminizedStates. */
   public void testWildcardMaxDeterminizedStates() throws Exception {
-    QueryParser qp = new QueryParser("field", new MockAnalyzer(random()));
+    QueryParser qp = new QueryParser(FIELD, new MockAnalyzer(random()));
     qp.setMaxDeterminizedStates(10);
     expectThrows(TooComplexToDeterminizeException.class, () -> {
       qp.parse("a*aaaaaaa");
     });
+  }
+
+  // TODO: Remove this specialization once the flexible standard parser gets multi-word synonym support
+  @Override
+  public void testQPA() throws Exception {
+    boolean oldSplitOnWhitespace = splitOnWhitespace;
+    splitOnWhitespace = false;
+
+    assertQueryEquals("term phrase term", qpAnalyzer, "term phrase1 phrase2 term");
+
+    CommonQueryParserConfiguration cqpc = getParserConfig(qpAnalyzer);
+    setDefaultOperatorAND(cqpc);
+    assertQueryEquals(cqpc, "field", "term phrase term", "+term +phrase1 +phrase2 +term");
+
+    splitOnWhitespace = oldSplitOnWhitespace;
+  }
+
+  // TODO: Move to QueryParserTestBase once standard flexible parser gets this capability
+  public void testMultiWordSynonyms() throws Exception {
+    QueryParser dumb = new QueryParser("field", new Analyzer1());
+    dumb.setSplitOnWhitespace(false);
+
+    // A multi-word synonym source will form a synonym query for the same-starting-position tokens
+    BooleanQuery.Builder multiWordExpandedBqBuilder = new BooleanQuery.Builder();
+    Query multiWordSynonymQuery = new SynonymQuery(new Term("field", "guinea"), new Term("field", "cavy"));
+    multiWordExpandedBqBuilder.add(multiWordSynonymQuery, BooleanClause.Occur.SHOULD);
+    multiWordExpandedBqBuilder.add(new TermQuery(new Term("field", "pig")), BooleanClause.Occur.SHOULD);
+    Query multiWordExpandedBq = multiWordExpandedBqBuilder.build();
+    assertEquals(multiWordExpandedBq, dumb.parse("guinea pig"));
+
+    // With the phrase operator, a multi-word synonym source will form a multiphrase query.
+    // When the number of expanded term(s) is different from that of the original term(s), this is not good.
+    MultiPhraseQuery.Builder multiWordExpandedMpqBuilder = new MultiPhraseQuery.Builder();
+    multiWordExpandedMpqBuilder.add(new Term[]{new Term("field", "guinea"), new Term("field", "cavy")});
+    multiWordExpandedMpqBuilder.add(new Term("field", "pig"));
+    Query multiWordExpandedMPQ = multiWordExpandedMpqBuilder.build();
+    assertEquals(multiWordExpandedMPQ, dumb.parse("\"guinea pig\""));
+
+    // custom behavior, the synonyms are expanded, unless you use quote operator
+    QueryParser smart = new SmartQueryParser();
+    smart.setSplitOnWhitespace(false);
+    assertEquals(multiWordExpandedBq, smart.parse("guinea pig"));
+
+    PhraseQuery.Builder multiWordUnexpandedPqBuilder = new PhraseQuery.Builder();
+    multiWordUnexpandedPqBuilder.add(new Term("field", "guinea"));
+    multiWordUnexpandedPqBuilder.add(new Term("field", "pig"));
+    Query multiWordUnexpandedPq = multiWordUnexpandedPqBuilder.build();
+    assertEquals(multiWordUnexpandedPq, smart.parse("\"guinea pig\""));
+  }
+
+  // TODO: Move to QueryParserTestBase once standard flexible parser gets this capability
+  public void testOperatorsAndMultiWordSynonyms() throws Exception {
+    Analyzer a = new MockSynonymAnalyzer();
+
+    boolean oldSplitOnWhitespace = splitOnWhitespace;
+    splitOnWhitespace = false;
+
+    // Operators should interrupt multiword analysis of adjacent words if they associate
+    assertQueryEquals("+guinea pig", a, "+guinea pig");
+    assertQueryEquals("-guinea pig", a, "-guinea pig");
+    assertQueryEquals("!guinea pig", a, "-guinea pig");
+    assertQueryEquals("guinea* pig", a, "guinea* pig");
+    assertQueryEquals("guinea? pig", a, "guinea? pig");
+    assertQueryEquals("guinea~2 pig", a, "guinea~2 pig");
+    assertQueryEquals("guinea^2 pig", a, "(guinea)^2.0 pig");
+
+    assertQueryEquals("guinea +pig", a, "guinea +pig");
+    assertQueryEquals("guinea -pig", a, "guinea -pig");
+    assertQueryEquals("guinea !pig", a, "guinea -pig");
+    assertQueryEquals("guinea pig*", a, "guinea pig*");
+    assertQueryEquals("guinea pig?", a, "guinea pig?");
+    assertQueryEquals("guinea pig~2", a, "guinea pig~2");
+    assertQueryEquals("guinea pig^2", a, "guinea (pig)^2.0");
+
+    assertQueryEquals("field:guinea pig", a, "guinea pig");
+    assertQueryEquals("guinea field:pig", a, "guinea pig");
+
+    assertQueryEquals("NOT guinea pig", a, "-guinea pig");
+    assertQueryEquals("guinea NOT pig", a, "guinea -pig");
+
+    assertQueryEquals("guinea pig AND dogs", a, "guinea +pig +Synonym(dog dogs)");
+    assertQueryEquals("dogs AND guinea pig", a, "+Synonym(dog dogs) +guinea pig");
+    assertQueryEquals("guinea pig && dogs", a, "guinea +pig +Synonym(dog dogs)");
+    assertQueryEquals("dogs && guinea pig", a, "+Synonym(dog dogs) +guinea pig");
+
+    assertQueryEquals("guinea pig OR dogs", a, "guinea pig Synonym(dog dogs)");
+    assertQueryEquals("dogs OR guinea pig", a, "Synonym(dog dogs) guinea pig");
+    assertQueryEquals("guinea pig || dogs", a, "guinea pig Synonym(dog dogs)");
+    assertQueryEquals("dogs || guinea pig", a, "Synonym(dog dogs) guinea pig");
+
+    assertQueryEquals("\"guinea\" pig", a, "guinea pig");
+    assertQueryEquals("guinea \"pig\"", a, "guinea pig");
+
+    assertQueryEquals("(guinea) pig", a, "guinea pig");
+    assertQueryEquals("guinea (pig)", a, "guinea pig");
+
+    assertQueryEquals("/guinea/ pig", a, "/guinea/ pig");
+    assertQueryEquals("guinea /pig/", a, "guinea /pig/");
+
+    // Operators should not interrupt multiword analysis if not don't associate
+    assertQueryEquals("(guinea pig)", a, "Synonym(cavy guinea) pig");
+    assertQueryEquals("+(guinea pig)", a, "+(Synonym(cavy guinea) pig)");
+    assertQueryEquals("-(guinea pig)", a, "-(Synonym(cavy guinea) pig)");
+    assertQueryEquals("!(guinea pig)", a, "-(Synonym(cavy guinea) pig)");
+    assertQueryEquals("NOT (guinea pig)", a, "-(Synonym(cavy guinea) pig)");
+    assertQueryEquals("(guinea pig)^2", a, "(Synonym(cavy guinea) pig)^2.0");
+
+    assertQueryEquals("field:(guinea pig)", a, "Synonym(cavy guinea) pig");
+
+    assertQueryEquals("+small guinea pig", a, "+small Synonym(cavy guinea) pig");
+    assertQueryEquals("-small guinea pig", a, "-small Synonym(cavy guinea) pig");
+    assertQueryEquals("!small guinea pig", a, "-small Synonym(cavy guinea) pig");
+    assertQueryEquals("NOT small guinea pig", a, "-small Synonym(cavy guinea) pig");
+    assertQueryEquals("small* guinea pig", a, "small* Synonym(cavy guinea) pig");
+    assertQueryEquals("small? guinea pig", a, "small? Synonym(cavy guinea) pig");
+    assertQueryEquals("\"small\" guinea pig", a, "small Synonym(cavy guinea) pig");
+
+    assertQueryEquals("guinea pig +running", a, "Synonym(cavy guinea) pig +running");
+    assertQueryEquals("guinea pig -running", a, "Synonym(cavy guinea) pig -running");
+    assertQueryEquals("guinea pig !running", a, "Synonym(cavy guinea) pig -running");
+    assertQueryEquals("guinea pig NOT running", a, "Synonym(cavy guinea) pig -running");
+    assertQueryEquals("guinea pig running*", a, "Synonym(cavy guinea) pig running*");
+    assertQueryEquals("guinea pig running?", a, "Synonym(cavy guinea) pig running?");
+    assertQueryEquals("guinea pig \"running\"", a, "Synonym(cavy guinea) pig running");
+
+    assertQueryEquals("\"guinea pig\"~2", a, "\"(guinea cavy) pig\"~2");
+
+    assertQueryEquals("field:\"guinea pig\"", a, "\"(guinea cavy) pig\"");
+
+    splitOnWhitespace = oldSplitOnWhitespace;
+  }
+
+  public void testOperatorsAndMultiWordSynonymsSplitOnWhitespace() throws Exception {
+    Analyzer a = new MockSynonymAnalyzer();
+
+    boolean oldSplitOnWhitespace = splitOnWhitespace;
+    splitOnWhitespace = true;
+
+    assertQueryEquals("+guinea pig", a, "+guinea pig");
+    assertQueryEquals("-guinea pig", a, "-guinea pig");
+    assertQueryEquals("!guinea pig", a, "-guinea pig");
+    assertQueryEquals("guinea* pig", a, "guinea* pig");
+    assertQueryEquals("guinea? pig", a, "guinea? pig");
+    assertQueryEquals("guinea~2 pig", a, "guinea~2 pig");
+    assertQueryEquals("guinea^2 pig", a, "(guinea)^2.0 pig");
+
+    assertQueryEquals("guinea +pig", a, "guinea +pig");
+    assertQueryEquals("guinea -pig", a, "guinea -pig");
+    assertQueryEquals("guinea !pig", a, "guinea -pig");
+    assertQueryEquals("guinea pig*", a, "guinea pig*");
+    assertQueryEquals("guinea pig?", a, "guinea pig?");
+    assertQueryEquals("guinea pig~2", a, "guinea pig~2");
+    assertQueryEquals("guinea pig^2", a, "guinea (pig)^2.0");
+
+    assertQueryEquals("field:guinea pig", a, "guinea pig");
+    assertQueryEquals("guinea field:pig", a, "guinea pig");
+
+    assertQueryEquals("NOT guinea pig", a, "-guinea pig");
+    assertQueryEquals("guinea NOT pig", a, "guinea -pig");
+
+    assertQueryEquals("guinea pig AND dogs", a, "guinea +pig +Synonym(dog dogs)");
+    assertQueryEquals("dogs AND guinea pig", a, "+Synonym(dog dogs) +guinea pig");
+    assertQueryEquals("guinea pig && dogs", a, "guinea +pig +Synonym(dog dogs)");
+    assertQueryEquals("dogs && guinea pig", a, "+Synonym(dog dogs) +guinea pig");
+
+    assertQueryEquals("guinea pig OR dogs", a, "guinea pig Synonym(dog dogs)");
+    assertQueryEquals("dogs OR guinea pig", a, "Synonym(dog dogs) guinea pig");
+    assertQueryEquals("guinea pig || dogs", a, "guinea pig Synonym(dog dogs)");
+    assertQueryEquals("dogs || guinea pig", a, "Synonym(dog dogs) guinea pig");
+
+    assertQueryEquals("\"guinea\" pig", a, "guinea pig");
+    assertQueryEquals("guinea \"pig\"", a, "guinea pig");
+
+    assertQueryEquals("(guinea) pig", a, "guinea pig");
+    assertQueryEquals("guinea (pig)", a, "guinea pig");
+
+    assertQueryEquals("/guinea/ pig", a, "/guinea/ pig");
+    assertQueryEquals("guinea /pig/", a, "guinea /pig/");
+
+    assertQueryEquals("(guinea pig)", a, "guinea pig");
+    assertQueryEquals("+(guinea pig)", a, "+(guinea pig)");
+    assertQueryEquals("-(guinea pig)", a, "-(guinea pig)");
+    assertQueryEquals("!(guinea pig)", a, "-(guinea pig)");
+    assertQueryEquals("NOT (guinea pig)", a, "-(guinea pig)");
+    assertQueryEquals("(guinea pig)^2", a, "(guinea pig)^2.0");
+
+    assertQueryEquals("field:(guinea pig)", a, "guinea pig");
+
+    assertQueryEquals("+small guinea pig", a, "+small guinea pig");
+    assertQueryEquals("-small guinea pig", a, "-small guinea pig");
+    assertQueryEquals("!small guinea pig", a, "-small guinea pig");
+    assertQueryEquals("NOT small guinea pig", a, "-small guinea pig");
+    assertQueryEquals("small* guinea pig", a, "small* guinea pig");
+    assertQueryEquals("small? guinea pig", a, "small? guinea pig");
+    assertQueryEquals("\"small\" guinea pig", a, "small guinea pig");
+
+    assertQueryEquals("guinea pig +running", a, "guinea pig +running");
+    assertQueryEquals("guinea pig -running", a, "guinea pig -running");
+    assertQueryEquals("guinea pig !running", a, "guinea pig -running");
+    assertQueryEquals("guinea pig NOT running", a, "guinea pig -running");
+    assertQueryEquals("guinea pig running*", a, "guinea pig running*");
+    assertQueryEquals("guinea pig running?", a, "guinea pig running?");
+    assertQueryEquals("guinea pig \"running\"", a, "guinea pig running");
+
+    assertQueryEquals("\"guinea pig\"~2", a, "\"(guinea cavy) pig\"~2");
+
+    assertQueryEquals("field:\"guinea pig\"", a, "\"(guinea cavy) pig\"");
+
+    splitOnWhitespace = oldSplitOnWhitespace;
+  }
+
+  public void testDefaultSplitOnWhitespace() throws Exception {
+    QueryParser parser = new QueryParser("field", new Analyzer1());
+
+    assertFalse(parser.getSplitOnWhitespace()); // default is false
+
+    // A multi-word synonym source will form a synonym query for the same-starting-position tokens
+    BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
+    bqBuilder.add(new SynonymQuery(new Term("field", "guinea"), new Term("field", "cavy")), BooleanClause.Occur.SHOULD);
+    bqBuilder.add(new TermQuery(new Term("field", "pig")), BooleanClause.Occur.SHOULD);
+    assertEquals(bqBuilder.build(), parser.parse("guinea pig"));
+
+    boolean oldSplitOnWhitespace = splitOnWhitespace;
+    splitOnWhitespace = QueryParser.DEFAULT_SPLIT_ON_WHITESPACE;
+    assertQueryEquals("guinea pig", new MockSynonymAnalyzer(), "Synonym(cavy guinea) pig");
+    splitOnWhitespace = oldSplitOnWhitespace;
+  }
+   
+  public void testWildcardAlone() throws ParseException {
+    //seems like crazy edge case, but can be useful in concordance 
+    QueryParser parser = new QueryParser(FIELD, new ASCIIAnalyzer());
+    parser.setAllowLeadingWildcard(false);
+    expectThrows(ParseException.class, () -> {
+      parser.parse("*");
+    });
+
+    QueryParser parser2 = new QueryParser("*", new ASCIIAnalyzer());
+    parser2.setAllowLeadingWildcard(false);
+    assertEquals(new MatchAllDocsQuery(), parser2.parse("*"));
+  }
+
+  public void testWildCardEscapes() throws ParseException, IOException {
+    Analyzer a = new ASCIIAnalyzer();
+    QueryParser parser = new QueryParser(FIELD, a);
+    assertTrue(isAHit(parser.parse("mö*tley"), "moatley", a));
+    // need to have at least one genuine wildcard to trigger the wildcard analysis
+    // hence the * before the y
+    assertTrue(isAHit(parser.parse("mö\\*tl*y"), "mo*tley", a));
+    // escaped backslash then true wildcard
+    assertTrue(isAHit(parser.parse("mö\\\\*tley"), "mo\\atley", a));
+    // escaped wildcard then true wildcard
+    assertTrue(isAHit(parser.parse("mö\\??ley"), "mo?tley", a));
+
+    // the first is an escaped * which should yield a miss
+    assertFalse(isAHit(parser.parse("mö\\*tl*y"), "moatley", a));
+  }
+
+  public void testWildcardDoesNotNormalizeEscapedChars() throws Exception {
+    Analyzer asciiAnalyzer = new ASCIIAnalyzer();
+    Analyzer keywordAnalyzer = new MockAnalyzer(random());
+    QueryParser parser = new QueryParser(FIELD, asciiAnalyzer);
+
+    assertTrue(isAHit(parser.parse("e*e"), "étude", asciiAnalyzer));
+    assertTrue(isAHit(parser.parse("é*e"), "etude", asciiAnalyzer));
+    assertFalse(isAHit(parser.parse("\\é*e"), "etude", asciiAnalyzer));
+    assertTrue(isAHit(parser.parse("\\é*e"), "étude", keywordAnalyzer));
+  }
+
+  public void testWildCardQuery() throws ParseException {
+    Analyzer a = new ASCIIAnalyzer();
+    QueryParser parser = new QueryParser(FIELD, a);
+    parser.setAllowLeadingWildcard(true);
+    assertEquals("*bersetzung uber*ung", parser.parse("*bersetzung über*ung").toString(FIELD));
+    parser.setAllowLeadingWildcard(false);
+    assertEquals("motley crue motl?* cru?", parser.parse("Mötley Cr\u00fce Mötl?* Crü?").toString(FIELD));
+    assertEquals("renee zellweger ren?? zellw?ger", parser.parse("Renée Zellweger Ren?? Zellw?ger").toString(FIELD));
+  }
+
+
+  public void testPrefixQuery() throws ParseException {
+    Analyzer a = new ASCIIAnalyzer();
+    QueryParser parser = new QueryParser(FIELD, a);
+    assertEquals("ubersetzung ubersetz*", parser.parse("übersetzung übersetz*").toString(FIELD));
+    assertEquals("motley crue motl* cru*", parser.parse("Mötley Crüe Mötl* crü*").toString(FIELD));
+    assertEquals("rene? zellw*", parser.parse("René? Zellw*").toString(FIELD));
+  }
+
+  public void testRangeQuery() throws ParseException {
+    Analyzer a = new ASCIIAnalyzer();
+    QueryParser parser = new QueryParser(FIELD, a);
+    assertEquals("[aa TO bb]", parser.parse("[aa TO bb]").toString(FIELD));
+    assertEquals("{anais TO zoe}", parser.parse("{Anaïs TO Zoé}").toString(FIELD));
+  }
+
+  public void testFuzzyQuery() throws ParseException {
+    Analyzer a = new ASCIIAnalyzer();
+    QueryParser parser = new QueryParser(FIELD, a);
+    assertEquals("ubersetzung ubersetzung~1", parser.parse("Übersetzung Übersetzung~0.9").toString(FIELD));
+    assertEquals("motley crue motley~1 crue~2", parser.parse("Mötley Crüe Mötley~0.75 Crüe~0.5").toString(FIELD));
+    assertEquals("renee zellweger renee~0 zellweger~2", parser.parse("Renée Zellweger Renée~0.9 Zellweger~").toString(FIELD));
+  }
+
+  final static class FoldingFilter extends TokenFilter {
+    final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+
+    public FoldingFilter(TokenStream input) {
+      super(input);
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (input.incrementToken()) {
+        char term[] = termAtt.buffer();
+        for (int i = 0; i < term.length; i++)
+          switch(term[i]) {
+            case 'ü':
+              term[i] = 'u'; 
+              break;
+            case 'ö': 
+              term[i] = 'o'; 
+              break;
+            case 'é': 
+              term[i] = 'e'; 
+              break;
+            case 'ï': 
+              term[i] = 'i'; 
+              break;
+          }
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+
+  final static class ASCIIAnalyzer extends Analyzer {
+    @Override
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer result = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+      return new TokenStreamComponents(result, new FoldingFilter(result));
+    }
+    @Override
+    protected TokenStream normalize(String fieldName, TokenStream in) {
+      return new FoldingFilter(new MockLowerCaseFilter(in));
+    }
+  }
+
+  // LUCENE-4176
+  public void testByteTerms() throws Exception {
+    String s = "เข";
+    Analyzer analyzer = new MockBytesAnalyzer();
+    QueryParser qp = new QueryParser(FIELD, analyzer);
+
+    assertTrue(isAHit(qp.parse("[เข TO เข]"), s, analyzer));
+    assertTrue(isAHit(qp.parse("เข~1"), s, analyzer));
+    assertTrue(isAHit(qp.parse("เข*"), s, analyzer));
+    assertTrue(isAHit(qp.parse("เ*"), s, analyzer));
+    assertTrue(isAHit(qp.parse("เ??"), s, analyzer));
+  }
+   
+  
+  private boolean isAHit(Query q, String content, Analyzer analyzer) throws IOException{
+    Directory ramDir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), ramDir, analyzer);
+    Document doc = new Document();
+    FieldType fieldType = new FieldType();
+    fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    fieldType.setTokenized(true);
+    fieldType.setStored(true);
+    Field field = new Field(FIELD, content, fieldType);
+    doc.add(field);
+    writer.addDocument(doc);
+    writer.close();
+    DirectoryReader ir = DirectoryReader.open(ramDir);
+    IndexSearcher is = new IndexSearcher(ir);
+      
+    int hits = is.search(q, 10).totalHits;
+    ir.close();
+    ramDir.close();
+    if (hits == 1){
+      return true;
+    } else {
+      return false;
+    }
+
   }
 }

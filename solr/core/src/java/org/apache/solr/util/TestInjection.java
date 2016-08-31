@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
@@ -39,6 +40,11 @@ import org.slf4j.LoggerFactory;
  * Allows random faults to be injected in running code during test runs.
  * 
  * Set static strings to "true" or "false" or "true:60" for true 60% of the time.
+ * 
+ * All methods are No-Ops unless <code>LuceneTestCase</code> is loadable via the ClassLoader used 
+ * to load this class.  <code>LuceneTestCase.random()</code> is used as the source of all entropy.
+ * 
+ * @lucene.internal
  */
 public class TestInjection {
   
@@ -53,16 +59,42 @@ public class TestInjection {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final Pattern ENABLED_PERCENT = Pattern.compile("(true|false)(?:\\:(\\d+))?$", Pattern.CASE_INSENSITIVE);
-  private static final Random RANDOM;
+
+  private static final String LUCENE_TEST_CASE_FQN = "org.apache.lucene.util.LuceneTestCase";
+
+  /** 
+   * If null, then we are not being run as part of a test, and all TestInjection events should be No-Ops.
+   * If non-null, then this class should be used for accessing random entropy
+   * @see #random
+   */
+  private static final Class LUCENE_TEST_CASE;
   
   static {
-    // We try to make things reproducible in the context of our tests by initializing the random instance
-    // based on the current seed
-    String seed = System.getProperty("tests.seed");
-    if (seed == null) {
-      RANDOM = new Random();
+    Class nonFinalTemp = null;
+    try {
+      ClassLoader classLoader = MethodHandles.lookup().lookupClass().getClassLoader();
+      nonFinalTemp = classLoader.loadClass(LUCENE_TEST_CASE_FQN);
+    } catch (ClassNotFoundException e) {
+      log.debug("TestInjection methods will all be No-Ops since LuceneTestCase not found");
+    }
+    LUCENE_TEST_CASE = nonFinalTemp;
+  }
+
+  /**
+   * Returns a random to be used by the current thread if available, otherwise
+   * returns null.
+   * @see #LUCENE_TEST_CASE
+   */
+  static Random random() { // non-private for testing
+    if (null == LUCENE_TEST_CASE) {
+      return null;
     } else {
-      RANDOM = new Random(seed.hashCode());
+      try {
+        Method randomMethod = LUCENE_TEST_CASE.getMethod("random");
+        return (Random) randomMethod.invoke(null);
+      } catch (Exception e) {
+        throw new IllegalStateException("Unable to use reflection to invoke LuceneTestCase.random()", e);
+      }
     }
   }
   
@@ -81,6 +113,8 @@ public class TestInjection {
   public static String randomDelayInCoreCreation = null;
   
   public static int randomDelayMaxInCoreCreationInSec = 10;
+
+  public static String splitFailureBeforeReplicaCreation = null;
   
   private static Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
 
@@ -92,6 +126,7 @@ public class TestInjection {
     updateLogReplayRandomPause = null;
     updateRandomPause = null;
     randomDelayInCoreCreation = null;
+    splitFailureBeforeReplicaCreation = null;
 
     for (Timer timer : timers) {
       timer.cancel();
@@ -100,11 +135,14 @@ public class TestInjection {
   
   public static boolean injectRandomDelayInCoreCreation() {
     if (randomDelayInCoreCreation != null) {
+      Random rand = random();
+      if (null == rand) return true;
+      
       Pair<Boolean,Integer> pair = parseValue(randomDelayInCoreCreation);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
-      if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
-        int delay = RANDOM.nextInt(randomDelayMaxInCoreCreationInSec);
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        int delay = rand.nextInt(randomDelayMaxInCoreCreationInSec);
         log.info("Inject random core creation delay of {}s", delay);
         try {
           Thread.sleep(delay * 1000);
@@ -118,11 +156,14 @@ public class TestInjection {
   
   public static boolean injectNonGracefullClose(CoreContainer cc) {
     if (cc.isShutDown() && nonGracefullClose != null) {
+      Random rand = random();
+      if (null == rand) return true;
+      
       Pair<Boolean,Integer> pair = parseValue(nonGracefullClose);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
-      if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
-        if (RANDOM.nextBoolean()) {
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        if (rand.nextBoolean()) {
           throw new TestShutdownFailError("Test exception for non graceful close");
         } else {
           
@@ -135,7 +176,9 @@ public class TestInjection {
               // we should only need to do it once
               
               try {
-                Thread.sleep(RANDOM.nextInt(1000));
+                // call random() again to get the correct one for this thread
+                Random taskRand = random();
+                Thread.sleep(taskRand.nextInt(1000));
               } catch (InterruptedException e) {
               
               }
@@ -147,7 +190,7 @@ public class TestInjection {
           };
           Timer timer = new Timer();
           timers.add(timer);
-          timer.schedule(task, RANDOM.nextInt(500));
+          timer.schedule(task, rand.nextInt(500));
         }
       }
     }
@@ -156,10 +199,13 @@ public class TestInjection {
 
   public static boolean injectFailReplicaRequests() {
     if (failReplicaRequests != null) {
+      Random rand = random();
+      if (null == rand) return true;
+      
       Pair<Boolean,Integer> pair = parseValue(failReplicaRequests);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
-      if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Random test update fail");
       }
     }
@@ -169,10 +215,13 @@ public class TestInjection {
   
   public static boolean injectFailUpdateRequests() {
     if (failUpdateRequests != null) {
+      Random rand = random();
+      if (null == rand) return true;
+      
       Pair<Boolean,Integer> pair = parseValue(failUpdateRequests);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
-      if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Random test update fail");
       }
     }
@@ -182,10 +231,13 @@ public class TestInjection {
   
   public static boolean injectNonExistentCoreExceptionAfterUnload(String cname) {
     if (nonExistentCoreExceptionAfterUnload != null) {
+      Random rand = random();
+      if (null == rand) return true;
+      
       Pair<Boolean,Integer> pair = parseValue(nonExistentCoreExceptionAfterUnload);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
-      if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
         throw new NonExistentCoreException("Core not found to unload: " + cname);
       }
     }
@@ -195,11 +247,14 @@ public class TestInjection {
   
   public static boolean injectUpdateLogReplayRandomPause() {
     if (updateLogReplayRandomPause != null) {
+      Random rand = random();
+      if (null == rand) return true;
+      
       Pair<Boolean,Integer> pair = parseValue(updateLogReplayRandomPause);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
-      if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
-        long rndTime = RANDOM.nextInt(1000);
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        long rndTime = rand.nextInt(1000);
         log.info("inject random log replay delay of {}ms", rndTime);
         try {
           Thread.sleep(rndTime);
@@ -214,17 +269,37 @@ public class TestInjection {
   
   public static boolean injectUpdateRandomPause() {
     if (updateRandomPause != null) {
+      Random rand = random();
+      if (null == rand) return true;
+      
       Pair<Boolean,Integer> pair = parseValue(updateRandomPause);
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
-      if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
-        long rndTime = RANDOM.nextInt(1000);
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        long rndTime = rand.nextInt(1000);
         log.info("inject random update delay of {}ms", rndTime);
         try {
           Thread.sleep(rndTime);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
+      }
+    }
+
+    return true;
+  }
+
+  public static boolean injectSplitFailureBeforeReplicaCreation() {
+    if (splitFailureBeforeReplicaCreation != null)  {
+      Random rand = random();
+      if (null == rand) return true;
+
+      Pair<Boolean,Integer> pair = parseValue(splitFailureBeforeReplicaCreation);
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        log.info("Injecting failure in creating replica for sub-shard");
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create replica");
       }
     }
 

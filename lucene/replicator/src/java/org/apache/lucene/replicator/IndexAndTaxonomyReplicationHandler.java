@@ -141,10 +141,12 @@ public class IndexAndTaxonomyReplicationHandler implements ReplicationHandler {
       indexDir.sync(Collections.singletonList(indexPendingFile));
       
       if (taxoSegmentsFile != null) {
-        taxoDir.renameFile(taxoPendingFile, taxoSegmentsFile);
+        taxoDir.rename(taxoPendingFile, taxoSegmentsFile);
+        taxoDir.syncMetaData();
       }
       
-      indexDir.renameFile(indexPendingFile, indexSegmentsFile);
+      indexDir.rename(indexPendingFile, indexSegmentsFile);
+      indexDir.syncMetaData();
       
       success = true;
     } finally {

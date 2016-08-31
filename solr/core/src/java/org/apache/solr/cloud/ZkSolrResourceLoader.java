@@ -96,13 +96,15 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
         }
       } catch (KeeperException.SessionExpiredException e) {
         exception = e;
-        // Retry in case of session expiry
-        try {
-          Thread.sleep(1000);
-          log.debug("Sleeping for 1s before retrying fetching resource=" + resource);
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-          throw new IOException("Could not load resource=" + resource, ie);
+        if (!zkController.getCoreContainer().isShutDown()) {
+          // Retry in case of session expiry
+          try {
+            Thread.sleep(1000);
+            log.debug("Sleeping for 1s before retrying fetching resource=" + resource);
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Could not load resource=" + resource, ie);
+          }
         }
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();

@@ -18,8 +18,6 @@ package org.apache.lucene.index;
 
 
 import java.io.*;
-import java.net.URI;
-import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,8 +27,6 @@ import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.mockfile.FilterPath;
-import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -50,9 +46,6 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   
   public void testDeleteLeftoverFiles() throws IOException {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
-    }
 
     MergePolicy mergePolicy = newLogMergePolicy(true, 10);
     

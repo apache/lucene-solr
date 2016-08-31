@@ -56,21 +56,19 @@ public abstract class AbstractPrefixTreeQuery extends Query {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (super.equals(o) == false) return false;
+    return sameClassAs(o) &&
+           equalsTo(getClass().cast(o));
+  }
 
-    AbstractPrefixTreeQuery that = (AbstractPrefixTreeQuery) o;
-
-    if (detailLevel != that.detailLevel) return false;
-    if (!fieldName.equals(that.fieldName)) return false;
-    if (!queryShape.equals(that.queryShape)) return false;
-
-    return true;
+  private boolean equalsTo(AbstractPrefixTreeQuery other) {
+    return detailLevel == other.detailLevel &&
+           fieldName.equals(other.fieldName) &&
+           queryShape.equals(other.queryShape);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
+    int result = classHash();
     result = 31 * result + queryShape.hashCode();
     result = 31 * result + fieldName.hashCode();
     result = 31 * result + detailLevel;
@@ -78,8 +76,8 @@ public abstract class AbstractPrefixTreeQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new ConstantScoreWeight(this) {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new ConstantScoreWeight(this, boost) {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         DocIdSet docSet = getDocIdSet(context);

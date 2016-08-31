@@ -54,6 +54,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.MDC;
 
+import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
+
 /**
  * LBHttpSolrClient or "LoadBalanced HttpSolrClient" is a load balancing wrapper around
  * {@link HttpSolrClient}. This is useful when you
@@ -331,7 +333,7 @@ public class LBHttpSolrClient extends SolrClient {
   public Rsp request(Req req) throws SolrServerException, IOException {
     Rsp rsp = new Rsp();
     Exception ex = null;
-    boolean isUpdate = req.request instanceof IsUpdateRequest;
+    boolean isNonRetryable = req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
     List<ServerWrapper> skipped = null;
 
     long timeAllowedNano = getTimeAllowedInNanos(req.getRequest());
@@ -358,12 +360,11 @@ public class LBHttpSolrClient extends SolrClient {
         }
         continue;
       }
-      rsp.server = serverStr;
       try {
         MDC.put("LBHttpSolrClient.url", serverStr);
         HttpSolrClient client = makeSolrClient(serverStr);
 
-        ex = doRequest(client, req, rsp, isUpdate, false, null);
+        ex = doRequest(client, req, rsp, isNonRetryable, false, null);
         if (ex == null) {
           return rsp; // SUCCESS
         }
@@ -379,7 +380,7 @@ public class LBHttpSolrClient extends SolrClient {
           break;
         }
 
-        ex = doRequest(wrapper.client, req, rsp, isUpdate, true, wrapper.getKey());
+        ex = doRequest(wrapper.client, req, rsp, isNonRetryable, true, wrapper.getKey());
         if (ex == null) {
           return rsp; // SUCCESS
         }
@@ -406,10 +407,11 @@ public class LBHttpSolrClient extends SolrClient {
     return e;
   }  
 
-  protected Exception doRequest(HttpSolrClient client, Req req, Rsp rsp, boolean isUpdate,
+  protected Exception doRequest(HttpSolrClient client, Req req, Rsp rsp, boolean isNonRetryable,
       boolean isZombie, String zombieKey) throws SolrServerException, IOException {
     Exception ex = null;
     try {
+      rsp.server = client.getBaseURL();
       rsp.rsp = client.request(req.getRequest(), (String) null);
       if (isZombie) {
         zombieServers.remove(zombieKey);
@@ -417,7 +419,7 @@ public class LBHttpSolrClient extends SolrClient {
     } catch (SolrException e) {
       // we retry on 404 or 403 or 503 or 500
       // unless it's an update - then we only retry on connect exception
-      if (!isUpdate && RETRY_CODES.contains(e.code())) {
+      if (!isNonRetryable && RETRY_CODES.contains(e.code())) {
         ex = (!isZombie) ? addZombie(client, e) : e;
       } else {
         // Server is alive but the request was likely malformed or invalid
@@ -427,22 +429,22 @@ public class LBHttpSolrClient extends SolrClient {
         throw e;
       }
     } catch (SocketException e) {
-      if (!isUpdate || e instanceof ConnectException) {
+      if (!isNonRetryable || e instanceof ConnectException) {
         ex = (!isZombie) ? addZombie(client, e) : e;
       } else {
         throw e;
       }
     } catch (SocketTimeoutException e) {
-      if (!isUpdate) {
+      if (!isNonRetryable) {
         ex = (!isZombie) ? addZombie(client, e) : e;
       } else {
         throw e;
       }
     } catch (SolrServerException e) {
       Throwable rootCause = e.getRootCause();
-      if (!isUpdate && rootCause instanceof IOException) {
+      if (!isNonRetryable && rootCause instanceof IOException) {
         ex = (!isZombie) ? addZombie(client, e) : e;
-      } else if (isUpdate && rootCause instanceof ConnectException) {
+      } else if (isNonRetryable && rootCause instanceof ConnectException) {
         ex = (!isZombie) ? addZombie(client, e) : e;
       } else {
         throw e;

@@ -883,7 +883,10 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       assertTokenStreamContents(ts, 
                                 tokens.toArray(new String[tokens.size()]));
     }
-    
+
+    a.normalize("dummy", text);
+    // TODO: what can we do besides testing that the above method does not throw?
+
     if (field != null) {
       reader = new StringReader(text);
       random = new Random(seed);

@@ -16,8 +16,6 @@
  */
 package org.apache.solr.internal.csv;
 
-import java.io.StringReader;
-
 import junit.framework.TestCase;
 
 /**

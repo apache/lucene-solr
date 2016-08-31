@@ -1,5 +1,3 @@
-package org.apache.lucene.replicator.nrt;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,15 +15,15 @@ package org.apache.lucene.replicator.nrt;
  * limitations under the License.
  */
 
+package org.apache.lucene.replicator.nrt;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Locale;
 
 import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.IOUtils;
 
 /** Copies one file from an incoming DataInput to a dest filename in a local Directory */
 

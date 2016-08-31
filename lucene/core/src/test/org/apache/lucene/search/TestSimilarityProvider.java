@@ -23,7 +23,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -114,16 +113,6 @@ public class TestSimilarityProvider extends LuceneTestCase {
     public float decodeNormValue(long norm) {
       return norm;
     }
-    
-    @Override
-    public float coord(int overlap, int maxOverlap) {
-      return 1f;
-    }
-
-    @Override
-    public float queryNorm(float sumOfSquaredWeights) {
-      return 1f;
-    }
 
     @Override
     public float lengthNorm(FieldInvertState state) {
@@ -161,16 +150,6 @@ public class TestSimilarityProvider extends LuceneTestCase {
     @Override
     public float decodeNormValue(long norm) {
       return norm;
-    }
-    
-    @Override
-    public float coord(int overlap, int maxOverlap) {
-      return 1f;
-    }
-
-    @Override
-    public float queryNorm(float sumOfSquaredWeights) {
-      return 1f;
     }
     
     @Override

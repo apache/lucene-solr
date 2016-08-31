@@ -79,8 +79,6 @@ public class TestTryDelete extends LuceneTestCase
     ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer,
                                                               new SearcherFactory());
 
-    TrackingIndexWriter mgrWriter = new TrackingIndexWriter(writer);
-
     IndexSearcher searcher = mgr.acquire();
 
     TopDocs topDocs = searcher.search(new TermQuery(new Term("foo", "0")),
@@ -90,10 +88,10 @@ public class TestTryDelete extends LuceneTestCase
     long result;
     if (random().nextBoolean()) {
       IndexReader r = DirectoryReader.open(writer);
-      result = mgrWriter.tryDeleteDocument(r, 0);
+      result = writer.tryDeleteDocument(r, 0);
       r.close();
     } else {
-      result = mgrWriter.tryDeleteDocument(searcher.getIndexReader(), 0);
+      result = writer.tryDeleteDocument(searcher.getIndexReader(), 0);
     }
 
     // The tryDeleteDocument should have succeeded:
@@ -132,10 +130,9 @@ public class TestTryDelete extends LuceneTestCase
                                       100);
     assertEquals(1, topDocs.totalHits);
 
-    TrackingIndexWriter mgrWriter = new TrackingIndexWriter(writer);
-    long result = mgrWriter.tryDeleteDocument(DirectoryReader.open(writer), 0);
+    long result = writer.tryDeleteDocument(DirectoryReader.open(writer), 0);
 
-    assertEquals(1, result);
+    assertTrue(result != -1);
 
     writer.commit();
 
@@ -175,11 +172,9 @@ public class TestTryDelete extends LuceneTestCase
                                       100);
     assertEquals(1, topDocs.totalHits);
 
-    TrackingIndexWriter mgrWriter = new TrackingIndexWriter(writer);
-    long result = mgrWriter.deleteDocuments(new TermQuery(new Term("foo",
-                                                                   "0")));
+    long result = writer.deleteDocuments(new TermQuery(new Term("foo", "0")));
 
-    assertEquals(1, result);
+    assertTrue(result != -1);
 
     // writer.commit();
 

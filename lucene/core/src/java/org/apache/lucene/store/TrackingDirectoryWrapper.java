@@ -60,8 +60,8 @@ public final class TrackingDirectoryWrapper extends FilterDirectory {
   }
 
   @Override
-  public void renameFile(String source, String dest) throws IOException {
-    in.renameFile(source, dest);
+  public void rename(String source, String dest) throws IOException {
+    in.rename(source, dest);
     synchronized (createdFileNames) {
       createdFileNames.add(dest);
       createdFileNames.remove(source);

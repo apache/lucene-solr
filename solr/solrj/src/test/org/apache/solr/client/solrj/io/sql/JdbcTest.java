@@ -615,13 +615,13 @@ public class JdbcTest extends SolrCloudTestCase {
     assertEquals("my_float_col".length(), resultSetMetaData.getColumnDisplaySize(4));
     assertEquals("testnull_i".length(), resultSetMetaData.getColumnDisplaySize(5));
 
-    assertEquals("Long", resultSetMetaData.getColumnTypeName(1));
+    assertEquals("String", resultSetMetaData.getColumnTypeName(1));
     assertEquals("Long", resultSetMetaData.getColumnTypeName(2));
     assertEquals("String", resultSetMetaData.getColumnTypeName(3));
     assertEquals("Double", resultSetMetaData.getColumnTypeName(4));
     assertEquals("Long", resultSetMetaData.getColumnTypeName(5));
 
-    assertEquals(Types.DOUBLE, resultSetMetaData.getColumnType(1));
+    assertEquals(Types.VARCHAR, resultSetMetaData.getColumnType(1));
     assertEquals(Types.DOUBLE, resultSetMetaData.getColumnType(2));
     assertEquals(Types.VARCHAR, resultSetMetaData.getColumnType(3));
     assertEquals(Types.DOUBLE, resultSetMetaData.getColumnType(4));

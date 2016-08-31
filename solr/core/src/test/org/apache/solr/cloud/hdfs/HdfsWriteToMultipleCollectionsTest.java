@@ -22,8 +22,13 @@ import java.util.Collection;
 import java.util.List;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
@@ -81,7 +86,7 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   }
   
   protected String getSolrXml() {
-    return "solr-no-core.xml";
+    return "solr.xml";
   }
 
   @Test
@@ -130,6 +135,20 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
         if (core.getCoreDescriptor().getCloudDescriptor().getCollectionName()
             .startsWith(ACOLLECTION)) {
           assertTrue(core.getDirectoryFactory() instanceof HdfsDirectoryFactory);
+          Directory dir = core.getDirectoryFactory().get(core.getDataDir(), null, null);
+          try {
+            long dataDirSize = core.getDirectoryFactory().size(dir);
+            FileSystem fileSystem = null;
+            
+            fileSystem = FileSystem.newInstance(
+                new Path(core.getDataDir()).toUri(), new Configuration());
+            long size = fileSystem.getContentSummary(
+                new Path(core.getDataDir())).getLength();
+            assertEquals(size, dataDirSize);
+          } finally {
+            core.getDirectoryFactory().release(dir);
+          }
+          
           RefCounted<IndexWriter> iwRef = core.getUpdateHandler()
               .getSolrCoreState().getIndexWriter(core);
           try {

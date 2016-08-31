@@ -16,8 +16,6 @@
  */
 package org.apache.solr.search.function;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.solr.util.AbstractSolrTestCase;
-import org.junit.BeforeClass;
 
 
 

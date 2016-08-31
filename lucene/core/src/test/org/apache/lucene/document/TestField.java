@@ -79,29 +79,7 @@ public class TestField extends LuceneTestCase {
     assertEquals("DoublePoint <foo:6.0,7.0>", field.toString());
   }
   
-  public void testLegacyDoubleField() throws Exception {
-    Field fields[] = new Field[] {
-        new LegacyDoubleField("foo", 5d, Field.Store.NO),
-        new LegacyDoubleField("foo", 5d, Field.Store.YES)
-    };
 
-    for (Field field : fields) {
-      trySetBoost(field);
-      trySetByteValue(field);
-      trySetBytesValue(field);
-      trySetBytesRefValue(field);
-      field.setDoubleValue(6d); // ok
-      trySetIntValue(field);
-      trySetFloatValue(field);
-      trySetLongValue(field);
-      trySetReaderValue(field);
-      trySetShortValue(field);
-      trySetStringValue(field);
-      trySetTokenStreamValue(field);
-    
-      assertEquals(6d, field.numericValue().doubleValue(), 0.0d);
-    }
-  }
   
   public void testDoubleDocValuesField() throws Exception {
     DoubleDocValuesField field = new DoubleDocValuesField("foo", 5d);
@@ -185,30 +163,6 @@ public class TestField extends LuceneTestCase {
     assertEquals("FloatPoint <foo:6.0,7.0>", field.toString());
   }
   
-  public void testLegacyFloatField() throws Exception {
-    Field fields[] = new Field[] {
-        new LegacyFloatField("foo", 5f, Field.Store.NO),
-        new LegacyFloatField("foo", 5f, Field.Store.YES)
-    };
-
-    for (Field field : fields) {
-      trySetBoost(field);
-      trySetByteValue(field);
-      trySetBytesValue(field);
-      trySetBytesRefValue(field);
-      trySetDoubleValue(field);
-      trySetIntValue(field);
-      field.setFloatValue(6f); // ok
-      trySetLongValue(field);
-      trySetReaderValue(field);
-      trySetShortValue(field);
-      trySetStringValue(field);
-      trySetTokenStreamValue(field);
-      
-      assertEquals(6f, field.numericValue().floatValue(), 0.0f);
-    }
-  }
-  
   public void testIntPoint() throws Exception {
     Field field = new IntPoint("foo", 5);
 
@@ -251,30 +205,6 @@ public class TestField extends LuceneTestCase {
     });
     assertTrue(expected.getMessage().contains("cannot convert to a single numeric value"));
     assertEquals("IntPoint <foo:6,7>", field.toString());
-  }
-  
-  public void testLegacyIntField() throws Exception {
-    Field fields[] = new Field[] {
-        new LegacyIntField("foo", 5, Field.Store.NO),
-        new LegacyIntField("foo", 5, Field.Store.YES)
-    };
-
-    for (Field field : fields) {
-      trySetBoost(field);
-      trySetByteValue(field);
-      trySetBytesValue(field);
-      trySetBytesRefValue(field);
-      trySetDoubleValue(field);
-      field.setIntValue(6); // ok
-      trySetFloatValue(field);
-      trySetLongValue(field);
-      trySetReaderValue(field);
-      trySetShortValue(field);
-      trySetStringValue(field);
-      trySetTokenStreamValue(field);
-      
-      assertEquals(6, field.numericValue().intValue());
-    }
   }
   
   public void testNumericDocValuesField() throws Exception {
@@ -338,30 +268,6 @@ public class TestField extends LuceneTestCase {
     });
     assertTrue(expected.getMessage().contains("cannot convert to a single numeric value"));
     assertEquals("LongPoint <foo:6,7>", field.toString());
-  }
-  
-  public void testLegacyLongField() throws Exception {
-    Field fields[] = new Field[] {
-        new LegacyLongField("foo", 5L, Field.Store.NO),
-        new LegacyLongField("foo", 5L, Field.Store.YES)
-    };
-
-    for (Field field : fields) {
-      trySetBoost(field);
-      trySetByteValue(field);
-      trySetBytesValue(field);
-      trySetBytesRefValue(field);
-      trySetDoubleValue(field);
-      trySetIntValue(field);
-      trySetFloatValue(field);
-      field.setLongValue(6); // ok
-      trySetReaderValue(field);
-      trySetShortValue(field);
-      trySetStringValue(field);
-      trySetTokenStreamValue(field);
-      
-      assertEquals(6L, field.numericValue().longValue());
-    }
   }
   
   public void testSortedBytesDocValuesField() throws Exception {

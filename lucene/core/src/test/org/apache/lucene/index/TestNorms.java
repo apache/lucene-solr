@@ -64,8 +64,6 @@ public class TestNorms extends LuceneTestCase {
       return state.getLength();
     }
 
-    @Override public float coord(int overlap, int maxOverlap) { return 0; }
-    @Override public float queryNorm(float sumOfSquaredWeights) { return 0; }
     @Override public float tf(float freq) { return 0; }
     @Override public float idf(long docFreq, long docCount) { return 0; }
     @Override public float sloppyFreq(int distance) { return 0; }
@@ -157,23 +155,12 @@ public class TestNorms extends LuceneTestCase {
     Similarity delegate = new ClassicSimilarity();
 
     @Override
-    public float queryNorm(float sumOfSquaredWeights) {
-
-      return delegate.queryNorm(sumOfSquaredWeights);
-    }
-
-    @Override
     public Similarity get(String field) {
       if (byteTestField.equals(field)) {
         return new ByteEncodingBoostSimilarity();
       } else {
         return delegate;
       }
-    }
-
-    @Override
-    public float coord(int overlap, int maxOverlap) {
-      return delegate.coord(overlap, maxOverlap);
     }
   }
 
@@ -187,7 +174,7 @@ public class TestNorms extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
+    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       throw new UnsupportedOperationException();
     }
 

@@ -296,11 +296,18 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
 
   private boolean authenticateRequest(ServletRequest request, ServletResponse response, final AtomicReference<ServletRequest> wrappedRequest) throws IOException {
+    boolean requestContinues = false;
     final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
     AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
     if (authenticationPlugin == null) {
       return true;
     } else {
+      try {
+        if (PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getPathInfo())) return true;
+      } catch (Exception e) {
+        log.error("Unexpected error ", e);
+      }
+
       //special case when solr is securing inter-node requests
       String header = ((HttpServletRequest) request).getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
@@ -308,7 +315,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       try {
         log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
         // upon successful authentication, this should call the chain's next filter.
-        authenticationPlugin.doAuthenticate(request, response, new FilterChain() {
+        requestContinues = authenticationPlugin.doAuthenticate(request, response, new FilterChain() {
           public void doFilter(ServletRequest req, ServletResponse rsp) throws IOException, ServletException {
             isAuthenticated.set(true);
             wrappedRequest.set(req);
@@ -319,8 +326,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error during request authentication, ", e);
       }
     }
-    // failed authentication?
-    if (!isAuthenticated.get()) {
+    // requestContinues is an optional short circuit, thus we still need to check isAuthenticated.
+    // This is because the AuthenticationPlugin doesn't always have enough information to determine if
+    // it should short circuit, e.g. the Kerberos Authentication Filter will send an error and not
+    // call later filters in chain, but doesn't throw an exception.  We could force each Plugin
+    // to implement isAuthenticated to simplify the check here, but that just moves the complexity to
+    // multiple code paths.
+    if (!requestContinues || !isAuthenticated.get()) {
       response.flushBuffer();
       return false;
     }

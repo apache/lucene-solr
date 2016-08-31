@@ -78,16 +78,6 @@ public class TestDocValuesScoring extends LuceneTestCase {
       public Similarity get(String field) {
         return "foo".equals(field) ? fooSim : base;
       }
-
-      @Override
-      public float coord(int overlap, int maxOverlap) {
-        return base.coord(overlap, maxOverlap);
-      }
-
-      @Override
-      public float queryNorm(float sumOfSquaredWeights) {
-        return base.queryNorm(sumOfSquaredWeights);
-      }
     });
     
     // in this case, we searched on field "foo". first document should have 2x the score.
@@ -153,8 +143,8 @@ public class TestDocValuesScoring extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return sim.computeWeight(collectionStats, termStats);
+    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return sim.computeWeight(boost, collectionStats, termStats);
     }
 
     @Override

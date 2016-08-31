@@ -19,9 +19,6 @@ package org.apache.solr.search.facet;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.solr.search.QueryContext;
-
-
 import java.io.IOException;
 import java.util.Map;
 

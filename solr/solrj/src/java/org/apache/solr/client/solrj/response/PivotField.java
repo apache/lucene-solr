@@ -21,8 +21,6 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.common.util.NamedList;
-
 public class PivotField implements Serializable
 {
   final String  _field;

@@ -32,6 +32,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.StringHelper;
@@ -66,7 +67,7 @@ final class LatLonPointDistanceQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     Rectangle box = Rectangle.fromPointDistance(latitude, longitude, radiusMeters);
     // create bounding box(es) for the distance range
     // these are pre-encoded with LatLonPoint's encoding
@@ -95,11 +96,11 @@ final class LatLonPointDistanceQuery extends Query {
     }
 
     // compute exact sort key: avoid any asin() computations
-    final double sortKey = sortKey(radiusMeters);
+    final double sortKey = GeoUtils.distanceQuerySortKey(radiusMeters);
 
     final double axisLat = Rectangle.axisLat(latitude, radiusMeters);
 
-    return new ConstantScoreWeight(this) {
+    return new ConstantScoreWeight(this, boost) {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -117,18 +118,21 @@ final class LatLonPointDistanceQuery extends Query {
         LatLonPoint.checkCompatible(fieldInfo);
         
         // matching docids
-        MatchingPoints result = new MatchingPoints(reader, field);
+        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
         values.intersect(field,
                          new IntersectVisitor() {
+
+                           DocIdSetBuilder.BulkAdder adder;
+
                            @Override
                            public void grow(int count) {
-                             result.grow(count);
+                             adder = result.grow(count);
                            }
 
                            @Override
                            public void visit(int docID) {
-                             result.add(docID);
+                             adder.add(docID);
                            }
 
                            @Override
@@ -152,7 +156,7 @@ final class LatLonPointDistanceQuery extends Query {
 
                              // its a match only if its sortKey <= our sortKey
                              if (SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude) <= sortKey) {
-                               result.add(docID);
+                               adder.add(docID);
                              }
                            }
                            
@@ -206,42 +210,9 @@ final class LatLonPointDistanceQuery extends Query {
                            }
                          });
 
-        return new ConstantScoreScorer(this, score(), result.iterator());
+        return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
     };
-  }
-
-  /**
-   * binary search to find the exact sortKey needed to match the specified radius
-   * any sort key <= this is a query match.
-   */
-  static double sortKey(double radius) {
-    // effectively infinite
-    if (radius >= SloppyMath.haversinMeters(Double.MAX_VALUE)) {
-      return SloppyMath.haversinMeters(Double.MAX_VALUE);
-    }
-
-    // this is a search through non-negative long space only
-    long lo = 0;
-    long hi = Double.doubleToRawLongBits(Double.MAX_VALUE);
-    while (lo <= hi) {
-      long mid = (lo + hi) >>> 1;
-      double sortKey = Double.longBitsToDouble(mid);
-      double midRadius = SloppyMath.haversinMeters(sortKey);
-      if (midRadius == radius) {
-        return sortKey;
-      } else if (midRadius > radius) {
-        hi = mid - 1;
-      } else {
-        lo = mid + 1;
-      }
-    }
-
-    // not found: this is because a user can supply an arbitrary radius, one that we will never
-    // calculate exactly via our haversin method.
-    double ceil = Double.longBitsToDouble(lo);
-    assert SloppyMath.haversinMeters(ceil) > radius;
-    return ceil;
   }
 
   public String getField() {
@@ -263,7 +234,7 @@ final class LatLonPointDistanceQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
+    int result = classHash();
     result = prime * result + field.hashCode();
     long temp;
     temp = Double.doubleToLongBits(latitude);
@@ -276,16 +247,16 @@ final class LatLonPointDistanceQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
-    LatLonPointDistanceQuery other = (LatLonPointDistanceQuery) obj;
-    if (field.equals(other.field) == false) return false;
-    if (Double.doubleToLongBits(latitude) != Double.doubleToLongBits(other.latitude)) return false;
-    if (Double.doubleToLongBits(longitude) != Double.doubleToLongBits(other.longitude)) return false;
-    if (Double.doubleToLongBits(radiusMeters) != Double.doubleToLongBits(other.radiusMeters)) return false;
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(LatLonPointDistanceQuery other) {
+    return field.equals(other.field) &&
+           Double.doubleToLongBits(latitude) == Double.doubleToLongBits(other.latitude) &&
+           Double.doubleToLongBits(longitude) == Double.doubleToLongBits(other.longitude) &&
+           Double.doubleToLongBits(radiusMeters) == Double.doubleToLongBits(other.radiusMeters);
   }
 
   @Override

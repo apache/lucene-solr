@@ -18,13 +18,11 @@ package org.apache.lucene.demo;
 
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 public class TestDemo extends LuceneTestCase {
 

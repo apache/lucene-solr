@@ -18,14 +18,11 @@ package org.apache.solr.handler.component;
 
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.handler.component.PivotFacetField;
-
 import org.apache.lucene.util.TestUtil;
 
 import java.util.List;
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Collections;
 
 /**
  * A light weight test of various helper methods used in pivot faceting

@@ -142,7 +142,7 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     CompletionTokenStream stream = (CompletionTokenStream) analyzer.tokenStream(getField(), getTerm().text());
     Set<IntsRef> refs = new HashSet<>();
     Automaton automaton = toLevenshteinAutomata(stream.toAutomaton(unicodeAware), refs);

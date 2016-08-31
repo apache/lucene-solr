@@ -28,7 +28,17 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,6 +59,7 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.FastLRUCache;
 import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.servlet.SolrRequestParsers;
@@ -91,7 +102,7 @@ public class SolrConfig extends Config implements MapSerializable {
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
   private RequestParams requestParams;
 
-  public static enum PluginOpts {
+  public enum PluginOpts {
     MULTI_OK,
     REQUIRE_NAME,
     REQUIRE_NAME_IN_OVERLAY,
@@ -234,7 +245,8 @@ public class SolrConfig extends Config implements MapSerializable {
     queryResultWindowSize = Math.max(1, getInt("query/queryResultWindowSize", 1));
     queryResultMaxDocsCached = getInt("query/queryResultMaxDocsCached", Integer.MAX_VALUE);
     enableLazyFieldLoading = getBool("query/enableLazyFieldLoading", false);
-
+    
+    useRangeVersionsForPeerSync = getBool("peerSync/useRangeVersions", true);
 
     filterCacheConfig = CacheConfig.getConfig(this, "query/filterCache");
     queryResultCacheConfig = CacheConfig.getConfig(this, "query/queryResultCache");
@@ -253,7 +265,6 @@ public class SolrConfig extends Config implements MapSerializable {
     dataDir = get("dataDir", null);
     if (dataDir != null && dataDir.length() == 0) dataDir = null;
 
-    userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");
 
     org.apache.solr.search.SolrIndexSearcher.initRegenerators(this);
 
@@ -275,6 +286,16 @@ public class SolrConfig extends Config implements MapSerializable {
     maxWarmingSearchers = getInt("query/maxWarmingSearchers", Integer.MAX_VALUE);
     slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", -1);
     for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
+
+    Map<String, CacheConfig> userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");
+    List<PluginInfo> caches = getPluginInfos(SolrCache.class.getName());
+    if (!caches.isEmpty()) {
+      for (PluginInfo c : caches) {
+        userCacheConfigs.put(c.name, CacheConfig.getConfig(this, "cache", c.attributes, null));
+      }
+    }
+    this.userCacheConfigs = Collections.unmodifiableMap(userCacheConfigs);
+
     updateHandlerInfo = loadUpdatehandlerInfo();
 
     multipartUploadLimitKB = getInt(
@@ -316,6 +337,7 @@ public class SolrConfig extends Config implements MapSerializable {
       .add(new SolrPluginInfo(TransformerFactory.class, "transformer", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(SearchComponent.class, "searchComponent", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(UpdateRequestProcessorFactory.class, "updateProcessor", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
+      .add(new SolrPluginInfo(SolrCache.class, "cache", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
           // TODO: WTF is up with queryConverter???
           // it apparently *only* works as a singleton? - SOLR-4304
           // and even then -- only if there is a single SpellCheckComponent
@@ -456,12 +478,15 @@ public class SolrConfig extends Config implements MapSerializable {
   public final CacheConfig queryResultCacheConfig;
   public final CacheConfig documentCacheConfig;
   public final CacheConfig fieldValueCacheConfig;
-  public final CacheConfig[] userCacheConfigs;
+  public final Map<String, CacheConfig> userCacheConfigs;
   // SolrIndexSearcher - more...
   public final boolean useFilterForSortedQuery;
   public final int queryResultWindowSize;
   public final int queryResultMaxDocsCached;
   public final boolean enableLazyFieldLoading;
+  
+  public final boolean useRangeVersionsForPeerSync;
+  
   // DocSet
   public final float hashSetInverseLoadFactor;
   public final int hashDocSetMaxSize;
@@ -863,6 +888,10 @@ public class SolrConfig extends Config implements MapSerializable {
         "formUploadLimitKB", formUploadLimitKB,
         "addHttpRequestToContext", addHttpRequestToContext));
     if (indexConfig != null) result.put("indexConfig", indexConfig.toMap());
+
+    m = new LinkedHashMap();
+    result.put("peerSync", m);
+    m.put("useRangeVersions", useRangeVersionsForPeerSync);
 
     //TODO there is more to add
 

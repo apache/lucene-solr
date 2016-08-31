@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -46,7 +45,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -458,9 +456,6 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     Document doc = new Document();
     long randomLong = random().nextLong();
     doc.add(new NumericDocValuesField("numeric", randomLong));
-    if (random().nextBoolean()) {
-      doc.add(new LegacyLongField("numeric", randomLong, Field.Store.NO));
-    }
     int numValues = atLeast(5);
     for (int i = 0; i < numValues; i++) {
       randomLong = random().nextLong();
@@ -468,9 +463,6 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       if (random().nextBoolean()) {
         // randomly duplicate field/value
         doc.add(new SortedNumericDocValuesField("sorted_numeric", randomLong));
-      }
-      if (random().nextBoolean()) {
-        doc.add(new LegacyLongField("numeric", randomLong, Field.Store.NO));
       }
     }
     BytesRef randomTerm = new BytesRef(randomTerm());

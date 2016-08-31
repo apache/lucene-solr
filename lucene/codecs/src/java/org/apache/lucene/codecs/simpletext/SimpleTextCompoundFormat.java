@@ -151,7 +151,10 @@ public class SimpleTextCompoundFormat extends CompoundFormat {
       public void deleteFile(String name) { throw new UnsupportedOperationException(); }
       
       @Override
-      public void renameFile(String source, String dest) { throw new UnsupportedOperationException(); }
+      public void rename(String source, String dest) { throw new UnsupportedOperationException(); }
+
+      @Override
+      public void syncMetaData() { throw new UnsupportedOperationException(); }
       
       @Override
       public Lock obtainLock(String name) { throw new UnsupportedOperationException(); }

@@ -40,9 +40,11 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
@@ -149,16 +151,12 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     }
 
     public int hashCode() {
-      return 31 * super.hashCode() + id.hashCode();
+      return 31 * classHash() + id.hashCode();
     }
 
-    public boolean equals(Object o) {
-      if (super.equals(o) == false) {
-        return false;
-      }
-
-      GraphTermsQuery q = (GraphTermsQuery)o;
-      return id == q.id;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             id == ((GraphTermsQuery) other).id;
     }
 
     public GraphTermsQuery clone() {
@@ -195,7 +193,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
 
       List<TermContext> finalContexts = new ArrayList();
       List<Term> finalTerms = new ArrayList();
@@ -210,7 +208,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
         }
       }
 
-      return new ConstantScoreWeight(this) {
+      return new ConstantScoreWeight(this, boost) {
 
         @Override
         public void extractTerms(Set<Term> terms) {
@@ -224,6 +222,9 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           final LeafReader reader = context.reader();
           final Fields fields = reader.fields();
           Terms terms = fields.terms(field);
+          if(terms == null) {
+            return new WeightOrDocIdSet(new BitDocIdSet(new FixedBitSet(reader.maxDoc()), 0));
+          }
           TermsEnum  termsEnum = terms.iterator();
           PostingsEnum docs = null;
           DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc(), terms);

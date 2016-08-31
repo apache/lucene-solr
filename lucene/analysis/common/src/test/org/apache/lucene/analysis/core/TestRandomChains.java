@@ -42,7 +42,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -51,6 +50,8 @@ import java.util.regex.Pattern;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CachingTokenFilter;
+import org.apache.lucene.analysis.CharArrayMap;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.CrankyTokenFilter;
 import org.apache.lucene.analysis.MockGraphTokenFilter;
@@ -74,8 +75,8 @@ import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenOffsetFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenPositionFilter;
-import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
+import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
 import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
 import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
@@ -84,8 +85,6 @@ import org.apache.lucene.analysis.payloads.PayloadEncoder;
 import org.apache.lucene.analysis.snowball.TestSnowball;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.synonym.SynonymMap;
-import org.apache.lucene.analysis.util.CharArrayMap;
-import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.AttributeFactory;
@@ -929,6 +928,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           System.out.println("Creating random analyzer:" + a);
         }
         try {
+          checkNormalize(a);
           checkRandomData(random, a, 500*RANDOM_MULTIPLIER, 20, false,
               false /* We already validate our own offsets... */);
         } catch (Throwable e) {
@@ -938,7 +938,14 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       }
     }
   }
-  
+
+  public void checkNormalize(Analyzer a) {
+    // normalization should not modify characters that may be used for wildcards
+    // or regular expressions
+    String s = "([0-9]+)?*";
+    assertEquals(s, a.normalize("dummy", s).utf8ToString());
+  }
+
   // we might regret this decision...
   public void testRandomChainsWithLargeStrings() throws Throwable {
     int numIterations = TEST_NIGHTLY ? atLeast(20) : 3;

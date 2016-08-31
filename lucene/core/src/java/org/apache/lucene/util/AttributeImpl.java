@@ -33,6 +33,17 @@ public abstract class AttributeImpl implements Cloneable, Attribute {
   public abstract void clear();
   
   /**
+   * Clears the values in this AttributeImpl and resets it to its value
+   * at the end of the field. If this implementation implements more than one Attribute interface
+   * it clears all.
+   * <p>
+   * The default implementation simply calls {@link #clear()}
+   */
+  public void end() {
+    clear();
+  }
+  
+  /**
    * This method returns the current attribute values as a string in the following format
    * by calling the {@link #reflectWith(AttributeReflector)} method:
    * 

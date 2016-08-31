@@ -40,7 +40,7 @@ public class AssertingSpanWeight extends SpanWeight {
    * @throws IOException on error
    */
   public AssertingSpanWeight(IndexSearcher searcher, SpanWeight in) throws IOException {
-    super((SpanQuery) in.getQuery(), searcher, null);
+    super((SpanQuery) in.getQuery(), searcher, null, 1f);
     this.in = in;
   }
 
@@ -65,16 +65,6 @@ public class AssertingSpanWeight extends SpanWeight {
   @Override
   public void extractTerms(Set<Term> terms) {
     in.extractTerms(terms);
-  }
-
-  @Override
-  public float getValueForNormalization() throws IOException {
-    return in.getValueForNormalization();
-  }
-
-  @Override
-  public void normalize(float queryNorm, float boost) {
-    in.normalize(queryNorm, boost);
   }
 
   @Override

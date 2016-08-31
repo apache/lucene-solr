@@ -103,36 +103,31 @@ public final class SpanOrQuery extends SpanQuery {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (! super.equals(o)) {
-      return false;
-    }
-    final SpanOrQuery that = (SpanOrQuery) o;
-    return clauses.equals(that.clauses);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           clauses.equals(((SpanOrQuery) other).clauses);
   }
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
-    h = (h * 7) ^ clauses.hashCode();
-    return h;
+    return classHash() ^ clauses.hashCode();
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     List<SpanWeight> subWeights = new ArrayList<>(clauses.size());
     for (SpanQuery q : clauses) {
-      subWeights.add(q.createWeight(searcher, false));
+      subWeights.add(q.createWeight(searcher, false, boost));
     }
-    return new SpanOrWeight(searcher, needsScores ? getTermContexts(subWeights) : null, subWeights);
+    return new SpanOrWeight(searcher, needsScores ? getTermContexts(subWeights) : null, subWeights, boost);
   }
 
   public class SpanOrWeight extends SpanWeight {
 
     final List<SpanWeight> subWeights;
 
-    public SpanOrWeight(IndexSearcher searcher, Map<Term, TermContext> terms, List<SpanWeight> subWeights) throws IOException {
-      super(SpanOrQuery.this, searcher, terms);
+    public SpanOrWeight(IndexSearcher searcher, Map<Term, TermContext> terms, List<SpanWeight> subWeights, float boost) throws IOException {
+      super(SpanOrQuery.this, searcher, terms, boost);
       this.subWeights = subWeights;
     }
 
@@ -166,7 +161,7 @@ public final class SpanOrQuery extends SpanQuery {
       if (subSpans.size() == 0) {
         return null;
       } else if (subSpans.size() == 1) {
-        return new ScoringWrapperSpans(subSpans.get(0), getSimScorer(context));
+        return subSpans.get(0);
       }
 
       DisiPriorityQueue byDocQueue = new DisiPriorityQueue(subSpans.size());

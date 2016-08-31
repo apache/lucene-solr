@@ -22,6 +22,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -61,31 +62,28 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new W(this, toQuery.createWeight(searcher, false));
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new W(this, toQuery.createWeight(searcher, false, 1f));
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-
-    GlobalOrdinalsWithScoreQuery that = (GlobalOrdinalsWithScoreQuery) o;
-
-    if (min != that.min) return false;
-    if (max != that.max) return false;
-    if (!joinField.equals(that.joinField)) return false;
-    if (!fromQuery.equals(that.fromQuery)) return false;
-    if (!toQuery.equals(that.toQuery)) return false;
-    if (!indexReader.equals(that.indexReader)) return false;
-
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(GlobalOrdinalsWithScoreQuery other) {
+    return min == other.min &&
+           max == other.max &&
+           joinField.equals(other.joinField) &&
+           fromQuery.equals(other.fromQuery) &&
+           toQuery.equals(other.toQuery) &&
+           indexReader.equals(other.indexReader);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
+    int result = classHash();
     result = 31 * result + joinField.hashCode();
     result = 31 * result + toQuery.hashCode();
     result = 31 * result + fromQuery.hashCode();
@@ -105,13 +103,10 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
         '}';
   }
 
-  final class W extends Weight {
-
-    private final Weight approximationWeight;
+  final class W extends FilterWeight {
 
     W(Query query, Weight approximationWeight) {
-      super(query);
-      this.approximationWeight = approximationWeight;
+      super(query, approximationWeight);
     }
 
     @Override
@@ -145,24 +140,13 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
     }
 
     @Override
-    public float getValueForNormalization() throws IOException {
-      return 1f;
-    }
-
-    @Override
-    public void normalize(float norm, float boost) {
-      // no normalization, we ignore the normalization process
-      // and produce scores based on the join
-    }
-
-    @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
       SortedDocValues values = DocValues.getSorted(context.reader(), joinField);
       if (values == null) {
         return null;
       }
 
-      Scorer approximationScorer = approximationWeight.scorer(context);
+      Scorer approximationScorer = in.scorer(context);
       if (approximationScorer == null) {
         return null;
       } else if (globalOrds != null) {

@@ -164,7 +164,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       assertTrue(doc.score + " does not equal: " + 1, doc.score == 1);
     }
     CheckHits.checkExplanations(query, PayloadHelper.FIELD, searcher, true);
-    Spans spans = query.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = query.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertTrue("spans is null and it shouldn't be", spans != null);
     /*float score = hits.score(0);
     for (int i =1; i < hits.length(); i++)
@@ -215,7 +215,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     }
     assertTrue(numTens + " does not equal: " + 10, numTens == 10);
     CheckHits.checkExplanations(query, "field", searcher, true);
-    Spans spans = query.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = query.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertTrue("spans is null and it shouldn't be", spans != null);
     //should be two matches per document
     int count = 0;
@@ -256,16 +256,6 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   }
 
   static class BoostingSimilarity extends ClassicSimilarity {
-
-    @Override
-    public float queryNorm(float sumOfSquaredWeights) {
-      return 1;
-    }
-    
-    @Override
-    public float coord(int overlap, int maxOverlap) {
-      return 1;
-    }
 
     // TODO: Remove warning after API has been finalized
     @Override

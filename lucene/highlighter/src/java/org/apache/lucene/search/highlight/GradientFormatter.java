@@ -40,7 +40,7 @@ public class GradientFormatter implements Formatter
      * Sets the color range for the IDF scores
      * 
      * @param maxScore
-     *            The score (and above) displayed as maxColor (See QueryScorer.getMaxWeight 
+     *            The score (and above) displayed as maxColor (See {@link QueryScorer#getMaxTermWeight()} 
      *         which can be used to calibrate scoring scale)
      * @param minForegroundColor
      *            The hex color used for representing IDF scores of zero eg

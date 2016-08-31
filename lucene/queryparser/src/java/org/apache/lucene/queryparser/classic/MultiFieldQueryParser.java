@@ -27,6 +27,7 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 
 /**
  * A QueryParser which constructs queries to search multiple fields.
@@ -148,18 +149,54 @@ public class MultiFieldQueryParser extends QueryParser
   protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {
     if (field == null) {
       List<Query> clauses = new ArrayList<>();
+      Query[] fieldQueries = new Query[fields.length];
+      int maxTerms = 0;
       for (int i = 0; i < fields.length; i++) {
         Query q = super.getFieldQuery(fields[i], queryText, quoted);
         if (q != null) {
-          //If the user passes a map of boosts
-          if (boosts != null) {
-            //Get the boost from the map and apply them
-            Float boost = boosts.get(fields[i]);
-            if (boost != null) {
-              q = new BoostQuery(q, boost.floatValue());
+          if (q instanceof TermQuery) {
+            maxTerms = Math.max(1, maxTerms);
+          } else if (q instanceof BooleanQuery) {
+            maxTerms = Math.max(maxTerms, ((BooleanQuery)q).clauses().size());
+          }
+          fieldQueries[i] = q;
+        }
+      }
+      for (int termNum = 0; termNum < maxTerms; termNum++) {
+        List<Query> termClauses = new ArrayList<>();
+        for (int i = 0; i < fields.length; i++) {
+          if (fieldQueries[i] != null) {
+            Query q = null;
+            if (fieldQueries[i] instanceof BooleanQuery) {
+              List<BooleanClause> nestedClauses = ((BooleanQuery)fieldQueries[i]).clauses();
+              if (termNum < nestedClauses.size()) {
+                q = nestedClauses.get(termNum).getQuery();
+              }
+            } else if (termNum == 0) { // e.g. TermQuery-s
+              q = fieldQueries[i];
+            }
+            if (q != null) {
+              if (boosts != null) {
+                //Get the boost from the map and apply them
+                Float boost = boosts.get(fields[i]);
+                if (boost != null) {
+                  q = new BoostQuery(q, boost);
+                }
+              }
+              termClauses.add(q);
             }
           }
-          clauses.add(q);
+        }
+        if (maxTerms > 1) {
+          if (termClauses.size() > 0) {
+            BooleanQuery.Builder builder = newBooleanQuery();
+            for (Query termClause : termClauses) {
+              builder.add(termClause, BooleanClause.Occur.SHOULD);
+            }
+            clauses.add(builder.build());
+          }
+        } else {
+          clauses.addAll(termClauses);
         }
       }
       if (clauses.size() == 0)  // happens for stopwords
@@ -244,7 +281,6 @@ public class MultiFieldQueryParser extends QueryParser
       return null; // all clause words were filtered away by the analyzer.
     }
     BooleanQuery.Builder query = newBooleanQuery();
-    query.setDisableCoord(true);
     for (Query sub : queries) {
       query.add(sub, BooleanClause.Occur.SHOULD);
     }

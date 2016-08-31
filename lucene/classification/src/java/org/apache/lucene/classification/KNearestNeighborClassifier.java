@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -82,7 +83,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
   /**
    * Creates a {@link KNearestNeighborClassifier}.
    *
-   * @param leafReader     the reader on the index to be used for classification
+   * @param indexReader     the reader on the index to be used for classification
    * @param analyzer       an {@link Analyzer} used to analyze unseen text
    * @param similarity     the {@link Similarity} to be used by the underlying {@link IndexSearcher} or {@code null}
    *                       (defaults to {@link org.apache.lucene.search.similarities.ClassicSimilarity})
@@ -94,14 +95,14 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    * @param classFieldName the name of the field used as the output for the classifier
    * @param textFieldNames the name of the fields used as the inputs for the classifier, they can contain boosting indication e.g. title^10
    */
-  public KNearestNeighborClassifier(LeafReader leafReader, Similarity similarity, Analyzer analyzer, Query query, int k, int minDocsFreq,
+  public KNearestNeighborClassifier(IndexReader indexReader, Similarity similarity, Analyzer analyzer, Query query, int k, int minDocsFreq,
                                     int minTermFreq, String classFieldName, String... textFieldNames) {
     this.textFieldNames = textFieldNames;
     this.classFieldName = classFieldName;
-    this.mlt = new MoreLikeThis(leafReader);
+    this.mlt = new MoreLikeThis(indexReader);
     this.mlt.setAnalyzer(analyzer);
     this.mlt.setFieldNames(textFieldNames);
-    this.indexSearcher = new IndexSearcher(leafReader);
+    this.indexSearcher = new IndexSearcher(indexReader);
     if (similarity != null) {
       this.indexSearcher.setSimilarity(similarity);
     } else {

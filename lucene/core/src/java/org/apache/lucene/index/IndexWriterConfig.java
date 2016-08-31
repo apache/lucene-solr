@@ -21,8 +21,8 @@ import java.io.PrintStream;
 import java.util.EnumSet;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -122,7 +122,21 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   }
   
   /**
-   * Creates a new config that with the default {@link
+   * Creates a new config, using {@link StandardAnalyzer} as the
+   * analyzer.  By default, {@link TieredMergePolicy} is used
+   * for merging;
+   * Note that {@link TieredMergePolicy} is free to select
+   * non-contiguous merges, which means docIDs may not
+   * remain monotonic over time.  If this is a problem you
+   * should switch to {@link LogByteSizeMergePolicy} or
+   * {@link LogDocMergePolicy}.
+   */
+  public IndexWriterConfig() {
+    this(new StandardAnalyzer());
+  }
+  
+  /**
+   * Creates a new config that with the provided {@link
    * Analyzer}. By default, {@link TieredMergePolicy} is used
    * for merging;
    * Note that {@link TieredMergePolicy} is free to select

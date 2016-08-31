@@ -17,13 +17,16 @@
 package org.apache.lucene.search.spans;
 
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -31,10 +34,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 public class TestSpanCollection extends LuceneTestCase {
 
@@ -61,7 +60,7 @@ public class TestSpanCollection extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(new MockAnalyzer(random())));
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newField(FIELD, docFields[i], OFFSETS));
@@ -120,7 +119,7 @@ public class TestSpanCollection extends LuceneTestCase {
     SpanNearQuery q7 = new SpanNearQuery(new SpanQuery[]{q1, q6}, 1, true);
 
     TermCollector collector = new TermCollector();
-    Spans spans = q7.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = q7.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertEquals(0, spans.advance(0));
     spans.nextStartPosition();
     checkCollectedTerms(spans, collector, new Term(FIELD, "w1"), new Term(FIELD, "w2"), new Term(FIELD, "w3"));
@@ -140,7 +139,7 @@ public class TestSpanCollection extends LuceneTestCase {
     SpanOrQuery orQuery = new SpanOrQuery(q2, q3);
 
     TermCollector collector = new TermCollector();
-    Spans spans = orQuery.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = orQuery.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
 
     assertEquals(1, spans.advance(1));
     spans.nextStartPosition();
@@ -170,7 +169,7 @@ public class TestSpanCollection extends LuceneTestCase {
     SpanNotQuery notq = new SpanNotQuery(nq, q3);
 
     TermCollector collector = new TermCollector();
-    Spans spans = notq.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = notq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
 
     assertEquals(2, spans.advance(2));
     spans.nextStartPosition();

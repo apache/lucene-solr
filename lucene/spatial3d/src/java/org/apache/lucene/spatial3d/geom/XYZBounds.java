@@ -30,7 +30,7 @@ public class XYZBounds implements Bounds {
    * unacceptably large.
    * Also, see LUCENE-7290 for a description of how geometry can magnify the bounds delta.
    */
-  private static final double FUDGE_FACTOR = Vector.MINIMUM_RESOLUTION * 500.0;
+  private static final double FUDGE_FACTOR = Vector.MINIMUM_RESOLUTION * 1e3;
   
   /** Minimum x */
   private Double minX = null;
@@ -289,6 +289,17 @@ public class XYZBounds implements Bounds {
   @Override
   public Bounds noBottomLatitudeBound() {
     // No specific thing we need to do.
+    return this;
+  }
+
+  @Override
+  public Bounds noBound(final PlanetModel planetModel) {
+    minX = planetModel.getMinimumXValue();
+    maxX = planetModel.getMaximumXValue();
+    minY = planetModel.getMinimumYValue();
+    maxY = planetModel.getMaximumYValue();
+    minZ = planetModel.getMinimumZValue();
+    maxZ = planetModel.getMaximumZValue();
     return this;
   }
 

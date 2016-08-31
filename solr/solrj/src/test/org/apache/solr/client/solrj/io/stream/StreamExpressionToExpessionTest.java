@@ -62,6 +62,8 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
                     .withFunctionName("avg", MeanMetric.class)
                     .withFunctionName("daemon", DaemonStream.class)
                     .withFunctionName("topic", TopicStream.class)
+                    .withFunctionName("tlogit", TextLogitStream.class)
+                    .withFunctionName("featuresSelection", FeaturesSelectionStream.class)
                     ;
   }
     
@@ -137,7 +139,6 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     assertTrue(expressionString.contains("id=blah"));
     assertTrue(expressionString.contains("checkpointEvery=1000"));
   }
-
 
   @Test
   public void testStatsStream() throws Exception {
@@ -341,6 +342,40 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     
     assertTrue(firstExpressionString.contains("q=\"presentTitles:\\\"chief, executive officer\\\" AND age:[36 TO *]\""));
     assertTrue(secondExpressionString.contains("q=\"presentTitles:\\\"chief, executive officer\\\" AND age:[36 TO *]\""));
+  }
+
+  @Test
+  public void testFeaturesSelectionStream() throws Exception {
+    String expr = "featuresSelection(collection1, q=\"*:*\", featureSet=\"first\", field=\"tv_text\", outcome=\"out_i\", numTerms=4, positiveLabel=2)";
+    FeaturesSelectionStream stream = new FeaturesSelectionStream(StreamExpressionParser.parse(expr), factory);
+    String expressionString = stream.toExpression(factory).toString();
+    assertTrue(expressionString.contains("q=\"*:*\""));
+    assertTrue(expressionString.contains("featureSet=first"));
+    assertTrue(expressionString.contains("field=tv_text"));
+    assertTrue(expressionString.contains("outcome=out_i"));
+    assertTrue(expressionString.contains("numTerms=4"));
+    assertTrue(expressionString.contains("positiveLabel=2"));
+  }
+
+  @Test
+  public void testTextLogitStreamWithFeaturesSelection() throws Exception {
+    String expr = "tlogit(" +
+        "collection1, " +
+        "q=\"*:*\", " +
+        "name=\"model\", " +
+        "featuresSelection(collection1, q=\"*:*\", featureSet=\"first\", field=\"tv_text\", outcome=\"out_i\", numTerms=4), " +
+        "field=\"tv_text\", " +
+        "outcome=\"out_i\", " +
+        "maxIterations=100)";
+    TextLogitStream logitStream = new TextLogitStream(StreamExpressionParser.parse(expr), factory);
+    String expressionString = logitStream.toExpression(factory).toString();
+    assertTrue(expressionString.contains("q=\"*:*\""));
+    assertTrue(expressionString.contains("name=model"));
+    assertFalse(expressionString.contains("terms="));
+    assertTrue(expressionString.contains("featuresSelection("));
+    assertTrue(expressionString.contains("field=tv_text"));
+    assertTrue(expressionString.contains("outcome=out_i"));
+    assertTrue(expressionString.contains("maxIterations=100"));
   }
   
   @Test

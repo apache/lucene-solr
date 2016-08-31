@@ -74,6 +74,19 @@ public class JSONTestUtil {
   }
 
   /**
+   * @param input Object structure to parse and test against
+   * @param pathAndExpected JSON path expression + '==' + expected value
+   * @param delta tollerance allowed in comparing float/double values
+   */
+  public static String matchObj(Object input, String pathAndExpected, double delta) throws Exception {
+    int pos = pathAndExpected.indexOf("==");
+    String path = pos>=0 ? pathAndExpected.substring(0,pos) : null;
+    String expected = pos>=0 ? pathAndExpected.substring(pos+2) : pathAndExpected;
+    Object expectObj = failRepeatedKeys ? new NoDupsObjectBuilder(new JSONParser(expected)).getVal() : ObjectBuilder.fromJSON(expected);
+    return matchObj(path, input, expectObj, delta);
+  }
+
+  /**
    * @param path JSON path expression
    * @param input JSON Structure to parse and test against
    * @param expected expected value of path

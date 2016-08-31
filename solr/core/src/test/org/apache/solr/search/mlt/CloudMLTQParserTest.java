@@ -98,7 +98,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     QueryResponse queryResponse = cluster.getSolrClient()
         .query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u}17").setShowDebugInfo(true));
     SolrDocumentList solrDocuments = queryResponse.getResults();
-    int[] expectedIds = new int[]{7, 13, 14, 15, 16, 20, 22, 24, 32, 9};
+    int[] expectedIds = new int[]{7, 9, 13, 14, 15, 16, 20, 22, 24, 32};
     int[] actualIds = new int[10];
     int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
@@ -113,7 +113,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
 
     QueryResponse queryResponse = cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u boost=true}17"));
     SolrDocumentList solrDocuments = queryResponse.getResults();
-    int[] expectedIds = new int[]{7, 13, 14, 15, 16, 20, 22, 24, 32, 9};
+    int[] expectedIds = new int[]{7, 9, 13, 14, 15, 16, 20, 22, 24, 32};
     int[] actualIds = new int[solrDocuments.size()];
     int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
@@ -138,8 +138,8 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     assertArrayEquals(expectedIds, actualIds);
 
     String[] expectedQueryStrings = new String[]{
-        "(+(lowerfilt_u:bmw lowerfilt_u:usa) -id:3)/no_coord",
-        "(+(lowerfilt_u:usa lowerfilt_u:bmw) -id:3)/no_coord"};
+        "+(lowerfilt_u:bmw lowerfilt_u:usa) -id:3",
+        "+(lowerfilt_u:usa lowerfilt_u:bmw) -id:3"};
 
     String[] actualParsedQueries;
     if (queryResponse.getDebugMap().get("parsedquery") instanceof String) {
@@ -159,7 +159,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     QueryResponse queryResponse = cluster.getSolrClient().query(COLLECTION,
         new SolrQuery("{!mlt qf=lowerfilt_u,lowerfilt1_u mindf=0 mintf=1}26"));
     SolrDocumentList solrDocuments = queryResponse.getResults();
-    int[] expectedIds = new int[]{27, 3, 29, 28};
+    int[] expectedIds = new int[]{3, 29, 27, 28};
     int[] actualIds = new int[solrDocuments.size()];
     int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {

@@ -51,9 +51,6 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     SchemaField schemaField = fields.get("string_direct_f");
     PerFieldPostingsFormat format = (PerFieldPostingsFormat) codec.postingsFormat();
     assertEquals("Direct", format.getPostingsFormatForField(schemaField.getName()).getName());
-    schemaField = fields.get("string_simpletext_f");
-    assertEquals("SimpleText",
-        format.getPostingsFormatForField(schemaField.getName()).getName());
     schemaField = fields.get("string_standard_f");
     assertEquals(TestUtil.getDefaultPostingsFormat().getName(), format.getPostingsFormatForField(schemaField.getName()).getName());
     schemaField = fields.get("string_f");
@@ -78,8 +75,6 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     Codec codec = h.getCore().getCodec();
     PerFieldPostingsFormat format = (PerFieldPostingsFormat) codec.postingsFormat();
 
-    assertEquals("SimpleText", format.getPostingsFormatForField("foo_simple").getName());
-    assertEquals("SimpleText", format.getPostingsFormatForField("bar_simple").getName());
     assertEquals("Direct", format.getPostingsFormatForField("foo_direct").getName());
     assertEquals("Direct", format.getPostingsFormatForField("bar_direct").getName());
     assertEquals(TestUtil.getDefaultPostingsFormat().getName(), format.getPostingsFormatForField("foo_standard").getName());

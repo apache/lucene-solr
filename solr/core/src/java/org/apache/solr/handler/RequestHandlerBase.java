@@ -16,16 +16,18 @@
  */
 package org.apache.solr.handler;
 
+import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.util.concurrent.atomic.LongAdder;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.PluginBag;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoMBean;
-import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -36,10 +38,6 @@ import org.apache.solr.util.stats.Timer;
 import org.apache.solr.util.stats.TimerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.solr.core.RequestParams.USEPARAM;
 
@@ -55,9 +53,10 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   protected boolean httpCaching = true;
 
   // Statistics
-  private final AtomicLong numRequests = new AtomicLong();
-  private final AtomicLong numErrors = new AtomicLong();
-  private final AtomicLong numTimeouts = new AtomicLong();
+  private final LongAdder numRequests = new LongAdder();
+  private final LongAdder numServerErrors = new LongAdder();
+  private final LongAdder numClientErrors = new LongAdder();
+  private final LongAdder numTimeouts = new LongAdder();
   private final Timer requestTimes = new Timer();
 
   private final long handlerStart;
@@ -145,7 +144,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    numRequests.incrementAndGet();
+    numRequests.increment();
     TimerContext timer = requestTimes.time();
     try {
       if(pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM)) req.getContext().put(USEPARAM,pluginInfo.attributes.get(USEPARAM));
@@ -159,28 +158,38 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         Object partialResults = header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
         boolean timedOut = partialResults == null ? false : (Boolean)partialResults;
         if( timedOut ) {
-          numTimeouts.incrementAndGet();
+          numTimeouts.increment();
           rsp.setHttpCaching(false);
         }
       }
     } catch (Exception e) {
+      boolean incrementErrors = true;
+      boolean isServerError = true;
       if (e instanceof SolrException) {
         SolrException se = (SolrException)e;
         if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
-          // TODO: should we allow this to be counted as an error (numErrors++)?
-
-        } else {
-          SolrException.log(log, e);
+          incrementErrors = false;
+        } else if (se.code() >= 400 && se.code() < 500) {
+          isServerError = false;
         }
       } else {
-        SolrException.log(log, e);
         if (e instanceof SyntaxError) {
+          isServerError = false;
           e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
         }
       }
 
       rsp.setException(e);
-      numErrors.incrementAndGet();
+
+      if (incrementErrors) {
+        SolrException.log(log, e);
+
+        if (isServerError) {
+          numServerErrors.increment();
+        } else {
+          numClientErrors.increment();
+        }
+      }
     }
     finally {
       timer.stop();
@@ -263,7 +272,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     Snapshot snapshot = requestTimes.getSnapshot();
     lst.add("handlerStart",handlerStart);
     lst.add("requests", numRequests.longValue());
-    lst.add("errors", numErrors.longValue());
+    lst.add("errors", numServerErrors.longValue() + numClientErrors.longValue());
+    lst.add("serverErrors", numServerErrors.longValue());
+    lst.add("clientErrors", numClientErrors.longValue());
     lst.add("timeouts", numTimeouts.longValue());
     lst.add("totalTime", requestTimes.getSum());
     lst.add("avgRequestsPerSecond", requestTimes.getMeanRate());

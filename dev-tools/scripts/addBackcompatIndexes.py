@@ -30,15 +30,13 @@ import urllib.request
 import re
 import shutil
 
-def create_and_add_index(source, indextype, version, temp_dir):
+def create_and_add_index(source, indextype, index_version, current_version, temp_dir):
   if indextype in ('cfs', 'nocfs'):
     dirname = 'index.%s' % indextype
   else:
     dirname = indextype
-  filename = {
-    'cfs': 'index.%s-cfs.zip',
-    'nocfs': 'index.%s-nocfs.zip'
-  }[indextype] % version
+  prefix = 'index' if current_version.is_back_compat_with(index_version) else 'unsupported'
+  filename = '%s.%s-%s.zip' % (prefix, index_version, indextype)
   print('  creating %s...' % filename, end='', flush=True)
   module = 'backward-codecs'
   index_dir = os.path.join('lucene', module, 'src/test/org/apache/lucene/index')
@@ -84,11 +82,12 @@ def create_and_add_index(source, indextype, version, temp_dir):
   scriptutil.run('rm -rf %s' % bc_index_dir)
   print('done')
 
-def update_backcompat_tests(types, version):
+def update_backcompat_tests(types, index_version, current_version):
   print('  adding new indexes to backcompat tests...', end='', flush=True)
   module = 'lucene/backward-codecs'
   filename = '%s/src/test/org/apache/lucene/index/TestBackwardsCompatibility.java' % module
-  matcher = re.compile(r'final static String\[\] oldNames = {|};')
+  matcher = re.compile(r'final static String\[\] oldNames = {|};' if current_version.is_back_compat_with(index_version)
+                       else r'final String\[\] unsupportedNames = {|};')
 
   def find_version(x):
     x = x.strip()
@@ -99,17 +98,17 @@ def update_backcompat_tests(types, version):
     start = None
     def __call__(self, buffer, match, line):
       if self.start:
-        # find where we this version should exist
+        # find where this version should exist
         i = len(buffer) - 1 
         v = find_version(buffer[i])
-        while i >= self.start and v.on_or_after(version):
+        while i >= self.start and v.on_or_after(index_version):
           i -= 1
           v = find_version(buffer[i])
         i += 1 # readjust since we skipped past by 1
 
         # unfortunately python doesn't have a range remove from list...
         # here we want to remove any previous references to the version we are adding
-        while i < len(buffer) and version.on_or_after(find_version(buffer[i])):
+        while i < len(buffer) and index_version.on_or_after(find_version(buffer[i])):
           buffer.pop(i)
 
         if i == len(buffer) and not buffer[-1].strip().endswith(","):
@@ -119,7 +118,7 @@ def update_backcompat_tests(types, version):
         last = buffer[-1]
         spaces = ' ' * (len(last) - len(last.lstrip()))
         for (j, t) in enumerate(types):
-          newline = spaces + ('"%s-%s"' % (version, t))
+          newline = spaces + ('"%s-%s"' % (index_version, t))
           if j < len(types) - 1 or i < len(buffer):
             newline += ','
           buffer.insert(i, newline + '\n')
@@ -128,7 +127,7 @@ def update_backcompat_tests(types, version):
         buffer.append(line)
         return True
 
-      if 'oldNames' in line:
+      if 'Names = {' in line:
         self.start = len(buffer) # location of first index name
       buffer.append(line)
       return False
@@ -213,11 +212,12 @@ def main():
 
   print('\nCreating backwards compatibility indexes')
   source = download_release(c.version, c.temp_dir, c.force)
-  create_and_add_index(source, 'cfs', c.version, c.temp_dir)
-  create_and_add_index(source, 'nocfs', c.version, c.temp_dir)
+  current_version = scriptutil.Version.parse(scriptutil.find_current_version())
+  create_and_add_index(source, 'cfs', c.version, current_version, c.temp_dir)
+  create_and_add_index(source, 'nocfs', c.version, current_version, c.temp_dir)
     
   print('\nAdding backwards compatibility tests')
-  update_backcompat_tests(['cfs', 'nocfs'], c.version)
+  update_backcompat_tests(['cfs', 'nocfs'], c.version, current_version)
 
   print('\nTesting changes')
   check_backcompat_tests()

@@ -124,8 +124,7 @@
                 <bundledSignature>jdk-deprecated</bundledSignature>
                 <bundledSignature>jdk-non-portable</bundledSignature>
                 <bundledSignature>jdk-reflection</bundledSignature>
-                <!--TODO: fix this <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>-->
-                <bundledSignature>commons-io-unsafe-2.4</bundledSignature>
+                <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
@@ -147,8 +146,7 @@
                 <bundledSignature>jdk-deprecated</bundledSignature>
                 <bundledSignature>jdk-non-portable</bundledSignature>
                 <bundledSignature>jdk-reflection</bundledSignature>
-                <!--TODO: fix this <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>-->
-                <bundledSignature>commons-io-unsafe-2.4</bundledSignature>
+                <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>

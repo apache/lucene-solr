@@ -20,12 +20,10 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
-import java.util.Set;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -115,8 +113,8 @@ public class ToParentBlockJoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new BlockJoinWeight(this, childQuery.createWeight(searcher, needsScores), parentsFilter, needsScores ? scoreMode : ScoreMode.None);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new BlockJoinWeight(this, childQuery.createWeight(searcher, needsScores, boost), parentsFilter, needsScores ? scoreMode : ScoreMode.None);
   }
   
   /** Return our child query. */
@@ -124,31 +122,14 @@ public class ToParentBlockJoinQuery extends Query {
     return childQuery;
   }
 
-  private static class BlockJoinWeight extends Weight {
-    private final Weight childWeight;
+  private static class BlockJoinWeight extends FilterWeight {
     private final BitSetProducer parentsFilter;
     private final ScoreMode scoreMode;
 
     public BlockJoinWeight(Query joinQuery, Weight childWeight, BitSetProducer parentsFilter, ScoreMode scoreMode) {
-      super(joinQuery);
-      this.childWeight = childWeight;
+      super(joinQuery, childWeight);
       this.parentsFilter = parentsFilter;
       this.scoreMode = scoreMode;
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      childWeight.extractTerms(terms);
-    }
-
-    @Override
-    public float getValueForNormalization() throws IOException {
-      return childWeight.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float norm, float boost) {
-      childWeight.normalize(norm, boost);
     }
 
     // NOTE: acceptDocs applies (and is checked) only in the
@@ -156,7 +137,7 @@ public class ToParentBlockJoinQuery extends Query {
     @Override
     public Scorer scorer(LeafReaderContext readerContext) throws IOException {
 
-      final Scorer childScorer = childWeight.scorer(readerContext);
+      final Scorer childScorer = in.scorer(readerContext);
       if (childScorer == null) {
         // No matches
         return null;
@@ -184,7 +165,7 @@ public class ToParentBlockJoinQuery extends Query {
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       BlockJoinScorer scorer = (BlockJoinScorer) scorer(context);
       if (scorer != null && scorer.iterator().advance(doc) == doc) {
-        return scorer.explain(context.docBase);
+        return scorer.explain(context, in);
       }
       return Explanation.noMatch("Not a match");
     }
@@ -436,10 +417,24 @@ public class ToParentBlockJoinQuery extends Query {
       return parentFreq;
     }
 
-    public Explanation explain(int docBase) throws IOException {
-      int start = docBase + prevParentDoc + 1; // +1 b/c prevParentDoc is previous parent doc
-      int end = docBase + parentDoc - 1; // -1 b/c parentDoc is parent doc
-      return Explanation.match(score(), String.format(Locale.ROOT, "Score based on child doc range from %d to %d", start, end)
+    public Explanation explain(LeafReaderContext context, Weight childWeight) throws IOException {
+      int start = context.docBase + prevParentDoc + 1; // +1 b/c prevParentDoc is previous parent doc
+      int end = context.docBase + parentDoc - 1; // -1 b/c parentDoc is parent doc
+
+      Explanation bestChild = null;
+      int matches = 0;
+      for (int childDoc = start; childDoc <= end; childDoc++) {
+        Explanation child = childWeight.explain(context, childDoc - context.docBase);
+        if (child.isMatch()) {
+          matches++;
+          if (bestChild == null || child.getValue() > bestChild.getValue()) {
+            bestChild = child;
+          }
+        }
+      }
+
+      return Explanation.match(score(), String.format(Locale.ROOT,
+          "Score based on %d child docs in range from %d to %d, best match:", matches, start, end), bestChild
       );
     }
 
@@ -474,22 +469,21 @@ public class ToParentBlockJoinQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object _other) {
-    if (_other instanceof ToParentBlockJoinQuery) {
-      final ToParentBlockJoinQuery other = (ToParentBlockJoinQuery) _other;
-      return origChildQuery.equals(other.origChildQuery) &&
-        parentsFilter.equals(other.parentsFilter) &&
-        scoreMode == other.scoreMode && 
-        super.equals(other);
-    } else {
-      return false;
-    }
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(ToParentBlockJoinQuery other) {
+    return origChildQuery.equals(other.origChildQuery) &&
+           parentsFilter.equals(other.parentsFilter) &&
+           scoreMode == other.scoreMode;
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
-    int hash = super.hashCode();
+    int hash = classHash();
     hash = prime * hash + origChildQuery.hashCode();
     hash = prime * hash + scoreMode.hashCode();
     hash = prime * hash + parentsFilter.hashCode();

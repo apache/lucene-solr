@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,9 +15,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+package org.apache.lucene.index;
+
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,11 +52,7 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.PointValues.IntersectVisitor;
-import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.CollectionStatistics;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.EarlyTerminatingSortingCollector;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
@@ -79,8 +74,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 
 public class TestIndexSorting extends LuceneTestCase {
 
@@ -999,8 +992,8 @@ public class TestIndexSorting extends LuceneTestCase {
     }
     
     @Override
-    public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return in.computeWeight(collectionStats, termStats);
+    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return in.computeWeight(boost, collectionStats, termStats);
     }
     
     @Override
@@ -1224,7 +1217,7 @@ public class TestIndexSorting extends LuceneTestCase {
     if (TEST_NIGHTLY) {
       numDocs = atLeast(100000);
     } else {
-      numDocs = atLeast(10000);
+      numDocs = atLeast(1000);
     }
     List<RandomDoc> docs = new ArrayList<>();
 

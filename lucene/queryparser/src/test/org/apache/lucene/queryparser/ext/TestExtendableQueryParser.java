@@ -50,6 +50,7 @@ public class TestExtendableQueryParser extends TestQueryParser {
         getDefaultField(), a) : new ExtendableQueryParser(
         getDefaultField(), a, extensions);
     qp.setDefaultOperator(QueryParserBase.OR_OPERATOR);
+    qp.setSplitOnWhitespace(splitOnWhitespace);
     return qp;
   }
 

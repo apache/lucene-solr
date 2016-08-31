@@ -87,7 +87,7 @@ public class TransactionLog implements Closeable {
   int snapshot_numRecords;
 
   // write a BytesRef as a byte array
-  JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
+  static final JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
     @Override
     public Object resolve(Object o, JavaBinCodec codec) throws IOException {
       if (o instanceof BytesRef) {
@@ -518,6 +518,11 @@ public class TransactionLog implements Closeable {
     synchronized (this) {
       return fos.size();
     }
+  }
+
+  /** Move to a read-only state, closing and releasing resources while keeping the log available for reads */
+  public void closeOutput() {
+
   }
 
   public void finish(UpdateLog.SyncLevel syncLevel) {

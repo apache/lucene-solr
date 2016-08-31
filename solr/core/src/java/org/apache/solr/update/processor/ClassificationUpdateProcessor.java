@@ -1,22 +1,3 @@
-package org.apache.solr.update.processor;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.classification.ClassificationResult;
-import org.apache.lucene.classification.document.DocumentClassifier;
-import org.apache.lucene.classification.document.KNearestNeighborDocumentClassifier;
-import org.apache.lucene.classification.document.SimpleNaiveBayesDocumentClassifier;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.update.AddUpdateCommand;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -33,6 +14,25 @@ import org.apache.solr.update.AddUpdateCommand;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.update.processor;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.classification.ClassificationResult;
+import org.apache.lucene.classification.document.DocumentClassifier;
+import org.apache.lucene.classification.document.KNearestNeighborDocumentClassifier;
+import org.apache.lucene.classification.document.SimpleNaiveBayesDocumentClassifier;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.update.AddUpdateCommand;
 
 /**
  * This Class is a Request Update Processor to classify the document in input and add a field
@@ -60,7 +60,7 @@ class ClassificationUpdateProcessor
    * @param schema          schema
    */
   public ClassificationUpdateProcessor(String[] inputFieldNames, String classFieldName, int minDf, int minTf, int k, String algorithm,
-                                       UpdateRequestProcessor next, LeafReader indexReader, IndexSchema schema) {
+                                       UpdateRequestProcessor next, IndexReader indexReader, IndexSchema schema) {
     super(next);
     this.classFieldName = classFieldName;
     Map<String, Analyzer> field2analyzer = new HashMap<String, Analyzer>();

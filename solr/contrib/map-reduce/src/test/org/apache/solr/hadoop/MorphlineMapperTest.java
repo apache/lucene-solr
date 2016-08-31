@@ -28,7 +28,6 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.hadoop.morphline.MorphlineMapper;
 import org.apache.solr.util.BadHdfsThreadsFilter;
-import org.apache.solr.util.BadMrClusterThreadsFilter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -45,6 +44,7 @@ public class MorphlineMapperTest extends MRUnitBase {
   }
   
   @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9220")
   public void testMapper() throws Exception {
     MorphlineMapper mapper = new MorphlineMapper();
     MapDriver<LongWritable, Text, Text, SolrInputDocumentWritable> mapDriver = MapDriver.newMapDriver(mapper);;

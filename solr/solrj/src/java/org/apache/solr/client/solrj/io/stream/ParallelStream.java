@@ -101,7 +101,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
 
     // Workers
     if(null == workersParam || null == workersParam.getParameter() || !(workersParam.getParameter() instanceof StreamExpressionValue)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single 'workersParam' parameter of type positive integer but didn't find one",expression));
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single 'workers' parameter of type positive integer but didn't find one",expression));
     }
     String workersStr = ((StreamExpressionValue)workersParam.getParameter()).getValue();
     int workersInt = 0;

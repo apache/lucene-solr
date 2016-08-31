@@ -55,7 +55,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -1514,9 +1513,9 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
       CloudSolrClient cloudSolrClient = this.context.getSolrClientCache().getCloudSolrClient(this.zkHost);
       cloudSolrClient.connect();
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-      Map<String, DocCollection> collections = zkStateReader.getClusterState().getCollectionsMap();
+      Set<String> collections = zkStateReader.getClusterState().getCollectionStates().keySet();
       if (collections.size() != 0) {
-        this.tables.addAll(collections.keySet());
+        this.tables.addAll(collections);
       }
       Collections.sort(this.tables);
     }

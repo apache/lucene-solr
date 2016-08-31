@@ -24,7 +24,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
  * Models the basic information related to a single "tolerated" error that occured during updates.  
- * This class is only useful when the <code>ToleranteUpdateProcessorFactory</code> is used in an update 
+ * This class is only useful when the <code>TolerantUpdateProcessorFactory</code> is used in an update 
  * processor chain
  */
 public final class ToleratedUpdateError {

@@ -471,7 +471,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
 
     final SegmentTerminateEarlyTestState tstes = new SegmentTerminateEarlyTestState();
 
-    File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml");
+    File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml");
     Builder jettyConfig = JettyConfig.builder();
     jettyConfig.waitForLoadingCoresToFinish(null);
     final MiniSolrCloudCluster miniCluster = createMiniSolrCloudCluster();

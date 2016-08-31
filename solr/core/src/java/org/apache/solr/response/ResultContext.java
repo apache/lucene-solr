@@ -20,7 +20,6 @@ import java.util.Iterator;
 
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
@@ -49,7 +48,7 @@ public abstract class ResultContext {
   public abstract SolrQueryRequest getRequest();
 
   public boolean wantsScores() {
-    return getReturnFields().wantsScore() && getDocList().hasScores();
+    return getReturnFields() != null && getReturnFields().wantsScore() && getDocList() != null && getDocList().hasScores();
   }
 
   public Iterator<SolrDocument> getProcessedDocuments() {

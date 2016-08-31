@@ -94,18 +94,9 @@ public class TestConjunctions extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(
+    public SimWeight computeWeight(float boost,
         CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return new SimWeight() {
-        @Override
-        public float getValueForNormalization() {
-          return 1; // we don't care
-        }
-        @Override
-        public void normalize(float queryNorm, float topLevelBoost) {
-          // we don't care
-        }
-      };
+      return new SimWeight() {};
     }
 
     @Override

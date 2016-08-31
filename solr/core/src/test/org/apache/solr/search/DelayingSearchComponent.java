@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 

@@ -44,7 +44,6 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanTopLevelScorers.BoostedScorer;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -94,10 +93,8 @@ public class TestBooleanQuery extends LuceneTestCase {
         clauses.add(new BooleanClause(query, occur));
       }
 
-      final boolean disableCoord = random().nextBoolean();
       final int minShouldMatch = random().nextInt(5);
       BooleanQuery.Builder bq1Builder = new BooleanQuery.Builder();
-      bq1Builder.setDisableCoord(disableCoord);
       bq1Builder.setMinimumNumberShouldMatch(minShouldMatch);
       for (BooleanClause clause : clauses) {
         bq1Builder.add(clause);
@@ -106,7 +103,6 @@ public class TestBooleanQuery extends LuceneTestCase {
 
       Collections.shuffle(clauses, random());
       BooleanQuery.Builder bq2Builder = new BooleanQuery.Builder();
-      bq2Builder.setDisableCoord(disableCoord);
       bq2Builder.setMinimumNumberShouldMatch(minShouldMatch);
       for (BooleanClause clause : clauses) {
         bq2Builder.add(clause);
@@ -119,12 +115,10 @@ public class TestBooleanQuery extends LuceneTestCase {
 
   public void testEqualityOnDuplicateShouldClauses() {
     BooleanQuery bq1 = new BooleanQuery.Builder()
-      .setDisableCoord(random().nextBoolean())
       .setMinimumNumberShouldMatch(random().nextInt(2))
       .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
       .build();
     BooleanQuery bq2 = new BooleanQuery.Builder()
-      .setDisableCoord(bq1.isCoordDisabled())
       .setMinimumNumberShouldMatch(bq1.getMinimumNumberShouldMatch())
       .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
       .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
@@ -134,12 +128,10 @@ public class TestBooleanQuery extends LuceneTestCase {
 
   public void testEqualityOnDuplicateMustClauses() {
     BooleanQuery bq1 = new BooleanQuery.Builder()
-      .setDisableCoord(random().nextBoolean())
       .setMinimumNumberShouldMatch(random().nextInt(2))
       .add(new TermQuery(new Term("foo", "bar")), Occur.MUST)
       .build();
     BooleanQuery bq2 = new BooleanQuery.Builder()
-      .setDisableCoord(bq1.isCoordDisabled())
       .setMinimumNumberShouldMatch(bq1.getMinimumNumberShouldMatch())
       .add(new TermQuery(new Term("foo", "bar")), Occur.MUST)
       .add(new TermQuery(new Term("foo", "bar")), Occur.MUST)
@@ -149,12 +141,10 @@ public class TestBooleanQuery extends LuceneTestCase {
 
   public void testEqualityOnDuplicateFilterClauses() {
     BooleanQuery bq1 = new BooleanQuery.Builder()
-      .setDisableCoord(random().nextBoolean())
       .setMinimumNumberShouldMatch(random().nextInt(2))
       .add(new TermQuery(new Term("foo", "bar")), Occur.FILTER)
       .build();
     BooleanQuery bq2 = new BooleanQuery.Builder()
-      .setDisableCoord(bq1.isCoordDisabled())
       .setMinimumNumberShouldMatch(bq1.getMinimumNumberShouldMatch())
       .add(new TermQuery(new Term("foo", "bar")), Occur.FILTER)
       .add(new TermQuery(new Term("foo", "bar")), Occur.FILTER)
@@ -164,13 +154,11 @@ public class TestBooleanQuery extends LuceneTestCase {
 
   public void testEqualityOnDuplicateMustNotClauses() {
     BooleanQuery bq1 = new BooleanQuery.Builder()
-      .setDisableCoord(random().nextBoolean())
       .setMinimumNumberShouldMatch(random().nextInt(2))
       .add(new MatchAllDocsQuery(), Occur.MUST)
       .add(new TermQuery(new Term("foo", "bar")), Occur.FILTER)
       .build();
     BooleanQuery bq2 = new BooleanQuery.Builder()
-      .setDisableCoord(bq1.isCoordDisabled())
       .setMinimumNumberShouldMatch(bq1.getMinimumNumberShouldMatch())
       .add(new MatchAllDocsQuery(), Occur.MUST)
       .add(new TermQuery(new Term("foo", "bar")), Occur.FILTER)
@@ -210,29 +198,6 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     BooleanQuery.Builder q = new BooleanQuery.Builder();
     q.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
-
-    // LUCENE-2617: make sure that a term not in the index still contributes to the score via coord factor
-    float score = s.search(q.build(), 10).getMaxScore();
-    Query subQuery = new BoostQuery(new TermQuery(new Term("field", "not_in_index")), 0f);
-    q.add(subQuery, BooleanClause.Occur.SHOULD);
-    float score2 = s.search(q.build(), 10).getMaxScore();
-    assertEquals(score*.5F, score2, 1e-6);
-
-    // LUCENE-2617: make sure that a clause not in the index still contributes to the score via coord factor
-    BooleanQuery.Builder qq = new BooleanQuery.Builder();
-    for (BooleanClause clause : q.build()) {
-      qq.add(clause);
-    }
-    PhraseQuery phrase = new PhraseQuery("field", "not_in_index", "another_not_in_index");
-    qq.add(new BoostQuery(phrase, 0f), BooleanClause.Occur.SHOULD);
-    score2 = s.search(qq.build(), 10).getMaxScore();
-    assertEquals(score*(1/3F), score2, 1e-6);
-
-    // now test BooleanScorer2
-    subQuery = new BoostQuery(new TermQuery(new Term("field", "b")), 0f);
-    q.add(subQuery, BooleanClause.Occur.MUST);
-    score2 = s.search(q.build(), 10).getMaxScore();
-    assertEquals(score*(2/3F), score2, 1e-6);
 
     // PhraseQuery w/ no terms added returns a null scorer
     PhraseQuery pq = new PhraseQuery("field", new String[0]);
@@ -714,7 +679,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
     final Weight weight = searcher.createNormalizedWeight(q.build(), random().nextBoolean());
     final Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
-    assertTrue(scorer instanceof BoostedScorer || scorer instanceof ExactPhraseScorer);
+    assertTrue(scorer instanceof ExactPhraseScorer);
     assertNotNull(scorer.twoPhaseIterator());
 
     reader.close();

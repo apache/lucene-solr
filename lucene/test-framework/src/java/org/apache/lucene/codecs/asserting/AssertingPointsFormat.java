@@ -17,7 +17,6 @@
 package org.apache.lucene.codecs.asserting;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.lucene.codecs.PointsFormat;
@@ -127,6 +126,7 @@ public final class AssertingPointsFormat extends PointsFormat {
           assert false: "point values are out of order";
         }
         System.arraycopy(packedValue, 0, lastDocValue, 0, bytesPerDim);
+        lastDocID = docID;
       }
       in.visit(docID, packedValue);
     }

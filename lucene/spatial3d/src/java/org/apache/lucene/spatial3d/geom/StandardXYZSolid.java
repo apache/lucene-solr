@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
-import java.util.Arrays;
-
 /**
  * 3D rectangle, bounded on six sides by X,Y,Z limits
  *

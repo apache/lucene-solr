@@ -110,10 +110,10 @@ public final class ConstantScoreQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    final Weight innerWeight = searcher.createWeight(query, false);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    final Weight innerWeight = searcher.createWeight(query, false, 1f);
     if (needsScores) {
-      return new ConstantScoreWeight(this) {
+      return new ConstantScoreWeight(this, boost) {
 
         @Override
         public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
@@ -162,20 +162,13 @@ public final class ConstantScoreQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!super.equals(o))
-      return false;
-    if (o instanceof ConstantScoreQuery) {
-      final ConstantScoreQuery other = (ConstantScoreQuery) o;
-      return this.query.equals(other.query);
-    }
-    return false;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           query.equals(((ConstantScoreQuery) other).query);
   }
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + query.hashCode();
+    return 31 * classHash() + query.hashCode();
   }
-
 }

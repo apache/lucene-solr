@@ -37,10 +37,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 
 public class TestOmitTf extends LuceneTestCase {
@@ -48,10 +46,6 @@ public class TestOmitTf extends LuceneTestCase {
   public static class SimpleSimilarity extends TFIDFSimilarity {
     @Override public float decodeNormValue(long norm) { return norm; }
     @Override public long encodeNormValue(float f) { return (long) f; }
-    @Override
-    public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
-    @Override
-    public float coord(int overlap, int maxOverlap) { return 1.0f; }
     @Override public float lengthNorm(FieldInvertState state) { return state.getBoost(); }
     @Override public float tf(float freq) { return freq; }
     @Override public float sloppyFreq(int distance) { return 2.0f; }

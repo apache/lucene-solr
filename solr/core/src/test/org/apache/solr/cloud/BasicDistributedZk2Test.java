@@ -399,22 +399,25 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     checkShardConsistency(true, false);
     
     // try a backup command
-    final HttpSolrClient client = (HttpSolrClient) shardToJetty.get(SHARD2).get(0).client.solrClient;
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", ReplicationHandler.PATH);
-    params.set("command", "backup");
-    Path location = createTempDir();
-    location = FilterPath.unwrap(location).toRealPath();
-    params.set("location", location.toString());
+    try(final HttpSolrClient client = getHttpSolrClient((String) shardToJetty.get(SHARD2).get(0).info.get("base_url"))) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("qt", ReplicationHandler.PATH);
+      params.set("command", "backup");
+      Path location = createTempDir();
+      location = FilterPath.unwrap(location).toRealPath();
+      params.set("location", location.toString());
 
-    QueryRequest request = new QueryRequest(params);
-    client.request(request);
-    
-    checkForBackupSuccess(client, location);
+      QueryRequest request = new QueryRequest(params);
+      client.request(request, DEFAULT_TEST_COLLECTION_NAME);
+
+      checkForBackupSuccess(client, location);
+      client.close();
+    }
+
   }
 
   private void checkForBackupSuccess(HttpSolrClient client, Path location) throws InterruptedException, IOException {
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus(client);
+    CheckBackupStatus checkBackupStatus = new CheckBackupStatus(client, DEFAULT_TEST_COLLECTION_NAME);
     while (!checkBackupStatus.success) {
       checkBackupStatus.fetchStatus();
       Thread.sleep(1000);

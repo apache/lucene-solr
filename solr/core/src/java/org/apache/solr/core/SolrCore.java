@@ -28,7 +28,19 @@ import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -69,16 +81,31 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.*;
+import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.CSVResponseWriter;
+import org.apache.solr.response.GeoJSONResponseWriter;
+import org.apache.solr.response.GraphMLResponseWriter;
+import org.apache.solr.response.JSONResponseWriter;
+import org.apache.solr.response.PHPResponseWriter;
+import org.apache.solr.response.PHPSerializedResponseWriter;
+import org.apache.solr.response.PythonResponseWriter;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.RawResponseWriter;
+import org.apache.solr.response.RubyResponseWriter;
+import org.apache.solr.response.SchemaXmlResponseWriter;
+import org.apache.solr.response.SmileResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.SortingResponseWriter;
+import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
@@ -87,6 +114,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.ManagedIndexSchema;
+import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheMBean;
@@ -157,6 +185,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final Map<String,UpdateRequestProcessorChain> updateProcessorChains;
   private final Map<String, SolrInfoMBean> infoRegistry;
   private final IndexDeletionPolicyWrapper solrDelPolicy;
+  private final SolrSnapshotMetaDataManager snapshotMgr;
   private final DirectoryFactory directoryFactory;
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
@@ -387,7 +416,19 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     } else {
       delPolicy = new SolrDeletionPolicy();
     }
-    return new IndexDeletionPolicyWrapper(delPolicy);
+
+    return new IndexDeletionPolicyWrapper(delPolicy, snapshotMgr);
+  }
+
+  private SolrSnapshotMetaDataManager initSnapshotMetaDataManager() {
+    try {
+      String dirName = getDataDir() + SolrSnapshotMetaDataManager.SNAPSHOT_METADATA_DIR + "/";
+      Directory snapshotDir = directoryFactory.get(dirName, DirContext.DEFAULT,
+           getSolrConfig().indexConfig.lockType);
+      return new SolrSnapshotMetaDataManager(this, snapshotDir);
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   private void initListeners() {
@@ -508,6 +549,24 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   // protect via synchronized(SolrCore.class)
   private static Set<String> dirs = new HashSet<>();
 
+  /**
+   * Returns <code>true</code> iff the index in the named directory is
+   * currently locked.
+   * @param directory the directory to check for a lock
+   * @throws IOException if there is a low-level IO error
+   * @deprecated Use of this method can only lead to race conditions. Try
+   *             to actually obtain a lock instead.
+   */
+  @Deprecated
+  private static boolean isWriterLocked(Directory directory) throws IOException {
+    try {
+      directory.obtainLock(IndexWriter.WRITE_LOCK_NAME).close();
+      return false;
+    } catch (LockObtainFailedException failed) {
+      return true;
+    }
+  }
+
   void initIndex(boolean reload) throws IOException {
 
     String indexDir = getNewIndexDir();
@@ -523,7 +582,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       final String lockType = getSolrConfig().indexConfig.lockType;
       Directory dir = directoryFactory.get(indexDir, DirContext.DEFAULT, lockType);
       try {
-        if (IndexWriter.isLocked(dir)) {
+        if (isWriterLocked(dir)) {
           log.error(logid + "Solr index directory '{}' is locked (lockType={}).  Throwing exception.",
                     indexDir, lockType);
           throw new LockObtainFailedException
@@ -712,6 +771,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
       initListeners();
 
+      this.snapshotMgr = initSnapshotMetaDataManager();
       this.solrDelPolicy = initDeletionPolicy(delPolicy);
 
       this.codec = initCodec(solrConfig, this.schema);
@@ -1210,6 +1270,17 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       infoRegistry.clear();
     } catch (Throwable e) {
       SolrException.log(log, e);
+      if (e instanceof Error) {
+        throw (Error) e;
+      }
+    }
+
+    // Close the snapshots meta-data directory.
+    Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
+    try {
+      this.directoryFactory.release(snapshotsDir);
+    }  catch (Throwable e) {
+      SolrException.log(log,e);
       if (e instanceof Error) {
         throw (Error) e;
       }
@@ -2316,6 +2387,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     return solrDelPolicy;
   }
 
+  /**
+   * @return A reference of {@linkplain SolrSnapshotMetaDataManager}
+   *         managing the persistent snapshots for this Solr core.
+   */
+  public SolrSnapshotMetaDataManager getSnapshotMetaDataManager() {
+    return snapshotMgr;
+  }
+
   public ReentrantLock getRuleExpiryLock() {
     return ruleExpiryLock;
   }
@@ -2489,13 +2568,13 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       SolrZkClient zkClient = cc.getZkController().getZkClient();
       int solrConfigversion, overlayVersion, managedSchemaVersion = 0;
       SolrConfig cfg = null;
-      try (SolrCore core1 = cc.solrCores.getCoreFromAnyList(coreName, true)) {
-        if (core1 == null || core1.isClosed()) return;
-        cfg = core1.getSolrConfig();
-        solrConfigversion = core1.getSolrConfig().getOverlay().getZnodeVersion();
-        overlayVersion = core1.getSolrConfig().getZnodeVersion();
+      try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+        if (solrCore == null || solrCore.isClosed()) return;
+        cfg = solrCore.getSolrConfig();
+        solrConfigversion = solrCore.getSolrConfig().getOverlay().getZnodeVersion();
+        overlayVersion = solrCore.getSolrConfig().getZnodeVersion();
         if (managedSchmaResourcePath != null) {
-          managedSchemaVersion = ((ManagedIndexSchema) core1.getLatestSchema()).getSchemaZkVersion();
+          managedSchemaVersion = ((ManagedIndexSchema) solrCore.getLatestSchema()).getSchemaZkVersion();
         }
 
       }
@@ -2505,6 +2584,13 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       if (checkStale(zkClient, overlayPath, solrConfigversion) ||
           checkStale(zkClient, solrConfigPath, overlayVersion) ||
           checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
+
+        try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+          solrCore.setLatestSchema(SchemaManager.getFreshManagedSchema(solrCore));
+        } catch (Exception e) {
+          log.warn("", SolrZkClient.checkInterrupted(e));
+        }
+
         log.info("core reload {}", coreName);
         try {
           cc.reload(coreName);
@@ -2514,9 +2600,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         return;
       }
       //some files in conf directory may have  other than managedschema, overlay, params
-      try (SolrCore core1 = cc.solrCores.getCoreFromAnyList(coreName, true)) {
-        if (core1 == null || core1.isClosed()) return;
-        for (Runnable listener : core1.confListeners) {
+      try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+        if (solrCore == null || solrCore.isClosed()) return;
+        for (Runnable listener : solrCore.confListeners) {
           try {
             listener.run();
           } catch (Exception e) {
@@ -2561,18 +2647,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     final String myIndexDir = getIndexDir();
     final String coreName = getName();
     if (myDirFactory != null && myDataDir != null && myIndexDir != null) {
-      Thread cleanupThread = new Thread() {
-        @Override
-        public void run() {
-          log.info("Looking for old index directories to cleanup for core {} in {}", coreName, myDataDir);
-          try {
-            myDirFactory.cleanupOldIndexDirectories(myDataDir, myIndexDir);
-          } catch (Exception exc) {
-            log.error("Failed to cleanup old index directories for core "+coreName, exc);
-          }
+      Thread cleanupThread = new Thread(() -> {
+        log.info("Looking for old index directories to cleanup for core {} in {}", coreName, myDataDir);
+        try {
+          myDirFactory.cleanupOldIndexDirectories(myDataDir, myIndexDir);
+        } catch (Exception exc) {
+          log.error("Failed to cleanup old index directories for core "+coreName, exc);
         }
-      };
-      cleanupThread.setName("OldIndexDirectoryCleanupThreadForCore-"+coreName);
+      }, "OldIndexDirectoryCleanupThreadForCore-"+coreName);
       cleanupThread.setDaemon(true);
       cleanupThread.start();
     }

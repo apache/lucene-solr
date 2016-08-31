@@ -348,6 +348,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     @Override
     public void shutdown() {
       updateShardHandler.close();
+      super.shutdown();
     }
 
   }

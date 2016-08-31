@@ -16,10 +16,13 @@
  */
 package org.apache.lucene.geo;
 
+import java.text.ParseException;
 import java.util.Arrays;
 
 /**
- * Represents a closed polygon on the earth's surface.
+ * Represents a closed polygon on the earth's surface.  You can either construct the Polygon directly yourself with {@code double[]}
+ * coordinates, or use {@link Polygon#fromGeoJSON} if you have a polygon already encoded as a
+ * <a href="http://geojson.org/geojson-spec.html">GeoJSON</a> string.
  * <p>
  * NOTES:
  * <ol>
@@ -158,5 +161,13 @@ public final class Polygon {
       sb.append(Arrays.toString(holes));
     }
     return sb.toString();
+  }
+
+  /** Parses a standard GeoJSON polygon string.  The type of the incoming GeoJSON object must be a Polygon or MultiPolygon, optionally
+   *  embedded under a "type: Feature".  A Polygon will return as a length 1 array, while a MultiPolygon will be 1 or more in length.
+   *
+   *  <p>See <a href="http://geojson.org/geojson-spec.html">the GeoJSON specification</a>. */
+  public static Polygon[] fromGeoJSON(String geojson) throws ParseException {
+    return new SimpleGeoJSONPolygonParser(geojson).parse();
   }
 }

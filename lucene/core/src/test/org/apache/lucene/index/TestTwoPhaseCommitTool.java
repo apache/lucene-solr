@@ -40,29 +40,31 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
     }
 
     @Override
-    public void prepareCommit() throws IOException {
-      prepareCommit(null);
+    public long prepareCommit() throws IOException {
+      return prepareCommit(null);
     }
 
-    public void prepareCommit(Map<String, String> commitData) throws IOException {
+    public long prepareCommit(Map<String, String> commitData) throws IOException {
       this.prepareCommitData = commitData;
       assertFalse("commit should not have been called before all prepareCommit were", commitCalled);
       if (failOnPrepare) {
         throw new IOException("failOnPrepare");
       }
+      return 1;
     }
 
     @Override
-    public void commit() throws IOException {
-      commit(null);
+    public long commit() throws IOException {
+      return commit(null);
     }
 
-    public void commit(Map<String, String> commitData) throws IOException {
+    public long commit(Map<String, String> commitData) throws IOException {
       this.commitData = commitData;
       commitCalled = true;
       if (failOnCommit) {
         throw new RuntimeException("failOnCommit");
       }
+      return 1;
     }
 
     @Override

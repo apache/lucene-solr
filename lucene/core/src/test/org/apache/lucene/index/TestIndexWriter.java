@@ -29,7 +29,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -69,8 +68,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -942,10 +939,6 @@ public class TestIndexWriter extends LuceneTestCase {
       // LUCENE-2239: won't work with NIOFS/MMAP
       MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory());
 
-      // When interrupt arrives in w.close(), this can
-      // lead to double-write of files:
-      dir.setPreventDoubleWrite(false);
-      
       // open/close slowly sometimes
       dir.setUseSlowOpenClosers(true);
       
@@ -1899,9 +1892,9 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.commit(); // first commit to complete IW create transaction.
     
     // this should store the commit data, even though no other changes were made
-    writer.setCommitData(new HashMap<String,String>() {{
+    writer.setLiveCommitData(new HashMap<String,String>() {{
       put("key", "value");
-    }});
+    }}.entrySet());
     writer.commit();
     
     DirectoryReader r = DirectoryReader.open(dir);
@@ -1909,13 +1902,13 @@ public class TestIndexWriter extends LuceneTestCase {
     r.close();
     
     // now check setCommitData and prepareCommit/commit sequence
-    writer.setCommitData(new HashMap<String,String>() {{
+    writer.setLiveCommitData(new HashMap<String,String>() {{
       put("key", "value1");
-    }});
+    }}.entrySet());
     writer.prepareCommit();
-    writer.setCommitData(new HashMap<String,String>() {{
+    writer.setLiveCommitData(new HashMap<String,String>() {{
       put("key", "value2");
-    }});
+    }}.entrySet());
     writer.commit(); // should commit the first commitData only, per protocol
 
     r = DirectoryReader.open(dir);
@@ -1933,21 +1926,32 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
     dir.close();
   }
+
+  private Map<String,String> getLiveCommitData(IndexWriter writer) {
+    Map<String,String> data = new HashMap<>();
+    Iterable<Map.Entry<String,String>> iter = writer.getLiveCommitData();
+    if (iter != null) {
+      for(Map.Entry<String,String> ent : iter) {
+        data.put(ent.getKey(), ent.getValue());
+      }
+    }
+    return data;
+  }
   
   @Test
   public void testGetCommitData() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(null));
-    writer.setCommitData(new HashMap<String,String>() {{
+    writer.setLiveCommitData(new HashMap<String,String>() {{
       put("key", "value");
-    }});
-    assertEquals("value", writer.getCommitData().get("key"));
+    }}.entrySet());
+    assertEquals("value", getLiveCommitData(writer).get("key"));
     writer.close();
     
     // validate that it's also visible when opening a new IndexWriter
     writer = new IndexWriter(dir, newIndexWriterConfig(null)
                                     .setOpenMode(OpenMode.APPEND));
-    assertEquals("value", writer.getCommitData().get("key"));
+    assertEquals("value", getLiveCommitData(writer).get("key"));
     writer.close();
     
     dir.close();
@@ -2657,9 +2661,9 @@ public class TestIndexWriter extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(w);
     Map<String,String> m = new HashMap<>();
     m.put("foo", "bar");
-    w.setCommitData(m);
+    w.setLiveCommitData(m.entrySet());
 
-    // setCommitData with no other changes should count as an NRT change:
+    // setLiveCommitData with no other changes should count as an NRT change:
     DirectoryReader r2 = DirectoryReader.openIfChanged(r);
     assertNotNull(r2);
 
@@ -2676,9 +2680,9 @@ public class TestIndexWriter extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(w);
     Map<String,String> m = new HashMap<>();
     m.put("foo", "bar");
-    w.setCommitData(m);
+    w.setLiveCommitData(m.entrySet());
     w.commit();
-    // setCommitData and also commit, with no other changes, should count as an NRT change:
+    // setLiveCommitData and also commit, with no other changes, should count as an NRT change:
     DirectoryReader r2 = DirectoryReader.openIfChanged(r);
     assertNotNull(r2);
     IOUtils.close(r, r2, w, dir);

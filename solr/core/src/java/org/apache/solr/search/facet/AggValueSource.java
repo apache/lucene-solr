@@ -22,7 +22,6 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.solr.search.QueryContext;
 
 public abstract class AggValueSource extends ValueSource {
   protected String name;

@@ -19,5 +19,3 @@ org.apache.lucene.codecs.memory.DirectPostingsFormat
 org.apache.lucene.codecs.memory.FSTOrdPostingsFormat
 org.apache.lucene.codecs.memory.FSTPostingsFormat
 org.apache.lucene.codecs.memory.MemoryPostingsFormat
-org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat
-org.apache.lucene.codecs.autoprefix.AutoPrefixPostingsFormat

@@ -84,8 +84,13 @@ public abstract class FilterDirectory extends Directory {
   }
 
   @Override
-  public void renameFile(String source, String dest) throws IOException {
-    in.renameFile(source, dest);
+  public void rename(String source, String dest) throws IOException {
+    in.rename(source, dest);
+  }
+
+  @Override
+  public void syncMetaData() throws IOException {
+    in.syncMetaData();
   }
 
   @Override

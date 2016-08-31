@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.MutablePointsReader;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.index.FieldInfo;
@@ -97,6 +98,14 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                           maxMBSortInHeap,
                                           values.size(fieldInfo.name),
                                           singleValuePerDoc)) {
+
+      if (values instanceof MutablePointsReader) {
+        final long fp = writer.writeField(dataOut, fieldInfo.name, (MutablePointsReader) values);
+        if (fp != -1) {
+          indexFPs.put(fieldInfo.name, fp);
+        }
+        return;
+      }
 
       values.intersect(fieldInfo.name, new IntersectVisitor() {
           @Override

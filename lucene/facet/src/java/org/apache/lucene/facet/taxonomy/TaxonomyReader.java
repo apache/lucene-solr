@@ -205,7 +205,7 @@ public abstract class TaxonomyReader implements Closeable {
   /**
    * Retrieve user committed data.
    * 
-   * @see TaxonomyWriter#setCommitData(Map)
+   * @see TaxonomyWriter#setLiveCommitData(Iterable)
    */
   public abstract Map<String, String> getCommitUserData() throws IOException;
   

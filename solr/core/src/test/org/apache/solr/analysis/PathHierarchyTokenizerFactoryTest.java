@@ -16,9 +16,6 @@
  */
 package org.apache.solr.analysis;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.solr.SolrTestCaseJ4;
 
 import org.junit.BeforeClass;

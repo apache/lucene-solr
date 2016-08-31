@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 
-import javax.xml.namespace.QName;
 import javax.xml.xpath.XPathConstants;
 
 public class BJQParserTest extends SolrTestCaseJ4 {

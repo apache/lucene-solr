@@ -41,7 +41,6 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -59,7 +58,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -204,7 +202,7 @@ public class QueryComponent extends SearchComponent
         filters = filters == null ? new ArrayList<Query>(fqs.length) : new ArrayList<>(filters);
         for (String fq : fqs) {
           if (fq != null && fq.trim().length()!=0) {
-            QParser fqp = QParser.getParser(fq, null, req);
+            QParser fqp = QParser.getParser(fq, req);
             filters.add(fqp.getQuery());
           }
         }
@@ -1307,6 +1305,10 @@ public class QueryComponent extends SearchComponent
 
       String keyFieldName = rb.req.getSchema().getUniqueKeyField().getName();
       boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
+      if (rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName) != null) {
+        // if id was renamed we need to use the new name
+        keyFieldName = rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName);
+      }
 
       for (ShardResponse srsp : sreq.responses) {
         if (srsp.getException() != null) {
@@ -1332,7 +1334,6 @@ public class QueryComponent extends SearchComponent
           continue;
         }
         SolrDocumentList docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
-
         for (SolrDocument doc : docs) {
           Object id = doc.getFieldValue(keyFieldName);
           ShardDoc sdoc = rb.resultIds.get(id.toString());

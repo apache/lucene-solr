@@ -127,7 +127,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
      //System.out.println("p "+peopleMultiplier+" d "+deptMultiplier);
     assertQ("subq1.fl is limited to single field",
         req("q","name_s:(john nancy)", "indent","true",
-            "fl","name_s_dv,depts:[subquery]", 
+            "fl","dept_ss_dv,name_s_dv,depts:[subquery]", 
             "rows","" + (2 * peopleMultiplier),
             "depts.q","{!term f=dept_id_s v=$row.dept_ss_dv}", 
             "depts.fl","text_t",
@@ -150,8 +150,8 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
     }
   
   final String[] johnAndNancyParams = new String[]{"q","name_s:(john nancy)", "indent","true",
-      "fl","name_s_dv,depts:[subquery]",
-      "fl","depts_i:[subquery]",
+      "fl","dept_ss_dv,name_s_dv,depts:[subquery]",
+      "fl","dept_i_dv,depts_i:[subquery]",
       "rows","" + (2 * peopleMultiplier),
       "depts.q","{!term f=dept_id_s v=$row.dept_ss_dv}", 
       "depts.fl","text_t",
@@ -225,7 +225,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
     }
     
     String[] john = new String[]{"q","name_s:john", "indent","true",
-        "fl","name_s_dv,depts:[subquery]",
+        "fl","dept_ss_dv,name_s_dv,depts:[subquery]",
         "rows","" + (2 * peopleMultiplier),
         "depts.q","+{!term f=dept_id_s v=$row.dept_ss_dv}^=0 _val_:id_i", 
         "depts.fl","id",
@@ -277,10 +277,10 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
     assertQ("dave works at both dept with other folks",
   //  System.out.println(h.query( 
         req(new String[]{"q","name_s:dave", "indent","true",
-        "fl","name_s_dv,subq1:[subquery]", 
+        "fl","dept_ss_dv,name_s_dv,subq1:[subquery]", 
         "rows","" + peopleMultiplier,
         "subq1.q","{!terms f=dept_id_s v=$row.dept_ss_dv}", 
-        "subq1.fl","text_t,dept_id_s_dv,neighbours:[subquery]",
+        "subq1.fl","dept_id_i_dv,text_t,dept_id_s_dv,neighbours:[subquery]",
         "subq1.indent","true",
         "subq1.rows",""+(deptMultiplier*2),
         "subq1.neighbours.q",//flipping via numbers 
@@ -459,9 +459,8 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
     
     assertQ("dave works at both, whether we set a  default separator or both",
         req(new String[]{"q","name_s:dave", "indent","true",
-        "fl",(random().nextBoolean() ? "name_s_dv" : "*")+ //"dept_ss_dv,
-                    ",subq1:[subquery "
-                +((random1.nextBoolean() ? "" : "separator=,"))+"]", 
+        "fl", (random().nextBoolean() ? "name_s_dv,dept_ss_dv" : "*") + 
+              ",subq1:[subquery " +((random1.nextBoolean() ? "" : "separator=,"))+"]", 
         "rows","" + peopleMultiplier,
         "subq1.q","{!terms f=dept_id_s v=$row.dept_ss_dv "+((random1.nextBoolean() ? "" : "separator=,"))+"}", 
         "subq1.fl","text_t",

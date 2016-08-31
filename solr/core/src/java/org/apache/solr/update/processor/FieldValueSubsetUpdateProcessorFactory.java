@@ -16,8 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.core.SolrCore;
-
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;

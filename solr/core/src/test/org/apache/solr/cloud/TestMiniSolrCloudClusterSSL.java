@@ -46,7 +46,6 @@ import org.apache.http.config.RegistryBuilder;
 import org.apache.http.config.Registry;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 
 import org.apache.lucene.util.Constants;

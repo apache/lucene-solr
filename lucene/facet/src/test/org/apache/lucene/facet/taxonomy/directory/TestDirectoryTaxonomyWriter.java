@@ -94,7 +94,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     taxoWriter.addCategory(new FacetLabel("b"));
     Map<String, String> userCommitData = new HashMap<>();
     userCommitData.put("testing", "1 2 3");
-    taxoWriter.setCommitData(userCommitData);
+    taxoWriter.setLiveCommitData(userCommitData.entrySet());
     taxoWriter.close();
     DirectoryReader r = DirectoryReader.open(dir);
     assertEquals("2 categories plus root should have been committed to the underlying directory", 3, r.numDocs());
@@ -109,14 +109,22 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     // that the taxonomy index has been recreated.
     taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     taxoWriter.addCategory(new FacetLabel("c")); // add a category so that commit will happen
-    taxoWriter.setCommitData(new HashMap<String, String>(){{
+    taxoWriter.setLiveCommitData(new HashMap<String, String>(){{
       put("just", "data");
-    }});
+    }}.entrySet());
     taxoWriter.commit();
     
     // verify taxoWriter.getCommitData()
+    Map<String,String> data = new HashMap<>();
+    Iterable<Map.Entry<String,String>> iter = taxoWriter.getLiveCommitData();
+    if (iter != null) {
+      for(Map.Entry<String,String> ent : iter) {
+        data.put(ent.getKey(), ent.getValue());
+      }
+    }
+    
     assertNotNull(DirectoryTaxonomyWriter.INDEX_EPOCH
-        + " not found in taoxWriter.commitData", taxoWriter.getCommitData().get(DirectoryTaxonomyWriter.INDEX_EPOCH));
+        + " not found in taoxWriter.commitData", data.get(DirectoryTaxonomyWriter.INDEX_EPOCH));
     taxoWriter.close();
     
     r = DirectoryReader.open(dir);
@@ -170,9 +178,9 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
 
   private void touchTaxo(DirectoryTaxonomyWriter taxoWriter, FacetLabel cp) throws IOException {
     taxoWriter.addCategory(cp);
-    taxoWriter.setCommitData(new HashMap<String, String>(){{
+    taxoWriter.setLiveCommitData(new HashMap<String, String>(){{
       put("just", "data");
-    }});
+    }}.entrySet());
     taxoWriter.commit();
   }
   

@@ -48,6 +48,10 @@ class GeoConvexPolygon extends GeoBasePolygon {
   protected boolean isDone = false;
   /** A bounds object for each sided plane */
   protected Map<SidedPlane, Membership> eitherBounds = null;
+  /** Map from edge to its previous non-coplanar brother */
+  protected Map<SidedPlane, SidedPlane> prevBrotherMap = null;
+  /** Map from edge to its next non-coplanar brother */
+  protected Map<SidedPlane, SidedPlane> nextBrotherMap = null;
   
   /**
    * Create a convex polygon from a list of points.  The first point must be on the
@@ -206,6 +210,8 @@ class GeoConvexPolygon extends GeoBasePolygon {
     
     // For each edge, create a bounds object.
     eitherBounds = new HashMap<>(edges.length);
+    prevBrotherMap = new HashMap<>(edges.length);
+    nextBrotherMap = new HashMap<>(edges.length);
     for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
       final SidedPlane edge = edges[edgeIndex];
       int bound1Index = legalIndex(edgeIndex+1);
@@ -213,12 +219,31 @@ class GeoConvexPolygon extends GeoBasePolygon {
         bound1Index++;
       }
       int bound2Index = legalIndex(edgeIndex-1);
+      // Look for bound2
       while (edges[legalIndex(bound2Index)].isNumericallyIdentical(edge)) {
         bound2Index--;
       }
-      eitherBounds.put(edge, new EitherBound(edges[legalIndex(bound1Index)], edges[legalIndex(bound2Index)]));
+      bound1Index = legalIndex(bound1Index);
+      bound2Index = legalIndex(bound2Index);
+      // Also confirm that all interior points are within the bounds
+      int startingIndex = bound2Index;
+      while (true) {
+        startingIndex = legalIndex(startingIndex+1);
+        if (startingIndex == bound1Index) {
+          break;
+        }
+        final GeoPoint interiorPoint = points.get(startingIndex);
+        if (!edges[bound1Index].isWithin(interiorPoint) || !edges[bound2Index].isWithin(interiorPoint)) {
+          throw new IllegalArgumentException("Convex polygon has a side that is more than 180 degrees");
+        }
+      }
+      eitherBounds.put(edge, new EitherBound(edges[bound1Index], edges[bound2Index]));
+      // When we are done with this cycle, we'll need to build the intersection bound for each edge and its brother.
+      // For now, keep track of the relationships.
+      nextBrotherMap.put(edge, edges[bound1Index]);
+      prevBrotherMap.put(edge, edges[bound2Index]);
     }
-    
+
     // Pick an edge point arbitrarily from the outer polygon.  Glom this together with all edge points from
     // inner polygons.
     int edgePointCount = 1;
@@ -333,7 +358,7 @@ class GeoConvexPolygon extends GeoBasePolygon {
 
   /** A membership implementation representing polygon edges that must apply.
    */
-  protected class EitherBound implements Membership {
+  protected static class EitherBound implements Membership {
     
     protected final SidedPlane sideBound1;
     protected final SidedPlane sideBound2;
@@ -355,6 +380,11 @@ class GeoConvexPolygon extends GeoBasePolygon {
     @Override
     public boolean isWithin(final double x, final double y, final double z) {
       return sideBound1.isWithin(x,y,z) && sideBound2.isWithin(x,y,z);
+    }
+    
+    @Override
+    public String toString() {
+      return "(" + sideBound1 + "," + sideBound2 + ")";
     }
   }
 
@@ -383,7 +413,7 @@ class GeoConvexPolygon extends GeoBasePolygon {
       bounds.addPoint(planetModel.MAX_Y_POLE);
     }
 
-    // Add all the points
+    // Add all the points and the intersections
     for (final GeoPoint point : points) {
       bounds.addPoint(point);
     }
@@ -391,6 +421,8 @@ class GeoConvexPolygon extends GeoBasePolygon {
     // Add planes with membership.
     for (final SidedPlane edge : edges) {
       bounds.addPlane(planetModel, edge, eitherBounds.get(edge));
+      final SidedPlane nextEdge = nextBrotherMap.get(edge);
+      bounds.addIntersection(planetModel, edge, nextEdge, prevBrotherMap.get(edge), nextBrotherMap.get(nextEdge));
     }
     
   }

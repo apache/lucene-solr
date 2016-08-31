@@ -21,16 +21,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.LegacyFloatField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
@@ -332,7 +330,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
         new BytesRef(""));
     Field weeksAtNumberOneField = new FloatDocValuesField("weeksAtNumberOne",
         0.0F);
-    Field weeksStoredField = new LegacyFloatField("weeks", 0.0F, Store.YES);
+    Field weeksStoredField = new StoredField("weeks", 0.0F);
     Field idField = newStringField("id", "", Field.Store.YES);
     Field songField = newTextField("song", "", Field.Store.NO);
     Field storedArtistField = newTextField("artistName", "", Field.Store.NO);
@@ -420,9 +418,9 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(
+    public SimWeight computeWeight(float boost,
         CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return sim.computeWeight(collectionStats, termStats);
+      return sim.computeWeight(boost, collectionStats, termStats);
     }
 
     @Override

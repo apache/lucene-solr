@@ -22,8 +22,8 @@ import java.util.Map;
 
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
@@ -37,7 +37,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.DelegatingCollector;
@@ -45,8 +44,8 @@ import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.PostFilter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SpatialOptions;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.apache.solr.util.SpatialUtils;
-
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Point;
@@ -99,7 +98,6 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     SchemaField latSF = subField(field, LAT, parser.getReq().getSchema());
     SchemaField lonSF = subField(field, LON, parser.getReq().getSchema());
     BooleanQuery.Builder result = new BooleanQuery.Builder();
-    result.setDisableCoord(true);
     // points must currently be ordered... should we support specifying any two opposite corner points?
     result.add(latSF.getType().getRangeQuery(parser, latSF,
         Double.toString(p1.getY()), Double.toString(p2.getY()), minInclusive, maxInclusive), BooleanClause.Occur.MUST);
@@ -115,7 +113,6 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     SchemaField latSF = subField(field, LAT, parser.getReq().getSchema());
     SchemaField lonSF = subField(field, LON, parser.getReq().getSchema());
     BooleanQuery.Builder result = new BooleanQuery.Builder();
-    result.setDisableCoord(true);
     result.add(latSF.getType().getFieldQuery(parser, latSF,
         Double.toString(p1.getY())), BooleanClause.Occur.MUST);
     result.add(lonSF.getType().getFieldQuery(parser, lonSF,
@@ -312,8 +309,8 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     protected Map latContext;
     protected Map lonContext;
 
-    public SpatialWeight(IndexSearcher searcher) throws IOException {
-      super(SpatialDistanceQuery.this);
+    public SpatialWeight(IndexSearcher searcher, float boost) throws IOException {
+      super(SpatialDistanceQuery.this, boost);
       this.searcher = searcher;
       this.latContext = ValueSource.newContext(searcher);
       this.lonContext = ValueSource.newContext(searcher);
@@ -494,7 +491,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
   @Override
   public DelegatingCollector getFilterCollector(IndexSearcher searcher) {
     try {
-      return new SpatialCollector(new SpatialWeight(searcher));
+      return new SpatialCollector(new SpatialWeight(searcher, 1f));
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
@@ -526,10 +523,10 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     // if we were supposed to use bboxQuery, then we should have been rewritten using that query
     assert bboxQuery == null;
-    return new SpatialWeight(searcher);
+    return new SpatialWeight(searcher, boost);
   }
 
 
@@ -554,7 +551,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
   /** Returns true if <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
-    if (!super.equals(o)) return false;
+    if (!sameClassAs(o)) return false;
     SpatialDistanceQuery other = (SpatialDistanceQuery)o;
     return     this.latCenter == other.latCenter
             && this.lonCenter == other.lonCenter
@@ -576,12 +573,11 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
   @Override
   public int hashCode() {
     // don't bother making the hash expensive - the center latitude + min longitude will be very unique
-    long hash = Double.doubleToLongBits(latCenter);
+    long hash = classHash();
+    hash = hash * 31 + Double.doubleToLongBits(latCenter);
     hash = hash * 31 + Double.doubleToLongBits(lonMin);
-    hash = hash * 31 + (long)super.hashCode();
-    return (int)(hash >> 32 + hash);
+    return (int) (hash >> 32 + hash);
   }
-
 }
 
 

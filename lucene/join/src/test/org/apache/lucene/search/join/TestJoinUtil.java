@@ -37,12 +37,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.LegacyIntField;
-import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -464,8 +461,8 @@ public class TestJoinUtil extends LuceneTestCase {
       private final Query fieldQuery = new FieldValueQuery(priceField);
 
       @Override
-      public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-        Weight fieldWeight = fieldQuery.createWeight(searcher, false);
+      public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+        Weight fieldWeight = fieldQuery.createWeight(searcher, false, boost);
         return new Weight(this) {
 
           @Override
@@ -475,15 +472,6 @@ public class TestJoinUtil extends LuceneTestCase {
           @Override
           public Explanation explain(LeafReaderContext context, int doc) throws IOException {
             return null;
-          }
-
-          @Override
-          public float getValueForNormalization() throws IOException {
-            return 0;
-          }
-
-          @Override
-          public void normalize(float norm, float topLevelBoost) {
           }
 
           @Override
@@ -507,6 +495,17 @@ public class TestJoinUtil extends LuceneTestCase {
       public String toString(String field) {
         return fieldQuery.toString(field);
       }
+
+      @Override
+      public boolean equals(Object o) {
+        return o == this;
+      }
+
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(this);
+      }
+
     };
 
     Directory dir = newDirectory();
@@ -964,12 +963,12 @@ public class TestJoinUtil extends LuceneTestCase {
 
         final Query joinQuery;
         {
-          // single val can be handled by multiple-vals 
+          // single val can be handled by multiple-vals
           final boolean muliValsQuery = multipleValuesPerDocument || random().nextBoolean();
-          final String fromField = from ? "from":"to"; 
-          final String toField = from ? "to":"from"; 
+          final String fromField = from ? "from":"to";
+          final String toField = from ? "to":"from";
 
-          int surpriseMe = random().nextInt(3);
+          int surpriseMe = random().nextInt(2);
           switch (surpriseMe) {
             case 0:
               Class<? extends Number> numType;
@@ -990,10 +989,6 @@ public class TestJoinUtil extends LuceneTestCase {
               joinQuery = JoinUtil.createJoinQuery(fromField + suffix, muliValsQuery, toField + suffix, numType, actualQuery, indexSearcher, scoreMode);
               break;
             case 1:
-              final LegacyNumericType legacyNumType = random().nextBoolean() ? LegacyNumericType.INT: LegacyNumericType.LONG ;
-              joinQuery = JoinUtil.createJoinQuery(fromField+legacyNumType, muliValsQuery, toField+legacyNumType, legacyNumType, actualQuery, indexSearcher, scoreMode);
-              break;
-            case 2:
               joinQuery = JoinUtil.createJoinQuery(fromField, muliValsQuery, toField, actualQuery, indexSearcher, scoreMode);
               break;
             default:
@@ -1079,22 +1074,22 @@ public class TestJoinUtil extends LuceneTestCase {
     for (int i = 0; i < numRandomValues; i++) {
       String uniqueRandomValue;
       do {
-        // the trick is to generate values which will be ordered similarly for string, ints&longs, positive nums makes it easier 
+        // the trick is to generate values which will be ordered similarly for string, ints&longs, positive nums makes it easier
         final int nextInt = random.nextInt(Integer.MAX_VALUE);
         uniqueRandomValue = String.format(Locale.ROOT, "%08x", nextInt);
         assert nextInt == Integer.parseUnsignedInt(uniqueRandomValue,16);
       } while ("".equals(uniqueRandomValue) || trackSet.contains(uniqueRandomValue));
-     
+
       // Generate unique values and empty strings aren't allowed.
       trackSet.add(uniqueRandomValue);
-      
+
       context.randomFrom[i] = random.nextBoolean();
       context.randomUniqueValues[i] = uniqueRandomValue;
-      
+
     }
 
     List<String> randomUniqueValuesReplica = new ArrayList<>(Arrays.asList(context.randomUniqueValues));
-        
+
     RandomDoc[] docs = new RandomDoc[nDocs];
     for (int i = 0; i < nDocs; i++) {
       String id = Integer.toString(i);
@@ -1117,7 +1112,7 @@ public class TestJoinUtil extends LuceneTestCase {
       Collections.shuffle(subValues, random);
       }
       for (String linkValue : subValues) {
-        
+
         assert !docs[i].linkValues.contains(linkValue);
         docs[i].linkValues.add(linkValue);
         if (from) {
@@ -1131,7 +1126,7 @@ public class TestJoinUtil extends LuceneTestCase {
           context.fromDocuments.get(linkValue).add(docs[i]);
           context.randomValueFromDocs.get(value).add(docs[i]);
           addLinkFields(random, document,  "from", linkValue, multipleValuesPerDocument, globalOrdinalJoin);
-          
+
         } else {
           if (!context.toDocuments.containsKey(linkValue)) {
             context.toDocuments.put(linkValue, new ArrayList<>());
@@ -1334,26 +1329,24 @@ public class TestJoinUtil extends LuceneTestCase {
     document.add(newTextField(random, fieldName, linkValue, Field.Store.NO));
 
     final int linkInt = Integer.parseUnsignedInt(linkValue,16);
-    document.add(new LegacyIntField(fieldName + LegacyNumericType.INT, linkInt, Field.Store.NO));
-    document.add(new IntPoint(fieldName + LegacyNumericType.INT, linkInt));
+    document.add(new IntPoint(fieldName + "INT", linkInt));
     document.add(new FloatPoint(fieldName + "FLOAT", linkInt));
 
     final long linkLong = linkInt<<32 | linkInt;
-    document.add(new LegacyLongField(fieldName +  LegacyNumericType.LONG, linkLong, Field.Store.NO));
-    document.add(new LongPoint(fieldName + LegacyNumericType.LONG, linkLong));
+    document.add(new LongPoint(fieldName + "LONG", linkLong));
     document.add(new DoublePoint(fieldName + "DOUBLE", linkLong));
 
     if (multipleValuesPerDocument) {
       document.add(new SortedSetDocValuesField(fieldName, new BytesRef(linkValue)));
-      document.add(new SortedNumericDocValuesField(fieldName+ LegacyNumericType.INT, linkInt));
+      document.add(new SortedNumericDocValuesField(fieldName+ "INT", linkInt));
       document.add(new SortedNumericDocValuesField(fieldName+ "FLOAT", Float.floatToRawIntBits(linkInt)));
-      document.add(new SortedNumericDocValuesField(fieldName+ LegacyNumericType.LONG, linkLong));
+      document.add(new SortedNumericDocValuesField(fieldName+ "LONG", linkLong));
       document.add(new SortedNumericDocValuesField(fieldName+ "DOUBLE", Double.doubleToRawLongBits(linkLong)));
     } else {
       document.add(new SortedDocValuesField(fieldName, new BytesRef(linkValue)));
-      document.add(new NumericDocValuesField(fieldName+ LegacyNumericType.INT, linkInt));
+      document.add(new NumericDocValuesField(fieldName+ "INT", linkInt));
       document.add(new FloatDocValuesField(fieldName+ "FLOAT", linkInt));
-      document.add(new NumericDocValuesField(fieldName+ LegacyNumericType.LONG, linkLong));
+      document.add(new NumericDocValuesField(fieldName+ "LONG", linkLong));
       document.add(new DoubleDocValuesField(fieldName+ "DOUBLE", linkLong));
     }
     if (globalOrdinalJoin) {

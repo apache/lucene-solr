@@ -36,7 +36,7 @@
  *   </li>
  *   <li>
  *     Effective Locale-specific normalization (case differences, diacritics, etc.).
- *     ({@link org.apache.lucene.analysis.core.LowerCaseFilter} and 
+ *     ({@link org.apache.lucene.analysis.LowerCaseFilter} and 
  *     {@link org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter} provide these services
  *     in a generic way that doesn't take into account locale-specific needs.)
  *   </li>

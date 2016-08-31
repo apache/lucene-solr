@@ -20,7 +20,6 @@ package org.apache.lucene.demo.facet;
 import java.util.List;
 
 import org.apache.lucene.facet.FacetResult;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
