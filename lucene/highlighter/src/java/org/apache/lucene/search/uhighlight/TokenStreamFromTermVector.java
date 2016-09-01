@@ -14,20 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search.highlight;
+package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -35,35 +37,26 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.UnicodeUtil;
 
-/**
- * TokenStream created from a term vector field. The term vector requires positions and/or offsets (either). If you
- * want payloads add PayloadAttributeImpl (as you would normally) but don't assume the attribute is already added just
- * because you know the term vector has payloads, since the first call to incrementToken() will observe if you asked
- * for them and if not then won't get them.  This TokenStream supports an efficient {@link #reset()}, so there's
- * no need to wrap with a caching impl.
- * <p>
- * The implementation will create an array of tokens indexed by token position.  As long as there aren't massive jumps
- * in positions, this is fine.  And it assumes there aren't large numbers of tokens at the same position, since it adds
- * them to a linked-list per position in O(N^2) complexity.  When there aren't positions in the term vector, it divides
- * the startOffset by 8 to use as a temporary substitute. In that case, tokens with the same startOffset will occupy
- * the same final position; otherwise tokens become adjacent.
- *
- * @lucene.internal
- */
 public final class TokenStreamFromTermVector extends TokenStream {
 
-  //This attribute factory uses less memory when captureState() is called.
-  public static final AttributeFactory ATTRIBUTE_FACTORY =
-      AttributeFactory.getStaticImplementation(
-          AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, PackedTokenAttributeImpl.class);
+  /**
+   * content length divided by distinct positions; an average of dense text.
+   */
+  private static final double AVG_CHARS_PER_POSITION = 6;
+
+  private static final int INSERTION_SORT_THRESHOLD = 16;
 
   private final Terms vector;
+
+  private final int filteredDocId;
 
   private final CharTermAttribute termAttribute;
 
   private final PositionIncrementAttribute positionIncrementAttribute;
 
-  private final int maxStartOffset;
+  private final int offsetLength;
+
+  private final float loadFactor;
 
   private OffsetAttribute offsetAttribute;//maybe null
 
@@ -80,17 +73,34 @@ public final class TokenStreamFromTermVector extends TokenStream {
 
   private boolean initialized = false;//lazy
 
+  public TokenStreamFromTermVector(Terms vector, int offsetLength) throws IOException {
+    this(vector, 0, offsetLength, 1f);
+  }
+
   /**
-   * Constructor. The uninversion doesn't happen here; it's delayed till the first call to
-   * {@link #incrementToken}.
+   * Constructor.
    *
-   * @param vector Terms that contains the data for
-   *        creating the TokenStream. Must have positions and/or offsets.
-   * @param maxStartOffset if a token's start offset exceeds this then the token is not added. -1 disables the limit.
+   * @param vector        Terms that contains the data for
+   *                      creating the TokenStream. Must have positions and/or offsets.
+   * @param filteredDocId
+   * @param offsetLength  Supply the character length of the text being uninverted, or a lower value if you don't want
+   *                      to invert text beyond an offset (in so doing this will act as a filter).  If you don't
+   *                      know the length, pass -1.  In conjunction with {@code loadFactor}, it's used to
+   *                      determine how many buckets to create during uninversion.
+   *                      It's also used to filter out tokens with a start offset exceeding this value.
+   * @param loadFactor    The percent of tokens from the original terms (by position count) that are
+   *                      expected to be inverted.  If they are filtered (e.g. {@link FilterLeafReader.FilterTerms}
+   *                      then consider using less than 1.0 to avoid wasting space.
+   *                      1.0 means all, 1/64th would suggest 1/64th of all tokens coming from vector.
    */
-  public TokenStreamFromTermVector(Terms vector, int maxStartOffset) throws IOException {
-    super(ATTRIBUTE_FACTORY);
-    this.maxStartOffset = maxStartOffset < 0 ? Integer.MAX_VALUE : maxStartOffset;
+  public TokenStreamFromTermVector(Terms vector, int filteredDocId, int offsetLength, float loadFactor) throws IOException {
+    super();
+    this.filteredDocId = filteredDocId;
+    this.offsetLength = offsetLength == Integer.MAX_VALUE ? -1 : offsetLength;
+    if (loadFactor <= 0f || loadFactor > 1f) {
+      throw new IllegalArgumentException("loadFactor should be > 0 and <= 1");
+    }
+    this.loadFactor = loadFactor;
     assert !hasAttribute(PayloadAttribute.class) : "AttributeFactory shouldn't have payloads *yet*";
     if (!vector.hasPositions() && !vector.hasOffsets()) {
       throw new IllegalArgumentException("The term vector needs positions and/or offsets.");
@@ -101,7 +111,9 @@ public final class TokenStreamFromTermVector extends TokenStream {
     positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
   }
 
-  public Terms getTermVectorTerms() { return vector; }
+  public Terms getTermVectorTerms() {
+    return vector;
+  }
 
   @Override
   public void reset() throws IOException {
@@ -112,33 +124,34 @@ public final class TokenStreamFromTermVector extends TokenStream {
   //We delay initialization because we can see which attributes the consumer wants, particularly payloads
   private void init() throws IOException {
     assert !initialized;
-    short dpEnumFlags = PostingsEnum.POSITIONS;
+    int dpEnumFlags = 0;
     if (vector.hasOffsets()) {
-      dpEnumFlags |= PostingsEnum.OFFSETS;
       offsetAttribute = addAttribute(OffsetAttribute.class);
+      dpEnumFlags |= PostingsEnum.OFFSETS;
     }
     if (vector.hasPayloads() && hasAttribute(PayloadAttribute.class)) {
-      dpEnumFlags |= (PostingsEnum.OFFSETS | PostingsEnum.PAYLOADS);//must ask for offsets too
       payloadAttribute = getAttribute(PayloadAttribute.class);
       payloadsBytesRefArray = new BytesRefArray(Counter.newCounter());
       spareBytesRefBuilder = new BytesRefBuilder();
+      dpEnumFlags |= PostingsEnum.PAYLOADS;
     }
 
     // We put term data here
     termCharsBuilder = new CharsRefBuilder();
-    termCharsBuilder.grow((int) (vector.size() * 7));//7 is over-estimate of average term len
+    termCharsBuilder.grow(initTotalTermCharLen());
 
-    // Step 1: iterate termsEnum and create a token, placing into an array of tokens by position
+    // Step 1: iterate termsEnum and create a token, placing into a bucketed array (given a load factor)
 
-    TokenLL[] positionedTokens = initTokensArray();
-
-    int lastPosition = -1;
+    final TokenLL[] tokenBuckets = initTokenBucketsArray();
+    final double OFFSET_TO_BUCKET_IDX = loadFactor / AVG_CHARS_PER_POSITION;
+    final double POSITION_TO_BUCKET_IDX = loadFactor;
 
     final TermsEnum termsEnum = vector.iterator();
     BytesRef termBytesRef;
     PostingsEnum dpEnum = null;
-    CharsRefBuilder tempCharsRefBuilder = new CharsRefBuilder();//only for UTF8->UTF16 call
-    //int sumFreq = 0;
+    final CharsRefBuilder tempCharsRefBuilder = new CharsRefBuilder();//only for UTF8->UTF16 call
+
+    TERM_LOOP:
     while ((termBytesRef = termsEnum.next()) != null) {
       //Grab the term (in same way as BytesRef.utf8ToString() but we don't want a String obj)
       // note: if term vectors supported seek by ord then we might just keep an int and seek by ord on-demand
@@ -146,26 +159,32 @@ public final class TokenStreamFromTermVector extends TokenStream {
       final int termCharsLen = UnicodeUtil.UTF8toUTF16(termBytesRef, tempCharsRefBuilder.chars());
       final int termCharsOff = termCharsBuilder.length();
       termCharsBuilder.append(tempCharsRefBuilder.chars(), 0, termCharsLen);
-
       dpEnum = termsEnum.postings(dpEnum, dpEnumFlags);
       assert dpEnum != null; // presumably checked by TokenSources.hasPositions earlier
-      dpEnum.nextDoc();
+      int currentDocId = dpEnum.advance(filteredDocId);
+      if (currentDocId != filteredDocId) {
+        continue; //Not expected
+      }
       final int freq = dpEnum.freq();
-      //sumFreq += freq;
       for (int j = 0; j < freq; j++) {
-        int pos = dpEnum.nextPosition();
         TokenLL token = new TokenLL();
+        token.position = dpEnum.nextPosition(); // can be -1 if not in the TV
         token.termCharsOff = termCharsOff;
         token.termCharsLen = (short) Math.min(termCharsLen, Short.MAX_VALUE);
+        // copy offset (if it's there) and compute bucketIdx
+        int bucketIdx;
         if (offsetAttribute != null) {
           token.startOffset = dpEnum.startOffset();
-          if (token.startOffset > maxStartOffset) {
-            continue;//filter this token out; exceeds threshold
+          if (offsetLength >= 0 && token.startOffset > offsetLength) {
+            continue TERM_LOOP;//filter this token out; exceeds threshold
           }
           token.endOffsetInc = (short) Math.min(dpEnum.endOffset() - token.startOffset, Short.MAX_VALUE);
-          if (pos == -1) {
-            pos = token.startOffset >> 3;//divide by 8
-          }
+          bucketIdx = (int) (token.startOffset * OFFSET_TO_BUCKET_IDX);
+        } else {
+          bucketIdx = (int) (token.position * POSITION_TO_BUCKET_IDX);
+        }
+        if (bucketIdx >= tokenBuckets.length) {
+          bucketIdx = tokenBuckets.length - 1;
         }
 
         if (payloadAttribute != null) {
@@ -173,89 +192,141 @@ public final class TokenStreamFromTermVector extends TokenStream {
           token.payloadIndex = payload == null ? -1 : payloadsBytesRefArray.append(payload);
         }
 
-        //Add token to an array indexed by position
-        if (positionedTokens.length <= pos) {
-          //grow, but not 2x since we think our original length estimate is close
-          TokenLL[] newPositionedTokens = new TokenLL[(int)((pos + 1) * 1.5f)];
-          System.arraycopy(positionedTokens, 0, newPositionedTokens, 0, lastPosition + 1);
-          positionedTokens = newPositionedTokens;
-        }
-        positionedTokens[pos] = token.insertIntoSortedLinkedList(positionedTokens[pos]);
-
-        lastPosition = Math.max(lastPosition, pos);
+        //Add token to the head of the bucket linked list
+        token.next = tokenBuckets[bucketIdx];
+        tokenBuckets[bucketIdx] = token;
       }
     }
 
-//    System.out.println(String.format(
-//        "SumFreq: %5d Size: %4d SumFreq/size: %3.3f MaxPos: %4d MaxPos/SumFreq: %3.3f WastePct: %3.3f",
-//        sumFreq, vector.size(), (sumFreq / (float)vector.size()), lastPosition, ((float)lastPosition)/sumFreq,
-//        (originalPositionEstimate/(lastPosition + 1.0f))));
+    // Step 2:  Link all Tokens into a linked-list and sort all tokens at the same position
 
-    // Step 2:  Link all Tokens into a linked-list and set position increments as we go
+    firstToken = initLinkAndSortTokens(tokenBuckets);
 
-    int prevTokenPos = -1;
-    TokenLL prevToken = null;
-    for (int pos = 0; pos <= lastPosition; pos++) {
-      TokenLL token = positionedTokens[pos];
-      if (token == null) {
-        continue;
-      }
-      //link
-      if (prevToken != null) {
-        assert prevToken.next == null;
-        prevToken.next = token; //concatenate linked-list
-      } else {
-        assert firstToken == null;
-        firstToken = token;
-      }
-      //set increments
-      if (vector.hasPositions()) {
-        token.positionIncrement = pos - prevTokenPos;
-        while (token.next != null) {
-          token = token.next;
-          token.positionIncrement = 0;
-        }
-      } else {
-        token.positionIncrement = 1;
-        while (token.next != null) {
-          prevToken = token;
-          token = token.next;
-          if (prevToken.startOffset == token.startOffset) {
-            token.positionIncrement = 0;
-          } else {
-            token.positionIncrement = 1;
-          }
+    // If the term vector didn't have positions, synthesize them
+    if (!vector.hasPositions() && firstToken != null) {
+      TokenLL prevToken = firstToken;
+      prevToken.position = 0;
+      for (TokenLL token = prevToken.next; token != null; prevToken = token, token = token.next) {
+        if (prevToken.startOffset == token.startOffset) {
+          token.position = prevToken.position;
+        } else {
+          token.position = prevToken.position + 1;
         }
       }
-      prevTokenPos = pos;
-      prevToken = token;
     }
 
     initialized = true;
   }
 
-  private TokenLL[] initTokensArray() throws IOException {
-    // Estimate the number of position slots we need from term stats.  We use some estimation factors taken from
-    //  Wikipedia that reduce the likelihood of needing to expand the array.
-    int sumTotalTermFreq = (int) vector.getSumTotalTermFreq();
-    if (sumTotalTermFreq == -1) {//unfortunately term vectors seem to not have this stat
-      int size = (int) vector.size();
-      if (size == -1) {//doesn't happen with term vectors, it seems, but pick a default any way
-        size = 128;
+  private static TokenLL initLinkAndSortTokens(TokenLL[] tokenBuckets) {
+    TokenLL firstToken = null;
+    List<TokenLL> scratchTokenArray = new ArrayList<>(); // declare here for re-use.  TODO use native array
+    TokenLL prevToken = null;
+    for (TokenLL tokenHead : tokenBuckets) {
+      if (tokenHead == null) {
+        continue;
       }
-      sumTotalTermFreq = (int)(size * 2.4);
+      //sort tokens at this position and link them; return the first
+      TokenLL tokenTail;
+      // just one token
+      if (tokenHead.next == null) {
+        tokenTail = tokenHead;
+      } else {
+        // add the linked list to a temporary array
+        for (TokenLL cur = tokenHead; cur != null; cur = cur.next) {
+          scratchTokenArray.add(cur);
+        }
+        // sort; and set tokenHead & tokenTail
+        if (scratchTokenArray.size() < INSERTION_SORT_THRESHOLD) {
+          // insertion sort by creating a linked list (leave scratchTokenArray alone)
+          tokenHead = tokenTail = scratchTokenArray.get(0);
+          tokenHead.next = null;
+          for (int i = 1; i < scratchTokenArray.size(); i++) {
+            TokenLL insertToken = scratchTokenArray.get(i);
+            if (insertToken.compareTo(tokenHead) <= 0) {
+              // takes the place of tokenHead
+              insertToken.next = tokenHead;
+              tokenHead = insertToken;
+            } else {
+              // goes somewhere after tokenHead
+              for (TokenLL prev = tokenHead; true; prev = prev.next) {
+                if (prev.next == null || insertToken.compareTo(prev.next) <= 0) {
+                  if (prev.next == null) {
+                    tokenTail = insertToken;
+                  }
+                  insertToken.next = prev.next;
+                  prev.next = insertToken;
+                  break;
+                }
+              }
+            }
+          }
+        } else {
+          Collections.sort(scratchTokenArray);
+          // take back out and create a linked list
+          TokenLL prev = tokenHead = scratchTokenArray.get(0);
+          for (int i = 1; i < scratchTokenArray.size(); i++) {
+            prev.next = scratchTokenArray.get(i);
+            prev = prev.next;
+          }
+          tokenTail = prev;
+          tokenTail.next = null;
+        }
+        scratchTokenArray.clear();//too bad ArrayList nulls it out; we don't actually need that
+      }
+
+      //link to previous
+      if (prevToken != null) {
+        assert prevToken.next == null;
+        prevToken.next = tokenHead; //concatenate linked-list
+        assert prevToken.compareTo(tokenHead) < 0 : "wrong offset / position ordering expectations";
+      } else {
+        assert firstToken == null;
+        firstToken = tokenHead;
+      }
+
+      prevToken = tokenTail;
     }
-    final int originalPositionEstimate = (int) (sumTotalTermFreq * 1.5);//less than 1 in 10 docs exceed this
+    return firstToken;
+  }
 
-    // This estimate is based on maxStartOffset. Err on the side of this being larger than needed.
-    final int offsetLimitPositionEstimate = (int) (maxStartOffset / 5.0);
+  private int initTotalTermCharLen() throws IOException {
+    int guessNumTerms;
+    if (vector.size() != -1) {
+      guessNumTerms = (int) vector.size();
+    } else if (offsetLength != -1) {
+      guessNumTerms = (int) (offsetLength * 0.33);//guess 1/3rd
+    } else {
+      return 128;
+    }
+    return Math.max(64, (int) (guessNumTerms * loadFactor * 7.0));//7 is over-estimate of average term len
+  }
 
-    // Take the smaller of the two estimates, but no smaller than 64
-    return new TokenLL[Math.max(64, Math.min(originalPositionEstimate, offsetLimitPositionEstimate))];
+  private TokenLL[] initTokenBucketsArray() throws IOException {
+    // Estimate the number of non-empty positions (number of tokens, excluding same-position synonyms).
+    int positionsEstimate;
+    if (offsetLength == -1) { // no clue what the char length is.
+      // Estimate the number of position slots we need from term stats based on Wikipedia.
+      int sumTotalTermFreq = (int) vector.getSumTotalTermFreq();
+      if (sumTotalTermFreq == -1) {//unfortunately term vectors seem to not have this stat
+        int size = (int) vector.size();
+        if (size == -1) {//doesn't happen with term vectors, it seems, but pick a default any way
+          size = 128;
+        }
+        sumTotalTermFreq = (int) (size * 2.4);
+      }
+      positionsEstimate = (int) (sumTotalTermFreq * 1.5);//less than 1 in 10 docs exceed this
+    } else {
+      // guess number of token positions by this factor.
+      positionsEstimate = (int) (offsetLength / AVG_CHARS_PER_POSITION);
+    }
+    // apply the load factor.
+    return new TokenLL[Math.max(1, (int) (positionsEstimate * loadFactor))];
   }
 
   @Override
   public boolean incrementToken() throws IOException {
+    int posInc;
     if (incrementToken == null) {
       if (!initialized) {
         init();
@@ -265,66 +336,48 @@ public final class TokenStreamFromTermVector extends TokenStream {
       if (incrementToken == null) {
         return false;
       }
+      posInc = incrementToken.position + 1;//first token normally has pos 0; add 1 to get posInc
     } else if (incrementToken.next != null) {
+      int lastPosition = incrementToken.position;
       incrementToken = incrementToken.next;
+      posInc = incrementToken.position - lastPosition;
     } else {
       return false;
     }
     clearAttributes();
     termAttribute.copyBuffer(termCharsBuilder.chars(), incrementToken.termCharsOff, incrementToken.termCharsLen);
-    positionIncrementAttribute.setPositionIncrement(incrementToken.positionIncrement);
+
+    positionIncrementAttribute.setPositionIncrement(posInc);
     if (offsetAttribute != null) {
       offsetAttribute.setOffset(incrementToken.startOffset, incrementToken.startOffset + incrementToken.endOffsetInc);
     }
-    if (payloadAttribute != null) {
-      if (incrementToken.payloadIndex == -1) {
-        payloadAttribute.setPayload(null);
-      } else {
-        payloadAttribute.setPayload(payloadsBytesRefArray.get(spareBytesRefBuilder, incrementToken.payloadIndex));
-      }
+    if (payloadAttribute != null && incrementToken.payloadIndex >= 0) {
+      payloadAttribute.setPayload(payloadsBytesRefArray.get(spareBytesRefBuilder, incrementToken.payloadIndex));
     }
     return true;
   }
 
-  private static class TokenLL {
+  private static class TokenLL implements Comparable<TokenLL> {
     // This class should weigh 32 bytes, including object header
 
     int termCharsOff; // see termCharsBuilder
     short termCharsLen;
 
-    int positionIncrement;
+    int position;
     int startOffset;
     short endOffsetInc; // add to startOffset to get endOffset
     int payloadIndex;
 
     TokenLL next;
 
-    /** Given the head of a linked-list (possibly null) this inserts the token at the correct
-     * spot to maintain the desired order, and returns the head (which could be this token if it's the smallest).
-     * O(N^2) complexity but N should be a handful at most.
-     */
-    TokenLL insertIntoSortedLinkedList(final TokenLL head) {
-      assert next == null;
-      if (head == null) {
-        return this;
-      } else if (this.compareOffsets(head) <= 0) {
-        this.next = head;
-        return this;
-      }
-      TokenLL prev = head;
-      while (prev.next != null && this.compareOffsets(prev.next) > 0) {
-        prev = prev.next;
-      }
-      this.next = prev.next;
-      prev.next = this;
-      return head;
-    }
-
-    /** by startOffset then endOffset */
-    int compareOffsets(TokenLL tokenB) {
-      int cmp = Integer.compare(this.startOffset, tokenB.startOffset);
+    @Override
+    public int compareTo(TokenLL tokenB) {
+      int cmp = Integer.compare(this.position, tokenB.position);
       if (cmp == 0) {
-        cmp = Short.compare(this.endOffsetInc, tokenB.endOffsetInc);
+        cmp = Integer.compare(this.startOffset, tokenB.startOffset);
+        if (cmp == 0) {
+          cmp = Short.compare(this.endOffsetInc, tokenB.endOffsetInc);
+        }
       }
       return cmp;
     }

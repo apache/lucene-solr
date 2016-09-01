@@ -14,12 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search.postingshighlight;
+package org.apache.lucene.search.uhighlight;
 
 import java.text.BreakIterator;
 import java.text.CharacterIterator;
 
-/** Just produces one single fragment for the entire text */
+/**
+ * Just produces one single fragment for the entire text
+ */
 public final class WholeBreakIterator extends BreakIterator {
   private CharacterIterator text;
   private int start;

@@ -16,25 +16,21 @@
  */
 package org.apache.lucene.search.uhighlight;
 
-/**
- * Creates a formatted snippet from the top passages.
- *
- * @lucene.experimental
- */
-public abstract class PassageFormatter {
+import java.io.IOException;
 
-  /**
-   * Formats the top <code>passages</code> from <code>content</code>
-   * into a human-readable text snippet.
-   *
-   * @param passages top-N passages for the field. Note these are sorted in
-   *                 the order that they appear in the document for convenience.
-   * @param content  content for the field.
-   * @return formatted highlight.  Note that for the
-   * non-expert APIs in {@link UnifiedHighlighter} that
-   * return String, the toString method on the Object
-   * returned by this method is used to compute the string.
-   */
-  public abstract Object format(Passage passages[], String content);
+import org.apache.lucene.index.IndexReader;
+
+/**
+ * Internal highlighter abstraction that operates on a per field basis.
+ *
+ * @lucene.internal
+ */
+public interface FieldHighlighter {
+
+  UnifiedHighlighter.OffsetSource getOffsetSource();
+
+  Object highlightFieldForDoc(IndexReader reader, int docId, String content, int maxPassages) throws IOException;
+
+  String getField();
 
 }
