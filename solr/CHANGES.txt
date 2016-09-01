@@ -101,6 +101,8 @@ Bug Fixes
 
 * SOLR-9455: Deleting a sub-shard in recovery state can mark parent shard as inactive. (shalin)
 
+* SOLR-9461: DELETENODE, REPLACENODE should pass down the 'async' param to subcommands (shalin, noble)
+
 Optimizations
 ----------------------
 

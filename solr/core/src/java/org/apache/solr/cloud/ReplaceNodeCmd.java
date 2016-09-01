@@ -34,14 +34,18 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.util.StrUtils.formatString;
 
 public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -58,6 +62,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     ocmh.checkRequired(message, "source", "target");
     String source = message.getStr("source");
     String target = message.getStr("target");
+    String async = message.getStr("async");
     boolean parallel = message.getBool("parallel", false);
     ClusterState clusterState = zkStateReader.getClusterState();
 
@@ -78,6 +83,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       NamedList nl = new NamedList();
       log.info("Going to create replica for collection={} shard={} on node={}", sourceReplica.getStr(COLLECTION_PROP), sourceReplica.getStr(SHARD_ID_PROP), target);
       ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, target);
+      if(async!=null) msg.getProperties().put(ASYNC, async);
       final ZkNodeProps addedReplica = ocmh.addReplica(clusterState,
           msg, nl, () -> {
             countDownLatch.countDown();
@@ -136,7 +142,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
     // we have reached this far means all replicas could be recreated
     //now cleanup the replicas in the source node
-    DeleteNodeCmd.cleanupReplicas(results, state, sourceReplicas, ocmh, source);
+    DeleteNodeCmd.cleanupReplicas(results, state, sourceReplicas, ocmh, source, async);
     results.add("success", "REPLACENODE action completed successfully from  : " + source + " to : " + target);
   }
 
