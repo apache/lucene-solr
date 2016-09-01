@@ -40,6 +40,7 @@ import org.apache.lucene.search.Query;
  */
 public class SpanNearQuery extends SpanQuery implements Cloneable {
 
+  private final static int REQUIRE_ALL = -1;
   /**
    * A builder for SpanNearQueries
    */
@@ -48,6 +49,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     private final String field;
     private final List<SpanQuery> clauses = new LinkedList<>();
     private int slop;
+    private final int minShouldMatch;
 
     /**
      * Construct a new builder
@@ -55,10 +57,20 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
      * @param ordered whether or not clauses must be in-order to match
      */
     public Builder(String field, boolean ordered) {
-      this.field = field;
-      this.ordered = ordered;
+      this(field, ordered, REQUIRE_ALL);
     }
 
+    /**
+     * Construct a new builder
+     * @param field the field to search in
+     * @param ordered whether or not clauses must be in-order to match
+     * @param minShouldMatch the minimum number of spans that need to match
+     */
+    public Builder(String field, boolean ordered, int minShouldMatch) {
+      this.field = field;
+      this.ordered = ordered;
+      this.minShouldMatch = minShouldMatch;
+    }
     /**
      * Add a new clause
      */
@@ -91,7 +103,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
      * Build the query
      */
     public SpanNearQuery build() {
-      return new SpanNearQuery(clauses.toArray(new SpanQuery[clauses.size()]), slop, ordered);
+      return new SpanNearQuery(clauses.toArray(new SpanQuery[clauses.size()]), slop, ordered, minShouldMatch);
     }
 
   }
@@ -113,6 +125,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   protected List<SpanQuery> clauses;
   protected int slop;
   protected boolean inOrder;
+  protected int minShouldMatch;
 
   protected String field;
 
@@ -128,6 +141,24 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
    * @param inOrder true if order is important
    */
   public SpanNearQuery(SpanQuery[] clausesIn, int slop, boolean inOrder) {
+    this(clausesIn, slop, inOrder, REQUIRE_ALL);
+  }
+
+  /** Construct a SpanNearQuery.  Matches spans matching a span from each
+   * clause, with up to <code>slop</code> total unmatched positions between
+   * them.
+   * <br>When <code>inOrder</code> is true, the spans from each clause
+   * must be in the same order as in <code>clauses</code> and must be non-overlapping.
+   * <br>When <code>inOrder</code> is false, the spans from each clause
+   * need not be ordered and may overlap.
+   * <br>Must match at least <code>minShouldMatch</code> within the
+   * allowable <code>slop</code>.
+   * @param clausesIn the clauses to find near each other, in the same field, at least 2.
+   * @param slop The slop value
+   * @param inOrder true if order is important
+   * @param minShouldMatch minimum number that should match, at least 2 and <code>&lt;= clausesIn.length</code>
+   */
+  public SpanNearQuery(SpanQuery[] clausesIn, int slop, boolean inOrder, int minShouldMatch) {
     this.clauses = new ArrayList<>(clausesIn.length);
     for (SpanQuery clause : clausesIn) {
       if (this.field == null) {                               // check field
@@ -137,10 +168,21 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       }
       this.clauses.add(clause);
     }
+
+    if (minShouldMatch > REQUIRE_ALL) {
+      if (minShouldMatch == 1) {
+        throw new IllegalArgumentException("Minimum must be > 1. Consider using a SpanOrQuery if you only require one match.");
+      } else if (minShouldMatch < 2) {
+        throw new IllegalArgumentException("Minimum must be > 1");
+      } else if (minShouldMatch > clauses.size()) {
+        throw new IllegalArgumentException("Minimum should be <= the number of clauses");
+      }
+    }
+
     this.slop = slop;
     this.inOrder = inOrder;
+    this.minShouldMatch = minShouldMatch;
   }
-
   /** Return the clauses whose spans are matched. */
   public SpanQuery[] getClauses() {
     return clauses.toArray(new SpanQuery[clauses.size()]);
@@ -151,6 +193,9 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
   /** Return true if matches are required to be in-order.*/
   public boolean isInOrder() { return inOrder; }
+
+  /** Return minimum number of clauses that must match.*/
+  public int getMinShouldMatch() { return minShouldMatch; }
 
   @Override
   public String getField() { return field; }
@@ -171,6 +216,10 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     buffer.append(slop);
     buffer.append(", ");
     buffer.append(inOrder);
+    if (minShouldMatch > REQUIRE_ALL) {
+      buffer.append(", ");
+      buffer.append(minShouldMatch);
+    }
     buffer.append(")");
     return buffer.toString();
   }
@@ -181,16 +230,18 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     for (SpanQuery q : clauses) {
       subWeights.add(q.createWeight(searcher, false, boost));
     }
-    return new SpanNearWeight(subWeights, searcher, needsScores ? getTermContexts(subWeights) : null, boost);
+    return new SpanNearWeight(subWeights, searcher, needsScores ? getTermContexts(subWeights) : null, boost, minShouldMatch);
   }
 
   public class SpanNearWeight extends SpanWeight {
 
     final List<SpanWeight> subWeights;
+    final int minShouldMatch;
 
-    public SpanNearWeight(List<SpanWeight> subWeights, IndexSearcher searcher, Map<Term, TermContext> terms, float boost) throws IOException {
+    public SpanNearWeight(List<SpanWeight> subWeights, IndexSearcher searcher, Map<Term, TermContext> terms, float boost, int minShouldMatch) throws IOException {
       super(SpanNearQuery.this, searcher, terms, boost);
       this.subWeights = subWeights;
+      this.minShouldMatch = minShouldMatch;
     }
 
     @Override
@@ -213,9 +264,13 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
         Spans subSpan = w.getSpans(context, requiredPostings);
         if (subSpan != null) {
           subSpans.add(subSpan);
-        } else {
-          return null; // all required
+        } else if (minShouldMatch == REQUIRE_ALL) {
+          return null;
         }
+      }
+
+      if (minShouldMatch > REQUIRE_ALL && subSpans.size() < minShouldMatch) {
+        return null;
       }
 
       // all NearSpans require at least two subSpans
@@ -262,14 +317,20 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   private boolean equalsTo(SpanNearQuery other) {
     return inOrder == other.inOrder && 
            slop == other.slop &&
-           clauses.equals(other.clauses);
+           clauses.equals(other.clauses) &&
+        minShouldMatch == other.minShouldMatch;
   }
 
   @Override
   public int hashCode() {
     int result = classHash();
+    result = Integer.rotateLeft(result, 1);
+    result ^= minShouldMatch;
+    result = Integer.rotateLeft(result, 1);
     result ^= clauses.hashCode();
+    result = Integer.rotateLeft(result, 1);
     result += slop;
+    result = Integer.rotateLeft(result, 1);
     int fac = 1 + (inOrder ? 8 : 4);
     return fac * result;
   }
