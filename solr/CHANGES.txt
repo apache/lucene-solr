@@ -42,6 +42,8 @@ Bug Fixes
 * SOLR-9188: blockUnknown property makes inter-node communication impossible (noble)
 
 * SOLR-9455: Deleting a sub-shard in recovery state can mark parent shard as inactive. (shalin)
+
+* SOLR-9461: DELETENODE, REPLACENODE should pass down the 'async' param to subcommands (shalin, noble)
 ==================  6.2.0 ==================
 
 Versions of Major Components
