@@ -57,13 +57,23 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
   <T> T getConfigProperty(String name);
 
   /**
-   * This method creates a URI using the specified path components (as method arguments).
+   * This method returns the URI representation for the specified path.
+   * Note - the specified path could be a fully qualified URI OR a relative path for a file-system.
    *
+   * @param path The path specified by the user.
+   * @return the URI representation of the user supplied value
+   */
+   URI createURI(String path);
+
+  /**
+   * This method resolves a URI using the specified path components (as method arguments).
+   *
+   * @param baseUri The base URI to use for creating the path
    * @param pathComponents
    *          The directory (or file-name) to be included in the URI.
    * @return A URI containing absolute path
    */
-  URI createURI(String... pathComponents);
+  URI resolve(URI baseUri, String... pathComponents);
 
   /**
    * This method checks if the specified path exists in this repository.

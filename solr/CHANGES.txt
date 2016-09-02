@@ -105,6 +105,8 @@ Bug Fixes
 
 * SOLR-9319: DELETEREPLICA can accept a 'count' and remove appropriate replicas (Nitin Sharma, noble )
 
+* SOLR-9444: Fix path usage for cloud backup/restore.  (Hrishikesh Gadre, Uwe Schindler, Varun Thacker)
+
 Optimizations
 ----------------------
 

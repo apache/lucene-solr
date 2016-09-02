@@ -79,13 +79,13 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
     String asyncId = message.getStr(ASYNC);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
-    String location = message.getStr(CoreAdminParams.BACKUP_LOCATION);
     Map<String, String> requestMap = new HashMap<>();
 
     CoreContainer cc = ocmh.overseer.getZkController().getCoreContainer();
     BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
 
-    URI backupPath = repository.createURI(location, backupName);
+    URI location = repository.createURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
+    URI backupPath = repository.resolve(location, backupName);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     BackupManager backupMgr = new BackupManager(repository, zkStateReader, restoreCollectionName);
 
@@ -195,7 +195,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RESTORECORE.toString());
       params.set(NAME, "snapshot." + slice.getName());
-      params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.getPath());
+      params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString());
       params.set(CoreAdminParams.BACKUP_REPOSITORY, repo);
 
       ocmh.sliceCmd(clusterState, params, null, slice, shardHandler, asyncId, requestMap);
