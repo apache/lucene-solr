@@ -139,6 +139,8 @@ Other Changes
 
 * SOLR-9406: SolrSuggester should selectively register close hook (Gethin James, Joel Bernstein)
 
+* SOLR-8961: Add a test module for solr-test-framework (Alan Woodward)
+
 ==================  6.2.0 ==================
 
 Versions of Major Components
