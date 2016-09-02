@@ -43,6 +43,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+
 /**
  * This class is experimental and subject to change.
  *
@@ -1531,6 +1533,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Boolean onlyIfDown;
     private Boolean deleteDataDir;
     private Boolean deleteInstanceDir;
+    private Integer count;
     private Boolean deleteIndexDir;
 
     /**
@@ -1579,10 +1582,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
-    @Override
-    @Deprecated
-    public DeleteReplica setAsyncId(String id) {
-      this.asyncId = id;
+    public DeleteReplica setCount(Integer count) {
+      this.count = count;
       return this;
     }
 
@@ -1602,6 +1603,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (deleteIndexDir != null) {
         params.set(CoreAdminParams.DELETE_INDEX, deleteIndexDir);
+      }
+      if (count != null) {
+        params.set(COUNT_PROP, deleteIndexDir);
       }
       return params;
     }

@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;

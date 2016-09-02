@@ -103,6 +103,8 @@ Bug Fixes
 
 * SOLR-9461: DELETENODE, REPLACENODE should pass down the 'async' param to subcommands (shalin, noble)
 
+* SOLR-9319: DELETEREPLICA can accept a 'count' and remove appropriate replicas (Nitin Sharma, noble )
+
 Optimizations
 ----------------------
 
