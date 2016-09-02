@@ -26,7 +26,7 @@ import java.text.StringCharacterIterator;
  * as a boundary.
  * For every slice between the specified characters, it is further processed with a specified
  * BreakIterator. A consequence is that the enclosed BreakIterator will never "see" the splitting character.
- * <br/>
+ * <br>
  * <em>Note: {@link #setText(CharacterIterator)} is unsupported. Use the string version.</em>
  *
  * @lucene.experimental

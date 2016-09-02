@@ -82,7 +82,7 @@ public final class TokenStreamFromTermVector extends TokenStream {
    *
    * @param vector        Terms that contains the data for
    *                      creating the TokenStream. Must have positions and/or offsets.
-   * @param filteredDocId
+   * @param filteredDocId The docID we will process.
    * @param offsetLength  Supply the character length of the text being uninverted, or a lower value if you don't want
    *                      to invert text beyond an offset (in so doing this will act as a filter).  If you don't
    *                      know the length, pass -1.  In conjunction with {@code loadFactor}, it's used to

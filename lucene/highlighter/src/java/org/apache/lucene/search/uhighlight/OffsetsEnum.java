@@ -24,7 +24,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Holds the term & PostingsEnum, and info for tracking the occurrences of a term within the text.
+ * Holds the term &amp; PostingsEnum, and info for tracking the occurrences of a term within the text.
  * It is advanced with the underlying postings and is placed in a priority queue by highlightOffsetsEnums
  * based on the start offset.
  *

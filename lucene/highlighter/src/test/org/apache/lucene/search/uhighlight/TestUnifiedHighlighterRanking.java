@@ -137,7 +137,6 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
       p2.setMaxLength(Integer.MAX_VALUE - 1);
 
       BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
-      queryBuilder.setDisableCoord(false);
       queryBuilder.add(query, BooleanClause.Occur.MUST);
       queryBuilder.add(new TermQuery(new Term("id", Integer.toString(doc))), BooleanClause.Occur.MUST);
       BooleanQuery bq = queryBuilder.build();

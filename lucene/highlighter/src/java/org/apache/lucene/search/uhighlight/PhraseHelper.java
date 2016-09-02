@@ -103,7 +103,7 @@ public class PhraseHelper {
       @Override
       protected void extractWeightedTerms(Map<String, WeightedSpanTerm> terms, Query query, float boost)
           throws IOException {
-        query.createWeight(UnifiedHighlighter.EMPTY_INDEXSEARCHER, false)
+        query.createWeight(UnifiedHighlighter.EMPTY_INDEXSEARCHER, false, boost)
             .extractTerms(positionInsensitiveTerms);
       }
 
@@ -190,9 +190,8 @@ public class PhraseHelper {
 
     // Get the underlying query terms
 
-    searcher.setQueryCache(null);
     TreeSet<Term> termSet = new TreeSet<>(); // sorted so we can loop over results in order shortly...
-    searcher.createWeight(spanQuery, false).extractTerms(termSet);//needsScores==false
+    searcher.createWeight(spanQuery, false, 1.0f).extractTerms(termSet);//needsScores==false
 
     // Get Spans by running the query against the reader
     // TODO it might make sense to re-use/cache the Spans instance, to advance forward between docs

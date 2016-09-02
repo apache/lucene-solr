@@ -92,21 +92,7 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
 
     // Wrap the reader to ensure we only fetch TVs once per doc
     DirectoryReader originalReader = iw.getReader();
-    IndexReader ir = new FilterLeafReader(SlowCompositeReaderWrapper.wrap(originalReader)) {
-      BitSet seenDocIDs = new BitSet();
-
-      @Override
-      public Fields getTermVectors(int docID) throws IOException {
-        // if we're invoked by ParallelLeafReader then we can't do our assertion. see LUCENE-6868
-        if (calledBy(ParallelLeafReader.class) == false
-            && calledBy(CheckIndex.class) == false) {
-          assertFalse("Should not request TVs for doc more than once.", seenDocIDs.get(docID));
-          seenDocIDs.set(docID);
-        }
-
-        return super.getTermVectors(docID);
-      }
-    };
+    IndexReader ir = new AssertOnceTermVecDirectoryReader(originalReader);
     iw.close();
 
     IndexSearcher searcher = newSearcher(ir);
@@ -129,7 +115,39 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
     ir.close();
   }
 
-  private boolean calledBy(Class<?> clazz) {
+  private static class AssertOnceTermVecDirectoryReader extends FilterDirectoryReader {
+    static final SubReaderWrapper SUB_READER_WRAPPER = new SubReaderWrapper() {
+      @Override
+      public LeafReader wrap(LeafReader reader) {
+        return new FilterLeafReader(reader) {
+          BitSet seenDocIDs = new BitSet();
+
+          @Override
+          public Fields getTermVectors(int docID) throws IOException {
+            // if we're invoked by ParallelLeafReader then we can't do our assertion. TODO see LUCENE-6868
+            if (calledBy(ParallelLeafReader.class) == false
+                && calledBy(CheckIndex.class) == false) {
+              assertFalse("Should not request TVs for doc more than once.", seenDocIDs.get(docID));
+              seenDocIDs.set(docID);
+            }
+
+            return super.getTermVectors(docID);
+          }
+        };
+      }
+    };
+
+    AssertOnceTermVecDirectoryReader(DirectoryReader in) throws IOException {
+      super(in, SUB_READER_WRAPPER);
+    }
+
+    @Override
+    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
+      return new AssertOnceTermVecDirectoryReader(in);
+    }
+  }
+
+  private static boolean calledBy(Class<?> clazz) {
     for (StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace()) {
       if (stackTraceElement.getClassName().equals(clazz.getName()))
         return true;

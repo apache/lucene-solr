@@ -702,7 +702,7 @@ public class UnifiedHighlighter {
    * @param maxPassages The maximum number of top-N ranked passages used to
    *                    form the highlighted snippets.
    * @return result of the {@link PassageFormatter} -- probably a String.  Might be null.
-   * @throws IOException
+   * @throws IOException if an I/O error occurred during processing
    */
   //TODO make content a List? and return a List? and ensure getEmptyHighlight is never invoked multiple times?
   public Object highlightWithoutSearcher(String field, Query query, String content, int maxPassages)
