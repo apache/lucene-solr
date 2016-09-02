@@ -37,35 +37,44 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 
 /**
- * A field highlighter.
+ * A field highlighter that leverages re-analysis.
  *
  * @lucene.internal
  */
 public class AnalysisFieldHighlighter extends AbstractFieldHighlighter {
 
+  //TODO: Consider splitting this highlighter into a MemoryIndexFieldHighlighter and a TokenStreamFieldHighlighter
   private static final BytesRef[] ZERO_LEN_BYTES_REF_ARRAY = new BytesRef[0];
-  private MemoryIndex memoryIndex;
-  private LeafReader leafReader;
   private final Analyzer analyzer;
-  private CharacterRunAutomaton preMemIndexFilterAutomaton;
+  private final MemoryIndex memoryIndex;
+  private final LeafReader leafReader;
+  private final CharacterRunAutomaton preMemIndexFilterAutomaton;
 
   public AnalysisFieldHighlighter(String field, Analyzer analyzer, PhraseHelper phraseHelper, BytesRef[] extractedTerms, CharacterRunAutomaton[] automata, PassageStrategy passageStrategy) {
     super(field, passageStrategy, extractedTerms, phraseHelper, automata);
     this.analyzer = analyzer;
     // Automata (Wildcards / MultiTermQuery):
     this.automata = automata;
+
     if (terms.length > 0 && !strictPhrases.hasPositionSensitivity()) {
       this.automata = convertTermsToAutomata(terms, automata);
       // clear the terms array now that we've moved them to be expressed as automata
       terms = ZERO_LEN_BYTES_REF_ARRAY;
-    } else if (terms.length > 0 || strictPhrases.willRewrite()) { //needs MemoryIndex
+    }
+
+    if (terms.length > 0 || strictPhrases.willRewrite()) { //needs MemoryIndex
       // init MemoryIndex
       boolean storePayloads = strictPhrases.hasPositionSensitivity(); // might be needed
       memoryIndex = new MemoryIndex(true, storePayloads);//true==store offsets
       leafReader = (LeafReader) memoryIndex.createSearcher().getIndexReader();
       // preFilter for MemoryIndex
       preMemIndexFilterAutomaton = buildCombinedAutomaton(field, terms, this.automata, strictPhrases);
+    } else {
+      memoryIndex = null;
+      leafReader = null;
+      preMemIndexFilterAutomaton = null;
     }
+
   }
 
   @Override
@@ -76,11 +85,9 @@ public class AnalysisFieldHighlighter extends AbstractFieldHighlighter {
   @Override
   public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
     // note: don't need LimitTokenOffsetFilter since content is already truncated to maxLength
-    TokenStream tokenStream = MultiValueTokenStream.wrap(field, analyzer, content, UnifiedHighlighter.MULTIVAL_SEP_CHAR);
-    //terms = filterExtractedTerms(extractedTerms);
-    boolean needLeafReader = terms.length > 0 || strictPhrases.willRewrite();
+    TokenStream tokenStream = tokenStream(content);
 
-    if (needLeafReader) { // also handles automata.length > 0
+    if (memoryIndex != null) { // also handles automata.length > 0
       // We use a MemoryIndex and index the tokenStream so that later we have the PostingsEnum with offsets.
 
       // note: An *alternative* strategy is to get PostingsEnums without offsets from the main index
@@ -91,7 +98,6 @@ public class AnalysisFieldHighlighter extends AbstractFieldHighlighter {
 
       // note: probably unwise to re-use TermsEnum on reset mem index so we don't. But we do re-use the
       //   leaf reader, which is a bit more top level than in the guts.
-      assert memoryIndex != null && leafReader != null;// initialized in constructor
       memoryIndex.reset();
 
       // Filter the tokenStream to applicable terms
@@ -114,6 +120,10 @@ public class AnalysisFieldHighlighter extends AbstractFieldHighlighter {
     }
 
     return createoOffsetsEnums(leafReader, docId, filter(tokenStream));
+  }
+
+  protected TokenStream tokenStream(String content) throws IOException {
+    return MultiValueTokenStream.wrap(field, analyzer, content, UnifiedHighlighter.MULTIVAL_SEP_CHAR);
   }
 
   protected TokenStream filter(TokenStream tokenStream) {

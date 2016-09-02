@@ -311,6 +311,7 @@ public class MultiTermHighlighting {
    * Return a TokenStream un-inverted from the provided Terms, but filtered based on the automata. The
    * Terms must have exactly one doc count (e.g. term vector or MemoryIndex).
    */
+  //TODO: Alternatively, product a list of OffsetsEnums from the Terms that match the automata.
   protected static TokenStream uninvertAndFilterTerms(Terms termsIndex,
                                                       int doc,
                                                       final CharacterRunAutomaton[] automata,
