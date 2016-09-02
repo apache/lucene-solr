@@ -82,6 +82,9 @@ New Features
 
 * SOLR-9127: Excel workbook (.xlsx) response writer. use 'wt=xlsx' (Tony Moriarty, noble)
 
+* SOLR-9469: JettySolrRunner now has the option of restarting using a different
+  port (Alan Woodward)
+
 Bug Fixes
 ----------------------
 
