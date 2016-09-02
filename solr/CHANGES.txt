@@ -107,6 +107,9 @@ Bug Fixes
 
 * SOLR-9444: Fix path usage for cloud backup/restore.  (Hrishikesh Gadre, Uwe Schindler, Varun Thacker)
 
+* SOLR-9381: Snitch for freedisk uses '/' instead of 'coreRootDirectory' (Tim Owen, noble)
+
+
 Optimizations
 ----------------------
 
