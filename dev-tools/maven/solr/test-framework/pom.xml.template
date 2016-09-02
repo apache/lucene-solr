@@ -61,6 +61,11 @@
         <directory>${module-path}/src/resources</directory>
       </resource>
     </resources>
+    <testResources>
+      <testResource>
+        <directory>${module-path}/src/test-files</directory>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
