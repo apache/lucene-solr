@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -803,8 +804,9 @@ enum CoreAdminOperation implements CoreAdminOp {
       // parameter is not supplied, the latest index commit is backed-up.
       String commitName = params.get(CoreAdminParams.COMMIT_NAME);
 
+      URI locationUri = repository.createURI(location);
       try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
-        SnapShooter snapShooter = new SnapShooter(repository, core, location, name, commitName);
+        SnapShooter snapShooter = new SnapShooter(repository, core, locationUri, name, commitName);
         // validateCreateSnapshot will create parent dirs instead of throw; that choice is dubious.
         //  But we want to throw. One reason is that
         //  this dir really should, in fact must, already exist here if triggered via a collection backup on a shared
@@ -847,8 +849,9 @@ enum CoreAdminOperation implements CoreAdminOp {
           + " parameter or as a default repository property");
     }
 
+    URI locationUri = repository.createURI(location);
     try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
-      RestoreCore restoreCore = new RestoreCore(repository, core, location, name);
+      RestoreCore restoreCore = new RestoreCore(repository, core, locationUri, name);
       boolean success = restoreCore.doRestore();
       if (!success) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to restore core=" + core.getName());

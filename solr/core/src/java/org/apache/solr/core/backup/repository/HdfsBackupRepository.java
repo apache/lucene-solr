@@ -20,6 +20,7 @@ package org.apache.solr.core.backup.repository;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -88,11 +89,31 @@ public class HdfsBackupRepository implements BackupRepository {
   }
 
   @Override
-  public URI createURI(String... pathComponents) {
-    Path result = baseHdfsPath;
-    for (String p : pathComponents) {
-      result = new Path(result, p);
+  public URI createURI(String location) {
+    Preconditions.checkNotNull(location);
+
+    URI result = null;
+    try {
+      result = new URI(location);
+      if (!result.isAbsolute()) {
+        result = resolve(this.baseHdfsPath.toUri(), location);
+      }
+    } catch (URISyntaxException ex) {
+      result = resolve(this.baseHdfsPath.toUri(), location);
     }
+
+    return result;
+  }
+
+  @Override
+  public URI resolve(URI baseUri, String... pathComponents) {
+    Preconditions.checkArgument(baseUri.isAbsolute());
+
+    Path result = new Path(baseUri);
+    for (String path : pathComponents) {
+      result = new Path(result, path);
+    }
+
     return result.toUri();
   }
 
