@@ -18,6 +18,7 @@ package org.apache.solr.cloud.rule;
 
 import java.lang.invoke.MethodHandles;
 
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -52,7 +53,7 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
   @ShardsFixed(num = 5)
   public void doIntegrationTest() throws Exception {
     final long minGB = (random().nextBoolean() ? 1 : 0);
-    assumeTrue("doIntegrationTest needs minGB="+minGB+" usable disk space", ImplicitSnitch.getUsableSpaceInGB() > minGB);
+    assumeTrue("doIntegrationTest needs minGB="+minGB+" usable disk space", ImplicitSnitch.getUsableSpaceInGB(Paths.get("/")) > minGB);
     String rulesColl = "rulesColl";
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       CollectionAdminResponse rsp;
@@ -208,8 +209,8 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
   public void testModifyColl() throws Exception {
     final long minGB1 = (random().nextBoolean() ? 1 : 0);
     final long minGB2 = 5;
-    assumeTrue("testModifyColl needs minGB1="+minGB1+" usable disk space", ImplicitSnitch.getUsableSpaceInGB() > minGB1);
-    assumeTrue("testModifyColl needs minGB2="+minGB2+" usable disk space", ImplicitSnitch.getUsableSpaceInGB() > minGB2);
+    assumeTrue("testModifyColl needs minGB1="+minGB1+" usable disk space", ImplicitSnitch.getUsableSpaceInGB(Paths.get("/")) > minGB1);
+    assumeTrue("testModifyColl needs minGB2="+minGB2+" usable disk space", ImplicitSnitch.getUsableSpaceInGB(Paths.get("/")) > minGB2);
     String rulesColl = "modifyColl";
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       CollectionAdminResponse rsp;
