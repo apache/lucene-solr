@@ -116,6 +116,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -491,16 +492,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }),
     DELETEREPLICA_OP(DELETEREPLICA, (req, rsp, h) -> {
       Map<String, Object> map = req.getParams().required().getAll(null,
-          COLLECTION_PROP,
-          SHARD_ID_PROP,
-          REPLICA_PROP);
+          COLLECTION_PROP);
 
-      req.getParams().getAll(map,
+      return req.getParams().getAll(map,
           DELETE_INDEX,
           DELETE_DATA_DIR,
-          DELETE_INSTANCE_DIR);
-
-      return req.getParams().getAll(map, ONLY_IF_DOWN);
+          DELETE_INSTANCE_DIR,
+              COUNT_PROP, REPLICA_PROP,
+              SHARD_ID_PROP,
+          ONLY_IF_DOWN);
     }),
     MIGRATE_OP(MIGRATE, (req, rsp, h) -> {
       Map<String, Object> map = req.getParams().required().getAll(null, COLLECTION_PROP, "split.key", "target.collection");

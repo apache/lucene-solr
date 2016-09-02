@@ -16,11 +16,14 @@
  */
 package org.apache.solr.common.params;
 
-public abstract class CollectionAdminParams {
+public interface CollectionAdminParams {
 
   /* Param used by DELETESTATUS call to clear all stored responses */
-  public static final String FLUSH = "flush";
+  String FLUSH = "flush";
 
-  public static final String COLLECTION = "collection";
+  String COLLECTION = "collection";
+
+  String COUNT_PROP = "count";
+
 
 }
