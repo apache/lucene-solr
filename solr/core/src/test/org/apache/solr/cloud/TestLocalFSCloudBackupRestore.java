@@ -24,12 +24,20 @@ import org.junit.BeforeClass;
  * such file-system would be exposed via local file-system API.
  */
 public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
+  private static String backupLocation;
 
   @BeforeClass
   public static void setupClass() throws Exception {
     configureCluster(NUM_SHARDS)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
+
+    boolean whitespacesInPath = random().nextBoolean();
+    if (whitespacesInPath) {
+      backupLocation = createTempDir("my backup").toAbsolutePath().toString();
+    } else {
+      backupLocation = createTempDir("mybackup").toAbsolutePath().toString();
+    }
   }
 
   @Override
@@ -44,6 +52,6 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
 
   @Override
   public String getBackupLocation() {
-    return createTempDir().toFile().getAbsolutePath();
+    return backupLocation;
   }
 }

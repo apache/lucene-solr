@@ -87,12 +87,12 @@ public class BackupManager {
    * @return the configuration parameters for the specified backup.
    * @throws IOException In case of errors.
    */
-  public Properties readBackupProperties(String backupLoc, String backupId) throws IOException {
+  public Properties readBackupProperties(URI backupLoc, String backupId) throws IOException {
     Preconditions.checkNotNull(backupLoc);
     Preconditions.checkNotNull(backupId);
 
     // Backup location
-    URI backupPath = repository.createURI(backupLoc, backupId);
+    URI backupPath = repository.resolve(backupLoc, backupId);
     if (!repository.exists(backupPath)) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't restore since doesn't exist: " + backupPath);
     }
@@ -113,8 +113,8 @@ public class BackupManager {
    * @param props The backup properties
    * @throws IOException in case of I/O error
    */
-  public void writeBackupProperties(String backupLoc, String backupId, Properties props) throws IOException {
-    URI dest = repository.createURI(backupLoc, backupId, BACKUP_PROPS_FILE);
+  public void writeBackupProperties(URI backupLoc, String backupId, Properties props) throws IOException {
+    URI dest = repository.resolve(backupLoc, backupId, BACKUP_PROPS_FILE);
     try (Writer propsWriter = new OutputStreamWriter(repository.createOutput(dest), StandardCharsets.UTF_8)) {
       props.store(propsWriter, "Backup properties file");
     }
@@ -128,10 +128,10 @@ public class BackupManager {
    * @return the meta-data information for the backed-up collection.
    * @throws IOException in case of errors.
    */
-  public DocCollection readCollectionState(String backupLoc, String backupId, String collectionName) throws IOException {
+  public DocCollection readCollectionState(URI backupLoc, String backupId, String collectionName) throws IOException {
     Preconditions.checkNotNull(collectionName);
 
-    URI zkStateDir = repository.createURI(backupLoc, backupId, ZK_STATE_DIR);
+    URI zkStateDir = repository.resolve(backupLoc, backupId, ZK_STATE_DIR);
     try (IndexInput is = repository.openInput(zkStateDir, COLLECTION_PROPS_FILE, IOContext.DEFAULT)) {
       byte[] arr = new byte[(int) is.length()]; // probably ok since the json file should be small.
       is.readBytes(arr, 0, (int) is.length());
@@ -149,9 +149,9 @@ public class BackupManager {
    * @param collectionState The collection meta-data to be stored.
    * @throws IOException in case of I/O errors.
    */
-  public void writeCollectionState(String backupLoc, String backupId, String collectionName,
+  public void writeCollectionState(URI backupLoc, String backupId, String collectionName,
                                    DocCollection collectionState) throws IOException {
-    URI dest = repository.createURI(backupLoc, backupId, ZK_STATE_DIR, COLLECTION_PROPS_FILE);
+    URI dest = repository.resolve(backupLoc, backupId, ZK_STATE_DIR, COLLECTION_PROPS_FILE);
     try (OutputStream collectionStateOs = repository.createOutput(dest)) {
       collectionStateOs.write(Utils.toJSON(Collections.singletonMap(collectionName, collectionState)));
     }
@@ -166,9 +166,9 @@ public class BackupManager {
    * @param targetConfigName  The name of the config to be created.
    * @throws IOException in case of I/O errors.
    */
-  public void uploadConfigDir(String backupLoc, String backupId, String sourceConfigName, String targetConfigName)
+  public void uploadConfigDir(URI backupLoc, String backupId, String sourceConfigName, String targetConfigName)
       throws IOException {
-    URI source = repository.createURI(backupLoc, backupId, ZK_STATE_DIR, CONFIG_STATE_DIR, sourceConfigName);
+    URI source = repository.resolve(backupLoc, backupId, ZK_STATE_DIR, CONFIG_STATE_DIR, sourceConfigName);
     String zkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + targetConfigName;
     uploadToZk(zkStateReader.getZkClient(), source, zkPath);
   }
@@ -181,10 +181,10 @@ public class BackupManager {
    * @param configName The name of the config to be saved.
    * @throws IOException in case of I/O errors.
    */
-  public void downloadConfigDir(String backupLoc, String backupId, String configName) throws IOException {
-    URI dest = repository.createURI(backupLoc, backupId, ZK_STATE_DIR, CONFIG_STATE_DIR, configName);
-    repository.createDirectory(repository.createURI(backupLoc, backupId, ZK_STATE_DIR));
-    repository.createDirectory(repository.createURI(backupLoc, backupId, ZK_STATE_DIR, CONFIG_STATE_DIR));
+  public void downloadConfigDir(URI backupLoc, String backupId, String configName) throws IOException {
+    URI dest = repository.resolve(backupLoc, backupId, ZK_STATE_DIR, CONFIG_STATE_DIR, configName);
+    repository.createDirectory(repository.resolve(backupLoc, backupId, ZK_STATE_DIR));
+    repository.createDirectory(repository.resolve(backupLoc, backupId, ZK_STATE_DIR, CONFIG_STATE_DIR));
     repository.createDirectory(dest);
 
     downloadFromZK(zkStateReader.getZkClient(), ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, dest);
@@ -201,11 +201,11 @@ public class BackupManager {
         if (children.size() == 0) {
           log.info("Writing file {}", file);
           byte[] data = zkClient.getData(zkPath + "/" + file, null, null, true);
-          try (OutputStream os = repository.createOutput(repository.createURI(dir.getPath(), file))) {
+          try (OutputStream os = repository.createOutput(repository.resolve(dir, file))) {
             os.write(data);
           }
         } else {
-          downloadFromZK(zkClient, zkPath + "/" + file, repository.createURI(dir.getPath(), file));
+          downloadFromZK(zkClient, zkPath + "/" + file, repository.resolve(dir, file));
         }
       }
     } catch (KeeperException | InterruptedException e) {
@@ -221,7 +221,7 @@ public class BackupManager {
 
     for (String file : repository.listAll(sourceDir)) {
       String zkNodePath = destZkPath + "/" + file;
-      URI path = repository.createURI(sourceDir.getPath(), file);
+      URI path = repository.resolve(sourceDir, file);
       PathType t = repository.getPathType(path);
       switch (t) {
         case FILE: {
