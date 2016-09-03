@@ -109,10 +109,46 @@ public abstract class AbstractFieldHighlighter implements FieldHighlighter {
     return field;
   }
 
-  protected List<OffsetsEnum> createoOffsetsEnums(LeafReader leafReader, int doc, TokenStream tokenStream) throws IOException {
+  @Override
+  public Object highlightFieldForDoc(IndexReader reader, int docId, String content, int maxPassages) throws IOException {
+    // note: it'd be nice to accept a CharSequence for content, but we need a CharacterIterator impl for it.
+    if (content.length() == 0) {
+      return null; // nothing to do
+    }
+    BreakIterator breakIterator = passageStrategy.getBreakIterator();
+    breakIterator.setText(content);
+
+    List<OffsetsEnum> offsetsEnums = getOffsetsEnums(reader, docId, content);
+
+    Passage[] passages;
+    try {
+      // Highlight the offsetsEnum list against the content to produce Passages.
+      passages = highlightOffsetsEnums(offsetsEnums, maxPassages);// and breakIterator & scorer
+    } finally {
+      // Ensure closeable resources get closed
+      IOUtils.close(offsetsEnums);
+    }
+
+    // Format the resulting Passages.
+    if (passages.length == 0) {
+      // no passages were returned, so ask for a default summary
+      int maxNoHighlightPassages = passageStrategy.getMaxNoHighlightPassages();
+      passages = passageStrategy.getSummaryPassagesNoHighlight(maxNoHighlightPassages == -1 ? maxPassages : maxNoHighlightPassages);
+    }
+
+    if (passages.length > 0) {
+      return passageStrategy.getPassageFormatter().format(passages, content);
+    } else {
+      return null;
+    }
+  }
+
+  public abstract List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException;
+
+  protected List<OffsetsEnum> createOffsetsEnums(LeafReader leafReader, int doc, TokenStream tokenStream) throws IOException {
     List<OffsetsEnum> offsetsEnums = createOffsetsEnumsFromReader(leafReader, doc);
     if (automata.length > 0) {
-      offsetsEnums.add(addAutomataOffset(doc, tokenStream));
+      offsetsEnums.add(createOffsetsEnumFromTokenStream(doc, tokenStream));
     }
     return offsetsEnums;
   }
@@ -154,7 +190,7 @@ public abstract class AbstractFieldHighlighter implements FieldHighlighter {
     return offsetsEnums;
   }
 
-  protected OffsetsEnum addAutomataOffset(int doc, TokenStream tokenStream) throws IOException {
+  protected OffsetsEnum createOffsetsEnumFromTokenStream(int doc, TokenStream tokenStream) throws IOException {
     // if there are automata (MTQ), we have to initialize the "fake" enum wrapping them.
     assert tokenStream != null;
     // TODO Opt: we sometimes evaluate the automata twice when this TS isn't the original; can we avoid?
@@ -262,40 +298,4 @@ public abstract class AbstractFieldHighlighter implements FieldHighlighter {
     Arrays.sort(passages, (left, right) -> left.startOffset - right.startOffset);
     return passages;
   }
-
-  @Override
-  public Object highlightFieldForDoc(IndexReader reader, int docId, String content, int maxPassages) throws IOException {
-    // note: it'd be nice to accept a CharSequence for content, but we need a CharacterIterator impl for it.
-    if (content.length() == 0) {
-      return null; // nothing to do
-    }
-    BreakIterator breakIterator = passageStrategy.getBreakIterator();
-    breakIterator.setText(content);
-
-    List<OffsetsEnum> offsetsEnums = getOffsetsEnums(reader, docId, content);
-
-    Passage[] passages;
-    try {
-      // Highlight the offsetsEnum list against the content to produce Passages.
-      passages = highlightOffsetsEnums(offsetsEnums, maxPassages);// and breakIterator & scorer
-    } finally {
-      // Ensure closeable resources get closed
-      IOUtils.close(offsetsEnums);
-    }
-
-    // Format the resulting Passages.
-    if (passages.length == 0) {
-      // no passages were returned, so ask for a default summary
-      int maxNoHighlightPassages = passageStrategy.getMaxNoHighlightPassages();
-      passages = passageStrategy.getSummaryPassagesNoHighlight(maxNoHighlightPassages == -1 ? maxPassages : maxNoHighlightPassages);
-    }
-
-    if (passages.length > 0) {
-      return passageStrategy.getPassageFormatter().format(passages, content);
-    } else {
-      return null;
-    }
-  }
-
-  public abstract List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException;
 }

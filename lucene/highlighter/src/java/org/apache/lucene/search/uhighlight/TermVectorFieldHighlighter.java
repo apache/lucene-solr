@@ -59,7 +59,7 @@ public class TermVectorFieldHighlighter extends AbstractFieldHighlighter {
       tokenStream = MultiTermHighlighting.uninvertAndFilterTerms(tvTerms, 0, automata, content.length());
     }
 
-    return createoOffsetsEnums(leafReader, docId, tokenStream);
+    return createOffsetsEnums(leafReader, docId, tokenStream);
   }
 
 }

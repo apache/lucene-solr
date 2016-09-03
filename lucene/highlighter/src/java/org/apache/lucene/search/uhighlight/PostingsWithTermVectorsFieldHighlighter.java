@@ -60,7 +60,7 @@ public class PostingsWithTermVectorsFieldHighlighter extends AbstractFieldHighli
     TokenStream tokenStream = automata.length > 0 ? MultiTermHighlighting
         .uninvertAndFilterTerms(leafReader.terms(field), docId, this.automata, content.length()) : null;
 
-    return createoOffsetsEnums(leafReader, docId, tokenStream);
+    return createOffsetsEnums(leafReader, docId, tokenStream);
   }
 
   @Override

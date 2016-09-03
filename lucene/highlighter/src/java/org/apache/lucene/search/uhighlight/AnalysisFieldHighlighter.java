@@ -119,7 +119,7 @@ public class AnalysisFieldHighlighter extends AbstractFieldHighlighter {
 
     }
 
-    return createoOffsetsEnums(leafReader, docId, filter(tokenStream));
+    return createOffsetsEnums(leafReader, docId, filter(tokenStream));
   }
 
   protected TokenStream tokenStream(String content) throws IOException {
