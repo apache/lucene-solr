@@ -133,7 +133,16 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
       params.add("facet.mincount", rand.nextBoolean() ? "0": "1" );
     }
     
+    final boolean shardRespondsWithMissingEvenLimitIsZero = 
+          params.getBool("facet.missing", false) && params.getInt("facet.limit", 100)==0;
+    // skip miss count check, here cloud is different to non-distrib
+    if (shardRespondsWithMissingEvenLimitIsZero ) {
+      handle.put(null, SKIP);
+    }
     query(params);
+    if (shardRespondsWithMissingEvenLimitIsZero ) {
+      handle.remove(null);
+    }
   }
   
   private void checkInvalidMincount() throws SolrServerException, IOException {
