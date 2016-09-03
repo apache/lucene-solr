@@ -25,6 +25,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -92,6 +93,8 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void startup() throws Exception {
+    assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
+    
     System.setProperty("authenticationPlugin", HttpParamDelegationTokenPlugin.class.getName());
     System.setProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED, "true");
 
