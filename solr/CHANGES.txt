@@ -144,6 +144,9 @@ Other Changes
 
 * SOLR-8961: Add a test module for solr-test-framework (Alan Woodward)
 
+* SOLR-9474: MiniSolrCloudCluster will not reuse ports by default when
+  restarting its JettySolrRunners (Alan Woodward)
+
 ==================  6.2.0 ==================
 
 Versions of Major Components
