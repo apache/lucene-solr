@@ -600,7 +600,7 @@ public class UnifiedHighlighter {
           assert resultByDocIn[docInIndex] == null;
           resultByDocIn[docInIndex] =
               fieldHighlighter
-                  .highlightFieldForDoc(indexReader, docId, content.toString(), maxPassages[fieldIdx]);
+                  .highlightFieldForDoc(indexReader, docId, content.toString());
         }
 
       }
@@ -711,7 +711,7 @@ public class UnifiedHighlighter {
     Objects.requireNonNull(content, "content is required");
     SortedSet<Term> queryTerms = extractTerms(query);
     return newHighlighterPerField(field, query, queryTerms, maxPassages)
-        .highlightFieldForDoc(null, -1, content, maxPassages);
+        .highlightFieldForDoc(null, -1, content);
   }
 
   protected FieldHighlighter newHighlighterPerField(String field, Query query, SortedSet<Term> allTerms, int maxPassages) {
@@ -731,7 +731,7 @@ public class UnifiedHighlighter {
         getMaxNoHighlightPassages(field));
   }
 
-  private FieldOffsetStrategy getOffsetStrategy(String field, BytesRef[] terms, CharacterRunAutomaton[] automata, PhraseHelper phraseHelper, OffsetSource offsetSource) {
+  protected FieldOffsetStrategy getOffsetStrategy(String field, BytesRef[] terms, CharacterRunAutomaton[] automata, PhraseHelper phraseHelper, OffsetSource offsetSource) {
     switch (offsetSource) {
       case ANALYSIS:
         return new AnalysisFieldHighlighter(field, terms, phraseHelper, automata, getIndexAnalyzer());
