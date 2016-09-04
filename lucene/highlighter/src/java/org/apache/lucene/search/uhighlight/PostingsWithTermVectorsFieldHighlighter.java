@@ -34,13 +34,10 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  *
  * @lucene.internal
  */
-public class PostingsWithTermVectorsFieldHighlighter extends AbstractFieldHighlighter {
+public class PostingsWithTermVectorsFieldHighlighter extends FieldOffsetStrategy {
 
-  private final CharacterRunAutomaton[] automata;
-
-  public PostingsWithTermVectorsFieldHighlighter(String field, PhraseHelper phraseHelper, BytesRef[] queryTerms, CharacterRunAutomaton[] automata, PassageStrategy passageStrategy) {
-    super(field, passageStrategy, queryTerms, phraseHelper, automata);
-    this.automata = automata;
+  public PostingsWithTermVectorsFieldHighlighter(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
+    super(field, queryTerms, phraseHelper, automata);
   }
 
   @Override

@@ -41,7 +41,7 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  *
  * @lucene.internal
  */
-public class AnalysisFieldHighlighter extends AbstractFieldHighlighter {
+public class AnalysisFieldHighlighter extends FieldOffsetStrategy {
 
   //TODO: Consider splitting this highlighter into a MemoryIndexFieldHighlighter and a TokenStreamFieldHighlighter
   private static final BytesRef[] ZERO_LEN_BYTES_REF_ARRAY = new BytesRef[0];
@@ -50,8 +50,8 @@ public class AnalysisFieldHighlighter extends AbstractFieldHighlighter {
   private final LeafReader leafReader;
   private final CharacterRunAutomaton preMemIndexFilterAutomaton;
 
-  public AnalysisFieldHighlighter(String field, Analyzer analyzer, PhraseHelper phraseHelper, BytesRef[] extractedTerms, CharacterRunAutomaton[] automata, PassageStrategy passageStrategy) {
-    super(field, passageStrategy, extractedTerms, phraseHelper, automata);
+  public AnalysisFieldHighlighter(String field, BytesRef[] extractedTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, Analyzer analyzer) {
+    super(field, extractedTerms, phraseHelper, automata);
     this.analyzer = analyzer;
     // Automata (Wildcards / MultiTermQuery):
     this.automata = automata;

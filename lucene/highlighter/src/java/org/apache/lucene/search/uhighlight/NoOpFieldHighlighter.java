@@ -17,24 +17,22 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-import java.text.BreakIterator;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
- * Field highlighter that does not highlight the text; instead it invokes
- * {@link PassageStrategy#getSummaryPassagesNoHighlight(int)}.
- *
  * @lucene.internal
  */
-public class NoOpFieldHighlighter implements FieldHighlighter {
+public class NoOpFieldHighlighter extends FieldOffsetStrategy {
 
-  private final PassageStrategy passageStrategy;
-  private final String field;
+  public static final NoOpFieldHighlighter INSTANCE = new NoOpFieldHighlighter();
 
-  public NoOpFieldHighlighter(String field, PassageStrategy passageStrategy) {
-    this.field = field;
-    this.passageStrategy = passageStrategy;
+  private NoOpFieldHighlighter() {
+    super("_ignored_", new BytesRef[0], PhraseHelper.NONE, new CharacterRunAutomaton[0]);
   }
 
   @Override
@@ -43,23 +41,8 @@ public class NoOpFieldHighlighter implements FieldHighlighter {
   }
 
   @Override
-  public Object highlightFieldForDoc(IndexReader reader, int docId, String content, int maxPassages) throws IOException {
-    if (content.length() == 0) {
-      return null; // nothing to do
-    }
-    BreakIterator breakIterator = passageStrategy.getBreakIterator();
-    breakIterator.setText(content);
-    Passage[] passages = passageStrategy.getSummaryPassagesNoHighlight(maxPassages);
-    if (passages.length > 0) {
-      return passageStrategy.getPassageFormatter().format(passages, content);
-    } else {
-      return null;
-    }
-  }
-
-  @Override
-  public String getField() {
-    return field;
+  public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
+    return Collections.emptyList();
   }
 
 }
