@@ -19,6 +19,7 @@ package org.apache.lucene.search.uhighlight;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -26,6 +27,12 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
+/**
+ * Highlights offsets in postings -- {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}.  This field
+ * highlighter does not support multi-term queries; the highlighter will fallback on analysis for that.
+ *
+ * @lucene.internal
+ */
 public class PostingsFieldHighlighter extends AbstractFieldHighlighter {
 
   public PostingsFieldHighlighter(String field, PhraseHelper phraseHelper, BytesRef[] queryTerms, CharacterRunAutomaton[] automata, PassageStrategy passageStrategy) {

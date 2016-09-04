@@ -43,59 +43,11 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  */
 public abstract class AbstractFieldHighlighter implements FieldHighlighter {
 
-  protected static final PostingsEnum EMPTY = new PostingsEnum() {
-
-    @Override
-    public int nextPosition() throws IOException {
-      return 0;
-    }
-
-    @Override
-    public int startOffset() throws IOException {
-      return Integer.MAX_VALUE;
-    }
-
-    @Override
-    public int endOffset() throws IOException {
-      return Integer.MAX_VALUE;
-    }
-
-    @Override
-    public BytesRef getPayload() throws IOException {
-      return null;
-    }
-
-    @Override
-    public int freq() throws IOException {
-      return 0;
-    }
-
-    @Override
-    public int docID() {
-      return NO_MORE_DOCS;
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      return NO_MORE_DOCS;
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      return NO_MORE_DOCS;
-    }
-
-    @Override
-    public long cost() {
-      return 0;
-    }
-  };
-
-  protected final PhraseHelper strictPhrases; //TODO: rename
   protected final String field;
   protected final PassageStrategy passageStrategy;
-  protected BytesRef[] terms;
-  protected CharacterRunAutomaton[] automata;
+  protected BytesRef[] terms; // Query: free-standing terms
+  protected PhraseHelper strictPhrases; // Query: position-sensitive information TODO: rename
+  protected CharacterRunAutomaton[] automata; // Query: free-standing wildcards (multi-term query)
 
   public AbstractFieldHighlighter(String field, PassageStrategy passageStrategy, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
     this.field = field;
@@ -298,4 +250,52 @@ public abstract class AbstractFieldHighlighter implements FieldHighlighter {
     Arrays.sort(passages, (left, right) -> left.startOffset - right.startOffset);
     return passages;
   }
+
+  protected static final PostingsEnum EMPTY = new PostingsEnum() {
+
+    @Override
+    public int nextPosition() throws IOException {
+      return 0;
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return null;
+    }
+
+    @Override
+    public int freq() throws IOException {
+      return 0;
+    }
+
+    @Override
+    public int docID() {
+      return NO_MORE_DOCS;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return NO_MORE_DOCS;
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return NO_MORE_DOCS;
+    }
+
+    @Override
+    public long cost() {
+      return 0;
+    }
+  };
 }

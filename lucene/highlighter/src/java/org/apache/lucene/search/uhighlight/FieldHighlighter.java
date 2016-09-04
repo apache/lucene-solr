@@ -29,6 +29,7 @@ public interface FieldHighlighter {
 
   UnifiedHighlighter.OffsetSource getOffsetSource();
 
+  //TODO rename to simply highlightDoc or just highlight() ?
   Object highlightFieldForDoc(IndexReader reader, int docId, String content, int maxPassages) throws IOException;
 
   String getField();

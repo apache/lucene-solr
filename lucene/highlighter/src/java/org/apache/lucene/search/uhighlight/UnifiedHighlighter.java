@@ -135,10 +135,10 @@ public class UnifiedHighlighter {
   private int cacheFieldValCharsThreshold = DEFAULT_CACHE_CHARS_THRESHOLD;
 
   /**
-   * Calls {@link Weight#extractTerms(Set)} on an empty index for the query.  The result is needed to be passed to
+   * Calls {@link Weight#extractTerms(Set)} on an empty index for the query.  The result is passed to
    * the constructor of {@link AbstractFieldHighlighter}.
    */
-  public static SortedSet<Term> extractTerms(Query query) throws IOException {
+  protected static SortedSet<Term> extractTerms(Query query) throws IOException {
     SortedSet<Term> queryTerms = new TreeSet<>();
     EMPTY_INDEXSEARCHER.createNormalizedWeight(query, false).extractTerms(queryTerms);
     return queryTerms;
@@ -260,7 +260,7 @@ public class UnifiedHighlighter {
    * highlights could be found.  If it's less than 0 (the default) then this defaults to the {@code maxPassages}
    * parameter given for each request.  If this is 0 then the resulting highlight is null (not formatted).
    */
-  public int getMaxNoHighlightPassages(String field) {
+  protected int getMaxNoHighlightPassages(String field) {
     return defaultMaxNoHighlightPassages;
   }
 
@@ -313,8 +313,8 @@ public class UnifiedHighlighter {
    * <li>Fall-back: {@link OffsetSource#ANALYSIS} is returned.</li>
    * </ol>
    * <p>
-   * Note that the highlighter sometimes effectively ignores this and will choose ANALYSIS in certain
-   * cases such as when there's nothing highlightable in the query.
+   * Note that the highlighter sometimes switches to something else based on the query, such as if you have
+   * {@link OffsetSource#POSTINGS_WITH_TERM_VECTORS} but in fact don't need term vectors.
    */
   protected OffsetSource getOffsetSource(String field) {
     FieldInfo fieldInfo = getFieldInfo(field);
@@ -331,8 +331,7 @@ public class UnifiedHighlighter {
 
   /**
    * Called by the default implementation of {@link #getOffsetSource(String)}.
-   * If there is no searcher then we simply always
-   * return null.
+   * If there is no searcher then we simply always return null.
    */
   protected FieldInfo getFieldInfo(String field) {
     if (searcher == null) {
@@ -570,7 +569,6 @@ public class UnifiedHighlighter {
 
     int cacheCharsThreshold = calculateOptimalCacheCharsThreshold(numTermVectors, numPostings);
 
-
     IndexReader indexReaderWithTermVecCache =
         (numTermVectors >= 2) ? TermVectorReusingLeafReader.wrap(searcher.getIndexReader()) : null;
 
@@ -634,7 +632,7 @@ public class UnifiedHighlighter {
       // because no other info on disk is needed to highlight it.
       return 0;
     } else if (numTermVectors >= 2) {
-      // (2) When two or more fields have term vectors, given the field-then-doc order below, the underlying term
+      // (2) When two or more fields have term vectors, given the field-then-doc algorithm, the underlying term
       // vectors will be fetched in a terrible access pattern unless we highlight a doc at a time and use a special
       // current-doc TV cache.  So we do that.  Hopefully one day TVs will be improved to make this pointless.
       return 0;
@@ -718,7 +716,6 @@ public class UnifiedHighlighter {
   }
 
   protected FieldHighlighter newHighlighterPerField(String field, Query query, SortedSet<Term> queryTerms) {
-
     BytesRef[] terms = filterExtractedTerms(field, queryTerms);
     EnumSet<HighlightFlag> highlightFlags = getHighlightAccuracy(field);
     CharacterRunAutomaton[] automata = highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)
@@ -806,6 +803,13 @@ public class UnifiedHighlighter {
         PhraseHelper.NONE;
   }
 
+  /**
+   * When highlighting phrases accurately, we need to know which {@link SpanQuery}'s need to have
+   * {@link Query#rewrite(IndexReader)} called on them.  It helps performance to avoid it if it's not needed.
+   * This method will be invoked on all SpanQuery instances recursively. If you have custom SpanQuery queries then
+   * override this to check instanceof and provide a definitive answer. If the query isn't your custom one, simply
+   * return null to have the default rules apply, which govern the ones included in Lucene.
+   */
   protected Boolean requiresRewrite(SpanQuery spanQuery) {
     return null;
   }
@@ -896,6 +900,7 @@ public class UnifiedHighlighter {
   }
 
   /**
+   * Fetches stored fields for highlighting. Uses a multi-val separator char and honors a max length to retrieve.
    * @lucene.internal
    */
   protected static class LimitedStoredFieldVisitor extends StoredFieldVisitor {
@@ -964,7 +969,7 @@ public class UnifiedHighlighter {
   }
 
   /**
-   * Wraps a DirectoryReader that remembers/caches the last call to {@link LeafReader#getTermVectors(int)} so that
+   * Wraps an IndexReader that remembers/caches the last call to {@link LeafReader#getTermVectors(int)} so that
    * if the next call has the same ID, then it is reused.  If TV's were column-stride (like doc-values), there would
    * be no need for this.
    */
@@ -986,7 +991,7 @@ public class UnifiedHighlighter {
     private int lastDocId = -1;
     private Fields tvFields;
 
-    public TermVectorReusingLeafReader(LeafReader in) {
+    TermVectorReusingLeafReader(LeafReader in) {
       super(in);
     }
 
@@ -1007,5 +1012,9 @@ public class UnifiedHighlighter {
   public enum HighlightFlag {
     PHRASES,
     MULTI_TERM_QUERY
+    // TODO: ignoreQueryFields
+    // TODO: useQueryBoosts
+    // TODO: avoidMemoryIndexIfPossible
+    // TODO: preferMemoryIndexForStats
   }
 }

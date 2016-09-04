@@ -30,14 +30,20 @@ import java.util.function.Function;
 /**
  * Helps the {@link AbstractFieldHighlighter} with strict position highlighting (e.g. highlight phrases correctly).
  * This is a stateful class holding information about the query, but it can (and is) re-used across highlighting
- * documents.  Despite this state; it's immutable after construction.
+ * documents.  Despite this state; it's immutable after construction.  The approach taken in this class is very similar
+ * to the standard Highlighter's {@link WeightedSpanTermExtractor} which is in fact re-used here.  However, we ought to
+ * completely rewrite it to use the SpanCollector interface to collect offsets directly. We'll get better
+ * phrase accuracy.
+ *
+ * @lucene.internal
  */
 public class PhraseHelper {
 
   public static final PhraseHelper NONE = new PhraseHelper(new MatchAllDocsQuery(), "_ignored_",
       spanQuery -> null, true);
 
-  static final Comparator<? super Spans> SPANS_COMPARATOR = (o1, o2) -> {
+  //TODO it seems this ought to be a general thing on Spans?
+  private static final Comparator<? super Spans> SPANS_COMPARATOR = (o1, o2) -> {
     int cmp = Integer.compare(o1.docID(), o2.docID());
     if (cmp != 0) {
       return cmp;
@@ -66,7 +72,7 @@ public class PhraseHelper {
    * {@code ignoreQueriesNeedingRewrite} effectively ignores any query clause that needs to be "rewritten", which is
    * usually limited to just a {@link SpanMultiTermQueryWrapper} but could be other custom ones.
    */
-  PhraseHelper(Query query, String field, Function<SpanQuery, Boolean> rewriteQueryPred,
+  public PhraseHelper(Query query, String field, Function<SpanQuery, Boolean> rewriteQueryPred,
                boolean ignoreQueriesNeedingRewrite) {
     this.fieldName = field; // if null then don't require field match
     // filter terms to those we want
@@ -359,7 +365,7 @@ public class PhraseHelper {
   private static class FieldFilteringTermHashSet extends HashSet<Term> {
     private final String field;
 
-    public FieldFilteringTermHashSet(String field) {
+    FieldFilteringTermHashSet(String field) {
       this.field = field;
     }
 

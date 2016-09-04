@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -37,7 +36,17 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.UnicodeUtil;
 
-public final class TokenStreamFromTermVector extends TokenStream {
+/**
+ * TokenStream created from a term vector field. The term vector requires positions and/or offsets (either). If you
+ * want payloads add PayloadAttributeImpl (as you would normally) but don't assume the attribute is already added just
+ * because you know the term vector has payloads, since the first call to incrementToken() will observe if you asked
+ * for them and if not then won't get them.  This TokenStream supports an efficient {@link #reset()}, so there's
+ * no need to wrap with a caching impl.
+ *
+ * @lucene.internal
+ */
+final class TokenStreamFromTermVector extends TokenStream {
+  // note: differs from similar class in the standard highlighter. This one is optimized for sparse cases.
 
   /**
    * content length divided by distinct positions; an average of dense text.
@@ -89,11 +98,12 @@ public final class TokenStreamFromTermVector extends TokenStream {
    *                      determine how many buckets to create during uninversion.
    *                      It's also used to filter out tokens with a start offset exceeding this value.
    * @param loadFactor    The percent of tokens from the original terms (by position count) that are
-   *                      expected to be inverted.  If they are filtered (e.g. {@link FilterLeafReader.FilterTerms}
+   *                      expected to be inverted.  If they are filtered (e.g.
+   *                      {@link org.apache.lucene.index.FilterLeafReader.FilterTerms})
    *                      then consider using less than 1.0 to avoid wasting space.
    *                      1.0 means all, 1/64th would suggest 1/64th of all tokens coming from vector.
    */
-  public TokenStreamFromTermVector(Terms vector, int filteredDocId, int offsetLength, float loadFactor) throws IOException {
+  TokenStreamFromTermVector(Terms vector, int filteredDocId, int offsetLength, float loadFactor) throws IOException {
     super();
     this.filteredDocId = filteredDocId;
     this.offsetLength = offsetLength == Integer.MAX_VALUE ? -1 : offsetLength;

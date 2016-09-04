@@ -20,6 +20,14 @@ import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Holds some objects associated with the passage scoring &amp; formatting.
+ * <br>
+ * NOTE: Instances of this are created per field and then re-used to highlight however many documents are highlighted.
+ * The {@link BreakIterator} is stateful and re-used -- effectively reset by {@code setText()}.
+ *
+ * @lucene.experimental
+ */
 public class PassageStrategy {
   private final PassageScorer passageScorer;
   private final PassageFormatter passageFormatter;
@@ -41,6 +49,7 @@ public class PassageStrategy {
     return passageFormatter;
   }
 
+  // TODO BreakIterator is stateful; consider making this a supplier of a new BreakIterator. See class javadocs above.
   public BreakIterator getBreakIterator() {
     return breakIterator;
   }

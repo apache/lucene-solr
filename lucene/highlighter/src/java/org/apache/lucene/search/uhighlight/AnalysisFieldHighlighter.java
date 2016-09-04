@@ -37,7 +37,7 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 
 /**
- * A field highlighter that leverages re-analysis.
+ * A field highlighter that uses an {@link Analyzer} to get offsets. It may use a {@link MemoryIndex} too.
  *
  * @lucene.internal
  */

@@ -28,6 +28,11 @@ import org.apache.lucene.search.highlight.TermVectorLeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
+/**
+ * Field highlighter using term vectors that contain offsets.
+ *
+ * @lucene.internal
+ */
 public class TermVectorFieldHighlighter extends AbstractFieldHighlighter {
 
   public TermVectorFieldHighlighter(String field, PhraseHelper phraseHelper, BytesRef[] queryTerms, CharacterRunAutomaton[] automata, PassageStrategy passageStrategy) {
@@ -39,22 +44,20 @@ public class TermVectorFieldHighlighter extends AbstractFieldHighlighter {
     return UnifiedHighlighter.OffsetSource.TERM_VECTORS;
   }
 
-
   @Override
   public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
-    LeafReader leafReader = null;
-    TokenStream tokenStream = null; // needed when automata.length > 0
-
     Terms tvTerms = reader.getTermVector(docId, field);
     if (tvTerms == null) {
       return Collections.emptyList();
     }
 
+    LeafReader leafReader = null;
     if ((terms.length > 0) || strictPhrases.willRewrite()) {
       leafReader = new TermVectorLeafReader(field, tvTerms);
       docId = 0;
     }
 
+    TokenStream tokenStream = null;
     if (automata.length > 0) {
       tokenStream = MultiTermHighlighting.uninvertAndFilterTerms(tvTerms, 0, automata, content.length());
     }

@@ -37,7 +37,7 @@ public class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable {
   float weight; // set once in highlightOffsetsEnums
   private int pos = 0; // the occurrence counter of this term within the text being highlighted.
 
-  protected OffsetsEnum(BytesRef term, PostingsEnum postingsEnum) throws IOException {
+  public OffsetsEnum(BytesRef term, PostingsEnum postingsEnum) throws IOException {
     this.term = term; // can be null
     this.postingsEnum = Objects.requireNonNull(postingsEnum);
   }
