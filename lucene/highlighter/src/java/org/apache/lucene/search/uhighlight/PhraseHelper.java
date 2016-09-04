@@ -28,7 +28,7 @@ import java.util.*;
 import java.util.function.Function;
 
 /**
- * Helps the {@link AbstractFieldHighlighter} with strict position highlighting (e.g. highlight phrases correctly).
+ * Helps the {@link FieldOffsetStrategy} with strict position highlighting (e.g. highlight phrases correctly).
  * This is a stateful class holding information about the query, but it can (and is) re-used across highlighting
  * documents.  Despite this state; it's immutable after construction.  The approach taken in this class is very similar
  * to the standard Highlighter's {@link WeightedSpanTermExtractor} which is in fact re-used here.  However, we ought to

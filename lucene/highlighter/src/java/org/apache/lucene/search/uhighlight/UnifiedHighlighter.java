@@ -135,8 +135,7 @@ public class UnifiedHighlighter {
   private int cacheFieldValCharsThreshold = DEFAULT_CACHE_CHARS_THRESHOLD;
 
   /**
-   * Calls {@link Weight#extractTerms(Set)} on an empty index for the query.  The result is passed to
-   * the constructor of {@link AbstractFieldHighlighter}.
+   * Calls {@link Weight#extractTerms(Set)} on an empty index for the query.
    */
   protected static SortedSet<Term> extractTerms(Query query) throws IOException {
     SortedSet<Term> queryTerms = new TreeSet<>();
@@ -545,7 +544,7 @@ public class UnifiedHighlighter {
     int numTermVectors = 0;
     int numPostings = 0;
     for (int f = 0; f < fields.length; f++) {
-      FieldHighlighter fieldHighlighter = newHighlighterPerField(fields[f], query, queryTerms);
+      FieldHighlighter fieldHighlighter = newHighlighterPerField(fields[f], query, queryTerms, maxPassages[f]);
       fieldHighlighters[f] = fieldHighlighter;
 
       switch (fieldHighlighter.getOffsetSource()) {
@@ -711,11 +710,11 @@ public class UnifiedHighlighter {
     }
     Objects.requireNonNull(content, "content is required");
     SortedSet<Term> queryTerms = extractTerms(query);
-    return newHighlighterPerField(field, query, queryTerms)
+    return newHighlighterPerField(field, query, queryTerms, maxPassages)
         .highlightFieldForDoc(null, -1, content, maxPassages);
   }
 
-  protected FieldHighlighter newHighlighterPerField(String field, Query query, SortedSet<Term> allTerms) {
+  protected FieldHighlighter newHighlighterPerField(String field, Query query, SortedSet<Term> allTerms, int maxPassages) {
     BytesRef[] terms = filterExtractedTerms(field, allTerms);
     EnumSet<HighlightFlag> highlightFlags = getFlags(field);
     CharacterRunAutomaton[] automata = highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)
@@ -723,31 +722,30 @@ public class UnifiedHighlighter {
         ZERO_LEN_AUTOMATA_ARRAY;
     PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY), highlightFlags.contains(HighlightFlag.PHRASES));
     OffsetSource offsetSource = getOptimizedOffsetSource(field, phraseHelper, terms, automata);
-    Analyzer analyzer = getIndexAnalyzer();
-    PassageStrategy passageStrategy = getPassageStrategy(field);
+    return new FieldHighlighter(field,
+        getOffsetStrategy(field, terms, automata, phraseHelper, offsetSource),
+        getScorer(field),
+        getFormatter(field),
+        new SplittingBreakIterator(getBreakIterator(field), UnifiedHighlighter.MULTIVAL_SEP_CHAR),
+        maxPassages,
+        getMaxNoHighlightPassages(field));
+  }
+
+  private FieldOffsetStrategy getOffsetStrategy(String field, BytesRef[] terms, CharacterRunAutomaton[] automata, PhraseHelper phraseHelper, OffsetSource offsetSource) {
     switch (offsetSource) {
       case ANALYSIS:
-        return new AnalysisFieldHighlighter(field, analyzer, phraseHelper, terms, automata, passageStrategy);
+        return new AnalysisFieldHighlighter(field, terms, phraseHelper, automata, getIndexAnalyzer());
       case NONE_NEEDED:
-        return new NoOpFieldHighlighter(field, passageStrategy);
+        return NoOpFieldHighlighter.INSTANCE;
       case TERM_VECTORS:
-        return new TermVectorFieldHighlighter(field, phraseHelper, terms, automata, passageStrategy);
+        return new TermVectorFieldHighlighter(field, terms, phraseHelper, automata);
       case POSTINGS:
-        return new PostingsFieldHighlighter(field, phraseHelper, terms, automata, passageStrategy);
+        return new PostingsFieldHighlighter(field, terms, phraseHelper, automata);
       case POSTINGS_WITH_TERM_VECTORS:
-        return new PostingsWithTermVectorsFieldHighlighter(field, phraseHelper, terms, automata, passageStrategy);
+        return new PostingsWithTermVectorsFieldHighlighter(field, terms, phraseHelper, automata);
       default:
         throw new IllegalArgumentException("Unrecognized offset source " + offsetSource);
     }
-  }
-
-  protected PassageStrategy getPassageStrategy(String field) {
-    //TODO: consider making to an actual strategy, e.g. a function that creates a passage or change names to passage params
-    PassageScorer scorer = getScorer(field);
-    BreakIterator breakIterator = new SplittingBreakIterator(getBreakIterator(field), UnifiedHighlighter.MULTIVAL_SEP_CHAR);
-    int maxNoHighlightPassages = getMaxNoHighlightPassages(field);
-    PassageFormatter formatter = getFormatter(field);
-    return new PassageStrategy(scorer, formatter, breakIterator, maxNoHighlightPassages);
   }
 
   protected EnumSet<HighlightFlag> getFlags(String field) {
