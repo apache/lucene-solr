@@ -59,6 +59,10 @@ public abstract class FieldOffsetStrategy {
 
   public abstract UnifiedHighlighter.OffsetSource getOffsetSource();
 
+  /**
+   * The primary method -- return offsets for highlightable words in the specified document.
+   * IMPORTANT: remember to close them all.
+   */
   public abstract List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException;
 
   protected List<OffsetsEnum> createOffsetsEnums(LeafReader leafReader, int doc, TokenStream tokenStream) throws IOException {

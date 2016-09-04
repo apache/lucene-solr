@@ -17,26 +17,25 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
- * Like {@link PostingsFieldHighlighter} but also uses term vectors (only terms needed) for multi-term queries.
+ * Uses offsets in postings -- {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}.  This
+ * does not support multi-term queries; the highlighter will fallback on analysis for that.
  *
  * @lucene.internal
  */
-public class PostingsWithTermVectorsFieldHighlighter extends FieldOffsetStrategy {
+public class PostingsOffsetStrategy extends FieldOffsetStrategy {
 
-  public PostingsWithTermVectorsFieldHighlighter(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
+  public PostingsOffsetStrategy(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
     super(field, queryTerms, phraseHelper, automata);
   }
 
@@ -47,21 +46,12 @@ public class PostingsWithTermVectorsFieldHighlighter extends FieldOffsetStrategy
       leafReader = (LeafReader) reader;
     } else {
       List<LeafReaderContext> leaves = reader.leaves();
-      LeafReaderContext LeafReaderContext = leaves.get(ReaderUtil.subIndex(docId, leaves));
-      leafReader = LeafReaderContext.reader();
-      docId -= LeafReaderContext.docBase; // adjust 'doc' to be within this atomic reader
+      LeafReaderContext leafReaderContext = leaves.get(ReaderUtil.subIndex(docId, leaves));
+      leafReader = leafReaderContext.reader();
+      docId -= leafReaderContext.docBase; // adjust 'doc' to be within this leaf reader
     }
 
-    Terms docTerms = leafReader.getTermVector(docId, field);
-    if (docTerms == null) {
-      return Collections.emptyList();
-    }
-    leafReader = new TermVectorFilteredLeafReader(leafReader, docTerms);
-
-    TokenStream tokenStream = automata.length > 0 ? MultiTermHighlighting
-        .uninvertAndFilterTerms(leafReader.terms(field), docId, this.automata, content.length()) : null;
-
-    return createOffsetsEnums(leafReader, docId, tokenStream);
+    return createOffsetsEnumsFromReader(leafReader, docId);
   }
 
   @Override

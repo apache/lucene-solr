@@ -25,13 +25,15 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
+ * Never returns offsets. Used when the query would highlight nothing.
+ *
  * @lucene.internal
  */
-public class NoOpFieldHighlighter extends FieldOffsetStrategy {
+public class NoOpOffsetStrategy extends FieldOffsetStrategy {
 
-  public static final NoOpFieldHighlighter INSTANCE = new NoOpFieldHighlighter();
+  public static final NoOpOffsetStrategy INSTANCE = new NoOpOffsetStrategy();
 
-  private NoOpFieldHighlighter() {
+  private NoOpOffsetStrategy() {
     super("_ignored_", new BytesRef[0], PhraseHelper.NONE, new CharacterRunAutomaton[0]);
   }
 
