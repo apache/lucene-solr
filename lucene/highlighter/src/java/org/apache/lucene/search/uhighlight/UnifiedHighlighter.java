@@ -544,7 +544,7 @@ public class UnifiedHighlighter {
     int numTermVectors = 0;
     int numPostings = 0;
     for (int f = 0; f < fields.length; f++) {
-      FieldHighlighter fieldHighlighter = newHighlighterPerField(fields[f], query, queryTerms, maxPassages[f]);
+      FieldHighlighter fieldHighlighter = getFieldHighlighter(fields[f], query, queryTerms, maxPassages[f]);
       fieldHighlighters[f] = fieldHighlighter;
 
       switch (fieldHighlighter.getOffsetSource()) {
@@ -710,20 +710,18 @@ public class UnifiedHighlighter {
     }
     Objects.requireNonNull(content, "content is required");
     SortedSet<Term> queryTerms = extractTerms(query);
-    return newHighlighterPerField(field, query, queryTerms, maxPassages)
+    return getFieldHighlighter(field, query, queryTerms, maxPassages)
         .highlightFieldForDoc(null, -1, content);
   }
 
-  protected FieldHighlighter newHighlighterPerField(String field, Query query, SortedSet<Term> allTerms, int maxPassages) {
+  protected FieldHighlighter getFieldHighlighter(String field, Query query, SortedSet<Term> allTerms, int maxPassages) {
     BytesRef[] terms = filterExtractedTerms(field, allTerms);
     EnumSet<HighlightFlag> highlightFlags = getFlags(field);
-    CharacterRunAutomaton[] automata = highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)
-        ? MultiTermHighlighting.extractAutomata(query, field, !highlightFlags.contains(HighlightFlag.PHRASES)) :
-        ZERO_LEN_AUTOMATA_ARRAY;
-    PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY), highlightFlags.contains(HighlightFlag.PHRASES));
-    OffsetSource offsetSource = getOptimizedOffsetSource(field, phraseHelper, terms, automata);
+    PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
+    CharacterRunAutomaton[] automata = getAutomata(field, query, highlightFlags);
+    OffsetSource offsetSource = getOptimizedOffsetSource(field, terms, phraseHelper, automata);
     return new FieldHighlighter(field,
-        getOffsetStrategy(field, terms, automata, phraseHelper, offsetSource),
+        getOffsetStrategy(offsetSource, field, terms, phraseHelper, automata),
         getScorer(field),
         getFormatter(field),
         new SplittingBreakIterator(getBreakIterator(field), UnifiedHighlighter.MULTIVAL_SEP_CHAR),
@@ -731,21 +729,19 @@ public class UnifiedHighlighter {
         getMaxNoHighlightPassages(field));
   }
 
-  protected FieldOffsetStrategy getOffsetStrategy(String field, BytesRef[] terms, CharacterRunAutomaton[] automata, PhraseHelper phraseHelper, OffsetSource offsetSource) {
-    switch (offsetSource) {
-      case ANALYSIS:
-        return new AnalysisFieldHighlighter(field, terms, phraseHelper, automata, getIndexAnalyzer());
-      case NONE_NEEDED:
-        return NoOpFieldHighlighter.INSTANCE;
-      case TERM_VECTORS:
-        return new TermVectorFieldHighlighter(field, terms, phraseHelper, automata);
-      case POSTINGS:
-        return new PostingsFieldHighlighter(field, terms, phraseHelper, automata);
-      case POSTINGS_WITH_TERM_VECTORS:
-        return new PostingsWithTermVectorsFieldHighlighter(field, terms, phraseHelper, automata);
-      default:
-        throw new IllegalArgumentException("Unrecognized offset source " + offsetSource);
+  protected static BytesRef[] filterExtractedTerms(String field, SortedSet<Term> queryTerms) {
+    // TODO consider requireFieldMatch
+    Term floor = new Term(field, "");
+    Term ceiling = new Term(field, UnicodeUtil.BIG_TERM);
+    SortedSet<Term> fieldTerms = queryTerms.subSet(floor, ceiling);
+
+    // Strip off the redundant field:
+    BytesRef[] terms = new BytesRef[fieldTerms.size()];
+    int termUpto = 0;
+    for (Term term : fieldTerms) {
+      terms[termUpto++] = term.bytes();
     }
+    return terms;
   }
 
   protected EnumSet<HighlightFlag> getFlags(String field) {
@@ -759,7 +755,21 @@ public class UnifiedHighlighter {
     return highlightFlags;
   }
 
-  protected OffsetSource getOptimizedOffsetSource(String field, PhraseHelper phraseHelper, BytesRef[] terms, CharacterRunAutomaton[] automata) {
+  protected PhraseHelper getPhraseHelper(String field, Query query, EnumSet<HighlightFlag> highlightFlags) {
+    boolean highlightPhrasesStrictly = highlightFlags.contains(HighlightFlag.PHRASES);
+    boolean handleMultiTermQuery = highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY);
+    return highlightPhrasesStrictly ?
+        new PhraseHelper(query, field, this::requiresRewrite, !handleMultiTermQuery) :
+        PhraseHelper.NONE;
+  }
+
+  protected CharacterRunAutomaton[] getAutomata(String field, Query query, EnumSet<HighlightFlag> highlightFlags) {
+    return highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)
+        ? MultiTermHighlighting.extractAutomata(query, field, !highlightFlags.contains(HighlightFlag.PHRASES))
+        : ZERO_LEN_AUTOMATA_ARRAY;
+  }
+
+  protected OffsetSource getOptimizedOffsetSource(String field, BytesRef[] terms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
     OffsetSource offsetSource = getOffsetSource(field);
 
     if (terms.length == 0 && automata.length == 0 && !phraseHelper.willRewrite()) {
@@ -793,10 +803,22 @@ public class UnifiedHighlighter {
     return offsetSource;
   }
 
-  protected PhraseHelper getPhraseHelper(String field, Query query, boolean handleMultiTermQuery, boolean highlightPhrasesStrictly) {
-    return highlightPhrasesStrictly ?
-        new PhraseHelper(query, field, this::requiresRewrite, !handleMultiTermQuery) :
-        PhraseHelper.NONE;
+  protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, String field, BytesRef[] terms,
+                                                  PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
+    switch (offsetSource) {
+      case ANALYSIS:
+        return new AnalysisOffsetStrategy(field, terms, phraseHelper, automata, getIndexAnalyzer());
+      case NONE_NEEDED:
+        return NoOpOffsetStrategy.INSTANCE;
+      case TERM_VECTORS:
+        return new TermVectorOffsetStrategy(field, terms, phraseHelper, automata);
+      case POSTINGS:
+        return new PostingsOffsetStrategy(field, terms, phraseHelper, automata);
+      case POSTINGS_WITH_TERM_VECTORS:
+        return new PostingsWithTermVectorsOffsetStrategy(field, terms, phraseHelper, automata);
+      default:
+        throw new IllegalArgumentException("Unrecognized offset source " + offsetSource);
+    }
   }
 
   /**
@@ -808,21 +830,6 @@ public class UnifiedHighlighter {
    */
   protected Boolean requiresRewrite(SpanQuery spanQuery) {
     return null;
-  }
-
-  protected static BytesRef[] filterExtractedTerms(String field, SortedSet<Term> queryTerms) {
-    // TODO consider requireFieldMatch
-    Term floor = new Term(field, "");
-    Term ceiling = new Term(field, UnicodeUtil.BIG_TERM);
-    SortedSet<Term> fieldTerms = queryTerms.subSet(floor, ceiling);
-
-    // Strip off the redundant field:
-    BytesRef[] terms = new BytesRef[fieldTerms.size()];
-    int termUpto = 0;
-    for (Term term : fieldTerms) {
-      terms[termUpto++] = term.bytes();
-    }
-    return terms;
   }
 
   private DocIdSetIterator asDocIdSetIterator(int[] sortedDocIds) {
