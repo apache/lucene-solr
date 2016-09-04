@@ -715,14 +715,14 @@ public class UnifiedHighlighter {
         .highlightFieldForDoc(null, -1, content, maxPassages);
   }
 
-  protected FieldHighlighter newHighlighterPerField(String field, Query query, SortedSet<Term> queryTerms) {
-    BytesRef[] terms = filterExtractedTerms(field, queryTerms);
-    EnumSet<HighlightFlag> highlightFlags = getHighlightAccuracy(field);
+  protected FieldHighlighter newHighlighterPerField(String field, Query query, SortedSet<Term> allTerms) {
+    BytesRef[] terms = filterExtractedTerms(field, allTerms);
+    EnumSet<HighlightFlag> highlightFlags = getFlags(field);
     CharacterRunAutomaton[] automata = highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)
         ? MultiTermHighlighting.extractAutomata(query, field, !highlightFlags.contains(HighlightFlag.PHRASES)) :
         ZERO_LEN_AUTOMATA_ARRAY;
-    PhraseHelper phraseHelper = getStrictPhraseHelper(field, query, highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY), highlightFlags.contains(HighlightFlag.PHRASES));
-    OffsetSource offsetSource = getOptimizedOffsetSource(field, phraseHelper, queryTerms, automata);
+    PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY), highlightFlags.contains(HighlightFlag.PHRASES));
+    OffsetSource offsetSource = getOptimizedOffsetSource(field, phraseHelper, terms, automata);
     Analyzer analyzer = getIndexAnalyzer();
     PassageStrategy passageStrategy = getPassageStrategy(field);
     switch (offsetSource) {
@@ -750,7 +750,7 @@ public class UnifiedHighlighter {
     return new PassageStrategy(scorer, formatter, breakIterator, maxNoHighlightPassages);
   }
 
-  protected EnumSet<HighlightFlag> getHighlightAccuracy(String field) {
+  protected EnumSet<HighlightFlag> getFlags(String field) {
     EnumSet<HighlightFlag> highlightFlags = EnumSet.noneOf(HighlightFlag.class);
     if (shouldHandleMultiTermQuery(field)) {
       highlightFlags.add(HighlightFlag.MULTI_TERM_QUERY);
@@ -761,9 +761,8 @@ public class UnifiedHighlighter {
     return highlightFlags;
   }
 
-  protected OffsetSource getOptimizedOffsetSource(String field, PhraseHelper phraseHelper, SortedSet<Term> queryTerms, CharacterRunAutomaton[] automata) {
+  protected OffsetSource getOptimizedOffsetSource(String field, PhraseHelper phraseHelper, BytesRef[] terms, CharacterRunAutomaton[] automata) {
     OffsetSource offsetSource = getOffsetSource(field);
-    BytesRef[] terms = filterExtractedTerms(field, queryTerms);
 
     if (terms.length == 0 && automata.length == 0 && !phraseHelper.willRewrite()) {
       return OffsetSource.NONE_NEEDED; //nothing to highlight
@@ -794,10 +793,9 @@ public class UnifiedHighlighter {
     }
 
     return offsetSource;
-
   }
 
-  protected PhraseHelper getStrictPhraseHelper(String field, Query query, boolean handleMultiTermQuery, boolean highlightPhrasesStrictly) {
+  protected PhraseHelper getPhraseHelper(String field, Query query, boolean handleMultiTermQuery, boolean highlightPhrasesStrictly) {
     return highlightPhrasesStrictly ?
         new PhraseHelper(query, field, this::requiresRewrite, !handleMultiTermQuery) :
         PhraseHelper.NONE;
