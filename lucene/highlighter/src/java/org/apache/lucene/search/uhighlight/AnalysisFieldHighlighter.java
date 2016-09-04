@@ -119,16 +119,11 @@ public class AnalysisFieldHighlighter extends AbstractFieldHighlighter {
 
     }
 
-    return createOffsetsEnums(leafReader, docId, filter(tokenStream));
+    return createOffsetsEnums(leafReader, docId, tokenStream);
   }
 
   protected TokenStream tokenStream(String content) throws IOException {
     return MultiValueTokenStream.wrap(field, analyzer, content, UnifiedHighlighter.MULTIVAL_SEP_CHAR);
-  }
-
-  protected TokenStream filter(TokenStream tokenStream) {
-    //left for extensibility
-    return tokenStream;
   }
 
   private static CharacterRunAutomaton[] convertTermsToAutomata(BytesRef[] terms, CharacterRunAutomaton[] automata) {
@@ -143,7 +138,7 @@ public class AnalysisFieldHighlighter extends AbstractFieldHighlighter {
 
   private static FilteringTokenFilter newKeepWordFilter(final TokenStream tokenStream,
                                                         final CharacterRunAutomaton charRunAutomaton) {
-    // it'd be nice to use KeepWordFilter but it demands a CharArraySet. File JIRA? Need a new interface?
+    // it'd be nice to use KeepWordFilter but it demands a CharArraySet. TODO File JIRA? Need a new interface?
     return new FilteringTokenFilter(tokenStream) {
       final CharTermAttribute charAtt = addAttribute(CharTermAttribute.class);
 
