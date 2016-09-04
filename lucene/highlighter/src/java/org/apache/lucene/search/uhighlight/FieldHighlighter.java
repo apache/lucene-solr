@@ -35,23 +35,24 @@ import org.apache.lucene.util.IOUtils;
  */
 public class FieldHighlighter {
 
-  private final String field;
-  private final FieldOffsetStrategy fieldOffsetStrategy;
-  private final PassageScorer passageScorer;
-  private final PassageFormatter passageFormatter;
-  private final BreakIterator breakIterator;
-  private final int maxPassages;
-  private final int maxNoHighlightPassages;
+  protected final String field;
+  protected final FieldOffsetStrategy fieldOffsetStrategy;
+  protected final BreakIterator breakIterator; // note: stateful!
+  protected final PassageScorer passageScorer;
+  protected final int maxPassages;
+  protected final int maxNoHighlightPassages;
+  protected final PassageFormatter passageFormatter;
 
-  public FieldHighlighter(String field, FieldOffsetStrategy fieldOffsetStrategy, PassageScorer passageScorer, PassageFormatter passageFormatter,
-                          BreakIterator breakIterator, int maxPassages, int maxNoHighlightPassages) {
+  public FieldHighlighter(String field, FieldOffsetStrategy fieldOffsetStrategy, BreakIterator breakIterator,
+                          PassageScorer passageScorer, int maxPassages, int maxNoHighlightPassages,
+                          PassageFormatter passageFormatter) {
     this.field = field;
     this.fieldOffsetStrategy = fieldOffsetStrategy;
-    this.passageScorer = passageScorer;
-    this.passageFormatter = passageFormatter;
     this.breakIterator = breakIterator;
+    this.passageScorer = passageScorer;
     this.maxPassages = maxPassages;
     this.maxNoHighlightPassages = maxNoHighlightPassages;
+    this.passageFormatter = passageFormatter;
   }
 
   public String getField() {
@@ -62,12 +63,16 @@ public class FieldHighlighter {
     return fieldOffsetStrategy.getOffsetSource();
   }
 
+  /**
+   * The primary method -- highlight this doc, assuming a specific field and given this content.
+   */
   public Object highlightFieldForDoc(IndexReader reader, int docId, String content) throws IOException {
+    // TODO accept LeafReader instead?
     // note: it'd be nice to accept a CharSequence for content, but we need a CharacterIterator impl for it.
     if (content.length() == 0) {
       return null; // nothing to do
     }
-    BreakIterator breakIterator = this.breakIterator;
+
     breakIterator.setText(content);
 
     List<OffsetsEnum> offsetsEnums = fieldOffsetStrategy.getOffsetsEnums(reader, docId, content);
@@ -84,7 +89,6 @@ public class FieldHighlighter {
     // Format the resulting Passages.
     if (passages.length == 0) {
       // no passages were returned, so ask for a default summary
-      int maxNoHighlightPassages = this.maxNoHighlightPassages;
       passages = getSummaryPassagesNoHighlight(maxNoHighlightPassages == -1 ? maxPassages : maxNoHighlightPassages);
     }
 
@@ -98,18 +102,16 @@ public class FieldHighlighter {
   /**
    * Called to summarize a document when no highlights were found.
    * By default this just returns the first
-   * {@code maxPassages} sentences; subclasses can override to customize.
-   * The state of {@code bi} should be at the beginning.
+   * {@link #maxPassages} sentences; subclasses can override to customize.
+   * The state of {@link #breakIterator} should be at the beginning.
    */
   protected Passage[] getSummaryPassagesNoHighlight(int maxPassages) {
     assert breakIterator.current() == breakIterator.first();
 
-    int finalMaxPassages = maxNoHighlightPassages == -1 ? maxPassages : maxNoHighlightPassages;
-    // BreakIterator should be un-next'd:
-    List<Passage> passages = new ArrayList<>(Math.min(finalMaxPassages, 10));
+    List<Passage> passages = new ArrayList<>(Math.min(maxPassages, 10));
     int pos = breakIterator.current();
     assert pos == 0;
-    while (passages.size() < finalMaxPassages) {
+    while (passages.size() < maxPassages) {
       int next = breakIterator.next();
       if (next == BreakIterator.DONE) {
         break;

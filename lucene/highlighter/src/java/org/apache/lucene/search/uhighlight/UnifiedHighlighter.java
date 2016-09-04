@@ -722,11 +722,11 @@ public class UnifiedHighlighter {
     OffsetSource offsetSource = getOptimizedOffsetSource(field, terms, phraseHelper, automata);
     return new FieldHighlighter(field,
         getOffsetStrategy(offsetSource, field, terms, phraseHelper, automata),
-        getScorer(field),
-        getFormatter(field),
         new SplittingBreakIterator(getBreakIterator(field), UnifiedHighlighter.MULTIVAL_SEP_CHAR),
+        getScorer(field),
         maxPassages,
-        getMaxNoHighlightPassages(field));
+        getMaxNoHighlightPassages(field),
+        getFormatter(field));
   }
 
   protected static BytesRef[] filterExtractedTerms(String field, SortedSet<Term> queryTerms) {
