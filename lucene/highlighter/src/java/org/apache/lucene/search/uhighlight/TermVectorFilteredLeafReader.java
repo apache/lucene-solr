@@ -28,44 +28,41 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
- * This class provides a filtered view on a leaf reader.
- * The view is filtered to only iterate over the Terms specified.
+ * A filtered LeafReader that only includes the terms that are also in a provided set of terms.
  * Certain methods may be unimplemented or cause large operations on the underlying reader
  * and be slow.
+ *
+ * @lucene.internal
  */
-public final class TermVectorFilteredLeafReader extends FilterLeafReader {
+final class TermVectorFilteredLeafReader extends FilterLeafReader {
+  // NOTE: super ("in") is baseLeafReader
+
   private final Terms filterTerms;
 
   /**
    * <p>Construct a FilterLeafReader based on the specified base reader.
    * <p>Note that base reader is closed if this FilterLeafReader is closed.</p>
    *
-   * @param in          specified base reader.
-   * @param filterTerms to filter by
+   * @param baseLeafReader full/original reader.
+   * @param filterTerms set of terms to filter by -- probably from a TermVector or MemoryIndex.
    */
-  public TermVectorFilteredLeafReader(LeafReader in, Terms filterTerms) {
-    super(in);
+  TermVectorFilteredLeafReader(LeafReader baseLeafReader, Terms filterTerms) {
+    super(baseLeafReader);
     this.filterTerms = filterTerms;
   }
 
   @Override
   public Fields fields() throws IOException {
-
     return new TermVectorFilteredFields(in.fields(), filterTerms);
   }
 
   private static final class TermVectorFilteredFields extends FilterLeafReader.FilterFields {
+    // NOTE: super ("in") is baseFields
 
     private final Terms filterTerms;
 
-    /**
-     * Creates a new FilterFields.
-     *
-     * @param in          the underlying Fields instance.
-     * @param filterTerms
-     */
-    public TermVectorFilteredFields(Fields in, Terms filterTerms) {
-      super(in);
+    TermVectorFilteredFields(Fields baseFields, Terms filterTerms) {
+      super(baseFields);
       this.filterTerms = filterTerms;
     }
 
@@ -76,22 +73,18 @@ public final class TermVectorFilteredLeafReader extends FilterLeafReader {
   }
 
   private static final class TermsFilteredTerms extends FilterLeafReader.FilterTerms {
+    // NOTE: super ("in") is the baseTerms
 
     private final Terms filterTerms;
 
-    /**
-     * Creates a new FilterTerms
-     *
-     * @param in          the underlying Terms instance.
-     * @param filterTerms
-     */
-    public TermsFilteredTerms(Terms in, Terms filterTerms) {
-      super(in);
+    TermsFilteredTerms(Terms baseTerms, Terms filterTerms) {
+      super(baseTerms);
       this.filterTerms = filterTerms;
     }
 
     //TODO delegate size() ?
-    //todo delegate getMin, getMax delegate to filterTerms
+
+    //TODO delegate getMin, getMax to filterTerms
 
     @Override
     public TermsEnum iterator() throws IOException {
@@ -105,18 +98,15 @@ public final class TermVectorFilteredLeafReader extends FilterLeafReader {
   }
 
   private static final class TermVectorFilteredTermsEnum extends FilterLeafReader.FilterTermsEnum {
+    // NOTE: super ("in") is the filteredTermsEnum. This is different than wrappers above because we
+    //    navigate the terms using the filter.
 
     //TODO: track the last term state from the term state method and do some potential optimizations
-    private final TermsEnum fullTermsEnum;
+    private final TermsEnum baseTermsEnum;
 
-    /**
-     * Creates a new FilterTermsEnum
-     *
-     * @param fullTermsEnum the underlying TermsEnum instance.
-     */
-    public TermVectorFilteredTermsEnum(TermsEnum fullTermsEnum, TermsEnum filteredTermsEnum) {
-      super(filteredTermsEnum);
-      this.fullTermsEnum = fullTermsEnum;
+    TermVectorFilteredTermsEnum(TermsEnum baseTermsEnum, TermsEnum filteredTermsEnum) {
+      super(filteredTermsEnum); // note this is reversed from constructors above
+      this.baseTermsEnum = baseTermsEnum;
     }
 
     //TODO delegate docFreq & ttf (moveToCurrentTerm() then call on full?
@@ -124,12 +114,12 @@ public final class TermVectorFilteredLeafReader extends FilterLeafReader {
     @Override
     public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
       moveToCurrentTerm();
-      return fullTermsEnum.postings(reuse, flags);
+      return baseTermsEnum.postings(reuse, flags);
     }
 
     void moveToCurrentTerm() throws IOException {
-      BytesRef currentTerm = in.term();
-      boolean termInBothTermsEnum = fullTermsEnum.seekExact(currentTerm);
+      BytesRef currentTerm = in.term(); // from filteredTermsEnum
+      boolean termInBothTermsEnum = baseTermsEnum.seekExact(currentTerm);
 
       if (!termInBothTermsEnum) {
         throw new IllegalStateException("Term vector term " + currentTerm + " does not appear in full index.");

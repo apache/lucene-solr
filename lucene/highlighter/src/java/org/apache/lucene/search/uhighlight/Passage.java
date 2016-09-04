@@ -27,6 +27,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * <p>
  * A passage contains {@link #getNumMatches} highlights from the query,
  * and the offsets and query terms that correspond with each match.
+ *
  * @lucene.experimental
  */
 public final class Passage {

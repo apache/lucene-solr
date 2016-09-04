@@ -33,6 +33,8 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  * It would be more orthogonal for this to be an Analyzer since we're wrapping an Analyzer but doing so seems like
  * more work.  The underlying components see a Reader not a String -- and the String is easy to
  * split up without redundant buffering.
+ *
+ * @lucene.internal
  */
 final class MultiValueTokenStream extends TokenFilter {
 
@@ -49,7 +51,7 @@ final class MultiValueTokenStream extends TokenFilter {
     private int remainingPosInc = 0;
 
     /** note: The caller must remember to close the TokenStream eventually. */
-    public static TokenStream wrap(String fieldName, Analyzer indexAnalyzer, String content, char splitChar)
+    static TokenStream wrap(String fieldName, Analyzer indexAnalyzer, String content, char splitChar)
             throws IOException {
         if (indexAnalyzer.getOffsetGap(fieldName) != 1) { // note: 1 is the default. It is RARELY changed.
             throw new IllegalArgumentException(

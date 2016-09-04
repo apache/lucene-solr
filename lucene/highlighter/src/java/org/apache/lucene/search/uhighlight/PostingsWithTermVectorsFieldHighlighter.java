@@ -29,6 +29,11 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
+/**
+ * Like {@link PostingsFieldHighlighter} but also uses term vectors (only terms needed) for multi-term queries.
+ *
+ * @lucene.internal
+ */
 public class PostingsWithTermVectorsFieldHighlighter extends AbstractFieldHighlighter {
 
   private final CharacterRunAutomaton[] automata;
@@ -40,7 +45,6 @@ public class PostingsWithTermVectorsFieldHighlighter extends AbstractFieldHighli
 
   @Override
   public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
-    //LeafReader indexReader = null; //todo fix null
     LeafReader leafReader;
     if (reader instanceof LeafReader) {
       leafReader = (LeafReader) reader;
@@ -60,7 +64,7 @@ public class PostingsWithTermVectorsFieldHighlighter extends AbstractFieldHighli
     TokenStream tokenStream = automata.length > 0 ? MultiTermHighlighting
         .uninvertAndFilterTerms(leafReader.terms(field), docId, this.automata, content.length()) : null;
 
-    return createoOffsetsEnums(leafReader, docId, tokenStream);
+    return createOffsetsEnums(leafReader, docId, tokenStream);
   }
 
   @Override

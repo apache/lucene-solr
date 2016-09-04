@@ -21,6 +21,12 @@ import java.text.BreakIterator;
 
 import org.apache.lucene.index.IndexReader;
 
+/**
+ * Field highlighter that does not highlight the text; instead it invokes
+ * {@link PassageStrategy#getSummaryPassagesNoHighlight(int)}.
+ *
+ * @lucene.internal
+ */
 public class NoOpFieldHighlighter implements FieldHighlighter {
 
   private final PassageStrategy passageStrategy;
@@ -38,7 +44,6 @@ public class NoOpFieldHighlighter implements FieldHighlighter {
 
   @Override
   public Object highlightFieldForDoc(IndexReader reader, int docId, String content, int maxPassages) throws IOException {
-    // note: it'd be nice to accept a CharSequence for content, but we need a CharacterIterator impl for it.
     if (content.length() == 0) {
       return null; // nothing to do
     }

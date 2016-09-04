@@ -57,9 +57,13 @@ import org.apache.lucene.util.automaton.LevenshteinAutomata;
 import org.apache.lucene.util.automaton.Operations;
 
 /**
- * Support for highlighting multiterm queries in PostingsHighlighter.
+ * Support for highlighting multi-term queries.
+ *
+ * @lucene.internal
  */
 public class MultiTermHighlighting {
+  private MultiTermHighlighting() {
+  }
 
   /**
    * Extracts all MultiTermQueries for {@code field}, and returns equivalent
@@ -200,7 +204,7 @@ public class MultiTermHighlighting {
    * <p>
    * This is solely used internally by PostingsHighlighter: <b>DO NOT USE THIS METHOD!</b>
    */
-  static PostingsEnum getDocsEnum(final TokenStream ts, final CharacterRunAutomaton[] matchers) throws IOException {
+  public static PostingsEnum getDocsEnum(final TokenStream ts, final CharacterRunAutomaton[] matchers) throws IOException {
     return new TokenStreamPostingsEnum(ts, matchers);
   }
 
@@ -311,8 +315,8 @@ public class MultiTermHighlighting {
    * Return a TokenStream un-inverted from the provided Terms, but filtered based on the automata. The
    * Terms must have exactly one doc count (e.g. term vector or MemoryIndex).
    */
-  //TODO: Alternatively, product a list of OffsetsEnums from the Terms that match the automata.
-  protected static TokenStream uninvertAndFilterTerms(Terms termsIndex,
+  //TODO: Alternatively, produce a list of OffsetsEnums from the Terms that match the automata.
+  public static TokenStream uninvertAndFilterTerms(Terms termsIndex,
                                                       int doc,
                                                       final CharacterRunAutomaton[] automata,
                                                       int offsetLength)
@@ -363,10 +367,9 @@ public class MultiTermHighlighting {
   /**
    * Returns a simple automata that matches the specified term.
    */
-  static CharacterRunAutomaton makeStringMatchAutomata(BytesRef term) {
+  public static CharacterRunAutomaton makeStringMatchAutomata(BytesRef term) {
     String termString = term.utf8ToString();
-    return new CharacterRunAutomaton(Automata.makeString
-        (termString)) {
+    return new CharacterRunAutomaton(Automata.makeString(termString)) {
       @Override
       public String toString() {
         return termString;
