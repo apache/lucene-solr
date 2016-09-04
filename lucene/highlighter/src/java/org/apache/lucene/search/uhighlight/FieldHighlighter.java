@@ -62,7 +62,7 @@ public class FieldHighlighter {
     return fieldOffsetStrategy.getOffsetSource();
   }
 
-  public Object highlightFieldForDoc(IndexReader reader, int docId, String content, int maxPassages) throws IOException {
+  public Object highlightFieldForDoc(IndexReader reader, int docId, String content) throws IOException {
     // note: it'd be nice to accept a CharSequence for content, but we need a CharacterIterator impl for it.
     if (content.length() == 0) {
       return null; // nothing to do
