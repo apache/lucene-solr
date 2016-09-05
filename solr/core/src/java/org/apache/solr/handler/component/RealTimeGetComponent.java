@@ -627,20 +627,15 @@ public class RealTimeGetComponent extends SearchComponent
     UpdateLog ulog = req.getCore().getUpdateHandler().getUpdateLog();
     if (ulog == null) return;
 
-    //get all available versions by default
-    long maxVersion = Long.MAX_VALUE;
     // get fingerprint first as it will cause a soft commit
     // and would avoid mismatch if documents are being actively index especially during PeerSync
     if (doFingerprint) {
       IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Long.MAX_VALUE);
       rb.rsp.add("fingerprint", fingerprint.toObject());
-      // if fingerprint is calculated, it makes sense to get only those versions
-      // which were used in computing the the fingerprint
-      maxVersion = fingerprint.getMaxVersionEncountered();
     }
 
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-      List<Long> versions = recentUpdates.getVersions(nVersions, maxVersion);
+      List<Long> versions = recentUpdates.getVersions(nVersions);
       rb.rsp.add("versions", versions);
     }
   }

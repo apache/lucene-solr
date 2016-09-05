@@ -17,26 +17,37 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.text.ParseException;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LongValues;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocSetUtil;
 
 /**
- * Facets numbers into a hash table.
- * It currently only works with {@link NumericDocValues} (single-valued).
+ * Facets numbers into a hash table.  The number is either a raw numeric DocValues value, or
+ * a term global ordinal integer.
+ * Limitations:
+ * <ul>
+ *   <li>doesn't handle multiValued, but could easily be added</li>
+ *   <li>doesn't handle prefix, but could easily be added</li>
+ *   <li>doesn't handle mincount==0 -- you're better off with an array alg</li>
+ * </ul>
  */
-class FacetFieldProcessorByHashNumeric extends FacetFieldProcessor {
+class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
   static int MAXIMUM_STARTING_TABLE_SIZE=1024;  // must be a power of two, non-final to support setting by tests
 
   /** a hash table with long keys (what we're counting) and integer values (counts) */
@@ -44,7 +55,6 @@ class FacetFieldProcessorByHashNumeric extends FacetFieldProcessor {
 
     static final float LOAD_FACTOR = 0.7f;
 
-    long numAdds;
     long[] vals;
     int[] counts;  // maintain the counts here since we need them to tell if there was actually a value anyway
     int[] oldToNewMapping;
@@ -82,7 +92,6 @@ class FacetFieldProcessorByHashNumeric extends FacetFieldProcessor {
         rehash();
       }
 
-      numAdds++;
       int h = hash(val);
       for (int slot = h & (vals.length-1);  ;slot = (slot + ((h>>7)|1)) & (vals.length-1)) {
         int count = counts[slot];
@@ -135,29 +144,93 @@ class FacetFieldProcessorByHashNumeric extends FacetFieldProcessor {
 
   }
 
+  /** A hack instance of Calc for Term ordinals in DocValues. */
+  // TODO consider making FacetRangeProcessor.Calc facet top level; then less of a hack?
+  private class TermOrdCalc extends FacetRangeProcessor.Calc {
+
+    IntFunction<BytesRef> lookupOrdFunction; // set in collectDocs()!
+
+    TermOrdCalc() throws IOException {
+      super(sf);
+    }
+
+    @Override
+    public long bitsToSortableBits(long globalOrd) {
+      return globalOrd;
+    }
+
+    /** To be returned in "buckets"/"val" */
+    @Override
+    public Comparable bitsToValue(long globalOrd) {
+      BytesRef bytesRef = lookupOrdFunction.apply((int) globalOrd);
+      // note FacetFieldProcessorByArray.findTopSlots also calls SchemaFieldType.toObject
+      return sf.getType().toObject(sf, bytesRef).toString();
+    }
+
+    @Override
+    public String formatValue(Comparable val) {
+      return (String) val;
+    }
+
+    @Override
+    protected Comparable parseStr(String rawval) throws ParseException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected Comparable parseAndAddGap(Comparable value, String gap) throws ParseException {
+      throw new UnsupportedOperationException();
+    }
+
+  }
+
+  FacetRangeProcessor.Calc calc;
+  LongCounts table;
   int allBucketsSlot = -1;
 
-  FacetFieldProcessorByHashNumeric(FacetContext fcontext, FacetField freq, SchemaField sf) {
+  FacetFieldProcessorByHashDV(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);
+    if (freq.mincount == 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          getClass()+" doesn't support mincount=0");
+    }
+    if (freq.prefix != null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          getClass()+" doesn't support prefix"); // yet, but it could
+    }
+    FieldInfo fieldInfo = fcontext.searcher.getLeafReader().getFieldInfos().fieldInfo(sf.getName());
+    if (fieldInfo != null &&
+        fieldInfo.getDocValuesType() != DocValuesType.NUMERIC &&
+        fieldInfo.getDocValuesType() != DocValuesType.SORTED) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          getClass()+" only support single valued number/string with docValues");
+    }
   }
 
   @Override
   public void process() throws IOException {
     super.process();
     response = calcFacets();
+    table = null;//gc
   }
 
   private SimpleOrderedMap<Object> calcFacets() throws IOException {
 
-    final FacetRangeProcessor.Calc calc = FacetRangeProcessor.getNumericCalc(sf);
+    if (sf.getType().getNumericType() != null) {
+      calc = FacetRangeProcessor.getNumericCalc(sf);
+    } else {
+      calc = new TermOrdCalc(); // kind of a hack
+    }
 
-    // TODO: it would be really nice to know the number of unique values!!!!
+    // TODO: Use the number of indexed terms, if present, as an estimate!
+    //    Even for NumericDocValues, we could check for a terms index for an estimate.
+    //    Our estimation should aim high to avoid expensive rehashes.
 
     int possibleValues = fcontext.base.size();
     // size smaller tables so that no resize will be necessary
     int currHashSize = BitUtil.nextHighestPowerOfTwo((int) (possibleValues * (1 / LongCounts.LOAD_FACTOR) + 1));
     currHashSize = Math.min(currHashSize, MAXIMUM_STARTING_TABLE_SIZE);
-    final LongCounts table = new LongCounts(currHashSize) {
+    table = new LongCounts(currHashSize) {
       @Override
       protected void rehash() {
         super.rehash();
@@ -166,9 +239,19 @@ class FacetFieldProcessorByHashNumeric extends FacetFieldProcessor {
       }
     };
 
-    int numSlots = currHashSize;
+    // note: these methods/phases align with FacetFieldProcessorByArray's
 
-    int numMissing = 0;
+    createCollectAcc();
+
+    collectDocs();
+
+    return super.findTopSlots(table.numSlots(), table.cardinality(),
+        slotNum -> calc.bitsToValue(table.vals[slotNum]), // getBucketValFromSlotNum
+        val -> calc.formatValue(val)); // getFieldQueryVal
+  }
+
+  private void createCollectAcc() throws IOException {
+    int numSlots = table.numSlots();
 
     if (freq.allBuckets) {
       allBucketsSlot = numSlots++;
@@ -238,160 +321,80 @@ class FacetFieldProcessorByHashNumeric extends FacetFieldProcessor {
     };
 
     // we set the countAcc & indexAcc first so generic ones won't be created for us.
-    createCollectAcc(fcontext.base.size(), numSlots);
+    super.createCollectAcc(fcontext.base.size(), numSlots);
 
     if (freq.allBuckets) {
       allBucketsAcc = new SpecialSlotAcc(fcontext, collectAcc, allBucketsSlot, otherAccs, 0);
     }
+  }
 
-    NumericDocValues values = null;
-    Bits docsWithField = null;
+  private void collectDocs() throws IOException {
+    if (calc instanceof TermOrdCalc) { // Strings
 
-    // TODO: factor this code out so it can be shared...
-    final List<LeafReaderContext> leaves = fcontext.searcher.getIndexReader().leaves();
-    final Iterator<LeafReaderContext> ctxIt = leaves.iterator();
-    LeafReaderContext ctx = null;
-    int segBase = 0;
-    int segMax;
-    int adjustedMax = 0;
-    for (DocIterator docsIt = fcontext.base.iterator(); docsIt.hasNext(); ) {
-      final int doc = docsIt.nextDoc();
-      if (doc >= adjustedMax) {
-        do {
-          ctx = ctxIt.next();
-          segBase = ctx.docBase;
-          segMax = ctx.reader().maxDoc();
-          adjustedMax = segBase + segMax;
-        } while (doc >= adjustedMax);
-        assert doc >= ctx.docBase;
-        setNextReaderFirstPhase(ctx);
+      // TODO support SortedSetDocValues
+      SortedDocValues globalDocValues = FieldUtil.getSortedDocValues(fcontext.qcontext, sf, null);
+      ((TermOrdCalc)calc).lookupOrdFunction = globalDocValues::lookupOrd;
 
-        values = DocValues.getNumeric(ctx.reader(), sf.getName());
-        docsWithField = DocValues.getDocsWithField(ctx.reader(), sf.getName());
-      }
+      DocSetUtil.collectSortedDocSet(fcontext.base, fcontext.searcher.getIndexReader(), new SimpleCollector() {
+          SortedDocValues docValues = globalDocValues; // this segment/leaf. NN
+          LongValues toGlobal = LongValues.IDENTITY; // this segment to global ordinal. NN
 
-      int segDoc = doc - segBase;
-      long val = values.get(segDoc);
-      if (val != 0 || docsWithField.get(segDoc)) {
-        int slot = table.add(val);  // this can trigger a rehash rehash
+          @Override public boolean needsScores() { return false; }
 
-        // countAcc.incrementCount(slot, 1);
-        // our countAcc is virtual, so this is not needed
+          @Override
+          protected void doSetNextReader(LeafReaderContext ctx) throws IOException {
+            setNextReaderFirstPhase(ctx);
+            if (globalDocValues instanceof MultiDocValues.MultiSortedDocValues) {
+              MultiDocValues.MultiSortedDocValues multiDocValues = (MultiDocValues.MultiSortedDocValues) globalDocValues;
+              docValues = multiDocValues.values[ctx.ord];
+              toGlobal = multiDocValues.mapping.getGlobalOrds(ctx.ord);
+            }
+          }
 
-        collectFirstPhase(segDoc, slot);
-      }
+          @Override
+          public void collect(int segDoc) throws IOException {
+            long ord = docValues.getOrd(segDoc);
+            if (ord != -1) {
+              long val = toGlobal.get(ord);
+              collectValFirstPhase(segDoc, val);
+            }
+          }
+        });
+
+    } else { // Numeric:
+
+      // TODO support SortedNumericDocValues
+      DocSetUtil.collectSortedDocSet(fcontext.base, fcontext.searcher.getIndexReader(), new SimpleCollector() {
+          NumericDocValues values = null; //NN
+          Bits docsWithField = null; //NN
+
+          @Override public boolean needsScores() { return false; }
+
+          @Override
+          protected void doSetNextReader(LeafReaderContext ctx) throws IOException {
+            setNextReaderFirstPhase(ctx);
+            values = DocValues.getNumeric(ctx.reader(), sf.getName());
+            docsWithField = DocValues.getDocsWithField(ctx.reader(), sf.getName());
+          }
+
+          @Override
+          public void collect(int segDoc) throws IOException {
+            long val = values.get(segDoc);
+            if (val != 0 || docsWithField.get(segDoc)) {
+              collectValFirstPhase(segDoc, val);
+            }
+          }
+        });
     }
+  }
 
-    //
-    // collection done, time to find the top slots
-    //
+  private void collectValFirstPhase(int segDoc, long val) throws IOException {
+    int slot = table.add(val); // this can trigger a rehash
 
-    int numBuckets = 0;
-    List<Object> bucketVals = null;
-    if (freq.numBuckets && fcontext.isShard()) {
-      bucketVals = new ArrayList<>(100);
-    }
+    // Our countAcc is virtual, so this is not needed:
+    // countAcc.incrementCount(slot, 1);
 
-    int off = fcontext.isShard() ? 0 : (int) freq.offset;
-    // add a modest amount of over-request if this is a shard request
-    int lim = freq.limit >= 0 ? (fcontext.isShard() ? (int)(freq.limit*1.1+4) : (int)freq.limit) : Integer.MAX_VALUE;
-
-    int maxsize = (int)(freq.limit >= 0 ?  freq.offset + lim : Integer.MAX_VALUE - 1);
-    maxsize = Math.min(maxsize, table.cardinality);
-
-    final int sortMul = freq.sortDirection.getMultiplier();
-
-    PriorityQueue<Slot> queue = new PriorityQueue<Slot>(maxsize) {
-      @Override
-      protected boolean lessThan(Slot a, Slot b) {
-        // TODO: sort-by-index-order
-        int cmp = sortAcc.compare(a.slot, b.slot) * sortMul;
-        return cmp == 0 ? (indexOrderAcc.compare(a.slot, b.slot) > 0) : cmp < 0;
-      }
-    };
-
-    // TODO: create a countAcc that wrapps the table so we can reuse more code?
-
-    Slot bottom = null;
-    for (int i=0; i<table.counts.length; i++) {
-      int count = table.counts[i];
-      if (count < effectiveMincount) {
-        // either not a valid slot, or count not high enough
-        continue;
-      }
-      numBuckets++;  // can be different from the table cardinality if mincount > 1
-
-      long val = table.vals[i];
-      if (bucketVals != null && bucketVals.size()<100) {
-        bucketVals.add( calc.bitsToValue(val) );
-      }
-
-      if (bottom == null) {
-        bottom = new Slot();
-      }
-      bottom.slot = i;
-
-      bottom = queue.insertWithOverflow(bottom);
-    }
-
-    SimpleOrderedMap<Object> res = new SimpleOrderedMap<>();
-    if (freq.numBuckets) {
-      if (!fcontext.isShard()) {
-        res.add("numBuckets", numBuckets);
-      } else {
-        SimpleOrderedMap<Object> map = new SimpleOrderedMap<>(2);
-        map.add("numBuckets", numBuckets);
-        map.add("vals", bucketVals);
-        res.add("numBuckets", map);
-      }
-    }
-
-    FacetDebugInfo fdebug = fcontext.getDebugInfo();
-    if (fdebug != null) fdebug.putInfoItem("numBuckets", (long) numBuckets);
-
-    if (freq.allBuckets) {
-      SimpleOrderedMap<Object> allBuckets = new SimpleOrderedMap<>();
-      // countAcc.setValues(allBuckets, allBucketsSlot);
-      allBuckets.add("count", table.numAdds);
-      allBucketsAcc.setValues(allBuckets, -1);
-      // allBuckets currently doesn't execute sub-facets (because it doesn't change the domain?)
-      res.add("allBuckets", allBuckets);
-    }
-
-    if (freq.missing) {
-      // TODO: it would be more efficient to buid up a missing DocSet if we need it here anyway.
-
-      SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
-      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null);
-      res.add("missing", missingBucket);
-    }
-
-    // if we are deep paging, we don't have to order the highest "offset" counts.
-    int collectCount = Math.max(0, queue.size() - off);
-    assert collectCount <= lim;
-    int[] sortedSlots = new int[collectCount];
-    for (int i = collectCount - 1; i >= 0; i--) {
-      sortedSlots[i] = queue.pop().slot;
-    }
-
-    ArrayList<SimpleOrderedMap> bucketList = new ArrayList<>(collectCount);
-    res.add("buckets", bucketList);
-
-    boolean needFilter = deferredAggs != null || freq.getSubFacets().size() > 0;
-
-    for (int slotNum : sortedSlots) {
-      SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
-      Comparable val = calc.bitsToValue(table.vals[slotNum]);
-      bucket.add("val", val);
-
-      Query filter = needFilter ? sf.getType().getFieldQuery(null, sf, calc.formatValue(val)) : null;
-
-      fillBucket(bucket, table.counts[slotNum], slotNum, null, filter);
-
-      bucketList.add(bucket);
-    }
-
-    return res;
+    super.collectFirstPhase(segDoc, slot);
   }
 
   private void doRehash(LongCounts table) {

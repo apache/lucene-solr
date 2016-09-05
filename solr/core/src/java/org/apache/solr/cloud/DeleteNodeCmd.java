@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -53,24 +54,30 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Source Node: " + node + " is not live");
     }
     List<ZkNodeProps> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);
-    cleanupReplicas(results, state, sourceReplicas, ocmh, node);
+    cleanupReplicas(results, state, sourceReplicas, ocmh, node, message.getStr(ASYNC));
   }
 
   static void cleanupReplicas(NamedList results,
                               ClusterState clusterState,
                               List<ZkNodeProps> sourceReplicas,
-                              OverseerCollectionMessageHandler ocmh, String node) throws InterruptedException {
+                              OverseerCollectionMessageHandler ocmh,
+                              String node,
+                              String async) throws InterruptedException {
     CountDownLatch cleanupLatch = new CountDownLatch(sourceReplicas.size());
     for (ZkNodeProps sourceReplica : sourceReplicas) {
-      log.info("Deleting replica for collection={} shard={} on node={}", sourceReplica.getStr(COLLECTION_PROP), sourceReplica.getStr(SHARD_ID_PROP), node);
+      String coll = sourceReplica.getStr(COLLECTION_PROP);
+      String shard = sourceReplica.getStr(SHARD_ID_PROP);
+      log.info("Deleting replica for collection={} shard={} on node={}", coll, shard, node);
       NamedList deleteResult = new NamedList();
       try {
+        if (async != null) sourceReplica = sourceReplica.plus(ASYNC, async);
         ((DeleteReplicaCmd)ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, sourceReplica.plus("parallel", "true"), deleteResult, () -> {
           cleanupLatch.countDown();
           if (deleteResult.get("failure") != null) {
             synchronized (results) {
+
               results.add("failure", String.format(Locale.ROOT, "Failed to delete replica for collection=%s shard=%s" +
-                  " on node=%s", sourceReplica.getStr(COLLECTION_PROP), sourceReplica.getStr(SHARD_ID_PROP), node));
+                  " on node=%s", coll, shard, node));
             }
           }
         });

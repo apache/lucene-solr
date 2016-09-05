@@ -388,4 +388,8 @@ public class UninvertingReader extends FilterLeafReader {
     }
     return info;
   }
+
+  public static int getUninvertedStatsSize() {
+    return FieldCache.DEFAULT.getCacheEntries().length;
+  }
 }

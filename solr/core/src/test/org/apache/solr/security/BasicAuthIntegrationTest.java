@@ -193,7 +193,10 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
       cloudSolrClient.request(update);
 
 
-      executeCommand(baseUrl + authzPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
+      executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, "harry", "HarryIsUberCool");
+      verifySecurityStatus(cl, baseUrl + PKIAuthenticationPlugin.PATH + "?wt=json", "key", NOT_NULL_PREDICATE, 20);
+
       String[] toolArgs = new String[]{
           "status", "-solr", baseUrl};
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -211,7 +214,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
         log.error("RunExampleTool failed due to: " + e +
             "; stdout from tool prior to failure: " + baos.toString(StandardCharsets.UTF_8.name()));
       }
-      executeCommand(baseUrl + authzPrefix, cl, "{set-property : { blockUnknown: false}}", "harry", "HarryIsUberCool");
+      executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: false}}", "harry", "HarryIsUberCool");
     } finally {
       if (cl != null) {
         HttpClientUtil.close(cl);
@@ -219,7 +222,8 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     }
   }
 
-  public static void executeCommand(String url, HttpClient cl, String payload, String user, String pwd) throws IOException {
+  public static void executeCommand(String url, HttpClient cl, String payload, String user, String pwd)
+      throws IOException {
     HttpPost httpPost;
     HttpResponse r;
     httpPost = new HttpPost(url);
@@ -231,15 +235,29 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     Utils.consumeFully(r.getEntity());
   }
 
-  public static void verifySecurityStatus(HttpClient cl, String url, String objPath, Object expected, int count) throws Exception {
+  public static void verifySecurityStatus(HttpClient cl, String url, String objPath,
+                                          Object expected, int count) throws Exception {
+    verifySecurityStatus(cl, url, objPath, expected, count, null, null);
+  }
+
+
+  public static void verifySecurityStatus(HttpClient cl, String url, String objPath,
+                                          Object expected, int count, String user, String pwd)
+      throws Exception {
     boolean success = false;
     String s = null;
     List<String> hierarchy = StrUtils.splitSmart(objPath, '/');
     for (int i = 0; i < count; i++) {
       HttpGet get = new HttpGet(url);
+      if (user != null) setBasicAuthHeader(get, user, pwd);
       HttpResponse rsp = cl.execute(get);
       s = EntityUtils.toString(rsp.getEntity());
-      Map m = (Map) Utils.fromJSONString(s);
+      Map m = null;
+      try {
+        m = (Map) Utils.fromJSONString(s);
+      } catch (Exception e) {
+        fail("Invalid json " + s);
+      }
       Utils.consumeFully(rsp.getEntity());
       Object actual = Utils.getObjectByPath(m, true, hierarchy);
       if (expected instanceof Predicate) {

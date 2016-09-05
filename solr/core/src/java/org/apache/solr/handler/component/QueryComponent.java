@@ -1305,6 +1305,10 @@ public class QueryComponent extends SearchComponent
 
       String keyFieldName = rb.req.getSchema().getUniqueKeyField().getName();
       boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
+      if (rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName) != null) {
+        // if id was renamed we need to use the new name
+        keyFieldName = rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName);
+      }
 
       for (ShardResponse srsp : sreq.responses) {
         if (srsp.getException() != null) {
@@ -1330,7 +1334,6 @@ public class QueryComponent extends SearchComponent
           continue;
         }
         SolrDocumentList docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
-
         for (SolrDocument doc : docs) {
           Object id = doc.getFieldValue(keyFieldName);
           ShardDoc sdoc = rb.resultIds.get(id.toString());

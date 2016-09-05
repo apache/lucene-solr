@@ -266,6 +266,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   //used for keeping track of replicas that have processed an add/update from the leader
   private RequestReplicationTracker replicationTracker = null;
 
+  // should we clone the document before sending it to replicas?
+  // this is set to true in the constructor if the next processors in the chain
+  // are custom and may modify the SolrInputDocument racing with its serialization for replication
+  private final boolean cloneRequiredOnLeader;
+
   public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     this(req, rsp, new AtomicUpdateDocumentMerger(req), next);
   }
@@ -314,6 +319,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       collection = null;
     }
 
+    boolean shouldClone = false;
+    UpdateRequestProcessor nextInChain = next;
+    while (nextInChain != null)  {
+      Class<? extends UpdateRequestProcessor> klass = nextInChain.getClass();
+      if (klass != LogUpdateProcessorFactory.LogUpdateProcessor.class
+          && klass != RunUpdateProcessor.class
+          && klass != TolerantUpdateProcessor.class)  {
+        shouldClone = true;
+        break;
+      }
+      nextInChain = nextInChain.next;
+    }
+    cloneRequiredOnLeader = shouldClone;
   }
 
   private List<Node> setupRequest(String id, SolrInputDocument doc) {
@@ -1086,14 +1104,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         boolean willDistrib = isLeader && nodes != null && nodes.size() > 0;
         
         SolrInputDocument clonedDoc = null;
-        if (willDistrib) {
+        if (willDistrib && cloneRequiredOnLeader) {
           clonedDoc = cmd.solrDoc.deepCopy();
         }
 
         // TODO: possibly set checkDeleteByQueries as a flag on the command?
         doLocalAdd(cmd);
         
-        if (willDistrib) {
+        if (willDistrib && cloneRequiredOnLeader) {
           cmd.solrDoc = clonedDoc;
         }
 

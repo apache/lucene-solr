@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.lucene50;
 
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,7 +49,7 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
       Throwable priorE = null;
       SegmentInfo si = null;
       try {
-        int format = CodecUtil.checkIndexHeader(input, Lucene50SegmentInfoFormat.CODEC_NAME,
+        CodecUtil.checkIndexHeader(input, Lucene50SegmentInfoFormat.CODEC_NAME,
                                           Lucene50SegmentInfoFormat.VERSION_START,
                                           Lucene50SegmentInfoFormat.VERSION_CURRENT,
                                           segmentID, "");
@@ -62,19 +61,9 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
         }
         final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
         
-        final Map<String,String> diagnostics;
-        final Set<String> files;
-        final Map<String,String> attributes;
-        
-        if (format >= VERSION_SAFE_MAPS) {
-          diagnostics = input.readMapOfStrings();
-          files = input.readSetOfStrings();
-          attributes = input.readMapOfStrings();
-        } else {
-          diagnostics = Collections.unmodifiableMap(input.readStringStringMap());
-          files = Collections.unmodifiableSet(input.readStringSet());
-          attributes = Collections.unmodifiableMap(input.readStringStringMap());
-        }
+        final Map<String,String> diagnostics = input.readMapOfStrings();
+        final Set<String> files = input.readSetOfStrings();
+        final Map<String,String> attributes = input.readMapOfStrings();
         
         si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, segmentID, attributes, null);
         si.setFiles(files);
@@ -95,7 +84,7 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
   /** File extension used to store {@link SegmentInfo}. */
   public final static String SI_EXTENSION = "si";
   static final String CODEC_NAME = "Lucene50SegmentInfo";
-  static final int VERSION_START = 0;
   static final int VERSION_SAFE_MAPS = 1;
+  static final int VERSION_START = VERSION_SAFE_MAPS;
   static final int VERSION_CURRENT = VERSION_SAFE_MAPS;
 }

@@ -46,6 +46,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +80,7 @@ public class SplitShardCmd implements Cmd {
 
     log.info("Split shard invoked");
     ZkStateReader zkStateReader = ocmh.zkStateReader;
+    zkStateReader.forceUpdateCollection(collectionName);
 
     String splitKey = message.getStr("split.key");
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
@@ -197,7 +199,10 @@ public class SplitShardCmd implements Cmd {
         subSlices.add(subSlice);
         String subShardName = collectionName + "_" + subSlice + "_replica1";
         subShardNames.add(subShardName);
+      }
 
+      boolean oldShardsDeleted = false;
+      for (String subSlice : subSlices) {
         Slice oSlice = collection.getSlice(subSlice);
         if (oSlice != null) {
           final Slice.State state = oSlice.getState();
@@ -206,22 +211,29 @@ public class SplitShardCmd implements Cmd {
                 "Sub-shard: " + subSlice + " exists in active state. Aborting split shard.");
           } else if (state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY) {
             // delete the shards
-            for (String sub : subSlices) {
-              log.info("Sub-shard: {} already exists therefore requesting its deletion", sub);
-              Map<String, Object> propMap = new HashMap<>();
-              propMap.put(Overseer.QUEUE_OPERATION, "deleteshard");
-              propMap.put(COLLECTION_PROP, collectionName);
-              propMap.put(SHARD_ID_PROP, sub);
-              ZkNodeProps m = new ZkNodeProps(propMap);
-              try {
-                ocmh.commandMap.get(DELETESHARD).call(clusterState, m, new NamedList());
-              } catch (Exception e) {
-                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to delete already existing sub shard: " + sub,
-                    e);
-              }
+            log.info("Sub-shard: {} already exists therefore requesting its deletion", subSlice);
+            Map<String, Object> propMap = new HashMap<>();
+            propMap.put(Overseer.QUEUE_OPERATION, "deleteshard");
+            propMap.put(COLLECTION_PROP, collectionName);
+            propMap.put(SHARD_ID_PROP, subSlice);
+            ZkNodeProps m = new ZkNodeProps(propMap);
+            try {
+              ocmh.commandMap.get(DELETESHARD).call(clusterState, m, new NamedList());
+            } catch (Exception e) {
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to delete already existing sub shard: " + subSlice,
+                  e);
             }
+
+            oldShardsDeleted = true;
           }
         }
+      }
+
+      if (oldShardsDeleted) {
+        // refresh the locally cached cluster state
+        // we know we have the latest because otherwise deleteshard would have failed
+        clusterState = zkStateReader.getClusterState();
+        collection = clusterState.getCollection(collectionName);
       }
 
       final String asyncId = message.getStr(ASYNC);
@@ -405,6 +417,8 @@ public class SplitShardCmd implements Cmd {
 
         replicas.add(propMap);
       }
+
+      assert TestInjection.injectSplitFailureBeforeReplicaCreation();
 
       // we must set the slice state into recovery before actually creating the replica cores
       // this ensures that the logic inside Overseer to update sub-shard state to 'active'

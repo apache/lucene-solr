@@ -178,12 +178,6 @@ public class MockIndexInputWrapper extends IndexInput {
   }
 
   @Override
-  public Map<String,String> readStringStringMap() throws IOException {
-    ensureOpen();
-    return delegate.readStringStringMap();
-  }
-
-  @Override
   public int readVInt() throws IOException {
     ensureOpen();
     return delegate.readVInt();
@@ -208,15 +202,21 @@ public class MockIndexInputWrapper extends IndexInput {
   }
 
   @Override
-  public Set<String> readStringSet() throws IOException {
-    ensureOpen();
-    return delegate.readStringSet();
-  }
-
-  @Override
   public void skipBytes(long numBytes) throws IOException {
     ensureOpen();
     super.skipBytes(numBytes);
+  }
+
+  @Override
+  public Map<String,String> readMapOfStrings() throws IOException {
+    ensureOpen();
+    return delegate.readMapOfStrings();
+  }
+
+  @Override
+  public Set<String> readSetOfStrings() throws IOException {
+    ensureOpen();
+    return delegate.readSetOfStrings();
   }
 
   @Override

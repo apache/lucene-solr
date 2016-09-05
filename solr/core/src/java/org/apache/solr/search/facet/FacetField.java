@@ -24,63 +24,71 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 
-
-public class FacetField extends FacetRequest {
-  String field;
+// Any type of facet request that generates a variable number of buckets
+// and the ability to sort by those generated buckets.
+abstract class FacetRequestSorted extends FacetRequest {
   long offset;
-  long limit = 10;
-  long mincount = 1;
+  long limit;
+  long mincount;
+  String sortVariable;
+  SortDirection sortDirection;
+  RefineMethod refine; // null, NONE, or SIMPLE
+
+  @Override
+  public RefineMethod getRefineMethod() {
+    return refine;
+  }
+
+  @Override
+  public boolean returnsPartial() {
+    return limit > 0;
+  }
+
+}
+
+
+public class FacetField extends FacetRequestSorted {
+  String field;
   boolean missing;
   boolean allBuckets;   // show cumulative stats across all buckets (this can be different than non-bucketed stats across all docs because of multi-valued docs)
   boolean numBuckets;
   String prefix;
-  String sortVariable;
-  SortDirection sortDirection;
   FacetMethod method;
   int cacheDf;  // 0 means "default", -1 means "never cache"
 
   // experimental - force perSeg collection when using dv method, currently for testing purposes only.
   Boolean perSeg;
 
-  // TODO: put this somewhere more generic?
-  public enum SortDirection {
-    asc(-1) ,
-    desc(1);
-
-    private final int multiplier;
-    private SortDirection(int multiplier) {
-      this.multiplier = multiplier;
-    }
-
-    // asc==-1, desc==1
-    public int getMultiplier() {
-      return multiplier;
-    }
+  {
+    // defaults for FacetRequestSorted
+    mincount = 1;
+    limit = 10;
   }
 
   public enum FacetMethod {
-    DV,  // DocValues
-    UIF, // UnInvertedField
-    ENUM,
-    STREAM,
+    DV,  // DocValues, collect into ordinal array
+    UIF, // UnInvertedField, collect into ordinal array
+    DVHASH, // DocValues, collect into hash
+    ENUM, // TermsEnum then intersect DocSet (stream-able)
+    STREAM, // presently equivalent to ENUM
     SMART,
     ;
 
     public static FacetMethod fromString(String method) {
-      if (method == null || method.length()==0) return null;
-      if ("dv".equals(method)) {
-        return DV;
-      } else if ("uif".equals(method)) {
-        return UIF;
-      } else if ("enum".equals(method)) {
-        return ENUM;
-      } else if ("smart".equals(method)) {
-        return SMART;
-      } else if ("stream".equals(method)) {
-        return STREAM;
+      if (method == null || method.length()==0) return DEFAULT_METHOD;
+      switch (method) {
+        case "dv": return DV;
+        case "uif": return UIF;
+        case "dvhash": return DVHASH;
+        case "enum": return ENUM;
+        case "stream": return STREAM; // TODO replace with enum?
+        case "smart": return SMART;
+        default:
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown FacetField method " + method);
       }
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown FacetField method " + method);
     }
+
+    static FacetMethod DEFAULT_METHOD = SMART; // non-final for tests to vary
   }
 
   @Override
@@ -89,21 +97,42 @@ public class FacetField extends FacetRequest {
     FieldType ft = sf.getType();
     boolean multiToken = sf.multiValued() || ft.multiValuedFieldCache();
 
-    if (method == FacetMethod.ENUM && sf.indexed()) {
-      throw new UnsupportedOperationException();
-    } else if (method == FacetMethod.STREAM && sf.indexed()) {
+    LegacyNumericType ntype = ft.getNumericType();
+    // ensure we can support the requested options for numeric faceting:
+    if (ntype != null) {
+      if (prefix != null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Doesn't make sense to set facet prefix on a numeric field");
+      }
+      if (mincount == 0) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Numeric fields do not support facet mincount=0; try indexing as terms");
+        // TODO if indexed=true then we could add support
+      }
+    }
+
+    // TODO auto-pick ENUM/STREAM SOLR-9351 when index asc and DocSet cardinality is *not* much smaller than term cardinality
+    if (method == FacetMethod.ENUM) {// at the moment these two are the same
+      method = FacetMethod.STREAM;
+    }
+    if (method == FacetMethod.STREAM && sf.indexed() &&
+        "index".equals(sortVariable) && sortDirection == SortDirection.asc) {
       return new FacetFieldProcessorByEnumTermsStream(fcontext, this, sf);
     }
 
-    LegacyNumericType ntype = ft.getNumericType();
+    // TODO if method=UIF and not single-valued numerics then simply choose that now? TODO add FieldType.getDocValuesType()
 
     if (!multiToken) {
-      if (ntype != null) {
-        // single valued numeric (docvalues or fieldcache)
-        return new FacetFieldProcessorByHashNumeric(fcontext, this, sf);
-      } else {
+      if (mincount > 0 && prefix == null && (ntype != null || method == FacetMethod.DVHASH)) {
+        // TODO can we auto-pick for strings when term cardinality is much greater than DocSet cardinality?
+        //   or if we don't know cardinality but DocSet size is very small
+        return new FacetFieldProcessorByHashDV(fcontext, this, sf);
+      } else if (ntype == null) {
         // single valued string...
         return new FacetFieldProcessorByArrayDV(fcontext, this, sf);
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Couldn't pick facet algorithm for field " + sf);
       }
     }
 

@@ -205,6 +205,93 @@ public class TestBooleanRewrites extends LuceneTestCase {
         .build();
     assertEquals(expected, searcher.rewrite(bq));
   }
+  
+  // Duplicate Should and Filter query is converted to Must (with minShouldMatch -1)
+  public void testConvertShouldAndFilterToMust() throws IOException {
+    IndexSearcher searcher = newSearcher(new MultiReader());
+
+    // no minShouldMatch
+    BooleanQuery bq = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "bar")), Occur.FILTER)
+        .build();
+    assertEquals(new TermQuery(new Term("foo", "bar")), searcher.rewrite(bq));
+
+
+    // minShouldMatch is set to -1
+    bq = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "bar")), Occur.FILTER)
+        .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "quz")), Occur.SHOULD)
+        .setMinimumNumberShouldMatch(2)
+        .build();
+
+    BooleanQuery expected = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("foo", "bar")), Occur.MUST)
+        .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "quz")), Occur.SHOULD)
+        .setMinimumNumberShouldMatch(1)
+        .build();
+    assertEquals(expected, searcher.rewrite(bq));
+  }
+
+  // Duplicate Must or Filter with MustNot returns no match
+  public void testDuplicateMustOrFilterWithMustNot() throws IOException {
+    IndexSearcher searcher = newSearcher(new MultiReader());
+
+    // Test Must with MustNot
+    BooleanQuery bq = new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("foo", "bar")), Occur.MUST)
+            // other terms
+            .add(new TermQuery(new Term("foo", "baz")), Occur.MUST)
+            .add(new TermQuery(new Term("foo", "bad")), Occur.SHOULD)
+            //
+            .add(new TermQuery(new Term("foo", "bar")), Occur.MUST_NOT)
+            .build();
+
+    assertEquals(new MatchNoDocsQuery(), searcher.rewrite(bq));
+
+    // Test Filter with MustNot
+    BooleanQuery bq2 = new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("foo", "bar")), Occur.FILTER)
+            // other terms
+            .add(new TermQuery(new Term("foo", "baz")), Occur.MUST)
+            .add(new TermQuery(new Term("foo", "bad")), Occur.SHOULD)
+            //
+            .add(new TermQuery(new Term("foo", "bar")), Occur.MUST_NOT)
+            .build();
+
+    assertEquals(new MatchNoDocsQuery(), searcher.rewrite(bq2));
+  }
+
+  // MatchAllQuery as MUST_NOT clause cannot return anything
+  public void testMatchAllMustNot() throws IOException {
+    IndexSearcher searcher = newSearcher(new MultiReader());
+
+    // Test Must with MatchAll MustNot
+    BooleanQuery bq = new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("foo", "bar")), Occur.MUST)
+            .add(new TermQuery(new Term("foo", "baz")), Occur.FILTER)
+            .add(new TermQuery(new Term("foo", "bad")), Occur.SHOULD)
+            //
+            .add(new MatchAllDocsQuery(), Occur.MUST_NOT)
+            .build();
+
+    assertEquals(new MatchNoDocsQuery(), searcher.rewrite(bq));
+
+    // Test Must with MatchAll MustNot and other MustNot
+    BooleanQuery bq2 = new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("foo", "bar")), Occur.MUST)
+            .add(new TermQuery(new Term("foo", "baz")), Occur.FILTER)
+            .add(new TermQuery(new Term("foo", "bad")), Occur.SHOULD)
+            //
+            .add(new TermQuery(new Term("foo", "bor")), Occur.MUST_NOT)
+            .add(new MatchAllDocsQuery(), Occur.MUST_NOT)
+            .build();
+
+    assertEquals(new MatchNoDocsQuery(), searcher.rewrite(bq2));
+  }
 
   public void testRemoveMatchAllFilter() throws IOException {
     IndexSearcher searcher = newSearcher(new MultiReader());
