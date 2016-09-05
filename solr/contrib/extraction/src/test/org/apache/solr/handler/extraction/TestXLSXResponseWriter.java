@@ -85,45 +85,37 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     // check Content-Type
     assertEquals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", writerXlsx.getContentType(r, rsp));
 
-    // check it read solrconfig
-    assertEquals("Foo Integer", writerXlsx.colNamesMap.get("foo_i"));
-    assertTrue("1 specific width read in from solrconfig", writerXlsx.colWidthsMap.get("foo_l") == 50);
-
-    assertTrue("All names read in from solrconfig", writerXlsx.colNamesMap.size() == 4);
-    assertTrue("All widths read in from solrconfig", writerXlsx.colWidthsMap.size() == 4);
-
     // test our basic types,and that fields come back in the requested order
     XSSFSheet resultSheet = getWSResultForQuery(req("q","id:1", "wt","xlsx", "fl","id,foo_s,foo_i,foo_l,foo_b,foo_f,foo_d,foo_dt1"));
 
-    assertEquals("ID,Foo String,Foo Integer,Foo Long,foo_b,foo_f,foo_d,foo_dt1\n1,hi,-1,12345678987654321,F,1.414,-1.0E300,2000-01-02T03:04:05Z\n"
+    assertEquals("id,foo_s,foo_i,foo_l,foo_b,foo_f,foo_d,foo_dt1\n1,hi,-1,12345678987654321,F,1.414,-1.0E300,2000-01-02T03:04:05Z\n"
         , getStringFromSheet(resultSheet));
 
     resultSheet = getWSResultForQuery(req("q","id:1^0", "wt","xlsx", "fl","id,score,foo_s"));
     // test retrieving score
-    assertEquals("ID,score,Foo String\n1,0.0,hi\n", getStringFromSheet(resultSheet));
-    // test column width (result is in 256ths of a character for some reason)
-    assertEquals(3*256, resultSheet.getColumnWidth(0));
+    assertEquals("id,score,foo_s\n1,0.0,hi\n", getStringFromSheet(resultSheet));
 
     resultSheet = getWSResultForQuery(req("q","id:1^0", "wt","xlsx", "colname.id", "I.D.", "colwidth.id", "10",
                                       "fl","id,score,foo_s"));
     // test override colname/width
-    assertEquals("I.D.,score,Foo String\n1,0.0,hi\n", getStringFromSheet(resultSheet));
+    assertEquals("I.D.,score,foo_s\n1,0.0,hi\n", getStringFromSheet(resultSheet));
+    // test colwidth (value returned is in 256ths of a character as per excel standard)
     assertEquals(10*256, resultSheet.getColumnWidth(0));
 
     resultSheet = getWSResultForQuery(req("q","id:2", "wt","xlsx", "fl","id,v_ss"));
     // test multivalued
-    assertEquals("ID,v_ss\n2,hi; there\n", getStringFromSheet(resultSheet));
+    assertEquals("id,v_ss\n2,hi; there\n", getStringFromSheet(resultSheet));
 
     // test retrieving fields from index
     resultSheet = getWSResultForQuery(req("q","*:*", "wt","xslx", "fl","*,score"));
     String result = getStringFromSheet(resultSheet);
-    for (String field : "ID,Foo String,Foo Integer,Foo Long,foo_b,foo_f,foo_d,foo_dt1,v_ss,v2_ss,score".split(",")) {
+    for (String field : "id,foo_s,foo_i,foo_l,foo_b,foo_f,foo_d,foo_dt1,v_ss,v2_ss,score".split(",")) {
       assertTrue(result.indexOf(field) >= 0);
     }
 
     // test null values
     resultSheet = getWSResultForQuery(req("q","id:2", "wt","xlsx", "fl","id,foo_s,v_ss"));
-    assertEquals("ID,Foo String,v_ss\n2,,hi; there\n", getStringFromSheet(resultSheet));
+    assertEquals("id,foo_s,v_ss\n2,,hi; there\n", getStringFromSheet(resultSheet));
 
     // now test SolrDocumentList
     SolrDocument d = new SolrDocument();
@@ -159,19 +151,19 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     rsp.setReturnFields( new SolrReturnFields("id,foo_s", req) );
 
     resultSheet = getWSResultForQuery(req, rsp);
-    assertEquals("ID,Foo String\n1,hi\n2,\n", getStringFromSheet(resultSheet));
+    assertEquals("id,foo_s\n1,hi\n2,\n", getStringFromSheet(resultSheet));
 
     // try scores
     rsp.setReturnFields( new SolrReturnFields("id,score,foo_s", req) );
 
     resultSheet = getWSResultForQuery(req, rsp);
-    assertEquals("ID,score,Foo String\n1,2.718,hi\n2,89.83,\n", getStringFromSheet(resultSheet));
+    assertEquals("id,score,foo_s\n1,2.718,hi\n2,89.83,\n", getStringFromSheet(resultSheet));
 
     // get field values from docs... should be ordered and not include score unless requested
     rsp.setReturnFields( new SolrReturnFields("*", req) );
 
     resultSheet = getWSResultForQuery(req, rsp);
-    assertEquals("ID,Foo Integer,Foo String,Foo Long,foo_b,foo_f,foo_d,foo_dt1,v_ss,v2_ss\n" +
+    assertEquals("id,foo_i,foo_s,foo_l,foo_b,foo_f,foo_d,foo_dt1,v_ss,v2_ss\n" +
         "1,-1,hi,12345678987654321L,false,1.414,-1.0E300,2000-01-02T03:04:05Z,,\n" +
         "2,,,,,,,,hi; there,nice; output\n", getStringFromSheet(resultSheet));
 
@@ -184,20 +176,20 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     // Test field globs
     rsp.setReturnFields( new SolrReturnFields("id,foo*", req) );
     resultSheet = getWSResultForQuery(req, rsp);
-    assertEquals("ID,Foo Integer,Foo String,Foo Long,foo_b,foo_f,foo_d,foo_dt1\n" +
+    assertEquals("id,foo_i,foo_s,foo_l,foo_b,foo_f,foo_d,foo_dt1\n" +
         "1,-1,hi,12345678987654321L,false,1.414,-1.0E300,2000-01-02T03:04:05Z\n" +
         "2,,,,,,,\n", getStringFromSheet(resultSheet));
 
     rsp.setReturnFields( new SolrReturnFields("id,*_d*", req) );
     resultSheet = getWSResultForQuery(req, rsp);
-    assertEquals("ID,foo_d,foo_dt1\n" +
+    assertEquals("id,foo_d,foo_dt1\n" +
         "1,-1.0E300,2000-01-02T03:04:05Z\n" +
         "2,,\n", getStringFromSheet(resultSheet));
 
     // Test function queries
     rsp.setReturnFields( new SolrReturnFields("sum(1,1),id,exists(foo_s1),div(9,1),foo_f", req) );
     resultSheet = getWSResultForQuery(req, rsp);
-    assertEquals("sum(1,1),ID,exists(foo_s1),div(9,1),foo_f\n" +
+    assertEquals("sum(1,1),id,exists(foo_s1),div(9,1),foo_f\n" +
         ",1,,,1.414\n" +
         ",2,,,\n", getStringFromSheet(resultSheet));
 
@@ -217,7 +209,7 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
     // Use Pseudo Field
     SolrQueryRequest req = req("q","id:1", "wt","xlsx", "fl","XXX:id,foo_s");
     XSSFSheet resultSheet = getWSResultForQuery(req);
-    assertEquals("XXX,Foo String\n1,hi\n", getStringFromSheet(resultSheet));
+    assertEquals("XXX,foo_s\n1,hi\n", getStringFromSheet(resultSheet));
     
     String txt = getStringFromSheet(getWSResultForQuery(req("q","id:1", "wt","xlsx", "fl","XXX:id,YYY:[docid],FOO:foo_s")));
     String[] lines = txt.split("\n");

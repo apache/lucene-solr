@@ -58,26 +58,8 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
 
 public class XLSXResponseWriter extends RawResponseWriter {
-  LinkedHashMap<String,String> colNamesMap = new LinkedHashMap<String,String>();
-  LinkedHashMap<String,Integer> colWidthsMap = new LinkedHashMap<String,Integer>();
-
   @Override
   public void init(NamedList solrconfig) {
-    NamedList columnNames = (NamedList) solrconfig.get("colnames");
-    if (columnNames != null && columnNames.size() > 0) {
-      for (Object nameObject: columnNames) {
-        Map.Entry<String, String> namePair = (Map.Entry<String, String>) nameObject;
-        this.colNamesMap.put(namePair.getKey(), namePair.getValue());
-      }
-    }
-
-    NamedList columnWidths = (NamedList) solrconfig.get("colwidths");
-    if (columnWidths != null && columnWidths.size() > 0) {
-      for (Object widthObject : columnWidths) {
-        Map.Entry<String, Integer> widthPair = (Map.Entry<String, Integer>) widthObject;
-        this.colWidthsMap.put(widthPair.getKey(), widthPair.getValue());
-      }
-    }
   }
 
   @Override
@@ -86,9 +68,8 @@ public class XLSXResponseWriter extends RawResponseWriter {
     // all writes before they go to it anyway
     XLSXWriter w = new XLSXWriter(new CharArrayWriter(), req, rsp);
 
-    // copy these as each request may modify them within its context
-    LinkedHashMap<String,String> reqNamesMap = new LinkedHashMap<>(colNamesMap);
-    LinkedHashMap<String,Integer> reqWidthsMap = new LinkedHashMap<>(colWidthsMap);
+    LinkedHashMap<String,String> reqNamesMap = new LinkedHashMap<>();
+    LinkedHashMap<String,Integer> reqWidthsMap = new LinkedHashMap<>();
 
     Iterator<String> paramNamesIter = req.getParams().getParameterNamesIterator();
     while (paramNamesIter.hasNext()) {
