@@ -27,6 +27,7 @@ import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.junit.AfterClass;
 import org.junit.Before;
 
@@ -142,6 +143,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /** The cluster */
   protected static MiniSolrCloudCluster cluster;
+
+  protected SolrZkClient zkClient() {
+    return cluster.getSolrClient().getZkStateReader().getZkClient();
+  }
 
   /**
    * Call this to configure a cluster of n nodes.
