@@ -203,7 +203,7 @@
     </lst>
   </requestHandler>
 
-<highlighting>
+  <highlighting>
    <!-- Configure the standard fragmenter -->
    <fragmenter name="gap" class="org.apache.solr.highlight.GapFragmenter" default="true">
     <lst name="defaults">
