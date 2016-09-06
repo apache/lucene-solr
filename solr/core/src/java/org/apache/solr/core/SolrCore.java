@@ -2197,6 +2197,12 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     m.put("smile", new SmileResponseWriter());
     m.put(ReplicationHandler.FILE_STREAM, getFileStreamWriter());
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
+    try {
+      m.put("xlsx",
+          (QueryResponseWriter) Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter").newInstance());
+    } catch (Exception e) {
+      //don't worry; solrcell contrib not in class path
+    }
   }
 
   private static BinaryResponseWriter getFileStreamWriter() {
@@ -2219,7 +2225,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   }
 
   public interface RawWriter {
-    public void write(OutputStream os) throws IOException ;
+    void write(OutputStream os) throws IOException ;
   }
 
   /** Configure the query response writers. There will always be a default writer; additional
