@@ -78,7 +78,9 @@ prefix, then you will now get an error as these options are incompatible with nu
 New Features
 ----------------------
 * SOLR-5725: facet.method=enum can bypass exact counts calculation with facet.exists=true, it just returns 1 for 
-  terms which exists in result docset. (Alexey Kozhemiakin, Sebastian Koziel, Radoslaw Zielinski via Mikhail Khludnev) 
+  terms which exists in result docset. (Alexey Kozhemiakin, Sebastian Koziel, Radoslaw Zielinski via Mikhail Khludnev)
+
+* SOLR-9127: Excel workbook (.xlsx) response writer. use 'wt=xlsx' (Tony Moriarty, noble)
 
 Bug Fixes
 ----------------------
