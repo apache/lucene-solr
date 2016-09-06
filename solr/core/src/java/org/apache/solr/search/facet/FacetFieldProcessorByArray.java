@@ -18,19 +18,15 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 
 /**
- * Base class for DV/UIF accumulating counts into an array by ordinal.
+ * Base class for DV/UIF accumulating counts into an array by ordinal.  It's
+ * for {@link org.apache.lucene.index.SortedDocValues} and {@link org.apache.lucene.index.SortedSetDocValues} only.
  * It can handle terms (strings), not numbers directly but those encoded as terms, and is multi-valued capable.
  */
 abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
@@ -57,11 +53,10 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
   @Override
   public void process() throws IOException {
     super.process();
-    sf = fcontext.searcher.getSchema().getField(freq.field);
-    response = getFieldCacheCounts();
+    response = calcFacets();
   }
 
-  private SimpleOrderedMap<Object> getFieldCacheCounts() throws IOException {
+  private SimpleOrderedMap<Object> calcFacets() throws IOException {
     String prefix = freq.prefix;
     if (prefix == null || prefix.length() == 0) {
       prefixRef = null;
@@ -86,128 +81,15 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
 
     collectDocs();
 
-    return findTopSlots();
-  }
-
-  private SimpleOrderedMap<Object> findTopSlots() throws IOException {
-    SimpleOrderedMap<Object> res = new SimpleOrderedMap<>();
-
-    int numBuckets = 0;
-    List<Object> bucketVals = null;
-    if (freq.numBuckets && fcontext.isShard()) {
-      bucketVals = new ArrayList<>(100);
-    }
-
-    int off = fcontext.isShard() ? 0 : (int) freq.offset;
-    // add a modest amount of over-request if this is a shard request
-    int lim = freq.limit >= 0 ? (fcontext.isShard() ? (int)(freq.limit*1.1+4) : (int)freq.limit) : Integer.MAX_VALUE;
-
-    int maxsize = (int)(freq.limit >= 0 ?  freq.offset + lim : Integer.MAX_VALUE - 1);
-    maxsize = Math.min(maxsize, nTerms);
-
-    final int sortMul = freq.sortDirection.getMultiplier();
-    final SlotAcc sortAcc = this.sortAcc;
-
-    PriorityQueue<Slot> queue = new PriorityQueue<Slot>(maxsize) {
-      @Override
-      protected boolean lessThan(Slot a, Slot b) {
-        int cmp = sortAcc.compare(a.slot, b.slot) * sortMul;
-        return cmp == 0 ? b.slot < a.slot : cmp < 0;
-      }
-    };
-
-    Slot bottom = null;
-    for (int i = 0; i < nTerms; i++) {
-      // screen out buckets not matching mincount immediately (i.e. don't even increment numBuckets)
-      if (effectiveMincount > 0 && countAcc.getCount(i) < effectiveMincount) {
-        continue;
-      }
-
-      numBuckets++;
-      if (bucketVals != null && bucketVals.size()<100) {
-        int ord = startTermIndex + i;
-        BytesRef br = lookupOrd(ord);
-        Object val = sf.getType().toObject(sf, br);
-        bucketVals.add(val);
-      }
-
-      if (bottom != null) {
-        if (sortAcc.compare(bottom.slot, i) * sortMul < 0) {
-          bottom.slot = i;
-          bottom = queue.updateTop();
-        }
-      } else if (lim > 0) {
-        // queue not full
-        Slot s = new Slot();
-        s.slot = i;
-        queue.add(s);
-        if (queue.size() >= maxsize) {
-          bottom = queue.top();
-        }
-      }
-    }
-
-    if (freq.numBuckets) {
-      if (!fcontext.isShard()) {
-        res.add("numBuckets", numBuckets);
-      } else {
-        SimpleOrderedMap<Object> map = new SimpleOrderedMap<>(2);
-        map.add("numBuckets", numBuckets);
-        map.add("vals", bucketVals);
-        res.add("numBuckets", map);
-      }
-    }
-
-    FacetDebugInfo fdebug = fcontext.getDebugInfo();
-    if (fdebug != null) fdebug.putInfoItem("numBuckets", (long) numBuckets);
-
-    // if we are deep paging, we don't have to order the highest "offset" counts.
-    int collectCount = Math.max(0, queue.size() - off);
-    assert collectCount <= lim;
-    int[] sortedSlots = new int[collectCount];
-    for (int i = collectCount - 1; i >= 0; i--) {
-      sortedSlots[i] = queue.pop().slot;
-    }
-
-    if (freq.allBuckets) {
-      SimpleOrderedMap<Object> allBuckets = new SimpleOrderedMap<>();
-      allBuckets.add("count", allBucketsAcc.getSpecialCount());
-      if (allBucketsAcc != null) {
-        allBucketsAcc.setValues(allBuckets, allBucketsSlot);
-      }
-      res.add("allBuckets", allBuckets);
-    }
-
-    ArrayList<SimpleOrderedMap<Object>> bucketList = new ArrayList<>(collectCount);
-    res.add("buckets", bucketList);
-
-    // TODO: do this with a callback instead?
-    boolean needFilter = deferredAggs != null || freq.getSubFacets().size() > 0;
-
-    for (int slotNum : sortedSlots) {
-      SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
-
-      // get the ord of the slot...
-      int ord = startTermIndex + slotNum;
-
-      BytesRef br = lookupOrd(ord);
-      Object val = sf.getType().toObject(sf, br);
-
-      bucket.add("val", val);
-
-      TermQuery filter = needFilter ? new TermQuery(new Term(sf.getName(), br)) : null;
-      fillBucket(bucket, countAcc.getCount(slotNum), slotNum, null, filter);
-
-      bucketList.add(bucket);
-    }
-
-    if (freq.missing) {
-      SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
-      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null);
-      res.add("missing", missingBucket);
-    }
-
-    return res;
+    return super.findTopSlots(nTerms, nTerms,
+        slotNum -> { // getBucketValFromSlotNum
+          try {
+            return (Comparable) sf.getType().toObject(sf, lookupOrd(slotNum + startTermIndex));
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        },
+        Object::toString); // getFieldQueryVal
   }
 
 }

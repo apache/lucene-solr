@@ -66,8 +66,19 @@ Jetty 9.3.8.v20160314
 Detailed Change List
 ----------------------
 
+Upgrade Notes
+----------------------
+
+* If you use the JSON Facet API (json.facet) with method=stream, you must now set sort='index asc' to get the streaming
+behavior; otherwise it won't stream.  Reminder: "method" is a hint that doesn't change defaults of other parameters.
+
+* If you use the JSON Facet API (json.facet) to facet on a numeric field and if you use mincount=0 or if you set the
+prefix, then you will now get an error as these options are incompatible with numeric faceting.
+
 New Features
 ----------------------
+* SOLR-5725: facet.method=enum can bypass exact counts calculation with facet.exists=true, it just returns 1 for 
+  terms which exists in result docset. (Alexey Kozhemiakin, Sebastian Koziel, Radoslaw Zielinski via Mikhail Khludnev) 
 
 Bug Fixes
 ----------------------
@@ -81,13 +92,25 @@ Bug Fixes
 
 * SOLR-9445: Admin requests are retried by CloudSolrClient and LBHttpSolrClient on failure. (shalin)
 
-* SOLR-9439: Shard split clean up logic for older failed splits is faulty. (shalin)
+* SOLR-9439: Shard split clean up logic for older failed splits is faulty. The delete shard API
+  has also been made more resilient against failures resulting from non-existent cores. (shalin)
 
 * SOLR-9430: Fix locale lookup in DIH <propertyWriter/> to use BCP47 language tags
   to be consistent with other places in Solr. Language names still work for backwards
   compatibility. (Uwe Schindler, Boris Steiner)
 
 * SOLR-9188: blockUnknown property makes inter-node communication impossible (noble)
+
+* SOLR-9455: Deleting a sub-shard in recovery state can mark parent shard as inactive. (shalin)
+
+* SOLR-9461: DELETENODE, REPLACENODE should pass down the 'async' param to subcommands (shalin, noble)
+
+* SOLR-9319: DELETEREPLICA can accept a 'count' and remove appropriate replicas (Nitin Sharma, noble )
+
+* SOLR-9444: Fix path usage for cloud backup/restore.  (Hrishikesh Gadre, Uwe Schindler, Varun Thacker)
+
+* SOLR-9381: Snitch for freedisk uses '/' instead of 'coreRootDirectory' (Tim Owen, noble)
+
 
 Optimizations
 ----------------------
@@ -96,6 +119,13 @@ Optimizations
 
 * SOLR-9449: Example schemas do not index _version_ field anymore because the field
   has DocValues enabled already. (shalin)
+
+* SOLR-9447: Do not clone SolrInputDocument if update processor chain does not contain custom processors.
+  (shalin)
+
+* SOLR-9452: JsonRecordReader should not deep copy document before handler.handle(). (noble, shalin)
+
+* SOLR-9142: JSON Facet API: new method=dvhash can be chosen for fields with high cardinality. (David Smiley)
 
 Other Changes
 ----------------------

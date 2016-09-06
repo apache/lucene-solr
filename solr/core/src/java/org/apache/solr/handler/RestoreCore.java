@@ -44,11 +44,11 @@ public class RestoreCore implements Callable<Boolean> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String backupName;
-  private final String backupLocation;
+  private final URI backupLocation;
   private final SolrCore core;
   private final BackupRepository backupRepo;
 
-  public RestoreCore(BackupRepository backupRepo, SolrCore core, String location, String name) {
+  public RestoreCore(BackupRepository backupRepo, SolrCore core, URI location, String name) {
     this.backupRepo = backupRepo;
     this.core = core;
     this.backupLocation = location;
@@ -62,7 +62,7 @@ public class RestoreCore implements Callable<Boolean> {
 
   public boolean doRestore() throws Exception {
 
-    URI backupPath = backupRepo.createURI(backupLocation, backupName);
+    URI backupPath = backupRepo.resolve(backupLocation, backupName);
     SimpleDateFormat dateFormat = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT);
     String restoreIndexName = "restore." + dateFormat.format(new Date());
     String restoreIndexPath = core.getDataDir() + restoreIndexName;

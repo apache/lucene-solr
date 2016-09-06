@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -100,21 +100,21 @@ public class ImplicitSnitch extends Snitch implements CoreAdminHandler.Invocable
     }
   }
 
-  static long getUsableSpaceInGB() throws IOException {
-    long space = Files.getFileStore(Paths.get("/")).getUsableSpace();
+  static long getUsableSpaceInGB(Path path) throws IOException {
+    long space = Files.getFileStore(path).getUsableSpace();
     long spaceInGB = space / 1024 / 1024 / 1024;
     return spaceInGB;
   }
 
   public Map<String, Object> invoke(SolrQueryRequest req) {
     Map<String, Object> result = new HashMap<>();
+    CoreContainer cc = (CoreContainer) req.getContext().get(CoreContainer.class.getName());
     if (req.getParams().getInt(CORES, -1) == 1) {
-      CoreContainer cc = (CoreContainer) req.getContext().get(CoreContainer.class.getName());
       result.put(CORES, cc.getCoreNames().size());
     }
     if (req.getParams().getInt(DISK, -1) == 1) {
       try {
-        final long spaceInGB = getUsableSpaceInGB();
+        final long spaceInGB = getUsableSpaceInGB(cc.getCoreRootDirectory());
         result.put(DISK, spaceInGB);
       } catch (IOException e) {
 
