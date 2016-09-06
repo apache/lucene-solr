@@ -23,46 +23,49 @@ import java.util.List;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.highlight.TermVectorLeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
- * Field highlighter using term vectors that contain offsets.
+ * Like {@link PostingsOffsetStrategy} but also uses term vectors (only terms needed) for multi-term queries.
  *
  * @lucene.internal
  */
-public class TermVectorFieldHighlighter extends FieldOffsetStrategy {
+public class PostingsWithTermVectorsOffsetStrategy extends FieldOffsetStrategy {
 
-  public TermVectorFieldHighlighter(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
+  public PostingsWithTermVectorsOffsetStrategy(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
     super(field, queryTerms, phraseHelper, automata);
   }
 
   @Override
-  public UnifiedHighlighter.OffsetSource getOffsetSource() {
-    return UnifiedHighlighter.OffsetSource.TERM_VECTORS;
-  }
-
-  @Override
   public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
-    Terms tvTerms = reader.getTermVector(docId, field);
-    if (tvTerms == null) {
+    LeafReader leafReader;
+    if (reader instanceof LeafReader) {
+      leafReader = (LeafReader) reader;
+    } else {
+      List<LeafReaderContext> leaves = reader.leaves();
+      LeafReaderContext LeafReaderContext = leaves.get(ReaderUtil.subIndex(docId, leaves));
+      leafReader = LeafReaderContext.reader();
+      docId -= LeafReaderContext.docBase; // adjust 'doc' to be within this atomic reader
+    }
+
+    Terms docTerms = leafReader.getTermVector(docId, field);
+    if (docTerms == null) {
       return Collections.emptyList();
     }
+    leafReader = new TermVectorFilteredLeafReader(leafReader, docTerms);
 
-    LeafReader leafReader = null;
-    if ((terms.length > 0) || strictPhrases.willRewrite()) {
-      leafReader = new TermVectorLeafReader(field, tvTerms);
-      docId = 0;
-    }
-
-    TokenStream tokenStream = null;
-    if (automata.length > 0) {
-      tokenStream = MultiTermHighlighting.uninvertAndFilterTerms(tvTerms, 0, automata, content.length());
-    }
+    TokenStream tokenStream = automata.length > 0 ? MultiTermHighlighting
+        .uninvertAndFilterTerms(leafReader.terms(field), docId, this.automata, content.length()) : null;
 
     return createOffsetsEnums(leafReader, docId, tokenStream);
   }
 
+  @Override
+  public UnifiedHighlighter.OffsetSource getOffsetSource() {
+    return UnifiedHighlighter.OffsetSource.POSTINGS;
+  }
 }

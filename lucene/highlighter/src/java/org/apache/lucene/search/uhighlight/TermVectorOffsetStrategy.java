@@ -17,45 +17,52 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.highlight.TermVectorLeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
- * Highlights offsets in postings -- {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}.  This field
- * highlighter does not support multi-term queries; the highlighter will fallback on analysis for that.
+ * Uses term vectors that contain offsets.
  *
  * @lucene.internal
  */
-public class PostingsFieldHighlighter extends FieldOffsetStrategy {
+public class TermVectorOffsetStrategy extends FieldOffsetStrategy {
 
-  public PostingsFieldHighlighter(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
+  public TermVectorOffsetStrategy(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
     super(field, queryTerms, phraseHelper, automata);
   }
 
   @Override
-  public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
-    LeafReader leafReader;
-    if (reader instanceof LeafReader) {
-      leafReader = (LeafReader) reader;
-    } else {
-      List<LeafReaderContext> leaves = reader.leaves();
-      LeafReaderContext leafReaderContext = leaves.get(ReaderUtil.subIndex(docId, leaves));
-      leafReader = leafReaderContext.reader();
-      docId -= leafReaderContext.docBase; // adjust 'doc' to be within this leaf reader
-    }
-
-    return createOffsetsEnumsFromReader(leafReader, docId);
+  public UnifiedHighlighter.OffsetSource getOffsetSource() {
+    return UnifiedHighlighter.OffsetSource.TERM_VECTORS;
   }
 
   @Override
-  public UnifiedHighlighter.OffsetSource getOffsetSource() {
-    return UnifiedHighlighter.OffsetSource.POSTINGS;
+  public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
+    Terms tvTerms = reader.getTermVector(docId, field);
+    if (tvTerms == null) {
+      return Collections.emptyList();
+    }
+
+    LeafReader leafReader = null;
+    if ((terms.length > 0) || strictPhrases.willRewrite()) {
+      leafReader = new TermVectorLeafReader(field, tvTerms);
+      docId = 0;
+    }
+
+    TokenStream tokenStream = null;
+    if (automata.length > 0) {
+      tokenStream = MultiTermHighlighting.uninvertAndFilterTerms(tvTerms, 0, automata, content.length());
+    }
+
+    return createOffsetsEnums(leafReader, docId, tokenStream);
   }
+
 }

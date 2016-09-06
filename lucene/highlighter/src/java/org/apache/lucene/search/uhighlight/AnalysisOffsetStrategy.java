@@ -37,11 +37,11 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 
 /**
- * A field highlighter that uses an {@link Analyzer} to get offsets. It may use a {@link MemoryIndex} too.
+ * Uses an {@link Analyzer} on content to get offsets. It may use a {@link MemoryIndex} too.
  *
  * @lucene.internal
  */
-public class AnalysisFieldHighlighter extends FieldOffsetStrategy {
+public class AnalysisOffsetStrategy extends FieldOffsetStrategy {
 
   //TODO: Consider splitting this highlighter into a MemoryIndexFieldHighlighter and a TokenStreamFieldHighlighter
   private static final BytesRef[] ZERO_LEN_BYTES_REF_ARRAY = new BytesRef[0];
@@ -50,7 +50,7 @@ public class AnalysisFieldHighlighter extends FieldOffsetStrategy {
   private final LeafReader leafReader;
   private final CharacterRunAutomaton preMemIndexFilterAutomaton;
 
-  public AnalysisFieldHighlighter(String field, BytesRef[] extractedTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, Analyzer analyzer) {
+  public AnalysisOffsetStrategy(String field, BytesRef[] extractedTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, Analyzer analyzer) {
     super(field, extractedTerms, phraseHelper, automata);
     this.analyzer = analyzer;
     // Automata (Wildcards / MultiTermQuery):
