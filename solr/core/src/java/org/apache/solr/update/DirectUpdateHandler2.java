@@ -519,6 +519,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @SuppressForbidden(reason = "Need currentTimeMillis, commit time should be used only for debugging purposes, " +
       " but currently suspiciously used for replication as well")
+  /*
+  Also see SolrIndexSplitter.setCommitData
+   */
   private void setCommitData(IndexWriter iw) {
     final Map<String,String> commitData = new HashMap<>();
     commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY,
