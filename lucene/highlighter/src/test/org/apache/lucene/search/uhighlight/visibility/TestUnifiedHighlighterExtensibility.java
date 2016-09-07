@@ -185,4 +185,17 @@ public class TestUnifiedHighlighterExtensibility {
     assertEquals(formattedResponse, formatter.format(new Passage[0], ""));
   }
 
+  @Test
+  public void testFieldHiglighterExtensibility() {
+    final String fieldName = "fieldName";
+    FieldHighlighter fieldHighlighter = new FieldHighlighter(fieldName, null, null, null, 1, 1, null) {
+      @Override
+      protected Passage[] highlightOffsetsEnums(List<OffsetsEnum> offsetsEnums) throws IOException {
+        return super.highlightOffsetsEnums(offsetsEnums);
+      }
+    };
+
+    assertEquals(fieldHighlighter.getField(), fieldName);
+  }
+
 }
