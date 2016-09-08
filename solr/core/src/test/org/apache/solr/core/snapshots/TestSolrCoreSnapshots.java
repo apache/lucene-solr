@@ -17,8 +17,6 @@
 package org.apache.solr.core.snapshots;
 
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -124,7 +122,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       // and the other containing document deletions.
       {
         List<IndexCommit> commits = listCommits(metaData.getIndexDirPath());
-        assertTrue(2 <= commits.size());
+        assertTrue(commits.size() >= 2);
       }
 
       // Backup the earlier created snapshot.
@@ -146,9 +144,11 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       }
 
       // Verify that the old index directory (before restore) contains only those index commits referred by snapshots.
+      // The IndexWriter (used to cleanup index files) creates an additional commit during closing. Hence we expect 2 commits (instead
+      // of 1).
       {
         List<IndexCommit> commits = listCommits(metaData.getIndexDirPath());
-        assertEquals(1, commits.size());
+        assertEquals(2, commits.size());
         assertEquals(metaData.getGenerationNumber(), commits.get(0).getGeneration());
       }
 
@@ -161,120 +161,13 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       // Delete second snapshot
       deleteSnapshot(adminClient, coreName, duplicateCommit.getName());
 
-      // Verify that corresponding index files have been deleted.
-      assertTrue(listCommits(duplicateCommit.getIndexDirPath()).isEmpty());
+      // Verify that corresponding index files have been deleted. Ideally this directory should
+      // be removed immediately. But the current DirectoryFactory impl waits until the
+      // closing the core (or the directoryFactory) for actual removal. Since the IndexWriter
+      // (used to cleanup index files) creates an additional commit during closing, we expect a single
+      // commit (instead of 0).
+      assertEquals(1, listCommits(duplicateCommit.getIndexDirPath()).size());
     }
-  }
-
-  @Test
-  public void testHandlingSharedIndexFiles() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
-    String collectionName = "SolrCoreSnapshots_IndexFileSharing";
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
-    create.process(solrClient);
-
-    int nDocs = BackupRestoreUtils.indexDocs(cluster.getSolrClient(), collectionName, docsSeed);
-    DocCollection collectionState = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
-    assertEquals(1, collectionState.getActiveSlices().size());
-    Slice shard = collectionState.getActiveSlices().iterator().next();
-    assertEquals(1, shard.getReplicas().size());
-    Replica replica = shard.getReplicas().iterator().next();
-
-    String replicaBaseUrl = replica.getStr(BASE_URL_PROP);
-    String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-    String backupName = TestUtil.randomSimpleString(random(), 1, 5);
-    String location = createTempDir().toFile().getAbsolutePath();
-
-    try (
-        SolrClient adminClient = getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-        SolrClient masterClient = getHttpSolrClient(replica.getCoreUrl())) {
-
-      int numTests = TestUtil.nextInt(random(), 2, 5);
-      List<SnapshotMetaData> snapshots = new ArrayList<>(numTests);
-
-      // Create multiple commits and create a snapshot per commit.
-      // This should result in Lucene reusing some of the segments for later index commits.
-      for (int attempt=0; attempt<numTests; attempt++) {
-        if (nDocs > 0) {
-          //Delete a few docs
-          int numDeletes = TestUtil.nextInt(random(), 1, nDocs);
-          for(int i=0; i<numDeletes; i++) {
-            masterClient.deleteByQuery("id:" + i);
-          }
-        }
-
-        // Add a few more
-        int moreAdds = TestUtil.nextInt(random(), 1, 100);
-        for (int i = 0; i < moreAdds; i++) {
-          SolrInputDocument doc = new SolrInputDocument();
-          doc.addField("id", i + nDocs);
-          doc.addField("name", "name = " + (i + nDocs));
-          masterClient.add(doc);
-        }
-        masterClient.commit();
-
-        // Create a snapshot
-        snapshots.add(createSnapshot(adminClient, coreName, "snapshot_" + attempt));
-      }
-
-      // Backup the earlier created snapshot.
-      {
-        Map<String,String> params = new HashMap<>();
-        params.put("name", backupName);
-        params.put("commitName", snapshots.get(0).getName());
-        params.put("location", location);
-        BackupRestoreUtils.runCoreAdminCommand(replicaBaseUrl, coreName, CoreAdminAction.BACKUPCORE.toString(), params);
-      }
-
-      // Restore the backup. The purpose of the restore operation is to change the *current* index directory.
-      // This is required since we delegate the file deletion to underlying IndexDeletionPolicy in case of
-      // *current* index directory. Hence for the purpose of this test, we want to ensure that the created
-      // snapshots are NOT in the *current* index directory.
-      {
-        Map<String,String> params = new HashMap<>();
-        params.put("name", "snapshot." + backupName);
-        params.put("location", location);
-        BackupRestoreUtils.runCoreAdminCommand(replicaBaseUrl, coreName, CoreAdminAction.RESTORECORE.toString(), params);
-      }
-
-      {
-        SnapshotMetaData snapshotMetaData = snapshots.get(0);
-
-        List<IndexCommit> commits = listCommits(snapshotMetaData.getIndexDirPath());
-        // Check if number of index commits are > 0 to ensure index file sharing.
-        assertTrue(commits.size() > 0);
-        Map<String,Integer> refCounts = SolrSnapshotManager.buildRefCounts(snapshots, commits);
-
-        Optional<IndexCommit> ic = commits.stream()
-            .filter(entry -> entry.getGeneration() == snapshotMetaData.getGenerationNumber())
-            .findFirst();
-        assertTrue(ic.isPresent());
-        Collection<String> nonSharedFiles = new ArrayList<>();
-        Collection<String> sharedFiles = new ArrayList<>();
-        for (String fileName : ic.get().getFileNames()) {
-          if (refCounts.getOrDefault(fileName, 0) > 1) {
-            sharedFiles.add(fileName);
-          } else {
-            nonSharedFiles.add(fileName);
-          }
-        }
-
-        // Delete snapshot
-        deleteSnapshot(adminClient, coreName, snapshotMetaData.getName());
-
-        // Verify that the shared files are not deleted.
-        for (String fileName : sharedFiles) {
-          Path path = Paths.get(snapshotMetaData.getIndexDirPath(), fileName);
-          assertTrue(path + " should exist.", Files.exists(path));
-        }
-
-        // Verify that the non-shared files are deleted.
-        for (String fileName : nonSharedFiles) {
-          Path path = Paths.get(snapshotMetaData.getIndexDirPath(), fileName);
-          assertFalse(path + " should not exist.", Files.exists(path));
-        }
-        }
-      }
   }
 
   @Test

@@ -39,6 +39,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -81,7 +82,9 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
+import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -194,6 +197,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final List<Runnable> confListeners = new CopyOnWriteArrayList<>();
 
   private final ReentrantLock ruleExpiryLock;
+  private final ReentrantLock snapshotDelLock; // A lock instance to guard against concurrent deletions.
 
   public Date getStartTimeStamp() { return startTime; }
 
@@ -430,6 +434,83 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       throw new IllegalStateException(e);
     }
   }
+
+  /**
+   * This method deletes the snapshot with the specified name. If the directory
+   * storing the snapshot is not the same as the *current* core index directory,
+   * then delete the files corresponding to this snapshot. Otherwise we leave the
+   * index files related to snapshot as is (assuming the underlying Solr IndexDeletionPolicy
+   * will clean them up appropriately).
+   *
+   * @param commitName The name of the snapshot to be deleted.
+   * @throws IOException in case of I/O error.
+   */
+  public void deleteNamedSnapshot(String commitName) throws IOException {
+    // Note this lock is required to prevent multiple snapshot deletions from
+    // opening multiple IndexWriter instances simultaneously.
+    this.snapshotDelLock.lock();
+    try {
+      Optional<SnapshotMetaData> metadata = snapshotMgr.release(commitName);
+      if (metadata.isPresent()) {
+        long gen = metadata.get().getGenerationNumber();
+        String indexDirPath = metadata.get().getIndexDirPath();
+
+        if (!indexDirPath.equals(getIndexDir())) {
+          Directory d = getDirectoryFactory().get(indexDirPath, DirContext.DEFAULT, "none");
+          try {
+            Collection<SnapshotMetaData> snapshots = snapshotMgr.listSnapshotsInIndexDir(indexDirPath);
+            log.info("Following snapshots exist in the index directory {} : {}", indexDirPath, snapshots);
+            if (snapshots.isEmpty()) {// No snapshots remain in this directory. Can be cleaned up!
+              log.info("Removing index directory {} since all named snapshots are deleted.", indexDirPath);
+              getDirectoryFactory().remove(d);
+            } else {
+              SolrSnapshotManager.deleteSnapshotIndexFiles(this, d, gen);
+            }
+          } finally {
+            getDirectoryFactory().release(d);
+          }
+        }
+      }
+    } finally {
+      snapshotDelLock.unlock();
+    }
+  }
+
+  /**
+   * This method deletes the index files not associated with any named snapshot only
+   * if the specified indexDirPath is not the *current* index directory.
+   *
+   * @param indexDirPath The path of the directory
+   * @throws IOException In case of I/O error.
+   */
+  public void deleteNonSnapshotIndexFiles(String indexDirPath) throws IOException {
+    // Skip if the specified indexDirPath is the *current* index directory.
+    if (getIndexDir().equals(indexDirPath)) {
+      return;
+    }
+
+    // Note this lock is required to prevent multiple snapshot deletions from
+    // opening multiple IndexWriter instances simultaneously.
+    this.snapshotDelLock.lock();
+    Directory dir = getDirectoryFactory().get(indexDirPath, DirContext.DEFAULT, "none");
+    try {
+      Collection<SnapshotMetaData> snapshots = snapshotMgr.listSnapshotsInIndexDir(indexDirPath);
+      log.info("Following snapshots exist in the index directory {} : {}", indexDirPath, snapshots);
+      // Delete the old index directory only if no snapshot exists in that directory.
+      if (snapshots.isEmpty()) {
+        log.info("Removing index directory {} since all named snapshots are deleted.", indexDirPath);
+        getDirectoryFactory().remove(dir);
+      } else {
+        SolrSnapshotManager.deleteNonSnapshotIndexFiles(this, dir, snapshots);
+      }
+    } finally {
+      snapshotDelLock.unlock();
+      if (dir != null) {
+        getDirectoryFactory().release(dir);
+      }
+    }
+  }
+
 
   private void initListeners() {
     final Class<SolrEventListener> clazz = SolrEventListener.class;
@@ -863,6 +944,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     bufferUpdatesIfConstructing(coreDescriptor);
 
     this.ruleExpiryLock = new ReentrantLock();
+    this.snapshotDelLock = new ReentrantLock();
+
     registerConfListener();
     
     assert ObjectReleaseTracker.track(this);

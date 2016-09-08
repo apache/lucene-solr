@@ -61,11 +61,9 @@ import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.RestoreCore;
@@ -899,25 +897,7 @@ enum CoreAdminOperation implements CoreAdminOp {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
       }
 
-      SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
-      Optional<SnapshotMetaData> metadata = mgr.release(commitName);
-      if (metadata.isPresent()) {
-        long gen = metadata.get().getGenerationNumber();
-        String indexDirPath = metadata.get().getIndexDirPath();
-
-        // If the directory storing the snapshot is not the same as the *current* core
-        // index directory, then delete the files corresponding to this snapshot.
-        // Otherwise we leave the index files related to snapshot as is (assuming the
-        // underlying Solr IndexDeletionPolicy will clean them up appropriately).
-        if (!indexDirPath.equals(core.getIndexDir())) {
-          Directory d = core.getDirectoryFactory().get(indexDirPath, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_NONE);
-          try {
-            SolrSnapshotManager.deleteIndexFiles(d, mgr.listSnapshotsInIndexDir(indexDirPath), gen);
-          } finally {
-            core.getDirectoryFactory().release(d);
-          }
-        }
-      }
+      core.deleteNamedSnapshot(commitName);
     }
   }),
   LISTSNAPSHOTS_OP(LISTSNAPSHOTS, it -> {
