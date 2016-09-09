@@ -10,6 +10,12 @@ API Changes
 * LUCENE-7436: MinHashFilter's constructor, and some of its default
   settings, should be public.  (Doug Turnbull via Mike McCandless)
 
+Bug Fixes
+
+* LUCENE-7417: The standard Highlighter could throw an IllegalArgumentException when
+  trying to highlight a query containing a degenerate case of a MultiPhraseQuery with one
+  term.  (Thomas Kappler via David Smiley)
+
 ======================= Lucene 6.2.0 =======================
 
 API Changes
