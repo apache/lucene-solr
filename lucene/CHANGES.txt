@@ -36,7 +36,21 @@ Other
 
 ======================= Lucene 6.3.0 =======================
 
-(No changes)
+API Changes
+
+New Features
+
+Bug Fixes
+
+* LUCENE-7417: The standard Highlighter could throw an IllegalArgumentException when
+  trying to highlight a query containing a degenerate case of a MultiPhraseQuery with one
+  term.  (Thomas Kappler via David Smiley)
+
+Improvements
+
+Optimizations
+
+Other
 
 ======================= Lucene 6.2.0 =======================
 

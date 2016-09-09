@@ -118,8 +118,7 @@ public class WeightedSpanTermExtractor {
       Term[] phraseQueryTerms = phraseQuery.getTerms();
       if (phraseQueryTerms.length == 1) {
         extractWeightedSpanTerms(terms, new SpanTermQuery(phraseQueryTerms[0]), boost);
-      }
-      else {
+      } else {
         SpanQuery[] clauses = new SpanQuery[phraseQueryTerms.length];
         for (int i = 0; i < phraseQueryTerms.length; i++) {
           clauses[i] = new SpanTermQuery(phraseQueryTerms[i]);
@@ -153,8 +152,8 @@ public class WeightedSpanTermExtractor {
       // this query is TermContext sensitive.
       extractWeightedTerms(terms, query, boost);
     } else if (query instanceof DisjunctionMaxQuery) {
-      for (Iterator<Query> iterator = ((DisjunctionMaxQuery) query).iterator(); iterator.hasNext();) {
-        extract(iterator.next(), boost, terms);
+      for (Query clause : ((DisjunctionMaxQuery) query)) {
+        extract(clause, boost, terms);
       }
     } else if (query instanceof ToParentBlockJoinQuery) {
       extract(((ToParentBlockJoinQuery) query).getChildQuery(), boost, terms);
@@ -184,16 +183,15 @@ public class WeightedSpanTermExtractor {
             disjuncts = (disjunctLists[positions[i]] = new ArrayList<>(termArray.length));
             ++distinctPositions;
           }
-          for (int j = 0; j < termArray.length; ++j) {
-            disjuncts.add(new SpanTermQuery(termArray[j]));
+          for (Term aTermArray : termArray) {
+            disjuncts.add(new SpanTermQuery(aTermArray));
           }
         }
 
         int positionGaps = 0;
         int position = 0;
         final SpanQuery[] clauses = new SpanQuery[distinctPositions];
-        for (int i = 0; i < disjunctLists.length; ++i) {
-          List<SpanQuery> disjuncts = disjunctLists[i];
+        for (List<SpanQuery> disjuncts : disjunctLists) {
           if (disjuncts != null) {
             clauses[position++] = new SpanOrQuery(disjuncts
                 .toArray(new SpanQuery[disjuncts.size()]));
@@ -202,11 +200,15 @@ public class WeightedSpanTermExtractor {
           }
         }
 
-        final int slop = mpq.getSlop();
-        final boolean inorder = (slop == 0);
+        if (clauses.length == 1) {
+          extractWeightedSpanTerms(terms, clauses[0], boost);
+        } else {
+          final int slop = mpq.getSlop();
+          final boolean inorder = (slop == 0);
 
-        SpanNearQuery sp = new SpanNearQuery(clauses, slop + positionGaps, inorder);
-        extractWeightedSpanTerms(terms, sp, boost);
+          SpanNearQuery sp = new SpanNearQuery(clauses, slop + positionGaps, inorder);
+          extractWeightedSpanTerms(terms, sp, boost);
+        }
       }
     } else if (query instanceof MatchAllDocsQuery) {
       //nothing
