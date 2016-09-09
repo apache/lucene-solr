@@ -128,11 +128,13 @@ public class BoolField extends PrimitiveFieldType {
 
   @Override
   public String toExternal(IndexableField f) {
-    if (f.binaryValue() == null) {
-      return null;
+    if (null != f.binaryValue()) {
+      return indexedToReadable(f.binaryValue().utf8ToString());
     }
-
-    return indexedToReadable(f.binaryValue().utf8ToString());
+    if (null != f.stringValue()) {
+      return indexedToReadable(f.stringValue());
+    }
+    return null;
   }
 
   @Override

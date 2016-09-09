@@ -182,12 +182,15 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     // test a second query, test making a copy of the main query
     SolrQuery query2 = query.getCopy();
     query2.addFilterQuery("inStock:true");
+    Assert.assertFalse(query.getFilterQueries() == query2.getFilterQueries());
     response = client.query( query2 );
     Assert.assertEquals(1, query2.getFilterQueries().length);
     Assert.assertEquals(0, response.getStatus());
     Assert.assertEquals(2, response.getResults().getNumFound() );
-    Assert.assertFalse(query.getFilterQueries() == query2.getFilterQueries());
-
+    for (SolrDocument outDoc : response.getResults()) {
+      assertEquals(true, outDoc.getFieldValue("inStock"));
+    }
+    
     // sanity check round tripping of params...
     query = new SolrQuery("foo");
     query.addFilterQuery("{!field f=inStock}true");
