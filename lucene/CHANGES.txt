@@ -3,13 +3,16 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
-======================= Lucene 5.5.3 =======================
+======================= Lucene 5.5.4 =======================
 
 Bug Fixes
 
 * LUCENE-7417: The standard Highlighter could throw an IllegalArgumentException when
   trying to highlight a query containing a degenerate case of a MultiPhraseQuery with one
   term.  (Thomas Kappler via David Smiley)
+
+======================= Lucene 5.5.3 =======================
+(No Changes)
 
 ======================= Lucene 5.5.2 =======================
 
