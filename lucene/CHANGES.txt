@@ -4,7 +4,12 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 5.5.3 =======================
-(No Changes)
+
+Bug Fixes
+
+* LUCENE-7417: The standard Highlighter could throw an IllegalArgumentException when
+  trying to highlight a query containing a degenerate case of a MultiPhraseQuery with one
+  term.  (Thomas Kappler via David Smiley)
 
 ======================= Lucene 5.5.2 =======================
 
@@ -59,7 +64,7 @@ Bug fixes
 
 * LUCENE-7188: remove incorrect sanity check in NRTCachingDirectory.listAll()
   that led to IllegalStateException being thrown when nothing was wrong.
-  (David Smiley, yonik)  
+  (David Smiley, yonik)
 
 * LUCENE-7209: Fixed explanations of FunctionScoreQuery. (Adrien Grand)
 
