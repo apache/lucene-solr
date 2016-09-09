@@ -119,6 +119,8 @@ Bug Fixes
 * SOLR-9488: Shard split can fail to write commit data on shutdown/restart causing replicas to recover
   without replicating the index. This can cause data loss. (shalin)
 
+* SOLR-9490: Fixed bugs in BoolField that caused it to erroneously return "false" for all docs depending
+  on usage (Colvin Cowie, Dan Fox, hossman)
 
 Optimizations
 ----------------------
