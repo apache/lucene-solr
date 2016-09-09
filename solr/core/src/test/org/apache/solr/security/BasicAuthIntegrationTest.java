@@ -98,7 +98,8 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
       randomJetty.stop();
-      randomJetty.start();
+      randomJetty.start(false);
+      baseUrl = randomJetty.getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
       String command = "{\n" +
