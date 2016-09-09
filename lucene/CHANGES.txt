@@ -4,7 +4,22 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 6.3.0 =======================
-(No Changes)
+
+API Changes
+
+New Features
+
+Bug Fixes
+
+* LUCENE-7417: The standard Highlighter could throw an IllegalArgumentException when
+  trying to highlight a query containing a degenerate case of a MultiPhraseQuery with one
+  term.  (Thomas Kappler via David Smiley)
+
+Improvements
+
+Optimizations
+
+Other
 
 ======================= Lucene 6.2.0 =======================
 
@@ -204,6 +219,10 @@ New Features
 
 API Changes
 
+* LUCENE-7184: Refactor LatLonPoint encoding methods to new GeoEncodingUtils
+  helper class in core geo package. Also refactors LatLonPointTests to
+  TestGeoEncodingUtils (Nick Knize)
+
 * LUCENE-7163: refactor GeoRect, Polygon, and GeoUtils tests to geo
   package in core (Nick Knize)
 
@@ -218,9 +237,6 @@ API Changes
 
 * LUCENE-7243: Removed the LeafReaderContext parameter from
   QueryCachingPolicy#shouldCache. (Adrien Grand)
-
-* LUCENE-7283: SlowCompositeReaderWrapper and the uninverting package have
-  been moved to Solr.  (Mike McCandless)
 
 Optimizations
 
@@ -400,6 +416,10 @@ New Features
   token which is a concatenation of the sorted and de-duplicated set of 
   input tokens. Useful for normalizing short text in clustering/linking 
   tasks. (Mark Harwood, Adrien Grand)
+
+* LUCENE-5735: NumberRangePrefixTreeStrategy now includes interval/range faceting
+  for counting ranges that align with the underlying terms as defined by the
+  NumberRangePrefixTree (e.g. familiar date units like days).  (David Smiley)
 
 * LUCENE-6711: Use CollectionStatistics.docCount() for IDF and average field
   length computations, to avoid skew from documents that don't have the field.
