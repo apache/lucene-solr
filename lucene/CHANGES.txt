@@ -7,6 +7,9 @@ http://s.apache.org/luceneversions
 
 API Changes
 
+* LUCENE-7436: MinHashFilter's constructor, and some of its default
+  settings, should be public.  (Doug Turnbull via Mike McCandless)
+
 New Features
 
 Bug Fixes
