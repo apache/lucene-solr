@@ -49,6 +49,10 @@ Bug Fixes
   trying to highlight a query containing a degenerate case of a MultiPhraseQuery with one
   term.  (Thomas Kappler via David Smiley)
 
+* LUCENE-7440: Document id skipping (PostingsEnum.advance) could throw an
+  ArrayIndexOutOfBoundsException exception on large index segments (>1.8B docs)
+  with large skips. (yonik)
+
 Improvements
 
 Optimizations

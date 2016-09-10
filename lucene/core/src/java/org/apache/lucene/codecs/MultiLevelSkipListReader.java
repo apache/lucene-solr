@@ -63,7 +63,9 @@ public abstract class MultiLevelSkipListReader implements Closeable {
   /**  skipInterval of each level. */
   private int skipInterval[];
 
-  /** Number of docs skipped per level. */
+  /** Number of docs skipped per level.
+   * It's possible for some values to overflow a signed int, but this has been accounted for.
+   */
   private int[] numSkipped;
 
   /** Doc id of current skip entry per level. */
@@ -150,8 +152,9 @@ public abstract class MultiLevelSkipListReader implements Closeable {
     setLastSkipData(level);
       
     numSkipped[level] += skipInterval[level];
-      
-    if (numSkipped[level] > docCount) {
+
+    // numSkipped may overflow a signed int, so compare as unsigned.
+    if (Integer.compareUnsigned(numSkipped[level], docCount) > 0) {
       // this skip list is exhausted
       skipDoc[level] = Integer.MAX_VALUE;
       if (numberOfSkipLevels > level) numberOfSkipLevels = level; 
