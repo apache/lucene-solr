@@ -88,6 +88,11 @@ Bug Fixes
 * SOLR-9490: Fixed bugs in BoolField that caused it to erroneously return "false" for all docs depending
   on usage (Colvin Cowie, Dan Fox, hossman)
 
+* SOLR-9344: HttpClientConfigurers are now chained, rather than only one being
+  set at a time.  This prevents a bug where BasicAuth and SSL could not be
+  combined on an HttpClient object. (Alan Woodward)
+
+
 Optimizations
 ----------------------
 

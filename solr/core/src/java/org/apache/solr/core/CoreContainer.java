@@ -327,7 +327,7 @@ public class CoreContainer {
     if (authcPlugin instanceof HttpClientInterceptorPlugin) {
       // Setup HttpClient to use the plugin's configurer for internode communication
       HttpClientConfigurer configurer = ((HttpClientInterceptorPlugin) authcPlugin).getClientConfigurer();
-      HttpClientUtil.setConfigurer(configurer);
+      HttpClientUtil.addConfigurer(configurer);
 
       // The default http client of the core container's shardHandlerFactory has already been created and
       // configured using the default httpclient configurer. We need to reconfigure it using the plugin's

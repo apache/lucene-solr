@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
+import com.google.common.collect.Lists;
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
@@ -93,20 +94,41 @@ public class HttpClientUtil {
   static final DefaultHttpRequestRetryHandler NO_RETRY = new DefaultHttpRequestRetryHandler(
       0, false);
 
-  private static HttpClientConfigurer configurer = new HttpClientConfigurer();
+  private static final List<HttpClientConfigurer> configurers
+      = Collections.synchronizedList(Lists.newArrayList(new HttpClientConfigurer()));
 
-  private static final List<HttpRequestInterceptor> interceptors = Collections.synchronizedList(new ArrayList<HttpRequestInterceptor>());
+  private static final List<HttpRequestInterceptor> interceptors = Collections.synchronizedList(new ArrayList<>());
   
   /**
-   * Replace the {@link HttpClientConfigurer} class used in configuring the http
-   * clients with a custom implementation.
+   * Add a {@link HttpClientConfigurer} class used to configure the http
+   * clients.
+   *
+   * @deprecated use {@link #addConfigurer(HttpClientConfigurer)}
    */
+  @Deprecated
   public static void setConfigurer(HttpClientConfigurer newConfigurer) {
-    configurer = newConfigurer;
+    addConfigurer(newConfigurer);
   }
-  
-  public static HttpClientConfigurer getConfigurer() {
-    return configurer;
+
+  /**
+   * Add a {@link HttpClientConfigurer} to the list of configurers used
+   * to create http clients
+   */
+  public static void addConfigurer(HttpClientConfigurer newConfigurer) {
+    configurers.add(newConfigurer);
+  }
+
+  /**
+   * Remove a {@link HttpClientConfigurer} from the list of configurers used
+   * to create http clients
+   */
+  public static void removeConfigurer(HttpClientConfigurer configurer) {
+    configurers.remove(configurer);
+  }
+
+  public static void resetConfigurers() {
+    configurers.clear();
+    configurers.add(new HttpClientConfigurer());
   }
   
   /**
@@ -146,7 +168,11 @@ public class HttpClientUtil {
    */
   public static void configureClient(final DefaultHttpClient httpClient,
       SolrParams config) {
-    configurer.configure(httpClient,  config);
+    synchronized (configurers) {
+      for (HttpClientConfigurer configurer : configurers) {
+        configurer.configure(httpClient, config);
+      }
+    }
     synchronized(interceptors) {
       for(HttpRequestInterceptor interceptor: interceptors) {
         httpClient.addRequestInterceptor(interceptor);

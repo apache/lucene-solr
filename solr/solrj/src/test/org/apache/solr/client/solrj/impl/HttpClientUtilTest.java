@@ -47,6 +47,7 @@ public class HttpClientUtilTest extends LuceneTestCase {
     client.close();
   }
 
+  @SuppressWarnings("deprecation")
   @Test
   public void testSetParams() {
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -59,27 +60,25 @@ public class HttpClientUtilTest extends LuceneTestCase {
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32345);
     params.set(HttpClientUtil.PROP_SO_TIMEOUT, 42345);
     params.set(HttpClientUtil.PROP_USE_RETRY, false);
-    DefaultHttpClient client = (DefaultHttpClient) HttpClientUtil.createClient(params);
-    try {
+    try (DefaultHttpClient client = (DefaultHttpClient) HttpClientUtil.createClient(params)) {
       assertEquals(12345, HttpConnectionParams.getConnectionTimeout(client.getParams()));
       assertEquals(PoolingClientConnectionManager.class, client.getConnectionManager().getClass());
-      assertEquals(22345, ((PoolingClientConnectionManager)client.getConnectionManager()).getMaxTotal());
-      assertEquals(32345, ((PoolingClientConnectionManager)client.getConnectionManager()).getDefaultMaxPerRoute());
+      assertEquals(22345, ((PoolingClientConnectionManager) client.getConnectionManager()).getMaxTotal());
+      assertEquals(32345, ((PoolingClientConnectionManager) client.getConnectionManager()).getDefaultMaxPerRoute());
       assertEquals(42345, HttpConnectionParams.getSoTimeout(client.getParams()));
       assertEquals(HttpClientUtil.NO_RETRY, client.getHttpRequestRetryHandler());
       assertEquals("pass", client.getCredentialsProvider().getCredentials(new AuthScope("127.0.0.1", 1234)).getPassword());
       assertEquals("user", client.getCredentialsProvider().getCredentials(new AuthScope("127.0.0.1", 1234)).getUserPrincipal().getName());
       assertEquals(true, client.getParams().getParameter(ClientPNames.HANDLE_REDIRECTS));
-    } finally {
-      client.close();
     }
   }
 
+  @SuppressWarnings("deprecation")
   @Test
   public void testAuthSchemeConfiguration() {
     System.setProperty(Krb5HttpClientConfigurer.LOGIN_CONFIG_PROP, "test");
     try {
-      HttpClientUtil.setConfigurer(new Krb5HttpClientConfigurer());
+      HttpClientUtil.addConfigurer(new Krb5HttpClientConfigurer());
       AbstractHttpClient client = (AbstractHttpClient)HttpClientUtil.createClient(null);
       assertEquals(1, client.getAuthSchemes().getSchemeNames().size());
       assertTrue(AuthSchemes.SPNEGO.equalsIgnoreCase(client.getAuthSchemes().getSchemeNames().get(0)));
@@ -89,30 +88,45 @@ public class HttpClientUtilTest extends LuceneTestCase {
     }
   }
 
+  @SuppressWarnings("deprecation")
   @Test
-  public void testReplaceConfigurer() throws IOException{
-    
-    try {
-    final AtomicInteger counter = new AtomicInteger();
-    HttpClientConfigurer custom = new HttpClientConfigurer(){
+  public void testMultipleConfigurers() throws IOException {
+
+    final AtomicInteger counter1 = new AtomicInteger();
+    final AtomicInteger counter2 = new AtomicInteger();
+
+    HttpClientConfigurer custom1 = new HttpClientConfigurer() {
       @Override
       public void configure(DefaultHttpClient httpClient, SolrParams config) {
         super.configure(httpClient, config);
-        counter.set(config.getInt("custom-param", -1));
+        counter1.set(config.getInt("custom-param", -1));
       }
-      
+    };
+    HttpClientConfigurer custom2 = new HttpClientConfigurer() {
+      @Override
+      public void configure(DefaultHttpClient httpClient, SolrParams config) {
+        super.configure(httpClient, config);
+        counter2.set(config.getInt("custom-param", -1));
+      }
     };
     
-    HttpClientUtil.setConfigurer(custom);
+    HttpClientUtil.addConfigurer(custom1);
+    HttpClientUtil.addConfigurer(custom2);
     
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("custom-param", 5);
     HttpClientUtil.createClient(params).close();
-    assertEquals(5, counter.get());
-    } finally {
-      //restore default configurer
-      HttpClientUtil.setConfigurer(new HttpClientConfigurer());
-    }
+    assertEquals(5, counter1.get());
+    assertEquals(5, counter2.get());
+
+    HttpClientUtil.createClient(null).close();
+    assertEquals(-1, counter1.get());
+    assertEquals(-1, counter2.get());
+
+    HttpClientUtil.removeConfigurer(custom1);
+    HttpClientUtil.createClient(params).close();
+    assertEquals(-1, counter1.get());
+    assertEquals(5, counter2.get());
 
   }
   
