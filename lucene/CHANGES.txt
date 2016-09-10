@@ -27,6 +27,10 @@ Bug Fixes
 * LUCENE-6974: Fixed DecimalDigitFilter in case of supplementary code points.
   (Hossman)
 
+* LUCENE-7440: Document id skipping (PostingsEnum.advance) could throw an
+  ArrayIndexOutOfBoundsException exception on large index segments (>1.8B docs)
+  with large skips. (yonik)
+
 Other
 
 * LUCENE-6989: Backport MMapDirectory's unmapping code from Lucene 6.4 to use
