@@ -152,6 +152,8 @@ Other Changes
 * SOLR-9474: MiniSolrCloudCluster will not reuse ports by default when
   restarting its JettySolrRunners (Alan Woodward)
 
+* SOLR-9498: Remove HDFS properties from DIH solrconfig.xml, as started in SOLR-6943 (Alexandre Rafalovitch)
+
 ==================  6.2.0 ==================
 
 Versions of Major Components
