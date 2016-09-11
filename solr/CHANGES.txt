@@ -154,6 +154,16 @@ Other Changes
 
 * SOLR-9498: Remove HDFS properties from DIH solrconfig.xml, as started in SOLR-6943 (Alexandre Rafalovitch)
 
+
+==================  6.2.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-9494: Use of {!collapse} sometimes doesn't correctly return true for Collector.needsScores(), especially when the
+  query was cached. This can cause an exception when 'q' is a SpanQuery or potentially others. (David Smiley)
+
+
 ==================  6.2.0 ==================
 
 Versions of Major Components
