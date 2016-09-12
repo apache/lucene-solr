@@ -25,6 +25,8 @@ Bug Fixes
 * SOLR-9494: Use of {!collapse} sometimes doesn't correctly return true for Collector.needsScores(), especially when the
   query was cached. This can cause an exception when 'q' is a SpanQuery or potentially others. (David Smiley)
 
+* SOLR-6744: fl renaming / alias of uniqueKey field generates null pointer exception in SolrCloud configuration
+  (Mike Drob via Tomás Fernández Löbbe)
 
 ==================  6.2.0 ==================
 
