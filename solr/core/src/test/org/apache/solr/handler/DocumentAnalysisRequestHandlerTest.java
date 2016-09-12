@@ -278,11 +278,11 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     assertNotNull("Expecting the 'StandardFilter' to be applied on the query for the 'text' field", tokenList);
     assertEquals("Query has only one token", 1, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("JUMPING", null, "<ALPHANUM>", 0, 7, 1, new int[]{1,1}, null, false));
-    tokenList = (List<NamedList>) queryResult.get("org.apache.lucene.analysis.LowerCaseFilter");
+    tokenList = (List<NamedList>) queryResult.get("org.apache.lucene.analysis.core.LowerCaseFilter");
     assertNotNull("Expecting the 'LowerCaseFilter' to be applied on the query for the 'text' field", tokenList);
     assertEquals("Query has only one token", 1, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("jumping", null, "<ALPHANUM>", 0, 7, 1, new int[]{1,1,1}, null, false));
-    tokenList = (List<NamedList>) queryResult.get("org.apache.lucene.analysis.StopFilter");
+    tokenList = (List<NamedList>) queryResult.get("org.apache.lucene.analysis.core.StopFilter");
     assertNotNull("Expecting the 'StopFilter' to be applied on the query for the 'text' field", tokenList);
     assertEquals("Query has only one token", 1, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("jumping", null, "<ALPHANUM>", 0, 7, 1, new int[]{1,1,1,1}, null, false));
@@ -311,7 +311,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     assertToken(tokenList.get(3), new TokenInfo("Over", null, "<ALPHANUM>", 15, 19, 4, new int[]{4,4}, null, false));
     assertToken(tokenList.get(4), new TokenInfo("The", null, "<ALPHANUM>", 20, 23, 5, new int[]{5,5}, null, false));
     assertToken(tokenList.get(5), new TokenInfo("Dogs", null, "<ALPHANUM>", 24, 28, 6, new int[]{6,6}, null, false));
-    tokenList = valueResult.get("org.apache.lucene.analysis.LowerCaseFilter");
+    tokenList = valueResult.get("org.apache.lucene.analysis.core.LowerCaseFilter");
     assertNotNull("Expecting the 'LowerCaseFilter' to be applied on the index for the 'text' field", tokenList);
     assertEquals("Expecting 6 tokens", 6, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("the", null, "<ALPHANUM>", 0, 3, 1, new int[]{1,1,1}, null, false));
@@ -320,7 +320,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     assertToken(tokenList.get(3), new TokenInfo("over", null, "<ALPHANUM>", 15, 19, 4, new int[]{4,4,4}, null, false));
     assertToken(tokenList.get(4), new TokenInfo("the", null, "<ALPHANUM>", 20, 23, 5, new int[]{5,5,5}, null, false));
     assertToken(tokenList.get(5), new TokenInfo("dogs", null, "<ALPHANUM>", 24, 28, 6, new int[]{6,6,6}, null, false));
-    tokenList = valueResult.get("org.apache.lucene.analysis.StopFilter");
+    tokenList = valueResult.get("org.apache.lucene.analysis.core.StopFilter");
     assertNotNull("Expecting the 'StopFilter' to be applied on the index for the 'text' field", tokenList);
     assertEquals("Expecting 4 tokens after stop word removal", 4, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("fox", null, "<ALPHANUM>", 4, 7, 2, new int[]{2,2,2,2}, null, false));

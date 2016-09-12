@@ -56,6 +56,11 @@ Bug Fixes
 * LUCENE-7442: MinHashFilter's ctor should validate its args.
   (Cao Manh Dat via Steve Rowe)
 
+* LUCENE-7318: Fix backwards compatibility issues around StandardAnalyzer
+  and its components, introduced with Lucene 6.2.0. The moved classes
+  were restored in their original packages: LowercaseFilter and StopFilter,
+  as well as several utility classes.  (Uwe Schindler, Mike McCandless)
+
 Improvements
 
 Optimizations

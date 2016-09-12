@@ -14,37 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.core;
 
 
-import java.io.IOException;
-
-import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.CharacterUtils;
 
 /**
- * Normalizes token text to lower case.
+ * Removes stop words from a token stream.
+ * <p>
+ * This class moved to Lucene Core, but a reference in the {@code analysis/common} module
+ * is preserved for documentation purposes and consistency with filter factory.
+ * @see org.apache.lucene.analysis.StopFilter
+ * @see StopFilterFactory
  */
-public class LowerCaseFilter extends TokenFilter {
-  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  
+public final class StopFilter extends org.apache.lucene.analysis.StopFilter {
+
   /**
-   * Create a new LowerCaseFilter, that normalizes token text to lower case.
+   * Constructs a filter which removes words from the input TokenStream that are
+   * named in the Set.
    * 
-   * @param in TokenStream to filter
+   * @param in
+   *          Input stream
+   * @param stopWords
+   *          A {@link CharArraySet} representing the stopwords.
+   * @see #makeStopSet(java.lang.String...)
    */
-  public LowerCaseFilter(TokenStream in) {
-    super(in);
+  public StopFilter(TokenStream in, CharArraySet stopWords) {
+    super(in, stopWords);
   }
-  
-  @Override
-  public final boolean incrementToken() throws IOException {
-    if (input.incrementToken()) {
-      CharacterUtils.toLowerCase(termAtt.buffer(), 0, termAtt.length());
-      return true;
-    } else
-      return false;
-  }
+
 }
