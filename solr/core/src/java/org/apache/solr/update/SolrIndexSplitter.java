@@ -19,17 +19,15 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.index.CodecReader;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterCodecReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -42,7 +40,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.HashBasedRouter;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitsFilteredPostingsEnum;
@@ -140,7 +137,7 @@ public class SolrIndexSplitter {
         // we commit explicitly instead of sending a CommitUpdateCommand through the processor chain
         // because the sub-shard cores will just ignore such a commit because the update log is not
         // in active state at this time.
-        setCommitData(iw);
+        SolrIndexWriter.setCommitData(iw);
         iw.commit();
         success = true;
       } finally {
@@ -157,14 +154,6 @@ public class SolrIndexSplitter {
 
     }
 
-  }
-
-  @SuppressForbidden(reason = "Need currentTimeMillis, commit time should be used only for debugging purposes, " +
-      " but currently suspiciously used for replication as well")
-  private void setCommitData(IndexWriter iw) {
-    final Map<String,String> commitData = new HashMap<>();
-    commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY, String.valueOf(System.currentTimeMillis()));
-    iw.setLiveCommitData(commitData.entrySet());
   }
 
   FixedBitSet[] split(LeafReaderContext readerContext) throws IOException {

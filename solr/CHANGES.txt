@@ -168,6 +168,9 @@ Bug Fixes
 * SOLR-9494: Use of {!collapse} sometimes doesn't correctly return true for Collector.needsScores(), especially when the
   query was cached. This can cause an exception when 'q' is a SpanQuery or potentially others. (David Smiley)
 
+* SOLR-9408: Fix TreeMergeOutputFormat to add timestamp metadata to a commit. SolrCloud replication relies on this.
+    (Jessica Cheng Mallet via Varun Thacker)
+
 
 ==================  6.2.0 ==================
 
