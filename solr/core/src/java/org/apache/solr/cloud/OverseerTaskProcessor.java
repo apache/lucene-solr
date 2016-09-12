@@ -176,7 +176,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     try {
       prioritizer.prioritizeOverseerNodes(myId);
     } catch (Exception e) {
-      log.error("Unable to prioritize overseer ", e);
+      if (!zkStateReader.getZkClient().isClosed()) {
+        log.error("Unable to prioritize overseer ", e);
+      }
     }
 
     // TODO: Make maxThreads configurable.

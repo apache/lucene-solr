@@ -158,6 +158,7 @@ Other Changes
 
 * SOLR-9498: Remove HDFS properties from DIH solrconfig.xml, as started in SOLR-6943 (Alexandre Rafalovitch)
 
+* SOLR-9365: Reduce noise in solr logs during graceful shutdown. (Cao Manh Dat via shalin)
 
 ==================  6.2.1 ==================
 
