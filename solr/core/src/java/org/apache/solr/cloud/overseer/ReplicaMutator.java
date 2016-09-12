@@ -38,6 +38,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -403,19 +404,57 @@ public class ReplicaMutator {
           }
           if (allActive) {
             // hurray, all sub shard replicas are active
-            log.info("Shard: {} - All replicas across all fellow sub-shards are now ACTIVE. Preparing to switch shard states.", sliceName);
+            log.info("Shard: {} - All replicas across all fellow sub-shards are now ACTIVE.", sliceName);
             String parentSliceName = (String) sliceProps.remove(Slice.PARENT);
-
-            Map<String, Object> propMap = new HashMap<>();
-            propMap.put(Overseer.QUEUE_OPERATION, "updateshardstate");
-            propMap.put(parentSliceName, Slice.State.INACTIVE.toString());
-            propMap.put(sliceName, Slice.State.ACTIVE.toString());
-            for (Slice subShardSlice : subShardSlices) {
-              propMap.put(subShardSlice.getName(), Slice.State.ACTIVE.toString());
+            // now lets see if the parent leader is still the same or else there's a chance of data loss
+            // see SOLR-9438 for details
+            String shardParentZkSession  = (String) sliceProps.remove("shard_parent_zk_session");
+            String shardParentNode = (String) sliceProps.remove("shard_parent_node");
+            boolean isLeaderSame = true;
+            if (shardParentNode != null && shardParentZkSession != null)  {
+              log.info("Checking whether sub-shard leader node is still the same one at {} with ZK session id {}", shardParentNode, shardParentZkSession);
+              try {
+                Stat leaderZnodeStat = zkStateReader.getZkClient().exists(ZkStateReader.LIVE_NODES_ZKNODE
+                    + "/" + shardParentNode, null, true);
+                if (leaderZnodeStat == null)  {
+                  log.error("The shard leader node: {} is not live anymore!", shardParentNode);
+                  isLeaderSame = false;
+                } else if (leaderZnodeStat.getEphemeralOwner() != Long.parseLong(shardParentZkSession))  {
+                  log.error("The zk session id for shard leader node: {} has changed from {} to {}",
+                      shardParentNode, shardParentZkSession, leaderZnodeStat.getEphemeralOwner());
+                  isLeaderSame = false;
+                }
+              } catch (Exception e) {
+                log.warn("Error occurred while checking if parent shard node is still live with the same zk session id. " +
+                    "We cannot switch shard states at this time.", e);
+                return collection; // we aren't going to make any changes right now
+              }
             }
-            propMap.put(ZkStateReader.COLLECTION_PROP, collection.getName());
-            ZkNodeProps m = new ZkNodeProps(propMap);
-            return new SliceMutator(zkStateReader).updateShardState(prevState, m).collection;
+
+            if (isLeaderSame) {
+              log.info("Sub-shard leader node is still the same one at {} with ZK session id {}. Preparing to switch shard states.", shardParentNode, shardParentZkSession);
+              Map<String, Object> propMap = new HashMap<>();
+              propMap.put(Overseer.QUEUE_OPERATION, "updateshardstate");
+              propMap.put(parentSliceName, Slice.State.INACTIVE.toString());
+              propMap.put(sliceName, Slice.State.ACTIVE.toString());
+              for (Slice subShardSlice : subShardSlices) {
+                propMap.put(subShardSlice.getName(), Slice.State.ACTIVE.toString());
+              }
+              propMap.put(ZkStateReader.COLLECTION_PROP, collection.getName());
+              ZkNodeProps m = new ZkNodeProps(propMap);
+              return new SliceMutator(zkStateReader).updateShardState(prevState, m).collection;
+            } else  {
+              // we must mark the shard split as failed by switching sub-shards to recovery_failed state
+              Map<String, Object> propMap = new HashMap<>();
+              propMap.put(Overseer.QUEUE_OPERATION, "updateshardstate");
+              propMap.put(sliceName, Slice.State.RECOVERY_FAILED.toString());
+              for (Slice subShardSlice : subShardSlices) {
+                propMap.put(subShardSlice.getName(), Slice.State.RECOVERY_FAILED.toString());
+              }
+              propMap.put(ZkStateReader.COLLECTION_PROP, collection.getName());
+              ZkNodeProps m = new ZkNodeProps(propMap);
+              return new SliceMutator(zkStateReader).updateShardState(prevState, m).collection;
+            }
           }
         }
       }

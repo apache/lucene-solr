@@ -582,7 +582,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
       prepCmd.setCheckLive(true);
       prepCmd.setOnlyIfLeader(true);
       final Slice.State state = slice.getState();
-      if (state != Slice.State.CONSTRUCTION && state != Slice.State.RECOVERY) {
+      if (state != Slice.State.CONSTRUCTION && state != Slice.State.RECOVERY && state != Slice.State.RECOVERY_FAILED) {
         prepCmd.setOnlyIfLeaderActive(true);
       }
       HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);

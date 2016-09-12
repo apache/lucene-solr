@@ -79,7 +79,7 @@ public class DeleteShardCmd implements Cmd {
     // TODO: Add check for range gaps on Slice deletion
     final Slice.State state = slice.getState();
     if (!(slice.getRange() == null || state == Slice.State.INACTIVE || state == Slice.State.RECOVERY
-        || state == Slice.State.CONSTRUCTION)) {
+        || state == Slice.State.CONSTRUCTION) || state == Slice.State.RECOVERY_FAILED) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The slice: " + slice.getName() + " is currently " + state
           + ". Only non-active (or custom-hashed) slices can be deleted.");
     }
