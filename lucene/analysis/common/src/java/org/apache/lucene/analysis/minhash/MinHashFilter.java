@@ -114,6 +114,15 @@ public class MinHashFilter extends TokenFilter {
    */
   public MinHashFilter(TokenStream input, int hashCount, int bucketCount, int hashSetSize, boolean withRotation) {
     super(input);
+    if (hashCount <= 0) {
+      throw new IllegalArgumentException("hashCount must be greater than zero");
+    }
+    if (bucketCount <= 0) {
+      throw new IllegalArgumentException("bucketCount must be greater than zero");
+    }
+    if (hashSetSize <= 0) {
+      throw new IllegalArgumentException("hashSetSize must be greater than zero");
+    }
     this.hashCount = hashCount;
     this.bucketCount = bucketCount;
     this.hashSetSize = hashSetSize;
