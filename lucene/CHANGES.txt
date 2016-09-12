@@ -53,6 +53,9 @@ Bug Fixes
   ArrayIndexOutOfBoundsException exception on large index segments (>1.8B docs)
   with large skips. (yonik)
 
+* LUCENE-7442: MinHashFilter's ctor should validate its args.
+  (Cao Manh Dat via Steve Rowe)
+
 Improvements
 
 Optimizations
