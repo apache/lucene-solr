@@ -85,6 +85,8 @@ New Features
 * SOLR-9469: JettySolrRunner now has the option of restarting using a different
   port (Alan Woodward)
 
+* SOLR-9319: DELETEREPLICA can accept a 'count' and remove appropriate replicas (Nitin Sharma, noble)
+
 Bug Fixes
 ----------------------
 
@@ -109,8 +111,6 @@ Bug Fixes
 * SOLR-9455: Deleting a sub-shard in recovery state can mark parent shard as inactive. (shalin)
 
 * SOLR-9461: DELETENODE, REPLACENODE should pass down the 'async' param to subcommands (shalin, noble)
-
-* SOLR-9319: DELETEREPLICA can accept a 'count' and remove appropriate replicas (Nitin Sharma, noble )
 
 * SOLR-9444: Fix path usage for cloud backup/restore.  (Hrishikesh Gadre, Uwe Schindler, Varun Thacker)
 
