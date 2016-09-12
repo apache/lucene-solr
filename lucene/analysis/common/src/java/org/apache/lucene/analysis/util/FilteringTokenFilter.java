@@ -14,37 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.util;
 
-
-import java.io.IOException;
-
-import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.CharacterUtils;
 
 /**
- * Normalizes token text to lower case.
+ * Abstract base class for TokenFilters that may remove tokens.
+ * You have to implement {@link #accept} and return a boolean if the current
+ * token should be preserved. {@link #incrementToken} uses this method
+ * to decide if a token should be passed to the caller.
+ * @deprecated This class moved to Lucene-Core module:
+ *  {@link org.apache.lucene.analysis.FilteringTokenFilter}
  */
-public class LowerCaseFilter extends TokenFilter {
-  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  
+@Deprecated
+public abstract class FilteringTokenFilter extends org.apache.lucene.analysis.FilteringTokenFilter {
+
   /**
-   * Create a new LowerCaseFilter, that normalizes token text to lower case.
-   * 
-   * @param in TokenStream to filter
+   * Create a new {@link FilteringTokenFilter}.
+   * @param in      the {@link TokenStream} to consume
    */
-  public LowerCaseFilter(TokenStream in) {
+  public FilteringTokenFilter(TokenStream in) {
     super(in);
   }
-  
-  @Override
-  public final boolean incrementToken() throws IOException {
-    if (input.incrementToken()) {
-      CharacterUtils.toLowerCase(termAtt.buffer(), 0, termAtt.length());
-      return true;
-    } else
-      return false;
-  }
+
 }

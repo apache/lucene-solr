@@ -14,37 +14,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis;
-
-
-import java.io.IOException;
-
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.CharacterUtils;
+package org.apache.lucene.analysis.util;
 
 /**
- * Normalizes token text to lower case.
+ * Base class for Analyzers that need to make use of stopword sets. 
+ * @deprecated This class moved to Lucene-Core module:
+ *  {@link org.apache.lucene.analysis.StopwordAnalyzerBase}
  */
-public class LowerCaseFilter extends TokenFilter {
-  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  
+@Deprecated
+public abstract class StopwordAnalyzerBase extends org.apache.lucene.analysis.StopwordAnalyzerBase {
+
   /**
-   * Create a new LowerCaseFilter, that normalizes token text to lower case.
+   * Creates a new instance initialized with the given stopword set
    * 
-   * @param in TokenStream to filter
+   * @param stopwords
+   *          the analyzer's stopword set
    */
-  public LowerCaseFilter(TokenStream in) {
-    super(in);
+  protected StopwordAnalyzerBase(final CharArraySet stopwords) {
+    super(stopwords);
   }
-  
+
+  /**
+   * Creates a new Analyzer with an empty stopword set
+   */
+  protected StopwordAnalyzerBase() {
+    super();
+  }
+
   @Override
-  public final boolean incrementToken() throws IOException {
-    if (input.incrementToken()) {
-      CharacterUtils.toLowerCase(termAtt.buffer(), 0, termAtt.length());
-      return true;
-    } else
-      return false;
+  public CharArraySet getStopwordSet() {
+    // this cast should always work, because the stop set is final!
+    return (CharArraySet) super.getStopwordSet();
   }
+
 }
