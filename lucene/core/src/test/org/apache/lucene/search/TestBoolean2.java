@@ -18,11 +18,13 @@ package org.apache.lucene.search;
 
 
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -37,7 +39,6 @@ import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -67,19 +68,38 @@ public class TestBoolean2 extends LuceneTestCase {
   private static Directory dir2;
   private static int mulFactor;
 
+  private static Directory copyOf(Directory dir) throws IOException {
+    Directory copy = newFSDirectory(createTempDir());
+    for(String name : dir.listAll()) {
+      if (name.startsWith("extra")) {
+        continue;
+      }
+      copy.copyFrom(dir, name, name, IOContext.DEFAULT);
+      copy.sync(Collections.singleton(name));
+    }
+    return copy;
+  }
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     // in some runs, test immediate adjacency of matches - in others, force a full bucket gap between docs
     NUM_FILLER_DOCS = random().nextBoolean() ? 0 : BooleanScorer.SIZE;
     PRE_FILLER_DOCS = TestUtil.nextInt(random(), 0, (NUM_FILLER_DOCS / 2));
+    if (VERBOSE) {
+      System.out.println("TEST: NUM_FILLER_DOCS=" + NUM_FILLER_DOCS + " PRE_FILLER_DOCS=" + PRE_FILLER_DOCS);
+    }
 
     if (NUM_FILLER_DOCS * PRE_FILLER_DOCS > 100000) {
       directory = newFSDirectory(createTempDir());
     } else {
       directory = newDirectory();
     }
-    
-    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    // randomized codecs are sometimes too costly for this test:
+    iwc.setCodec(Codec.forName("Lucene62"));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, iwc);
     // we'll make a ton of docs, disable store/norms/vectors
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setOmitNorms(true);
@@ -119,8 +139,10 @@ public class TestBoolean2 extends LuceneTestCase {
       singleSegmentDirectory.sync(Collections.singleton(fileName));
     }
     
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     // we need docID order to be preserved:
+    // randomized codecs are sometimes too costly for this test:
+    iwc.setCodec(Codec.forName("Lucene62"));
     iwc.setMergePolicy(newLogMergePolicy());
     try (IndexWriter w = new IndexWriter(singleSegmentDirectory, iwc)) {
       w.forceMerge(1, true);
@@ -130,7 +152,7 @@ public class TestBoolean2 extends LuceneTestCase {
     singleSegmentSearcher.setSimilarity(searcher.getSimilarity(true));
     
     // Make big index
-    dir2 = new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(directory));
+    dir2 = copyOf(directory);
 
     // First multiply small test index:
     mulFactor = 1;
@@ -142,9 +164,14 @@ public class TestBoolean2 extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("\nTEST: cycle...");
       }
-      final Directory copy = new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(dir2));
-      RandomIndexWriter w = new RandomIndexWriter(random(), dir2);
+      final Directory copy = copyOf(dir2);
+
+      iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+      // randomized codecs are sometimes too costly for this test:
+      iwc.setCodec(Codec.forName("Lucene62"));
+      RandomIndexWriter w = new RandomIndexWriter(random(), dir2, iwc);
       w.addIndexes(copy);
+      copy.close();
       docCount = w.maxDoc();
       w.close();
       mulFactor *= 2;
