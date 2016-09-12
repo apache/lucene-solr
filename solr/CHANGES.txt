@@ -122,6 +122,10 @@ Bug Fixes
 * SOLR-9490: Fixed bugs in BoolField that caused it to erroneously return "false" for all docs depending
   on usage (Colvin Cowie, Dan Fox, hossman)
 
+* SOLR-9438: Shard split can be marked successful and sub-shard states switched to 'active' even when
+  one or more sub-shards replicas do not recover due to the leader crashing or restarting between the time
+  the replicas are created and before they can recover. This can cause data loss. (shalin)
+
 Optimizations
 ----------------------
 
