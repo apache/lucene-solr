@@ -26,6 +26,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.Bits;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -168,16 +169,8 @@ public class IndexFingerprint {
     return map;
   }
 
-  private static long getLong(Object o, String key, long def) {
-    long v = def;
-
-    Object oval = null;
-    if (o instanceof Map) {
-      oval = ((Map)o).get(key);
-    } else if (o instanceof NamedList) {
-      oval = ((NamedList)o).get(key);
-    }
-
+  private static long getLong(Map m, String key, long def) {
+    Object oval = m.get(key);
     return oval != null ? ((Number)oval).longValue() : def;
   }
 
@@ -185,14 +178,23 @@ public class IndexFingerprint {
    * Create an IndexFingerprint object from a deserialized generic object (Map or NamedList)
    */
   public static IndexFingerprint fromObject(Object o) {
+    if (o instanceof IndexFingerprint) return (IndexFingerprint) o;
+    Map map = null;
+    if (o instanceof Map) {
+      map = (Map) o;
+    } else if (o instanceof NamedList) {
+      map = ((NamedList) o).asShallowMap();
+    } else {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type " + o);
+    }
     IndexFingerprint f = new IndexFingerprint();
-    f.maxVersionSpecified = getLong(o, "maxVersionSpecified", Long.MAX_VALUE);
-    f.maxVersionEncountered = getLong(o, "maxVersionEncountered", -1);
-    f.maxInHash = getLong(o, "maxInHash", -1);
-    f.versionsHash = getLong(o, "versionsHash", -1);
-    f.numVersions = getLong(o, "numVersions", -1);
-    f.numDocs = getLong(o, "numDocs", -1);
-    f.maxDoc = getLong(o, "maxDoc", -1);
+    f.maxVersionSpecified = getLong(map, "maxVersionSpecified", Long.MAX_VALUE);
+    f.maxVersionEncountered = getLong(map, "maxVersionEncountered", -1);
+    f.maxInHash = getLong(map, "maxInHash", -1);
+    f.versionsHash = getLong(map, "versionsHash", -1);
+    f.numVersions = getLong(map, "numVersions", -1);
+    f.numDocs = getLong(map, "numDocs", -1);
+    f.maxDoc = getLong(map, "maxDoc", -1);
     return f;
   }
 
