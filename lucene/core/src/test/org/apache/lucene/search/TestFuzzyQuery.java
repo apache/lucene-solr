@@ -18,7 +18,9 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -523,6 +525,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
       w.addDocument(doc);
     }
     DirectoryReader r = w.getReader();
+    //System.out.println("TEST: reader=" + r);
     IndexSearcher s = newSearcher(r);
     int iters = atLeast(1000);
     for(int iter=0;iter<iters;iter++) {
@@ -531,38 +534,54 @@ public class TestFuzzyQuery extends LuceneTestCase {
       String queryPrefix = queryTerm.substring(0, prefixLength);
 
       // we don't look at scores here:
-      Set<String>[] expected = new Set[3];
+      List<TermAndScore>[] expected = new List[3];
       for(int ed=0;ed<3;ed++) {
-        expected[ed] = new HashSet<String>();
+        expected[ed] = new ArrayList<TermAndScore>();
       }
       for(String term : terms) {
         if (term.startsWith(queryPrefix) == false) {
           continue;
         }
         int ed = getDistance(term, queryTerm);
-        if (Math.min(queryTerm.length(), term.length()) > ed) {
+        if (Math.min(queryTerm.length(), term.length()) > ed) {        
+          float score = 1f - (float) ed / (float) Math.min(queryTerm.length(), term.length());
           while (ed < 3) {
-            expected[ed].add(term);
+            expected[ed].add(new TermAndScore(term, score));
             ed++;
           }
         }
       }
 
       for(int ed=0;ed<3;ed++) {
-        FuzzyQuery query = new FuzzyQuery(new Term("field", queryTerm), ed, prefixLength, terms.size(), true);
+        Collections.sort(expected[ed]);
+        int queueSize = TestUtil.nextInt(random(), 1, terms.size());
+        /*
+        System.out.println("\nTEST: query=" + queryTerm + " ed=" + ed + " queueSize=" + queueSize + " vs expected match size=" + expected[ed].size() + " prefixLength=" + prefixLength);
+        for(TermAndScore ent : expected[ed]) {
+          System.out.println("  " + ent);
+        }
+        */
+        FuzzyQuery query = new FuzzyQuery(new Term("field", queryTerm), ed, prefixLength, queueSize, true);
         TopDocs hits = s.search(query, terms.size());
         Set<String> actual = new HashSet<>();
         for(ScoreDoc hit : hits.scoreDocs) {
           Document doc = s.doc(hit.doc);
           actual.add(doc.get("field"));
+          //System.out.println("   actual: " + doc.get("field") + " score=" + hit.score);
         }
-        if (actual.equals(expected[ed]) == false) {
+        Set<String> expectedTop = new HashSet<>();
+        int limit = Math.min(queueSize, expected[ed].size());
+        for(int i=0;i<limit;i++) {
+          expectedTop.add(expected[ed].get(i).term);
+        }
+        
+        if (actual.equals(expectedTop) == false) {
           StringBuilder sb = new StringBuilder();
-          sb.append("FAILED: query=" + queryTerm + " ed=" + ed + " prefixLength=" + prefixLength + "\n");
+          sb.append("FAILED: query=" + queryTerm + " ed=" + ed + " queueSize=" + queueSize + " vs expected match size=" + expected[ed].size() + " prefixLength=" + prefixLength + "\n");
 
           boolean first = true;
           for(String term : actual) {
-            if (expected[ed].contains(term) == false) {
+            if (expectedTop.contains(term) == false) {
               if (first) {
                 sb.append("  these matched but shouldn't:\n");
                 first = false;
@@ -571,7 +590,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
             }
           }
           first = true;
-          for(String term : expected[ed]) {
+          for(String term : expectedTop) {
             if (actual.contains(term) == false) {
               if (first) {
                 sb.append("  these did not match but should:\n");
@@ -586,6 +605,33 @@ public class TestFuzzyQuery extends LuceneTestCase {
     }
     
     IOUtils.close(r, w, dir);
+  }
+
+  private static class TermAndScore implements Comparable<TermAndScore> {
+    final String term;
+    final float score;
+    
+    public TermAndScore(String term, float score) {
+      this.term = term;
+      this.score = score;
+    }
+
+    @Override
+    public int compareTo(TermAndScore other) {
+      // higher score sorts first, and if scores are tied, lower term sorts first
+      if (score > other.score) {
+        return -1;
+      } else if (score < other.score) {
+        return 1;
+      } else {
+        return term.compareTo(other.term);
+      }
+    }
+
+    @Override
+    public String toString() {
+      return term + " score=" + score;
+    }
   }
 
   // Poached from LuceneLevenshteinDistance.java (from suggest module): it supports transpositions (treats them as ed=1, not ed=2)
