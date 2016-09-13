@@ -60,7 +60,13 @@ Bug Fixes
   the replicas are created and before they can recover. This can cause data loss. (shalin)
 
 * SOLR-9408: Fix TreeMergeOutputFormat to add timestamp metadata to a commit. SolrCloud replication relies on this.
-    (Jessica Cheng Mallet via Varun Thacker)
+  (Jessica Cheng Mallet via Varun Thacker)
+
+Other Changes
+----------------------
+
+* SOLR-7362: Fix TestReqParamsAPI test failures (noble, Varun Thacker)
+
 ==================  6.2.0 ==================
 
 Versions of Major Components
