@@ -539,7 +539,9 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   public void testConcurrentIndexCloseSearchAndRefresh() throws Exception {
     final Directory dir = newFSDirectory(createTempDir());
     AtomicReference<IndexWriter> writerRef = new AtomicReference<>();
-    writerRef.set(new IndexWriter(dir, newIndexWriterConfig()));
+    final MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(IndexWriter.MAX_TERM_LENGTH);
+    writerRef.set(new IndexWriter(dir, newIndexWriterConfig(analyzer)));
 
     AtomicReference<SearcherManager> mgrRef = new AtomicReference<>();
     mgrRef.set(new SearcherManager(writerRef.get(), null));
@@ -561,7 +563,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
                 } else {
                   w.rollback();
                 }
-                writerRef.set(new IndexWriter(dir, newIndexWriterConfig()));
+                writerRef.set(new IndexWriter(dir, newIndexWriterConfig(analyzer)));
               }
             }
             docs.close();

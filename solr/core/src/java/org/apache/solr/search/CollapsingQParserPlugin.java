@@ -517,6 +517,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override public boolean needsScores() { return true; }
+
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       this.contexts[context.ord] = context;
@@ -726,6 +728,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     }
 
+    @Override public boolean needsScores() { return true; }
+
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       this.contexts[context.ord] = context;
@@ -909,6 +913,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override public boolean needsScores() { return needsScores || super.needsScores(); }
+
     public void setScorer(Scorer scorer) {
       this.collapseStrategy.setScorer(scorer);
     }
@@ -1068,6 +1074,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
       }
     }
+
+    @Override public boolean needsScores() { return needsScores || super.needsScores(); }
 
     public void setScorer(Scorer scorer) {
       this.collapseStrategy.setScorer(scorer);
@@ -1686,7 +1694,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private float[] ordVals;
     private Map rcontext;
     private final CollapseScore collapseScore = new CollapseScore();
-    private final boolean cscore;
     private float score;
 
     public OrdValueSourceStrategy(int maxDoc,
@@ -1714,7 +1721,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         Arrays.fill(ordVals, Float.MAX_VALUE);
       }
 
-      this.cscore = collapseScore.setupIfNeeded(groupHeadSelector, rcontext);
+      collapseScore.setupIfNeeded(groupHeadSelector, rcontext);
 
       if(this.needsScores) {
         this.scores = new float[ords.length];
@@ -1735,7 +1742,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         this.boostDocs.add(globalDoc);
       }
 
-      if(needsScores || cscore) {
+      if (needsScores) {
         this.score = scorer.score();
         this.collapseScore.score = score;
       }
@@ -2208,7 +2215,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private FunctionValues functionValues;
     private Map rcontext;
     private final CollapseScore collapseScore = new CollapseScore();
-    private final boolean cscore;
     private float score;
     private int index=-1;
 
@@ -2240,7 +2246,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         comp = new MinFloatComp();
       }
 
-      this.cscore = collapseScore.setupIfNeeded(groupHeadSelector, rcontext);
+      collapseScore.setupIfNeeded(groupHeadSelector, rcontext);
 
       if(needsScores) {
         this.scores = new float[size];
@@ -2263,7 +2269,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         return;
       }
 
-      if(needsScores || cscore) {
+      if (needsScores) {
         this.score = scorer.score();
         this.collapseScore.score = score;
       }

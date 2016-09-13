@@ -166,7 +166,10 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           // also randomly pick it:
           ValidatingTokenFilter.class, 
           // TODO: needs to be a tokenizer, doesnt handle graph inputs properly (a shingle or similar following will then cause pain)
-          WordDelimiterFilter.class)) {
+          WordDelimiterFilter.class,
+          // clones of core's filters:
+          org.apache.lucene.analysis.core.StopFilter.class,
+          org.apache.lucene.analysis.core.LowerCaseFilter.class)) {
         for (Constructor<?> ctor : c.getConstructors()) {
           brokenConstructors.put(ctor, ALWAYS);
         }

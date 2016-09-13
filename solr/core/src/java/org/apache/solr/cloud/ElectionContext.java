@@ -288,8 +288,12 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
     ActionThrottle lt;
     try (SolrCore core = cc.getCore(coreName)) {
-      if (core == null) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+      if (core == null ) {
+        if (cc.isShutDown()) {
+          return;
+        } else {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+        }
       }
       MDCLoggingContext.setCore(core);
       lt = core.getUpdateHandler().getSolrCoreState().getLeaderThrottle();
@@ -325,9 +329,13 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       try (SolrCore core = cc.getCore(coreName)) {
         
         if (core == null) {
-          cancelElection();
-          throw new SolrException(ErrorCode.SERVER_ERROR,
-              "SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+          if (!zkController.getCoreContainer().isShutDown())  {
+            cancelElection();
+            throw new SolrException(ErrorCode.SERVER_ERROR,
+                "SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+          } else  {
+            return;
+          }
         }
         
         // should I be leader?

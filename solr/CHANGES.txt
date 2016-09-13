@@ -77,6 +77,15 @@ prefix, then you will now get an error as these options are incompatible with nu
 
 New Features
 ----------------------
+* SOLR-5725: facet.method=enum can bypass exact counts calculation with facet.exists=true, it just returns 1 for 
+  terms which exists in result docset. (Alexey Kozhemiakin, Sebastian Koziel, Radoslaw Zielinski via Mikhail Khludnev)
+
+* SOLR-9127: Excel workbook (.xlsx) response writer. use 'wt=xlsx' (Tony Moriarty, noble)
+
+* SOLR-9469: JettySolrRunner now has the option of restarting using a different
+  port (Alan Woodward)
+
+* SOLR-9319: DELETEREPLICA can accept a 'count' and remove appropriate replicas (Nitin Sharma, noble)
 
 Bug Fixes
 ----------------------
@@ -103,12 +112,19 @@ Bug Fixes
 
 * SOLR-9461: DELETENODE, REPLACENODE should pass down the 'async' param to subcommands (shalin, noble)
 
-* SOLR-9319: DELETEREPLICA can accept a 'count' and remove appropriate replicas (Nitin Sharma, noble )
-
 * SOLR-9444: Fix path usage for cloud backup/restore.  (Hrishikesh Gadre, Uwe Schindler, Varun Thacker)
 
 * SOLR-9381: Snitch for freedisk uses '/' instead of 'coreRootDirectory' (Tim Owen, noble)
 
+* SOLR-9488: Shard split can fail to write commit data on shutdown/restart causing replicas to recover
+  without replicating the index. This can cause data loss. (shalin)
+
+* SOLR-9490: Fixed bugs in BoolField that caused it to erroneously return "false" for all docs depending
+  on usage (Colvin Cowie, Dan Fox, hossman)
+
+* SOLR-9438: Shard split can be marked successful and sub-shard states switched to 'active' even when
+  one or more sub-shards replicas do not recover due to the leader crashing or restarting between the time
+  the replicas are created and before they can recover. This can cause data loss. (shalin)
 
 Optimizations
 ----------------------
@@ -134,6 +150,27 @@ Other Changes
   (Jon Dorando, Christine Poerschke)
 
 * SOLR-9406: SolrSuggester should selectively register close hook (Gethin James, Joel Bernstein)
+
+* SOLR-8961: Add a test module for solr-test-framework (Alan Woodward)
+
+* SOLR-9474: MiniSolrCloudCluster will not reuse ports by default when
+  restarting its JettySolrRunners (Alan Woodward)
+
+* SOLR-9498: Remove HDFS properties from DIH solrconfig.xml, as started in SOLR-6943 (Alexandre Rafalovitch)
+
+* SOLR-9365: Reduce noise in solr logs during graceful shutdown. (Cao Manh Dat via shalin)
+
+==================  6.2.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-9494: Use of {!collapse} sometimes doesn't correctly return true for Collector.needsScores(), especially when the
+  query was cached. This can cause an exception when 'q' is a SpanQuery or potentially others. (David Smiley)
+
+* SOLR-9408: Fix TreeMergeOutputFormat to add timestamp metadata to a commit. SolrCloud replication relies on this.
+    (Jessica Cheng Mallet via Varun Thacker)
+
 
 ==================  6.2.0 ==================
 
@@ -1167,6 +1204,23 @@ Other Changes
 
 * SOLR-8904: DateUtil in SolrJ moved to the extraction contrib as ExtractionDateUtil.  Obsolete methods were removed.
   (David Smiley)
+
+======================= 5.5.3 =======================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.12.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.8.v20160314
+
+
+(No Changes)
+
 
 ======================= 5.5.2 =======================
 

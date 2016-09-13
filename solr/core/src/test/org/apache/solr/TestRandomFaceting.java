@@ -16,21 +16,38 @@
  */
 package org.apache.solr;
 
-import org.apache.lucene.util.TestUtil;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.regex.Pattern;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.noggit.JSONUtil;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
-import java.util.*;
-
 @Slow
 public class TestRandomFaceting extends SolrTestCaseJ4 {
+
+  private static final Pattern trieFields = Pattern.compile(".*_t.");
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -80,6 +97,21 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     types.add(new FldType("missing_ss",new IRange(0,0), new SVal('a','b',1,1)));
 
     // TODO: doubles, multi-floats, ints with precisionStep>0, booleans
+    types.add(new FldType("small_tf",ZERO_ONE, new FVal(-4,5)));
+    assert trieFields.matcher("small_tf").matches();
+    assert !trieFields.matcher("small_f").matches();
+    
+    types.add(new FldType("foo_ti",ZERO_ONE, new IRange(-2,indexSize)));
+    assert trieFields.matcher("foo_ti").matches();
+    assert !trieFields.matcher("foo_i").matches();
+    
+    types.add(new FldType("bool_b",ZERO_ONE, new Vals(){
+      @Override
+      public Comparable get() {
+        return random().nextBoolean();
+      }
+      
+    }));
   }
 
   void addMoreDocs(int ndocs) throws Exception {
@@ -144,8 +176,8 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   }
 
 
-  List<String> multiValuedMethods = Arrays.asList(new String[]{"enum","fc"});
-  List<String> singleValuedMethods = Arrays.asList(new String[]{"enum","fc","fcs"});
+  List<String> multiValuedMethods = Arrays.asList(new String[]{"enum","fc", null});
+  List<String> singleValuedMethods = Arrays.asList(new String[]{"enum","fc","fcs", null});
 
 
   void doFacetTests(FldType ftype) throws Exception {
@@ -154,9 +186,8 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
       Random rand = random();
       boolean validate = validateResponses;
       ModifiableSolrParams params = params("facet","true", "wt","json", "indent","true", "omitHeader","true");
-      params.add("q","*:*", "rows","0");  // TODO: select subsets
+      params.add("q","*:*");  // TODO: select subsets
       params.add("rows","0");
-
 
       SchemaField sf = req.getSchema().getField(ftype.fname);
       boolean multiValued = sf.getType().multiValuedFieldCache();
@@ -198,6 +229,10 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
         params.add("facet.missing", "true");
       }
 
+      if (rand.nextBoolean()) {
+        params.add("facet.enum.cache.minDf",""+ rand.nextInt(indexSize));
+      }
+      
       // TODO: randomly add other facet params
       String key = ftype.fname;
       String facet_field = ftype.fname;
@@ -210,45 +245,207 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
       List<String> methods = multiValued ? multiValuedMethods : singleValuedMethods;
       List<String> responses = new ArrayList<>(methods.size());
       for (String method : methods) {
-        // params.add("facet.field", "{!key="+method+"}" + ftype.fname);
-        // TODO: allow method to be passed on local params?
-
-        params.set("facet.method", method);
-
-        // if (random().nextBoolean()) params.set("facet.mincount", "1");  // uncomment to test that validation fails
-
-        String strResponse = h.query(req(params));
-        // Object realResponse = ObjectBuilder.fromJSON(strResponse);
-        // System.out.println(strResponse);
-
-        responses.add(strResponse);
+        for (boolean exists : new boolean [] {false, true}) {
+          // params.add("facet.field", "{!key="+method+"}" + ftype.fname);
+          // TODO: allow method to be passed on local params?
+          if (method!=null) {
+            params.set("facet.method", method);
+          } else {
+            params.remove("facet.method");
+          }
+          
+          params.set("facet.exists", ""+exists);
+          if (!exists && rand.nextBoolean()) {
+            params.remove("facet.exists");
+          }
+          
+          // if (random().nextBoolean()) params.set("facet.mincount", "1");  // uncomment to test that validation fails
+          if (params.getInt("facet.limit", 100)!=0) { // it bypasses all processing, and we can go to empty validation
+            if (exists && params.getInt("facet.mincount", 0)>1) {
+              assertQEx("no mincount on facet.exists",
+                  rand.nextBoolean() ? "facet.exists":"facet.mincount",
+                  req(params), ErrorCode.BAD_REQUEST);
+              continue;
+            }
+            // facet.exists can't be combined with non-enum nor with enum requested for tries, because it will be flipped to FC/FCS 
+            final boolean notEnum = method != null && !method.equals("enum");
+            final boolean trieField = trieFields.matcher(ftype.fname).matches();
+            if ((notEnum || trieField) && exists) {
+              assertQEx("facet.exists only when enum or ommitted", 
+                  "facet.exists", req(params), ErrorCode.BAD_REQUEST);
+              continue;
+            }
+          }
+          String strResponse = h.query(req(params));
+          responses.add(strResponse);
+          
+          if (responses.size()>1) {
+            validateResponse(responses.get(0), strResponse, params, method, methods);
+          }
+        }
+        
       }
-
+      
       /**
       String strResponse = h.query(req(params));
       Object realResponse = ObjectBuilder.fromJSON(strResponse);
       **/
-
-      if (validate) {
-        for (int i=1; i<methods.size(); i++) {
-          String err = JSONTestUtil.match("/", responses.get(i), responses.get(0), 0.0);
-          if (err != null) {
-            log.error("ERROR: mismatch facet response: " + err +
-                "\n expected =" + responses.get(0) +
-                "\n response = " + responses.get(i) +
-                "\n request = " + params
-            );
-            fail(err);
-          }
-        }
-      }
-
-
     } finally {
       req.close();
     }
   }
+  private void validateResponse(String expected, String actual, ModifiableSolrParams params, String method,
+        List<String> methods) throws Exception {
+    if (params.getBool("facet.exists", false)) {
+      if (isSortByCount(params)) { // it's challenged with facet.sort=count 
+        expected = getExpectationForSortByCount(params, methods);// that requires to recalculate expactation
+      } else { // facet.sort=index
+        expected = capFacetCountsTo1(expected);
+      }
+    }
+    
+    String err = JSONTestUtil.match("/", actual, expected, 0.0);
+    if (err != null) {
+      log.error("ERROR: mismatch facet response: " + err +
+          "\n expected =" + expected +
+          "\n response = " + actual +
+          "\n request = " + params
+      );
+      fail(err);
+    }
+  }
 
+  /** if facet.exists=true with facet.sort=counts,
+   * it should return all values with 1 hits ordered by label index
+   * then all vals with 0 , and then missing count with null label,
+   * in the implementation below they are called three stratas 
+   * */
+  private String getExpectationForSortByCount( ModifiableSolrParams params, List<String> methods) throws Exception {
+    String indexSortedResponse = getIndexSortedAllFacetValues(params, methods);
+    
+    return transformFacetFields(indexSortedResponse, e -> {
+      List<Object> facetSortedByIndex = (List<Object>) e.getValue();
+      Map<Integer,List<Object>> stratas = new HashMap<Integer,List<Object>>(){
+        @Override // poor man multimap, I won't do that anymore, I swear.
+        public List<Object> get(Object key) {
+          if (!containsKey(key)) {
+            put((Integer) key, new ArrayList<>());
+          }
+          return super.get(key);
+        }
+      };
+      
+      for (Iterator iterator = facetSortedByIndex.iterator(); iterator.hasNext();) {
+        Object label = (Object) iterator.next();
+        Long count = (Long) iterator.next();
+        final Integer strata;
+        if (label==null) { // missing (here "stratas" seems like overengineering )
+          strata = null;
+        }else {
+          if (count>0) {
+            count = 1L; // capping here 
+            strata = 1; // non-zero count become zero
+          } else {
+            strata = 0; // zero-count
+          }
+        }
+        final List<Object> facet = stratas.get(strata);
+        facet.add(label);
+        facet.add(count);
+      }
+      List stratified =new ArrayList<>();
+      for(Integer s : new Integer[]{1, 0}) { // non-zero capped to one goes first, zeroes go then
+        stratified.addAll(stratas.get(s));
+      }// cropping them now
+      int offset=params.getInt("facet.offset", 0) * 2;
+      int end = offset + params.getInt("facet.limit", 100) * 2 ;
+      int fromIndex = offset > stratified.size() ?  stratified.size() : offset;
+      stratified = stratified.subList(fromIndex, 
+               end > stratified.size() ?  stratified.size() : end);
+      
+      if (params.getInt("facet.limit", 100)>0) { /// limit=0 omits even miss count
+        stratified.addAll(stratas.get(null));
+      }
+      facetSortedByIndex.clear();
+      facetSortedByIndex.addAll(stratified);
+    });
+  }
+
+  private String getIndexSortedAllFacetValues(ModifiableSolrParams in, List<String> methods) throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams(in);
+    params.set("facet.sort", "index");
+    String goodOldMethod = methods.get(random().nextInt( methods.size()));
+    params.set("facet.method", goodOldMethod);
+    params.set("facet.exists", "false");
+    if (random().nextBoolean()) {
+      params.remove("facet.exists");
+    }
+    params.set("facet.limit",-1);
+    params.set("facet.offset",0);
+    final String query;
+    SolrQueryRequest req = null;
+    try {
+      req = req(params);
+      query = h.query(req);
+    } finally {
+      req.close();
+    }
+    return query;
+  }
+
+  private boolean isSortByCount(ModifiableSolrParams in) {
+    boolean sortIsCount;
+    String sortParam = in.get("facet.sort");
+    sortIsCount = "count".equals(sortParam) || (sortParam==null && in.getInt("facet.limit",100)>0);
+    return sortIsCount;
+  }
+
+  /*
+   * {
+  "response":{"numFound":6,"start":0,"docs":[]
+  },
+  "facet_counts":{
+    "facet_queries":{},
+    "facet_fields":{
+      "foo_i":[
+        "6",2,
+        "2",1,
+        "3",1]},
+    "facet_ranges":{},
+    "facet_intervals":{},
+    "facet_heatmaps":{}}} 
+   * */
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private String capFacetCountsTo1(String expected) throws IOException {
+    return transformFacetFields(expected, e -> {
+      List<Object> facetValues = (List<Object>) e.getValue();
+      for (ListIterator iterator = facetValues.listIterator(); iterator.hasNext();) {
+        Object value = iterator.next(); 
+        Long count = (Long) iterator.next();
+        if (value!=null && count > 1) {
+          iterator.set(1);
+        }
+        
+      }
+    });
+  }
+  
+  private String transformFacetFields(String expected, Consumer<Map.Entry<Object,Object>> consumer) throws IOException {
+    Object json = ObjectBuilder.fromJSON(expected);
+    Map facet_fields = getFacetFieldMap(json);
+    Set entries = facet_fields.entrySet();
+    for (Object facetTuples : entries) { //despite there should be only one field
+      Entry entry = (Entry)facetTuples;
+      consumer.accept(entry);
+    }
+    return JSONUtil.toJSON(json);
+  }
+
+  private Map getFacetFieldMap(Object json) {
+    Object facet_counts = ((Map)json).get("facet_counts");
+    Map facet_fields = (Map) ((Map)facet_counts).get("facet_fields");
+    return facet_fields;
+  }
 }
 
 

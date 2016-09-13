@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -40,11 +41,10 @@ import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.misc.IndexMergeTool;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.store.hdfs.HdfsDirectory;
+import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Preconditions;
 
 /**
  * See {@link IndexMergeTool}.
@@ -151,7 +151,7 @@ public class TreeMergeOutputFormat extends FileOutputFormat<Text, NullWritable> 
         LOG.info("Optimizing Solr: forcing tree merge down to {} segments", maxSegments);
         timer = new RTimer();
         if (maxSegments < Integer.MAX_VALUE) {
-          writer.forceMerge(maxSegments); 
+          writer.forceMerge(maxSegments);
           // TODO: consider perf enhancement for no-deletes merges: bulk-copy the postings data 
           // see http://lucene.472066.n3.nabble.com/Experience-with-large-merge-factors-tp1637832p1647046.html
         }
@@ -160,6 +160,10 @@ public class TreeMergeOutputFormat extends FileOutputFormat<Text, NullWritable> 
           context.getCounter(SolrCounters.class.getName(), SolrCounters.PHYSICAL_TREE_MERGE_TIME.toString()).increment((long) timer.getTime());
         }
         LOG.info("Optimizing Solr: done forcing tree merge down to {} segments in {}ms", maxSegments, timer.getTime());
+
+        // Set Solr's commit data so the created index is usable by SolrCloud. E.g. Currently SolrCloud relies on
+        // commitTimeMSec in the commit data to do replication.
+        SolrIndexWriter.setCommitData(writer);
 
         timer = new RTimer();
         LOG.info("Optimizing Solr: Closing index writer");

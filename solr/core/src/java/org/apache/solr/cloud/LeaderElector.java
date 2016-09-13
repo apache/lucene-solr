@@ -347,7 +347,9 @@ public  class LeaderElector {
         // am I the next leader?
         checkIfIamLeader(context, true);
       } catch (Exception e) {
-        log.warn("", e);
+        if (!zkClient.isClosed()) {
+          log.warn("", e);
+        }
       }
     }
   }

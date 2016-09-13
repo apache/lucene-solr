@@ -1169,12 +1169,12 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           if (upShards.contains(s)) {
             // this is no longer true if there was a query timeout on an up shard
             // assertTrue("Expected to find numFound in the up shard info",info.get("numFound") != null);
-            assertTrue("Expected to find shardAddress in the up shard info",info.get("shardAddress") != null);
+            assertTrue("Expected to find shardAddress in the up shard info: " + info.toString(), info.get("shardAddress") != null);
           }
           else {
             assertEquals("Expected to find the "+SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" header set if a shard is down",
                 Boolean.TRUE, rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-            assertTrue("Expected to find error in the down shard info",info.get("error") != null);
+            assertTrue("Expected to find error in the down shard info: " + info.toString(), info.get("error") != null);
           }
         }
       }

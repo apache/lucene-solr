@@ -40,20 +40,16 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.cloud.TestMiniSolrCloudClusterBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -61,50 +57,50 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.SolrCLI;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
-public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
+public class BasicAuthIntegrationTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @Override
-  protected void doExtraTests(MiniSolrCloudCluster miniCluster, SolrZkClient zkClient, ZkStateReader zkStateReader,
-                              CloudSolrClient cloudSolrClient, String defaultCollName) throws Exception {
+  private static final String COLLECTION = "authCollection";
 
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(3)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
+
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 1).process(cluster.getSolrClient());
+  }
+
+  @Test
+  public void testBasicAuth() throws Exception {
 
     String authcPrefix = "/admin/authentication";
     String authzPrefix = "/admin/authorization";
-
-    String old = cloudSolrClient.getDefaultCollection();
-    cloudSolrClient.setDefaultCollection(null);
 
     NamedList<Object> rsp;
     HttpClient cl = null;
     try {
       cl = HttpClientUtil.createClient(null);
-      String baseUrl = getRandomReplica(zkStateReader.getClusterState().getCollection(defaultCollName), random()).getStr(BASE_URL_PROP);
+
+      JettySolrRunner randomJetty = cluster.getRandomJetty(random());
+      String baseUrl = randomJetty.getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
-      zkClient.setData("/security.json", STD_CONF.replaceAll("'", "\"").getBytes(UTF_8), true);
+      zkClient().setData("/security.json", STD_CONF.replaceAll("'", "\"").getBytes(UTF_8), true);
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
-      boolean found = false;
-      for (JettySolrRunner jettySolrRunner : miniCluster.getJettySolrRunners()) {
-        if(baseUrl.contains(String.valueOf(jettySolrRunner.getLocalPort()))){
-          found = true;
-          jettySolrRunner.stop();
-          jettySolrRunner.start();
-          verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
-          break;
-        }
-      }
-
-      assertTrue("No server found to restart , looking for : "+baseUrl , found);
+      randomJetty.stop();
+      randomJetty.start(false);
+      baseUrl = randomJetty.getBaseUrl().toString();
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
       String command = "{\n" +
           "'set-user': {'harry':'HarryIsCool'}\n" +
@@ -112,11 +108,12 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
 
       GenericSolrRequest genericReq = new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix, new ModifiableSolrParams());
       genericReq.setContentStreams(Collections.singletonList(new ContentStreamBase.ByteArrayStream(command.getBytes(UTF_8), "")));
-      try {
-        cloudSolrClient.request(genericReq);
-        fail("Should have failed with a 401");
-      } catch (HttpSolrClient.RemoteSolrException e) {
-      }
+
+      HttpSolrClient.RemoteSolrException exp = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+        cluster.getSolrClient().request(genericReq);
+      });
+      assertEquals(401, exp.code());
+
       command = "{\n" +
           "'set-user': {'harry':'HarryIsUberCool'}\n" +
           "}";
@@ -130,7 +127,8 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
       int statusCode = r.getStatusLine().getStatusCode();
       Utils.consumeFully(r.getEntity());
       assertEquals("proper_cred sent, but access denied", 200, statusCode);
-      baseUrl = getRandomReplica(zkStateReader.getClusterState().getCollection(defaultCollName), random()).getStr(BASE_URL_PROP);
+
+      baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
 
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/credentials/harry", NOT_NULL_PREDICATE, 20);
       command = "{\n" +
@@ -139,7 +137,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
 
       executeCommand(baseUrl + authzPrefix, cl,command, "solr", "SolrRocks");
 
-      baseUrl = getRandomReplica(zkStateReader.getClusterState().getCollection(defaultCollName), random()).getStr(BASE_URL_PROP);
+      baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/user-role/harry", NOT_NULL_PREDICATE, 20);
 
       executeCommand(baseUrl + authzPrefix, cl, Utils.toJSONString(singletonMap("set-permission", Utils.makeMap
@@ -153,7 +151,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
           ("name", "collection-admin-edit", "role", "admin"))), "harry", "HarryIsUberCool"  );
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/name", "collection-admin-edit", 20);
 
-      CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(defaultCollName);
+      CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
 
       try (HttpSolrClient solrClient = getHttpSolrClient(baseUrl)) {
         try {
@@ -170,18 +168,17 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
 
         }
       }
-      cloudSolrClient.request(CollectionAdminRequest.reloadCollection(defaultCollName)
+      cluster.getSolrClient().request(CollectionAdminRequest.reloadCollection(COLLECTION)
           .setBasicAuthCredentials("harry", "HarryIsUberCool"));
 
       try {
-        cloudSolrClient.request(CollectionAdminRequest.reloadCollection(defaultCollName)
+        cluster.getSolrClient().request(CollectionAdminRequest.reloadCollection(COLLECTION)
             .setBasicAuthCredentials("harry", "Cool12345"));
         fail("This should not succeed");
       } catch (HttpSolrClient.RemoteSolrException e) {
 
       }
 
-      cloudSolrClient.setDefaultCollection(old);
       executeCommand(baseUrl + authzPrefix, cl,"{set-permission : { name : update , role : admin}}", "harry", "HarryIsUberCool");
 
       SolrInputDocument doc = new SolrInputDocument();
@@ -190,7 +187,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
       update.setBasicAuthCredentials("harry","HarryIsUberCool");
       update.add(doc);
       update.setCommitWithin(100);
-      cloudSolrClient.request(update);
+      cluster.getSolrClient().request(update, COLLECTION);
 
 
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");

@@ -1265,7 +1265,14 @@ public class FacetComponent extends SearchComponent {
       if (facetFs != null) {
         
         for (String field : facetFs) {
-          DistribFieldFacet ff = new DistribFieldFacet(rb, field);
+          final DistribFieldFacet ff;
+          
+          if (params.getFieldBool(field, FacetParams.FACET_EXISTS, false)) {
+            // cap facet count by 1 with this method
+            ff = new DistribFacetExistsField(rb, field);
+          } else {
+            ff = new DistribFieldFacet(rb, field);
+          }
           facets.put(ff.getKey(), ff);
         }
       }
@@ -1469,7 +1476,7 @@ public class FacetComponent extends SearchComponent {
             sfc.termNum = termNum++;
             counts.put(name, sfc);
           }
-          sfc.count += count;
+          incCount(sfc, count);
           terms.set(sfc.termNum);
           last = count;
         }
@@ -1484,6 +1491,10 @@ public class FacetComponent extends SearchComponent {
       missingMaxPossible += last;
       missingMax[shardNum] = last;
       counted[shardNum] = terms;
+    }
+
+    protected void incCount(ShardFacetCount sfc, long count) {
+      sfc.count += count;
     }
     
     public ShardFacetCount[] getLexSorted() {
@@ -1530,7 +1541,7 @@ public class FacetComponent extends SearchComponent {
       }
     }
   }
-  
+
   /**
    * <b>This API is experimental and subject to change</b>
    */
@@ -1547,4 +1558,18 @@ public class FacetComponent extends SearchComponent {
     }
   }
 
+  
+  private static final class DistribFacetExistsField extends DistribFieldFacet {
+    private DistribFacetExistsField(ResponseBuilder rb, String facetStr) {
+      super(rb, facetStr);
+      SimpleFacets.checkMincountOnExists(field, minCount); 
+    }
+
+    @Override
+    protected void incCount(ShardFacetCount sfc, long count) {
+      if (count>0) {
+        sfc.count = 1;
+      }
+    }
+  }
 }

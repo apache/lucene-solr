@@ -36,7 +36,36 @@ Other
 
 ======================= Lucene 6.3.0 =======================
 
-(No changes)
+API Changes
+
+* LUCENE-7436: MinHashFilter's constructor, and some of its default
+  settings, should be public.  (Doug Turnbull via Mike McCandless)
+
+New Features
+
+Bug Fixes
+
+* LUCENE-7417: The standard Highlighter could throw an IllegalArgumentException when
+  trying to highlight a query containing a degenerate case of a MultiPhraseQuery with one
+  term.  (Thomas Kappler via David Smiley)
+
+* LUCENE-7440: Document id skipping (PostingsEnum.advance) could throw an
+  ArrayIndexOutOfBoundsException exception on large index segments (>1.8B docs)
+  with large skips. (yonik)
+
+* LUCENE-7442: MinHashFilter's ctor should validate its args.
+  (Cao Manh Dat via Steve Rowe)
+
+* LUCENE-7318: Fix backwards compatibility issues around StandardAnalyzer
+  and its components, introduced with Lucene 6.2.0. The moved classes
+  were restored in their original packages: LowercaseFilter and StopFilter,
+  as well as several utility classes.  (Uwe Schindler, Mike McCandless)
+
+Improvements
+
+Optimizations
+
+Other
 
 ======================= Lucene 6.2.0 =======================
 
@@ -631,6 +660,9 @@ Other
 
 * LUCENE-7095: Add point values support to the numeric field query time join.
   (Martijn van Groningen, Mike McCandless)
+
+======================= Lucene 5.5.3 =======================
+(No Changes)
 
 ======================= Lucene 5.5.2 =======================
 

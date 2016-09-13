@@ -20,10 +20,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.LongAdder;
@@ -47,7 +45,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -516,16 +513,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
     return rc;
   }
-
-  @SuppressForbidden(reason = "Need currentTimeMillis, commit time should be used only for debugging purposes, " +
-      " but currently suspiciously used for replication as well")
-  private void setCommitData(IndexWriter iw) {
-    final Map<String,String> commitData = new HashMap<>();
-    commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY,
-        String.valueOf(System.currentTimeMillis()));
-    iw.setLiveCommitData(commitData.entrySet());
-  }
-
+  
   public void prepareCommit(CommitUpdateCommand cmd) throws IOException {
 
     boolean error=true;
@@ -534,7 +522,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       log.info("start "+cmd);
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
-        setCommitData(iw.get());
+        SolrIndexWriter.setCommitData(iw.get());
         iw.get().prepareCommit();
       } finally {
         iw.decref();
@@ -615,7 +603,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           // SolrCore.verbose("writer.commit() start writer=",writer);
 
           if (writer.hasUncommittedChanges()) {
-            setCommitData(writer);
+            SolrIndexWriter.setCommitData(writer);
             writer.commit();
           } else {
             log.info("No uncommitted changes. Skipping IW.commit.");
@@ -800,7 +788,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           }
 
           // todo: refactor this shared code (or figure out why a real CommitUpdateCommand can't be used)
-          setCommitData(writer);
+          SolrIndexWriter.setCommitData(writer);
           writer.commit();
 
           synchronized (solrCoreState.getUpdateLock()) {

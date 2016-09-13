@@ -25,6 +25,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -57,16 +58,18 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   private static SolrClient solrClient;
 
   private static String getUsersFirstGroup() throws Exception {
-    org.apache.hadoop.security.Groups hGroups =
-        new org.apache.hadoop.security.Groups(new Configuration());
     String group = "*"; // accept any group if a group can't be found
-    try {
-      List<String> g = hGroups.getGroups(System.getProperty("user.name"));
-      if (g != null && g.size() > 0) {
-        group = g.get(0);
+    if (!Constants.WINDOWS) { // does not work on Windows!
+      org.apache.hadoop.security.Groups hGroups =
+          new org.apache.hadoop.security.Groups(new Configuration());
+      try {
+        List<String> g = hGroups.getGroups(System.getProperty("user.name"));
+        if (g != null && g.size() > 0) {
+          group = g.get(0);
+        }
+      } catch (NullPointerException npe) {
+        // if user/group doesn't exist on test box
       }
-    } catch (NullPointerException npe) {
-      // if user/group doesn't exist on test box
     }
     return group;
   }
@@ -92,6 +95,8 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void startup() throws Exception {
+    assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
+    
     System.setProperty("authenticationPlugin", HttpParamDelegationTokenPlugin.class.getName());
     System.setProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED, "true");
 
@@ -151,7 +156,9 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
       miniCluster.shutdown();
     }
     miniCluster = null;
-    solrClient.close();
+    if (solrClient != null) {
+      solrClient.close();
+    }
     solrClient = null;
     System.clearProperty("authenticationPlugin");
     System.clearProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED);
