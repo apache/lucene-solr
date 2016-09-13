@@ -329,7 +329,7 @@ public class FuzzyTermsEnum extends TermsEnum {
       //System.out.println("AFTE.accept term=" + term);
       int ed = matchers.length - 1;
       
-      // we are wrapping either an intersect() TermsEnum or an AutomatonTermsENum,
+      // we are wrapping either an intersect() TermsEnum or an AutomatonTermsEnum,
       // so we know the outer DFA always matches.
       // now compute exact edit distance
       while (ed > 0) {
