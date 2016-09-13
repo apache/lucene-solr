@@ -90,6 +90,8 @@ New Features
 * SOLR-8186: Reduce logging to logs/solr-<port>-console.log when not running in foreground mode
   Show timestamp also in foreground log. Also removes some logging noise. (janhoy)
 
+* SOLR-8487: Adds CommitStream to support sending commits to a collection being updated. (Dennis Gove)
+
 Bug Fixes
 ----------------------
 
