@@ -1182,6 +1182,29 @@ Other Changes
 * SOLR-8904: DateUtil in SolrJ moved to the extraction contrib as ExtractionDateUtil.  Obsolete methods were removed.
   (David Smiley)
 
+======================= 5.5.3 =======================
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.7
+Carrot2 3.10.4
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.2.13.v20150730
+
+Bug Fixes
+---------------------
+
+* SOLR-9290: TCP-connections in CLOSE_WAIT spike during heavy indexing and do not decrease.
+  (Mads Tomasgård Bjørgan, Anshum Gupta, Shai Erera, hossman, Mark Miller, yonik, shalin)
+
+* SOLR-7280: Load cores in sorted order & limit threads to improve cluster stability (noble, Erick Erickson, shalin)
+
+
+* SOLR-9310: PeerSync fails on a node restart due to IndexFingerPrint mismatch (Pushkar Raste, noble)
+
 ======================= 5.5.2 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
