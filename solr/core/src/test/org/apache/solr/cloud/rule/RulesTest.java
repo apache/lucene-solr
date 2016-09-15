@@ -234,25 +234,16 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
     }
 
 
-    for (int i = 0; i < 20; i++) {
-      DocCollection rulesCollection = ZkStateReader.getCollectionLive(cloudClient.getZkStateReader(), rulesColl);
-      log.info("version_of_coll {}  ", rulesCollection.getZNodeVersion());
-      List list = (List) rulesCollection.get("rule");
-      assertEquals(3, list.size());
-      if (!"<5".equals(((Map) list.get(0)).get("cores"))) {
-        if (i < 19) {
-          Thread.sleep(100);
-          continue;
-        }
-
-      }
-      assertEquals("<5", ((Map) list.get(0)).get("cores"));
-      assertEquals("1", ((Map) list.get(1)).get("replica"));
-      assertEquals(">"+minGB2, ((Map) list.get(2)).get("freedisk"));
-      assertEquals("true", String.valueOf(rulesCollection.getProperties().get("autoAddReplicas")));
-      list = (List) rulesCollection.get("snitch");
-      assertEquals(1, list.size());
-      assertEquals("ImplicitSnitch", ((Map) list.get(0)).get("class"));
-    }
+    DocCollection rulesCollection = ZkStateReader.getCollectionLive(cloudClient.getZkStateReader(), rulesColl);
+    log.info("version_of_coll {}  ", rulesCollection.getZNodeVersion());
+    List list = (List) rulesCollection.get("rule");
+    assertEquals(3, list.size());
+    assertEquals("<5", ((Map) list.get(0)).get("cores"));
+    assertEquals("1", ((Map) list.get(1)).get("replica"));
+    assertEquals(">"+minGB2, ((Map) list.get(2)).get("freedisk"));
+    assertEquals("true", String.valueOf(rulesCollection.getProperties().get("autoAddReplicas")));
+    list = (List) rulesCollection.get("snitch");
+    assertEquals(1, list.size());
+    assertEquals("ImplicitSnitch", ((Map) list.get(0)).get("class"));
   }
 }
