@@ -189,9 +189,6 @@ public final class FuzzyTermsEnum extends TermsEnum {
       maxEdits--;
     }
 
-    // TODO: this opto could be improved, e.g. if the worst term in the queue is zzzz with ed=2, then, really, on the next segment, we
-    // should only be looking for ed=1 terms up until zzzz, then ed=2.  Tricky :)
-    
     if (oldMaxEdits != maxEdits || lastTerm == null) {
       // This is a very powerful optimization: the maximum edit distance has changed.  This happens because we collect only the top scoring
       // N (= 50, by default) terms, and if e.g. maxEdits=2, and the queue is now full of matching terms, and we notice that the worst entry
@@ -211,41 +208,32 @@ public final class FuzzyTermsEnum extends TermsEnum {
 
     BytesRef term;
 
-    // while loop because we skip short terms even if they are within the specified edit distance (see the NOTE in FuzzyQuery class javadocs)
-    while (true) {
+    term = actualEnum.next();
+    if (term == null) {
+      // end
+      return null;
+    }
 
-      term = actualEnum.next();
-      if (term == null) {
-        // end
-        break;
-      }
-
-      int ed = maxEdits;
+    int ed = maxEdits;
       
-      // we know the outer DFA always matches.
-      // now compute exact edit distance
-      while (ed > 0) {
-        if (matches(term, ed - 1)) {
-          ed--;
-        } else {
-          break;
-        }
-      }
-      
-      if (ed == 0) { // exact match
-        boostAtt.setBoost(1.0F);
-        break;
+    // we know the outer DFA always matches.
+    // now compute exact edit distance
+    while (ed > 0) {
+      if (matches(term, ed - 1)) {
+        ed--;
       } else {
-        final int codePointCount = UnicodeUtil.codePointCount(term);
-        int minTermLength = Math.min(codePointCount, termLength);
-
-        // only accept a matching term if it's longer than the edit distance:
-        if (minTermLength > ed) {
-          float similarity = 1.0f - (float) ed / (float) minTermLength;
-          boostAtt.setBoost(similarity);
-          break;
-        }
+        break;
       }
+    }
+      
+    if (ed == 0) { // exact match
+      boostAtt.setBoost(1.0F);
+    } else {
+      final int codePointCount = UnicodeUtil.codePointCount(term);
+      int minTermLength = Math.min(codePointCount, termLength);
+
+      float similarity = 1.0f - (float) ed / (float) minTermLength;
+      boostAtt.setBoost(similarity);
     }
       
     final float bottom = maxBoostAtt.getMaxNonCompetitiveBoost();

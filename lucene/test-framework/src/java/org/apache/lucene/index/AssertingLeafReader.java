@@ -126,6 +126,11 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert termsEnum != null;
       return new AssertingTermsEnum(termsEnum);
     }
+
+    @Override
+    public String toString() {
+      return "AssertingTerms(" + in + ")";
+    }
   }
   
   static final VirtualMethod<TermsEnum> SEEK_EXACT = new VirtualMethod<>(TermsEnum.class, "seekExact", BytesRef.class);
