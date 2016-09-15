@@ -126,6 +126,9 @@ Bug Fixes
   one or more sub-shards replicas do not recover due to the leader crashing or restarting between the time
   the replicas are created and before they can recover. This can cause data loss. (shalin)
 
+* SOLR-9484: The modify collection API should wait for the modified properties to show up in the
+  cluster state. (Cao Manh Dat, shalin)
+
 Optimizations
 ----------------------
 

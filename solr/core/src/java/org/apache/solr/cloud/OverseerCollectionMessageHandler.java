@@ -662,6 +662,26 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
     
     overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
+    boolean areChangesVisible = true;
+    while (!timeout.hasTimedOut()) {
+      DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
+      areChangesVisible = true;
+      for (Map.Entry<String,Object> updateEntry : message.getProperties().entrySet()) {
+        String updateKey = updateEntry.getKey();
+        if (!updateKey.equals(ZkStateReader.COLLECTION_PROP)
+            && !updateKey.equals(Overseer.QUEUE_OPERATION)
+            && !collection.get(updateKey).equals(updateEntry.getValue())){
+          areChangesVisible = false;
+          break;
+        }
+      }
+      if (areChangesVisible) break;
+      Thread.sleep(100);
+    }
+    if (!areChangesVisible)
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not modify collection " + message);
   }
 
   void cleanupCollection(String collectionName, NamedList results) throws Exception {
