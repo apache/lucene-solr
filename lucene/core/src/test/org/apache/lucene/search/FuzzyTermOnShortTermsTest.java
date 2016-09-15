@@ -49,15 +49,16 @@ public class FuzzyTermOnShortTermsTest extends LuceneTestCase {
       countHits(a, new String[]{"abcde"}, new FuzzyQuery(new Term(FIELD, "abc"), 2), 1);
       countHits(a, new String[]{"abc"}, new FuzzyQuery(new Term(FIELD, "abcde"), 2), 1);
       
-      //these don't      
-      countHits(a, new String[]{"ab"}, new FuzzyQuery(new Term(FIELD, "a"), 1), 0);
-      countHits(a, new String[]{"a"}, new FuzzyQuery(new Term(FIELD, "ab"), 1), 0);
+      // LUCENE-7439: these now work as well:
       
-      countHits(a, new String[]{"abc"}, new FuzzyQuery(new Term(FIELD, "a"), 2), 0);
-      countHits(a, new String[]{"a"}, new FuzzyQuery(new Term(FIELD, "abc"), 2), 0);
+      countHits(a, new String[]{"ab"}, new FuzzyQuery(new Term(FIELD, "a"), 1), 1);
+      countHits(a, new String[]{"a"}, new FuzzyQuery(new Term(FIELD, "ab"), 1), 1);
+      
+      countHits(a, new String[]{"abc"}, new FuzzyQuery(new Term(FIELD, "a"), 2), 1);
+      countHits(a, new String[]{"a"}, new FuzzyQuery(new Term(FIELD, "abc"), 2), 1);
 
-      countHits(a, new String[]{"abcd"}, new FuzzyQuery(new Term(FIELD, "ab"), 2), 0);
-      countHits(a, new String[]{"ab"}, new FuzzyQuery(new Term(FIELD, "abcd"), 2), 0);
+      countHits(a, new String[]{"abcd"}, new FuzzyQuery(new Term(FIELD, "ab"), 2), 1);
+      countHits(a, new String[]{"ab"}, new FuzzyQuery(new Term(FIELD, "abcd"), 2), 1);
    }
    
    private void countHits(Analyzer analyzer, String[] docs, Query q, int expected) throws Exception {

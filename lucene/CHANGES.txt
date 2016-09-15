@@ -32,6 +32,9 @@ Bug Fixes
 
 Improvements
 
+* LUCENE-7439: FuzzyQuery now matches all terms within the specified
+  edit distance, even if they are short terms (Mike McCandless)
+
 Optimizations
 
 Other

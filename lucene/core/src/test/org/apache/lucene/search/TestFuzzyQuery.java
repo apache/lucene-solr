@@ -543,12 +543,10 @@ public class TestFuzzyQuery extends LuceneTestCase {
           continue;
         }
         int ed = getDistance(term, queryTerm);
-        if (Math.min(queryTerm.length(), term.length()) > ed) {        
-          float score = 1f - (float) ed / (float) Math.min(queryTerm.length(), term.length());
-          while (ed < 3) {
-            expected[ed].add(new TermAndScore(term, score));
-            ed++;
-          }
+        float score = 1f - (float) ed / (float) Math.min(queryTerm.length(), term.length());
+        while (ed < 3) {
+          expected[ed].add(new TermAndScore(term, score));
+          ed++;
         }
       }
 

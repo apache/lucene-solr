@@ -350,7 +350,7 @@ public class FuzzyTermsEnum extends TermsEnum {
         final int codePointCount = UnicodeUtil.codePointCount(term);
         final float similarity = 1.0f - ((float) ed / (float) 
             (Math.min(codePointCount, termLength)));
-        if (similarity > minSimilarity) {
+        if (minSimilarity == 0 || similarity > minSimilarity) {
           boostAtt.setBoost((similarity - minSimilarity) * scale_factor);
           //System.out.println("  yes");
           return AcceptStatus.YES;

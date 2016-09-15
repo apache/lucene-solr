@@ -16,9 +16,11 @@
  */
 package org.apache.lucene.sandbox.queries;
 
-import java.util.List;
-import java.util.Arrays;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -472,8 +474,17 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
     q = new SlowFuzzyQuery(new Term("field", "a"), 6f, 0, 50);
     hits = searcher.search(q, 10).scoreDocs;
     assertEquals(2, hits.length);
-    assertEquals("test", searcher.doc(hits[0].doc).get("field"));
-    assertEquals("foobar", searcher.doc(hits[1].doc).get("field"));
+
+    // We cannot expect a particular order since both hits 0.0 score:
+    Set<String> actual = new HashSet<>();
+    actual.add(searcher.doc(hits[0].doc).get("field"));
+    actual.add(searcher.doc(hits[1].doc).get("field"));
+
+    Set<String> expected = new HashSet<>();
+    expected.add("test");
+    expected.add("foobar");
+    
+    assertEquals(expected, actual);
     
     reader.close();
     index.close();
