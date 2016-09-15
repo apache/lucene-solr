@@ -43,11 +43,13 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     int[] min = new int[dimensions];
     int[] max = new int[dimensions];
 
+    int minV, maxV;
     for (int d=0; d<dimensions; ++d) {
-      min[d] = nextIntInternal();
-      max[d] = nextIntInternal();
+      minV = nextIntInternal();
+      maxV = nextIntInternal();
+      min[d] = Math.min(minV, maxV);
+      max[d] = Math.max(minV, maxV);
     }
-
     return new IntRange(min, max);
   }
 
@@ -140,16 +142,8 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
       assert min != null && max != null && min.length > 0 && max.length > 0
           : "test box: min/max cannot be null or empty";
       assert min.length == max.length : "test box: min/max length do not agree";
-      this.min = new int[min.length];
-      this.max = new int[max.length];
-      for (int d=0; d<min.length; ++d) {
-        if (min[d] > max[d]) {
-          // swap if max < min:
-          int temp = min[d];
-          min[d] = max[d];
-          max[d] = temp;
-        }
-      }
+      this.min = min;
+      this.max = max;
     }
 
     @Override
@@ -164,7 +158,12 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected void setMin(int dim, Object val) {
-      min[dim] = (Integer)val;
+      int v = (Integer)val;
+      if (min[dim] < v) {
+        max[dim] = v;
+      } else {
+        min[dim] = v;
+      }
     }
 
     @Override
@@ -174,7 +173,12 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected void setMax(int dim, Object val) {
-      max[dim] = (Integer)val;
+      int v = (Integer)val;
+      if (max[dim] > v) {
+        min[dim] = v;
+      } else {
+        max[dim] = v;
+      }
     }
 
     @Override
