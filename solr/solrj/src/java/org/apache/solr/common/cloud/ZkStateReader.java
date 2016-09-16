@@ -172,22 +172,23 @@ public class ZkStateReader implements Closeable {
     String configName = null;
 
     String path = COLLECTIONS_ZKNODE + "/" + collection;
-    LOG.info("Load collection config from: [{}]", path);
+    LOG.debug("Loading collection config from: [{}]", path);
 
     try {
       byte[] data = zkClient.getData(path, null, null, true);
 
-      if(data != null) {
+      if (data != null) {
         ZkNodeProps props = ZkNodeProps.load(data);
         configName = props.getStr(CONFIGNAME_PROP);
       }
 
       if (configName != null) {
-        if (!zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true)) {
-          LOG.error("Specified config does not exist in ZooKeeper: [{}]", configName);
+        String configPath = CONFIGS_ZKNODE + "/" + configName;
+        if (!zkClient.exists(configPath, true)) {
+          LOG.error("Specified config=[{}] does not exist in ZooKeeper at location=[{}]", configName, configPath);
           throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "Specified config does not exist in ZooKeeper: " + configName);
         } else {
-          LOG.info("path=[{}] [{}]=[{}] specified config exists in ZooKeeper", path, CONFIGNAME_PROP, configName);
+          LOG.debug("path=[{}] [{}]=[{}] specified config exists in ZooKeeper", configPath, CONFIGNAME_PROP, configName);
         }
       } else {
         throw new ZooKeeperException(ErrorCode.INVALID_STATE, "No config data found at path: " + path);
