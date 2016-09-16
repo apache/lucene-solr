@@ -132,6 +132,8 @@ Bug Fixes
 * SOLR-9507: CoreContainer threads now correctly set their MDC logging values
   (Alan Woodward)
 
+* SOLR-9522: Improve error handling in ZKPropertiesWriter (Varun Thacker)
+
 Optimizations
 ----------------------
 
