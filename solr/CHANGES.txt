@@ -129,6 +129,9 @@ Bug Fixes
 * SOLR-9484: The modify collection API should wait for the modified properties to show up in the
   cluster state. (Cao Manh Dat, shalin)
 
+* SOLR-9507: CoreContainer threads now correctly set their MDC logging values
+  (Alan Woodward)
+
 Optimizations
 ----------------------
 

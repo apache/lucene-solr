@@ -459,6 +459,8 @@ public class CoreContainer {
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
     if(isZooKeeperAware())  pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName());
 
+    MDCLoggingContext.setNode(this);
+
     ZkStateReader.ConfigData securityConfig = isZooKeeperAware() ? getZkController().getZkStateReader().getSecurityProps(false) : new ZkStateReader.ConfigData(EMPTY_MAP, -1);
     initializeAuthorizationPlugin((Map<String, Object>) securityConfig.data.get("authorization"));
     initializeAuthenticationPlugin((Map<String, Object>) securityConfig.data.get("authentication"));
