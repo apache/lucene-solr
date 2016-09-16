@@ -425,7 +425,12 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
       @Override
       public T put(String  key, T value) {
-        NamedList.this.add(key, value);
+        int idx = NamedList.this.indexOf(key, 0);
+        if (idx == -1) {
+          NamedList.this.add(key, value);
+        } else {
+          NamedList.this.setVal(idx, value);
+        }
         return  null;
       }
 
@@ -436,8 +441,10 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
       @Override
       public void putAll(Map m) {
-        NamedList.this.addAll(m);
-
+        for (Object o : m.entrySet()) {
+          Map.Entry e = (Entry) o;
+          put(e.getKey() == null ? null : e.getKey().toString(), (T) e.getValue());
+        }
       }
 
       @Override
