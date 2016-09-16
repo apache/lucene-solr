@@ -168,6 +168,7 @@ Other Changes
 
 * SOLR-9365: Reduce noise in solr logs during graceful shutdown. (Cao Manh Dat via shalin)
 
+* SOLR-9451: Make clusterstatus command logging less verbose. (Varun Thacker)
 ==================  6.2.1 ==================
 
 Bug Fixes
