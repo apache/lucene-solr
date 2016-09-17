@@ -99,6 +99,11 @@ Bug Fixes
 * SOLR-9484: The modify collection API should wait for the modified properties to show up in the
   cluster state. (Cao Manh Dat, shalin)
 
+* SOLR-9507: CoreContainer threads now correctly set their MDC logging values
+  (Alan Woodward)
+
+* SOLR-9522: Improve error handling in ZKPropertiesWriter (Varun Thacker)
+
 Optimizations
 ----------------------
 
@@ -133,6 +138,7 @@ Other Changes
 
 * SOLR-9365: Reduce noise in solr logs during graceful shutdown. (Cao Manh Dat via shalin)
 
+* SOLR-9451: Make clusterstatus command logging less verbose. (Varun Thacker)
 ==================  6.2.1 ==================
 
 Bug Fixes

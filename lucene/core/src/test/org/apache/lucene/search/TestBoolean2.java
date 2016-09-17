@@ -177,9 +177,12 @@ public class TestBoolean2 extends LuceneTestCase {
       mulFactor *= 2;
     } while(docCount < 3000 * NUM_FILLER_DOCS);
 
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir2, 
-        newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
+    iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000));
+    // randomized codecs are sometimes too costly for this test:
+    iwc.setCodec(Codec.forName("Lucene62"));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir2, iwc);
+
     doc = new Document();
     doc.add(new Field("field2", "xxx", ft));
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
