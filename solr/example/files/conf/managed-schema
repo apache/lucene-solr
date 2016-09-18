@@ -482,7 +482,7 @@
   <dynamicField name="*_tdts" type="tdates" indexed="true" stored="true"/>
   <dynamicField name="attr_*" type="text_general" multiValued="true" indexed="true" stored="true"/>
   <dynamicField name="*_txt" type="text_general" indexed="true" stored="true"/>
-  <dynamicField name="*_dts" type="date" multiValued="true" indexed="true" stored="true"/>
+  <dynamicField name="*_dts" type="dates" indexed="true" stored="true"/>
   <dynamicField name="*_tis" type="tints" indexed="true" stored="true"/>
   <dynamicField name="*_tls" type="tlongs" indexed="true" stored="true"/>
   <dynamicField name="*_tfs" type="tfloats" indexed="true" stored="true"/>
