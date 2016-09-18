@@ -28,7 +28,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
-import org.apache.hadoop.hdfs.server.namenode.LeaseExpiredException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -170,7 +169,7 @@ public class FSHDFSUtils {
       log.info("recoverLease=" + recovered + ", " +
         getLogMessageDetail(nbAttempt, p, startWaiting));
     } catch (IOException e) {
-      if (e instanceof LeaseExpiredException && e.getMessage().contains("File does not exist")) {
+      if (e.getMessage().contains("File does not exist")) {
         // This exception comes out instead of FNFE, fix it
         throw new FileNotFoundException("The given transactionlog file wasn't found at " + p);
       } else if (e instanceof FileNotFoundException) {

@@ -26,6 +26,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -37,22 +38,19 @@ import org.apache.hadoop.hdfs.server.namenode.ha.HATestUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.util.HdfsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.util.internal.ThreadLocalRandom;
-
 public class HdfsTestUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private static final String LOGICAL_HOSTNAME = "ha-nn-uri-%d";
 
   private static final boolean HA_TESTING_ENABLED = false; // SOLR-XXX
-  
-  private static Locale savedLocale;
-  
+
   private static Map<MiniDFSCluster,Timer> timers = new ConcurrentHashMap<>();
 
   private static FSDataOutputStream badTlogOutStream;
@@ -62,27 +60,34 @@ public class HdfsTestUtil {
   public static MiniDFSCluster setupClass(String dir) throws Exception {
     return setupClass(dir, true, true);
   }
-  
+
   public static MiniDFSCluster setupClass(String dir, boolean haTesting) throws Exception {
     return setupClass(dir, haTesting, true);
   }
-  
+
+  /**
+   * Checks that commons-lang3 FastDateFormat works with configured locale
+   */
+  @SuppressForbidden(reason="Call FastDateFormat.format same way Hadoop calls it")
+  private static void checkFastDateFormat() {
+    try {
+      FastDateFormat.getInstance().format(System.currentTimeMillis());
+    } catch (ArrayIndexOutOfBoundsException e) {
+      LuceneTestCase.assumeNoException("commons-lang3 FastDateFormat doesn't work with " +
+          Locale.getDefault().toLanguageTag(), e);
+    }
+  }
+
   public static MiniDFSCluster setupClass(String dir, boolean safeModeTesting, boolean haTesting) throws Exception {
     LuceneTestCase.assumeFalse("HDFS tests were disabled by -Dtests.disableHdfs",
-      Boolean.parseBoolean(System.getProperty("tests.disableHdfs", "false")));  
+      Boolean.parseBoolean(System.getProperty("tests.disableHdfs", "false")));
 
-    savedLocale = Locale.getDefault();
-    // TODO: we HACK around HADOOP-9643
-    Locale.setDefault(Locale.ENGLISH);
-    
+    checkFastDateFormat();
+
     if (!HA_TESTING_ENABLED) haTesting = false;
-    
-    
-    // keep netty from using secure random on startup: SOLR-10098
-    ThreadLocalRandom.setInitialSeedUniquifier(1L);
-    
+
     int dataNodes = Integer.getInteger("tests.hdfs.numdatanodes", 2);
-    
+
     Configuration conf = new Configuration();
     conf.set("dfs.block.access.token.enable", "false");
     conf.set("dfs.permissions.enabled", "false");
@@ -90,45 +95,43 @@ public class HdfsTestUtil {
     conf.set("hdfs.minidfs.basedir", dir + File.separator + "hdfsBaseDir");
     conf.set("dfs.namenode.name.dir", dir + File.separator + "nameNodeNameDir");
     conf.setBoolean("fs.hdfs.impl.disable.cache", true);
-    
+
     System.setProperty("test.build.data", dir + File.separator + "hdfs" + File.separator + "build");
     System.setProperty("test.cache.data", dir + File.separator + "hdfs" + File.separator + "cache");
     System.setProperty("solr.lock.type", DirectoryFactory.LOCK_TYPE_HDFS);
-    
-    
+
     System.setProperty("solr.hdfs.blockcache.global", Boolean.toString(LuceneTestCase.random().nextBoolean()));
-    
+
     final MiniDFSCluster dfsCluster;
-    
 
     if (!haTesting) {
-      dfsCluster = new MiniDFSCluster(conf, dataNodes, true, null);
+      dfsCluster = new MiniDFSCluster.Builder(conf).numDataNodes(dataNodes).format(true).build();
+
       System.setProperty("solr.hdfs.home", getDataDir(dfsCluster, "solr_hdfs_home"));
     } else {
-      
       dfsCluster = new MiniDFSCluster.Builder(conf)
           .nnTopology(MiniDFSNNTopology.simpleHATopology()).numDataNodes(dataNodes)
           .build();
-      
+
       Configuration haConfig = getClientConfiguration(dfsCluster);
 
       HdfsUtil.TEST_CONF = haConfig;
       System.setProperty("solr.hdfs.home", getDataDir(dfsCluster, "solr_hdfs_home"));
     }
-    
+
     dfsCluster.waitActive();
-    
+
     if (haTesting) dfsCluster.transitionToActive(0);
-    
+
     int rndMode = LuceneTestCase.random().nextInt(3);
     if (safeModeTesting && rndMode == 1) {
       NameNodeAdapter.enterSafeMode(dfsCluster.getNameNode(), false);
-      
+
       int rnd = LuceneTestCase.random().nextInt(10000);
       Timer timer = new Timer();
       timers.put(dfsCluster, timer);
       timer.schedule(new TimerTask() {
-        
+
         @Override
         public void run() {
           NameNodeAdapter.leaveSafeMode(dfsCluster.getNameNode());
@@ -140,7 +143,7 @@ public class HdfsTestUtil {
       Timer timer = new Timer();
       timers.put(dfsCluster, timer);
       timer.schedule(new TimerTask() {
-        
+
         @Override
         public void run() {
           // TODO: randomly transition to standby
@@ -154,7 +157,6 @@ public class HdfsTestUtil {
         }
       }, rnd);
     }  else {
-    
       // TODO: we could do much better at testing this
       // force a lease recovery by creating a tlog file and not closing it
       URI uri = dfsCluster.getURI();
@@ -163,9 +165,9 @@ public class HdfsTestUtil {
       badTlogOutStreamFs = FileSystem.get(hdfsDirPath.toUri(), conf);
       badTlogOutStream = badTlogOutStreamFs.create(hdfsDirPath);
     }
-    
+
     SolrTestCaseJ4.useFactory("org.apache.solr.core.HdfsDirectoryFactory");
-    
+
     return dfsCluster;
   }
 
@@ -178,45 +180,44 @@ public class HdfsTestUtil {
       return new Configuration();
     }
   }
-  
+
   public static void teardownClass(MiniDFSCluster dfsCluster) throws Exception {
-    
+
     if (badTlogOutStream != null) {
       IOUtils.closeQuietly(badTlogOutStream);
     }
-    
+
     if (badTlogOutStreamFs != null) {
       IOUtils.closeQuietly(badTlogOutStreamFs);
     }
-    
+
     SolrTestCaseJ4.resetFactory();
-    System.clearProperty("solr.lock.type");
-    System.clearProperty("test.build.data");
-    System.clearProperty("test.cache.data");
-    System.clearProperty("solr.hdfs.home");
-    System.clearProperty("solr.hdfs.blockcache.global");
-    if (dfsCluster != null) {
-      Timer timer = timers.remove(dfsCluster);
-      if (timer != null) {
-        timer.cancel();
+
+    try {
+      if (dfsCluster != null) {
+        Timer timer = timers.remove(dfsCluster);
+        if (timer != null) {
+          timer.cancel();
+        }
+        try {
+          dfsCluster.shutdown();
+        } catch (Error e) {
+          // Added in SOLR-7134
+          // Rarely, this can fail to either a NullPointerException
+          // or a class not found exception. The later may fixable
+          // by adding test dependencies.
+          log.warn("Exception shutting down dfsCluster", e);
+        }
       }
-      try {
-        dfsCluster.shutdown();
-      } catch (Error e) {
-        // Added in SOLR-7134
-        // Rarely, this can fail to either a NullPointerException
-        // or a class not found exception. The later may fixable
-        // by adding test dependencies.
-        log.warn("Exception shutting down dfsCluster", e);
-      }
-    }
-    
-    // TODO: we HACK around HADOOP-9643
-    if (savedLocale != null) {
-      Locale.setDefault(savedLocale);
+    } finally {
+      System.clearProperty("solr.lock.type");
+      System.clearProperty("test.build.data");
+      System.clearProperty("test.cache.data");
+      System.clearProperty("solr.hdfs.home");
+      System.clearProperty("solr.hdfs.blockcache.global");
     }
   }
-  
+
   public static String getDataDir(MiniDFSCluster dfsCluster, String dataDir)
       throws IOException {
     if (dataDir == null) {
@@ -225,10 +226,10 @@ public class HdfsTestUtil {
     String dir =  "/"
         + new File(dataDir).toString().replaceAll(":", "_")
             .replaceAll("/", "_").replaceAll(" ", "_");
-    
+
     return getURI(dfsCluster) + dir;
   }
-  
+
   public static String getURI(MiniDFSCluster dfsCluster) {
     if (dfsCluster.getNameNodeInfos().length > 1) {
       String logicalName = String.format(Locale.ENGLISH, LOGICAL_HOSTNAME, dfsCluster.getInstanceId()); // NOTE: hdfs uses default locale
@@ -238,5 +239,4 @@ public class HdfsTestUtil {
       return uri.toString() ;
     }
   }
-
 }
