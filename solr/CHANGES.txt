@@ -106,6 +106,8 @@ Upgrade Notes
 * SOLR-11774: In 'langid' contrib, the LanguageIdentifierUpdateProcessor base class changed some method signatures. 
   If you have a custom language identifier implementation you will need to adapt your code.
 
+* SOLR-9515: Hadoop dependencies have been upgraded to Hadoop 3.2.0 from 2.7.2. (Mark Miller, Kevin Risden)
+
 * SOLR-5211: Deleting (or updating) documents by their uniqueKey is now scoped to only consider root documents, not
   child/nested documents.  Thus a delete-by-id won't work on a child doc (no-op), and an attempt to update a child doc
   by providing a new doc with the same ID would add a new doc (probably erroneous).  Both these actions were and still
@@ -216,6 +218,8 @@ Other Changes
 * SOLR-13086: Improve the error message reported by DocumentObjectBinder when a setter is not found (Gus Heck)
 
 * SOLR-12365: Renamed class Config to XmlConfigFile (David Smiley)
+
+* SOLR-9515: Hadoop dependencies have been upgraded to Hadoop 3.2.0 from 2.7.2. (Mark Miller, Kevin Risden)
 
 ==================  7.7.0 ==================
 
