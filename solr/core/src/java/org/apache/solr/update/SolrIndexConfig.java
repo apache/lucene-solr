@@ -36,7 +36,7 @@ import org.apache.lucene.util.Version;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.MapSerializable;
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
@@ -187,7 +187,7 @@ public class SolrIndexConfig implements MapSerializable {
   }
 
   @Override
-  public Map<String, Object> toMap() {
+  public Map<String, Object> toMap(Map<String, Object> map) {
     Map<String, Object> m = Utils.makeMap("useCompoundFile", effectiveUseCompoundFileSetting,
         "maxBufferedDocs", maxBufferedDocs,
         "maxMergeDocs", maxMergeDocs,
@@ -196,13 +196,13 @@ public class SolrIndexConfig implements MapSerializable {
         "writeLockTimeout", writeLockTimeout,
         "lockType", lockType,
         "infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
-    if(mergeSchedulerInfo != null) m.put("mergeScheduler",mergeSchedulerInfo.toMap());
+    if(mergeSchedulerInfo != null) m.put("mergeScheduler",mergeSchedulerInfo);
     if (mergePolicyInfo != null) {
-      m.put("mergePolicy", mergePolicyInfo.toMap());
+      m.put("mergePolicy", mergePolicyInfo);
     } else if (mergePolicyFactoryInfo != null) {
-      m.put("mergePolicyFactory", mergePolicyFactoryInfo.toMap());
+      m.put("mergePolicyFactory", mergePolicyFactoryInfo);
     }
-    if(mergedSegmentWarmerInfo != null) m.put("mergedSegmentWarmer",mergedSegmentWarmerInfo.toMap());
+    if(mergedSegmentWarmerInfo != null) m.put("mergedSegmentWarmer",mergedSegmentWarmerInfo);
     return m;
   }
 

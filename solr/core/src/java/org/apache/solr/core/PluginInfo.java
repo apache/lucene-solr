@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.DOMUtil;
 import org.w3c.dom.Node;
@@ -33,7 +34,7 @@ import static org.apache.solr.schema.FieldType.CLASS_NAME;
  * An Object which represents a Plugin of any type 
  *
  */
-public class PluginInfo implements MapSerializable{
+public class PluginInfo implements MapSerializable {
   public final String name, className, type;
   public final NamedList initArgs;
   public final Map<String, String> attributes;
@@ -128,21 +129,23 @@ public class PluginInfo implements MapSerializable{
     List<PluginInfo> l = getChildren(type);
     return  l.isEmpty() ? null:l.get(0);
   }
- public Map<String,Object> toMap(){
-    LinkedHashMap m = new LinkedHashMap(attributes);
+
+  public Map<String, Object> toMap(Map<String, Object> map) {
+    map.putAll(attributes);
+    Map m = map;
     if(initArgs!=null ) m.putAll(initArgs.asMap(3));
     if(children != null){
       for (PluginInfo child : children) {
         Object old = m.get(child.name);
         if(old == null){
-          m.put(child.name, child.toMap());
+          m.put(child.name, child.toMap(new LinkedHashMap<>()));
         } else if (old instanceof List) {
           List list = (List) old;
-          list.add(child.toMap());
+          list.add(child.toMap(new LinkedHashMap<>()));
         }  else {
           ArrayList l = new ArrayList();
           l.add(old);
-          l.add(child.toMap());
+          l.add(child.toMap(new LinkedHashMap<>()));
           m.put(child.name,l);
         }
       }

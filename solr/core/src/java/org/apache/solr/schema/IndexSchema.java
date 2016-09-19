@@ -63,7 +63,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.Config;
-import org.apache.solr.core.MapSerializable;
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -1489,7 +1489,7 @@ public class IndexSchema {
 
 
     @Override
-    public Map<String, Object> toMap() {
+    public Map<String, Object> toMap(Map<String, Object> map) {
       return Stream.of(Handler.values())
           .filter(it -> name == null || it.nameLower.equals(name))
           .map(it -> new Pair<>(it.realName, it.fun.apply(this)))
@@ -1507,7 +1507,7 @@ public class IndexSchema {
 
 
   public Map<String, Object> getNamedPropertyValues(String name, SolrParams params) {
-    return new SchemaProps(name, params, this).toMap();
+    return new SchemaProps(name, params, this).toMap(new LinkedHashMap<>());
 
   }
 

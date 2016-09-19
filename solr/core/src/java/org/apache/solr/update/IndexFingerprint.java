@@ -26,6 +26,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.Bits;
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
@@ -38,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** @lucene.internal */
-public class IndexFingerprint {
+public class IndexFingerprint implements MapSerializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private long maxVersionSpecified;
@@ -154,11 +155,8 @@ public class IndexFingerprint {
     return cmp;
   }
 
-  /**
-   * Create a generic object suitable for serializing with ResponseWriters
-   */
-  public Object toObject() {
-    Map<String,Object> map = new LinkedHashMap<>();
+  @Override
+  public Map<String, Object> toMap(Map<String, Object> map) {
     map.put("maxVersionSpecified", maxVersionSpecified);
     map.put("maxVersionEncountered", maxVersionEncountered);
     map.put("maxInHash", maxInHash);
@@ -200,6 +198,6 @@ public class IndexFingerprint {
 
   @Override
   public String toString() {
-    return toObject().toString();
+    return toMap(new LinkedHashMap<>()).toString();
   }
 }

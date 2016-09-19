@@ -169,6 +169,8 @@ Other Changes
 * SOLR-9365: Reduce noise in solr logs during graceful shutdown. (Cao Manh Dat via shalin)
 
 * SOLR-9451: Make clusterstatus command logging less verbose. (Varun Thacker)
+
+* SOLR-9502: ResponseWriters should natively support MapSerializable  (noble)
 ==================  6.2.1 ==================
 
 Bug Fixes

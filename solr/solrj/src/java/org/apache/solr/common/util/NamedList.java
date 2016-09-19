@@ -441,9 +441,14 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
       @Override
       public void putAll(Map m) {
+        boolean isEmpty = isEmpty();
         for (Object o : m.entrySet()) {
           Map.Entry e = (Entry) o;
-          put(e.getKey() == null ? null : e.getKey().toString(), (T) e.getValue());
+          if (isEmpty) {// we know that there are no duplicates
+            add((String) e.getKey(), (T) e.getValue());
+          } else {
+            put(e.getKey() == null ? null : e.getKey().toString(), (T) e.getValue());
+          }
         }
       }
 
