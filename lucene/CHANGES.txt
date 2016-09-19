@@ -70,6 +70,11 @@ Optimizations
 
 Other
 
+Build
+
+* LUCENE-7292: Fix build to use "--release 8" instead of "-release 8" on
+  Java 9 (this changed with recent EA build b135).  (Uwe Schindler)
+
 ======================= Lucene 6.2.1 =======================
 (No Changes)
 
