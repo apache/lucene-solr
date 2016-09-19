@@ -134,6 +134,9 @@ Bug Fixes
 
 * SOLR-9522: Improve error handling in ZKPropertiesWriter (Varun Thacker)
 
+* SOLR-9512: CloudSolrClient will try and keep up with leader changes if its
+  state cache points to a down server (Alan Woodward, noble)
+
 Optimizations
 ----------------------
 

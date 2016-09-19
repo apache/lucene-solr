@@ -46,6 +46,8 @@ import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -500,5 +502,27 @@ public class MiniSolrCloudCluster {
       }
     }
     return ok ? null : parsed;
+  }
+
+  /**
+   * Get the Jetty that a particular Replica is located on
+   */
+  public JettySolrRunner getReplicaJetty(Replica replica) {
+    for (JettySolrRunner jetty : jettys) {
+      if (replica.getCoreUrl().startsWith(jetty.getBaseUrl().toString()))
+        return jetty;
+    }
+    throw new IllegalStateException("No jetty found for replica with core url " + replica.getCoreUrl());
+  }
+
+  /**
+   * Get the Jetty that the leader of a particular collection shard is located on
+   */
+  public JettySolrRunner getLeaderJetty(String collectionName, String shard) {
+    DocCollection collectionState = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    Replica leader = collectionState.getLeader(shard);
+    if (leader == null)
+      throw new IllegalStateException("No leader for shard " + shard);
+    return getReplicaJetty(leader);
   }
 }

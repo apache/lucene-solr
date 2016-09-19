@@ -247,6 +247,19 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return activeShards == expectedShards;
   }
 
+  /**
+   * Check that all shards in a collection have a leader
+   */
+  public static boolean isUpdateable(Set<String> liveNodes, DocCollection collectionState, int expectedShards) {
+    int updateableShards = 0;
+    for (Slice slice : collectionState) {
+      Replica leader = slice.getLeader();
+      if (leader != null && leader.isActive(liveNodes))
+        updateableShards++;
+    }
+    return updateableShards == expectedShards;
+  }
+
   @Override
   public Iterator<Slice> iterator() {
     return slices.values().iterator();
