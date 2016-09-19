@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.solr.common.EnumFieldValue;
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -336,6 +337,12 @@ public class JavaBinCodec {
       writeMapEntry((Map.Entry)val);
       return true;
     }
+    if (val instanceof MapSerializable) {
+      //todo find a better way to reuse the map more efficiently
+      writeMap(((MapSerializable) val).toMap(new NamedList().asShallowMap()));
+      return true;
+    }
+
     return false;
   }
 

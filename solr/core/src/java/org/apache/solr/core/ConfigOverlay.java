@@ -22,6 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.StrUtils;
@@ -228,7 +229,7 @@ public class ConfigOverlay implements MapSerializable {
   }
 
   @Override
-  public Map<String, Object> toMap() {
+  public Map<String, Object> toMap(Map<String, Object> map) {
     Map result = new LinkedHashMap();
     result.put(ZNODEVER, znodeVersion);
     result.putAll(data);

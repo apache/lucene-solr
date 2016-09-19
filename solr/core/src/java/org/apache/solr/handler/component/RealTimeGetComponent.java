@@ -631,7 +631,7 @@ public class RealTimeGetComponent extends SearchComponent
     // and would avoid mismatch if documents are being actively index especially during PeerSync
     if (doFingerprint) {
       IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Long.MAX_VALUE);
-      rb.rsp.add("fingerprint", fingerprint.toObject());
+      rb.rsp.add("fingerprint", fingerprint);
     }
 
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
@@ -695,7 +695,7 @@ public class RealTimeGetComponent extends SearchComponent
     if (doFingerprint) {
       long maxVersionForUpdate = Collections.min(versions, PeerSync.absComparator);
       IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Math.abs(maxVersionForUpdate));
-      rb.rsp.add("fingerprint", fingerprint.toObject());
+      rb.rsp.add("fingerprint", fingerprint);
     }
 
     List<Object> updates = new ArrayList<>(versions.size());
