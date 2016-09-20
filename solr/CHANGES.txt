@@ -137,6 +137,8 @@ Bug Fixes
 * SOLR-9512: CloudSolrClient will try and keep up with leader changes if its
   state cache points to a down server (Alan Woodward, noble)
 
+* SOLR-8080: bin/solr start script now exits with informative message if using wrong Java version (janhoy)
+
 Optimizations
 ----------------------
 
