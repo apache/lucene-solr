@@ -94,6 +94,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String STATS_SOURCE = "org.apache.solr.stats_source";
+  public static final String STATISTICS_KEY = "searcher";
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
@@ -150,6 +151,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private boolean releaseDirectory;
 
   private final Map<Long, IndexFingerprint> maxVersionFingerprintCache = new ConcurrentHashMap<>();
+
+  private final NamedList<Object> readerStats;
 
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory,
       String path) throws IOException {
@@ -336,6 +339,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // We already have our own filter cache
     setQueryCache(null);
 
+    readerStats = snapStatistics(reader);
     // do this at the end since an exception in the constructor means we won't close
     numOpens.incrementAndGet();
   }
@@ -421,7 +425,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public void register() {
     final Map<String,SolrInfoMBean> infoRegistry = core.getInfoRegistry();
     // register self
-    infoRegistry.put("searcher", this);
+    infoRegistry.put(STATISTICS_KEY, this);
     infoRegistry.put(name, this);
     for (SolrCache cache : cacheList) {
       cache.setState(SolrCache.State.LIVE);
@@ -2428,15 +2432,23 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     final NamedList<Object> lst = new SimpleOrderedMap<>();
     lst.add("searcherName", name);
     lst.add("caching", cachingEnabled);
+
+    lst.addAll(readerStats);
+
+    lst.add("openedAt", openTime);
+    if (registerTime != null) lst.add("registeredAt", registerTime);
+    lst.add("warmupTime", warmupTime);
+    return lst;
+  }
+
+  static private NamedList<Object> snapStatistics(DirectoryReader reader) {
+    final NamedList<Object> lst = new SimpleOrderedMap<>();
     lst.add("numDocs", reader.numDocs());
     lst.add("maxDoc", reader.maxDoc());
     lst.add("deletedDocs", reader.maxDoc() - reader.numDocs());
     lst.add("reader", reader.toString());
     lst.add("readerDir", reader.directory());
     lst.add("indexVersion", reader.getVersion());
-    lst.add("openedAt", openTime);
-    if (registerTime != null) lst.add("registeredAt", registerTime);
-    lst.add("warmupTime", warmupTime);
     return lst;
   }
 
