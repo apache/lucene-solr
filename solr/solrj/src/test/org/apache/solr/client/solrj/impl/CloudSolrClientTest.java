@@ -156,6 +156,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     
     // Test single threaded routed updates for UpdateRequest
     NamedList<Object> response = cluster.getSolrClient().request(request, COLLECTION);
+    if (cluster.getSolrClient().isDirectUpdatesToLeadersOnly()) {
+      checkSingleServer(response);
+    }
     CloudSolrClient.RouteResponse rr = (CloudSolrClient.RouteResponse) response;
     Map<String,LBHttpSolrClient.Req> routes = rr.getRoutes();
     Iterator<Map.Entry<String,LBHttpSolrClient.Req>> it = routes.entrySet()
@@ -184,6 +187,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .deleteById("0")
         .deleteById("2")
         .commit(cluster.getSolrClient(), COLLECTION);
+    if (cluster.getSolrClient().isDirectUpdatesToLeadersOnly()) {
+      checkSingleServer(uResponse.getResponse());
+    }
 
     QueryResponse qResponse = cluster.getSolrClient().query(COLLECTION, new SolrQuery("*:*"));
     SolrDocumentList docs = qResponse.getResults();
@@ -194,6 +200,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       threadedClient.setParallelUpdates(true);
       threadedClient.setDefaultCollection(COLLECTION);
       response = threadedClient.request(request);
+      if (threadedClient.isDirectUpdatesToLeadersOnly()) {
+        checkSingleServer(response);
+      }
       rr = (CloudSolrClient.RouteResponse) response;
       routes = rr.getRoutes();
       it = routes.entrySet()
@@ -596,6 +605,18 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     } finally {
       HttpClientUtil.close(client);
+    }
+  }
+
+  private static void checkSingleServer(NamedList<Object> response) {
+    final CloudSolrClient.RouteResponse rr = (CloudSolrClient.RouteResponse) response;
+    final Map<String,LBHttpSolrClient.Req> routes = rr.getRoutes();
+    final Iterator<Map.Entry<String,LBHttpSolrClient.Req>> it =
+        routes.entrySet().iterator();
+    while (it.hasNext()) {
+      Map.Entry<String,LBHttpSolrClient.Req> entry = it.next();
+        assertEquals("wrong number of servers: "+entry.getValue().getServers(),
+            1, entry.getValue().getServers().size());
     }
   }
 
