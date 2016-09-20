@@ -117,6 +117,7 @@ Bug Fixes
 
 * SOLR-9542: Kerberos delegation tokens requires Jackson library (Ishan Chattopadhyaya via noble)
 
+* SOLR-9330: Fix AlreadyClosedException on admin/mbeans?stats=true (Mikhail Khludnev) 
 
 Optimizations
 ----------------------
