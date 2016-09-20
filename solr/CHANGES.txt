@@ -139,6 +139,9 @@ Bug Fixes
 
 * SOLR-8080: bin/solr start script now exits with informative message if using wrong Java version (janhoy)
 
+* SOLR-9475: bin/install_solr_service.sh script got improved detection of Linux distro, especially within
+  virtualized/Docker environment through parsing of /etc/*-release files. Now also supports CentOS. (janhoy)
+
 Optimizations
 ----------------------
 
