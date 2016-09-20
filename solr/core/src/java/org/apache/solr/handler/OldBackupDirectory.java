@@ -32,7 +32,7 @@ class OldBackupDirectory implements Comparable<OldBackupDirectory> {
 
   private URI basePath;
   private String dirName;
-  private Optional<Date> timestamp;
+  private Optional<Date> timestamp = Optional.empty();
 
   public OldBackupDirectory(URI basePath, String dirName) {
     this.dirName = Preconditions.checkNotNull(dirName);
