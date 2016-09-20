@@ -191,10 +191,6 @@ public class CloudSolrClient extends SolrClient {
     }
   }
 
-  private void invalidateCollectionState(String collection) {
-    collectionStateCache.remove(collection);
-  }
-
   /**
    * Create a new client object that connects to Zookeeper and is always aware
    * of the SolrCloud state. If there is a fully redundant Zookeeper quorum and
@@ -725,29 +721,23 @@ public class CloudSolrClient extends SolrClient {
     long start = System.nanoTime();
 
     if (parallelUpdates) {
-      final Map<String, Future<LBHttpSolrClient.Rsp>> responseFutures = new HashMap<>(routes.size());
+      final Map<String, Future<NamedList<?>>> responseFutures = new HashMap<>(routes.size());
       for (final Map.Entry<String, LBHttpSolrClient.Req> entry : routes.entrySet()) {
         final String url = entry.getKey();
         final LBHttpSolrClient.Req lbRequest = entry.getValue();
         try {
           MDC.put("CloudSolrClient.url", url);
-          responseFutures.put(url, threadPool.submit(() -> lbClient.request(lbRequest)));
+          responseFutures.put(url, threadPool.submit(() -> lbClient.request(lbRequest).getResponse()));
         } finally {
           MDC.remove("CloudSolrClient.url");
         }
       }
 
-      for (final Map.Entry<String, Future<LBHttpSolrClient.Rsp>> entry: responseFutures.entrySet()) {
+      for (final Map.Entry<String, Future<NamedList<?>>> entry: responseFutures.entrySet()) {
         final String url = entry.getKey();
-        final Future<LBHttpSolrClient.Rsp> responseFuture = entry.getValue();
+        final Future<NamedList<?>> responseFuture = entry.getValue();
         try {
-          LBHttpSolrClient.Rsp response = responseFuture.get();
-          shardResponses.add(url, response.getResponse());
-          if (url.startsWith(response.getServer())) { // startsWith to deal with stray trailing slashes
-            // we didn't hit our first-preference server, which means that our cached
-            // collection state is no longer valid
-            invalidateCollectionState(collection);
-          }
+          shardResponses.add(url, responseFuture.get());
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           throw new RuntimeException(e);
@@ -770,14 +760,8 @@ public class CloudSolrClient extends SolrClient {
         String url = entry.getKey();
         LBHttpSolrClient.Req lbRequest = entry.getValue();
         try {
-          LBHttpSolrClient.Rsp response = lbClient.request(lbRequest);
-          NamedList<Object> rsp = response.getResponse();
+          NamedList<Object> rsp = lbClient.request(lbRequest).getResponse();
           shardResponses.add(url, rsp);
-          if (response.getServer().equals(url) == false) {
-            // we didn't hit our first-preference server, which means that our cached
-            // collection state is no longer valid
-            invalidateCollectionState(collection);
-          }
         } catch (Exception e) {
           if(e instanceof SolrException) {
             throw (SolrException) e;
@@ -828,7 +812,10 @@ public class CloudSolrClient extends SolrClient {
 
   private Map<String,List<String>> buildUrlMap(DocCollection col) {
     Map<String, List<String>> urlMap = new HashMap<>();
-    for (Slice slice : col) {
+    Collection<Slice> slices = col.getActiveSlices();
+    Iterator<Slice> sliceIterator = slices.iterator();
+    while (sliceIterator.hasNext()) {
+      Slice slice = sliceIterator.next();
       String name = slice.getName();
       List<String> urls = new ArrayList<>();
       Replica leader = slice.getLeader();
@@ -839,15 +826,19 @@ public class CloudSolrClient extends SolrClient {
         // take unoptimized general path - we cannot find a leader yet
         return null;
       }
-      urls.add(leader.getCoreUrl());
-
-      for (Replica replica : slice.getReplicas()) {
-        if (!replica.getNodeName().equals(leader.getNodeName()) &&
-            !replica.getName().equals(leader.getName())) {
-          urls.add(replica.getCoreUrl());
+      ZkCoreNodeProps zkProps = new ZkCoreNodeProps(leader);
+      String url = zkProps.getCoreUrl();
+      urls.add(url);
+      if (!directUpdatesToLeadersOnly) {
+        for (Replica replica : slice.getReplicas()) {
+          if (!replica.getNodeName().equals(leader.getNodeName()) &&
+              !replica.getName().equals(leader.getName())) {
+            ZkCoreNodeProps zkProps1 = new ZkCoreNodeProps(replica);
+            String url1 = zkProps1.getCoreUrl();
+            urls.add(url1);
+          }
         }
       }
-
       urlMap.put(name, urls);
     }
     return urlMap;
