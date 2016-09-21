@@ -152,6 +152,8 @@ Other Changes
 * SOLR-9508: Install script install_solr_service.sh now checks existence of tools.
   New option -n to avoid starting service after installation (janhoy)
 
+* SOLR-7826: Refuse "bin/solr create" if run as root, unless -force is specified (janhoy, Binoy Dalal)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
