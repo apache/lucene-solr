@@ -55,6 +55,9 @@ Optimizations
 
 Other
 
+* LUCENE-7452: Block join query exception suggests how to find a doc, which 
+ violates orthogonality requirement. (Mikhail Khludnev)
+
 Build
 
 * LUCENE-7292: Fix build to use "--release 8" instead of "-release 8" on
