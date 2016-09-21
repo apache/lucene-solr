@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.request;
+package org.apache.solr.response;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -27,20 +27,18 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.response.BinaryQueryResponseWriter;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.BinaryResponseWriter.Resolver;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
 
 /**
  * Test for BinaryResponseWriter
- * @Deprecated use {@link org.apache.solr.response.TestBinaryResponseWriter} instead.
+ *
  *
  * @since solr 1.4
  */
-@Deprecated
 public class TestBinaryResponseWriter extends AbstractSolrTestCase {
 
   
