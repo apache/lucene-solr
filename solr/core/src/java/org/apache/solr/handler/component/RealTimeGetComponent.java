@@ -112,6 +112,12 @@ public class RealTimeGetComponent extends SearchComponent
       return;
     }
     
+    val = params.get("getFingerprint");
+    if(val != null) {
+      processGetFingeprint(rb);
+      return;
+    }
+    
     val = params.get("getVersions");
     if (val != null) {
       processGetVersions(rb);
@@ -597,6 +603,17 @@ public class RealTimeGetComponent extends SearchComponent
     return null;
   }
 
+  
+  
+  public void processGetFingeprint(ResponseBuilder rb) throws IOException {
+    SolrQueryRequest req = rb.req;
+    SolrParams params = req.getParams();
+    
+    long maxVersion = params.getLong("getFingerprint", Long.MAX_VALUE);
+    IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Math.abs(maxVersion));
+    rb.rsp.add("fingerprint", fingerprint);
+  }
+  
 
   ///////////////////////////////////////////////////////////////////////////////////
   // Returns last versions added to index
