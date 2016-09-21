@@ -142,6 +142,10 @@ Other Changes
 * SOLR-9451: Make clusterstatus command logging less verbose. (Varun Thacker)
 
 * SOLR-9502: ResponseWriters should natively support MapSerializable  (noble)
+
+* SOLR-9538: Relocate (BinaryResponse|JSON|Smile)Writer tests to org.apache.solr.response
+  which is the package of the classes they test. (Jonny Marks via Christine Poerschke)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
