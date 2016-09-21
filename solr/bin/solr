@@ -49,6 +49,9 @@ SOLR_SCRIPT="$0"
 verbose=false
 THIS_OS=`uname -s`
 
+# What version of Java is required to run this version of Solr.
+JAVA_VER_REQ="8"         # For printing in echo
+
 stop_all=false
 
 # for now, we don't support running this script from cygwin due to problems
@@ -116,16 +119,34 @@ else
   JAVA=java
 fi
 
-# test that Java exists and is executable on this server
-"$JAVA" -version >/dev/null 2>&1 || {
+# test that Java exists, is executable and correct version
+JAVA_VER=$("$JAVA" -version 2>&1)
+if [[ $? -ne 0 ]] ; then
   echo >&2 "Java not found, or an error was encountered when running java."
-  echo >&2 "A working Java 8 is required to run Solr!"
-  echo >&2 "Please install Java 8 or fix JAVA_HOME before running this script."
-  echo >&2 "Command that we tried: '${JAVA} -version'"
+  echo >&2 "A working Java $JAVA_VER_REQ JRE is required to run Solr!"
+  echo >&2 "Please install latest version of Java $JAVA_VER_REQ or set JAVA_HOME properly."
+  echo >&2 "Command that we tried: '${JAVA} -version', with response:"
+  echo >&2 "${JAVA_VER}"
+  echo
+  echo >&2 "Debug information:"
+  echo >&2 "JAVA_HOME: ${JAVA_HOME:-N/A}"
   echo >&2 "Active Path:"
   echo >&2 "${PATH}"
   exit 1
-}
+else
+  JAVA_VER=$(echo $JAVA_VER | awk -F '"' '/version/ {print $2}')
+  if [[ "$JAVA_VER" < "1.$JAVA_VER_REQ" ]] ; then
+    echo >&2 "Your current version of Java is too old to run this version of Solr"
+    echo >&2 "We found version $JAVA_VER, using command '${JAVA}'"
+    echo >&2 "Please install latest version of Java $JAVA_VER_REQ or set JAVA_HOME properly."
+    echo
+    echo >&2 "Debug information:"
+    echo >&2 "JAVA_HOME: ${JAVA_HOME:-N/A}"
+    echo >&2 "Active Path:"
+    echo >&2 "${PATH}"
+    exit 1
+  fi
+fi
 
 # Select HTTP OR HTTPS related configurations
 SOLR_URL_SCHEME=http
