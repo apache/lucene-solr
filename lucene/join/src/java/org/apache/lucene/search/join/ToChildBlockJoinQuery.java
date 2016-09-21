@@ -43,9 +43,10 @@ import org.apache.lucene.util.BitSet;
 public class ToChildBlockJoinQuery extends Query {
 
   /** Message thrown from {@link
-   *  ToChildBlockJoinScorer#validateParentDoc} on mis-use,
+   *  ToChildBlockJoinScorer#validateParentDoc} on misuse,
    *  when the parent query incorrectly returns child docs. */
-  static final String INVALID_QUERY_MESSAGE = "Parent query yields document which is not matched by parents filter, docID=";
+  static final String INVALID_QUERY_MESSAGE = "Parent query must not match any docs besides parent filter. "
+      + "Combine them as must (+) and must-not (-) clauses to find a problem doc. docID=";
   static final String ILLEGAL_ADVANCE_ON_PARENT = "Expect to be advanced on child docs only. got docID=";
 
   private final BitSetProducer parentsFilter;
