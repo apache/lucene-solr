@@ -164,6 +164,9 @@ Other Changes
 * SOLR-5563: Move lots of SolrCloud logging from 'info' to 'debug' (janhoy, Alan
   Woodward)
 
+* SOLR-9544: Allow ObjectReleaseTracker more time to check for asynchronously
+  closing resources (Alan Woodward)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
