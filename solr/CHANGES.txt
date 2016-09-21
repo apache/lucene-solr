@@ -122,6 +122,9 @@ Optimizations
 
 * SOLR-9142: JSON Facet API: new method=dvhash can be chosen for fields with high cardinality. (David Smiley)
 
+* SOLR-9446: Leader failure after creating a freshly replicated index can send nodes into recovery even if
+  index was not changed (Pushkar Raste, noble)
+
 Other Changes
 ----------------------
 
