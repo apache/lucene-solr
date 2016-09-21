@@ -149,6 +149,9 @@ Other Changes
 * SOLR-9538: Relocate (BinaryResponse|JSON|Smile)Writer tests to org.apache.solr.response
   which is the package of the classes they test. (Jonny Marks via Christine Poerschke)
 
+* SOLR-9508: Install script install_solr_service.sh now checks existence of tools.
+  New option -n to avoid starting service after installation (janhoy)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
