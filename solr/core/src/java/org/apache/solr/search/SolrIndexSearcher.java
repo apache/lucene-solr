@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
@@ -2384,15 +2385,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * gets a cached version of the IndexFingerprint for this searcher
    **/
   public IndexFingerprint getIndexFingerprint(long maxVersion) throws IOException {
-    IndexFingerprint fingerprint = maxVersionFingerprintCache.get(maxVersion);
-    if (fingerprint != null) return fingerprint;
-    // possibly expensive, so prevent more than one thread from calculating it for this searcher
-    synchronized (maxVersionFingerprintCache) {
-      fingerprint = maxVersionFingerprintCache.get(maxVersionFingerprintCache);
-      if (fingerprint != null) return fingerprint;
-      fingerprint = IndexFingerprint.getFingerprint(this, maxVersion);
-      maxVersionFingerprintCache.put(maxVersion, fingerprint);
-      return fingerprint;
+    final SolrIndexSearcher searcher = this;
+    final AtomicReference<IOException> exception = new AtomicReference<>();
+    try {
+      return maxVersionFingerprintCache.computeIfAbsent(maxVersion, key -> {
+        try {
+          return IndexFingerprint.getFingerprint(searcher, key);
+        } catch (IOException e) {
+          exception.set(e);
+          return null;
+        }
+      });
+    } finally {
+      if (exception.get() != null) throw exception.get();
     }
   }
 
