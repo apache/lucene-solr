@@ -92,40 +92,6 @@ Bug Fixes
 
 * SOLR-9310: PeerSync fails on a node restart due to IndexFingerPrint mismatch (Pushkar Raste, noble)
 
-* SOLR-9389: HDFS Transaction logs stay open for writes which leaks Xceivers. (Tim Owen via Mark Miller)
-
-* SOLR-6744: fl renaming / alias of uniqueKey field generates null pointer exception in SolrCloud configuration
-  (Mike Drob via Tomás Fernández Löbbe)
-
-* SOLR-9445: Admin requests are retried by CloudSolrClient and LBHttpSolrClient on failure. (shalin)
-
-* SOLR-9439: Shard split clean up logic for older failed splits is faulty. The delete shard API
-  has also been made more resilient against failures resulting from non-existent cores. (shalin)
-
-* SOLR-9430: Fix locale lookup in DIH <propertyWriter/> to use BCP47 language tags
-  to be consistent with other places in Solr. Language names still work for backwards
-  compatibility. (Uwe Schindler, Boris Steiner)
-
-* SOLR-9188: blockUnknown property makes inter-node communication impossible (noble)
-
-* SOLR-9455: Deleting a sub-shard in recovery state can mark parent shard as inactive. (shalin)
-
-* SOLR-9461: DELETENODE, REPLACENODE should pass down the 'async' param to subcommands (shalin, noble)
-
-* SOLR-9444: Fix path usage for cloud backup/restore.  (Hrishikesh Gadre, Uwe Schindler, Varun Thacker)
-
-* SOLR-9381: Snitch for freedisk uses '/' instead of 'coreRootDirectory' (Tim Owen, noble)
-
-* SOLR-9488: Shard split can fail to write commit data on shutdown/restart causing replicas to recover
-  without replicating the index. This can cause data loss. (shalin)
-
-* SOLR-9490: Fixed bugs in BoolField that caused it to erroneously return "false" for all docs depending
-  on usage (Colvin Cowie, Dan Fox, hossman)
-
-* SOLR-9438: Shard split can be marked successful and sub-shard states switched to 'active' even when
-  one or more sub-shards replicas do not recover due to the leader crashing or restarting between the time
-  the replicas are created and before they can recover. This can cause data loss. (shalin)
-
 * SOLR-9484: The modify collection API should wait for the modified properties to show up in the
   cluster state. (Cao Manh Dat, shalin)
 
@@ -134,8 +100,10 @@ Bug Fixes
 
 * SOLR-9522: Improve error handling in ZKPropertiesWriter (Varun Thacker)
 
-* SOLR-9512: CloudSolrClient will try and keep up with leader changes if its
-  state cache points to a down server (Alan Woodward, noble)
+* SOLR-8080: bin/solr start script now exits with informative message if using wrong Java version (janhoy)
+
+* SOLR-9475: bin/install_solr_service.sh script got improved detection of Linux distro, especially within
+  virtualized/Docker environment through parsing of /etc/*-release files. Now also supports CentOS. (janhoy)
 
 * SOLR-9524: SolrIndexSearcher.getIndexFingerprint uses dubious synchronization (Mike Drob, noble)
 
@@ -156,8 +124,6 @@ Optimizations
 
 Other Changes
 ----------------------
-
-* SOLR-7362: Fix TestReqParamsAPI test failures (noble, Varun Thacker)
 
 * SOLR-9412: Add failOnMissingParams option to MacroExpander, add TestMacroExpander class.
   (Jon Dorando, Christine Poerschke)
@@ -184,9 +150,47 @@ Bug Fixes
 * SOLR-9494: Use of {!collapse} sometimes doesn't correctly return true for Collector.needsScores(), especially when the
   query was cached. This can cause an exception when 'q' is a SpanQuery or potentially others. (David Smiley)
 
-* SOLR-9408: Fix TreeMergeOutputFormat to add timestamp metadata to a commit. SolrCloud replication relies on this.
-    (Jessica Cheng Mallet via Varun Thacker)
+* SOLR-6744: fl renaming / alias of uniqueKey field generates null pointer exception in SolrCloud configuration
+  (Mike Drob via Tomás Fernández Löbbe)
 
+* SOLR-9445: Admin requests are retried by CloudSolrClient and LBHttpSolrClient on failure. (shalin)
+
+* SOLR-9439: Shard split clean up logic for older failed splits is faulty. The delete shard API
+  has also been made more resilient against failures resulting from non-existent cores. (shalin)
+
+* SOLR-9430: Fix locale lookup in DIH <propertyWriter/> to use BCP47 language tags
+  to be consistent with other places in Solr. Language names still work for backwards
+  compatibility. (Uwe Schindler, Boris Steiner)
+
+* SOLR-9389: HDFS Transaction logs stay open for writes which leaks Xceivers. (Tim Owen via Mark Miller)
+
+* SOLR-9188: blockUnknown property makes inter-node communication impossible (noble)
+
+* SOLR-9455: Deleting a sub-shard in recovery state can mark parent shard as inactive. (shalin)
+
+* SOLR-9461: DELETENODE, REPLACENODE should pass down the 'async' param to subcommands (shalin, noble)
+
+* SOLR-9444: Fix path usage for cloud backup/restore.  (Hrishikesh Gadre, Uwe Schindler, Varun Thacker)
+
+* SOLR-9381: Snitch for freedisk uses '/' instead of 'coreRootDirectory' (Tim Owen, noble)
+
+* SOLR-9488: Shard split can fail to write commit data on shutdown/restart causing replicas to recover
+  without replicating the index. This can cause data loss. (shalin)
+
+* SOLR-9490: Fixed bugs in BoolField that caused it to erroneously return "false" for all docs depending
+  on usage (Colvin Cowie, Dan Fox, hossman)
+
+* SOLR-9438: Shard split can be marked successful and sub-shard states switched to 'active' even when
+  one or more sub-shards replicas do not recover due to the leader crashing or restarting between the time
+  the replicas are created and before they can recover. This can cause data loss. (shalin)
+
+* SOLR-9408: Fix TreeMergeOutputFormat to add timestamp metadata to a commit. SolrCloud replication relies on this.
+  (Jessica Cheng Mallet via Varun Thacker)
+
+Other Changes
+----------------------
+
+* SOLR-7362: Fix TestReqParamsAPI test failures (noble, Varun Thacker)
 
 ==================  6.2.0 ==================
 

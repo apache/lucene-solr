@@ -52,20 +52,29 @@ print_usage() {
   echo ""
 } # end print_usage
 
-if [ -f "/proc/version" ]; then
-  proc_version=`cat /proc/version`
-else
-  proc_version=`uname -a`
+proc_version=`cat /etc/*-release 2>/dev/null`
+if [[ $? -gt 0 ]]; then
+  if [ -f "/proc/version" ]; then
+    proc_version=`cat /proc/version`
+  else
+    proc_version=`uname -a`
+  fi
 fi
 
 if [[ $proc_version == *"Debian"* ]]; then
   distro=Debian
 elif [[ $proc_version == *"Red Hat"* ]]; then
   distro=RedHat
+elif [[ $proc_version == *"CentOS"* ]]; then
+  distro=CentOS
 elif [[ $proc_version == *"Ubuntu"* ]]; then
   distro=Ubuntu
 elif [[ $proc_version == *"SUSE"* ]]; then
   distro=SUSE
+elif [[ $proc_version == *"Darwin"* ]]; then
+  echo "Sorry, this script does not support macOS. You'll need to setup Solr as a service manually using the documentation provided in the Solr Reference Guide."
+  echo "You could also try installing via Homebrew (http://brew.sh/), e.g. brew install solr"
+  exit 1
 else
   echo -e "\nERROR: Your Linux distribution ($proc_version) not supported by this script!\nYou'll need to setup Solr as a service manually using the documentation provided in the Solr Reference Guide.\n" 1>&2
   exit 1
@@ -214,7 +223,7 @@ fi
 solr_uid="`id -u "$SOLR_USER"`"
 if [ $? -ne 0 ]; then
   echo "Creating new user: $SOLR_USER"
-  if [ "$distro" == "RedHat" ]; then
+  if [ "$distro" == "RedHat" ] || [ "$distro" == "CentOS" ] ; then
     adduser "$SOLR_USER"
   elif [ "$distro" == "SUSE" ]; then
     useradd -m "$SOLR_USER"
@@ -316,15 +325,15 @@ find "$SOLR_VAR_DIR" -type d -print0 | xargs -0 chmod 0750
 find "$SOLR_VAR_DIR" -type f -print0 | xargs -0 chmod 0640
 
 # configure autostart of service
-if [[ "$distro" == "RedHat" || "$distro" == "SUSE" ]]; then
+if [[ "$distro" == "RedHat" || "$distro" == "CentOS" || "$distro" == "SUSE" ]]; then
   chkconfig "$SOLR_SERVICE" on
 else
   update-rc.d "$SOLR_SERVICE" defaults
 fi
+echo "Service $SOLR_SERVICE installed."
+echo "Customize Solr startup configuration in /etc/default/$SOLR_SERVICE.in.sh"
 
 # start service
 service "$SOLR_SERVICE" start
 sleep 5
 service "$SOLR_SERVICE" status
-
-echo "Service $SOLR_SERVICE installed."

@@ -38,10 +38,30 @@ Other
 
 API Changes
 
+New Features
+
+Bug Fixes
+
+Improvements
+
+* LUCENE-7439: FuzzyQuery now matches all terms within the specified
+  edit distance, even if they are short terms (Mike McCandless)
+
+Optimizations
+
+Other
+
+Build
+
+* LUCENE-7292: Fix build to use "--release 8" instead of "-release 8" on
+  Java 9 (this changed with recent EA build b135).  (Uwe Schindler)
+
+======================= Lucene 6.2.1 =======================
+
+API Changes
+
 * LUCENE-7436: MinHashFilter's constructor, and some of its default
   settings, should be public.  (Doug Turnbull via Mike McCandless)
-
-New Features
 
 Bug Fixes
 
@@ -60,18 +80,6 @@ Bug Fixes
   and its components, introduced with Lucene 6.2.0. The moved classes
   were restored in their original packages: LowercaseFilter and StopFilter,
   as well as several utility classes.  (Uwe Schindler, Mike McCandless)
-
-Improvements
-
-* LUCENE-7439: FuzzyQuery now matches all terms within the specified
-  edit distance, even if they are short terms (Mike McCandless)
-
-Optimizations
-
-Other
-
-======================= Lucene 6.2.1 =======================
-(No Changes)
 
 ======================= Lucene 6.2.0 =======================
 
