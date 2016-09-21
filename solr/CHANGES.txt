@@ -87,6 +87,9 @@ New Features
 
 * SOLR-9319: DELETEREPLICA can accept a 'count' and remove appropriate replicas (Nitin Sharma, noble)
 
+* SOLR-8186: Reduce logging to logs/solr-<port>-console.log when not running in foreground mode
+  Show timestamp also in foreground log. Also removes some logging noise. (janhoy)
+
 Bug Fixes
 ----------------------
 

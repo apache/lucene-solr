@@ -441,7 +441,9 @@ public class CoreContainer {
         loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
         loader.reloadLuceneSPI();
       } catch (IOException e) {
-        log.warn("Couldn't add files from {} to classpath: {}", libPath, e.getMessage());
+        if (!libDir.equals("lib")) { // Don't complain if default "lib" dir does not exist
+          log.warn("Couldn't add files from {} to classpath: {}", libPath, e.getMessage());
+        }
       }
     }
 
