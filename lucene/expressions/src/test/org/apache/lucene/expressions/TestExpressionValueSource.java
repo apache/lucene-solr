@@ -136,6 +136,7 @@ public class TestExpressionValueSource extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, iter.nextDoc());
 
     // just the first doc
+    values = vs.getValues(new HashMap<String,Object>(), leaf);
     scorer = values.getRangeScorer(leaf, "4", "40", false, false);
     iter = scorer.iterator();
     assertEquals(-1, scorer.docID());

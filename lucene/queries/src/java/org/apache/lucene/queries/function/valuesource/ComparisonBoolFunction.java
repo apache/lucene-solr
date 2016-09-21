@@ -42,7 +42,7 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
   }
 
   /** Perform the comparison, returning true or false */
-  public abstract boolean compare(int doc, FunctionValues lhs, FunctionValues rhs);
+  public abstract boolean compare(int doc, FunctionValues lhs, FunctionValues rhs) throws IOException;
 
   /** Uniquely identify the operation (ie "gt", "lt" "gte", etc) */
   public String name() {
@@ -57,17 +57,17 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
 
     return new BoolDocValues(this) {
       @Override
-      public boolean boolVal(int doc) {
+      public boolean boolVal(int doc) throws IOException {
         return compare(doc, lhsVal, rhsVal);
       }
 
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return compLabel + "(" + lhsVal.toString(doc) + "," + rhsVal.toString(doc) + ")";
       }
 
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         return lhsVal.exists(doc) && rhsVal.exists(doc);
       }
 

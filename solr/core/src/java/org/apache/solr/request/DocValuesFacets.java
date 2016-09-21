@@ -21,7 +21,7 @@ import java.util.List;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
@@ -70,14 +70,14 @@ public class DocValuesFacets {
     OrdinalMap ordinalMap = null; // for mapping per-segment ords to global ones
     if (multiValued) {
       si = searcher.getLeafReader().getSortedSetDocValues(fieldName);
-      if (si instanceof MultiSortedSetDocValues) {
+      if (si instanceof MultiDocValues.MultiSortedSetDocValues) {
         ordinalMap = ((MultiSortedSetDocValues)si).mapping;
       }
     } else {
       SortedDocValues single = searcher.getLeafReader().getSortedDocValues(fieldName);
       si = single == null ? null : DocValues.singleton(single);
-      if (single instanceof MultiSortedDocValues) {
-        ordinalMap = ((MultiSortedDocValues)single).mapping;
+      if (single instanceof MultiDocValues.MultiSortedDocValues) {
+        ordinalMap = ((MultiDocValues.MultiSortedDocValues)single).mapping;
       }
     }
     if (si == null) {
@@ -272,7 +272,15 @@ public class DocValuesFacets {
     final LongValues ordmap = map == null ? null : map.getGlobalOrds(subIndex);
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      int term = si.getOrd(doc);
+      if (doc > si.docID()) {
+        si.advance(doc);
+      }
+      int term;
+      if (doc == si.docID()) {
+        term = si.ordValue();
+      } else {
+        term = -1;
+      }
       if (map != null && term >= 0) {
         term = (int) ordmap.get(term);
       }
@@ -293,7 +301,14 @@ public class DocValuesFacets {
     
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      segCounts[1+si.getOrd(doc)]++;
+      if (doc > si.docID()) {
+        si.advance(doc);
+      }
+      if (doc == si.docID()) {
+        segCounts[1+si.ordValue()]++;
+      } else {
+        segCounts[0]++;
+      }
     }
     
     // migrate to global ords (if necessary)
@@ -319,23 +334,22 @@ public class DocValuesFacets {
     final LongValues ordMap = map == null ? null : map.getGlobalOrds(subIndex);
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      si.setDocument(doc);
-      // strange do-while to collect the missing count (first ord is NO_MORE_ORDS)
-      int term = (int) si.nextOrd();
-      if (term < 0) {
-        if (startTermIndex == -1) {
-          counts[0]++; // missing count
-        }
-        continue;
+      if (doc > si.docID()) {
+        si.advance(doc);
       }
-      
-      do {
-        if (map != null) {
-          term = (int) ordMap.get(term);
-        }
-        int arrIdx = term-startTermIndex;
-        if (arrIdx>=0 && arrIdx<counts.length) counts[arrIdx]++;
-      } while ((term = (int) si.nextOrd()) >= 0);
+      if (doc == si.docID()) {
+        // strange do-while to collect the missing count (first ord is NO_MORE_ORDS)
+        int term = (int) si.nextOrd();
+        do {
+          if (map != null) {
+            term = (int) ordMap.get(term);
+          }
+          int arrIdx = term-startTermIndex;
+          if (arrIdx>=0 && arrIdx<counts.length) counts[arrIdx]++;
+        } while ((term = (int) si.nextOrd()) >= 0);
+      } else if (startTermIndex == -1) {
+        counts[0]++; // missing count
+      }
     }
   }
   
@@ -351,14 +365,16 @@ public class DocValuesFacets {
     
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      si.setDocument(doc);
-      int term = (int) si.nextOrd();
-      if (term < 0) {
-        counts[0]++; // missing
-      } else {
+      if (doc > si.docID()) {
+        si.advance(doc);
+      }
+      if (doc == si.docID()) {
+        int term = (int) si.nextOrd();
         do {
           segCounts[1+term]++;
         } while ((term = (int)si.nextOrd()) >= 0);
+      } else {
+        counts[0]++; // missing
       }
     }
     

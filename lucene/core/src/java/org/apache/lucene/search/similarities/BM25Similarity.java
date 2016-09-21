@@ -238,14 +238,27 @@ public class BM25Similarity extends Similarity {
     }
     
     @Override
-    public float score(int doc, float freq) {
+    public float score(int doc, float freq) throws IOException {
       // if there are no norms, we act as if b=0
-      float norm = norms == null ? k1 : cache[(byte)norms.get(doc) & 0xFF];
+      float norm;
+      if (norms == null) {
+        norm = k1;
+      } else {
+        int normsDocID = norms.docID();
+        if (normsDocID < doc) {
+          normsDocID = norms.advance(doc);
+        }
+        if (normsDocID == doc) {
+          norm = cache[(byte)norms.longValue() & 0xFF];
+        } else {
+          norm = cache[0];
+        }
+      }
       return weightValue * freq / (freq + norm);
     }
     
     @Override
-    public Explanation explain(int doc, Explanation freq) {
+    public Explanation explain(int doc, Explanation freq) throws IOException {
       return explainScore(doc, freq, stats, norms);
     }
 
@@ -286,7 +299,7 @@ public class BM25Similarity extends Similarity {
 
   }
 
-  private Explanation explainTFNorm(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) {
+  private Explanation explainTFNorm(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) throws IOException {
     List<Explanation> subs = new ArrayList<>();
     subs.add(freq);
     subs.add(Explanation.match(k1, "parameter k1"));
@@ -296,7 +309,13 @@ public class BM25Similarity extends Similarity {
           (freq.getValue() * (k1 + 1)) / (freq.getValue() + k1),
           "tfNorm, computed from:", subs);
     } else {
-      float doclen = decodeNormValue((byte)norms.get(doc));
+      byte norm;
+      if (norms.advance(doc) == doc) {
+        norm = (byte) norms.longValue();
+      } else {
+        norm = 0;
+      }
+      float doclen = decodeNormValue(norm);
       subs.add(Explanation.match(b, "parameter b"));
       subs.add(Explanation.match(stats.avgdl, "avgFieldLength"));
       subs.add(Explanation.match(doclen, "fieldLength"));
@@ -306,7 +325,7 @@ public class BM25Similarity extends Similarity {
     }
   }
 
-  private Explanation explainScore(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) {
+  private Explanation explainScore(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) throws IOException {
     Explanation boostExpl = Explanation.match(stats.boost, "boost");
     List<Explanation> subs = new ArrayList<>();
     if (boostExpl.getValue() != 1.0f)

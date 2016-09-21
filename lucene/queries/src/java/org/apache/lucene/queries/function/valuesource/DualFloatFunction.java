@@ -43,7 +43,7 @@ public abstract class DualFloatFunction extends ValueSource {
   }
 
   protected abstract String name();
-  protected abstract float func(int doc, FunctionValues aVals, FunctionValues bVals);
+  protected abstract float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException;
 
   @Override
   public String description() {
@@ -56,7 +56,7 @@ public abstract class DualFloatFunction extends ValueSource {
     final FunctionValues bVals =  b.getValues(context, readerContext);
     return new FloatDocValues(this) {
       @Override
-      public float floatVal(int doc) {
+      public float floatVal(int doc) throws IOException {
         return func(doc, aVals, bVals);
       }
       /** 
@@ -64,11 +64,11 @@ public abstract class DualFloatFunction extends ValueSource {
        * <code>exists</code> for the specified doc 
        */
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         return MultiFunction.allExists(doc, aVals, bVals);
       }
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return name() + '(' + aVals.toString(doc) + ',' + bVals.toString(doc) + ')';
       }
     };

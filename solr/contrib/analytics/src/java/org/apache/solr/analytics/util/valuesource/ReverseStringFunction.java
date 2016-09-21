@@ -16,6 +16,8 @@
  */
 package org.apache.solr.analytics.util.valuesource;
 
+import java.io.IOException;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -35,7 +37,7 @@ public class ReverseStringFunction extends SingleStringFunction {
     return NAME;
   }
 
-  protected CharSequence func(int doc, FunctionValues vals) {
+  protected CharSequence func(int doc, FunctionValues vals) throws IOException {
     String val = vals.strVal(doc);
     return val != null ? StringUtils.reverse(val) : null;
   }

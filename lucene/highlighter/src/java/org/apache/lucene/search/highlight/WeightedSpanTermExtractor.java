@@ -63,9 +63,9 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
+import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 
@@ -472,11 +472,6 @@ public class WeightedSpanTermExtractor {
     @Override
     public NumericDocValues getNormValues(String field) throws IOException {
       return super.getNormValues(FIELD_NAME);
-    }
-
-    @Override
-    public Bits getDocsWithField(String field) throws IOException {
-      return super.getDocsWithField(FIELD_NAME);
     }
   }
 

@@ -66,7 +66,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMFile;
 import org.apache.lucene.store.RAMInputStream;
 import org.apache.lucene.store.RAMOutputStream;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LongValues;
@@ -206,19 +205,14 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
     for (LeafReaderContext context : indexReader.leaves()) {
       final LeafReader reader = context.reader();
       final NumericDocValues numeric = DocValues.getNumeric(reader, "numeric");
-      final Bits numericBits = DocValues.getDocsWithField(reader, "numeric");
 
       final SortedDocValues sorted = DocValues.getSorted(reader, "sorted");
-      final Bits sortedBits = DocValues.getDocsWithField(reader, "sorted");
 
       final BinaryDocValues binary = DocValues.getBinary(reader, "binary");
-      final Bits binaryBits = DocValues.getDocsWithField(reader, "binary");
 
       final SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(reader, "sorted_numeric");
-      final Bits sortedNumericBits = DocValues.getDocsWithField(reader, "sorted_numeric");
 
       final SortedSetDocValues sortedSet = DocValues.getSortedSet(reader, "sorted_set");
-      final Bits sortedSetBits = DocValues.getDocsWithField(reader, "sorted_set");
 
       for (int i = 0; i < reader.maxDoc(); ++i) {
         final Document doc = reader.document(i);
@@ -226,49 +220,43 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
         final Long value = valueField == null ? null : valueField.numericValue().longValue();
 
         if (value == null) {
-          assertEquals(0, numeric.get(i));
-          assertEquals(-1, sorted.getOrd(i));
-          assertEquals(new BytesRef(), binary.get(i));
-
-          assertFalse(numericBits.get(i));
-          assertFalse(sortedBits.get(i));
-          assertFalse(binaryBits.get(i));
+          assertTrue(numeric.docID() + " vs " + i, numeric.docID() < i);
         } else {
-          assertEquals(value.longValue(), numeric.get(i));
-          assertTrue(sorted.getOrd(i) >= 0);
-          assertEquals(new BytesRef(Long.toString(value)), sorted.lookupOrd(sorted.getOrd(i)));
-          assertEquals(new BytesRef(Long.toString(value)), binary.get(i));
-
-          assertTrue(numericBits.get(i));
-          assertTrue(sortedBits.get(i));
-          assertTrue(binaryBits.get(i));
+          assertEquals(i, numeric.nextDoc());
+          assertEquals(i, binary.nextDoc());
+          assertEquals(i, sorted.nextDoc());
+          assertEquals(value.longValue(), numeric.longValue());
+          assertTrue(sorted.ordValue() >= 0);
+          assertEquals(new BytesRef(Long.toString(value)), sorted.lookupOrd(sorted.ordValue()));
+          assertEquals(new BytesRef(Long.toString(value)), binary.binaryValue());
         }
 
         final IndexableField[] valuesFields = doc.getFields("values");
-        final Set<Long> valueSet = new HashSet<>();
-        for (IndexableField sf : valuesFields) {
-          valueSet.add(sf.numericValue().longValue());
-        }
-
-        sortedNumeric.setDocument(i);
-        assertEquals(valuesFields.length, sortedNumeric.count());
-        for (int j = 0; j < sortedNumeric.count(); ++j) {
-          assertTrue(valueSet.contains(sortedNumeric.valueAt(j)));
-        }
-        sortedSet.setDocument(i);
-        int sortedSetCount = 0;
-        while (true) {
-          long ord = sortedSet.nextOrd();
-          if (ord == SortedSetDocValues.NO_MORE_ORDS) {
-            break;
+        if (valuesFields.length == 0) {
+          assertTrue(sortedNumeric.docID() + " vs " + i, sortedNumeric.docID() < i);
+        } else {
+          final Set<Long> valueSet = new HashSet<>();
+          for (IndexableField sf : valuesFields) {
+            valueSet.add(sf.numericValue().longValue());
           }
-          assertTrue(valueSet.contains(Long.parseLong(sortedSet.lookupOrd(ord).utf8ToString())));
-          sortedSetCount++;
-        }
-        assertEquals(valueSet.size(), sortedSetCount);
 
-        assertEquals(!valueSet.isEmpty(), sortedNumericBits.get(i));
-        assertEquals(!valueSet.isEmpty(), sortedSetBits.get(i));
+          assertEquals(i, sortedNumeric.nextDoc());
+          assertEquals(valuesFields.length, sortedNumeric.docValueCount());
+          for (int j = 0; j < sortedNumeric.docValueCount(); ++j) {
+            assertTrue(valueSet.contains(sortedNumeric.nextValue()));
+          }
+          assertEquals(i, sortedSet.nextDoc());
+          int sortedSetCount = 0;
+          while (true) {
+            long ord = sortedSet.nextOrd();
+            if (ord == SortedSetDocValues.NO_MORE_ORDS) {
+              break;
+            }
+            assertTrue(valueSet.contains(Long.parseLong(sortedSet.lookupOrd(ord).utf8ToString())));
+            sortedSetCount++;
+          }
+          assertEquals(valueSet.size(), sortedSetCount);
+        }
       }
     }
 
@@ -546,7 +534,7 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
       RAMInputStream in = new RAMInputStream("", buffer);
       BytesRefBuilder b = new BytesRefBuilder();
       for (int i = 0; i < maxDoc; ++i) {
-        values.setDocument(i);
+        assertEquals(i, values.nextDoc());
         final int numValues = in.readVInt();
 
         for (int j = 0; j < numValues; ++j) {
@@ -595,10 +583,10 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
       assertNotNull(values);
       RAMInputStream in = new RAMInputStream("", buffer);
       for (int i = 0; i < maxDoc; ++i) {
-        values.setDocument(i);
-        assertEquals(2, values.count());
-        assertEquals(in.readVLong(), values.valueAt(0));
-        assertEquals(in.readVLong(), values.valueAt(1));
+        assertEquals(i, values.nextDoc());
+        assertEquals(2, values.docValueCount());
+        assertEquals(in.readVLong(), values.nextValue());
+        assertEquals(in.readVLong(), values.nextValue());
       }
       r.close();
       dir.close();

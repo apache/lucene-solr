@@ -18,6 +18,10 @@ API Changes
 * LUCENE-7355: AnalyzingQueryParser has been removed as its functionality has
   been folded into the classic QueryParser. (Adrien Grand)
 
+* LUCENE-7407: Doc values APIs have been switched from random access
+  to iterators, enabling future codec compression improvements. (Mike
+  McCandless)
+
 Bug Fixes
 
 Improvements

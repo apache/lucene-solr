@@ -467,12 +467,6 @@ public abstract class FilterLeafReader extends LeafReader {
   }
 
   @Override
-  public Bits getDocsWithField(String field) throws IOException {
-    ensureOpen();
-    return in.getDocsWithField(field);
-  }
-
-  @Override
   public Sort getIndexSort() {
     ensureOpen();
     return in.getIndexSort();

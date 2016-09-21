@@ -191,14 +191,10 @@ public final class SegmentReader extends CodecReader {
     try {
       core.decRef();
     } finally {
-      try {
-        super.doClose();
-      } finally {
-        if (docValuesProducer instanceof SegmentDocValuesProducer) {
-          segDocValues.decRef(((SegmentDocValuesProducer)docValuesProducer).dvGens);
-        } else if (docValuesProducer != null) {
-          segDocValues.decRef(Collections.singletonList(-1L));
-        }
+      if (docValuesProducer instanceof SegmentDocValuesProducer) {
+        segDocValues.decRef(((SegmentDocValuesProducer)docValuesProducer).dvGens);
+      } else if (docValuesProducer != null) {
+        segDocValues.decRef(Collections.singletonList(-1L));
       }
     }
   }

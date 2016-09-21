@@ -75,11 +75,11 @@ public class TestUninvertingReader extends LuceneTestCase {
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
     
-    v.setDocument(0);
+    assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
-    v.setDocument(1);
+    assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
@@ -117,11 +117,11 @@ public class TestUninvertingReader extends LuceneTestCase {
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
     
-    v.setDocument(0);
+    assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
-    v.setDocument(1);
+    assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
@@ -158,11 +158,11 @@ public class TestUninvertingReader extends LuceneTestCase {
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
     
-    v.setDocument(0);
+    assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
-    v.setDocument(1);
+    assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
@@ -199,11 +199,11 @@ public class TestUninvertingReader extends LuceneTestCase {
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
     
-    v.setDocument(0);
+    assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
-    v.setDocument(1);
+    assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());

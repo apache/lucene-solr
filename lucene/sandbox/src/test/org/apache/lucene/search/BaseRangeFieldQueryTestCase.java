@@ -203,7 +203,6 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
 
     int dimensions = ranges[0][0].numDimensions();
     int iters = atLeast(25);
-    NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
     Bits liveDocs = MultiFields.getLiveDocs(s.getIndexReader());
     int maxDoc = s.getIndexReader().maxDoc();
 
@@ -250,8 +249,10 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
         public boolean needsScores() { return false; }
       });
 
+      NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
       for (int docID=0; docID<maxDoc; ++docID) {
-        int id = (int) docIDToID.get(docID);
+        assertEquals(docID, docIDToID.nextDoc());
+        int id = (int) docIDToID.longValue();
         boolean expected;
         if (liveDocs != null && liveDocs.get(docID) == false) {
           // document is deleted

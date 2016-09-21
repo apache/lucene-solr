@@ -18,8 +18,6 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.util.Counter;
@@ -88,57 +86,70 @@ class NumericDocValuesWriter extends DocValuesWriter {
     final PackedLongValues values = pending.build();
 
     dvConsumer.addNumericField(fieldInfo,
-                               new Iterable<Number>() {
+                               new EmptyDocValuesProducer() {
                                  @Override
-                                 public Iterator<Number> iterator() {
-                                   return new NumericIterator(maxDoc, values, docsWithField);
+                                 public NumericDocValues getNumeric(FieldInfo fieldInfo) {
+                                   if (fieldInfo != NumericDocValuesWriter.this.fieldInfo) {
+                                     throw new IllegalArgumentException("wrong fieldInfo");
+                                   }
+                                   return new BufferedNumericDocValues(maxDoc, values, docsWithField);
                                  }
                                });
   }
 
   // iterates over the values we have in ram
-  private static class NumericIterator implements Iterator<Number> {
+  private static class BufferedNumericDocValues extends NumericDocValues {
     final PackedLongValues.Iterator iter;
     final FixedBitSet docsWithField;
     final int size;
     final int maxDoc;
-    int upto;
+    private long value;
+    private int docID = -1;
     
-    NumericIterator(int maxDoc, PackedLongValues values, FixedBitSet docsWithFields) {
+    BufferedNumericDocValues(int maxDoc, PackedLongValues values, FixedBitSet docsWithFields) {
       this.maxDoc = maxDoc;
       this.iter = values.iterator();
       this.size = (int) values.size();
       this.docsWithField = docsWithFields;
     }
+
+    @Override
+    public int docID() {
+      return docID;
+    }
+
+    @Override
+    public int nextDoc() {
+      if (docID == size-1) {
+        docID = NO_MORE_DOCS;
+      } else {
+        int next = docsWithField.nextSetBit(docID+1);
+        if (next == NO_MORE_DOCS) {
+          docID = NO_MORE_DOCS;
+        } else {
+          // skip missing values:
+          while (docID < next) {
+            docID++;
+            value = iter.next();
+          }
+        }
+      }
+      return docID;
+    }
     
     @Override
-    public boolean hasNext() {
-      return upto < maxDoc;
-    }
-
-    @Override
-    public Number next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
-      }
-      Long value;
-      if (upto < size) {
-        long v = iter.next();
-        if (docsWithField.get(upto)) {
-          value = v;
-        } else {
-          value = null;
-        }
-      } else {
-        value = null;
-      }
-      upto++;
-      return value;
-    }
-
-    @Override
-    public void remove() {
+    public int advance(int target) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      return docsWithField.cardinality();
+    }
+
+    @Override
+    public long longValue() {
+      return value;
     }
   }
 }

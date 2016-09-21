@@ -99,9 +99,16 @@ public class ReverseOrdFieldSource extends ValueSource {
     final int end = sindex.getValueCount();
 
     return new IntDocValues(this) {
-     @Override
-      public int intVal(int doc) {
-        return (end - sindex.getOrd(doc+off) - 1);
+      @Override
+      public int intVal(int doc) throws IOException {
+        if (doc+off > sindex.docID()) {
+          sindex.advance(doc+off);
+        }
+        if (doc+off == sindex.docID()) {
+          return (end - sindex.ordValue() - 1);
+        } else {
+          return end;
+        }
       }
     };
   }

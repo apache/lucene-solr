@@ -14,23 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.index;
 
-
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A per-document byte[]
+ * A per-document numeric value.
  */
-public abstract class BinaryDocValues {
+public abstract class BinaryDocValues extends DocIdSetIterator {
   
   /** Sole constructor. (For invocation by subclass 
-   * constructors, typically implicit.) */
+   *  constructors, typically implicit.) */
   protected BinaryDocValues() {}
 
-  /** Lookup the value for document.  The returned {@link BytesRef} may be
-   * re-used across calls to {@link #get(int)} so make sure to
-   * {@link BytesRef#deepCopyOf(BytesRef) copy it} if you want to keep it
-   * around. */
-  public abstract BytesRef get(int docID);
+  /**
+   * Returns the numeric value for the current document ID.
+   * @return numeric value
+   */
+  public abstract BytesRef binaryValue();
 }

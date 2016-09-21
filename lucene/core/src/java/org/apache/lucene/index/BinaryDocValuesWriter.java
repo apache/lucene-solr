@@ -18,8 +18,6 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.store.DataInput;
@@ -115,64 +113,76 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     bytes.freeze(false);
     final PackedLongValues lengths = this.lengths.build();
     dvConsumer.addBinaryField(fieldInfo,
-                              new Iterable<BytesRef>() {
+                              new EmptyDocValuesProducer() {
                                 @Override
-                                public Iterator<BytesRef> iterator() {
-                                   return new BytesIterator(maxDoc, lengths);
+                                public BinaryDocValues getBinary(FieldInfo fieldInfoIn) {
+                                  if (fieldInfoIn != fieldInfo) {
+                                    throw new IllegalArgumentException("wrong fieldInfo");
+                                  }
+                                  return new BufferedBinaryDocValues(maxDoc, lengths);
                                 }
                               });
   }
 
   // iterates over the values we have in ram
-  private class BytesIterator implements Iterator<BytesRef> {
+  private class BufferedBinaryDocValues extends BinaryDocValues {
     final BytesRefBuilder value = new BytesRefBuilder();
     final PackedLongValues.Iterator lengthsIterator;
     final DataInput bytesIterator = bytes.getDataInput();
-    final int size = (int) lengths.size();
+    final int size;
     final int maxDoc;
-    int upto;
+    private int docID = -1;
     
-    BytesIterator(int maxDoc, PackedLongValues lengths) {
+    BufferedBinaryDocValues(int maxDoc, PackedLongValues lengths) {
       this.maxDoc = maxDoc;
       this.lengthsIterator = lengths.iterator();
-    }
-    
-    @Override
-    public boolean hasNext() {
-      return upto < maxDoc;
+      this.size = (int) lengths.size();
     }
 
     @Override
-    public BytesRef next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
-      }
-      final BytesRef v;
-      if (upto < size) {
-        int length = (int) lengthsIterator.next();
-        value.grow(length);
-        value.setLength(length);
-        try {
-          bytesIterator.readBytes(value.bytes(), 0, value.length());
-        } catch (IOException ioe) {
-          // Should never happen!
-          throw new RuntimeException(ioe);
-        }
-        if (docsWithField.get(upto)) {
-          v = value.get();
-        } else {
-          v = null;
-        }
+    public int docID() {
+      return docID;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      if (docID == size-1) {
+        docID = NO_MORE_DOCS;
       } else {
-        v = null;
+        int next = docsWithField.nextSetBit(docID+1);
+        if (next == NO_MORE_DOCS) {
+          docID = NO_MORE_DOCS;
+        } else {
+
+          int length = 0;
+
+          // skip missing values:
+          while (docID < next) {
+            docID++;
+            length = (int) lengthsIterator.next();
+            assert docID == next || length == 0;
+          }
+          value.grow(length);
+          value.setLength(length);
+          bytesIterator.readBytes(value.bytes(), 0, length);
+        }
       }
-      upto++;
-      return v;
+      return docID;
     }
 
     @Override
-    public void remove() {
+    public int advance(int target) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      return docsWithField.cardinality();
+    }
+
+    @Override
+    public BytesRef binaryValue() {
+      return value.get();
     }
   }
 }

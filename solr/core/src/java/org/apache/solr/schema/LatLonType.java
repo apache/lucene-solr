@@ -378,7 +378,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
 
     }
 
-    boolean match() {
+    boolean match() throws IOException {
       // longitude should generally be more restrictive than latitude
       // (e.g. in the US, it immediately separates the coasts, and in world search separates
       // US from Europe from Asia, etc.

@@ -145,13 +145,21 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
 
             @Override
             public boolean get(int doc) {
-              fcsi.setDocument(doc);
-              for (long ord = fcsi.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = fcsi.nextOrd()) {
-                if (termSet.get(ord)) {
-                  return true;
+              try {
+                if (doc > fcsi.docID()) {
+                  fcsi.advance(doc);
                 }
+                if (doc == fcsi.docID()) {
+                  for (long ord = fcsi.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = fcsi.nextOrd()) {
+                    if (termSet.get(ord)) {
+                      return true;
+                    }
+                  }
+                }
+                return false;
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
               }
-              return false;
             }
 
             @Override

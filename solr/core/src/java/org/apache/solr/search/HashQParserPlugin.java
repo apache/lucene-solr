@@ -268,7 +268,7 @@ public class HashQParserPlugin extends QParserPlugin {
 
   private interface HashKey {
     public void setNextReader(LeafReaderContext reader) throws IOException;
-    public long hashCode(int doc);
+    public long hashCode(int doc) throws IOException;
   }
 
   private class BytesHash implements HashKey {
@@ -287,8 +287,16 @@ public class HashQParserPlugin extends QParserPlugin {
       values = context.reader().getSortedDocValues(field);
     }
 
-    public long hashCode(int doc) {
-      BytesRef ref = values.get(doc);
+    public long hashCode(int doc) throws IOException {
+      if (doc > values.docID()) {
+        values.advance(doc);
+      }
+      BytesRef ref;
+      if (doc == values.docID()) {
+        ref = values.binaryValue();
+      } else {
+        ref = null;
+      }
       this.fieldType.indexedToReadable(ref, charsRefBuilder);
       CharsRef charsRef = charsRefBuilder.get();
       return charsRef.hashCode();
@@ -308,8 +316,17 @@ public class HashQParserPlugin extends QParserPlugin {
       values = context.reader().getNumericDocValues(field);
     }
 
-    public long hashCode(int doc) {
-      long l = values.get(doc);
+    public long hashCode(int doc) throws IOException {
+      int valuesDocID = values.docID();
+      if (valuesDocID < doc) {
+        valuesDocID = values.advance(doc);
+      }
+      long l;
+      if (valuesDocID == doc) {
+        l = values.longValue();
+      } else {
+        l = 0;
+      }
       return Longs.hashCode(l);
     }
   }
@@ -346,7 +363,7 @@ public class HashQParserPlugin extends QParserPlugin {
       key4.setNextReader(context);
     }
 
-    public long hashCode(int doc) {
+    public long hashCode(int doc) throws IOException {
       return key1.hashCode(doc)+key2.hashCode(doc)+key3.hashCode(doc)+key4.hashCode(doc);
     }
   }

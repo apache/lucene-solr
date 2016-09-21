@@ -17,6 +17,8 @@
 
 package org.apache.solr.search.function;
 
+import java.io.IOException;
+
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
@@ -41,7 +43,7 @@ public class SolrComparisonBoolFunction extends ComparisonBoolFunction {
   }
 
   @Override
-  public boolean compare(int doc, FunctionValues lhs, FunctionValues rhs) {
+  public boolean compare(int doc, FunctionValues lhs, FunctionValues rhs) throws IOException {
     // TODO consider a separate FunctionValues impl, one for Long, one for Double
     // performs the safest possible numeric comparison, if both lhs and rhs are Longs, then
     // we perform a Long comparison to avoid the issues with precision when casting to doubles

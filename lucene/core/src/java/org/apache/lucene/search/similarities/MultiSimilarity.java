@@ -75,7 +75,7 @@ public class MultiSimilarity extends Similarity {
     }
     
     @Override
-    public float score(int doc, float freq) {
+    public float score(int doc, float freq) throws IOException {
       float sum = 0.0f;
       for (SimScorer subScorer : subScorers) {
         sum += subScorer.score(doc, freq);
@@ -84,7 +84,7 @@ public class MultiSimilarity extends Similarity {
     }
 
     @Override
-    public Explanation explain(int doc, Explanation freq) {
+    public Explanation explain(int doc, Explanation freq) throws IOException {
       List<Explanation> subs = new ArrayList<>();
       for (SimScorer subScorer : subScorers) {
         subs.add(subScorer.explain(doc, freq));

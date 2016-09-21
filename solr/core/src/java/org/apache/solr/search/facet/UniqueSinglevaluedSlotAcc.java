@@ -66,16 +66,20 @@ class UniqueSinglevaluedSlotAcc extends UniqueSlotAcc {
   }
 
   @Override
-  public void collect(int doc, int slotNum) {
-    int segOrd = subDv.getOrd(doc);
-    if (segOrd < 0) return;  // -1 means missing
-    int ord = toGlobal==null ? segOrd : (int)toGlobal.get(segOrd);
-
-    FixedBitSet bits = arr[slotNum];
-    if (bits == null) {
-      bits = new FixedBitSet(nTerms);
-      arr[slotNum] = bits;
+  public void collect(int doc, int slotNum) throws IOException {
+    if (doc > subDv.docID()) {
+      subDv.advance(doc);
     }
-    bits.set(ord);
+    if (doc == subDv.docID()) {
+      int segOrd = subDv.ordValue();
+      int ord = toGlobal==null ? segOrd : (int)toGlobal.get(segOrd);
+
+      FixedBitSet bits = arr[slotNum];
+      if (bits == null) {
+        bits = new FixedBitSet(nTerms);
+        arr[slotNum] = bits;
+      }
+      bits.set(ord);
+    }
   }
 }

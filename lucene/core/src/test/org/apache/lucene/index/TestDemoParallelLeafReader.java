@@ -23,7 +23,9 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,10 +34,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ScoreDoc;
@@ -722,9 +725,10 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           assertNotNull("oldSchemaGen=" + oldSchemaGen, oldValues);
           for(int i=0;i<maxDoc;i++) {
             // TODO: is this still O(blockSize^2)?
+            assertEquals(i, oldValues.nextDoc());
             Document oldDoc = reader.document(i);
             Document newDoc = new Document();
-            newDoc.add(new NumericDocValuesField("number_" + newSchemaGen, oldValues.get(i)));
+            newDoc.add(new NumericDocValuesField("number_" + newSchemaGen, oldValues.longValue()));
             w.addDocument(newDoc);
           }
         }
@@ -752,11 +756,12 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         for(int i=0;i<maxDoc;i++) {
           Document oldDoc = r.document(i);
           long value = Long.parseLong(oldDoc.get("text").split(" ")[1]);
-          if (value != numbers.get(i)) {
-            if (DEBUG) System.out.println("FAIL: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.get(i) + " numbers=" + numbers);
+          assertEquals(i, numbers.nextDoc());
+          if (value != numbers.longValue()) {
+            if (DEBUG) System.out.println("FAIL: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.longValue() + " numbers=" + numbers);
             failed = true;
           } else if (failed) {
-            if (DEBUG) System.out.println("OK: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.get(i));
+            if (DEBUG) System.out.println("OK: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.longValue());
           }
         }
         assertFalse("FAILED field=" + fieldName + " r=" + r, failed);
@@ -817,7 +822,8 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
             // TODO: is this still O(blockSize^2)?
             Document oldDoc = reader.document(i);
             Document newDoc = new Document();
-            newDoc.add(new NumericDocValuesField("number", newSchemaGen*(oldValues.get(i)/oldSchemaGen)));
+            assertEquals(i, oldValues.nextDoc());
+            newDoc.add(new NumericDocValuesField("number", newSchemaGen*(oldValues.longValue()/oldSchemaGen)));
             w.addDocument(newDoc);
           }
         }
@@ -850,11 +856,12 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           Document oldDoc = r.document(i);
           long value = Long.parseLong(oldDoc.get("text").split(" ")[1]);
           value *= schemaGen;
-          if (value != numbers.get(i)) {
-            System.out.println("FAIL: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.get(i) + " numbers=" + numbers);
+          assertEquals(i, numbers.nextDoc());
+          if (value != numbers.longValue()) {
+            System.out.println("FAIL: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.longValue() + " numbers=" + numbers);
             failed = true;
           } else if (failed) {
-            System.out.println("OK: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.get(i));
+            System.out.println("OK: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.longValue());
           }
         }
         assertFalse("FAILED r=" + r, failed);
@@ -1110,7 +1117,8 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
             for(int i=0;i<maxDoc;i++) {
               Document doc = leaf.document(i);
               long value = Long.parseLong(doc.get("text").split(" ")[1]);
-              long dvValue = numbers.get(i);
+              assertEquals(i, numbers.nextDoc());
+              long dvValue = numbers.longValue();
               if (value == 0) {
                 assertEquals(0, dvValue);
               } else {
@@ -1278,11 +1286,12 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     for(int i=0;i<maxDoc;i++) {
       Document oldDoc = r.document(i);
       long value = multiplier * Long.parseLong(oldDoc.get("text").split(" ")[1]);
-      if (value != numbers.get(i)) {
-        System.out.println("FAIL: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.get(i) + " numbers=" + numbers);
+      assertEquals(i, numbers.nextDoc());
+      if (value != numbers.longValue()) {
+        System.out.println("FAIL: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.longValue() + " numbers=" + numbers);
         failed = true;
       } else if (failed) {
-        System.out.println("OK: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.get(i));
+        System.out.println("OK: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.longValue());
       }
     }
     if (failed) {
@@ -1304,18 +1313,16 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
   private static void testNumericDVSort(IndexSearcher s) throws IOException {
     // Confirm we can sort by the new DV field:
     TopDocs hits = s.search(new MatchAllDocsQuery(), 100, new Sort(new SortField("number", SortField.Type.LONG)));
-    NumericDocValues numbers = MultiDocValues.getNumericValues(s.getIndexReader(), "number");
     long last = Long.MIN_VALUE;
     for(ScoreDoc scoreDoc : hits.scoreDocs) {
       long value = Long.parseLong(s.doc(scoreDoc.doc).get("text").split(" ")[1]);
       assertTrue(value >= last);
-      assertEquals(value, numbers.get(scoreDoc.doc));
+      assertEquals(value, ((Long) ((FieldDoc) scoreDoc).fields[0]).longValue());
       last = value;
     }
   }
 
   private static void testPointRangeQuery(IndexSearcher s) throws IOException {
-    NumericDocValues numbers = MultiDocValues.getNumericValues(s.getIndexReader(), "number");
     for(int i=0;i<100;i++) {
       // Confirm we can range search by the new indexed (numeric) field:
       long min = random().nextLong();
@@ -1331,7 +1338,24 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         long value = Long.parseLong(s.doc(scoreDoc.doc).get("text").split(" ")[1]);
         assertTrue(value >= min);
         assertTrue(value <= max);
-        assertEquals(value, numbers.get(scoreDoc.doc));
+      }
+
+      Arrays.sort(hits.scoreDocs,
+                  new Comparator<ScoreDoc>() {
+                    @Override
+                    public int compare(ScoreDoc a, ScoreDoc b) {
+                      return a.doc - b.doc;
+                    }
+                  });
+
+      NumericDocValues numbers = MultiDocValues.getNumericValues(s.getIndexReader(), "number");
+      for(ScoreDoc hit : hits.scoreDocs) {
+        if (numbers.docID() < hit.doc) {
+          numbers.advance(hit.doc);
+        }
+        assertEquals(hit.doc, numbers.docID());
+        long value = Long.parseLong(s.doc(hit.doc).get("text").split(" ")[1]);
+        assertEquals(value, numbers.longValue());
       }
     }
   }

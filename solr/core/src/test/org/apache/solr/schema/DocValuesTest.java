@@ -16,10 +16,21 @@
  */
 package org.apache.solr.schema;
 
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReader;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -30,15 +41,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class DocValuesTest extends SolrTestCaseJ4 {
 
@@ -84,12 +86,24 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         assertEquals(DocValuesType.SORTED, infos.fieldInfo("stringdv").getDocValuesType());
         assertEquals(DocValuesType.SORTED, infos.fieldInfo("booldv").getDocValuesType());
 
-        assertEquals((long) Float.floatToIntBits(1), reader.getNumericDocValues("floatdv").get(0));
-        assertEquals(2L, reader.getNumericDocValues("intdv").get(0));
-        assertEquals(Double.doubleToLongBits(3), reader.getNumericDocValues("doubledv").get(0));
-        assertEquals(4L, reader.getNumericDocValues("longdv").get(0));
-        assertEquals("solr", reader.getSortedDocValues("stringdv").get(0).utf8ToString());
-        assertEquals("T", reader.getSortedDocValues("booldv").get(0).utf8ToString());
+        NumericDocValues dvs = reader.getNumericDocValues("floatdv");
+        assertEquals(0, dvs.nextDoc());
+        assertEquals((long) Float.floatToIntBits(1), dvs.longValue());
+        dvs = reader.getNumericDocValues("intdv");
+        assertEquals(0, dvs.nextDoc());
+        assertEquals(2L, dvs.longValue());
+        dvs = reader.getNumericDocValues("doubledv");
+        assertEquals(0, dvs.nextDoc());
+        assertEquals(Double.doubleToLongBits(3), dvs.longValue());
+        dvs = reader.getNumericDocValues("longdv");
+        assertEquals(0, dvs.nextDoc());
+        assertEquals(4L, dvs.longValue());
+        SortedDocValues sdv = reader.getSortedDocValues("stringdv");
+        assertEquals(0, sdv.nextDoc());
+        assertEquals("solr", sdv.binaryValue().utf8ToString());
+        sdv = reader.getSortedDocValues("booldv");
+        assertEquals(0, sdv.nextDoc());
+        assertEquals("T", sdv.binaryValue().utf8ToString());
 
         final IndexSchema schema = core.getLatestSchema();
         final SchemaField floatDv = schema.getField("floatdv");

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.analytics.util.valuesource;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.Date;
 
@@ -50,7 +51,7 @@ public class DateMathFunction extends MultiDateFunction {
   }
 
   @Override
-  protected long func(int doc, FunctionValues[] valsArr) {
+  protected long func(int doc, FunctionValues[] valsArr) throws IOException {
     long time = 0;
     Date date = (Date)valsArr[0].objectVal(doc);
     try {

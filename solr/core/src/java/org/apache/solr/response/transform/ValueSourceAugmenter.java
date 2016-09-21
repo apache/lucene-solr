@@ -65,7 +65,6 @@ public class ValueSourceAugmenter extends DocTransformer
     try {
       searcher = context.getSearcher();
       readerContexts = searcher.getIndexReader().leaves();
-      docValuesArr = new FunctionValues[readerContexts.size()];
       fcontext = ValueSource.newContext(searcher);
       this.valueSource.createWeight(fcontext, searcher);
     } catch (IOException e) {
@@ -76,7 +75,6 @@ public class ValueSourceAugmenter extends DocTransformer
   Map fcontext;
   SolrIndexSearcher searcher;
   List<LeafReaderContext> readerContexts;
-  FunctionValues docValuesArr[];
 
   @Override
   public void transform(SolrDocument doc, int docid, float score) {
@@ -87,11 +85,7 @@ public class ValueSourceAugmenter extends DocTransformer
       // TODO: calculate this stuff just once across diff functions
       int idx = ReaderUtil.subIndex(docid, readerContexts);
       LeafReaderContext rcontext = readerContexts.get(idx);
-      FunctionValues values = docValuesArr[idx];
-      if (values == null) {
-        docValuesArr[idx] = values = valueSource.getValues(fcontext, rcontext);
-      }
-
+      FunctionValues values = valueSource.getValues(fcontext, rcontext);
       int localId = docid - rcontext.docBase;
       setValue(doc,values.objectVal(localId));
     } catch (IOException e) {

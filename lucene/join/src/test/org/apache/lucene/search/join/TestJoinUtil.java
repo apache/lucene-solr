@@ -54,8 +54,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NumericDocValues;
@@ -88,7 +88,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
@@ -484,7 +483,8 @@ public class TestJoinUtil extends LuceneTestCase {
             return new FilterScorer(fieldScorer, this) {
               @Override
               public float score() throws IOException {
-                return (float) price.get(in.docID());
+                assertEquals(in.docID(), price.nextDoc());
+                return (float) price.longValue();
               }
             };
           }
@@ -1182,15 +1182,19 @@ public class TestJoinUtil extends LuceneTestCase {
 
           @Override
           public void collect(int doc) throws IOException {
-            docTermOrds.setDocument(doc);
-            long ord;
-            while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-              final BytesRef joinValue = docTermOrds.lookupOrd(ord);
-              JoinScore joinScore = joinValueToJoinScores.get(joinValue);
-              if (joinScore == null) {
-                joinValueToJoinScores.put(BytesRef.deepCopyOf(joinValue), joinScore = new JoinScore());
+            if (doc > docTermOrds.docID()) {
+              docTermOrds.advance(doc);
+            }
+            if (doc == docTermOrds.docID()) {
+              long ord;
+              while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+                final BytesRef joinValue = docTermOrds.lookupOrd(ord);
+                JoinScore joinScore = joinValueToJoinScores.get(joinValue);
+                if (joinScore == null) {
+                  joinValueToJoinScores.put(BytesRef.deepCopyOf(joinValue), joinScore = new JoinScore());
+                }
+                joinScore.addScore(scorer.score());
               }
-              joinScore.addScore(scorer.score());
             }
           }
 
@@ -1214,12 +1218,17 @@ public class TestJoinUtil extends LuceneTestCase {
 
           private Scorer scorer;
           private BinaryDocValues terms;
-          private Bits docsWithField;
 
           @Override
           public void collect(int doc) throws IOException {
-            final BytesRef joinValue = terms.get(doc);
-            if (joinValue.length == 0 && !docsWithField.get(doc)) {
+            if (doc > terms.docID()) {
+              terms.advance(doc);
+            }
+            final BytesRef joinValue;
+            if (doc == terms.docID()) {
+              joinValue = terms.binaryValue();
+            } else {
+              // missing;
               return;
             }
 
@@ -1236,7 +1245,6 @@ public class TestJoinUtil extends LuceneTestCase {
           @Override
           protected void doSetNextReader(LeafReaderContext context) throws IOException {
             terms = DocValues.getBinary(context.reader(), fromField);
-            docsWithField = DocValues.getDocsWithField(context.reader(), fromField);
           }
 
           @Override
@@ -1281,8 +1289,17 @@ public class TestJoinUtil extends LuceneTestCase {
           private int docBase;
 
           @Override
-          public void collect(int doc) {
-            final BytesRef joinValue = terms.get(doc);
+          public void collect(int doc) throws IOException {
+            if (doc > terms.docID()) {
+              terms.advance(doc);
+            }
+            final BytesRef joinValue;
+            if (doc == terms.docID()) {
+              joinValue = terms.binaryValue();
+            } else {
+              // missing;
+              joinValue = new BytesRef(BytesRef.EMPTY_BYTES);
+            }
             JoinScore joinScore = joinValueToJoinScores.get(joinValue);
             if (joinScore == null) {
               return;

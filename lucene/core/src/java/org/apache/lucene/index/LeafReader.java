@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
@@ -241,13 +240,13 @@ public abstract class LeafReader extends IndexReader {
   }
 
   /** Returns {@link NumericDocValues} for this field, or
-   *  null if no {@link NumericDocValues} were indexed for
+   *  null if no numeric doc values were indexed for
    *  this field.  The returned instance should only be
-   *  used by a single thread. */
+   *  used by a single thread.  This will never return null. */
   public abstract NumericDocValues getNumericDocValues(String field) throws IOException;
 
   /** Returns {@link BinaryDocValues} for this field, or
-   *  null if no {@link BinaryDocValues} were indexed for
+   *  null if no binary doc values were indexed for
    *  this field.  The returned instance should only be
    *  used by a single thread. */
   public abstract BinaryDocValues getBinaryDocValues(String field) throws IOException;
@@ -269,12 +268,6 @@ public abstract class LeafReader extends IndexReader {
    *  this field.  The returned instance should only be
    *  used by a single thread. */
   public abstract SortedSetDocValues getSortedSetDocValues(String field) throws IOException;
-
-  /** Returns a {@link Bits} at the size of <code>reader.maxDoc()</code>,
-   *  with turned on bits for each docid that does have a value for this field,
-   *  or null if no DocValues were indexed for this field. The
-   *  returned instance should only be used by a single thread */
-  public abstract Bits getDocsWithField(String field) throws IOException;
 
   /** Returns {@link NumericDocValues} representing norms
    *  for this field, or null if no {@link NumericDocValues}

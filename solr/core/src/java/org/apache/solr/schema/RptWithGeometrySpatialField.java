@@ -156,7 +156,7 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
         int docId = -1;
         Shape shape = null;
 
-        private void setShapeFromDoc(int doc) {
+        private void setShapeFromDoc(int doc) throws IOException {
           if (docId == doc) {
             return;
           }
@@ -180,24 +180,24 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
         // Use the cache for exists & objectVal;
 
         @Override
-        public boolean exists(int doc) {
+        public boolean exists(int doc) throws IOException {
           setShapeFromDoc(doc);
           return shape != null;
         }
 
         @Override
-        public Object objectVal(int doc) {
+        public Object objectVal(int doc) throws IOException {
           setShapeFromDoc(doc);
           return shape;
         }
 
         @Override
-        public Explanation explain(int doc) {
+        public Explanation explain(int doc) throws IOException {
           return targetFuncValues.explain(doc);
         }
 
         @Override
-        public String toString(int doc) {
+        public String toString(int doc) throws IOException {
           return targetFuncValues.toString(doc);
         }
       };

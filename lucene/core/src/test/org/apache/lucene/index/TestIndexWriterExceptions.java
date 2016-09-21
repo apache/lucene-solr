@@ -2039,8 +2039,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         BinaryDocValues bcf = reader.getBinaryDocValues("bcf");
         for (int i = 0; i < reader.maxDoc(); i++) {
           if (liveDocs == null || liveDocs.get(i)) {
-            assertEquals("doc=" + (docBase + i), cf.get(i), f.get(i) * 2);
-            assertEquals("doc=" + (docBase + i), TestBinaryDocValuesUpdates.getValue(bcf, i), TestBinaryDocValuesUpdates.getValue(bf, i) * 2);
+            assertEquals(i, f.advance(i));
+            assertEquals(i, cf.advance(i));
+            assertEquals(i, bf.advance(i));
+            assertEquals(i, bcf.advance(i));
+            assertEquals("doc=" + (docBase + i), cf.longValue(), f.longValue() * 2);
+            assertEquals("doc=" + (docBase + i), TestBinaryDocValuesUpdates.getValue(bcf), TestBinaryDocValuesUpdates.getValue(bf) * 2);
           }
         }
       }

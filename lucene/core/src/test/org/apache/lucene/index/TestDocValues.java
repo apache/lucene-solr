@@ -49,7 +49,6 @@ public class TestDocValues extends LuceneTestCase {
     assertNotNull(DocValues.getSorted(r, "bogus"));
     assertNotNull(DocValues.getSortedSet(r, "bogus"));
     assertNotNull(DocValues.getSortedNumeric(r, "bogus"));
-    assertNotNull(DocValues.getDocsWithField(r, "bogus"));
     
     dr.close();
     iw.close();
@@ -84,9 +83,6 @@ public class TestDocValues extends LuceneTestCase {
     expectThrows(IllegalStateException.class, () -> {
       DocValues.getSortedNumeric(r, "foo");
     });
-    expectThrows(IllegalStateException.class, () -> {
-      DocValues.getDocsWithField(r, "foo");
-    });
     
     dr.close();
     iw.close();
@@ -108,7 +104,6 @@ public class TestDocValues extends LuceneTestCase {
     // ok
     assertNotNull(DocValues.getNumeric(r, "foo"));
     assertNotNull(DocValues.getSortedNumeric(r, "foo"));
-    assertNotNull(DocValues.getDocsWithField(r, "foo"));
     
     // errors
     expectThrows(IllegalStateException.class, () -> {
@@ -140,7 +135,6 @@ public class TestDocValues extends LuceneTestCase {
     
     // ok
     assertNotNull(DocValues.getBinary(r, "foo"));
-    assertNotNull(DocValues.getDocsWithField(r, "foo"));
     
     // errors
     expectThrows(IllegalStateException.class, () -> {
@@ -177,7 +171,6 @@ public class TestDocValues extends LuceneTestCase {
     assertNotNull(DocValues.getBinary(r, "foo"));
     assertNotNull(DocValues.getSorted(r, "foo"));
     assertNotNull(DocValues.getSortedSet(r, "foo"));
-    assertNotNull(DocValues.getDocsWithField(r, "foo"));
     
     // errors
     expectThrows(IllegalStateException.class, () -> {
@@ -206,7 +199,6 @@ public class TestDocValues extends LuceneTestCase {
     
     // ok
     assertNotNull(DocValues.getSortedSet(r, "foo"));
-    assertNotNull(DocValues.getDocsWithField(r, "foo"));
     
     // errors
     expectThrows(IllegalStateException.class, () -> {
@@ -241,11 +233,10 @@ public class TestDocValues extends LuceneTestCase {
     
     // ok
     assertNotNull(DocValues.getSortedNumeric(r, "foo"));
-    assertNotNull(DocValues.getDocsWithField(r, "foo"));
     
     // errors
     expectThrows(IllegalStateException.class, () -> {
-      DocValues.getBinary(r, "foo");
+        DocValues.getBinary(r, "foo");
     });
     expectThrows(IllegalStateException.class, () -> {
       DocValues.getNumeric(r, "foo");

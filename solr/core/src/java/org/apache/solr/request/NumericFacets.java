@@ -27,8 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FilterNumericDocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Terms;
@@ -161,25 +162,23 @@ final class NumericFacets {
             longs = DocValues.getNumeric(ctx.reader(), fieldName);
             break;
           case FLOAT:
-            final NumericDocValues floats = DocValues.getNumeric(ctx.reader(), fieldName);
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs = new NumericDocValues() {
+            longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
               @Override
-              public long get(int docID) {
-                long bits = floats.get(docID);
-                if (bits<0) bits ^= 0x7fffffffffffffffL;
+              public long longValue() {
+                long bits = super.longValue();
+                if (bits < 0) bits ^= 0x7fffffffffffffffL;
                 return bits;
               }
             };
             break;
           case DOUBLE:
-            final NumericDocValues doubles = DocValues.getNumeric(ctx.reader(), fieldName);
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs = new NumericDocValues() {
+            longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
               @Override
-              public long get(int docID) {
-                long bits = doubles.get(docID);
-                if (bits<0) bits ^= 0x7fffffffffffffffL;
+              public long longValue() {
+                long bits = super.longValue();
+                if (bits < 0) bits ^= 0x7fffffffffffffffL;
                 return bits;
               }
             };
@@ -187,11 +186,13 @@ final class NumericFacets {
           default:
             throw new AssertionError();
         }
-        docsWithField = DocValues.getDocsWithField(ctx.reader(), fieldName);
       }
-      long v = longs.get(doc - ctx.docBase);
-      if (v != 0 || docsWithField.get(doc - ctx.docBase)) {
-        hashTable.add(doc, v, 1);
+      int valuesDocID = longs.docID();
+      if (valuesDocID < doc - ctx.docBase) {
+        valuesDocID = longs.advance(doc - ctx.docBase);
+      }
+      if (valuesDocID == doc - ctx.docBase) {
+        hashTable.add(doc, longs.longValue(), 1);
       } else {
         ++missingCount;
       }

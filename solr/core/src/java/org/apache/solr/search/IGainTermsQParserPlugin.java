@@ -126,7 +126,18 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
     public void collect(int doc) throws IOException {
       super.collect(doc);
       ++count;
-      if (leafOutcomeValue.get(doc) == positiveLabel) {
+      int valuesDocID = leafOutcomeValue.docID();
+      if (valuesDocID < doc) {
+        valuesDocID = leafOutcomeValue.advance(doc);
+      }
+      int value;
+      if (valuesDocID == doc) {
+        value = (int) leafOutcomeValue.longValue();
+      } else {
+        value = 0;
+      }
+      
+      if (value == positiveLabel) {
         positiveSet.set(context.docBase + doc);
         numPositiveDocs++;
       } else {

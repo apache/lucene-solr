@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.LegacyNumericDocValues;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
@@ -449,7 +449,7 @@ public class PackedInts {
    * A read-only random access array of positive integers.
    * @lucene.internal
    */
-  public static abstract class Reader extends NumericDocValues implements Accountable {
+  public static abstract class Reader extends LegacyNumericDocValues implements Accountable {
 
     /**
      * Bulk get: read at least one and at most <code>len</code> longs starting

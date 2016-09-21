@@ -39,7 +39,7 @@ public abstract class DualDoubleFunction extends ValueSource {
   }
 
   protected abstract String name();
-  protected abstract double func(int doc, FunctionValues aVals, FunctionValues bVals);
+  protected abstract double func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException;
 
   @Override
   public String description() {
@@ -52,17 +52,17 @@ public abstract class DualDoubleFunction extends ValueSource {
     final FunctionValues bVals =  b.getValues(context, readerContext);
     return new DoubleDocValues(this) {
       @Override
-      public double doubleVal(int doc) {
+      public double doubleVal(int doc) throws IOException {
         return func(doc, aVals, bVals);
       }
       
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         return aVals.exists(doc) & bVals.exists(doc);
       }
 
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return name() + '(' + aVals.toString(doc) + ',' + bVals.toString(doc) + ')';
       }
     };

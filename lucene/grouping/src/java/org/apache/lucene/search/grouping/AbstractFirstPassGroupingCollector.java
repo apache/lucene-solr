@@ -338,7 +338,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
    * @param doc The specified doc
    * @return the group value for the specified doc
    */
-  protected abstract GROUP_VALUE_TYPE getDocGroupValue(int doc);
+  protected abstract GROUP_VALUE_TYPE getDocGroupValue(int doc) throws IOException;
 
   /**
    * Returns a copy of the specified group value by creating a new instance and copying the value from the specified

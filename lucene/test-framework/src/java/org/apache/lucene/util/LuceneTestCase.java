@@ -144,6 +144,7 @@ import junit.framework.AssertionFailedError;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
  * Base class for all Lucene unit tests, Junit3 or Junit4 variant.
@@ -2440,8 +2441,8 @@ public abstract class LuceneTestCase extends Assert {
         if (leftValues != null && rightValues != null) {
           assertDocValuesEquals(info, leftReader.maxDoc(), leftValues, rightValues);
         } else {
-          assertNull(info, leftValues);
-          assertNull(info, rightValues);
+          assertTrue(info + ": left numeric doc values for field=\"" + field + "\" are not null", leftValues == null || leftValues.nextDoc() == NO_MORE_DOCS);
+          assertTrue(info + ": right numeric doc values for field=\"" + field + "\" are not null", rightValues == null || rightValues.nextDoc() == NO_MORE_DOCS);
         }
       }
 
@@ -2449,14 +2450,17 @@ public abstract class LuceneTestCase extends Assert {
         BinaryDocValues leftValues = MultiDocValues.getBinaryValues(leftReader, field);
         BinaryDocValues rightValues = MultiDocValues.getBinaryValues(rightReader, field);
         if (leftValues != null && rightValues != null) {
-          for(int docID=0;docID<leftReader.maxDoc();docID++) {
-            final BytesRef left = BytesRef.deepCopyOf(leftValues.get(docID));
-            final BytesRef right = rightValues.get(docID);
-            assertEquals(info, left, right);
+          while (true) {
+            int docID = leftValues.nextDoc();
+            assertEquals(docID, rightValues.nextDoc());
+            if (docID == NO_MORE_DOCS) {
+              break;
+            }
+            assertEquals(leftValues.binaryValue(), rightValues.binaryValue());
           }
         } else {
-          assertNull(info, leftValues);
-          assertNull(info, rightValues);
+          assertTrue(info, leftValues == null || leftValues.nextDoc() == NO_MORE_DOCS);
+          assertTrue(info, rightValues == null || rightValues.nextDoc() == NO_MORE_DOCS);
         }
       }
       
@@ -2474,8 +2478,10 @@ public abstract class LuceneTestCase extends Assert {
           }
           // bytes
           for(int docID=0;docID<leftReader.maxDoc();docID++) {
-            final BytesRef left = BytesRef.deepCopyOf(leftValues.get(docID));
-            final BytesRef right = rightValues.get(docID);
+            assertEquals(docID, leftValues.nextDoc());
+            assertEquals(docID, rightValues.nextDoc());
+            final BytesRef left = BytesRef.deepCopyOf(leftValues.binaryValue());
+            final BytesRef right = rightValues.binaryValue();
             assertEquals(info, left, right);
           }
         } else {
@@ -2497,9 +2503,12 @@ public abstract class LuceneTestCase extends Assert {
             assertEquals(info, left, right);
           }
           // ord lists
-          for(int docID=0;docID<leftReader.maxDoc();docID++) {
-            leftValues.setDocument(docID);
-            rightValues.setDocument(docID);
+          while (true) {
+            int docID = leftValues.nextDoc();
+            assertEquals(docID, rightValues.nextDoc());
+            if (docID == NO_MORE_DOCS) {
+              break;
+            }
             long ord;
             while ((ord = leftValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
               assertEquals(info, ord, rightValues.nextOrd());
@@ -2516,35 +2525,20 @@ public abstract class LuceneTestCase extends Assert {
         SortedNumericDocValues leftValues = MultiDocValues.getSortedNumericValues(leftReader, field);
         SortedNumericDocValues rightValues = MultiDocValues.getSortedNumericValues(rightReader, field);
         if (leftValues != null && rightValues != null) {
-          for (int i = 0; i < leftReader.maxDoc(); i++) {
-            leftValues.setDocument(i);
-            long expected[] = new long[leftValues.count()];
-            for (int j = 0; j < expected.length; j++) {
-              expected[j] = leftValues.valueAt(j);
+          while (true) {
+            int docID = leftValues.nextDoc();
+            assertEquals(docID, rightValues.nextDoc());
+            if (docID == NO_MORE_DOCS) {
+              break;
             }
-            rightValues.setDocument(i);
-            for (int j = 0; j < expected.length; j++) {
-              assertEquals(info, expected[j], rightValues.valueAt(j));
+            assertEquals(info, leftValues.docValueCount(), rightValues.docValueCount());
+            for (int j = 0; j < leftValues.docValueCount(); j++) {
+              assertEquals(info, leftValues.nextValue(), rightValues.nextValue());
             }
-            assertEquals(info, expected.length, rightValues.count());
           }
         } else {
           assertNull(info, leftValues);
           assertNull(info, rightValues);
-        }
-      }
-      
-      {
-        Bits leftBits = MultiDocValues.getDocsWithField(leftReader, field);
-        Bits rightBits = MultiDocValues.getDocsWithField(rightReader, field);
-        if (leftBits != null && rightBits != null) {
-          assertEquals(info, leftBits.length(), rightBits.length());
-          for (int i = 0; i < leftBits.length(); i++) {
-            assertEquals(info, leftBits.get(i), rightBits.get(i));
-          }
-        } else {
-          assertNull(info, leftBits);
-          assertNull(info, rightBits);
         }
       }
     }
@@ -2553,9 +2547,14 @@ public abstract class LuceneTestCase extends Assert {
   public void assertDocValuesEquals(String info, int num, NumericDocValues leftDocValues, NumericDocValues rightDocValues) throws IOException {
     assertNotNull(info, leftDocValues);
     assertNotNull(info, rightDocValues);
-    for(int docID=0;docID<num;docID++) {
-      assertEquals(leftDocValues.get(docID),
-                   rightDocValues.get(docID));
+    while (true) {
+      int leftDocID = leftDocValues.nextDoc();
+      int rightDocID = rightDocValues.nextDoc();
+      assertEquals(leftDocID, rightDocID);
+      if (leftDocID == NO_MORE_DOCS) {
+        return;
+      }
+      assertEquals(leftDocValues.longValue(), rightDocValues.longValue());
     }
   }
   

@@ -22,10 +22,10 @@ import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -153,9 +153,25 @@ public class TestDocValuesScoring extends LuceneTestCase {
       final NumericDocValues values = DocValues.getNumeric(context.reader(), boostField);
       
       return new SimScorer() {
+
+        private float getValueForDoc(int doc) throws IOException {
+          int curDocID = values.docID();
+          if (doc < curDocID) {
+            throw new IllegalArgumentException("doc=" + doc + " is before curDocID=" + curDocID);
+          }
+          if (doc > curDocID) {
+            curDocID = values.advance(doc);
+          }
+          if (curDocID == doc) {
+            return Float.intBitsToFloat((int)values.longValue());
+          } else {
+            return 0f;
+          }
+        }
+        
         @Override
-        public float score(int doc, float freq) {
-          return Float.intBitsToFloat((int)values.get(doc)) * sub.score(doc, freq);
+        public float score(int doc, float freq) throws IOException {
+          return getValueForDoc(doc) * sub.score(doc, freq);
         }
         
         @Override
@@ -169,8 +185,8 @@ public class TestDocValuesScoring extends LuceneTestCase {
         }
 
         @Override
-        public Explanation explain(int doc, Explanation freq) {
-          Explanation boostExplanation = Explanation.match(Float.intBitsToFloat((int)values.get(doc)), "indexDocValue(" + boostField + ")");
+        public Explanation explain(int doc, Explanation freq) throws IOException {
+          Explanation boostExplanation = Explanation.match(getValueForDoc(doc), "indexDocValue(" + boostField + ")");
           Explanation simExplanation = sub.explain(doc, freq);
           return Explanation.match(
               boostExplanation.getValue() * simExplanation.getValue(),

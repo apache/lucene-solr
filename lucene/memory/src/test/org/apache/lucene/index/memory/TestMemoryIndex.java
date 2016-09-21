@@ -180,7 +180,9 @@ public class TestMemoryIndex extends LuceneTestCase {
 
     IndexSearcher searcher = mi.createSearcher();
     LeafReader reader = (LeafReader) searcher.getIndexReader();
-    float n1 = reader.getNormValues("f1").get(0);
+    NumericDocValues norms = reader.getNormValues("f1");
+    assertEquals(0, norms.nextDoc());
+    float n1 = norms.longValue();
 
     // Norms are re-computed when we change the Similarity
     mi.setSimilarity(new ClassicSimilarity() {
@@ -189,7 +191,9 @@ public class TestMemoryIndex extends LuceneTestCase {
         return 74;
       }
     });
-    float n2 = reader.getNormValues("f1").get(0);
+    norms = reader.getNormValues("f1");
+    assertEquals(0, norms.nextDoc());
+    float n2 = norms.longValue();
 
     assertTrue(n1 != n2);
     TestUtil.checkReader(reader);
@@ -235,24 +239,27 @@ public class TestMemoryIndex extends LuceneTestCase {
     MemoryIndex mi = MemoryIndex.fromDocument(doc, analyzer);
     LeafReader leafReader = mi.createSearcher().getIndexReader().leaves().get(0).reader();
     NumericDocValues numericDocValues = leafReader.getNumericDocValues("numeric");
-    assertEquals(29L, numericDocValues.get(0));
+    assertEquals(0, numericDocValues.nextDoc());
+    assertEquals(29L, numericDocValues.longValue());
     SortedNumericDocValues sortedNumericDocValues = leafReader.getSortedNumericDocValues("sorted_numeric");
-    sortedNumericDocValues.setDocument(0);
-    assertEquals(5, sortedNumericDocValues.count());
-    assertEquals(30L, sortedNumericDocValues.valueAt(0));
-    assertEquals(31L, sortedNumericDocValues.valueAt(1));
-    assertEquals(32L, sortedNumericDocValues.valueAt(2));
-    assertEquals(32L, sortedNumericDocValues.valueAt(3));
-    assertEquals(33L, sortedNumericDocValues.valueAt(4));
+    assertEquals(0, sortedNumericDocValues.nextDoc());
+    assertEquals(5, sortedNumericDocValues.docValueCount());
+    assertEquals(30L, sortedNumericDocValues.nextValue());
+    assertEquals(31L, sortedNumericDocValues.nextValue());
+    assertEquals(32L, sortedNumericDocValues.nextValue());
+    assertEquals(32L, sortedNumericDocValues.nextValue());
+    assertEquals(33L, sortedNumericDocValues.nextValue());
     BinaryDocValues binaryDocValues = leafReader.getBinaryDocValues("binary");
-    assertEquals("a", binaryDocValues.get(0).utf8ToString());
+    assertEquals(0, binaryDocValues.nextDoc());
+    assertEquals("a", binaryDocValues.binaryValue().utf8ToString());
     SortedDocValues sortedDocValues = leafReader.getSortedDocValues("sorted");
-    assertEquals("b", sortedDocValues.get(0).utf8ToString());
-    assertEquals(0, sortedDocValues.getOrd(0));
+    assertEquals(0, sortedDocValues.nextDoc());
+    assertEquals("b", sortedDocValues.binaryValue().utf8ToString());
+    assertEquals(0, sortedDocValues.ordValue());
     assertEquals("b", sortedDocValues.lookupOrd(0).utf8ToString());
     SortedSetDocValues sortedSetDocValues = leafReader.getSortedSetDocValues("sorted_set");
     assertEquals(3, sortedSetDocValues.getValueCount());
-    sortedSetDocValues.setDocument(0);
+    assertEquals(0, sortedSetDocValues.nextDoc());
     assertEquals(0L, sortedSetDocValues.nextOrd());
     assertEquals(1L, sortedSetDocValues.nextOrd());
     assertEquals(2L, sortedSetDocValues.nextOrd());
@@ -335,7 +342,8 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertEquals(5, penum.endOffset());
 
     BinaryDocValues binaryDocValues = leafReader.getBinaryDocValues("text");
-    assertEquals("quick brown fox", binaryDocValues.get(0).utf8ToString());
+    assertEquals(0, binaryDocValues.nextDoc());
+    assertEquals("quick brown fox", binaryDocValues.binaryValue().utf8ToString());
   }
 
   public void testPointValues() throws Exception {
@@ -475,7 +483,9 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertArrayEquals(packedPoint, leafReader.getPointValues().getMinPackedValue("field"));
     assertArrayEquals(packedPoint, leafReader.getPointValues().getMaxPackedValue("field"));
 
-    assertEquals("term", leafReader.getBinaryDocValues("field").get(0).utf8ToString());
+    BinaryDocValues dvs = leafReader.getBinaryDocValues("field");
+    assertEquals(0, dvs.nextDoc());
+    assertEquals("term", dvs.binaryValue().utf8ToString());
   }
 
   public void testToStringDebug() {

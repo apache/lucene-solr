@@ -32,6 +32,8 @@ import java.util.stream.StreamSupport;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.LegacyDocValuesIterables;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -42,8 +44,8 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.MathUtil;
-import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.PagedBytes.PagedBytesDataInput;
+import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.DirectMonotonicWriter;
 import org.apache.lucene.util.packed.DirectWriter;
@@ -85,8 +87,8 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
   }
   
   @Override
-  public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
-    addNumericField(field, values, NumberType.VALUE);
+  public void addNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    addNumericField(field, LegacyDocValuesIterables.numericIterable(field, valuesProducer, maxDoc), NumberType.VALUE);
   }
 
   void addNumericField(FieldInfo field, Iterable<Number> values, NumberType numberType) throws IOException {
@@ -351,7 +353,11 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
   }
 
   @Override
-  public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+  public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    addBinaryField(field, LegacyDocValuesIterables.binaryIterable(field, valuesProducer, maxDoc));
+  }
+  
+  private void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
     // write the byte[] data
     meta.writeVInt(field.number);
     meta.writeByte(Lucene54DocValuesFormat.BINARY);
@@ -508,7 +514,6 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
       addReverseTermIndex(field, values, maxLength);
     }
   }
-  
   // writes term dictionary "block"
   // first term is absolute encoded as vint length + bytes.
   // lengths of subsequent N terms are encoded as either N bytes or N shorts.
@@ -572,21 +577,32 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
   }
 
   @Override
-  public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+  public void addSortedField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    meta.writeVInt(field.number);
+    meta.writeByte(Lucene54DocValuesFormat.SORTED);
+    addTermsDict(field, LegacyDocValuesIterables.valuesIterable(valuesProducer.getSorted(field)));
+    addNumericField(field, LegacyDocValuesIterables.sortedOrdIterable(valuesProducer, field, maxDoc), NumberType.ORDINAL);
+  }
+
+  private void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> ords) throws IOException {
     meta.writeVInt(field.number);
     meta.writeByte(Lucene54DocValuesFormat.SORTED);
     addTermsDict(field, values);
-    addNumericField(field, docToOrd, NumberType.ORDINAL);
+    addNumericField(field, ords, NumberType.ORDINAL);
   }
 
   @Override
-  public void addSortedNumericField(FieldInfo field, final Iterable<Number> docToValueCount, final Iterable<Number> values) throws IOException {
+  public void addSortedNumericField(FieldInfo field, final DocValuesProducer valuesProducer) throws IOException {
+
+    final Iterable<Number> docToValueCount = LegacyDocValuesIterables.sortedNumericToDocCount(valuesProducer, field, maxDoc);
+    final Iterable<Number> values = LegacyDocValuesIterables.sortedNumericToValues(valuesProducer, field);
+    
     meta.writeVInt(field.number);
     meta.writeByte(Lucene54DocValuesFormat.SORTED_NUMERIC);
     if (isSingleValued(docToValueCount)) {
       meta.writeVInt(SORTED_SINGLE_VALUED);
       // The field is single-valued, we can encode it as NUMERIC
-      addNumericField(field, singletonView(docToValueCount, values, null));
+      addNumericField(field, singletonView(docToValueCount, values, null), NumberType.VALUE);
     } else {
       final SortedSet<LongsRef> uniqueValueSets = uniqueValueSets(docToValueCount, values);
       if (uniqueValueSets != null) {
@@ -608,7 +624,12 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
   }
 
   @Override
-  public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
+  public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+
+    Iterable<BytesRef> values = LegacyDocValuesIterables.valuesIterable(valuesProducer.getSortedSet(field));
+    Iterable<Number> docToOrdCount = LegacyDocValuesIterables.sortedSetOrdCountIterable(valuesProducer, field, maxDoc);
+    Iterable<Number> ords = LegacyDocValuesIterables.sortedSetOrdsIterable(valuesProducer, field);
+
     meta.writeVInt(field.number);
     meta.writeByte(Lucene54DocValuesFormat.SORTED_SET);
 

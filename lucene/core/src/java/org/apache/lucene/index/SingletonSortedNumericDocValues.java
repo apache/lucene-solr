@@ -16,9 +16,8 @@
  */
 package org.apache.lucene.index;
 
+import java.io.IOException;
 
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.Bits.MatchAllBits;
 
 /** 
  * Exposes multi-valued view over a single-valued instance.
@@ -28,42 +27,58 @@ import org.apache.lucene.util.Bits.MatchAllBits;
  */
 final class SingletonSortedNumericDocValues extends SortedNumericDocValues {
   private final NumericDocValues in;
-  private final Bits docsWithField;
   private long value;
-  private int count;
   
-  public SingletonSortedNumericDocValues(NumericDocValues in, Bits docsWithField) {
+  public SingletonSortedNumericDocValues(NumericDocValues in) {
+    if (in.docID() != -1) {
+      throw new IllegalStateException("iterator has already been used: docID=" + in.docID());
+    }
     this.in = in;
-    this.docsWithField = docsWithField instanceof MatchAllBits ? null : docsWithField;
   }
 
   /** Return the wrapped {@link NumericDocValues} */
   public NumericDocValues getNumericDocValues() {
+    if (in.docID() != -1) {
+      throw new IllegalStateException("iterator has already been used: docID=" + in.docID());
+    }
     return in;
   }
-  
-  /** Return the wrapped {@link Bits} */
-  public Bits getDocsWithField() {
-    return docsWithField;
+
+  @Override
+  public int docID() {
+    return in.docID();
   }
 
   @Override
-  public void setDocument(int doc) {
-    value = in.get(doc);
-    if (docsWithField != null && value == 0 && docsWithField.get(doc) == false) {
-      count = 0;
-    } else {
-      count = 1;
+  public int nextDoc() throws IOException {
+    int docID = in.nextDoc();
+    if (docID != NO_MORE_DOCS) {
+      value = in.longValue();
     }
+    return docID;
   }
-
+  
   @Override
-  public long valueAt(int index) {
+  public int advance(int target) throws IOException {
+    int docID = in.advance(target);
+    if (docID != NO_MORE_DOCS) {
+      value = in.longValue();
+    }
+    return docID;
+  }
+      
+  @Override
+  public long cost() {
+    return in.cost();
+  }
+  
+  @Override
+  public long nextValue() {
     return value;
   }
 
   @Override
-  public int count() {
-    return count;
+  public int docValueCount() {
+    return 1;
   }
 }

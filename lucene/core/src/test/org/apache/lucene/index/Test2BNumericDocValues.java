@@ -80,7 +80,8 @@ public class Test2BNumericDocValues extends LuceneTestCase {
       LeafReader reader = context.reader();
       NumericDocValues dv = reader.getNumericDocValues("dv");
       for (int i = 0; i < reader.maxDoc(); i++) {
-        assertEquals(expectedValue, dv.get(i));
+        assertEquals(i, dv.nextDoc());
+        assertEquals(expectedValue, dv.longValue());
         expectedValue++;
       }
     }

@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FilterIterator;
 
 /**
@@ -114,13 +113,6 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
     return (f == null) ? null : new FieldFilterFields(f);
   }
   
-  
-
-  @Override
-  public NumericDocValues getNumericDocValues(String field) throws IOException {
-    return hasField(field) ? super.getNumericDocValues(field) : null;
-  }
-
   @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     return hasField(field) ? super.getBinaryDocValues(field) : null;
@@ -144,11 +136,6 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
   @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     return hasField(field) ? super.getNormValues(field) : null;
-  }
-
-  @Override
-  public Bits getDocsWithField(String field) throws IOException {
-    return hasField(field) ? super.getDocsWithField(field) : null;
   }
 
   @Override

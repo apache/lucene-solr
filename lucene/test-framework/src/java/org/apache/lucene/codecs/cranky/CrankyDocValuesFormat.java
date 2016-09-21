@@ -25,7 +25,6 @@ import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.BytesRef;
 
 class CrankyDocValuesFormat extends DocValuesFormat {
   final DocValuesFormat delegate;
@@ -70,43 +69,43 @@ class CrankyDocValuesFormat extends DocValuesFormat {
     }
 
     @Override
-    public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+    public void addNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.addNumericField()");
       }
-      delegate.addNumericField(field, values);
+      delegate.addNumericField(field, valuesProducer);
     }
 
     @Override
-    public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+    public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.addBinaryField()");
       }
-      delegate.addBinaryField(field, values);
+      delegate.addBinaryField(field, valuesProducer);
     }
 
     @Override
-    public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+    public void addSortedField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.addSortedField()");
       }
-      delegate.addSortedField(field, values, docToOrd);
+      delegate.addSortedField(field, valuesProducer);
     }
     
     @Override
-    public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
+    public void addSortedNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.addSortedNumericField()");
       }
-      delegate.addSortedNumericField(field, docToValueCount, values);
+      delegate.addSortedNumericField(field, valuesProducer);
     }
 
     @Override
-    public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
+    public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.addSortedSetField()");
       }
-      delegate.addSortedSetField(field, values, docToOrdCount, ords);
+      delegate.addSortedSetField(field, valuesProducer);
     }
   }
 }
