@@ -38,14 +38,17 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.Slice.State;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.Diagnostics;
 import org.apache.solr.handler.ReplicationHandler;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Test sync peer sync when a node restarts and documents are indexed when node was down.
+ * 
+ * Test for SOLR-9446
  *
  * This test is modeled after SyncSliceTest
  */
@@ -146,12 +149,9 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       // shutdown the original leader
       log.info("Now shutting down initial leader");
       forceNodeFailures(Arrays.asList(initialLeaderJetty));
-      Thread.sleep(15000); // sleep for a while for leader to change ...
+      waitForNewLeader("shard1", (Replica)initialLeaderJetty.client.info  , 15);
       log.info("Updating mappings from zk");
       updateMappingsFromZk(jettys, clients, true);
-      
-      // ensure secondNode became leader
-      assertEquals(secondNode, shardToLeaderJetty.get("shard1"));
       
       long numRequestsAfter = (Long) secondNode.jetty
           .getCoreContainer()
@@ -161,7 +161,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
           .getRequestHandler(ReplicationHandler.PATH)
           .getStatistics().get("requests");
 
-      //assertEquals("FreshNode went into recovery", numRequestsBefore, numRequestsAfter);
+      assertEquals("Node went into replication", numRequestsBefore, numRequestsAfter);
       
       success = true;
     } finally {
@@ -192,9 +192,36 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     assertEquals(getShardCount() - totalDown, jetties.size());
 
     nodesDown.addAll(replicasToShutDown);
-
-    Thread.sleep(3000);
   }
+
+  
+  private void waitForNewLeader(String shardName, Replica oldLeader, int maxWaitInSecs) throws Exception {
+    log.info("Will wait for a node to become leader for {} secs", maxWaitInSecs);
+    boolean waitForLeader = true;
+    int i = 0;
+    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
+    
+    while(waitForLeader) {
+      ClusterState clusterState = zkStateReader.getClusterState();
+      DocCollection coll = clusterState.getCollection("collection1");
+      Slice slice = coll.getSlice(shardName);
+      if(slice.getLeader() != oldLeader && slice.getState() == State.ACTIVE) {
+        log.info("New leader got elected in {} secs", i);
+        break;
+      }
+      
+      if(i == maxWaitInSecs) {
+        Diagnostics.logThreadDumps("Could not find new leader in specified timeout");
+        zkStateReader.getZkClient().printLayoutToStdOut();
+        fail("Could not find new leader even after waiting for " + maxWaitInSecs + "secs");
+      }
+      
+      i++;
+      Thread.sleep(1000);
+    }
+  }
+    
 
 
   private void waitTillNodesActive() throws Exception {
