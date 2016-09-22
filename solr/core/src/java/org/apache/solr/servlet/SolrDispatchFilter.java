@@ -56,6 +56,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
@@ -123,14 +124,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   {
     String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
     if (muteConsole != null && !Arrays.asList("false","0","off","no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
-      Enumeration appenders = LogManager.getRootLogger().getAllAppenders();
-      while (appenders.hasMoreElements()) {
-        Appender appender = (Appender) appenders.nextElement();
-        if (appender instanceof ConsoleAppender) {
-          log.info("Property solr.log.muteconsole given. Muting ConsoleAppender named " + appender.getName());
-          LogManager.getRootLogger().removeAppender(appender);
-        }
-      }
+      muteConsole();
     }
     log.info("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
 
@@ -165,6 +159,18 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
 
     log.info("SolrDispatchFilter.init() done");
+  }
+
+  @SuppressForbidden(reason = "Legitimate log4j access")
+  private void muteConsole() {
+    Enumeration appenders = LogManager.getRootLogger().getAllAppenders();
+    while (appenders.hasMoreElements()) {
+      Appender appender = (Appender) appenders.nextElement();
+      if (appender instanceof ConsoleAppender) {
+        log.info("Property solr.log.muteconsole given. Muting ConsoleAppender named " + appender.getName());
+        LogManager.getRootLogger().removeAppender(appender);
+      }
+    }
   }
 
   /**
