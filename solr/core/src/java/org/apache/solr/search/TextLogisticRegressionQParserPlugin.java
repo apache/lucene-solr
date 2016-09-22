@@ -153,7 +153,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
     public void collect(int doc) throws IOException{
       int valuesDocID = leafOutcomeValue.docID();
       if (valuesDocID < doc) {
-        valuesDocID = leafOutcomeValue.advance(valuesDocID);
+        valuesDocID = leafOutcomeValue.advance(doc);
       }
       int outcome;
       if (valuesDocID == doc) {

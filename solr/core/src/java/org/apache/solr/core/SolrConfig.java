@@ -228,7 +228,7 @@ public class SolrConfig extends Config implements MapSerializable {
     indexConfig = new SolrIndexConfig(this, "indexConfig", null);
 
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", BooleanQuery.getMaxClauseCount());
-    log.info("Using Lucene MatchVersion: " + luceneMatchVersion);
+    log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
 
     // Warn about deprecated / discontinued parameters
     // boolToFilterOptimizer has had no effect since 3.1
@@ -327,7 +327,7 @@ public class SolrConfig extends Config implements MapSerializable {
     }
 
     solrRequestParsers = new SolrRequestParsers(this);
-    log.info("Loaded SolrConfig: " + name);
+    log.info("Loaded SolrConfig: {}", name);
   }
 
   public static final List<SolrPluginInfo> plugins = ImmutableList.<SolrPluginInfo>builder()
@@ -409,7 +409,7 @@ public class SolrConfig extends Config implements MapSerializable {
       int version = 0; // will be always 0 for file based resourceLoader
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-        log.info("config overlay loaded . version : {} ", version);
+        log.debug("Config overlay loaded. version : {} ", version);
       }
       isr = new InputStreamReader(in, StandardCharsets.UTF_8);
       Map m = (Map) ObjectBuilder.getVal(new JSONParser(isr));
@@ -750,7 +750,7 @@ public class SolrConfig extends Config implements MapSerializable {
     NodeList nodes = (NodeList) evaluate("lib", XPathConstants.NODESET);
     if (nodes == null || nodes.getLength() == 0) return;
 
-    log.info("Adding specified lib dirs to ClassLoader");
+    log.debug("Adding specified lib dirs to ClassLoader");
     SolrResourceLoader loader = getResourceLoader();
     List<URL> urls = new ArrayList<>();
 
@@ -931,7 +931,7 @@ public class SolrConfig extends Config implements MapSerializable {
 
   public RequestParams refreshRequestParams() {
     requestParams = RequestParams.getFreshRequestParams(getResourceLoader(), requestParams);
-    log.info("current version of requestparams : {}", requestParams.getZnodeVersion());
+    log.debug("current version of requestparams : {}", requestParams.getZnodeVersion());
     return requestParams;
   }
 

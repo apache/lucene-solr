@@ -37,7 +37,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,14 +48,10 @@ import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.HttpClient;
-import org.apache.log4j.Appender;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.LogManager;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
@@ -122,9 +117,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   @Override
   public void init(FilterConfig config) throws ServletException
   {
+    log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
     String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
     if (muteConsole != null && !Arrays.asList("false","0","off","no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
-      muteConsole();
+      StartupLoggingUtils.muteConsole();
     }
     log.info("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
 
@@ -147,7 +143,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       this.cores = createCoreContainer(solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome),
                                        extraProperties);
       this.httpClient = cores.getUpdateShardHandler().getHttpClient();
-      log.info("user.dir=" + System.getProperty("user.dir"));
+      log.debug("user.dir=" + System.getProperty("user.dir"));
     }
     catch( Throwable t ) {
       // catch this so our filter still works
@@ -158,19 +154,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
     }
 
-    log.info("SolrDispatchFilter.init() done");
-  }
-
-  @SuppressForbidden(reason = "Legitimate log4j access")
-  private void muteConsole() {
-    Enumeration appenders = LogManager.getRootLogger().getAllAppenders();
-    while (appenders.hasMoreElements()) {
-      Appender appender = (Appender) appenders.nextElement();
-      if (appender instanceof ConsoleAppender) {
-        log.info("Property solr.log.muteconsole given. Muting ConsoleAppender named " + appender.getName());
-        LogManager.getRootLogger().removeAppender(appender);
-      }
-    }
+    log.trace("SolrDispatchFilter.init() done");
   }
 
   /**

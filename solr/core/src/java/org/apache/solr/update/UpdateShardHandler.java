@@ -72,7 +72,7 @@ public class UpdateShardHandler {
       clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, cfg.getMaxUpdateConnections());
       clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, cfg.getMaxUpdateConnectionsPerHost());
     }
-    log.info("Created UpdateShardHandler HTTP client with params: {}", clientParams);
+    log.debug("Created UpdateShardHandler HTTP client with params: {}", clientParams);
   }
   
   public HttpClient getHttpClient() {

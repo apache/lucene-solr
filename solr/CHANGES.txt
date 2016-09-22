@@ -90,6 +90,8 @@ New Features
 * SOLR-8186: Reduce logging to logs/solr-<port>-console.log when not running in foreground mode
   Show timestamp also in foreground log. Also removes some logging noise. (janhoy)
 
+* SOLR-8487: Adds CommitStream to support sending commits to a collection being updated. (Dennis Gove)
+
 Bug Fixes
 ----------------------
 
@@ -166,6 +168,11 @@ Other Changes
 
 * SOLR-5563: Move lots of SolrCloud logging from 'info' to 'debug' (janhoy, Alan
   Woodward)
+
+* SOLR-9544: Allow ObjectReleaseTracker more time to check for asynchronously
+  closing resources (Alan Woodward)
+
+* SOLR-6677: Reduced logging during Solr startup, moved more logs to DEBUG level (janhoy, Shawn Heisey)
 
 ==================  6.2.1 ==================
 

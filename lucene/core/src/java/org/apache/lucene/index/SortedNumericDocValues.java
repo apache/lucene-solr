@@ -32,8 +32,8 @@ public abstract class SortedNumericDocValues extends DocIdSetIterator {
   protected SortedNumericDocValues() {}
 
   /** 
-   * Retrieve the value for the current document at the specified index. 
-   * An index ranges from {@code 0} to {@code count()-1}. 
+   * Iterates to the next value in the current document.  Do not call this more than {@link #docValueCount} times
+   * for the document.
    */
   public abstract long nextValue() throws IOException;
   
