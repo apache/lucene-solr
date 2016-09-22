@@ -537,18 +537,20 @@ public class IndexSchema {
             throw new SolrException(ErrorCode.SERVER_ERROR, msg);
           }
         }
-        log.info("default search field in schema is "+defaultSearchFieldName);
+        log.info("[{}] default search field in schema is {}. WARNING: Deprecated, please use 'df' on request instead.",
+            loader.getCoreProperties().getProperty(SOLR_CORE_NAME), defaultSearchFieldName);
       }
 
       //                      /schema/solrQueryParser/@defaultOperator
       expression = stepsToPath(SCHEMA, SOLR_QUERY_PARSER, AT + DEFAULT_OPERATOR);
       node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
       if (node==null) {
-        log.debug("using default query parser operator (OR)");
+        log.debug("Default query parser operator not set in Schema");
       } else {
         isExplicitQueryParserDefaultOperator = true;
         queryParserDefaultOperator=node.getNodeValue().trim();
-        log.info("query parser default operator is "+queryParserDefaultOperator);
+        log.info("[{}] query parser default operator is {}. WARNING: Deprecated, please use 'q.op' on request instead.",
+            loader.getCoreProperties().getProperty(SOLR_CORE_NAME), queryParserDefaultOperator);
       }
 
       //                      /schema/uniqueKey/text()
@@ -577,7 +579,8 @@ public class IndexSchema {
         }
         uniqueKeyFieldName=uniqueKeyField.getName();
         uniqueKeyFieldType=uniqueKeyField.getType();
-        log.info("unique key field: "+uniqueKeyFieldName);
+        log.info("[{}] unique key field: {}",
+            loader.getCoreProperties().getProperty(SOLR_CORE_NAME), uniqueKeyFieldName);
       
         // Unless the uniqueKeyField is marked 'required=false' then make sure it exists
         if( Boolean.FALSE != explicitRequiredProp.get( uniqueKeyFieldName ) ) {

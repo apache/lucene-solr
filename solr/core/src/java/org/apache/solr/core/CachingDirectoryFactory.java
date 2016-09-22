@@ -350,7 +350,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           CacheValue newCacheValue = new CacheValue(fullPath, directory);
           byDirectoryCache.put(directory, newCacheValue);
           byPathCache.put(fullPath, newCacheValue);
-          log.info("return new directory for " + fullPath);
+          log.debug("return new directory for " + fullPath);
           success = true;
         } finally {
           if (!success) {

@@ -57,7 +57,7 @@ public class UpdateShardHandler {
       new SolrjNamedThreadFactory("recoveryExecutor"));
   
   private PoolingClientConnectionManager clientConnectionManager;
-  
+
   private final CloseableHttpClient client;
 
   private final UpdateShardHandlerConfig cfg;
@@ -82,6 +82,7 @@ public class UpdateShardHandler {
           cfg.getMaxUpdateConnectionIdleTime(), TimeUnit.MILLISECONDS);
       idleConnectionsEvictor.start();
     }
+    log.trace("Created UpdateShardHandler HTTP client with params: {}", clientParams);
   }
 
   protected ModifiableSolrParams getClientParams() {
@@ -93,13 +94,13 @@ public class UpdateShardHandler {
           cfg.getDistributedConnectionTimeout());
     }
     // in the update case, we want to do retries, and to use
-    // the default Solr retry handler that createClient will 
+    // the default Solr retry handler that createClient will
     // give us
     clientParams.set(HttpClientUtil.PROP_USE_RETRY, true);
     return clientParams;
   }
-  
-  
+
+
   public HttpClient getHttpClient() {
     return client;
   }
@@ -112,7 +113,7 @@ public class UpdateShardHandler {
   public ClientConnectionManager getConnectionManager() {
     return clientConnectionManager;
   }
-  
+
   /**
    * This method returns an executor that is not meant for disk IO and that will
    * be interrupted on shutdown.
@@ -122,7 +123,7 @@ public class UpdateShardHandler {
   public ExecutorService getUpdateExecutor() {
     return updateExecutor;
   }
-  
+
   /**
    * In general, RecoveryStrategy threads do not do disk IO, but they open and close SolrCores
    * in async threads, among other things, and can trigger disk IO, so we use this alternate 

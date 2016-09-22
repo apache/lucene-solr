@@ -159,7 +159,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     this.connectionsEvictorSleepDelay = getParameter(args, CONNECTIONS_EVICTOR_SLEEP_DELAY, connectionsEvictorSleepDelay, sb);
     this.maxConnectionIdleTime = getParameter(args, MAX_CONNECTION_IDLE_TIME, maxConnectionIdleTime, sb);
 
-    log.info("created with {}",sb);
+    log.debug("created with {}",sb);
     
     // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.
     String v = System.getProperty("tests.shardhandler.randomSeed");
@@ -188,7 +188,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     this.idleConnectionsEvictor = new UpdateShardHandler.IdleConnectionsEvictor(clientConnectionManager,
         connectionsEvictorSleepDelay, TimeUnit.MILLISECONDS, maxConnectionIdleTime, TimeUnit.MILLISECONDS);
     idleConnectionsEvictor.start();
-    
+
     // must come after createClient
     if (useRetries) {
       // our default retry handler will never retry on IOException if the request has been sent already,
@@ -210,7 +210,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   /**
-   * For an already created internal httpclient, this can be used to configure it 
+   * For an already created internal httpclient, this can be used to configure it
    * again. Useful for authentication plugins.
    * @param configurer an HttpClientConfigurer instance
    */
@@ -255,7 +255,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
           clientConnectionManager.shutdown();
         }
       } finally {
-        
+
         if (loadbalancer != null) {
           loadbalancer.close();
         }
