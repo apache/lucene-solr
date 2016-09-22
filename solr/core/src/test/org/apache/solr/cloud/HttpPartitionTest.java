@@ -87,7 +87,10 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
    */
   @Override
   protected CloudSolrClient createCloudClient(String defaultCollection) {
-    CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), false);
+    CloudSolrClient client = new CloudSolrClient.Builder()
+        .withZkHost(zkServer.getZkAddress())
+        .sendDirectUpdatesToAnyShardReplica()
+        .build();
     client.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
     client.getLbClient().setConnectionTimeout(30000);
