@@ -157,6 +157,10 @@ Other Changes
 
 * SOLR-7826: Refuse "bin/solr create" if run as root, unless -force is specified (janhoy, Binoy Dalal)
 
+* SOLR-6871: Updated the quickstart tutorial to cover the 6.2.0 release, and added ant target
+ "generate-website-quickstart" to convert the bundled version of the tutorial into one suitable
+ for the website.
+
 ==================  6.2.1 ==================
 
 Bug Fixes
