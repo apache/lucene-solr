@@ -135,8 +135,8 @@ public class ReplicaMutator {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection/slice/replica " +
           collectionName + "/" + sliceName + "/" + replicaName + " no action taken.");
     }
-    log.info("Setting property " + property + " with value: " + propVal +
-        " for collection: " + collectionName + ". Full message: " + message);
+    log.info("Setting property {} with value {} for collection {}", property, propVal, collectionName);
+    log.debug("Full message: {}", message);
     if (StringUtils.equalsIgnoreCase(replica.getStr(property), propVal)) return ZkStateWriter.NO_OP; // already the value we're going to set
 
     // OK, there's no way we won't change the cluster state now
@@ -184,13 +184,11 @@ public class ReplicaMutator {
           collectionName + "/" + sliceName + "/" + replicaName + " no action taken.");
     }
 
-    log.info("Deleting property " + property + " for collection: " + collectionName +
-        " slice " + sliceName + " replica " + replicaName + ". Full message: " + message);
+    log.info("Deleting property {} for collection: {} slice: {} replica: {}", property, collectionName, sliceName, replicaName);
+    log.debug("Full message: {}", message);
     String curProp = replica.getStr(property);
     if (curProp == null) return ZkStateWriter.NO_OP; // not there anyway, nothing to do.
 
-    log.info("Deleting property " + property + " for collection: " + collectionName +
-        " slice " + sliceName + " replica " + replicaName + ". Full message: " + message);
     Slice slice = collection.getSlice(sliceName);
     DocCollection newCollection = SliceMutator.updateReplica(collection,
         slice, replicaName, unsetProperty(replica, property));
@@ -209,7 +207,7 @@ public class ReplicaMutator {
     final String cName = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     Integer numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, null);
-    log.info("Update state numShards={} message={}", numShards, message);
+    log.debug("Update state numShards={} message={}", numShards, message);
 
     List<String> shardNames = new ArrayList<>();
 
@@ -239,7 +237,7 @@ public class ReplicaMutator {
       coreNodeName = ClusterStateMutator.getAssignedCoreNodeName(collection,
           message.getStr(ZkStateReader.NODE_NAME_PROP), message.getStr(ZkStateReader.CORE_NAME_PROP));
       if (coreNodeName != null) {
-        log.info("node=" + coreNodeName + " is already registered");
+        log.debug("node=" + coreNodeName + " is already registered");
       } else {
         // if coreNodeName is null, auto assign one
         coreNodeName = Assign.assignNode(collection);
@@ -253,7 +251,7 @@ public class ReplicaMutator {
       //get shardId from ClusterState
       sliceName = ClusterStateMutator.getAssignedId(collection, coreNodeName);
       if (sliceName != null) {
-        log.info("shard=" + sliceName + " is already registered");
+        log.debug("shard=" + sliceName + " is already registered");
       }
     }
     if (sliceName == null) {
@@ -261,7 +259,7 @@ public class ReplicaMutator {
       if (collectionExists) {
         // use existing numShards
         numShards = collection.getSlices().size();
-        log.info("Collection already exists with " + ZkStateReader.NUM_SHARDS_PROP + "=" + numShards);
+        log.debug("Collection already exists with " + ZkStateReader.NUM_SHARDS_PROP + "=" + numShards);
       }
       sliceName = Assign.assignShard(collection, numShards);
       log.info("Assigning new node to shard shard=" + sliceName);
