@@ -17,12 +17,13 @@
 package org.apache.solr.update.processor;
 
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.FieldType;
-
-import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
+
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
 
 /**
  * Ignores &amp; removes fields matching the specified 
@@ -57,26 +58,16 @@ public final class IgnoreFieldUpdateProcessorFactory extends FieldMutatingUpdate
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
-    return new FieldMutatingUpdateProcessor(getSelector(), next) {
-      @Override
-      protected SolrInputField mutate(final SolrInputField src) {
-        return null;
-      }
-    };
+    return mutator(getSelector(), next, src -> null);
+
   }
 
   @Override
-  public FieldMutatingUpdateProcessor.FieldNameSelector 
-    getDefaultSelector(final SolrCore core) {
-
-    return new FieldMutatingUpdateProcessor.FieldNameSelector() {
-      @Override
-      public boolean shouldMutate(final String fieldName) {
-        final IndexSchema schema = core.getLatestSchema();
-        FieldType type = schema.getFieldTypeNoEx(fieldName);
-        return (null == type);
-
-      }
+  public FieldNameSelector getDefaultSelector(final SolrCore core) {
+    return fieldName -> {
+      final IndexSchema schema = core.getLatestSchema();
+      FieldType type = schema.getFieldTypeNoEx(fieldName);
+      return (null == type);
     };
   }
   

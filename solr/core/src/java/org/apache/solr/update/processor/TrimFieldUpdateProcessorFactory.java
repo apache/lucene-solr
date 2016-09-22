@@ -20,6 +20,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
+import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.valueMutator;
+
 
 /**
  * Trims leading and trailing whitespace from any CharSequence values 
@@ -48,20 +50,17 @@ public final class TrimFieldUpdateProcessorFactory extends FieldMutatingUpdatePr
     // no trim specific init args
     super.init(args);
   }
-  
+
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
-    return new FieldValueMutatingUpdateProcessor(getSelector(), next) {
-      @Override
-      protected Object mutateValue(final Object src) {
-        if (src instanceof CharSequence) {
-          return ((CharSequence)src).toString().trim();
-        }
-        return src;
+    return valueMutator(getSelector(), next, src -> {
+      if (src instanceof CharSequence) {
+        return src.toString().trim();
       }
-    };
+      return src;
+    });
   }
 }
 

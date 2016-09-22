@@ -17,11 +17,14 @@
 package org.apache.solr.update.processor;
 
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
 import java.util.Collections;
 import java.util.Collection;
 import java.util.List;
 import java.util.SortedSet;
+
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
 
 /**
  * Keeps only the last value of fields matching the specified 
@@ -69,10 +72,8 @@ public final class LastFieldValueUpdateProcessorFactory extends FieldValueSubset
   }
 
   @Override
-  public FieldMutatingUpdateProcessor.FieldNameSelector 
-    getDefaultSelector(final SolrCore core) {
-    
-    return FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
+  public FieldNameSelector getDefaultSelector(final SolrCore core) {
+    return SELECT_NO_FIELDS;
   }
   
 }
