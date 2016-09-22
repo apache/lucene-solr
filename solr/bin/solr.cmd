@@ -222,6 +222,8 @@ goto done
 @echo.
 @echo   -noprompt     Don't prompt for input; accept all defaults when running examples that accept user input
 @echo.
+@echo   -v and -q     Verbose (-v) or quiet (-q) logging. Sets default log level to DEBUG or WARN instead of INFO
+@echo.
 @echo   -V            Verbose messages from this script
 @echo.
 goto done
@@ -439,6 +441,8 @@ IF "%1"=="-f" goto set_foreground_mode
 IF "%1"=="-foreground" goto set_foreground_mode
 IF "%1"=="-V" goto set_verbose
 IF "%1"=="-verbose" goto set_verbose
+IF "%1"=="-v" goto set_debug
+IF "%1"=="-q" goto set_warn
 IF "%1"=="-c" goto set_cloud_mode
 IF "%1"=="-cloud" goto set_cloud_mode
 IF "%1"=="-d" goto set_server_dir
@@ -478,6 +482,16 @@ goto parse_args
 :set_verbose
 set verbose=1
 set "PASS_TO_RUN_EXAMPLE=--verbose !PASS_TO_RUN_EXAMPLE!"
+SHIFT
+goto parse_args
+
+:set_debug
+set SOLR_LOG_LEVEL=DEBUG
+SHIFT
+goto parse_args
+
+:set_warn
+set SOLR_LOG_LEVEL=WARN
 SHIFT
 goto parse_args
 
@@ -931,6 +945,10 @@ IF "%verbose%"=="1" (
     @echo     REMOTE_JMX_OPTS = %REMOTE_JMX_OPTS%
   )
 
+  IF NOT "%SOLR_LOG_LEVEL%"=="" (
+    @echo     SOLR_LOG_LEVEL  = !SOLR_LOG_LEVEL!
+  )
+
   @echo.
 )
 
@@ -945,6 +963,7 @@ IF NOT "%SOLR_SSL_OPTS%"=="" (
   set "SSL_PORT_PROP=-Dsolr.jetty.https.port=%SOLR_PORT%"
   set "START_OPTS=%START_OPTS% %SOLR_SSL_OPTS% !SSL_PORT_PROP!"
 )
+IF NOT "%SOLR_LOG_LEVEL%"=="" set "START_OPTS=%START_OPTS% -Dsolr.log.level=%SOLR_LOG_LEVEL%"
 
 IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=file:%SOLR_SERVER_DIR%\resources\log4j.properties"
 

@@ -91,6 +91,10 @@ SOLR_OPTS="$SOLR_OPTS -Xss256k"
 # so you can point the script to use a different log4j.properties file
 #LOG4J_PROPS=/var/solr/log4j.properties
 
+# Changes the logging level. Valid values: ALL, TRACE, DEBUG, INFO, WARN, ERROR, FATAL, OFF. Default is INFO
+# This is an alternative to changing the rootLogger in log4j.properties
+#SOLR_LOG_LEVEL=INFO
+
 # Location where Solr should write logs to; should agree with the file appender
 # settings in server/resources/log4j.properties
 #SOLR_LOGS_DIR=

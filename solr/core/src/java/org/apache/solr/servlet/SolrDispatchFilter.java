@@ -114,6 +114,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
   public static final String SOLR_LOG_MUTECONSOLE = "solr.log.muteconsole";
 
+  public static final String SOLR_LOG_LEVEL = "solr.log.level";
+
   @Override
   public void init(FilterConfig config) throws ServletException
   {
@@ -122,7 +124,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (muteConsole != null && !Arrays.asList("false","0","off","no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
       StartupLoggingUtils.muteConsole();
     }
-    log.info("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
+    String logLevel = System.getProperty(SOLR_LOG_LEVEL);
+    if (logLevel != null) {
+      StartupLoggingUtils.changeLogLevel(logLevel);
+    }
 
     String exclude = config.getInitParameter("excludePatterns");
     if(exclude != null) {

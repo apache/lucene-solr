@@ -258,7 +258,9 @@ function print_usage() {
     echo ""
     echo "  -noprompt     Don't prompt for input; accept all defaults when running examples that accept user input"
     echo ""
-    echo "  -V            Verbose messages from this script"
+    echo "  -v and -q     Verbose (-v) or quiet (-q) logging. Sets default log level to DEBUG or WARN instead of INFO"
+    echo ""
+    echo "  -V or -version Verbose messages from this script"
     echo ""
   elif [ "$CMD" == "stop" ]; then
     echo ""
@@ -1160,6 +1162,14 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=" --verbose"
             shift
         ;;
+        -v)
+            SOLR_LOG_LEVEL=DEBUG
+            shift
+        ;;
+        -q)
+            SOLR_LOG_LEVEL=WARN
+            shift
+        ;;
         -all)
             stop_all=true
             shift
@@ -1185,6 +1195,10 @@ if [ $# -gt 0 ]; then
         ;;
     esac
   done
+fi
+
+if [[ $SOLR_LOG_LEVEL ]] ; then
+  SOLR_LOG_LEVEL_OPT="-Dsolr.log.level=$SOLR_LOG_LEVEL"
 fi
 
 if [ -z "$SOLR_SERVER_DIR" ]; then
@@ -1518,6 +1532,11 @@ function launch_solr() {
       echo -e "    RMI_PORT        = $RMI_PORT"
       echo -e "    REMOTE_JMX_OPTS = ${REMOTE_JMX_OPTS[@]}"
     fi
+
+    if [ "$SOLR_LOG_LEVEL" != "" ]; then
+      echo -e "    SOLR_LOG_LEVEL  = $SOLR_LOG_LEVEL"
+    fi
+
     echo -e "\n"
   fi
     
@@ -1530,7 +1549,7 @@ function launch_solr() {
   fi
 
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" \
-    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" \
+    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" $SOLR_LOG_LEVEL_OPT \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
