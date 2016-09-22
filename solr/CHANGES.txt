@@ -110,6 +110,9 @@ Bug Fixes
 
 * SOLR-9524: SolrIndexSearcher.getIndexFingerprint uses dubious synchronization (Mike Drob, noble)
 
+* SOLR-9542: Kerberos delegation tokens requires Jackson library (Ishan Chattopadhyaya via noble)
+
+
 Optimizations
 ----------------------
 
