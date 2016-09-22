@@ -198,12 +198,21 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     if (newLoader != classLoader) {
       this.classLoader = newLoader;
     }
+
     log.info("[{}] Added {} libs to classloader, from paths: {}",
-        getCoreProperties().getProperty(SOLR_CORE_NAME), urls.size(), urls.stream()
+        getCoreName("null"), urls.size(), urls.stream()
         .map(u -> u.getPath().substring(0,u.getPath().lastIndexOf("/")))
         .sorted()
         .distinct()
         .collect(Collectors.toList()));
+  }
+
+  private String getCoreName(String defaultVal) {
+    if (getCoreProperties() != null) {
+      return getCoreProperties().getProperty(SOLR_CORE_NAME, defaultVal);
+    } else {
+      return defaultVal;
+    }
   }
 
   /**

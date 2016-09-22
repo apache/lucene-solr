@@ -462,14 +462,11 @@ public class IndexSchema {
       final XPath xpath = schemaConf.getXPath();
       String expression = stepsToPath(SCHEMA, AT + NAME);
       Node nd = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+      String coreName = getCoreName("null");
       StringBuilder sb = new StringBuilder();
       // Another case where the initialization from the test harness is different than the "real world"
       sb.append("[");
-      if (loader.getCoreProperties() != null) {
-        sb.append(loader.getCoreProperties().getProperty(SOLR_CORE_NAME));
-      } else {
-        sb.append("null");
-      }
+      sb.append(coreName);
       sb.append("] ");
       if (nd==null) {
         sb.append("schema has no name!");
@@ -538,7 +535,7 @@ public class IndexSchema {
           }
         }
         log.info("[{}] default search field in schema is {}. WARNING: Deprecated, please use 'df' on request instead.",
-            loader.getCoreProperties().getProperty(SOLR_CORE_NAME), defaultSearchFieldName);
+            coreName, defaultSearchFieldName);
       }
 
       //                      /schema/solrQueryParser/@defaultOperator
@@ -550,7 +547,7 @@ public class IndexSchema {
         isExplicitQueryParserDefaultOperator = true;
         queryParserDefaultOperator=node.getNodeValue().trim();
         log.info("[{}] query parser default operator is {}. WARNING: Deprecated, please use 'q.op' on request instead.",
-            loader.getCoreProperties().getProperty(SOLR_CORE_NAME), queryParserDefaultOperator);
+            coreName, queryParserDefaultOperator);
       }
 
       //                      /schema/uniqueKey/text()
@@ -580,7 +577,7 @@ public class IndexSchema {
         uniqueKeyFieldName=uniqueKeyField.getName();
         uniqueKeyFieldType=uniqueKeyField.getType();
         log.info("[{}] unique key field: {}",
-            loader.getCoreProperties().getProperty(SOLR_CORE_NAME), uniqueKeyFieldName);
+            coreName, uniqueKeyFieldName);
       
         // Unless the uniqueKeyField is marked 'required=false' then make sure it exists
         if( Boolean.FALSE != explicitRequiredProp.get( uniqueKeyFieldName ) ) {
@@ -610,7 +607,15 @@ public class IndexSchema {
     // create the field analyzers
     refreshAnalyzers();
   }
-  
+
+  private String getCoreName(String defaultVal) {
+    if (loader != null && loader.getCoreProperties() != null) {
+      return loader.getCoreProperties().getProperty(SOLR_CORE_NAME, defaultVal);
+    } else {
+      return defaultVal;
+    }
+  }
+
   protected void postReadInform() {
     //Run the callbacks on SchemaAware now that everything else is done
     for (SchemaAware aware : schemaAware) {
