@@ -60,7 +60,7 @@ public final class MaxFieldValueUpdateProcessorFactory extends FieldValueSubsetU
     try {
       // NOTE: the extra cast to Object is needed to prevent compile
       // errors on Eclipse Compiler (ecj) used for javadoc lint
-      result = Collections.singletonList(Collections.max(values));
+      result = Collections.singletonList((Object) Collections.max(values));
     } catch (ClassCastException e) {
       throw new SolrException
         (BAD_REQUEST, 
