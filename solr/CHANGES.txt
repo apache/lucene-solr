@@ -167,6 +167,8 @@ Other Changes
 * SOLR-9544: Allow ObjectReleaseTracker more time to check for asynchronously
   closing resources (Alan Woodward)
 
+* SOLR-6677: Reduced logging during Solr startup, moved more logs to DEBUG level (janhoy, Shawn Heisey)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
