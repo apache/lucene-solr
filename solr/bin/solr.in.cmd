@@ -27,6 +27,10 @@ set SOLR_JAVA_MEM=-Xms512m -Xmx512m
 REM Enable verbose GC logging
 set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime
 
+REM Changes the logging level. Valid values: ALL, TRACE, DEBUG, INFO, WARN, ERROR, FATAL, OFF. Default is INFO
+REM This is an alternative to changing the rootLogger in log4j.properties
+REM set SOLR_LOG_LEVEL=INFO
+
 REM These GC settings have shown to work well for a number of common Solr workloads
 set GC_TUNE=-XX:NewRatio=3 ^
  -XX:SurvivorRatio=4 ^

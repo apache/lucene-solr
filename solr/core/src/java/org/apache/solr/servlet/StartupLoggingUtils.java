@@ -22,6 +22,7 @@ import java.util.Enumeration;
 
 import org.apache.log4j.Appender;
 import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
@@ -63,6 +64,27 @@ final class StartupLoggingUtils {
       return true;
     } catch (Exception e) {
       logNotSupported("Could not mute logging to console.");
+      return false;
+    }
+  }
+
+  /**
+   * Dynamically change log4j log level through property solr.log.level
+   * @param logLevel String with level, should be one of the supported, e.g. TRACE, DEBUG, INFO, WARN, ERROR...
+   * @return true if ok or else false if something happened, e.g. log4j classes were not in classpath
+   */
+  @SuppressForbidden(reason = "Legitimate log4j access")
+  static boolean changeLogLevel(String logLevel) {
+    try {
+      if (!isLog4jActive()) {
+        logNotSupported("Could not mute logging to console.");
+        return false;
+      }
+      log.info("Log level override, property solr.log.level=" + logLevel);
+      LogManager.getRootLogger().setLevel(Level.toLevel(logLevel, Level.INFO));
+      return true;
+    } catch (Exception e) {
+      logNotSupported("Could not change log level.");
       return false;
     }
   }

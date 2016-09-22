@@ -92,6 +92,9 @@ New Features
 
 * SOLR-8487: Adds CommitStream to support sending commits to a collection being updated. (Dennis Gove)
 
+* SOLR-9534: You can now set Solr's log level through environment variable SOLR_LOG_LEVEL
+  Also adds conveience arguments -q (quiet: WARN) and -v (verbose: DEBUG) to bin/solr (janhoy)
+
 Bug Fixes
 ----------------------
 
