@@ -246,6 +246,18 @@ public class ReRankQParserPlugin extends QParserPlugin {
           return mainDocs;
         }
 
+        ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;
+        ScoreDoc[] reRankScoreDocs = new ScoreDoc[Math.min(mainScoreDocs.length, reRankDocs)];
+        System.arraycopy(mainScoreDocs, 0, reRankScoreDocs, 0, reRankScoreDocs.length);
+
+        mainDocs.scoreDocs = reRankScoreDocs;
+
+        TopDocs rescoredDocs = reRankQueryRescorer
+            .rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
+
+        //Lower howMany to return if we've collected fewer documents.
+        howMany = Math.min(howMany, mainScoreDocs.length);
+
         if(boostedPriority != null) {
           SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
           Map requestContext = null;
@@ -255,19 +267,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
           IntIntHashMap boostedDocs = QueryElevationComponent.getBoostDocs((SolrIndexSearcher)searcher, boostedPriority, requestContext);
 
-          ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;
-          ScoreDoc[] reRankScoreDocs = new ScoreDoc[Math.min(mainScoreDocs.length, reRankDocs)];
-          System.arraycopy(mainScoreDocs,0,reRankScoreDocs,0,reRankScoreDocs.length);
-
-          mainDocs.scoreDocs = reRankScoreDocs;
-
-          TopDocs rescoredDocs = reRankQueryRescorer
-              .rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
-
           Arrays.sort(rescoredDocs.scoreDocs, new BoostedComp(boostedDocs, mainDocs.scoreDocs, rescoredDocs.getMaxScore()));
-
-          //Lower howMany if we've collected fewer documents.
-          howMany = Math.min(howMany, mainScoreDocs.length);
 
           if(howMany == rescoredDocs.scoreDocs.length) {
             return rescoredDocs; // Just return the rescoredDocs
@@ -287,26 +287,6 @@ public class ReRankQParserPlugin extends QParserPlugin {
           }
 
         } else {
-
-          ScoreDoc[] mainScoreDocs   = mainDocs.scoreDocs;
-
-          /*
-          *  Create the array for the reRankScoreDocs.
-          */
-          ScoreDoc[] reRankScoreDocs = new ScoreDoc[Math.min(mainScoreDocs.length, reRankDocs)];
-
-          /*
-          *  Copy the initial results into the reRankScoreDocs array.
-          */
-          System.arraycopy(mainScoreDocs, 0, reRankScoreDocs, 0, reRankScoreDocs.length);
-
-          mainDocs.scoreDocs = reRankScoreDocs;
-
-          TopDocs rescoredDocs = reRankQueryRescorer
-              .rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
-
-          //Lower howMany to return if we've collected fewer documents.
-          howMany = Math.min(howMany, mainScoreDocs.length);
 
           if(howMany == rescoredDocs.scoreDocs.length) {
             return rescoredDocs; // Just return the rescoredDocs
