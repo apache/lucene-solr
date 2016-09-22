@@ -144,7 +144,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   @Override
   public void run() {
-    log.info("Process current queue of overseer operations");
+    log.debug("Process current queue of overseer operations");
     LeaderStatus isLeader = amILeader();
     while (isLeader == LeaderStatus.DONT_KNOW) {
       log.debug("am_i_leader unclear {}", isLeader);
@@ -290,7 +290,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               Thread.currentThread().interrupt();
               continue;
             }
-            log.info(messageHandler.getName() + ": Get the message id:" + head.getId() + " message:" + message.toString());
+            log.debug(messageHandler.getName() + ": Get the message id:" + head.getId() + " message:" + message.toString());
             Runner runner = new Runner(messageHandler, message,
                 operation, head, lock);
             tpe.execute(runner);
@@ -393,9 +393,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       if (e.code() == KeeperException.Code.CONNECTIONLOSS) {
         log.error("", e);
         return LeaderStatus.DONT_KNOW;
-      } else if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
-        log.info("", e);
-      } else {
+      } else if (e.code() != KeeperException.Code.SESSIONEXPIRED) {
         log.warn("", e);
       }
     } catch (InterruptedException e) {
@@ -486,7 +484,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         log.debug("Marked task [{}] as completed.", head.getId());
         printTrackingMaps();
 
-        log.info(messageHandler.getName() + ": Message id:" + head.getId() +
+        log.debug(messageHandler.getName() + ": Message id:" + head.getId() +
             " complete, response:" + response.getResponse().toString());
         success = true;
       } catch (KeeperException e) {

@@ -175,7 +175,7 @@ public class CreateCollectionCmd implements Cmd {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully create collection: " + collectionName);
 
       if (nodeList.isEmpty()) {
-        log.info("Finished create command for collection: {}", collectionName);
+        log.debug("Finished create command for collection: {}", collectionName);
         return;
       }
 
@@ -183,14 +183,14 @@ public class CreateCollectionCmd implements Cmd {
       Map<String, String> requestMap = new HashMap<>();
 
 
-      log.info(formatString("Creating SolrCores for new collection {0}, shardNames {1} , replicationFactor : {2}",
+      log.debug(formatString("Creating SolrCores for new collection {0}, shardNames {1} , replicationFactor : {2}",
           collectionName, shardNames, repFactor));
       Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
       for (Map.Entry<ReplicaAssigner.Position, String> e : positionVsNodes.entrySet()) {
         ReplicaAssigner.Position position = e.getKey();
         String nodeName = e.getValue();
         String coreName = collectionName + "_" + position.shard + "_replica" + (position.index + 1);
-        log.info(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}"
+        log.debug(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}"
             , coreName, position.shard, collectionName, nodeName));
 
 
@@ -256,10 +256,9 @@ public class CreateCollectionCmd implements Cmd {
         // We shouldn't be passing 'results' here for the cleanup as the response would then contain 'success'
         // element, which may be interpreted by the user as a positive ack
         ocmh.cleanupCollection(collectionName, new NamedList());
-        log.info("Cleaned up  artifacts for failed create collection for [" + collectionName + "]");
+        log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
       } else {
-        log.debug("Finished create command on all shards for collection: "
-            + collectionName);
+        log.debug("Finished create command on all shards for collection: {}", collectionName);
       }
     } catch (SolrException ex) {
       throw ex;

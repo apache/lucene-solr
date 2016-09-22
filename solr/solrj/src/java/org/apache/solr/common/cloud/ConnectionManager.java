@@ -105,15 +105,13 @@ public class ConnectionManager implements Watcher {
   @Override
   public void process(WatchedEvent event) {
     if (event.getState() == AuthFailed || event.getState() == Disconnected || event.getState() == Expired) {
-      log.warn("Watcher " + this + " name:" + name + " got event " + event
-          + " path:" + event.getPath() + " type:" + event.getType());
-    } else if (log.isInfoEnabled()) {
-      log.info("Watcher " + this + " name:" + name + " got event " + event
-          + " path:" + event.getPath() + " type:" + event.getType());
+      log.warn("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
+    } else {
+      log.debug("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
     }
     
     if (isClosed) {
-      log.info("Client->ZooKeeper status change trigger but we are already closed");
+      log.debug("Client->ZooKeeper status change trigger but we are already closed");
       return;
     }
     
@@ -216,7 +214,7 @@ public class ConnectionManager implements Watcher {
 
   public synchronized void waitForConnected(long waitForConnection)
       throws TimeoutException {
-    log.info("Waiting for client to connect to ZooKeeper");
+    log.debug("Waiting for client to connect to ZooKeeper");
     long expire = System.nanoTime() + TimeUnit.NANOSECONDS.convert(waitForConnection, TimeUnit.MILLISECONDS);
     long left = 1;
     while (!connected && left > 0) {
