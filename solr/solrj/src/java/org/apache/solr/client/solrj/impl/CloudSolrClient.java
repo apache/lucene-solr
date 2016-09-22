@@ -1331,6 +1331,10 @@ public class CloudSolrClient extends SolrClient {
   public LBHttpSolrClient getLbClient() {
     return lbClient;
   }
+
+  public HttpClient getHttpClient() {
+    return myClient;
+  }
   
   public boolean isUpdatesToLeaders() {
     return updatesToLeaders;
