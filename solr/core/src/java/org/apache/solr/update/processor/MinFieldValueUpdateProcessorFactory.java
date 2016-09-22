@@ -60,7 +60,7 @@ public final class MinFieldValueUpdateProcessorFactory extends FieldValueSubsetU
     try {
       // NOTE: the extra cast to Object is needed to prevent compile
       // errors on Eclipse Compiler (ecj) used for javadoc lint
-      result = Collections.singletonList(Collections.min(values));
+      result = Collections.singletonList((Object) Collections.min(values));
     } catch (ClassCastException e) {
       throw new SolrException
         (BAD_REQUEST, 
