@@ -122,7 +122,7 @@ public class Overseer implements Closeable {
         isLeader = amILeader();  // not a no, not a yes, try ask again
       }
 
-      log.info("Starting to work on the main queue");
+      log.debug("Starting to work on the main queue");
       try {
         ZkStateWriter zkStateWriter = null;
         ClusterState clusterState = null;
@@ -152,7 +152,7 @@ public class Overseer implements Closeable {
               boolean hadWorkItems = data != null;
               while (data != null)  {
                 final ZkNodeProps message = ZkNodeProps.load(data);
-                log.info("processMessage: workQueueSize: {}, message = {}", workQueue.getStats().getQueueLength(), message);
+                log.debug("processMessage: workQueueSize: {}, message = {}", workQueue.getStats().getQueueLength(), message);
                 // force flush to ZK after each message because there is no fallback if workQueue items
                 // are removed from workQueue but fail to be written to ZK
                 clusterState = processQueueItem(message, clusterState, zkStateWriter, false, null);
@@ -182,8 +182,7 @@ public class Overseer implements Closeable {
             head = stateUpdateQueue.peek(true);
           } catch (KeeperException e) {
             if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
-              log.warn(
-                  "Solr cannot talk to ZK, exiting Overseer main queue loop", e);
+              log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
               return;
             }
             log.error("Exception in Overseer main queue loop", e);
@@ -198,7 +197,7 @@ public class Overseer implements Closeable {
             while (head != null) {
               byte[] data = head;
               final ZkNodeProps message = ZkNodeProps.load(data);
-              log.info("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
+              log.debug("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
               // we can batch here because workQueue is our fallback in case a ZK write failed
               clusterState = processQueueItem(message, clusterState, zkStateWriter, true, new ZkStateWriter.ZkWriteCallback() {
                 @Override
@@ -297,7 +296,7 @@ public class Overseer implements Closeable {
         String id = (String) m.get("id");
         if(overseerCollectionConfigSetProcessor.getId().equals(id)){
           try {
-            log.info("I'm exiting , but I'm still the leader");
+            log.warn("I'm exiting, but I'm still the leader");
             zkClient.delete(path,stat.getVersion(),true);
           } catch (KeeperException.BadVersionException e) {
             //no problem ignore it some other Overseer has already taken over
@@ -306,7 +305,7 @@ public class Overseer implements Closeable {
           }
 
         } else{
-          log.info("somebody else has already taken up the overseer position");
+          log.debug("somebody else has already taken up the overseer position");
         }
       } finally {
         //if I am not shutting down, Then I need to rejoin election
@@ -406,9 +405,7 @@ public class Overseer implements Closeable {
         if (e.code() == KeeperException.Code.CONNECTIONLOSS) {
           log.error("", e);
           return LeaderStatus.DONT_KNOW;
-        } else if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
-          log.info("", e);
-        } else {
+        } else if (e.code() != KeeperException.Code.SESSIONEXPIRED) {
           log.warn("", e);
         }
       } catch (InterruptedException e) {
@@ -546,7 +543,7 @@ public class Overseer implements Closeable {
   }
   
   public synchronized void close() {
-    if (closed) return;
+    if (closed || id == null) return;
     log.info("Overseer (id=" + id + ") closing");
     
     doClose();

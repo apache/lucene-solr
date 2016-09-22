@@ -161,6 +161,9 @@ Other Changes
  "generate-website-quickstart" to convert the bundled version of the tutorial into one suitable
  for the website.
 
+* SOLR-5563: Move lots of SolrCloud logging from 'info' to 'debug' (janhoy, Alan
+  Woodward)
+
 ==================  6.2.1 ==================
 
 Bug Fixes

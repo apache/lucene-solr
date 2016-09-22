@@ -221,17 +221,17 @@ public class ZkStateWriter {
 
           if (c == null) {
             // let's clean up the collections path for this collection
-            log.info("going to delete_collection {}", path);
+            log.debug("going to delete_collection {}", path);
             reader.getZkClient().clean("/collections/" + name);
           } else if (c.getStateFormat() > 1) {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
             if (reader.getZkClient().exists(path, true)) {
-              log.info("going to update_collection {} version: {}", path, c.getZNodeVersion());
+              log.debug("going to update_collection {} version: {}", path, c.getZNodeVersion());
               Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
               DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion(), path);
               clusterState = clusterState.copyWith(name, newCollection);
             } else {
-              log.info("going to create_collection {}", path);
+              log.debug("going to create_collection {}", path);
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
               DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0, path);
               clusterState = clusterState.copyWith(name, newCollection);
