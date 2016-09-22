@@ -187,7 +187,26 @@
   <target name="documentation" description="Generate all documentation"
     depends="javadocs,changes-to-html,process-webpages"/>
   <target name="compile-core" depends="compile-solr-core" unless="solr.core.compiled"/>
-  
+
+  <target name="generate-website-quickstart"
+          description="Generate a version of the quickstart tutorial suitable for the website, at build/website/quickstart.mdtext">
+    <copy file="${common-solr.dir}/site/quickstart.mdtext" tofile="${common-solr.dir}/build/website/quickstart.mdtext"
+          overwrite="false" encoding="UTF-8">
+      <filterchain>
+        <tokenfilter>
+          <filetokenizer/>
+          <!-- Website images are under /solr/assets/images/ -->
+          <replaceregex pattern="src\s*=\s*&quot;images/" replace="src=&quot;/solr/assets/images/" flags="gs"/>
+          <!-- Redirect to the website's version-specific system requirements page -->
+          <replaceregex pattern="\(SYSTEM_REQUIREMENTS.html\)" replace="(/solr/api/SYSTEM_REQUIREMENTS.html)" flags="gs"/>
+          <!-- Remove name anchors.  Unlike pegdown, the website markdown processor automatically attaches id-s to headers.
+               Exception: don't remove the "techproducts" anchor, because it has no following header.                      -->
+          <replaceregex pattern="&lt;a\s+name\s*=\s*&quot;(?!techproducts)[^&quot;]+&quot;\s*&gt;\s*&lt;/a&gt;\s*" replace="" flags="gs"/>
+        </tokenfilter>
+      </filterchain>
+    </copy>
+  </target>
+
   <target name="process-webpages" depends="define-lucene-javadoc-url,resolve-pegdown">
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="core/build.xml,test-framework/build.xml,solrj/build.xml,contrib/**/build.xml"/>
