@@ -19,9 +19,14 @@
 
 <schema name="example" version="1.6">
 
+ <fields>
+        
+   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+  <field name="_version_" type="long" indexed="true" stored="true"/>
 
-  <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
   <field name="eff" type="eff"/>
+  <field name="rff" type="rff"/>
+ </fields>
 
 
   <!-- Field to use to determine and enforce document uniqueness. 
@@ -29,12 +34,14 @@
     -->
   <uniqueKey>id</uniqueKey>
 
+ <types>
+    <!-- The StrField type is not analyzed, but indexed/stored verbatim. -->
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>s
 
-  <!-- The StrField type is not analyzed, but indexed/stored verbatim. -->
-  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-
-  <!-- Our external file field type -->
-  <fieldType name="eff" class="solr.ExternalFileField"/>
-
+    <!-- Our external file field type -->
+    <fieldType name="eff" class="solr.ExternalFileField"/>
+    <fieldType name="rff" class="solr.RemoteFileField" fallBackToLocal="true"/>
+  </types>
 
 </schema>

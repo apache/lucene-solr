@@ -38,6 +38,8 @@
   <requestHandler name="standard" class="solr.StandardRequestHandler">
     <bool name="httpCaching">true</bool>
   </requestHandler>
+  
+  <requestHandler name="/update-rffs" class="org.apache.solr.schema.RemoteFileField$DownloadRemoteFilesRequestHandler"/>
 
 
   <requestHandler name="/dump" class="DumpRequestHandler" initParams="a">
