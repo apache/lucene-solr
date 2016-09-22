@@ -641,8 +641,6 @@ final class DefaultIndexingChain extends DocConsumer {
     // reused
     TokenStream tokenStream;
 
-    IndexOptions indexOptions;
-
     public PerField(FieldInfo fieldInfo, boolean invert) {
       this.fieldInfo = fieldInfo;
       similarity = docState.similarity;
