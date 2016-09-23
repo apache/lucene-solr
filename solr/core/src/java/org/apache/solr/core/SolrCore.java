@@ -2068,7 +2068,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
 
   public void closeSearcher() {
-    log.info(logid+"Closing main searcher on request.");
+    log.debug(logid+"Closing main searcher on request.");
     synchronized (searcherLock) {
       if (realtimeSearcher != null) {
         realtimeSearcher.decref();

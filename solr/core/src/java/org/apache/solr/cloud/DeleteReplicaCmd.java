@@ -71,7 +71,7 @@ public class DeleteReplicaCmd implements Cmd {
   @SuppressWarnings("unchecked")
   void deleteReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
           throws KeeperException, InterruptedException {
-    log.info("deleteReplica() : {}", Utils.toJSONString(message));
+    log.debug("deleteReplica() : {}", Utils.toJSONString(message));
     boolean parallel = message.getBool("parallel", false);
 
     //If a count is specified the strategy needs be different
@@ -142,7 +142,7 @@ public class DeleteReplicaCmd implements Cmd {
       Set<String> replicas = shardToReplicasMapping.get(shardSlice);
       //callDeleteReplica on all replicas
       for (String replica: replicas) {
-        log.info("Deleting replica {}  for shard {} based on count {}", replica, shardId, count);
+        log.debug("Deleting replica {}  for shard {} based on count {}", replica, shardId, count);
         deleteCore(shardSlice, collectionName, replica, message, shard, results, onComplete, parallel);
       }
       results.add("shard_id", shardId);
