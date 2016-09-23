@@ -180,6 +180,9 @@ Other Changes
 
 * SOLR-6090: Remove unreachable printLayout usage in cloud tests. (Cao Manh Dat via shalin)
 
+* SOLR-9551: Add JSONWriter constructor variant, JSONWriterTest.testConstantsUnchanged test.
+  (Jonny Marks, Christine Poerschke)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
