@@ -39,8 +39,7 @@ public abstract class SortedDocValues extends BinaryDocValues {
   /**
    * Returns the ordinal for the current docID.
    * @return ordinal for the document: this is dense, starts at 0, then
-   *         increments by 1 for the next value in sorted order. Note that
-   *         missing values are indicated by -1.
+   *         increments by 1 for the next value in sorted order.
    */
   public abstract int ordValue();
 
