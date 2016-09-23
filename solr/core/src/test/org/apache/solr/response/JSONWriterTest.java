@@ -131,4 +131,14 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     req.close();
   }
   
+  @Test
+  public void testConstantsUnchanged() {
+    assertEquals("json.nl", JSONWriter.JSON_NL_STYLE);
+    assertEquals("map", JSONWriter.JSON_NL_MAP);
+    assertEquals("flat", JSONWriter.JSON_NL_FLAT);
+    assertEquals("arrarr", JSONWriter.JSON_NL_ARROFARR);
+    assertEquals("arrmap", JSONWriter.JSON_NL_ARROFMAP);
+    assertEquals("json.wrf", JSONWriter.JSON_WRAPPER_FUNCTION);
+  }
+
 }
