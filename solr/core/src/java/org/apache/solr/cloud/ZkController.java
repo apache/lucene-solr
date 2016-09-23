@@ -2515,7 +2515,7 @@ public class ZkController {
    * @param nodeName to operate on
    */
   public void publishNodeAsDown(String nodeName) {
-    log.info("Publish node={} as DOWN", nodeName);
+    log.debug("Publish node={} as DOWN", nodeName);
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
         ZkStateReader.NODE_NAME_PROP, nodeName);
     try {

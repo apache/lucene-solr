@@ -174,7 +174,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
               + " from "
               + leaderUrl
               + " gen:"
-              + core.getDeletionPolicy().getLatestCommit() != null ? "null" : core.getDeletionPolicy().getLatestCommit().getGeneration()
+              + (core.getDeletionPolicy().getLatestCommit() != null ? "null" : core.getDeletionPolicy().getLatestCommit().getGeneration())
               + " data:" + core.getDataDir()
               + " index:" + core.getIndexDir()
               + " newIndex:" + core.getNewIndexDir()
