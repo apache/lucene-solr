@@ -33,7 +33,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class ZkSolrClientTest extends AbstractSolrTestCase {
-  private static final boolean DEBUG = false;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -151,10 +150,6 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
         zkClient.makePath("collections/collection3", true);
       }
 
-      if (DEBUG) {
-        zkClient.printLayoutToStdOut();
-      }
-
       assertNotNull(zkClient.exists("/collections/collection3", null, true));
       assertNotNull(zkClient.exists("/collections/collection1", null, true));
       
@@ -179,10 +174,6 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
 
         }
         Thread.sleep(1000 * i);
-      }
-
-      if (DEBUG) {
-        zkClient.printLayoutToStdOut();
       }
 
       assertNotNull("Node does not exist, but it should", zkClient.exists("/collections/collection4", null, true));
@@ -278,9 +269,6 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
 
         @Override
         public void process(WatchedEvent event) {
-          if (DEBUG) {
-            System.out.println("children changed");
-          }
           cnt.incrementAndGet();
           // remake watch
           try {
@@ -300,10 +288,6 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
       zkClient.makePath("collections/collection99/config=collection3", true);
       
       zkClient.makePath("/collections/collection97/shards", true);
-
-      if (DEBUG) {
-        zkClient.printLayoutToStdOut();
-      }
       
       // pause for the watches to fire
       Thread.sleep(700);

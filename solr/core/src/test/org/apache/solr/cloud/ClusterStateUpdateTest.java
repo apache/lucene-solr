@@ -45,8 +45,6 @@ import org.slf4j.LoggerFactory;
 public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final boolean VERBOSE = false;
-
   protected ZkTestServer zkServer;
 
   protected String zkDir;
@@ -239,9 +237,6 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
 
   @Override
   public void tearDown() throws Exception {
-    if (VERBOSE) {
-      printLayout(zkServer.getZkHost());
-    }
     container1.shutdown();
     container2.shutdown();
     container3.shutdown();

@@ -178,6 +178,8 @@ Other Changes
 
 * SOLR-6677: Reduced logging during Solr startup, moved more logs to DEBUG level (janhoy, Shawn Heisey)
 
+* SOLR-6090: Remove unreachable printLayout usage in cloud tests. (Cao Manh Dat via shalin)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
