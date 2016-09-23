@@ -65,8 +65,6 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final boolean DEBUG = false;
-
   protected String getSolrXml() {
     return "solr.xml";
   }
@@ -99,9 +97,6 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     testCustomCollectionsAPI();
     testRouteFieldForHashRouter();
     testCreateShardRepFactor();
-    if (DEBUG) {
-      super.printLayout();
-    }
   }
 
 

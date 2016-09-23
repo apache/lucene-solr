@@ -55,8 +55,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   static final int TIMEOUT = 10000;
 
-  private static final boolean DEBUG = false;
-
   @BeforeClass
   public static void beforeClass() throws Exception {
 
@@ -194,9 +192,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
               + COLLECTION_NAME, Utils.toJSON(zkProps),
           CreateMode.PERSISTENT, true);
 
-      if (DEBUG) {
-        zkClient.printLayoutToStdOut();
-      }
       zkClient.close();
       
       cc = getCoreContainer();
