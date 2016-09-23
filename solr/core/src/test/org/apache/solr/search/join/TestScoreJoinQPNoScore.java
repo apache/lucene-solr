@@ -32,6 +32,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -54,6 +55,46 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
   public static void beforeTests() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig-basic.xml","schema-docValuesJoin.xml");
+  }
+
+  public void testJoinNumeric() throws Exception {
+    assertU(add(doc("id", "1", "uid_l_dv", "1","name_s", "john", "u_role_i_dv", "1")));
+    assertU(add(doc("id", "2", "uid_l_dv", "2","name_s", "mark", "u_role_i_dv", "1")));
+    assertU(add(doc("id", "3", "uid_l_dv", "3","name_s", "nacy", "u_role_i_dv", "2")));
+    assertU(add(doc("id", "4", "uid_l_dv", "4","name_s", "dave", "u_role_i_dv", "3")));
+
+    assertU(add(doc("id", "10", "rel_from_l_dv", "1","rel_to_l_dv", "2")));
+    assertU(add(doc("id", "11", "rel_from_l_dv", "2","rel_to_l_dv", "1")));
+
+    assertU(add(doc("id", "15", "role_i_dv", "1", "name_s", "admin")));
+    assertU(add(doc("id", "16", "role_i_dv", "2", "name_s", "mod")));
+    assertU(add(doc("id", "16", "role_i_dv", "3", "name_s", "user")));
+
+    assertU(commit());
+
+    // Test join long field
+    assertJQ(req("q","{!join from=rel_to_l_dv to=uid_l_dv"+whateverScore()+"}rel_from_l_dv:1", "fl","id")
+        ,"/response=={'numFound':1,'start':0,'docs':[{'id':'2'}]}"
+    );
+
+    assertJQ(req("q","{!join from=uid_l_dv to=rel_from_l_dv"+whateverScore()+"}name_s:john", "fl","id")
+        ,"/response=={'numFound':1,'start':0,'docs':[{'id':'10'}]}"
+    );
+
+    // Test join int field
+    assertJQ(req("q","{!join from=role_i_dv to=u_role_i_dv"+whateverScore()+"}name_s:admin", "fl","id")
+        ,"/response=={'numFound':2,'start':0,'docs':[{'id':'1'},{'id':'2'}]}"
+    );
+
+    assertQEx("From and to field must have same numeric type", 
+        req("q","{!join from=role_i_dv to=uid_l_dv"+whateverScore()+"}name_s:admin", "fl","id")
+        , SolrException.ErrorCode.BAD_REQUEST
+    );
+
+    assertQEx("From and to field must have same numeric type", 
+        req("q","{!join from=role_i_dv to=id"+whateverScore()+"}name_s:admin", "fl","id")
+        , SolrException.ErrorCode.BAD_REQUEST
+    );
   }
 
   @Test

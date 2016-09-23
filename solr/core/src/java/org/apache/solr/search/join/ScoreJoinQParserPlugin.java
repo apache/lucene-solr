@@ -20,8 +20,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.JoinUtil;
 import org.apache.lucene.search.join.ScoreMode;
@@ -78,9 +80,10 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     private final long fromCoreOpenTime;
 
     public OtherCoreJoinQuery(Query fromQuery, String fromField,
-                              String fromIndex, long fromCoreOpenTime, ScoreMode scoreMode,
+                              String fromIndex, FieldType.LegacyNumericType numericType,
+                              long fromCoreOpenTime, ScoreMode scoreMode,
                               String toField) {
-      super(fromQuery, fromField, toField, scoreMode);
+      super(fromQuery, fromField, toField, numericType, scoreMode);
       this.fromIndex = fromIndex;
       this.fromCoreOpenTime = fromCoreOpenTime;
     }
@@ -100,8 +103,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       fromHolder = fromCore.getRegisteredSearcher();
       final Query joinQuery;
       try {
-        joinQuery = JoinUtil.createJoinQuery(fromField, true,
-            toField, fromQuery, fromHolder.get(), scoreMode);
+        joinQuery = createJoinQuery(fromHolder.get());
       } finally {
         fromCore.close();
         fromHolder.decref();
@@ -146,21 +148,33 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     protected final ScoreMode scoreMode;
     protected final String fromField;
     protected final String toField;
+    protected final FieldType.LegacyNumericType numericType;
 
     SameCoreJoinQuery(Query fromQuery, String fromField, String toField,
+                      FieldType.LegacyNumericType numericType,
                       ScoreMode scoreMode) {
       this.fromQuery = fromQuery;
       this.scoreMode = scoreMode;
       this.fromField = fromField;
       this.toField = toField;
+      this.numericType = numericType;
     }
 
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
-      final Query jq = JoinUtil.createJoinQuery(fromField, true,
-          toField, fromQuery, info.getReq().getSearcher(), scoreMode);
+      final Query jq = createJoinQuery(info.getReq().getSearcher());
       return jq.rewrite(reader);
+    }
+
+    protected Query createJoinQuery(IndexSearcher searcher) throws IOException {
+      if (numericType != null) {
+        return JoinUtil.createJoinQuery(fromField, true,
+            toField,numericType, fromQuery, searcher, scoreMode);
+      } else {
+        return JoinUtil.createJoinQuery(fromField, true,
+            toField, fromQuery, searcher, scoreMode);
+      }
     }
 
 
@@ -218,6 +232,13 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       private Query createQuery(final String fromField, final String fromQueryStr,
                                 String fromIndex, final String toField, final ScoreMode scoreMode,
                                 boolean byPassShortCircutCheck) throws SyntaxError {
+        FieldType.LegacyNumericType fromNumericType = req.getSchema().getField(fromField).getType().getNumericType();
+        FieldType.LegacyNumericType toNumericType = req.getSchema().getField(toField).getType().getNumericType();
+        // Both will equals to null if they are not numeric type
+        if (fromNumericType != toNumericType) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "From and to field must have same numeric type. Found from=" +fromNumericType+" to=" + toNumericType);
+        }
 
         final String myCore = req.getCore().getCoreDescriptor().getName();
 
@@ -243,8 +264,8 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
             if (fromHolder != null) {
               fromCoreOpenTime = fromHolder.get().getOpenNanoTime();
             }
-            return new OtherCoreJoinQuery(fromQuery, fromField, coreName, fromCoreOpenTime,
-                scoreMode, toField);
+            return new OtherCoreJoinQuery(fromQuery, fromField, coreName, fromNumericType,
+                fromCoreOpenTime, scoreMode, toField);
           } finally {
             otherReq.close();
             fromCore.close();
@@ -253,7 +274,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         } else {
           QParser fromQueryParser = subQuery(fromQueryStr, null);
           final Query fromQuery = fromQueryParser.getQuery();
-          return new SameCoreJoinQuery(fromQuery, fromField, toField, scoreMode);
+          return new SameCoreJoinQuery(fromQuery, fromField, toField, fromNumericType, scoreMode);
         }
       }
     };

@@ -29,11 +29,12 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.join.TestScoreJoinQPNoScore;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.apache.solr.search.join.TestScoreJoinQPNoScore.whateverScore;
 
 public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
@@ -46,17 +47,30 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
     // File testHome = createTempDir().toFile();
     // FileUtils.copyDirectory(getFile("solrj/solr"), testHome);
-    initCore("solrconfig.xml", "schema12.xml", TEST_HOME(), "collection1");
+    initCore("solrconfig-basic.xml", "schema-docValuesJoin.xml", TEST_HOME(), "collection1");
     final CoreContainer coreContainer = h.getCoreContainer();
 
-    fromCore = coreContainer.create("fromCore", ImmutableMap.of("configSet", "minimal"));
+    fromCore = coreContainer.create("fromCore", ImmutableMap.of("configSet", "minimal", "schema", "schema-join.xml"));
 
-    assertU(add(doc("id", "1", "name", "john", "title", "Director", "dept_s", "Engineering")));
-    assertU(add(doc("id", "2", "name", "mark", "title", "VP", "dept_s", "Marketing")));
-    assertU(add(doc("id", "3", "name", "nancy", "title", "MTS", "dept_s", "Sales")));
-    assertU(add(doc("id", "4", "name", "dave", "title", "MTS", "dept_s", "Support", "dept_s", "Engineering")));
-    assertU(add(doc("id", "5", "name", "tina", "title", "VP", "dept_s", "Engineering")));
+    assertU(add(doc("id", "1", "uid_l_dv", "1", "name_s", "john",
+        "title_s", "Director", "dept_ss", "Engineering", "u_role_i_dv", "1")));
+    assertU(add(doc("id", "2", "uid_l_dv", "2", "name_s", "mark",
+        "title_s", "VP", "dept_ss", "Marketing", "u_role_i_dv", "1")));
+    assertU(add(doc("id", "3", "uid_l_dv", "3", "name_s", "nancy",
+        "title_s", "MTS", "dept_ss", "Sales", "u_role_i_dv", "2")));
+    assertU(add(doc("id", "4", "uid_l_dv", "4", "name_s", "dave",
+        "title_s", "MTS", "dept_ss", "Support", "dept_ss", "Engineering", "u_role_i_dv", "3")));
+    assertU(add(doc("id", "5", "uid_l_dv", "5", "name_s", "tina",
+        "title_s", "VP", "dept_ss", "Engineering", "u_role_i_dv", "3")));
+
     assertU(commit());
+
+    update(fromCore, add(doc("id", "15", "rel_from_l_dv", "1","rel_to_l_dv", "2")));
+    update(fromCore, add(doc("id", "16", "rel_from_l_dv", "2","rel_to_l_dv", "1")));
+
+    update(fromCore, add(doc("id", "20", "role_i_dv", "1", "name_s", "admin")));
+    update(fromCore, add(doc("id", "21", "role_i_dv", "2", "name_s", "mod")));
+    update(fromCore, add(doc("id", "22", "role_i_dv", "3", "name_s", "user")));
 
     update(fromCore, add(doc("id", "10", "dept_id_s", "Engineering", "text", "These guys develop stuff", "cat", "dev")));
     update(fromCore, add(doc("id", "11", "dept_id_s", "Marketing", "text", "These guys make you look good")));
@@ -64,6 +78,27 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
     update(fromCore, add(doc("id", "13", "dept_id_s", "Support", "text", "These guys help customers")));
     update(fromCore, commit());
 
+  }
+
+  @Test
+  public void testJoinNumeric() throws Exception {
+    // Test join long field
+    assertJQ(req("q","{!join fromIndex=fromCore " +
+        "from=rel_to_l_dv to=uid_l_dv"+ whateverScore()+"}rel_from_l_dv:1", "fl","id")
+        ,"/response=={'numFound':1,'start':0,'docs':[{'id':'2'}]}"
+    );
+
+    // Test join int field
+    assertJQ(req("q","{!join fromIndex=fromCore " +
+        "from=role_i_dv to=u_role_i_dv"+whateverScore()+"}name_s:admin", "fl","id")
+        ,"/response=={'numFound':2,'start':0,'docs':[{'id':'1'},{'id':'2'}]}"
+    );
+
+    // Test join int field
+    assertQEx("From and to field must have same numeric type",req("q","{!join fromIndex=fromCore " +
+            "from=role_i_dv to=uid_l_dv"+whateverScore()+"}name_s:admin", "fl","id")
+        ,ErrorCode.BAD_REQUEST
+    );
   }
 
 
@@ -80,18 +115,18 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
   @Test
   public void testScoreJoin() throws Exception {
-    doTestJoin("{!join " + TestScoreJoinQPNoScore.whateverScore());
+    doTestJoin("{!join " + whateverScore());
   }
 
   void doTestJoin(String joinPrefix) throws Exception {
-    assertJQ(req("q", joinPrefix + " from=dept_id_s to=dept_s fromIndex=fromCore}cat:dev", "fl", "id",
+    assertJQ(req("q", joinPrefix + " to=dept_ss from=dept_id_s fromIndex=fromCore}cat:dev", "fl", "id",
         "debugQuery", random().nextBoolean() ? "true":"false")
         , "/response=={'numFound':3,'start':0,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
     );
 
     // find people that develop stuff - but limit via filter query to a name of "john"
     // this tests filters being pushed down to queries (SOLR-3062)
-    assertJQ(req("q", joinPrefix + " from=dept_id_s to=dept_s fromIndex=fromCore}cat:dev", "fl", "id", "fq", "name:john",
+    assertJQ(req("q", joinPrefix + " to=dept_ss from=dept_id_s fromIndex=fromCore}cat:dev", "fl", "id", "fq", "name_s:john",
         "debugQuery", random().nextBoolean() ? "true":"false")
         , "/response=={'numFound':1,'start':0,'docs':[{'id':'1'}]}"
     );
@@ -99,7 +134,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
   @Test
   public void testCoresAreDifferent() throws Exception {
-    assertQEx("schema12.xml" + " has no \"cat\" field", req("cat:*"), ErrorCode.BAD_REQUEST);
+    assertQEx("'to' schema" + " has no \"cat\" field", req("cat:*"), ErrorCode.BAD_REQUEST);
     final LocalSolrQueryRequest req = new LocalSolrQueryRequest(fromCore, "cat:*", "/select", 0, 100, Collections.emptyMap());
     final String resp = query(fromCore, req);
     assertTrue(resp, resp.contains("numFound=\"1\""));
