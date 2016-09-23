@@ -23,6 +23,7 @@
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/benchmark/src/benchmark.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/benchmark/conf/benchmark-conf.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/classification/classification.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/concordance/concordance.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/demo/demo.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/expressions/expressions.iml" />
       <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/facet/facet.iml" />

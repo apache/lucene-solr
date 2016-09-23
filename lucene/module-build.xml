@@ -464,6 +464,28 @@
     <property name="backward-codecs-javadocs.uptodate" value="true"/>
   </target>
 
+  <property name="concordance.jar" value="${common.dir}/build/concordance/lucene-concordance-${version}.jar"/>
+  <target name="check-concordance-uptodate" unless="concordance.uptodate">
+    <module-uptodate name="concordance" jarfile="${concordance.jar}" property="concordance.uptodate"/>
+  </target>
+  <target name="jar-concordance" unless="concordance.uptodate" depends="check-concordance-uptodate">
+    <ant dir="${common.dir}/concordance" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="concordance.uptodate" value="true"/>
+  </target>
+
+  <property name="concordance-javadoc.jar" value="${common.dir}/build/concordance/lucene-concordance-${version}-javadoc.jar"/>
+  <target name="check-concordance-javadocs-uptodate" unless="concordance-javadocs.uptodate">
+    <module-uptodate name="concordance" jarfile="${concordance-javadoc.jar}" property="concordance-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-concordance" unless="concordance-javadocs.uptodate" depends="check-concordance-javadocs-uptodate">
+    <ant dir="${common.dir}/concordance" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="concordance-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="expressions.jar" value="${common.dir}/build/expressions/lucene-expressions-${version}.jar"/>
   <target name="check-expressions-uptodate" unless="expressions.uptodate">
     <module-uptodate name="expressions" jarfile="${expressions.jar}" property="expressions.uptodate"/>

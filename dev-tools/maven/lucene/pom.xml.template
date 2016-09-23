@@ -47,6 +47,7 @@
     <module>analysis</module>
     <module>benchmark</module>
     <module>classification</module>
+    <module>concordance</module>
     <module>demo</module>
     <module>expressions</module>
     <module>facet</module>
