@@ -95,6 +95,8 @@ New Features
 * SOLR-9534: You can now set Solr's log level through environment variable SOLR_LOG_LEVEL
   Also adds conveience arguments -q (quiet: WARN) and -v (verbose: DEBUG) to bin/solr (janhoy)
 
+* SOLR-9537: Support facet scoring with the scoreNodes expression (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
