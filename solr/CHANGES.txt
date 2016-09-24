@@ -37,6 +37,9 @@ Upgrading from Solr 6.x
 * HttpSolrClient#setDefaultMaxConnectionsPerHost and
   HttpSolrClient#setMaxTotalConnections have been removed. These now default very
   high and can only be changed via param when creating an HttpClient instance.
+  
+* Query time join with scoring {!join score=none} (even none) doesn't handle single value numeric fields. 
+  Users are advised to convert these fields into string and reindex.  
 
 Bug Fixes
 ----------------------
