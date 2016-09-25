@@ -129,6 +129,49 @@ public class IndexFingerprint implements MapSerializable {
 
     return f;
   }
+  
+  public static IndexFingerprint getFingerprint(SolrIndexSearcher searcher, LeafReaderContext ctx, Long maxVersion) throws IOException {
+    SchemaField versionField = VersionInfo.getAndCheckVersionField(searcher.getSchema());
+    ValueSource vs = versionField.getType().getValueSource(versionField, null);
+    Map funcContext = ValueSource.newContext(searcher);
+    vs.createWeight(funcContext, searcher);
+    
+    IndexFingerprint f = new IndexFingerprint();
+    f.maxVersionSpecified = maxVersion;
+    f.maxDoc = searcher.maxDoc();
+    f.numDocs = ctx.reader().numDocs();
+    
+    int maxDoc = ctx.reader().maxDoc();
+    Bits liveDocs = ctx.reader().getLiveDocs();
+    FunctionValues fv = vs.getValues(funcContext, ctx);
+    for (int doc = 0; doc < maxDoc; doc++) {
+      if (liveDocs != null && !liveDocs.get(doc)) continue;
+      long v = fv.longVal(doc);
+      f.maxVersionEncountered = Math.max(v, f.maxVersionEncountered);
+      if (v <= f.maxVersionSpecified) {
+        f.maxInHash = Math.max(v, f.maxInHash);
+        
+        // compe up with better way for fingerprint comparison
+        f.versionsHash += v;
+        f.numVersions++;
+      }
+    }
+    
+    return f;
+  }
+  
+  
+  public static IndexFingerprint reduce(IndexFingerprint acc, IndexFingerprint f2) {
+    acc.maxVersionSpecified = Math.max(acc.maxVersionSpecified, f2.maxVersionSpecified);
+    acc.maxDoc = Math.max(acc.maxDoc, f2.maxDoc);
+    acc.numDocs += f2.numDocs;
+    acc.maxVersionEncountered = Math.max(acc.maxVersionEncountered, f2.maxVersionEncountered);
+    acc.maxInHash = Math.max(acc.maxInHash, f2.maxInHash);
+    acc.versionsHash += f2.versionsHash;
+    acc.numVersions += f2.numVersions;
+
+    return acc;
+  }
 
   /** returns 0 for equal, negative if f1 is less recent than f2, positive if more recent */
   public static int compare(IndexFingerprint f1, IndexFingerprint f2) {
@@ -200,4 +243,5 @@ public class IndexFingerprint implements MapSerializable {
   public String toString() {
     return toMap(new LinkedHashMap<>()).toString();
   }
+
 }
