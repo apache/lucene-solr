@@ -100,6 +100,8 @@ New Features
 
 * SOLR-9537: Support facet scoring with the scoreNodes expression (Joel Bernstein)
 
+* SOLR-9558: DIH TemplateTransformerto to support multivalued fields (Ted Sullivan via noble)
+
 Bug Fixes
 ----------------------
 
