@@ -190,6 +190,9 @@ Other Changes
 * SOLR-9551: Add JSONWriter constructor variant, JSONWriterTest.testConstantsUnchanged test.
   (Jonny Marks, Christine Poerschke)
 
+* SOLR-9500: Add a LogLevel annotation to set log levels on specific tests (Alan
+  Woodward)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
