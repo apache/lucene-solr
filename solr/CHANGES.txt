@@ -195,6 +195,8 @@ Optimizations
   reader rather than ask for a global view.  In extreme cases, this leads to a 100x speedup.
   (Takahiro Ishikawa, yonik)
 
+* SOLR-9566: Don't put replicas into recovery when first creating a Collection
+  (Alan Woodward)
 
 Other Changes
 ----------------------

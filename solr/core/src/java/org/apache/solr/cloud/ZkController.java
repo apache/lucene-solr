@@ -231,7 +231,7 @@ public class ZkController {
 
     public Object call() throws Exception {
       log.info("Registering core {} afterExpiration? {}", descriptor.getName(), afterExpiration);
-      register(descriptor.getName(), descriptor, recoverReloadedCores, afterExpiration);
+      register(descriptor.getName(), descriptor, recoverReloadedCores, afterExpiration, false);
       return descriptor;
     }
   }
@@ -354,7 +354,7 @@ public class ZkController {
                     if (executorService != null) {
                       executorService.submit(new RegisterCoreAsync(descriptor, true, true));
                     } else {
-                      register(descriptor.getName(), descriptor, true, true);
+                      register(descriptor.getName(), descriptor, true, true, false);
                     }
                   } catch (Exception e) {
                     SolrException.log(log, "Error registering SolrCore", e);
@@ -840,8 +840,8 @@ public class ZkController {
    *
    * @return the shardId for the SolrCore
    */
-  public String register(String coreName, final CoreDescriptor desc) throws Exception {
-    return register(coreName, desc, false, false);
+  public String register(String coreName, final CoreDescriptor desc, boolean skipRecovery) throws Exception {
+    return register(coreName, desc, false, false, skipRecovery);
   }
 
 
@@ -850,7 +850,8 @@ public class ZkController {
    *
    * @return the shardId for the SolrCore
    */
-  public String register(String coreName, final CoreDescriptor desc, boolean recoverReloadedCores, boolean afterExpiration) throws Exception {
+  public String register(String coreName, final CoreDescriptor desc, boolean recoverReloadedCores,
+                         boolean afterExpiration, boolean skipRecovery) throws Exception {
     try (SolrCore core = cc.getCore(desc.getName())) {
       MDCLoggingContext.setCore(core);
     }
@@ -929,8 +930,8 @@ public class ZkController {
             }
           }
         }
-        boolean didRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc, collection,
-            coreZkNodeName, shardId, leaderProps, core, cc, afterExpiration);
+        boolean didRecovery
+            = checkRecovery(recoverReloadedCores, isLeader, skipRecovery, collection, coreZkNodeName, core, cc, afterExpiration);
         if (!didRecovery) {
           publish(desc, Replica.State.ACTIVE);
         }
@@ -1080,10 +1081,8 @@ public class ZkController {
   /**
    * Returns whether or not a recovery was started
    */
-  private boolean checkRecovery(String coreName, final CoreDescriptor desc,
-                                boolean recoverReloadedCores, final boolean isLeader,
-                                final CloudDescriptor cloudDesc, final String collection,
-                                final String shardZkNodeName, String shardId, ZkNodeProps leaderProps,
+  private boolean checkRecovery(boolean recoverReloadedCores, final boolean isLeader, boolean skipRecovery,
+                                final String collection, String shardId,
                                 SolrCore core, CoreContainer cc, boolean afterExpiration) {
     if (SKIP_AUTO_RECOVERY) {
       log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
@@ -1092,7 +1091,7 @@ public class ZkController {
     boolean doRecovery = true;
     if (!isLeader) {
 
-      if (!afterExpiration && core.isReloaded() && !recoverReloadedCores) {
+      if (skipRecovery || (!afterExpiration && core.isReloaded() && !recoverReloadedCores)) {
         doRecovery = false;
       }
 

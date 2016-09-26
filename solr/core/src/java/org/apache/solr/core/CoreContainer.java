@@ -517,14 +517,14 @@ public class CoreContainer {
                 zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
               }
 
-              core = create(cd, false);
+              core = create(cd, false, false);
             } finally {
               if (asyncSolrCoreLoad) {
                 solrCores.markCoreAsNotLoading(cd);
               }
             }
             try {
-              zkSys.registerInZk(core, true);
+              zkSys.registerInZk(core, true, false);
             } catch (RuntimeException e) {
               SolrException.log(log, "Error registering SolrCore", e);
             }
@@ -706,7 +706,7 @@ public class CoreContainer {
     return coresLocator;
   }
 
-  protected SolrCore registerCore(String name, SolrCore core, boolean registerInZk) {
+  protected SolrCore registerCore(String name, SolrCore core, boolean registerInZk, boolean skipRecovery) {
     if( core == null ) {
       throw new RuntimeException( "Can not register a null core." );
     }
@@ -744,7 +744,7 @@ public class CoreContainer {
     if( old == null || old == core) {
       log.debug( "registering core: "+name );
       if (registerInZk) {
-        zkSys.registerInZk(core, false);
+        zkSys.registerInZk(core, false, skipRecovery);
       }
       return null;
     }
@@ -752,7 +752,7 @@ public class CoreContainer {
       log.debug( "replacing core: "+name );
       old.close();
       if (registerInZk) {
-        zkSys.registerInZk(core, false);
+        zkSys.registerInZk(core, false, skipRecovery);
       }
       return old;
     }
@@ -765,7 +765,7 @@ public class CoreContainer {
    * @return the newly created core
    */
   public SolrCore create(String coreName, Map<String, String> parameters) {
-    return create(coreName, cfg.getCoreRootDirectory().resolve(coreName), parameters);
+    return create(coreName, cfg.getCoreRootDirectory().resolve(coreName), parameters, false);
   }
 
   /**
@@ -775,7 +775,7 @@ public class CoreContainer {
    * @param parameters the core parameters
    * @return the newly created core
    */
-  public SolrCore create(String coreName, Path instancePath, Map<String, String> parameters) {
+  public SolrCore create(String coreName, Path instancePath, Map<String, String> parameters, boolean newCollection) {
 
     CoreDescriptor cd = new CoreDescriptor(this, coreName, instancePath, parameters);
 
@@ -798,7 +798,7 @@ public class CoreContainer {
         preExisitingZkEntry = getZkController().checkIfCoreNodeNameAlreadyExists(cd);
       }
 
-      SolrCore core = create(cd, true);
+      SolrCore core = create(cd, true, newCollection);
 
       // only write out the descriptor if the core is successfully created
       coresLocator.create(this, cd);
@@ -845,7 +845,7 @@ public class CoreContainer {
    *
    * @return the newly created core
    */
-  private SolrCore create(CoreDescriptor dcore, boolean publishState) {
+  private SolrCore create(CoreDescriptor dcore, boolean publishState, boolean newCollection) {
 
     if (isShutDown) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Solr has been shutdown.");
@@ -868,7 +868,7 @@ public class CoreContainer {
         core.getUpdateHandler().getUpdateLog().recoverFromLog();
       }
 
-      registerCore(dcore.getName(), core, publishState);
+      registerCore(dcore.getName(), core, publishState, newCollection);
 
       return core;
     } catch (Exception e) {
@@ -964,7 +964,7 @@ public class CoreContainer {
       ConfigSet coreConfig = coreConfigService.getConfig(cd);
       log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
       SolrCore newCore = core.reload(coreConfig);
-      registerCore(name, newCore, false);
+      registerCore(name, newCore, false, false);
     } catch (SolrCoreState.CoreIsClosedException e) {
       throw e;
     } catch (Exception e) {
@@ -1061,7 +1061,7 @@ public class CoreContainer {
     SolrIdentifierValidator.validateCoreName(toName);
     try (SolrCore core = getCore(name)) {
       if (core != null) {
-        registerCore(toName, core, true);
+        registerCore(toName, core, true, false);
         SolrCore old = solrCores.remove(name);
         coresLocator.rename(this, old.getCoreDescriptor(), core.getCoreDescriptor());
       }
@@ -1132,7 +1132,7 @@ public class CoreContainer {
         if (zkSys.getZkController() != null) {
           zkSys.getZkController().throwErrorIfReplicaReplaced(desc);
         }
-        core = create(desc, true); // This should throw an error if it fails.
+        core = create(desc, true, false); // This should throw an error if it fails.
       }
       core.open();
     }
