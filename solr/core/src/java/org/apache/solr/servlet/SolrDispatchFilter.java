@@ -167,10 +167,20 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
 
   private void logWelcomeBanner() {
-    log.info(" ___      _       Welcome to Apache Solr™ version {}", Version.LATEST);
+    log.info(" ___      _       Welcome to Apache Solr™ version {}", solrVersion());
     log.info("/ __| ___| |_ _   Starting in {} mode on port {}", isCloudMode() ? "cloud" : "standalone", getSolrPort());
     log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty("solr.install.dir"));
     log.info("|___/\\___/_|_|    Start time: {}", Instant.now().toString());
+  }
+
+  private String solrVersion() {
+    String specVer = Version.LATEST.toString();
+    try {
+      String implVer = SolrCore.class.getPackage().getImplementationVersion();
+      return (specVer.equals(implVer.split(" ")[0])) ? specVer : implVer;
+    } catch (Exception e) {
+      return specVer;
+    }
   }
 
   private String getSolrPort() {
