@@ -26,6 +26,8 @@ import java.util.Locale;
 
 import org.apache.solr.common.SolrException;
 
+import static java.util.Collections.singletonList;
+
 /**
  *
  */
@@ -39,6 +41,7 @@ public class StrUtils {
    * outside strings.
    */
   public static List<String> splitSmart(String s, char separator) {
+    if(s.indexOf(separator) == -1) return singletonList(s);
     ArrayList<String> lst = new ArrayList<>(4);
     int pos=0, start=0, end=s.length();
     char inString=0;
