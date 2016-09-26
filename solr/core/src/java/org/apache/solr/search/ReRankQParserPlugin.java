@@ -268,45 +268,23 @@ public class ReRankQParserPlugin extends QParserPlugin {
           IntIntHashMap boostedDocs = QueryElevationComponent.getBoostDocs((SolrIndexSearcher)searcher, boostedPriority, requestContext);
 
           Arrays.sort(rescoredDocs.scoreDocs, new BoostedComp(boostedDocs, mainDocs.scoreDocs, rescoredDocs.getMaxScore()));
+        }
 
-          if(howMany == rescoredDocs.scoreDocs.length) {
-            return rescoredDocs; // Just return the rescoredDocs
-          } else if(howMany > rescoredDocs.scoreDocs.length) {
-            //We need to return more then we've reRanked, so create the combined page.
-            ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
-            System.arraycopy(mainScoreDocs, 0, scoreDocs, 0, scoreDocs.length); //lay down the initial docs
-            System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, rescoredDocs.scoreDocs.length);//overlay the re-ranked docs.
-            rescoredDocs.scoreDocs = scoreDocs;
-            return rescoredDocs;
-          } else {
-            //We've rescored more then we need to return.
-            ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
-            System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, howMany);
-            rescoredDocs.scoreDocs = scoreDocs;
-            return rescoredDocs;
-          }
-
+        if(howMany == rescoredDocs.scoreDocs.length) {
+          return rescoredDocs; // Just return the rescoredDocs
+        } else if(howMany > rescoredDocs.scoreDocs.length) {
+          //We need to return more then we've reRanked, so create the combined page.
+          ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
+          System.arraycopy(mainScoreDocs, 0, scoreDocs, 0, scoreDocs.length); //lay down the initial docs
+          System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, rescoredDocs.scoreDocs.length);//overlay the re-ranked docs.
+          rescoredDocs.scoreDocs = scoreDocs;
+          return rescoredDocs;
         } else {
-
-          if(howMany == rescoredDocs.scoreDocs.length) {
-            return rescoredDocs; // Just return the rescoredDocs
-          } else if(howMany > rescoredDocs.scoreDocs.length) {
-
-            //We need to return more then we've reRanked, so create the combined page.
-            ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
-            //lay down the initial docs
-            System.arraycopy(mainScoreDocs, 0, scoreDocs, 0, scoreDocs.length);
-            //overlay the rescoreds docs
-            System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, rescoredDocs.scoreDocs.length);
-            rescoredDocs.scoreDocs = scoreDocs;
-            return rescoredDocs;
-          } else {
-            //We've rescored more then we need to return.
-            ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
-            System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, howMany);
-            rescoredDocs.scoreDocs = scoreDocs;
-            return rescoredDocs;
-          }
+          //We've rescored more then we need to return.
+          ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
+          System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, howMany);
+          rescoredDocs.scoreDocs = scoreDocs;
+          return rescoredDocs;
         }
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
