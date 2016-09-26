@@ -282,7 +282,7 @@ public final class ByteBlockPool {
 
   /** Fill the provided {@link BytesRef} with the bytes at the specified offset/length slice.
    *  This will avoid copying the bytes, if the slice fits into a single block; otherwise, it uses
-   *  the provided {@linkl BytesRefBuilder} to copy bytes over. */
+   *  the provided {@link BytesRefBuilder} to copy bytes over. */
   void setBytesRef(BytesRefBuilder builder, BytesRef result, long offset, int length) {
     result.length = length;
 
