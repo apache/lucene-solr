@@ -60,7 +60,7 @@ New Features
 
 * SOLR-9534: You can now set Solr's log level through environment variable SOLR_LOG_LEVEL
   Also adds conveience arguments -q (quiet: WARN) and -v (verbose: DEBUG) to bin/solr (janhoy)
-  
+
 * SOLR-8395: query time {!join} for single value numeric fields. (Cao Manh Dat via mkhl)
 
 * SOLR-9537: Support facet scoring with the scoreNodes expression (Joel Bernstein)
@@ -96,7 +96,7 @@ Bug Fixes
 
 * SOLR-9542: Kerberos delegation tokens requires Jackson library (Ishan Chattopadhyaya via noble)
 
-* SOLR-9330: Fix AlreadyClosedException on admin/mbeans?stats=true (Mikhail Khludnev) 
+* SOLR-9330: Fix AlreadyClosedException on admin/mbeans?stats=true (Mikhail Khludnev)
 
 Optimizations
 ----------------------
@@ -164,6 +164,8 @@ Other Changes
 
 * SOLR-9500: Add a LogLevel annotation to set log levels on specific tests (Alan
   Woodward)
+
+* SOLR-9548: The beginning of solr.log now starts with a more informative welcome message (janhoy)
 
 ==================  6.2.1 ==================
 
