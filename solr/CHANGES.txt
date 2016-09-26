@@ -37,9 +37,9 @@ Upgrading from Solr 6.x
 * HttpSolrClient#setDefaultMaxConnectionsPerHost and
   HttpSolrClient#setMaxTotalConnections have been removed. These now default very
   high and can only be changed via param when creating an HttpClient instance.
-  
-* Query time join with scoring {!join score=none} (even none) doesn't handle single value numeric fields. 
-  Users are advised to convert these fields into string and reindex.  
+
+* Query time join with scoring {!join score=none} (even none) doesn't handle single value numeric fields.
+  Users are advised to convert these fields into string and reindex.
 
 Bug Fixes
 ----------------------
@@ -124,7 +124,7 @@ Bug Fixes
 
 * SOLR-9542: Kerberos delegation tokens requires Jackson library (Ishan Chattopadhyaya via noble)
 
-* SOLR-9330: Fix AlreadyClosedException on admin/mbeans?stats=true (Mikhail Khludnev) 
+* SOLR-9330: Fix AlreadyClosedException on admin/mbeans?stats=true (Mikhail Khludnev)
 
 Optimizations
 ----------------------
@@ -192,6 +192,8 @@ Other Changes
 
 * SOLR-9500: Add a LogLevel annotation to set log levels on specific tests (Alan
   Woodward)
+
+* SOLR-9548: The beginning of solr.log now starts with a more informative welcome message (janhoy)
 
 ==================  6.2.1 ==================
 
