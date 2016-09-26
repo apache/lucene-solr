@@ -82,7 +82,9 @@ enum CoreAdminOperation implements CoreAdminOp {
       instancePath = coreContainer.getCoreRootDirectory().resolve(instanceDir).normalize();
     }
 
-    coreContainer.create(coreName, instancePath, coreParams);
+    boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
+
+    coreContainer.create(coreName, instancePath, coreParams, newCollection);
 
     it.rsp.add("core", coreName);
   }),
