@@ -184,7 +184,6 @@ public class SliceMutator {
     String routeKey = message.getStr("routeKey");
     String range = message.getStr("range");
     String targetCollection = message.getStr("targetCollection");
-    String targetShard = message.getStr("targetShard");
     String expireAt = message.getStr("expireAt");
 
     DocCollection collection = clusterState.getCollection(collectionName);
