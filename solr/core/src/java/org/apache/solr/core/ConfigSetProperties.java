@@ -70,7 +70,7 @@ public class ConfigSetProperties {
       Object object = ObjectBuilder.getVal(jsonParser);
       if (!(object instanceof Map)) {
         final String objectClass = object == null ? "null" : object.getClass().getName();
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid JSON type " + object.getClass().getName() + ", expected Map");
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid JSON type " + objectClass + ", expected Map");
       }
       return new NamedList((Map)object);
     } catch (Exception ex) {
