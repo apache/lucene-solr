@@ -1597,14 +1597,14 @@ public class UpdateLog implements PluginInfoInitialized {
       log.warn("Failed to determine the max value of the version field due to: "+ioExc, ioExc);
     }
 
-    log.info("Took {}ms to seed version buckets with highest version {}",
+    log.debug("Took {}ms to seed version buckets with highest version {}",
         timer.getTime(), String.valueOf(highestVersion));
 
     return highestVersion;
   }
 
   public void seedBucketsWithHighestVersion(SolrIndexSearcher newSearcher) {
-    log.info("Looking up max value of version field to seed version buckets");
+    log.debug("Looking up max value of version field to seed version buckets");
     versionInfo.blockUpdates();
     try {
       maxVersionFromIndex = seedBucketsWithHighestVersion(newSearcher, versionInfo);

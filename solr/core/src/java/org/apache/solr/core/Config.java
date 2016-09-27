@@ -120,7 +120,7 @@ public class Config {
         InputStream in = loader.openConfig(name);
         if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
           zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-          log.info("loaded config {} with version {} ",name,zkVersion);
+          log.debug("loaded config {} with version {} ",name,zkVersion);
         }
         is = new InputSource(in);
         is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));

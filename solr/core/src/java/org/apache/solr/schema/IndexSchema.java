@@ -534,7 +534,7 @@ public class IndexSchema {
             throw new SolrException(ErrorCode.SERVER_ERROR, msg);
           }
         }
-        log.info("[{}] default search field in schema is {}. WARNING: Deprecated, please use 'df' on request instead.",
+        log.warn("[{}] default search field in schema is {}. WARNING: Deprecated, please use 'df' on request instead.",
             coreName, defaultSearchFieldName);
       }
 
@@ -546,7 +546,7 @@ public class IndexSchema {
       } else {
         isExplicitQueryParserDefaultOperator = true;
         queryParserDefaultOperator=node.getNodeValue().trim();
-        log.info("[{}] query parser default operator is {}. WARNING: Deprecated, please use 'q.op' on request instead.",
+        log.warn("[{}] query parser default operator is {}. WARNING: Deprecated, please use 'q.op' on request instead.",
             coreName, queryParserDefaultOperator);
       }
 
@@ -576,9 +576,7 @@ public class IndexSchema {
         }
         uniqueKeyFieldName=uniqueKeyField.getName();
         uniqueKeyFieldType=uniqueKeyField.getType();
-        log.info("[{}] unique key field: {}",
-            coreName, uniqueKeyFieldName);
-      
+
         // Unless the uniqueKeyField is marked 'required=false' then make sure it exists
         if( Boolean.FALSE != explicitRequiredProp.get( uniqueKeyFieldName ) ) {
           uniqueKeyField.required = true;
@@ -606,6 +604,8 @@ public class IndexSchema {
 
     // create the field analyzers
     refreshAnalyzers();
+
+    log.info("Loaded schema {}/{} with uniqueid field {}", name, version, uniqueKeyFieldName);
   }
 
   private String getCoreName(String defaultVal) {
