@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.request;
 
+import java.util.Date;
+
 import org.apache.solr.common.util.NamedList;
 
 public class CoreStatus {
@@ -38,5 +40,9 @@ public class CoreStatus {
   @Override
   public String toString() {
     return response.toString();
+  }
+
+  public Date getCoreStartTime() {
+    return (Date) response.get("startTime");
   }
 }

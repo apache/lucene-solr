@@ -176,6 +176,10 @@ public class CloudSolrClient extends SolrClient {
 
   };
 
+  public void setSoTimeout(int timeout) {
+    lbClient.setSoTimeout(timeout);
+  }
+
   class ExpiringCachedDocCollection {
     final DocCollection cached;
     long cachedAt;
