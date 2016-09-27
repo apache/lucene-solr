@@ -1049,6 +1049,7 @@ fi
 
 # Run in foreground (default is to run in the background)
 FG="false"
+FORCE=false
 noprompt=false
 SOLR_OPTS=($SOLR_OPTS)
 PASS_TO_RUN_EXAMPLE=
@@ -1174,6 +1175,10 @@ if [ $# -gt 0 ]; then
             stop_all=true
             shift
         ;;
+        -force)
+            FORCE=true
+            shift
+        ;;
         --)
             shift
             break
@@ -1296,6 +1301,14 @@ fi
 
 if [ -z "$STOP_PORT" ]; then
   STOP_PORT=`expr $SOLR_PORT - 1000`
+fi
+
+if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ] ; then
+  if [[ "$(whoami)" == "root" ]] && [[ "$FORCE" == "false" ]] ; then
+    echo "WARNING: Starting Solr as the root user is a security risk and not considered best practice. Exiting."
+    echo "         Please consult the Reference Guide. To override this check, start with argument '-force'"
+    exit 1
+  fi
 fi
 
 if [[ "$SCRIPT_CMD" == "start" ]]; then

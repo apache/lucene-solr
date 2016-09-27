@@ -198,6 +198,8 @@ Other Changes
 
 * SOLR-9548: The beginning of solr.log now starts with a more informative welcome message (janhoy)
 
+* SOLR-9547: Do not allow bin/solr start as root user, unless -force param specified (janhoy)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
