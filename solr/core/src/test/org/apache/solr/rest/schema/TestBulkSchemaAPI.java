@@ -195,6 +195,28 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNotNull("Field '" + newFieldName + "' is not in the schema", map);
   }
 
+  public void testAddIllegalDynamicField() throws Exception {
+    RestTestHarness harness = restTestHarness;
+
+    String newFieldName = "illegal";
+
+    String payload = "{\n" +
+        "    'add-dynamic-field' : {\n" +
+        "                 'name':'" + newFieldName + "',\n" +
+        "                 'type':'string',\n" +
+        "                 'stored':true,\n" +
+        "                 'indexed':true\n" +
+        "                 }\n" +
+        "    }";
+
+    String response = harness.post("/schema?wt=json", json(payload));
+    Map map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNotNull(response, map.get("errors"));
+
+    map = getObj(harness, newFieldName, "dynamicFields");
+    assertNull(newFieldName + " illegal dynamic field should not have been added to schema", map);
+  }
+
   public void testAddFieldWithExistingCatchallDynamicField() throws Exception {
     RestTestHarness harness = restTestHarness;
 
