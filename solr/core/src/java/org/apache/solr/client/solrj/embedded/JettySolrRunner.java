@@ -38,6 +38,8 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.eclipse.jetty.server.Connector;
@@ -293,6 +295,10 @@ public class JettySolrRunner {
     return getSolrDispatchFilter().getCores();
   }
 
+  public String getNodeName() {
+    return getCoreContainer().getZkController().getNodeName();
+  }
+
   public boolean isRunning() {
     return server.isRunning();
   }
@@ -451,6 +457,10 @@ public class JettySolrRunner {
       throw new  IllegalStateException
         ("Java could not make sense of protocol: " + protocol, e);
     }
+  }
+
+  public SolrClient newClient() {
+    return new HttpSolrClient.Builder(getBaseUrl().toString()).build();
   }
 
   public DebugFilter getDebugFilter() {

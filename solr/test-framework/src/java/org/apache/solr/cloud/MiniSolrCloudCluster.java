@@ -97,7 +97,7 @@ public class MiniSolrCloudCluster {
       "  \n" +
       "</solr>\n";
 
-  private final ZkTestServer zkServer;
+  private ZkTestServer zkServer; // non-final due to injectChaos()
   private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
   private final Path baseDir;
@@ -337,6 +337,10 @@ public class MiniSolrCloudCluster {
         .build());
   }
 
+  public JettySolrRunner getJettySolrRunner(int index) {
+    return jettys.get(index);
+  }
+
   /**
    * Start a new Solr instance on a particular servlet context
    *
@@ -513,6 +517,10 @@ public class MiniSolrCloudCluster {
   public CloudSolrClient getSolrClient() {
     return solrClient;
   }
+
+  public SolrZkClient getZkClient() {
+    return solrClient.getZkStateReader().getZkClient();
+  }
   
   protected CloudSolrClient buildSolrClient() {
     return new Builder()
@@ -568,6 +576,31 @@ public class MiniSolrCloudCluster {
       long sessionId = zkClient.getSolrZooKeeper().getSessionId();
       zkServer.expire(sessionId);
       log.info("Expired zookeeper session {} from node {}", sessionId, jetty.getBaseUrl());
+    }
+  }
+
+  public void injectChaos(Random random) throws Exception {
+
+    // sometimes we restart one of the jetty nodes
+    if (random.nextBoolean()) {
+      JettySolrRunner jetty = jettys.get(random.nextInt(jettys.size()));
+      ChaosMonkey.stop(jetty);
+      log.info("============ Restarting jetty");
+      ChaosMonkey.start(jetty);
+    }
+
+    // sometimes we restart zookeeper
+    if (random.nextBoolean()) {
+      zkServer.shutdown();
+      log.info("============ Restarting zookeeper");
+      zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
+      zkServer.run();
+    }
+
+    // sometimes we cause a connection loss - sometimes it will hit the overseer
+    if (random.nextBoolean()) {
+      JettySolrRunner jetty = jettys.get(random.nextInt(jettys.size()));
+      ChaosMonkey.causeConnectionLoss(jetty);
     }
   }
 }

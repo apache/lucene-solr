@@ -191,6 +191,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     @Deprecated
     public abstract AsyncCollectionSpecificAdminRequest setCollectionName(String collection);
 
+    public String getCollectionName() {
+      return collection;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
@@ -1601,6 +1605,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public AddReplica withProperty(String key, String value) {
+      if (this.properties == null)
+        this.properties = new Properties();
+      this.properties.setProperty(key, value);
+      return this;
+    }
+
     public String getNode() {
       return node;
     }
@@ -2178,8 +2189,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   /**
    * Returns a SolrRequest to get a list of collections in the cluster
    */
-  public static List listCollections() {
-    return new List();
+  public static java.util.List<String> listCollections(SolrClient client) throws IOException, SolrServerException {
+    CollectionAdminResponse resp = new List().process(client);
+    return (java.util.List<String>) resp.getResponse().get("collections");
   }
 
   // LIST request

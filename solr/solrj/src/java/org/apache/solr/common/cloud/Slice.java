@@ -21,8 +21,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
@@ -216,6 +219,13 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
    */
   public Collection<Replica> getReplicas() {
     return replicas.values();
+  }
+
+  /**
+   * Gets all replicas that match a predicate
+   */
+  public List<Replica> getReplicas(Predicate<Replica> pred) {
+    return replicas.values().stream().filter(pred).collect(Collectors.toList());
   }
 
   /**
