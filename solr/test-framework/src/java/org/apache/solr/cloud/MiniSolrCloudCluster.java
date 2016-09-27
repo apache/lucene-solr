@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import javax.servlet.Filter;
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,13 +58,18 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * "Mini" SolrCloud cluster to be used for testing
  */
 public class MiniSolrCloudCluster {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final String DEFAULT_CLOUD_SOLR_XML = "<solr>\n" +
       "\n" +
@@ -186,6 +192,8 @@ public class MiniSolrCloudCluster {
 
     this.baseDir = Objects.requireNonNull(baseDir);
     this.jettyConfig = Objects.requireNonNull(jettyConfig);
+
+    log.info("Starting cluster of {} servers in {}", numServers, baseDir);
 
     Files.createDirectories(baseDir);
 
@@ -512,5 +520,19 @@ public class MiniSolrCloudCluster {
         return jetty;
     }
     throw new IllegalArgumentException("Cannot find Jetty for a replica with core url " + replica.getCoreUrl());
+  }
+
+  /**
+   * Make the zookeeper session on a particular jetty expire
+   */
+  public void expireZkSession(JettySolrRunner jetty) {
+    CoreContainer cores = jetty.getCoreContainer();
+    if (cores != null) {
+      SolrZkClient zkClient = cores.getZkController().getZkClient();
+      zkClient.getSolrZooKeeper().closeCnxn();
+      long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+      zkServer.expire(sessionId);
+      log.info("Expired zookeeper session {} from node {}", sessionId, jetty.getBaseUrl());
+    }
   }
 }
