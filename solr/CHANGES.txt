@@ -203,6 +203,8 @@ Other Changes
 
 * SOLR-9547: Do not allow bin/solr start as root user, unless -force param specified (janhoy)
 
+* SOLR-9567: Make ReRankQParserPlugin's private ReRankCollector a public class of its own. (Christine Poerschke)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
