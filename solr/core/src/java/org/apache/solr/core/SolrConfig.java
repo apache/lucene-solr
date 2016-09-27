@@ -327,7 +327,7 @@ public class SolrConfig extends Config implements MapSerializable {
     }
 
     solrRequestParsers = new SolrRequestParsers(this);
-    log.info("Loaded SolrConfig: {}", name);
+    log.debug("Loaded SolrConfig: {}", name);
   }
 
   public static final List<SolrPluginInfo> plugins = ImmutableList.<SolrPluginInfo>builder()

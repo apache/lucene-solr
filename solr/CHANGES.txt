@@ -188,7 +188,8 @@ Other Changes
 * SOLR-9544: Allow ObjectReleaseTracker more time to check for asynchronously
   closing resources (Alan Woodward)
 
-* SOLR-6677: Reduced logging during Solr startup, moved more logs to DEBUG level (janhoy, Shawn Heisey)
+* SOLR-6677: Reduced logging during startup and shutdown, moved more logs to DEBUG level
+  (janhoy, Shawn Heisey, Alan Woodward)
 
 * SOLR-6090: Remove unreachable printLayout usage in cloud tests. (Cao Manh Dat via shalin)
 

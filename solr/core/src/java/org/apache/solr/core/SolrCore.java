@@ -357,7 +357,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       }
     }
     if (!result.equals(lastNewIndexDir)) {
-      log.info("New index directory detected: old="+lastNewIndexDir + " new=" + result);
+      log.debug("New index directory detected: old="+lastNewIndexDir + " new=" + result);
     }
     lastNewIndexDir = result;
     return result;
@@ -598,7 +598,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     // Create the index if it doesn't exist.
     if(!indexExists) {
-      log.warn(logid + "Solr index directory '" + new File(indexDir) + "' doesn't exist."
+      log.debug(logid + "Solr index directory '" + new File(indexDir) + "' doesn't exist."
           + " Creating new index...");
 
       SolrIndexWriter writer = SolrIndexWriter.create(this, "SolrCore.initIndex", indexDir, getDirectoryFactory(), true,

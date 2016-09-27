@@ -312,7 +312,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public void cleanupOldIndexDirectories(final String dataDirPath, final String currentIndexDirPath) {
     File dataDir = new File(dataDirPath);
     if (!dataDir.isDirectory()) {
-      log.warn("{} does not point to a valid data directory; skipping clean-up of old index directories.", dataDirPath);
+      log.debug("{} does not point to a valid data directory; skipping clean-up of old index directories.", dataDirPath);
       return;
     }
 
