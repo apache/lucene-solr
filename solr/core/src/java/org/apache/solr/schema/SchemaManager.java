@@ -254,7 +254,7 @@ public class SchemaManager {
           return  false;
         }
         try {
-          SchemaField field = SchemaField.create(name, ft, op.getValuesExcluding(NAME, TYPE));
+          SchemaField field = mgr.managedIndexSchema.newDynamicField(name, type, op.getValuesExcluding(NAME, TYPE));
           mgr.managedIndexSchema
               = mgr.managedIndexSchema.addDynamicFields(singletonList(field), Collections.emptyMap(), false);
           return true;

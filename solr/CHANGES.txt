@@ -129,6 +129,8 @@ Bug Fixes
 
 * SOLR-9330: Fix AlreadyClosedException on admin/mbeans?stats=true (Mikhail Khludnev)
 
+* SOLR-9411: Better validation for Schema REST API add-dynamic-field (janhoy)
+
 Optimizations
 ----------------------
 
