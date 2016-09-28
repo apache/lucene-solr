@@ -208,6 +208,9 @@ Other Changes
 
 * SOLR-7436: Solr stops printing stacktraces in log and output (janhoy, hossman, Markus Jelsma)
 
+* SOLR-9576: Make FieldAnalysisRequestHandler, DocumentAnalysisRequestHandler & DumpRequestHandler
+  implicit (noble)
+
 ==================  6.2.1 ==================
 
 Bug Fixes

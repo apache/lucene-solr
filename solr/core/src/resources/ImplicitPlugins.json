@@ -133,6 +133,24 @@
       "components": [
         "terms"
       ]
+    },
+    "/analysis/document": {
+      "class": "solr.DocumentAnalysisRequestHandler",
+      "startup": "lazy",
+      "useParams": "_ANALYSIS_DOCUMENT"
+    },
+    "/analysis/field": {
+      "class": "solr.FieldAnalysisRequestHandler",
+      "startup": "lazy",
+      "useParams": "_ANALYSIS_FIELD"
+    },
+    "/debug/dump": {
+      "class": "solr.DumpRequestHandler",
+      "useParams": "_DEBUG_DUMP",
+      "defaults": {
+        "echoParams": "explicit",
+        "echoHandler": true
+      }
     }
   }
 }
