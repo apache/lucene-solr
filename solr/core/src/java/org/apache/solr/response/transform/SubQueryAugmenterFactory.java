@@ -217,7 +217,6 @@ class SubQueryAugmenter extends DocTransformer {
       
       if (vals != null) {
         StringBuilder rez = new StringBuilder();
-        int i = 0;
         for (Iterator iterator = vals.iterator(); iterator.hasNext();) {
           Object object = (Object) iterator.next();
           rez.append(convertFieldValue(object));
