@@ -1804,6 +1804,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public static Path TEST_PATH() { return getFile("solr/collection1").getParentFile().toPath(); }
 
+  public static Path configset(String name) {
+    return TEST_PATH().resolve("configsets").resolve(name).resolve("conf");
+  }
+
   public static Throwable getRootCause(Throwable t) {
     Throwable result = t;
     for (Throwable cause = t; null != cause; cause = cause.getCause()) {
