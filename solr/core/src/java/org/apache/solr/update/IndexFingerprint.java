@@ -97,38 +97,6 @@ public class IndexFingerprint implements MapSerializable {
     }
     
   }
-
-  /** Calculates an index fingerprint */
-  public static IndexFingerprint getFingerprint(SolrIndexSearcher searcher, long maxVersion) throws IOException {
-    SchemaField versionField = VersionInfo.getAndCheckVersionField(searcher.getSchema());
-
-    IndexFingerprint f = new IndexFingerprint();
-    f.maxVersionSpecified = maxVersion;
-    f.maxDoc = searcher.maxDoc();
-
-    // TODO: this could be parallelized, or even cached per-segment if performance becomes an issue
-    ValueSource vs = versionField.getType().getValueSource(versionField, null);
-    Map funcContext = ValueSource.newContext(searcher);
-    vs.createWeight(funcContext, searcher);
-    for (LeafReaderContext ctx : searcher.getTopReaderContext().leaves()) {
-      int maxDoc = ctx.reader().maxDoc();
-      f.numDocs += ctx.reader().numDocs();
-      Bits liveDocs = ctx.reader().getLiveDocs();
-      FunctionValues fv = vs.getValues(funcContext, ctx);
-      for (int doc = 0; doc < maxDoc; doc++) {
-        if (liveDocs != null && !liveDocs.get(doc)) continue;
-        long v = fv.longVal(doc);
-        f.maxVersionEncountered = Math.max(v, f.maxVersionEncountered);
-        if (v <= f.maxVersionSpecified) {
-          f.maxInHash = Math.max(v, f.maxInHash);
-          f.versionsHash += Hash.fmix64(v);
-          f.numVersions++;
-        }
-      }
-    }
-
-    return f;
-  }
   
   public static IndexFingerprint getFingerprint(SolrIndexSearcher searcher, LeafReaderContext ctx, Long maxVersion) throws IOException {
     SchemaField versionField = VersionInfo.getAndCheckVersionField(searcher.getSchema());
