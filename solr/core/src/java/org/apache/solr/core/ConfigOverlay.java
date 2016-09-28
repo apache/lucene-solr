@@ -230,10 +230,9 @@ public class ConfigOverlay implements MapSerializable {
 
   @Override
   public Map<String, Object> toMap(Map<String, Object> map) {
-    Map result = new LinkedHashMap();
-    result.put(ZNODEVER, znodeVersion);
-    result.putAll(data);
-    return result;
+    map.put(ZNODEVER, znodeVersion);
+    map.putAll(data);
+    return map;
   }
 
   public Map<String, Map> getNamedPlugins(String typ) {
