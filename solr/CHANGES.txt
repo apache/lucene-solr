@@ -226,6 +226,8 @@ Other Changes
 * SOLR-9576: Make FieldAnalysisRequestHandler, DocumentAnalysisRequestHandler & DumpRequestHandler
   implicit (noble)
 
+* SOLR-9574: Factor out AbstractReRankQuery from ReRankQParserPlugin's private ReRankQuery. (Christine Poerschke)
+
 ==================  6.2.1 ==================
 
 Bug Fixes

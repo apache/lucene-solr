@@ -17,23 +17,13 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import java.util.Map;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryRescorer;
-import org.apache.lucene.search.Rescorer;
-import org.apache.lucene.search.TopDocsCollector;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.handler.component.MergeStrategy;
-import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
 
 /*
 *
@@ -100,13 +90,9 @@ public class ReRankQParserPlugin extends QParserPlugin {
     }
   }
 
-  private final class ReRankQuery extends RankQuery {
-    private Query mainQuery = defaultQuery;
+  private final class ReRankQuery extends AbstractReRankQuery {
     final private Query reRankQuery;
-    final private int reRankDocs;
     final private double reRankWeight;
-    final private Rescorer reRankQueryRescorer;
-    private Map<BytesRef, Integer> boostedPriority;
 
     public int hashCode() {
       return 31 * classHash() + mainQuery.hashCode()+reRankQuery.hashCode()+(int)reRankWeight+reRankDocs;
@@ -125,34 +111,9 @@ public class ReRankQParserPlugin extends QParserPlugin {
     }
 
     public ReRankQuery(Query reRankQuery, int reRankDocs, double reRankWeight) {
+      super(defaultQuery, reRankDocs, new ReRankQueryRescorer(reRankQuery, reRankWeight));
       this.reRankQuery = reRankQuery;
-      this.reRankDocs = reRankDocs;
       this.reRankWeight = reRankWeight;
-      this.reRankQueryRescorer = new ReRankQueryRescorer(reRankQuery, reRankWeight);
-    }
-
-    public RankQuery wrap(Query _mainQuery) {
-      if(_mainQuery != null){
-        this.mainQuery = _mainQuery;
-      }
-      return  this;
-    }
-
-    public MergeStrategy getMergeStrategy() {
-      return null;
-    }
-
-    public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
-
-      if(this.boostedPriority == null) {
-        SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
-        if(info != null) {
-          Map context = info.getReq().getContext();
-          this.boostedPriority = (Map<BytesRef, Integer>)context.get(QueryElevationComponent.BOOSTED_PRIORITY);
-        }
-      }
-
-      return new ReRankCollector(reRankDocs, len, reRankQueryRescorer, cmd, searcher, boostedPriority);
     }
 
     @Override
@@ -166,17 +127,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
       return sb.toString();
     }
 
-    public Query rewrite(IndexReader reader) throws IOException {
-      Query q = mainQuery.rewrite(reader);
-      if (q != mainQuery) {
-        return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight).wrap(q);
-      }
-      return super.rewrite(reader);
-    }
-
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException{
-      final Weight mainWeight = mainQuery.createWeight(searcher, needsScores, boost);
-      return new ReRankWeight(mainQuery, reRankQueryRescorer, searcher, mainWeight);
+    protected Query rewrite(Query rewrittenMainQuery) throws IOException {
+      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight).wrap(rewrittenMainQuery);
     }
   }
 }
