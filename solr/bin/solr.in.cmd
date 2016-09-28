@@ -45,7 +45,8 @@ set GC_TUNE=-XX:NewRatio=3 ^
  -XX:CMSInitiatingOccupancyFraction=50 ^
  -XX:CMSMaxAbortablePrecleanTime=6000 ^
  -XX:+CMSParallelRemarkEnabled ^
- -XX:+ParallelRefProcEnabled
+ -XX:+ParallelRefProcEnabled ^
+ -XX:-OmitStackTraceInFastThrow
 
 REM Set the ZooKeeper connection string if using an external ZooKeeper ensemble
 REM e.g. host1:2181,host2:2181/chroot

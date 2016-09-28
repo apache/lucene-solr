@@ -206,6 +206,8 @@ Other Changes
 
 * SOLR-9567: Make ReRankQParserPlugin's private ReRankCollector a public class of its own. (Christine Poerschke)
 
+* SOLR-7436: Solr stops printing stacktraces in log and output (janhoy, hossman, Markus Jelsma)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
