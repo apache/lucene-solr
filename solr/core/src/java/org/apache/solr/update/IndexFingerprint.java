@@ -82,21 +82,24 @@ public class IndexFingerprint implements MapSerializable {
 
   /** Opens a new realtime searcher and returns it's (possibly cached) fingerprint */
   public static IndexFingerprint getFingerprint(SolrCore core, long maxVersion) throws IOException {
+    RTimer timer = new RTimer();
     core.getUpdateHandler().getUpdateLog().openRealtimeSearcher();
     RefCounted<SolrIndexSearcher> newestSearcher = core.getUpdateHandler().getUpdateLog().uhandler.core.getRealtimeSearcher();
     try {
-      return newestSearcher.get().getIndexFingerprint(maxVersion);
+      IndexFingerprint f = newestSearcher.get().getIndexFingerprint(maxVersion);
+      final double duration = timer.stop();
+      log.info("IndexFingerprint millis:" + duration + " result:" + f);
+      return f;
     } finally {
       if (newestSearcher != null) {
         newestSearcher.decref();
       }
     }
+    
   }
 
   /** Calculates an index fingerprint */
   public static IndexFingerprint getFingerprint(SolrIndexSearcher searcher, long maxVersion) throws IOException {
-    RTimer timer = new RTimer();
-
     SchemaField versionField = VersionInfo.getAndCheckVersionField(searcher.getSchema());
 
     IndexFingerprint f = new IndexFingerprint();
@@ -124,9 +127,6 @@ public class IndexFingerprint implements MapSerializable {
       }
     }
 
-    final double duration = timer.stop();
-    log.info("IndexFingerprint millis:" + duration + " result:" + f);
-
     return f;
   }
   
@@ -150,9 +150,7 @@ public class IndexFingerprint implements MapSerializable {
       f.maxVersionEncountered = Math.max(v, f.maxVersionEncountered);
       if (v <= f.maxVersionSpecified) {
         f.maxInHash = Math.max(v, f.maxInHash);
-        
-        // compe up with better way for fingerprint comparison
-        f.versionsHash += v;
+        f.versionsHash += Hash.fmix64(v);
         f.numVersions++;
       }
     }

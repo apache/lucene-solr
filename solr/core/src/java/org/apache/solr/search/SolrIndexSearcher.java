@@ -2447,7 +2447,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * gets a cached version of the IndexFingerprint for this searcher
    **/
   public IndexFingerprint getIndexFingerprint(long maxVersion) throws IOException {
-    final SolrIndexSearcher searcher = this;
     final AtomicReference<IOException> exception = new AtomicReference<>();
     try {
       return maxVersionFingerprintCache.computeIfAbsent(maxVersion, key -> {
@@ -2463,26 +2462,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
   }
   
-  
   private IndexFingerprint computeFromPerSegmentIndexFingerprint(long maxVersion) throws IOException {
     final SolrIndexSearcher searcher = this;
     final AtomicReference<IOException> exception = new AtomicReference<>();
-    IndexFingerprint f = null;
     try {
-     return searcher.getTopReaderContext().leaves().stream().map(ctx -> {
-          Map<Long, IndexFingerprint> segLocalFingerprintCache = perSegmentFingerprintCache.computeIfAbsent(ctx, k -> new ConcurrentHashMap<>());
-          IndexFingerprint segmentFingerprint = segLocalFingerprintCache.computeIfAbsent(maxVersion, key -> {
-            try {
-              return IndexFingerprint.getFingerprint(searcher, ctx, key);
-            } catch (IOException e) {
-              exception.set(e);
-              return null;
-            }
-          });
-          return segmentFingerprint;
-      }).filter(java.util.Objects::nonNull)
-        .reduce(new IndexFingerprint(), IndexFingerprint::reduce);
-    
+    return searcher.getTopReaderContext().leaves().stream().map(ctx -> {
+      try {
+        return searcher.getCore().getFingerprint(searcher, ctx, maxVersion);
+      } catch (IOException e) {
+        exception.set(e);
+        return null;
+      }
+    })
+      .filter(java.util.Objects::nonNull)
+      .reduce(new IndexFingerprint(), IndexFingerprint::reduce);
     }finally {
       if (exception.get() != null) throw exception.get();
     }

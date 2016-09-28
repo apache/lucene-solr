@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -49,6 +50,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.io.FileUtils;
@@ -57,6 +59,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -124,6 +127,7 @@ import org.apache.solr.search.stats.LocalStatsCache;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.update.DefaultSolrCoreState;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.SolrCoreState.IndexWriterCloser;
 import org.apache.solr.update.SolrIndexWriter;
@@ -196,6 +200,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final ReentrantLock ruleExpiryLock;
 
   public Date getStartTimeStamp() { return startTime; }
+  
+  // Map is not concurrent, but since computeIfAbsent is idempotent, it should be alright for two threads to compute values for the same key.   
+  private final Map<LeafReaderContext, Map<Long, IndexFingerprint>> perSegmentFingerprintCache = new WeakHashMap<>();
 
   public long getStartNanoTime() {
     return startNanoTime;
@@ -1503,6 +1510,26 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   */
   public RefCounted<SolrIndexSearcher> getSearcher() {
     return getSearcher(false,true,null);
+  }
+  
+  public IndexFingerprint getFingerprint(SolrIndexSearcher searcher, LeafReaderContext ctx, long maxVersion)
+      throws IOException {
+    final AtomicReference<IOException> exception = new AtomicReference<>();
+    try {
+      Map<Long,IndexFingerprint> segLocalFingerprintCache = perSegmentFingerprintCache.computeIfAbsent(ctx,
+          k -> new ConcurrentHashMap<>());
+      return segLocalFingerprintCache.computeIfAbsent(maxVersion, key -> {
+        try {
+          return IndexFingerprint.getFingerprint(searcher, ctx, key);
+        } catch (IOException e) {
+          exception.set(e);
+          return null;
+        }
+        
+      });
+    } finally {
+      if (exception.get() != null) throw exception.get();
+    }
   }
 
   /**
