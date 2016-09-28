@@ -61,7 +61,7 @@ import org.apache.lucene.util.automaton.Operations;
  *
  * @lucene.internal
  */
-public class MultiTermHighlighting {
+class MultiTermHighlighting {
   private MultiTermHighlighting() {
   }
 
