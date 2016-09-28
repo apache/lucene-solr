@@ -16,11 +16,6 @@
  */
 package org.apache.solr.common.params;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.StrUtils;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -35,11 +30,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
+
 /**  SolrParams hold request parameters.
  *
  *
  */
-public abstract class SolrParams implements Serializable {
+public abstract class SolrParams implements Serializable, MapSerializable {
 
   /** returns the String value of a param, or null if not set */
   public abstract String get(String param);
@@ -445,5 +446,14 @@ public abstract class SolrParams implements Serializable {
       // impossible!
       throw new AssertionError(e);
     }
+  }
+
+  @Override
+  public Map toMap(Map<String, Object> map) {
+    toNamedList().forEach((k, v) -> {
+      if (v == null || "".equals(v)) return;
+      map.put(k, v);
+    });
+    return map;
   }
 }
