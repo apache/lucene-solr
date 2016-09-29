@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 
@@ -77,7 +78,7 @@ public abstract class LeafReader extends IndexReader {
    *
    * @lucene.experimental
    */
-  public interface CoreClosedListener {
+  public static interface CoreClosedListener {
     /** Invoked when the shared core of the original {@code
      *  SegmentReader} has closed. The provided {@code
      *  ownerCoreCacheKey} will be the same key as the one
