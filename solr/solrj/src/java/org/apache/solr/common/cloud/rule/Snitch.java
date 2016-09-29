@@ -14,10 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud.rule;
+package org.apache.solr.common.cloud.rule;
 
-import java.util.Map;
+import java.util.Set;
 
-public interface RemoteCallback {
-  void remoteCallback(SnitchContext ctx, Map<String, Object> returnedVal);
+import com.google.common.collect.ImmutableSet;
+
+/**
+ *
+ */
+public abstract class Snitch {
+  public static final Set<Class> WELL_KNOWN_SNITCHES = ImmutableSet.of(ImplicitSnitch.class);
+
+
+  public abstract void getTags(String solrNode, Set<String> requestedTags, SnitchContext ctx);
+
+  public abstract boolean isKnownTag(String tag);
+
 }
