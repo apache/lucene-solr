@@ -315,7 +315,7 @@ fi
 if [ -f "$SOLR_VAR_DIR/solr.in.sh" ]; then
   echo -e "\nMoving existing $SOLR_VAR_DIR/solr.in.sh to /etc/default/$SOLR_SERVICE.in.sh ...\n"
   mv "$SOLR_VAR_DIR/solr.in.sh" "/etc/default/$SOLR_SERVICE.in.sh"
-elif [ -f "/etc/default/$SOLR_SERVICE.in.sh" ]; then
+elif [ -f "/etc/default/$SOLR_SERVICE.in.sh" -a "$SOLR_UPGRADE" = "NO" ]; then
   echo -e "\n/etc/default/$SOLR_SERVICE.in.sh already exist. Skipping install ...\n"
 else
   echo -e "\nInstalling /etc/default/$SOLR_SERVICE.in.sh ...\n"
