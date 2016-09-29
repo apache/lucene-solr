@@ -72,6 +72,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
   private long count;
   private int runCount;
+  private boolean initialRun = true;
   private String id;
   protected long checkpointEvery;
   private Map<String, Long> checkpoints = new HashMap<String, Long>();
@@ -350,9 +351,14 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
   }
 
   public void close() throws IOException {
-    runCount = 0;
     try {
-      persistCheckpoints();
+
+      if (initialRun || runCount > 0) {
+        persistCheckpoints();
+        initialRun = false;
+        runCount = 0;
+      }
+
     } finally {
 
       if(solrStreams != null) {
