@@ -871,6 +871,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
 
     public void setNextReader(LeafReaderContext context) throws IOException {
       this.vals = DocValues.getNumeric(context.reader(), field);
+      lastDocID = 0;
     }
 
     public void setCurrentValue(int docId) throws IOException {
@@ -962,6 +963,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
 
     public void setNextReader(LeafReaderContext context) throws IOException {
       this.vals = DocValues.getNumeric(context.reader(), field);
+      lastDocID = 0;
     }
 
     public void setCurrentValue(int docId) throws IOException {
@@ -1054,6 +1056,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
 
     public void setNextReader(LeafReaderContext context) throws IOException {
       this.vals = DocValues.getNumeric(context.reader(), field);
+      lastDocID = 0;
     }
 
     public void setCurrentValue(int docId) throws IOException {
@@ -1146,6 +1149,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
     public void setNextReader(LeafReaderContext context) throws IOException {
       this.reader = context.reader();
       this.vals = DocValues.getNumeric(this.reader, this.field);
+      lastDocID = 0;
     }
 
     public void setCurrentValue(int docId) throws IOException {
