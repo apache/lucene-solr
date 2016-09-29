@@ -93,6 +93,8 @@ public class SimplePostTool {
   static final String DATA_MODE_WEB = "web";
   static final String DEFAULT_DATA_MODE = DATA_MODE_FILES;
 
+  static final String FORMAT_SOLR = "solr";
+
   // Input args
   boolean auto = false;
   int recursive = 0;
@@ -123,6 +125,8 @@ public class SimplePostTool {
   static boolean mockMode = false;
   static PageFetcher pageFetcher;
 
+  public static final String TYPE_APPLICATION_JSON = "application/json";
+
   static {
     DATA_MODES.add(DATA_MODE_FILES);
     DATA_MODES.add(DATA_MODE_ARGS);
@@ -132,8 +136,8 @@ public class SimplePostTool {
     mimeMap = new HashMap<>();
     mimeMap.put("xml", "application/xml");
     mimeMap.put("csv", "text/csv");
-    mimeMap.put("json", "application/json");
-    mimeMap.put("jsonl", "application/json");
+    mimeMap.put("json", TYPE_APPLICATION_JSON);
+    mimeMap.put("jsonl", TYPE_APPLICATION_JSON);
     mimeMap.put("pdf", "application/pdf");
     mimeMap.put("rtf", "text/rtf");
     mimeMap.put("html", "text/html");
@@ -776,11 +780,11 @@ public class SimplePostTool {
         }
         // TODO: Add a flag that disables /update and sends all to /update/extract, to avoid CSV, JSON, and XML files
         // TODO: from being interpreted as Solr documents internally
-        if (type.equals("application/json") && !"solr".equals(format))  {
+        if (type.equals(TYPE_APPLICATION_JSON) && !FORMAT_SOLR.equals(format))  {
           suffix = "/json/docs";
           String urlStr = appendUrlPath(solrUrl, suffix).toString();
           url = new URL(urlStr);
-        } else if (type.equals("application/xml") || type.equals("text/csv") || type.equals("application/json")) {
+        } else if (type.equals(DEFAULT_CONTENT_TYPE) || type.equals("text/csv") || type.equals(TYPE_APPLICATION_JSON)) {
           // Default handler
         } else {
           // SolrCell

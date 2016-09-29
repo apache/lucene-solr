@@ -104,6 +104,8 @@ New Features
 
 * SOLR-9557: Every implicit requesthandler now has a default 'useParams' attribute (noble)
 
+* SOLR-6994: Implement Windows version of bin/post (janhoy)
+
 * SOLR-9572: config API to show expanded useParams for request handlers inline (noble)
 
 Bug Fixes
