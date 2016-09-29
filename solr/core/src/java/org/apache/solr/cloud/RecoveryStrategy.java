@@ -373,7 +373,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
           PeerSync peerSync = new PeerSync(core,
               Collections.singletonList(leaderUrl), ulog.getNumRecordsToKeep(), false, false);
           peerSync.setStartingVersions(recentVersions);
-          boolean syncSuccess = peerSync.sync();
+          boolean syncSuccess = peerSync.sync().isSuccess();
           if (syncSuccess) {
             SolrQueryRequest req = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());

@@ -42,6 +42,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.CreateMode;
@@ -359,13 +360,15 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
           }
         }
-        
+
+        PeerSync.PeerSyncResult result = null;
         boolean success = false;
         try {
-          success = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
+          result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
+          success = result.isSuccess();
         } catch (Exception e) {
           SolrException.log(log, "Exception while trying to sync", e);
-          success = false;
+          result = PeerSync.PeerSyncResult.failure();
         }
         
         UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
@@ -382,10 +385,15 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           if (!hasRecentUpdates) {
             // we failed sync, but we have no versions - we can't sync in that case
             // - we were active
-            // before, so become leader anyway
-            log.info(
-                "We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
-            success = true;
+            // before, so become leader anyway if no one else has any versions either
+            if (result.getOtherHasVersions().orElse(false))  {
+              log.info("We failed sync, but we have no versions - we can't sync in that case. But others have some versions, so we should not become leader");
+              success = false;
+            } else  {
+              log.info(
+                  "We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
+              success = true;
+            }
           }
         }
         
