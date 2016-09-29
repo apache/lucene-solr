@@ -33,9 +33,9 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedDocValues;
@@ -112,12 +112,7 @@ class FieldCacheImpl implements FieldCache {
   }
 
   // per-segment fieldcaches don't purge until the shared core closes.
-  final SegmentReader.CoreClosedListener purgeCore = new SegmentReader.CoreClosedListener() {
-    @Override
-    public void onClose(Object ownerCoreCacheKey) {
-      FieldCacheImpl.this.purgeByCacheKey(ownerCoreCacheKey);
-    }
-  };
+  final SegmentReader.CoreClosedListener purgeCore = ownerCoreCacheKey -> FieldCacheImpl.this.purgeByCacheKey(ownerCoreCacheKey);
   
   private void initReader(LeafReader reader) {
     reader.addCoreClosedListener(purgeCore);
