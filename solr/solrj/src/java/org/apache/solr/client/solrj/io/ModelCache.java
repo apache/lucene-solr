@@ -17,32 +17,21 @@
 package org.apache.solr.client.solrj.io;
 
 import java.io.IOException;
-import java.io.Serializable;
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.HashMap;
-
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
-import org.apache.solr.client.solrj.io.stream.TopicStream;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
  *  The Model cache keeps a local in-memory copy of models
  */
 
-public class ModelCache implements Serializable {
+public class ModelCache {
 
-  private final LRU models;
+  private LRU models;
   private String defaultZkHost;
   private SolrClientCache solrClientCache;
 
@@ -117,7 +106,7 @@ public class ModelCache implements Serializable {
     }
   }
 
-  private static class Model {
+  private class Model {
     private Tuple tuple;
     private long lastChecked;
 
@@ -135,7 +124,7 @@ public class ModelCache implements Serializable {
     }
   }
 
-  private static class LRU extends LinkedHashMap<String, Model> {
+  private class LRU extends LinkedHashMap<String, Model> {
 
     private int maxSize;
 
