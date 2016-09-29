@@ -112,12 +112,7 @@ class FieldCacheImpl implements FieldCache {
   }
 
   // per-segment fieldcaches don't purge until the shared core closes.
-  final SegmentReader.CoreClosedListener purgeCore = new SegmentReader.CoreClosedListener() {
-    @Override
-    public void onClose(Object ownerCoreCacheKey) {
-      FieldCacheImpl.this.purgeByCacheKey(ownerCoreCacheKey);
-    }
-  };
+  final SegmentReader.CoreClosedListener purgeCore = FieldCacheImpl.this::purgeByCacheKey;
   
   private void initReader(LeafReader reader) {
     reader.addCoreClosedListener(purgeCore);
