@@ -132,6 +132,9 @@ Bug Fixes
 
 * SOLR-9411: Better validation for Schema API add-field and add-dynamic-field (janhoy, Steve Rowe)
 
+* SOLR-9504: A replica with an empty index becomes the leader even when other more qualified replicas
+  are in line. (shalin)
+
 Optimizations
 ----------------------
 
