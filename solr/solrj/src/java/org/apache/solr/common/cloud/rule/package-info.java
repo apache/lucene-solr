@@ -14,21 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud.rule;
-
-import java.util.Set;
-
-import com.google.common.collect.ImmutableSet;
-
-/**
- *
+ 
+/** 
+ * Classes for managing Replica placement strategy when operating in <a href="http://wiki.apache.org/solr/SolrCloud">SolrCloud</a> mode.
  */
-public abstract class Snitch {
-  static Set<Class> WELL_KNOWN_SNITCHES = ImmutableSet.of(ImplicitSnitch.class);
+package org.apache.solr.common.cloud.rule;
 
 
-  public abstract void getTags(String solrNode, Set<String> requestedTags, org.apache.solr.common.cloud.rule.SnitchContext ctx);
-
-  public abstract boolean isKnownTag(String tag);
-
-}

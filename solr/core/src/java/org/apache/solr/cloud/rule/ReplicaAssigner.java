@@ -36,6 +36,9 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.common.cloud.rule.Snitch;
+import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -360,10 +363,7 @@ public class ReplicaAssigner {
       return myTags;
     }
 
-    @Override
-    public CoreContainer getCoreContainer() {
-      return cc;
-    }
+
   }
 
   /**
@@ -399,7 +399,7 @@ public class ReplicaAssigner {
       //now use the Snitch to get the tags
       for (SnitchInfoImpl info : snitches.values()) {
         if (!info.myTags.isEmpty()) {
-          SnitchContext context = getSnitchCtx(node, info);
+          SnitchContext context = getSnitchCtx(node, info, cc);
           info.nodeVsContext.put(node, context);
           try {
             info.snitch.getTags(node, info.myTags, context);
@@ -418,7 +418,7 @@ public class ReplicaAssigner {
         if (context.exception != null) {
           failedNodes.put(node, context);
           participatingLiveNodes.remove(node);
-          log.warn("Not all tags were obtained from node " + node);
+          log.warn("Not all tags were obtained from node " + node, context.exception);
           context.exception = new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Not all tags were obtained from node " + node);
         } else {
@@ -443,8 +443,9 @@ public class ReplicaAssigner {
   }
 
   private Map<String, Object> snitchSession = new HashMap<>();
-  protected SnitchContext getSnitchCtx( String node, SnitchInfoImpl info) {
-    return new SnitchContext(info, node, snitchSession);
+
+  protected SnitchContext getSnitchCtx(String node, SnitchInfoImpl info, CoreContainer cc) {
+    return new ServerSnitchContext(info, node, snitchSession, cc);
   }
 
   public static void verifySnitchConf(CoreContainer cc, List snitchConf) {
