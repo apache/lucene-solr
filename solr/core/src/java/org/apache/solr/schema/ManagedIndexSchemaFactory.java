@@ -152,6 +152,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
             byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
             schemaZkVersion = stat.getVersion();
             schemaInputStream = new ByteArrayInputStream(data);
+            loadedResource = managedSchemaPath;
             warnIfNonManagedSchemaExists();
           } catch (Exception e1) {
             if (e1 instanceof InterruptedException) {

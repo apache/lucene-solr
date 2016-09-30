@@ -138,6 +138,9 @@ Bug Fixes
 * SOLR-9504: A replica with an empty index becomes the leader even when other more qualified replicas
   are in line. (shalin)
 
+* SOLR-9554: Fix NullPointerException when cores are loaded in parallel and switch schema.xml to managed-scheme.
+ (Alan Woodward, Mikhail Khludnev)
+
 Optimizations
 ----------------------
 
