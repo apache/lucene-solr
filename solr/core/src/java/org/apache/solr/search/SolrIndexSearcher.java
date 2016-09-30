@@ -200,8 +200,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private boolean releaseDirectory;
 
   private final Map<Long, IndexFingerprint> maxVersionFingerprintCache = new ConcurrentHashMap<>();
-  
-  private final Map<LeafReaderContext, Map<Long, IndexFingerprint>> perSegmentFingerprintCache = new ConcurrentHashMap<>();
 
   private final NamedList<Object> readerStats;
 
@@ -2468,14 +2466,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     try {
     return searcher.getTopReaderContext().leaves().stream().map(ctx -> {
       try {
-        return searcher.getCore().getFingerprint(searcher, ctx, maxVersion);
+        return searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion);
       } catch (IOException e) {
         exception.set(e);
         return null;
       }
     })
       .filter(java.util.Objects::nonNull)
-      .reduce(new IndexFingerprint(), IndexFingerprint::reduce);
+      .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
     }finally {
       if (exception.get() != null) throw exception.get();
     }

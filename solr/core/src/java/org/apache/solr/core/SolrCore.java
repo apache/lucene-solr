@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -50,7 +49,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.io.FileUtils;
@@ -150,6 +148,8 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.MapMaker;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
@@ -201,8 +201,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   public Date getStartTimeStamp() { return startTime; }
   
-  // Map is not concurrent, but since computeIfAbsent is idempotent, it should be alright for two threads to compute values for the same key.   
-  private final Map<LeafReaderContext, Map<Long, IndexFingerprint>> perSegmentFingerprintCache = new WeakHashMap<>();
+  private final Map<Object, IndexFingerprint> perSegmentFingerprintCache = new  MapMaker().weakKeys().makeMap();
 
   public long getStartNanoTime() {
     return startNanoTime;
@@ -1511,25 +1510,37 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   public RefCounted<SolrIndexSearcher> getSearcher() {
     return getSearcher(false,true,null);
   }
-  
-  public IndexFingerprint getFingerprint(SolrIndexSearcher searcher, LeafReaderContext ctx, long maxVersion)
+
+  /**
+   * Computes fingerprint of a segment and caches it only if all the version in segment are included in the fingerprint. 
+   * We can't use computeIfAbsent as caching is conditional (as described above) 
+   * There is chance that two threads may compute fingerprint on the same segment. It might be OK to do so rather than locking entire map.
+   * @param searcher searcher that includes specified LeaderReaderContext
+   * @param ctx LeafReaderContext of a segment to compute fingerprint of 
+   * @param maxVersion maximum version number to consider for fingerprint computation
+   * @return IndexFingerprint of the segment
+   * @throws IOException Can throw IOException
+   */
+  public IndexFingerprint getIndexFingerprint(SolrIndexSearcher searcher, LeafReaderContext ctx, long maxVersion)
       throws IOException {
-    final AtomicReference<IOException> exception = new AtomicReference<>();
-    try {
-      Map<Long,IndexFingerprint> segLocalFingerprintCache = perSegmentFingerprintCache.computeIfAbsent(ctx,
-          k -> new ConcurrentHashMap<>());
-      return segLocalFingerprintCache.computeIfAbsent(maxVersion, key -> {
-        try {
-          return IndexFingerprint.getFingerprint(searcher, ctx, key);
-        } catch (IOException e) {
-          exception.set(e);
-          return null;
+      IndexFingerprint f = null;
+      f = perSegmentFingerprintCache.get(ctx.reader().getCoreCacheKey()) ; 
+      // fingerprint is either not cached or 
+      // we want fingerprint only up to a version less than maxVersionEncountered in the segment 
+      if(f == null || (f.getMaxInHash() > maxVersion)) {
+        log.debug("IndexFingerprint cache miss for searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader() , ctx.reader().hashCode(), maxVersion);
+        f = IndexFingerprint.getFingerprint(searcher, ctx, maxVersion);
+        // cache fingerprint for the segment only if all the versions in the segment are included in the fingerprint  
+        if(f.getMaxVersionEncountered() == f.getMaxInHash()) {
+          log.info("Caching fingerprint for searcher:{} leafReaderContext:{} mavVersion:{}", searcher, ctx, maxVersion);
+          perSegmentFingerprintCache.put(ctx.reader().getCoreCacheKey(), f);
         }
         
-      });
-    } finally {
-      if (exception.get() != null) throw exception.get();
-    }
+      } else {
+        log.debug("IndexFingerprint cache hit for searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader(), ctx.reader().hashCode(), maxVersion);
+      }
+      log.debug("Cache Size: {}, Segments Size:{}", perSegmentFingerprintCache.size(), searcher.getTopReaderContext().leaves().size());
+      return f;
   }
 
   /**

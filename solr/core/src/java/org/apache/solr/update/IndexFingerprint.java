@@ -52,6 +52,14 @@ public class IndexFingerprint implements MapSerializable {
   private long numDocs;
   private long maxDoc;
 
+  public IndexFingerprint() {
+    // default constructor
+  }
+  
+  public IndexFingerprint (long maxVersionSpecified)  {
+    this.maxVersionSpecified = maxVersionSpecified;
+  }
+  
   public long getMaxVersionSpecified() {
     return maxVersionSpecified;
   }
@@ -106,7 +114,7 @@ public class IndexFingerprint implements MapSerializable {
     
     IndexFingerprint f = new IndexFingerprint();
     f.maxVersionSpecified = maxVersion;
-    f.maxDoc = searcher.maxDoc();
+    f.maxDoc = ctx.reader().maxDoc();
     f.numDocs = ctx.reader().numDocs();
     
     int maxDoc = ctx.reader().maxDoc();
@@ -128,7 +136,7 @@ public class IndexFingerprint implements MapSerializable {
   
   
   public static IndexFingerprint reduce(IndexFingerprint acc, IndexFingerprint f2) {
-    acc.maxVersionSpecified = Math.max(acc.maxVersionSpecified, f2.maxVersionSpecified);
+    // acc should have maxVersionSpecified already set in it using IndexFingerprint(long maxVersionSpecified) constructor
     acc.maxDoc = Math.max(acc.maxDoc, f2.maxDoc);
     acc.numDocs += f2.numDocs;
     acc.maxVersionEncountered = Math.max(acc.maxVersionEncountered, f2.maxVersionEncountered);
