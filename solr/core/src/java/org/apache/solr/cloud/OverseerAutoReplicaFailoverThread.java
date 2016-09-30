@@ -137,6 +137,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
           Thread.sleep(workLoopDelay);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
+          return;
         }
       }
     }
