@@ -19,11 +19,11 @@ var solrAdminServices = angular.module('solrAdminServices', ['ngResource']);
 
 solrAdminServices.factory('System',
   ['$resource', function($resource) {
-    return $resource('/solr/admin/info/system', {"wt":"json", "_":Date.now()});
+    return $resource('admin/info/system', {"wt":"json", "_":Date.now()});
   }])
 .factory('Collections',
   ['$resource', function($resource) {
-    return $resource('/solr/admin/collections',
+    return $resource('admin/collections',
     {'wt':'json', '_':Date.now()}, {
     "list": {params:{action: "LIST"}},
     "status": {params:{action: "CLUSTERSTATUS"}},
@@ -40,7 +40,7 @@ solrAdminServices.factory('System',
   }])
 .factory('Cores',
   ['$resource', function($resource) {
-    return $resource('/solr/admin/cores',
+    return $resource('admin/cores',
     {'wt':'json', '_':Date.now()}, {
     "query": {},
     "list": {params:{indexInfo: false}},
@@ -54,7 +54,7 @@ solrAdminServices.factory('System',
   }])
 .factory('Logging',
   ['$resource', function($resource) {
-    return $resource('/solr/admin/info/logging', {'wt':'json', '_':Date.now()}, {
+    return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
       "events": {params: {since:'0'}},
       "levels": {},
       "setLevel": {}
@@ -62,7 +62,7 @@ solrAdminServices.factory('System',
   }])
 .factory('Zookeeper',
   ['$resource', function($resource) {
-    return $resource('/solr/admin/zookeeper', {wt:'json', _:Date.now()}, {
+    return $resource('admin/zookeeper', {wt:'json', _:Date.now()}, {
       "simple": {},
       "dump": {params: {dump: "true"}},
       "liveNodes": {params: {path: '/live_nodes'}},
@@ -81,30 +81,30 @@ solrAdminServices.factory('System',
   }])
 .factory('Properties',
   ['$resource', function($resource) {
-    return $resource('/solr/admin/info/properties', {'wt':'json', '_':Date.now()});
+    return $resource('admin/info/properties', {'wt':'json', '_':Date.now()});
   }])
 .factory('Threads',
   ['$resource', function($resource) {
-    return $resource('/solr/admin/info/threads', {'wt':'json', '_':Date.now()});
+    return $resource('admin/info/threads', {'wt':'json', '_':Date.now()});
   }])
 .factory('Properties',
   ['$resource', function($resource) {
-    return $resource('/solr/admin/info/properties', {'wt':'json', '_':Date.now()});
+    return $resource('admin/info/properties', {'wt':'json', '_':Date.now()});
   }])
 .factory('Replication',
   ['$resource', function($resource) {
-    return $resource('/solr/:core/replication', {'wt':'json', core: "@core", '_':Date.now()}, {
+    return $resource(':core/replication', {'wt':'json', core: "@core", '_':Date.now()}, {
       "details": {params: {command: "details"}},
       "command": {params: {}}
     });
   }])
 .factory('CoreSystem',
   ['$resource', function($resource) {
-    return $resource('/solr/:core/admin/system', {wt:'json', core: "@core", _:Date.now()});
+    return $resource(':core/admin/system', {wt:'json', core: "@core", _:Date.now()});
   }])
 .factory('Update',
   ['$resource', function($resource) {
-    return $resource('/solr/:core/:handler', {core: '@core', wt:'json', _:Date.now(), handler:'update'}, {
+    return $resource(':core/:handler', {core: '@core', wt:'json', _:Date.now(), handler:'update'}, {
       "optimize": {params: { optimize: "true"}},
       "commit": {params: {commit: "true"}},
       "post": {headers: {'Content-type': 'application/json'}, method: "POST", params: {handler: '@handler'}},
@@ -115,7 +115,7 @@ solrAdminServices.factory('System',
   }])
 .service('FileUpload', function ($http) {
     this.upload = function(params, file, success, error){
-        var url = "/solr/" + params.core + "/" + params.handler + "?";
+        var url = "" + params.core + "/" + params.handler + "?";
         raw = params.raw;
         delete params.core;
         delete params.handler;
@@ -135,7 +135,7 @@ solrAdminServices.factory('System',
 })
 .factory('Luke',
   ['$resource', function($resource) {
-    return $resource('/solr/:core/admin/luke', {core: '@core', wt:'json', _:Date.now()}, {
+    return $resource(':core/admin/luke', {core: '@core', wt:'json', _:Date.now()}, {
       "index":  {params: {numTerms: 0, show: 'index'}},
       "raw": {params: {numTerms: 0}},
       "schema": {params: {show:'schema'}},
@@ -156,13 +156,13 @@ solrAdminServices.factory('System',
   }])
 .factory('Analysis',
   ['$resource', function($resource) {
-    return $resource('/solr/:core/analysis/field', {core: '@core', wt:'json', _:Date.now()}, {
+    return $resource(':core/analysis/field', {core: '@core', wt:'json', _:Date.now()}, {
       "field": {params: {"analysis.showmatch": true}}
     });
   }])
 .factory('DataImport',
   ['$resource', function($resource) {
-    return $resource('/solr/:core/:name', {core: '@core', name: '@name', indent:'on', wt:'json', _:Date.now()}, {
+    return $resource(':core/:name', {core: '@core', name: '@name', indent:'on', wt:'json', _:Date.now()}, {
       "config": {params: {command: "show-config"}, headers: {doNotIntercept: "true"},
                  transformResponse: function(data) {
                     return {config: data};
@@ -177,14 +177,14 @@ solrAdminServices.factory('System',
   }])
 .factory('Ping',
   ['$resource', function($resource) {
-    return $resource('/solr/:core/admin/ping', {wt:'json', core: '@core', ts:Date.now(), _:Date.now()}, {
+    return $resource(':core/admin/ping', {wt:'json', core: '@core', ts:Date.now(), _:Date.now()}, {
      "ping": {},
      "status": {params:{action:"status"}, headers: {doNotIntercept: "true"}
     }});
   }])
 .factory('Mbeans',
   ['$resource', function($resource) {
-    return $resource('/solr/:core/admin/mbeans', {'wt':'json', core: '@core', '_':Date.now()}, {
+    return $resource(':core/admin/mbeans', {'wt':'json', core: '@core', '_':Date.now()}, {
         stats: {params: {stats: true}},
         info: {},
         reference: {
@@ -203,7 +203,7 @@ solrAdminServices.factory('System',
   }])
 .factory('Files',
   ['$resource', function($resource) {
-    return $resource('/solr/:core/admin/file', {'wt':'json', core: '@core', '_':Date.now()}, {
+    return $resource(':core/admin/file', {'wt':'json', core: '@core', '_':Date.now()}, {
       "list": {},
       "get": {method: "GET", interceptor: {
           response: function(config) {return config;}
@@ -214,7 +214,7 @@ solrAdminServices.factory('System',
   }])
 .factory('Query',
     ['$resource', function($resource) {
-       var resource = $resource('/solr/:core/:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
+       var resource = $resource(':core/:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
            "query": {
              method: "GET",
              transformResponse: function (data) {
@@ -232,19 +232,19 @@ solrAdminServices.factory('System',
                    }
                }
            }
-           return "/solr/" + params.core + "/" + params.handler + "?" + qs.sort().join("&");
+           return "" + params.core + "/" + params.handler + "?" + qs.sort().join("&");
        }
        return resource;
 }])
 .factory('Segments',
    ['$resource', function($resource) {
-       return $resource('/solr/:core/admin/segments', {'wt':'json', core: '@core', _:Date.now()}, {
+       return $resource(':core/admin/segments', {'wt':'json', core: '@core', _:Date.now()}, {
            get: {}
        });
 }])
 .factory('Schema',
    ['$resource', function($resource) {
-     return $resource('/solr/:core/schema', {wt: 'json', core: '@core', _:Date.now()}, {
+     return $resource(':core/schema', {wt: 'json', core: '@core', _:Date.now()}, {
        get: {method: "GET"},
        check: {method: "GET", headers: {doNotIntercept: "true"}},
        post: {method: "POST"}
@@ -252,7 +252,7 @@ solrAdminServices.factory('System',
 }])
 .factory('Config',
    ['$resource', function($resource) {
-     return $resource('/solr/:core/config', {wt: 'json', core: '@core', _:Date.now()}, {
+     return $resource(':core/config', {wt: 'json', core: '@core', _:Date.now()}, {
        get: {method: "GET"}
      })
 }]);
