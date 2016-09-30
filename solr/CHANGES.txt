@@ -108,6 +108,9 @@ New Features
 
 * SOLR-9258: Optimizing, storing and deploying AI models with Streaming Expressions (Cao Manh Dat, Joel Bernstein)
 
+* SOLR-9205: Added method LukeResponse.getSchemaFlags() which returns field
+  information as an EnumSet (Fengtan, Alan Woodward)
+
 
 Bug Fixes
 ----------------------
