@@ -37,7 +37,6 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
@@ -560,56 +559,10 @@ public class PeerSync  {
       return true;
     }
     
-    if(core.getSolrConfig().useRangeVersionsForPeerSync && canHandleVersionRanges(sreq.shards[0])) {
-      return handleVersionsWithRanges(srsp, otherVersions, sreq, completeList, otherHigh, otherHighest);
-    } else {
-      return handleIndividualVersions(srsp, otherVersions, sreq, completeList, otherHigh, otherHighest);
-    }
+   return handleVersionsWithRanges(srsp, otherVersions, sreq, completeList, otherHigh, otherHighest);
   }
 
-  private boolean handleIndividualVersions(ShardResponse srsp, List<Long> otherVersions, SyncShardRequest sreq,
-      boolean completeList, long otherHigh, long otherHighest) {
-    List<Long> toRequest = new ArrayList<>();
-    for (Long otherVersion : otherVersions) {
-      // stop when the entries get old enough that reorders may lead us to see updates we don't need
-      if (!completeList && Math.abs(otherVersion) < ourLowThreshold) break;
 
-      if (ourUpdateSet.contains(otherVersion) || requestedUpdateSet.contains(otherVersion)) {
-        // we either have this update, or already requested it
-        // TODO: what if the shard we previously requested this from returns failure (because it goes
-        // down)
-        continue;
-      }
-
-      toRequest.add(otherVersion);
-      requestedUpdateSet.add(otherVersion);
-    }
-
-    // TODO, do we really need to hold on to all the version numbers we requested.
-    // keeping track of totalRequestedUpdates should suffice for verification 
-    sreq.requestedUpdates = toRequest;
-    sreq.totalRequestedUpdates = toRequest.size();
-    
-    if (toRequest.isEmpty()) {
-      log.info(msg() + " No additional versions requested. ourLowThreshold="+ourLowThreshold + " otherHigh="+otherHigh+ " ourHighest=" + ourHighest + " otherHighest=" + otherHighest);
-
-      // we had (or already requested) all the updates referenced by the replica
-
-      // If we requested updates from another replica, we can't compare fingerprints yet with this replica, we need to defer
-      if (doFingerprint) {
-        sreq.doFingerprintComparison = true;
-      }
-
-      return true;
-    }
-    
-    if (toRequest.size() > maxUpdates) {
-      log.info(msg() + " Failing due to needing too many updates:" + maxUpdates);
-      return false;
-    }
-
-    return requestUpdates(srsp, StrUtils.join(toRequest, ','), toRequest.size());
-  }
 
   private boolean compareFingerprint(SyncShardRequest sreq) {
     if (sreq.fingerprint == null) return true;

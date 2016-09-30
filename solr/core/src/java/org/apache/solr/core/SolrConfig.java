@@ -247,8 +247,6 @@ public class SolrConfig extends Config implements MapSerializable {
     queryResultMaxDocsCached = getInt("query/queryResultMaxDocsCached", Integer.MAX_VALUE);
     enableLazyFieldLoading = getBool("query/enableLazyFieldLoading", false);
     
-    useRangeVersionsForPeerSync = getBool("peerSync/useRangeVersions", true);
-
     filterCacheConfig = CacheConfig.getConfig(this, "query/filterCache");
     queryResultCacheConfig = CacheConfig.getConfig(this, "query/queryResultCache");
     documentCacheConfig = CacheConfig.getConfig(this, "query/documentCache");
@@ -486,7 +484,6 @@ public class SolrConfig extends Config implements MapSerializable {
   public final int queryResultMaxDocsCached;
   public final boolean enableLazyFieldLoading;
   
-  public final boolean useRangeVersionsForPeerSync;
   
   // DocSet
   public final float hashSetInverseLoadFactor;
@@ -887,10 +884,6 @@ public class SolrConfig extends Config implements MapSerializable {
         "formUploadLimitKB", formUploadLimitKB,
         "addHttpRequestToContext", addHttpRequestToContext));
     if (indexConfig != null) result.put("indexConfig", indexConfig);
-
-    m = new LinkedHashMap();
-    result.put("peerSync", m);
-    m.put("useRangeVersions", useRangeVersionsForPeerSync);
 
     //TODO there is more to add
 
