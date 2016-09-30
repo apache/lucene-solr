@@ -106,6 +106,9 @@ New Features
 
 * SOLR-9572: config API to show expanded useParams for request handlers inline (noble)
 
+* SOLR-9258: Optimizing, storing and deploying AI models with Streaming Expressions (Cao Manh Dat, Joel Bernstein)
+
+
 Bug Fixes
 ----------------------
 
