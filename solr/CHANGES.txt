@@ -141,6 +141,9 @@ Bug Fixes
 * SOLR-9554: Fix NullPointerException when cores are loaded in parallel and switch schema.xml to managed-scheme.
  (Alan Woodward, Mikhail Khludnev)
 
+* SOLR-9556: OverseerAutoFailoverReplicaThread was not exiting on interrupt
+  (Alan Woodward)
+
 Optimizations
 ----------------------
 
