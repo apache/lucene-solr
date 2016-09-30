@@ -228,6 +228,8 @@ Other Changes
 
 * SOLR-9574: Factor out AbstractReRankQuery from ReRankQParserPlugin's private ReRankQuery. (Christine Poerschke)
 
+* SOLR-5041: Add a test to make sure that a leader always recovers from log on startup. (Cao Manh Dat, shalin)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
