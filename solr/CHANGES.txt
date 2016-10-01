@@ -78,6 +78,10 @@ behavior; otherwise it won't stream.  Reminder: "method" is a hint that doesn't 
 * If you use the JSON Facet API (json.facet) to facet on a numeric field and if you use mincount=0 or if you set the
 prefix, then you will now get an error as these options are incompatible with numeric faceting.
 
+* Solr's logging verbosity at the INFO level has been greatly reduced, and
+  you may need to update the log configs to use the DEBUG level to get the
+  same logging messages as before.
+
 New Features
 ----------------------
 * SOLR-5725: facet.method=enum can bypass exact counts calculation with facet.exists=true, it just returns 1 for 
