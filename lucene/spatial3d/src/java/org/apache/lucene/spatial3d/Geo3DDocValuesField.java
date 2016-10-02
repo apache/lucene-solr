@@ -67,6 +67,12 @@ public class Geo3DDocValuesField extends Field {
   private final static double yFactor = 1.0 / inverseYFactor;
   private final static double zFactor = 1.0 / inverseZFactor;
   
+  // These values are the delta between a value and the next value in each specific dimension
+  
+  private final static double xStep = inverseXFactor;
+  private final static double yStep = inverseYFactor;
+  private final static double zStep = inverseZFactor;
+  
   /**
    * Type for a Geo3DDocValuesField
    * <p>
@@ -180,6 +186,54 @@ public class Geo3DDocValuesField extends Field {
    */
   public static double decodeZValue(final long docValue) {
     return decodeZ(((int)(docValue)) & 0x1FFFFF);
+  }
+
+  /** Round the provided X value down, by encoding it, decrementing it, and unencoding it.
+   * @param startValue is the starting value.
+   * @return the rounded value.
+   */
+  public static double roundDownX(final double startValue) {
+    return startValue - xStep;
+  }
+
+  /** Round the provided X value up, by encoding it, incrementing it, and unencoding it.
+   * @param startValue is the starting value.
+   * @return the rounded value.
+   */
+  public static double roundUpX(final double startValue) {
+    return startValue + xStep;
+  }
+
+  /** Round the provided Y value down, by encoding it, decrementing it, and unencoding it.
+   * @param startValue is the starting value.
+   * @return the rounded value.
+   */
+  public static double roundDownY(final double startValue) {
+    return startValue - yStep;
+  }
+
+  /** Round the provided Y value up, by encoding it, incrementing it, and unencoding it.
+   * @param startValue is the starting value.
+   * @return the rounded value.
+   */
+  public static double roundUpY(final double startValue) {
+    return startValue + yStep;
+  }
+  
+  /** Round the provided Z value down, by encoding it, decrementing it, and unencoding it.
+   * @param startValue is the starting value.
+   * @return the rounded value.
+   */
+  public static double roundDownZ(final double startValue) {
+    return startValue - zStep;
+  }
+
+  /** Round the provided Z value up, by encoding it, incrementing it, and unencoding it.
+   * @param startValue is the starting value.
+   * @return the rounded value.
+   */
+  public static double roundUpZ(final double startValue) {
+    return startValue + zStep;
   }
 
   // For encoding/decoding, we generally want the following behavior:
