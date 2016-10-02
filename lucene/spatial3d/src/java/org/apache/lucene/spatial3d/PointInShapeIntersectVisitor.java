@@ -30,13 +30,25 @@ import org.apache.lucene.util.NumericUtils;
 class PointInShapeIntersectVisitor implements IntersectVisitor {
   private final DocIdSetBuilder hits;
   private final GeoShape shape;
-  private final XYZBounds shapeBounds;
+  private final double minimumX;
+  private final double maximumX;
+  private final double minimumY;
+  private final double maximumY;
+  private final double minimumZ;
+  private final double maximumZ;
   private DocIdSetBuilder.BulkAdder adder;
   
-  public PointInShapeIntersectVisitor(DocIdSetBuilder hits, GeoShape shape, XYZBounds shapeBounds) {
+  public PointInShapeIntersectVisitor(DocIdSetBuilder hits,
+    GeoShape shape,
+    XYZBounds bounds) {
     this.hits = hits;
     this.shape = shape;
-    this.shapeBounds = shapeBounds;
+    this.minimumX = Geo3DDocValuesField.roundDownX(bounds.getMinimumX());
+    this.maximumX = Geo3DDocValuesField.roundUpX(bounds.getMaximumX());
+    this.minimumY = Geo3DDocValuesField.roundDownY(bounds.getMinimumY());
+    this.maximumY = Geo3DDocValuesField.roundUpY(bounds.getMaximumY());
+    this.minimumZ = Geo3DDocValuesField.roundDownZ(bounds.getMinimumZ());
+    this.maximumZ = Geo3DDocValuesField.roundUpZ(bounds.getMaximumZ());
   }
 
   @Override
@@ -55,9 +67,9 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
     double x = Geo3DPoint.decodeDimension(packedValue, 0);
     double y = Geo3DPoint.decodeDimension(packedValue, Integer.BYTES);
     double z = Geo3DPoint.decodeDimension(packedValue, 2 * Integer.BYTES);
-    if (x >= shapeBounds.getMinimumX() && x <= shapeBounds.getMaximumX() &&
-      y >= shapeBounds.getMinimumY() && y <= shapeBounds.getMaximumY() &&
-      z >= shapeBounds.getMinimumZ() && z <= shapeBounds.getMaximumZ()) {
+    if (x >= minimumX && x <= maximumX &&
+      y >= minimumY && y <= maximumY &&
+      z >= minimumZ && z <= maximumZ) {
       if (shape.isWithin(x, y, z)) {
         adder.add(docID);
       }
@@ -83,9 +95,9 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
     assert zMin <= zMax;
 
     // First, check bounds.  If the shape is entirely contained, return CELL_CROSSES_QUERY.
-    if (shapeBounds.getMinimumX() >= xMin && shapeBounds.getMaximumX() <= xMax &&
-      shapeBounds.getMinimumY() >= yMin && shapeBounds.getMaximumY() <= yMax &&
-      shapeBounds.getMinimumZ() >= zMin && shapeBounds.getMaximumZ() <= zMax) {
+    if (minimumX >= xMin && maximumX <= xMax &&
+      minimumY >= yMin && maximumY <= yMax &&
+      minimumZ >= zMin && maximumZ <= zMax) {
       return Relation.CELL_CROSSES_QUERY;
     }
 
