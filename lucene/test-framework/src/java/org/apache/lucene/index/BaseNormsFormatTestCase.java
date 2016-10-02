@@ -35,6 +35,8 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 /**
  * Abstract class to do basic tests for a norms format.
  * NOTE: This test focuses on the norms impl, nothing else.
@@ -279,8 +281,11 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
       NumericDocValues expected = r.getNumericDocValues("dv");
       NumericDocValues actual = r.getNormValues("indexed");
       for (int i = 0; i < r.maxDoc(); i++) {
-        assertEquals("doc " + i, expected.get(i), actual.get(i));
+        assertEquals(i, expected.nextDoc());
+        assertEquals(i, actual.nextDoc());
+        assertEquals("doc " + i, expected.longValue(), actual.longValue());
       }
+      assertEquals(NO_MORE_DOCS, expected.nextDoc());
     }
     ir.close();
     
@@ -293,7 +298,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
       NumericDocValues expected = r.getNumericDocValues("dv");
       NumericDocValues actual = r.getNormValues("indexed");
       for (int i = 0; i < r.maxDoc(); i++) {
-        assertEquals("doc " + i, expected.get(i), actual.get(i));
+        assertEquals(i, expected.nextDoc());
+        assertEquals(i, actual.nextDoc());
+        assertEquals("doc " + i, expected.longValue(), actual.longValue());
       }
     }
     
@@ -397,7 +404,8 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     NumericDocValues norms = MultiDocValues.getNormValues(r, "content");
     assertNotNull(norms);
     for(int i=0;i<r.maxDoc();i++) {
-      assertEquals(0, norms.get(i));
+      assertEquals(i, norms.nextDoc());
+      assertEquals(0, norms.longValue());
     }
 
     r.close();

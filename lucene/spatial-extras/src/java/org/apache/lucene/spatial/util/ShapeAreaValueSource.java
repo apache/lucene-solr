@@ -69,7 +69,7 @@ public class ShapeAreaValueSource extends ValueSource {
 
     return new DoubleDocValues(this) {
       @Override
-      public double doubleVal(int doc) {
+      public double doubleVal(int doc) throws IOException {
         Shape shape = (Shape) shapeValues.objectVal(doc);
         if (shape == null || shape.isEmpty())
           return 0;//or NaN?
@@ -79,12 +79,12 @@ public class ShapeAreaValueSource extends ValueSource {
       }
 
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         return shapeValues.exists(doc);
       }
 
       @Override
-      public Explanation explain(int doc) {
+      public Explanation explain(int doc) throws IOException {
         Explanation exp = super.explain(doc);
         List<Explanation> details = new ArrayList<>(Arrays.asList(exp.getDetails()));
         details.add(shapeValues.explain(doc));

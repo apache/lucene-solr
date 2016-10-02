@@ -18,6 +18,7 @@ package org.apache.solr.cloud.rule;
 
 import java.lang.invoke.MethodHandles;
 
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -52,7 +53,7 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
   @ShardsFixed(num = 5)
   public void doIntegrationTest() throws Exception {
     final long minGB = (random().nextBoolean() ? 1 : 0);
-    assumeTrue("doIntegrationTest needs minGB="+minGB+" usable disk space", ImplicitSnitch.getUsableSpaceInGB() > minGB);
+    assumeTrue("doIntegrationTest needs minGB="+minGB+" usable disk space", ImplicitSnitch.getUsableSpaceInGB(Paths.get("/")) > minGB);
     String rulesColl = "rulesColl";
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       CollectionAdminResponse rsp;
@@ -208,8 +209,8 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
   public void testModifyColl() throws Exception {
     final long minGB1 = (random().nextBoolean() ? 1 : 0);
     final long minGB2 = 5;
-    assumeTrue("testModifyColl needs minGB1="+minGB1+" usable disk space", ImplicitSnitch.getUsableSpaceInGB() > minGB1);
-    assumeTrue("testModifyColl needs minGB2="+minGB2+" usable disk space", ImplicitSnitch.getUsableSpaceInGB() > minGB2);
+    assumeTrue("testModifyColl needs minGB1="+minGB1+" usable disk space", ImplicitSnitch.getUsableSpaceInGB(Paths.get("/")) > minGB1);
+    assumeTrue("testModifyColl needs minGB2="+minGB2+" usable disk space", ImplicitSnitch.getUsableSpaceInGB(Paths.get("/")) > minGB2);
     String rulesColl = "modifyColl";
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       CollectionAdminResponse rsp;
@@ -233,25 +234,16 @@ public class RulesTest extends AbstractFullDistribZkTestBase {
     }
 
 
-    for (int i = 0; i < 20; i++) {
-      DocCollection rulesCollection = ZkStateReader.getCollectionLive(cloudClient.getZkStateReader(), rulesColl);
-      log.info("version_of_coll {}  ", rulesCollection.getZNodeVersion());
-      List list = (List) rulesCollection.get("rule");
-      assertEquals(3, list.size());
-      if (!"<5".equals(((Map) list.get(0)).get("cores"))) {
-        if (i < 19) {
-          Thread.sleep(100);
-          continue;
-        }
-
-      }
-      assertEquals("<5", ((Map) list.get(0)).get("cores"));
-      assertEquals("1", ((Map) list.get(1)).get("replica"));
-      assertEquals(">"+minGB2, ((Map) list.get(2)).get("freedisk"));
-      assertEquals("true", String.valueOf(rulesCollection.getProperties().get("autoAddReplicas")));
-      list = (List) rulesCollection.get("snitch");
-      assertEquals(1, list.size());
-      assertEquals("ImplicitSnitch", ((Map) list.get(0)).get("class"));
-    }
+    DocCollection rulesCollection = ZkStateReader.getCollectionLive(cloudClient.getZkStateReader(), rulesColl);
+    log.info("version_of_coll {}  ", rulesCollection.getZNodeVersion());
+    List list = (List) rulesCollection.get("rule");
+    assertEquals(3, list.size());
+    assertEquals("<5", ((Map) list.get(0)).get("cores"));
+    assertEquals("1", ((Map) list.get(1)).get("replica"));
+    assertEquals(">"+minGB2, ((Map) list.get(2)).get("freedisk"));
+    assertEquals("true", String.valueOf(rulesCollection.getProperties().get("autoAddReplicas")));
+    list = (List) rulesCollection.get("snitch");
+    assertEquals(1, list.size());
+    assertEquals("ImplicitSnitch", ((Map) list.get(0)).get("class"));
   }
 }

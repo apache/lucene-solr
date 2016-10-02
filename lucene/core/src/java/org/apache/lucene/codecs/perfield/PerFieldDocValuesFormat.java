@@ -40,8 +40,6 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -105,28 +103,28 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     }
     
     @Override
-    public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
-      getInstance(field).addNumericField(field, values);
+    public void addNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+      getInstance(field).addNumericField(field, valuesProducer);
     }
 
     @Override
-    public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
-      getInstance(field).addBinaryField(field, values);
+    public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+      getInstance(field).addBinaryField(field, valuesProducer);
     }
 
     @Override
-    public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
-      getInstance(field).addSortedField(field, values, docToOrd);
+    public void addSortedField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+      getInstance(field).addSortedField(field, valuesProducer);
     }
 
     @Override
-    public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
-      getInstance(field).addSortedNumericField(field, docToValueCount, values);
+    public void addSortedNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+      getInstance(field).addSortedNumericField(field, valuesProducer);
     }
 
     @Override
-    public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
-      getInstance(field).addSortedSetField(field, values, docToOrdCount, ords);
+    public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+      getInstance(field).addSortedSetField(field, valuesProducer);
     }
 
     private DocValuesConsumer getInstance(FieldInfo field) throws IOException {
@@ -307,12 +305,6 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
       return producer == null ? null : producer.getSortedSet(field);
     }
     
-    @Override
-    public Bits getDocsWithField(FieldInfo field) throws IOException {
-      DocValuesProducer producer = fields.get(field.name);
-      return producer == null ? null : producer.getDocsWithField(field);
-    }
-
     @Override
     public void close() throws IOException {
       IOUtils.close(formats.values());

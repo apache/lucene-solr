@@ -192,6 +192,21 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     compareValues(result, "A val", asList("params", "a"));
     compareValues(result, Arrays.asList("val 1", "val 2"), asList("params", "d"));
     compareValues(result, "20", asList("params", "i"));
+
+    result = TestSolrConfigHandler.testForResponseElement(null,
+        urls.get(random().nextInt(urls.size())),
+        "/config/requestHandler?componentName=/dump1&expandParams=true&wt=json&useParams=y&c=CC",
+        cloudClient,
+        asList("config", "requestHandler","/dump1","_useParamsExpanded_","x", "a"),
+        "A val",
+        5);
+    compareValues(result, "B val", asList("config", "requestHandler","/dump1","_useParamsExpanded_","x", "b"));
+    compareValues(result, "CY val", asList("config", "requestHandler","/dump1","_useParamsExpanded_","y", "c"));
+    compareValues(result, "BY val", asList("config", "requestHandler","/dump1","_useParamsExpanded_","y", "b"));
+    compareValues(result, "A val", asList("config", "requestHandler","/dump1","_effectiveParams_", "a"));
+    compareValues(result, "BY val", asList("config", "requestHandler","/dump1","_effectiveParams_", "b"));
+    compareValues(result, "CC", asList("config", "requestHandler","/dump1","_effectiveParams_", "c"));
+
     payload = " {\n" +
         "  'update' : {'y': {\n" +
         "                'c':'CY val modified',\n" +

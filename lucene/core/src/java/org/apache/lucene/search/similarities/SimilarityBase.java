@@ -274,17 +274,31 @@ public abstract class SimilarityBase extends Similarity {
       this.stats = stats;
       this.norms = norms;
     }
+
+    private float getNormValue(int doc) throws IOException {
+      if (norms == null) {
+        return 1F;
+      }
+      int normsDocID = norms.docID();
+      if (normsDocID < doc) {
+        normsDocID = norms.advance(doc);
+      }
+      if (normsDocID == doc) {
+        return decodeNormValue((byte) norms.longValue());
+      } else {
+        return decodeNormValue((byte) 0);
+      }
+    }
     
     @Override
-    public float score(int doc, float freq) {
+    public float score(int doc, float freq) throws IOException {
       // We have to supply something in case norms are omitted
-      return SimilarityBase.this.score(stats, freq,
-          norms == null ? 1F : decodeNormValue((byte)norms.get(doc)));
+      return SimilarityBase.this.score(stats, freq, getNormValue(doc));
     }
+
     @Override
-    public Explanation explain(int doc, Explanation freq) {
-      return SimilarityBase.this.explain(stats, doc, freq,
-          norms == null ? 1F : decodeNormValue((byte)norms.get(doc)));
+    public Explanation explain(int doc, Explanation freq) throws IOException {
+      return SimilarityBase.this.explain(stats, doc, freq, getNormValue(doc));
     }
 
     @Override

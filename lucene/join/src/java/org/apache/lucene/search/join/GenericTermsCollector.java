@@ -43,9 +43,9 @@ interface GenericTermsCollector extends Collector {
       case None:
         return wrap(new TermsCollector.MV(mvFunction));
       case Avg:
-          return new MV.Avg(mvFunction);
+        return new MV.Avg(mvFunction);
       default:
-          return new MV(mvFunction, mode);
+        return new MV(mvFunction, mode);
     }
   }
 
@@ -55,13 +55,31 @@ interface GenericTermsCollector extends Collector {
       return new SortedSetDocValues() {
         
         @Override
-        public void setDocument(int docID) {
-          target.setDocument(docID);
-          out.println("\ndoc# "+docID);
+        public int docID() {
+          return target.docID();
+        }
+
+        @Override
+        public int nextDoc() throws IOException {
+          int docID = target.nextDoc();
+          out.println("\nnextDoc doc# "+docID);
+          return docID;
+        }
+
+        @Override
+        public int advance(int dest) throws IOException {
+          int docID = target.advance(dest);
+          out.println("\nadvance(" + dest + ") -> doc# "+docID);
+          return docID;
+        }
+
+        @Override
+        public long cost() {
+          return target.cost();
         }
         
         @Override
-        public long nextOrd() {
+        public long nextOrd() throws IOException {
           return target.nextOrd();
         }
         

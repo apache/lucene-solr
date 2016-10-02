@@ -38,7 +38,9 @@ public abstract class ValueSource {
 
   /**
    * Gets the values for this reader and the context that was previously
-   * passed to createWeight()
+   * passed to createWeight().  The values must be consumed in a forward
+   * docID manner, and you must call this method again to iterate through
+   * the values again.
    */
   public abstract FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException;
 
@@ -144,12 +146,12 @@ public abstract class ValueSource {
     }
 
     @Override
-    public int compareBottom(int doc) {
+    public int compareBottom(int doc) throws IOException {
       return Double.compare(bottom, docVals.doubleVal(doc));
     }
 
     @Override
-    public void copy(int slot, int doc) {
+    public void copy(int slot, int doc) throws IOException {
       values[slot] = docVals.doubleVal(doc);
     }
 
@@ -174,7 +176,7 @@ public abstract class ValueSource {
     }
 
     @Override
-    public int compareTop(int doc) {
+    public int compareTop(int doc) throws IOException {
       final double docValue = docVals.doubleVal(doc);
       return Double.compare(topValue, docValue);
     }

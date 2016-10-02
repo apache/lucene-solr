@@ -17,17 +17,20 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
+
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A per-document set of presorted byte[] values.
+ * A multi-valued version of {@link SortedDocValues}.
  * <p>
- * Per-Document values in a SortedDocValues are deduplicated, dereferenced,
+ * Per-Document values in a SortedSetDocValues are deduplicated, dereferenced,
  * and sorted into a dictionary of unique values. A pointer to the
  * dictionary value (ordinal) can be retrieved for each document. Ordinals
  * are dense and in increasing sorted order.
  */
-public abstract class SortedSetDocValues {
+public abstract class SortedSetDocValues extends DocIdSetIterator {
   
   /** Sole constructor. (For invocation by subclass 
    * constructors, typically implicit.) */
@@ -39,20 +42,15 @@ public abstract class SortedSetDocValues {
   public static final long NO_MORE_ORDS = -1;
 
   /** 
-   * Returns the next ordinal for the current document (previously
-   * set by {@link #setDocument(int)}.
+   * Returns the next ordinal for the current document.
    * @return next ordinal for the document, or {@link #NO_MORE_ORDS}. 
    *         ordinals are dense, start at 0, then increment by 1 for 
    *         the next value in sorted order. 
    */
-  public abstract long nextOrd();
-  
-  /** 
-   * Sets iteration to the specified docID 
-   * @param docID document ID 
-   */
-  public abstract void setDocument(int docID);
+  public abstract long nextOrd() throws IOException;
 
+  // TODO: should we have a docValueCount, like SortedNumeric?
+  
   /** Retrieves the value for the specified ordinal. The returned
    * {@link BytesRef} may be re-used across calls to lookupOrd so make sure to
    * {@link BytesRef#deepCopyOf(BytesRef) copy it} if you want to keep it

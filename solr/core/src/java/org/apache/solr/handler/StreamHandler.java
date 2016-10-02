@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -36,10 +37,10 @@ import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.stream.*;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
@@ -64,6 +65,7 @@ import org.slf4j.LoggerFactory;
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
   static SolrClientCache clientCache = new SolrClientCache();
+  static ModelCache modelCache = null;
   private StreamFactory streamFactory = new StreamFactory();
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
@@ -96,6 +98,9 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       defaultZkhost = core.getCoreDescriptor().getCoreContainer().getZkController().getZkServerAddress();
       streamFactory.withCollectionZkHost(defaultCollection, defaultZkhost);
       streamFactory.withDefaultZkHost(defaultZkhost);
+      modelCache = new ModelCache(250,
+                                  defaultZkhost,
+                                  clientCache);
     }
 
      streamFactory
@@ -105,6 +110,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("update", UpdateStream.class)
       .withFunctionName("jdbc", JDBCStream.class)
       .withFunctionName("topic", TopicStream.class)
+      .withFunctionName("commit", CommitStream.class)
       
       // decorator streams
       .withFunctionName("merge", MergeStream.class)
@@ -128,7 +134,9 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("shortestPath", ShortestPathStream.class)
       .withFunctionName("gatherNodes", GatherNodesStream.class)
       .withFunctionName("select", SelectStream.class)
-         .withFunctionName("scoreNodes", ScoreNodesStream.class)
+      .withFunctionName("scoreNodes", ScoreNodesStream.class)
+         .withFunctionName("model", ModelStream.class)
+         .withFunctionName("classify", ClassifyStream.class)
 
       // metrics
       .withFunctionName("min", MinMetric.class)
@@ -196,7 +204,9 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     context.workerID = worker;
     context.numWorkers = numWorkers;
     context.setSolrClientCache(clientCache);
+    context.setModelCache(modelCache);
     context.put("core", this.coreName);
+    context.put("solr-core", req.getCore());
     tupleStream.setStreamContext(context);
     
     // if asking for explanation then go get it
@@ -453,5 +463,4 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       return tuple;
     }
   }
-
 }

@@ -1942,7 +1942,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
     <sequential>
       <local name="javac.release.args"/>
-      <condition property="javac.release.args" value="-source @{javac.release} -target @{javac.release}" else="-release @{javac.release}">
+      <condition property="javac.release.args" value="-source @{javac.release} -target @{javac.release}" else="--release @{javac.release}">
         <equals arg1="${build.java.runtime}" arg2="1.8"/>
       </condition>
       <mkdir dir="@{destdir}"/>
@@ -2072,7 +2072,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     <attribute name="linksource" default="no"/>
     <sequential>
       <local name="javadoc.release.args"/>
-      <condition property="javadoc.release.args" value="-source ${javac.release}" else="-release ${javac.release}">
+      <condition property="javadoc.release.args" value="-source ${javac.release}" else="--release ${javac.release}">
         <equals arg1="${build.java.runtime}" arg2="1.8"/>
       </condition>
       <antcall target="download-java8-javadoc-packagelist"/>

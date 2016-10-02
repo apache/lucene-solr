@@ -77,8 +77,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final int TIMEOUT = 30000;
-  private static final boolean DEBUG = false;
-  
+
   private List<Overseer> overseers = new ArrayList<>();
   private List<ZkStateReader> readers = new ArrayList<>();
   private List<HttpShardHandlerFactory> httpShardHandlerFactorys = new ArrayList<>();
@@ -286,11 +285,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       assertNotNull(reader.getLeaderUrl(collection, "shard3", 15000));
       
     } finally {
-      if (DEBUG) {
-        if (zkController != null) {
-          zkClient.printLayoutToStdOut();
-        }
-      }
       close(zkClient);
       if (zkController != null) {
         zkController.close();
@@ -360,11 +354,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       assertNotNull(reader.getLeaderUrl("collection2", "shard3", 15000));
       
     } finally {
-      if (DEBUG) {
-        if (zkController != null) {
-          zkClient.printLayoutToStdOut();
-        }
-      }
       close(zkClient);
       if (zkController != null) {
         zkController.close();
@@ -499,11 +488,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
 
     } finally {
-      if (DEBUG) {
-        if (controllers[0] != null) {
-          zkClient.printLayoutToStdOut();
-        }
-      }
       close(zkClient);
       close(overseerClient);
       close(reader);

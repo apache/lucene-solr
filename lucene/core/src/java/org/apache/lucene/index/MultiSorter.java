@@ -18,18 +18,18 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.MergeState.DocMap;
-import org.apache.lucene.index.MergeState;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
+@SuppressWarnings({"unchecked","rawtypes"})
 final class MultiSorter {
   
   /** Does a merge sort of the leaves of the incoming reader, returning {@link DocMap} to map each leaf's
@@ -39,9 +39,9 @@ final class MultiSorter {
     // TODO: optimize if only 1 reader is incoming, though that's a rare case
 
     SortField fields[] = sort.getSort();
-    final CrossReaderComparator[] comparators = new CrossReaderComparator[fields.length];
+    final ComparableProvider[][] comparables = new ComparableProvider[fields.length][];
     for(int i=0;i<fields.length;i++) {
-      comparators[i] = getComparator(readers, fields[i]);
+      comparables[i] = getComparableProviders(readers, fields[i]);
     }
 
     int leafCount = readers.size();
@@ -49,8 +49,8 @@ final class MultiSorter {
     PriorityQueue<LeafAndDocID> queue = new PriorityQueue<LeafAndDocID>(leafCount) {
         @Override
         public boolean lessThan(LeafAndDocID a, LeafAndDocID b) {
-          for(int i=0;i<comparators.length;i++) {
-            int cmp = comparators[i].compare(a.readerIndex, a.docID, b.readerIndex, b.docID);
+          for(int i=0;i<comparables.length;i++) {
+            int cmp = a.values[i].compareTo(b.values[i]);
             if (cmp != 0) {
               return cmp < 0;
             }
@@ -59,8 +59,9 @@ final class MultiSorter {
           // tie-break by docID natural order:
           if (a.readerIndex != b.readerIndex) {
             return a.readerIndex < b.readerIndex;
+          } else {
+            return a.docID < b.docID;
           }
-          return a.docID < b.docID;
         }
     };
 
@@ -68,10 +69,16 @@ final class MultiSorter {
 
     for(int i=0;i<leafCount;i++) {
       CodecReader reader = readers.get(i);
-      queue.add(new LeafAndDocID(i, reader.getLiveDocs(), reader.maxDoc()));
+      LeafAndDocID leaf = new LeafAndDocID(i, reader.getLiveDocs(), reader.maxDoc(), comparables.length);
+      for(int j=0;j<comparables.length;j++) {
+        leaf.values[j] = comparables[j][i].getComparable(leaf.docID);
+        assert leaf.values[j] != null;
+      }
+      queue.add(leaf);
       builders[i] = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
     }
 
+    // merge sort:
     int mappedDocID = 0;
     while (queue.size() != 0) {
       LeafAndDocID top = queue.top();
@@ -81,6 +88,10 @@ final class MultiSorter {
       }
       top.docID++;
       if (top.docID < top.maxDoc) {
+        for(int j=0;j<comparables.length;j++) {
+          top.values[j] = comparables[j][top.readerIndex].getComparable(top.docID);
+          assert top.values[j] != null;
+        }
         queue.updateTop();
       } else {
         queue.pop();
@@ -110,32 +121,41 @@ final class MultiSorter {
     final int readerIndex;
     final Bits liveDocs;
     final int maxDoc;
+    final Comparable[] values;
     int docID;
 
-    public LeafAndDocID(int readerIndex, Bits liveDocs, int maxDoc) {
+    public LeafAndDocID(int readerIndex, Bits liveDocs, int maxDoc, int numComparables) {
       this.readerIndex = readerIndex;
       this.liveDocs = liveDocs;
       this.maxDoc = maxDoc;
+      this.values = new Comparable[numComparables];
     }
   }
 
-  private interface CrossReaderComparator {
-    public int compare(int readerIndexA, int docIDA, int readerIndexB, int docIDB);
+  /** Returns an object for this docID whose .compareTo represents the requested {@link SortField} sort order. */
+  private interface ComparableProvider {
+    public Comparable getComparable(int docID) throws IOException;
   }
 
-  private static CrossReaderComparator getComparator(List<CodecReader> readers, SortField sortField) throws IOException {
+  /** Returns {@code ComparableProvider}s for the provided readers to represent the requested {@link SortField} sort order. */
+  private static ComparableProvider[] getComparableProviders(List<CodecReader> readers, SortField sortField) throws IOException {
+
+    ComparableProvider[] providers = new ComparableProvider[readers.size()];
+
     switch(sortField.getType()) {
 
     case STRING:
       {
         // this uses the efficient segment-local ordinal map:
-        MultiReader multiReader = new MultiReader(readers.toArray(new LeafReader[readers.size()]));
-        final SortedDocValues sorted = MultiDocValues.getSortedValues(multiReader, sortField.getField());
-        final int[] docStarts = new int[readers.size()];
-        List<LeafReaderContext> leaves = multiReader.leaves();
+        final SortedDocValues[] values = new SortedDocValues[readers.size()];
         for(int i=0;i<readers.size();i++) {
-          docStarts[i] = leaves.get(i).docBase;
+          SortedDocValues v = readers.get(i).getSortedDocValues(sortField.getField());
+          if (v == null) {
+            v = DocValues.emptySorted();
+          }
+          values[i] = v;
         }
+        MultiDocValues.OrdinalMap ordinalMap = MultiDocValues.OrdinalMap.build(null, values, PackedInts.DEFAULT);
         final int missingOrd;
         if (sortField.getMissingValue() == SortField.STRING_LAST) {
           missingOrd = Integer.MAX_VALUE;
@@ -150,31 +170,41 @@ final class MultiSorter {
           reverseMul = 1;
         }
 
-        return new CrossReaderComparator() {
-          @Override
-          public int compare(int readerIndexA, int docIDA, int readerIndexB, int docIDB) {
-            int ordA = sorted.getOrd(docStarts[readerIndexA] + docIDA);
-            if (ordA == -1) {
-              ordA = missingOrd;
-            }
-            int ordB = sorted.getOrd(docStarts[readerIndexB] + docIDB);
-            if (ordB == -1) {
-              ordB = missingOrd;
-            }
-            return reverseMul * Integer.compare(ordA, ordB);
-          }
-        };
+        for(int readerIndex=0;readerIndex<readers.size();readerIndex++) {
+          final SortedDocValues readerValues = values[readerIndex];
+          final LongValues globalOrds = ordinalMap.getGlobalOrds(readerIndex);
+          providers[readerIndex] = new ComparableProvider() {
+              // used only by assert:
+              int lastDocID = -1;
+              private boolean docsInOrder(int docID) {
+                if (docID < lastDocID) {
+                  throw new AssertionError("docs must be sent in order, but lastDocID=" + lastDocID + " vs docID=" + docID);
+                }
+                lastDocID = docID;
+                return true;
+              }
+              
+              @Override
+              public Comparable getComparable(int docID) throws IOException {
+                assert docsInOrder(docID);
+                int readerDocID = readerValues.docID();
+                if (readerDocID < docID) {
+                  readerDocID = readerValues.advance(docID);
+                }
+                if (readerDocID == docID) {
+                  // translate segment's ord to global ord space:
+                  return reverseMul * (int) globalOrds.get(readerValues.ordValue());
+                } else {
+                  return missingOrd;
+                }
+              }
+            };
+        }
       }
+      break;
 
     case LONG:
       {
-        List<NumericDocValues> values = new ArrayList<>();
-        List<Bits> docsWithFields = new ArrayList<>();
-        for(CodecReader reader : readers) {
-          values.add(DocValues.getNumeric(reader, sortField.getField()));
-          docsWithFields.add(DocValues.getDocsWithField(reader, sortField.getField()));
-        }
-
         final int reverseMul;
         if (sortField.getReverse()) {
           reverseMul = -1;
@@ -182,44 +212,47 @@ final class MultiSorter {
           reverseMul = 1;
         }
 
-        final long missingValue;
-
+        final Long missingValue;
         if (sortField.getMissingValue() != null) {
           missingValue = (Long) sortField.getMissingValue();
         } else {
-          missingValue = 0;
+          missingValue = 0L;
         }
 
-        return new CrossReaderComparator() {
-          @Override
-          public int compare(int readerIndexA, int docIDA, int readerIndexB, int docIDB) {
-            long valueA;
-            if (docsWithFields.get(readerIndexA).get(docIDA)) {
-              valueA = values.get(readerIndexA).get(docIDA);
-            } else {
-              valueA = missingValue;
-            }
-
-            long valueB;
-            if (docsWithFields.get(readerIndexB).get(docIDB)) {
-              valueB = values.get(readerIndexB).get(docIDB);
-            } else {
-              valueB = missingValue;
-            }
-            return reverseMul * Long.compare(valueA, valueB);
-          }
-        };
+        for(int readerIndex=0;readerIndex<readers.size();readerIndex++) {
+          final NumericDocValues values = DocValues.getNumeric(readers.get(readerIndex), sortField.getField());
+          
+          providers[readerIndex] = new ComparableProvider() {
+              // used only by assert:
+              int lastDocID = -1;
+              private boolean docsInOrder(int docID) {
+                if (docID < lastDocID) {
+                  throw new AssertionError("docs must be sent in order, but lastDocID=" + lastDocID + " vs docID=" + docID);
+                }
+                lastDocID = docID;
+                return true;
+              }
+              
+              @Override
+              public Comparable getComparable(int docID) throws IOException {
+                assert docsInOrder(docID);
+                int readerDocID = values.docID();
+                if (readerDocID < docID) {
+                  readerDocID = values.advance(docID);
+                }
+                if (readerDocID == docID) {
+                  return reverseMul * values.longValue();
+                } else {
+                  return missingValue;
+                }
+              }
+            };
+        }
       }
+      break;
 
     case INT:
       {
-        List<NumericDocValues> values = new ArrayList<>();
-        List<Bits> docsWithFields = new ArrayList<>();
-        for(CodecReader reader : readers) {
-          values.add(DocValues.getNumeric(reader, sortField.getField()));
-          docsWithFields.add(DocValues.getDocsWithField(reader, sortField.getField()));
-        }
-
         final int reverseMul;
         if (sortField.getReverse()) {
           reverseMul = -1;
@@ -227,44 +260,47 @@ final class MultiSorter {
           reverseMul = 1;
         }
 
-        final int missingValue;
-
+        final Integer missingValue;
         if (sortField.getMissingValue() != null) {
           missingValue = (Integer) sortField.getMissingValue();
         } else {
           missingValue = 0;
         }
 
-        return new CrossReaderComparator() {
-          @Override
-          public int compare(int readerIndexA, int docIDA, int readerIndexB, int docIDB) {
-            int valueA;
-            if (docsWithFields.get(readerIndexA).get(docIDA)) {
-              valueA = (int) values.get(readerIndexA).get(docIDA);
-            } else {
-              valueA = missingValue;
-            }
+        for(int readerIndex=0;readerIndex<readers.size();readerIndex++) {
+          final NumericDocValues values = DocValues.getNumeric(readers.get(readerIndex), sortField.getField());
 
-            int valueB;
-            if (docsWithFields.get(readerIndexB).get(docIDB)) {
-              valueB = (int) values.get(readerIndexB).get(docIDB);
-            } else {
-              valueB = missingValue;
-            }
-            return reverseMul * Integer.compare(valueA, valueB);
-          }
-        };
+          providers[readerIndex] = new ComparableProvider() {
+              // used only by assert:
+              int lastDocID = -1;
+              private boolean docsInOrder(int docID) {
+                if (docID < lastDocID) {
+                  throw new AssertionError("docs must be sent in order, but lastDocID=" + lastDocID + " vs docID=" + docID);
+                }
+                lastDocID = docID;
+                return true;
+              }
+              
+              @Override
+              public Comparable getComparable(int docID) throws IOException {
+                assert docsInOrder(docID);
+                int readerDocID = values.docID();
+                if (readerDocID < docID) {
+                  readerDocID = values.advance(docID);
+                }
+                if (readerDocID == docID) {
+                  return reverseMul * (int) values.longValue();
+                } else {
+                  return missingValue;
+                }
+              }
+            };
+        }
       }
+      break;
 
     case DOUBLE:
       {
-        List<NumericDocValues> values = new ArrayList<>();
-        List<Bits> docsWithFields = new ArrayList<>();
-        for(CodecReader reader : readers) {
-          values.add(DocValues.getNumeric(reader, sortField.getField()));
-          docsWithFields.add(DocValues.getDocsWithField(reader, sortField.getField()));
-        }
-
         final int reverseMul;
         if (sortField.getReverse()) {
           reverseMul = -1;
@@ -272,44 +308,47 @@ final class MultiSorter {
           reverseMul = 1;
         }
 
-        final double missingValue;
-
+        final Double missingValue;
         if (sortField.getMissingValue() != null) {
           missingValue = (Double) sortField.getMissingValue();
         } else {
           missingValue = 0.0;
         }
 
-        return new CrossReaderComparator() {
-          @Override
-          public int compare(int readerIndexA, int docIDA, int readerIndexB, int docIDB) {
-            double valueA;
-            if (docsWithFields.get(readerIndexA).get(docIDA)) {
-              valueA = Double.longBitsToDouble(values.get(readerIndexA).get(docIDA));
-            } else {
-              valueA = missingValue;
-            }
+        for(int readerIndex=0;readerIndex<readers.size();readerIndex++) {
+          final NumericDocValues values = DocValues.getNumeric(readers.get(readerIndex), sortField.getField());
 
-            double valueB;
-            if (docsWithFields.get(readerIndexB).get(docIDB)) {
-              valueB = Double.longBitsToDouble(values.get(readerIndexB).get(docIDB));
-            } else {
-              valueB = missingValue;
-            }
-            return reverseMul * Double.compare(valueA, valueB);
-          }
-        };
+          providers[readerIndex] = new ComparableProvider() {
+              // used only by assert:
+              int lastDocID = -1;
+              private boolean docsInOrder(int docID) {
+                if (docID < lastDocID) {
+                  throw new AssertionError("docs must be sent in order, but lastDocID=" + lastDocID + " vs docID=" + docID);
+                }
+                lastDocID = docID;
+                return true;
+              }
+              
+              @Override
+              public Comparable getComparable(int docID) throws IOException {
+                assert docsInOrder(docID);
+                int readerDocID = values.docID();
+                if (readerDocID < docID) {
+                  readerDocID = values.advance(docID);
+                }
+                if (readerDocID == docID) {
+                  return reverseMul * Double.longBitsToDouble(values.longValue());
+                } else {
+                  return missingValue;
+                }
+              }
+            };
+        }
       }
+      break;
 
     case FLOAT:
       {
-        List<NumericDocValues> values = new ArrayList<>();
-        List<Bits> docsWithFields = new ArrayList<>();
-        for(CodecReader reader : readers) {
-          values.add(DocValues.getNumeric(reader, sortField.getField()));
-          docsWithFields.add(DocValues.getDocsWithField(reader, sortField.getField()));
-        }
-
         final int reverseMul;
         if (sortField.getReverse()) {
           reverseMul = -1;
@@ -317,37 +356,49 @@ final class MultiSorter {
           reverseMul = 1;
         }
 
-        final float missingValue;
-
+        final Float missingValue;
         if (sortField.getMissingValue() != null) {
           missingValue = (Float) sortField.getMissingValue();
         } else {
           missingValue = 0.0f;
         }
 
-        return new CrossReaderComparator() {
-          @Override
-          public int compare(int readerIndexA, int docIDA, int readerIndexB, int docIDB) {
-            float valueA;
-            if (docsWithFields.get(readerIndexA).get(docIDA)) {
-              valueA = Float.intBitsToFloat((int) values.get(readerIndexA).get(docIDA));
-            } else {
-              valueA = missingValue;
-            }
+        for(int readerIndex=0;readerIndex<readers.size();readerIndex++) {
+          final NumericDocValues values = DocValues.getNumeric(readers.get(readerIndex), sortField.getField());
 
-            float valueB;
-            if (docsWithFields.get(readerIndexB).get(docIDB)) {
-              valueB = Float.intBitsToFloat((int) values.get(readerIndexB).get(docIDB));
-            } else {
-              valueB = missingValue;
-            }
-            return reverseMul * Float.compare(valueA, valueB);
-          }
-        };
+          providers[readerIndex] = new ComparableProvider() {
+              // used only by assert:
+              int lastDocID = -1;
+              private boolean docsInOrder(int docID) {
+                if (docID < lastDocID) {
+                  throw new AssertionError("docs must be sent in order, but lastDocID=" + lastDocID + " vs docID=" + docID);
+                }
+                lastDocID = docID;
+                return true;
+              }
+              
+              @Override
+              public Comparable getComparable(int docID) throws IOException {
+                assert docsInOrder(docID);
+                int readerDocID = values.docID();
+                if (readerDocID < docID) {
+                  readerDocID = values.advance(docID);
+                }
+                if (readerDocID == docID) {
+                  return reverseMul * Float.intBitsToFloat((int) values.longValue());
+                } else {
+                  return missingValue;
+                }
+              }
+            };
+        }
       }
+      break;
 
     default:
       throw new IllegalArgumentException("unhandled SortField.getType()=" + sortField.getType());
     }
+
+    return providers;
   }
 }

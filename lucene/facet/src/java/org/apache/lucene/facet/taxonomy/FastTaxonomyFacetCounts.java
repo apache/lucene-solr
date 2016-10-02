@@ -19,8 +19,8 @@ package org.apache.lucene.facet.taxonomy;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
+import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -59,20 +59,25 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
       
       int doc;
       while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        final BytesRef bytesRef = dv.get(doc);
-        byte[] bytes = bytesRef.bytes;
-        int end = bytesRef.offset + bytesRef.length;
-        int ord = 0;
-        int offset = bytesRef.offset;
-        int prev = 0;
-        while (offset < end) {
-          byte b = bytes[offset++];
-          if (b >= 0) {
-            prev = ord = ((ord << 7) | b) + prev;
-            ++values[ord];
-            ord = 0;
-          } else {
-            ord = (ord << 7) | (b & 0x7F);
+        if (dv.docID() < doc) {
+          dv.advance(doc);
+        }
+        if (dv.docID() == doc) {
+          final BytesRef bytesRef = dv.binaryValue();
+          byte[] bytes = bytesRef.bytes;
+          int end = bytesRef.offset + bytesRef.length;
+          int ord = 0;
+          int offset = bytesRef.offset;
+          int prev = 0;
+          while (offset < end) {
+            byte b = bytes[offset++];
+            if (b >= 0) {
+              prev = ord = ((ord << 7) | b) + prev;
+              ++values[ord];
+              ord = 0;
+            } else {
+              ord = (ord << 7) | (b & 0x7F);
+            }
           }
         }
       }

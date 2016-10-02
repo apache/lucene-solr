@@ -43,6 +43,8 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 /**
  * Abstract class to do basic tests for a points format.
  * NOTE: This test focuses on the points impl, nothing else.
@@ -167,7 +169,19 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
     for(LeafReaderContext ctx : r.leaves()) {
       PointValues values = ctx.reader().getPointValues();
+
       NumericDocValues idValues = ctx.reader().getNumericDocValues("id");
+      if (idValues == null) {
+        // this is (surprisingly) OK, because if the random IWC flushes all 10 docs before the 11th doc is added, and force merge runs, it
+        // will drop the 100% deleted segments, and the "id" field never exists in the final single doc segment
+        continue;
+      }
+      int[] docIDToID = new int[ctx.reader().maxDoc()];
+      int docID;
+      while ((docID = idValues.nextDoc()) != NO_MORE_DOCS) {
+        docIDToID[docID] = (int) idValues.longValue();
+      }
+      
       if (values != null) {
         BitSet seen = new BitSet();
         values.intersect("dim",
@@ -183,7 +197,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
                              if (liveDocs.get(docID)) {
                                seen.set(docID);
                              }
-                             assertEquals(idValues.get(docID), NumericUtils.sortableBytesToInt(packedValue, 0));
+                             assertEquals(docIDToID[docID], NumericUtils.sortableBytesToInt(packedValue, 0));
                            }
                          });
         assertEquals(0, seen.cardinality());
@@ -704,6 +718,14 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
       }
 
       NumericDocValues idValues = MultiDocValues.getNumericValues(r, "id");
+      int[] docIDToID = new int[r.maxDoc()];
+      {
+        int docID;
+        while ((docID = idValues.nextDoc()) != NO_MORE_DOCS) {
+          docIDToID[docID] = (int) idValues.longValue();
+        }
+      }
+
       Bits liveDocs = MultiFields.getLiveDocs(r);
 
       // Verify min/max values are correct:
@@ -781,7 +803,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
               @Override
               public void visit(int docID) {
                 if (liveDocs == null || liveDocs.get(docBase+docID)) {
-                  hits.set((int) idValues.get(docBase+docID));
+                  hits.set(docIDToID[docBase+docID]);
                 }
                 //System.out.println("visit docID=" + docID);
               }
@@ -792,7 +814,6 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
                   return;
                 }
 
-                //System.out.println("visit check docID=" + docID + " id=" + idValues.get(docID));
                 for(int dim=0;dim<numDims;dim++) {
                   //System.out.println("  dim=" + dim + " value=" + new BytesRef(packedValue, dim*numBytesPerDim, numBytesPerDim));
                   if (StringHelper.compare(numBytesPerDim, packedValue, dim*numBytesPerDim, queryMin[dim], 0) < 0 ||
@@ -803,7 +824,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
                 }
 
                 //System.out.println("  yes");
-                hits.set((int) idValues.get(docBase+docID));
+                hits.set(docIDToID[docBase+docID]);
               }
 
               @Override
@@ -869,7 +890,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
         if (failCount != 0) {
           for(int docID=0;docID<r.maxDoc();docID++) {
-            System.out.println("  docID=" + docID + " id=" + idValues.get(docID));
+            System.out.println("  docID=" + docID + " id=" + docIDToID[docID]);
           }
 
           fail(failCount + " docs failed; " + successCount + " docs succeeded");

@@ -224,7 +224,12 @@ public class TestTermsEnum extends LuceneTestCase {
     final IndexReader r = w.getReader();
     w.close();
 
-    final NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
+    int[] docIDToID = new int[r.maxDoc()];
+    NumericDocValues values = MultiDocValues.getNumericValues(r, "id");
+    for(int i=0;i<r.maxDoc();i++) {
+      assertEquals(i, values.nextDoc());
+      docIDToID[i] = (int) values.longValue();
+    }
 
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
 
@@ -327,7 +332,7 @@ public class TestTermsEnum extends LuceneTestCase {
           postingsEnum = TestUtil.docs(random(), te, postingsEnum, PostingsEnum.NONE);
           final int docID = postingsEnum.nextDoc();
           assertTrue(docID != DocIdSetIterator.NO_MORE_DOCS);
-          assertEquals(docIDToID.get(docID), termToID.get(expected).intValue());
+          assertEquals(docIDToID[docID], termToID.get(expected).intValue());
           do {
             loc++;
           } while (loc < termsArray.length && !acceptTermsSet.contains(termsArray[loc]));

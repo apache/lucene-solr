@@ -464,14 +464,6 @@
     </httpCaching>
   </requestDispatcher>
 
-  <!-- Echo the request contents back to the client -->
-  <requestHandler name="/debug/dump" class="solr.DumpRequestHandler" >
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-      <str name="echoHandler">true</str>
-    </lst>
-  </requestHandler>
-
   <requestHandler name="/search-facet-def" class="solr.SearchHandler" >
     <lst name="defaults">
       <str name="facet.field">foo_s</str>

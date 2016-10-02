@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
-import org.apache.lucene.index.LeafReader.CoreClosedListener;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -316,12 +315,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
         ramBytesUsed += HASHTABLE_RAM_BYTES_PER_ENTRY;
         assert previous == null;
         // we just created a new leaf cache, need to register a close listener
-        context.reader().addCoreClosedListener(new CoreClosedListener() {
-          @Override
-          public void onClose(Object ownerCoreCacheKey) {
-            clearCoreCacheKey(ownerCoreCacheKey);
-          }
-        });
+        context.reader().addCoreClosedListener(this::clearCoreCacheKey);
       }
       leafCache.putIfAbsent(query, set);
       evictIfNecessary();

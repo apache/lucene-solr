@@ -43,6 +43,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+
 /**
  * This class is experimental and subject to change.
  *
@@ -1524,26 +1526,51 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     return new DeleteReplica(collection, shard, replica);
   }
 
-  // DELETEREPLICA request
-  public static class DeleteReplica extends AsyncShardSpecificAdminRequest {
+  /**
+   * Returns a SolrRequest to remove a number of replicas from a specific shard
+   */
+  public static DeleteReplica deleteReplicasFromShard(String collection, String shard, int count) {
+    return new DeleteReplica(collection, shard, count);
+  }
 
+  public static DeleteReplica deleteReplicasFromAllShards(String collection, int count) {
+    return new DeleteReplica(collection, count);
+  }
+
+  // DELETEREPLICA request
+  public static class DeleteReplica extends AsyncCollectionSpecificAdminRequest {
+
+    protected String shard;
     protected String replica;
     protected Boolean onlyIfDown;
     private Boolean deleteDataDir;
     private Boolean deleteInstanceDir;
     private Boolean deleteIndexDir;
+    private Integer count;
 
     /**
      * @deprecated Use {@link #deleteReplica(String, String, String)}
      */
     @Deprecated
     public DeleteReplica() {
-      super(CollectionAction.DELETEREPLICA, null, null);
+      super(CollectionAction.DELETEREPLICA, null);
     }
 
     private DeleteReplica(String collection, String shard, String replica) {
-      super(CollectionAction.DELETEREPLICA, collection, shard);
+      super(CollectionAction.DELETEREPLICA, collection);
+      this.shard = shard;
       this.replica = replica;
+    }
+
+    private DeleteReplica(String collection, String shard, int count) {
+      super(CollectionAction.DELETEREPLICA, collection);
+      this.shard = shard;
+      this.count = count;
+    }
+
+    private DeleteReplica(String collection, int count) {
+      super(CollectionAction.DELETEREPLICA, collection);
+      this.count = count;
     }
 
     @Deprecated
@@ -1572,24 +1599,33 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
-    @Override
     @Deprecated
     public DeleteReplica setShardName(String shard) {
       this.shard = shard;
       return this;
     }
 
-    @Override
     @Deprecated
-    public DeleteReplica setAsyncId(String id) {
-      this.asyncId = id;
+    public DeleteReplica setCount(Integer count) {
+      this.count = count;
       return this;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-      params.set(ZkStateReader.REPLICA_PROP, this.replica);
+
+      // AsyncCollectionSpecificAdminRequest uses 'name' rather than 'collection'
+      // TODO - deal with this inconsistency
+      params.remove(CoreAdminParams.NAME);
+      if (this.collection == null)
+        throw new IllegalArgumentException("You must set a collection name for this request");
+      params.set(ZkStateReader.COLLECTION_PROP, this.collection);
+
+      if (this.replica != null)
+        params.set(ZkStateReader.REPLICA_PROP, this.replica);
+      if (this.shard != null)
+        params.set(ZkStateReader.SHARD_ID_PROP, this.shard);
 
       if (onlyIfDown != null) {
         params.set("onlyIfDown", onlyIfDown);
@@ -1602,6 +1638,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (deleteIndexDir != null) {
         params.set(CoreAdminParams.DELETE_INDEX, deleteIndexDir);
+      }
+      if (count != null) {
+        params.set(COUNT_PROP, count);
       }
       return params;
     }
@@ -1621,6 +1660,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public DeleteReplica setDeleteInstanceDir(Boolean deleteInstanceDir) {
       this.deleteInstanceDir = deleteInstanceDir;
+      return this;
+    }
+
+    public Boolean getDeleteIndexDir() {
+      return deleteIndexDir;
+    }
+
+    public DeleteReplica setDeleteIndexDir(Boolean deleteIndexDir) {
+      this.deleteIndexDir = deleteIndexDir;
       return this;
     }
   }

@@ -134,7 +134,7 @@ public class OverseerTaskQueue extends DistributedQueue {
         return;
       }
       // If latchEventType is not null, only fire if the type matches
-      LOG.info("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState(), latchEventType);
+      LOG.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState(), latchEventType);
       if (latchEventType == null || event.getType() == latchEventType) {
         synchronized (lock) {
           this.event = event;

@@ -292,7 +292,8 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
         final Document doc = sub.document(docID);
         final Field f = (Field) doc.getField("nf");
         assertTrue("got f=" + f, f instanceof StoredField);
-        assertEquals(answers[(int) ids.get(docID)], f.numericValue());
+        assertEquals(docID, ids.nextDoc());
+        assertEquals(answers[(int) ids.longValue()], f.numericValue());
       }
     }
     r.close();

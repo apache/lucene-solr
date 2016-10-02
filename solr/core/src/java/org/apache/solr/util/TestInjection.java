@@ -113,6 +113,8 @@ public class TestInjection {
   public static String randomDelayInCoreCreation = null;
   
   public static int randomDelayMaxInCoreCreationInSec = 10;
+
+  public static String splitFailureBeforeReplicaCreation = null;
   
   private static Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
 
@@ -124,6 +126,7 @@ public class TestInjection {
     updateLogReplayRandomPause = null;
     updateRandomPause = null;
     randomDelayInCoreCreation = null;
+    splitFailureBeforeReplicaCreation = null;
 
     for (Timer timer : timers) {
       timer.cancel();
@@ -280,6 +283,23 @@ public class TestInjection {
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
+      }
+    }
+
+    return true;
+  }
+
+  public static boolean injectSplitFailureBeforeReplicaCreation() {
+    if (splitFailureBeforeReplicaCreation != null)  {
+      Random rand = random();
+      if (null == rand) return true;
+
+      Pair<Boolean,Integer> pair = parseValue(splitFailureBeforeReplicaCreation);
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        log.info("Injecting failure in creating replica for sub-shard");
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create replica");
       }
     }
 

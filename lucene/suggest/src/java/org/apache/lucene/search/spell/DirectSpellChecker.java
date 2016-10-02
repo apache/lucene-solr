@@ -415,40 +415,42 @@ public class DirectSpellChecker {
     BoostAttribute boostAtt =
       e.attributes().addAttribute(BoostAttribute.class);
     while ((candidateTerm = e.next()) != null) {
-      final float boost = boostAtt.getBoost();
+      // For FuzzyQuery, boost is the score:
+      float score = boostAtt.getBoost();
       // ignore uncompetitive hits
-      if (stQueue.size() >= numSug && boost <= stQueue.peek().boost)
+      if (stQueue.size() >= numSug && score <= stQueue.peek().boost) {
         continue;
+      }
       
       // ignore exact match of the same term
-      if (queryTerm.bytesEquals(candidateTerm))
+      if (queryTerm.bytesEquals(candidateTerm)) {
         continue;
+      }
       
       int df = e.docFreq();
       
       // check docFreq if required
-      if (df <= docfreq)
+      if (df <= docfreq) {
         continue;
+      }
       
-      final float score;
       final String termAsString;
       if (distance == INTERNAL_LEVENSHTEIN) {
         // delay creating strings until the end
         termAsString = null;
-        // undo FuzzyTermsEnum's scale factor for a real scaled lev score
-        score = boost / e.getScaleFactor() + e.getMinSimilarity();
       } else {
         spare.copyUTF8Bytes(candidateTerm);
         termAsString = spare.toString();
         score = distance.getDistance(term.text(), termAsString);
       }
       
-      if (score < accuracy)
+      if (score < accuracy) {
         continue;
+      }
       
       // add new entry in PQ
       st.term = BytesRef.deepCopyOf(candidateTerm);
-      st.boost = boost;
+      st.boost = score;
       st.docfreq = df;
       st.termAsString = termAsString;
       st.score = score;

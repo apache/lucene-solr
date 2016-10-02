@@ -16,6 +16,16 @@
  */
 package org.apache.solr.request;
 
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
+
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
@@ -35,16 +45,6 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
-
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
 
 
 class PerSegmentSingleValuedFaceting {
@@ -293,7 +293,15 @@ class PerSegmentSingleValuedFaceting {
         // specialized version when collecting counts for all terms
         int doc;
         while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-          int t = 1+si.getOrd(doc);
+          if (doc > si.docID()) {
+            si.advance(doc);
+          }
+          int t;
+          if (doc == si.docID()) {
+            t = 1+si.ordValue();
+          } else {
+            t = 0;
+          }
           hasAnyCount = hasAnyCount || t > 0; //counts[0] == missing counts
           counts[t]++;
         }
@@ -301,7 +309,15 @@ class PerSegmentSingleValuedFaceting {
         // version that adjusts term numbers because we aren't collecting the full range
         int doc;
         while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-          int term = si.getOrd(doc);
+          if (doc > si.docID()) {
+            si.advance(doc);
+          }
+          int term;
+          if (doc == si.docID()) {
+            term = si.ordValue();
+          } else {
+            term = -1;
+          }
           int arrIdx = term-startTermIndex;
           if (arrIdx>=0 && arrIdx<nTerms){
             counts[arrIdx]++;

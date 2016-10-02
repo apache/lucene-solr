@@ -151,8 +151,17 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
     }
 
     public void collect(int doc) throws IOException{
+      int valuesDocID = leafOutcomeValue.docID();
+      if (valuesDocID < doc) {
+        valuesDocID = leafOutcomeValue.advance(doc);
+      }
+      int outcome;
+      if (valuesDocID == doc) {
+        outcome = (int) leafOutcomeValue.longValue();
+      } else {
+        outcome = 0;
+      }
 
-      int outcome = (int) leafOutcomeValue.get(doc);
       outcome = trainingParams.positiveLabel == outcome? 1 : 0;
       if (outcome == 1) {
         positiveDocsSet.set(context.docBase + doc);

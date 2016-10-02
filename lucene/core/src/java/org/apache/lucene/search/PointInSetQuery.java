@@ -172,7 +172,7 @@ public abstract class PointInSetQuery extends Query {
       this.result = result;
       this.sortedPackedPoints = sortedPackedPoints;
       scratch.length = bytesPerDim;
-      this.iterator = sortedPackedPoints.iterator();
+      this.iterator = this.sortedPackedPoints.iterator();
       nextQueryPoint = iterator.next();
     }
 

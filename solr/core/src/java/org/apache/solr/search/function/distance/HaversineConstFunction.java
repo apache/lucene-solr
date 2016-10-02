@@ -65,7 +65,7 @@ public class HaversineConstFunction extends ValueSource {
 
     return new DoubleDocValues(this) {
       @Override
-      public double doubleVal(int doc) {
+      public double doubleVal(int doc) throws IOException {
         double latRad = latVals.doubleVal(doc) * DEGREES_TO_RADIANS;
         double lonRad = lonVals.doubleVal(doc) * DEGREES_TO_RADIANS;
         double diffX = latCenterRad - latRad;
@@ -77,7 +77,7 @@ public class HaversineConstFunction extends ValueSource {
         return (EARTH_MEAN_DIAMETER * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)));
       }
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return name() + '(' + latVals.toString(doc) + ',' + lonVals.toString(doc) + ',' + latCenter + ',' + lonCenter + ')';
       }
     };

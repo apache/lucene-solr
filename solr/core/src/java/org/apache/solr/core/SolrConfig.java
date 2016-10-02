@@ -47,6 +47,7 @@ import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.util.Version;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.IOUtils;
@@ -227,7 +228,7 @@ public class SolrConfig extends Config implements MapSerializable {
     indexConfig = new SolrIndexConfig(this, "indexConfig", null);
 
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", BooleanQuery.getMaxClauseCount());
-    log.info("Using Lucene MatchVersion: " + luceneMatchVersion);
+    log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
 
     // Warn about deprecated / discontinued parameters
     // boolToFilterOptimizer has had no effect since 3.1
@@ -326,7 +327,7 @@ public class SolrConfig extends Config implements MapSerializable {
     }
 
     solrRequestParsers = new SolrRequestParsers(this);
-    log.info("Loaded SolrConfig: " + name);
+    log.debug("Loaded SolrConfig: {}", name);
   }
 
   public static final List<SolrPluginInfo> plugins = ImmutableList.<SolrPluginInfo>builder()
@@ -408,7 +409,7 @@ public class SolrConfig extends Config implements MapSerializable {
       int version = 0; // will be always 0 for file based resourceLoader
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-        log.info("config overlay loaded . version : {} ", version);
+        log.debug("Config overlay loaded. version : {} ", version);
       }
       isr = new InputStreamReader(in, StandardCharsets.UTF_8);
       Map m = (Map) ObjectBuilder.getVal(new JSONParser(isr));
@@ -537,8 +538,7 @@ public class SolrConfig extends Config implements MapSerializable {
     }
 
     @Override
-    public Map<String, Object> toMap() {
-      LinkedHashMap map = new LinkedHashMap();
+    public Map<String, Object> toMap(Map<String, Object> map) {
       map.put("agentId", agentId);
       map.put("serviceUrl", serviceUrl);
       map.put("rootName", rootName);
@@ -561,7 +561,7 @@ public class SolrConfig extends Config implements MapSerializable {
         = Pattern.compile("\\bmax-age=(\\d+)");
 
     @Override
-    public Map<String, Object> toMap() {
+    public Map<String, Object> toMap(Map<String, Object> map) {
       return makeMap("never304", never304,
           "etagSeed", etagSeed,
           "lastModFrom", lastModFrom.name().toLowerCase(Locale.ROOT),
@@ -675,7 +675,7 @@ public class SolrConfig extends Config implements MapSerializable {
 
 
     @Override
-    public Map<String, Object> toMap() {
+    public Map<String, Object> toMap(Map<String, Object> map) {
       LinkedHashMap result = new LinkedHashMap();
       result.put("indexWriter", makeMap("closeWaitsForMerges", indexWriterCloseWaitsForMerges));
       result.put("commitWithin", makeMap("softCommit", commitWithinSoftCommit));
@@ -750,7 +750,7 @@ public class SolrConfig extends Config implements MapSerializable {
     NodeList nodes = (NodeList) evaluate("lib", XPathConstants.NODESET);
     if (nodes == null || nodes.getLength() == 0) return;
 
-    log.info("Adding specified lib dirs to ClassLoader");
+    log.debug("Adding specified lib dirs to ClassLoader");
     SolrResourceLoader loader = getResourceLoader();
     List<URL> urls = new ArrayList<>();
 
@@ -841,11 +841,10 @@ public class SolrConfig extends Config implements MapSerializable {
   }
 
   @Override
-  public Map<String, Object> toMap() {
-    LinkedHashMap result = new LinkedHashMap();
+  public Map<String, Object> toMap(Map<String, Object> result) {
     if (getZnodeVersion() > -1) result.put(ZNODEVER, getZnodeVersion());
     result.put("luceneMatchVersion", luceneMatchVersion);
-    result.put("updateHandler", getUpdateHandlerInfo().toMap());
+    result.put("updateHandler", getUpdateHandlerInfo());
     Map m = new LinkedHashMap();
     result.put("query", m);
     m.put("useFilterForSortedQuery", useFilterForSortedQuery);
@@ -853,7 +852,7 @@ public class SolrConfig extends Config implements MapSerializable {
     m.put("queryResultMaxDocsCached", queryResultMaxDocsCached);
     m.put("enableLazyFieldLoading", enableLazyFieldLoading);
     m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
-    if (jmxConfig != null) result.put("jmx", jmxConfig.toMap());
+    if (jmxConfig != null) result.put("jmx", jmxConfig);
     for (SolrPluginInfo plugin : plugins) {
       List<PluginInfo> infos = getPluginInfos(plugin.clazz.getName());
       if (infos == null || infos.isEmpty()) continue;
@@ -861,16 +860,16 @@ public class SolrConfig extends Config implements MapSerializable {
       tag = tag.replace("/", "");
       if (plugin.options.contains(PluginOpts.REQUIRE_NAME)) {
         LinkedHashMap items = new LinkedHashMap();
-        for (PluginInfo info : infos) items.put(info.name, info.toMap());
+        for (PluginInfo info : infos) items.put(info.name, info);
         for (Map.Entry e : overlay.getNamedPlugins(plugin.tag).entrySet()) items.put(e.getKey(), e.getValue());
         result.put(tag, items);
       } else {
         if (plugin.options.contains(MULTI_OK)) {
-          ArrayList<Map> l = new ArrayList<>();
-          for (PluginInfo info : infos) l.add(info.toMap());
+          ArrayList<MapSerializable> l = new ArrayList<>();
+          for (PluginInfo info : infos) l.add(info);
           result.put(tag, l);
         } else {
-          result.put(tag, infos.get(0).toMap());
+          result.put(tag, infos.get(0));
         }
 
       }
@@ -879,15 +878,15 @@ public class SolrConfig extends Config implements MapSerializable {
 
 
     addCacheConfig(m, filterCacheConfig, queryResultCacheConfig, documentCacheConfig, fieldValueCacheConfig);
-    if (jmxConfig != null) result.put("jmx", jmxConfig.toMap());
+    if (jmxConfig != null) result.put("jmx", jmxConfig);
     m = new LinkedHashMap();
     result.put("requestDispatcher", m);
     m.put("handleSelect", handleSelect);
-    if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig.toMap());
+    if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig);
     m.put("requestParsers", makeMap("multipartUploadLimitKB", multipartUploadLimitKB,
         "formUploadLimitKB", formUploadLimitKB,
         "addHttpRequestToContext", addHttpRequestToContext));
-    if (indexConfig != null) result.put("indexConfig", indexConfig.toMap());
+    if (indexConfig != null) result.put("indexConfig", indexConfig);
 
     m = new LinkedHashMap();
     result.put("peerSync", m);
@@ -900,7 +899,7 @@ public class SolrConfig extends Config implements MapSerializable {
 
   private void addCacheConfig(Map queryMap, CacheConfig... cache) {
     if (cache == null) return;
-    for (CacheConfig config : cache) if (config != null) queryMap.put(config.getNodeName(), config.toMap());
+    for (CacheConfig config : cache) if (config != null) queryMap.put(config.getNodeName(), config);
 
   }
 
@@ -932,7 +931,7 @@ public class SolrConfig extends Config implements MapSerializable {
 
   public RequestParams refreshRequestParams() {
     requestParams = RequestParams.getFreshRequestParams(getResourceLoader(), requestParams);
-    log.info("current version of requestparams : {}", requestParams.getZnodeVersion());
+    log.debug("current version of requestparams : {}", requestParams.getZnodeVersion());
     return requestParams;
   }
 

@@ -283,9 +283,7 @@ public class ToParentBlockJoinQuery extends Query {
 
           // Parent & child docs are supposed to be
           // orthogonal:
-          if (nextChildDoc == parentDoc) {
-            throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
-          }
+          checkOrthogonal(nextChildDoc, parentDoc);
 
           //System.out.println("  parentDoc=" + parentDoc);
           assert parentDoc != DocIdSetIterator.NO_MORE_DOCS;
@@ -326,9 +324,7 @@ public class ToParentBlockJoinQuery extends Query {
 
           // Parent & child docs are supposed to be
           // orthogonal:
-          if (nextChildDoc == parentDoc) {
-            throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
-          }
+          checkOrthogonal(nextChildDoc, parentDoc);
 
           switch(scoreMode) {
           case Avg:
@@ -381,9 +377,7 @@ public class ToParentBlockJoinQuery extends Query {
           }
 
           // Parent & child docs are supposed to be orthogonal:
-          if (nextChildDoc == prevParentDoc) {
-            throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
-          }
+          checkOrthogonal(nextChildDoc, prevParentDoc);
 
           final int nd = nextDoc();
           //System.out.println("  return nextParentDoc=" + nd);
@@ -400,6 +394,15 @@ public class ToParentBlockJoinQuery extends Query {
           return childIt.cost();
         }
       };
+    }
+
+    private void checkOrthogonal(int childDoc, int parentDoc) {
+      if (childDoc==parentDoc) {
+        throw new IllegalStateException("Child query must not match same docs with parent filter. "
+             + "Combine them as must clauses (+) to find a problem doc. "
+             + "docId=" + nextChildDoc + ", " + childScorer.getClass());
+        
+      }
     }
 
     @Override

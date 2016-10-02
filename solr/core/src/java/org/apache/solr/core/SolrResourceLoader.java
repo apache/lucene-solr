@@ -41,9 +41,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -89,6 +92,8 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       "update.processor.", "util.", "spelling.", "handler.component.", "handler.dataimport.",
       "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.","handler.admin."
   };
+  private static final java.lang.String SOLR_CORE_NAME = "solr.core.name";
+  private static Set<String> loggedOnce = new ConcurrentSkipListSet<>();
 
   protected URLClassLoader classLoader;
   private final Path instanceDir;
@@ -150,10 +155,10 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   public SolrResourceLoader(Path instanceDir, ClassLoader parent, Properties coreProperties) {
     if (instanceDir == null) {
       this.instanceDir = SolrResourceLoader.locateSolrHome().toAbsolutePath().normalize();
-      log.info("new SolrResourceLoader for deduced Solr Home: '{}'", this.instanceDir);
+      log.debug("new SolrResourceLoader for deduced Solr Home: '{}'", this.instanceDir);
     } else{
       this.instanceDir = instanceDir.toAbsolutePath().normalize();
-      log.info("new SolrResourceLoader for directory: '{}'", this.instanceDir);
+      log.debug("new SolrResourceLoader for directory: '{}'", this.instanceDir);
     }
 
     if (parent == null)
@@ -192,6 +197,21 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     URLClassLoader newLoader = addURLsToClassLoader(classLoader, urls);
     if (newLoader != classLoader) {
       this.classLoader = newLoader;
+    }
+
+    log.info("[{}] Added {} libs to classloader, from paths: {}",
+        getCoreName("null"), urls.size(), urls.stream()
+        .map(u -> u.getPath().substring(0,u.getPath().lastIndexOf("/")))
+        .sorted()
+        .distinct()
+        .collect(Collectors.toList()));
+  }
+
+  private String getCoreName(String defaultVal) {
+    if (getCoreProperties() != null) {
+      return getCoreProperties().getProperty(SOLR_CORE_NAME, defaultVal);
+    } else {
+      return defaultVal;
     }
   }
 
@@ -232,7 +252,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     allURLs.addAll(Arrays.asList(oldLoader.getURLs()));
     allURLs.addAll(urls);
     for (URL url : urls) {
-      log.info("Adding '{}' to classloader", url.toString());
+      log.debug("Adding '{}' to classloader", url.toString());
     }
 
     ClassLoader oldParent = oldLoader.getParent();
@@ -754,11 +774,11 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     try {
       Context c = new InitialContext();
       home = (String)c.lookup("java:comp/env/"+project+"/home");
-      log.info("Using JNDI solr.home: "+home );
+      logOnceInfo("home_using_jndi", "Using JNDI solr.home: "+home );
     } catch (NoInitialContextException e) {
-      log.info("JNDI not configured for "+project+" (NoInitialContextEx)");
+      log.debug("JNDI not configured for "+project+" (NoInitialContextEx)");
     } catch (NamingException e) {
-      log.info("No /"+project+"/home in JNDI");
+      log.debug("No /"+project+"/home in JNDI");
     } catch( RuntimeException ex ) {
       log.warn("Odd RuntimeException while testing for JNDI: " + ex.getMessage());
     } 
@@ -768,16 +788,24 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       String prop = project + ".solr.home";
       home = System.getProperty(prop);
       if( home != null ) {
-        log.info("using system property "+prop+": " + home );
+        logOnceInfo("home_using_sysprop", "Using system property "+prop+": " + home );
       }
     }
     
     // if all else fails, try 
     if( home == null ) {
       home = project + '/';
-      log.info(project + " home defaulted to '" + home + "' (could not find system property or JNDI)");
+      logOnceInfo("home_default", project + " home defaulted to '" + home + "' (could not find system property or JNDI)");
     }
     return Paths.get(home);
+  }
+
+  // Logs a message only once per startup
+  private static void logOnceInfo(String key, String msg) {
+    if (!loggedOnce.contains(key)) {
+      loggedOnce.add(key);
+      log.info(msg);
+    }
   }
 
   /**

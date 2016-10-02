@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -33,9 +31,6 @@ import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.CloseableThreadLocal;
-import org.apache.lucene.util.IOUtils;
 
 /**
  * LeafReader implemented by codec APIs.
@@ -109,20 +104,6 @@ public abstract class CodecReader extends LeafReader implements Accountable {
     return getPostingsReader();
   }
   
-  final CloseableThreadLocal<Map<String,Object>> docValuesLocal = new CloseableThreadLocal<Map<String,Object>>() {
-    @Override
-    protected Map<String,Object> initialValue() {
-      return new HashMap<>();
-    }
-  };
-
-  final CloseableThreadLocal<Map<String,Bits>> docsWithFieldLocal = new CloseableThreadLocal<Map<String,Bits>>() {
-    @Override
-    protected Map<String,Bits> initialValue() {
-      return new HashMap<>();
-    }
-  };
-  
   // returns the FieldInfo that corresponds to the given field and type, or
   // null if the field does not exist, or not indexed as the requested
   // DovDocValuesType.
@@ -143,48 +124,15 @@ public abstract class CodecReader extends LeafReader implements Accountable {
 
     return fi;
   }
-  
+
   @Override
   public final NumericDocValues getNumericDocValues(String field) throws IOException {
     ensureOpen();
-    Map<String,Object> dvFields = docValuesLocal.get();
-
-    Object previous = dvFields.get(field);
-    if (previous != null && previous instanceof NumericDocValues) {
-      return (NumericDocValues) previous;
-    } else {
-      FieldInfo fi = getDVField(field, DocValuesType.NUMERIC);
-      if (fi == null) {
-        return null;
-      }
-      NumericDocValues dv = getDocValuesReader().getNumeric(fi);
-      dvFields.put(field, dv);
-      return dv;
+    FieldInfo fi = getDVField(field, DocValuesType.NUMERIC);
+    if (fi == null) {
+      return null;
     }
-  }
-
-  @Override
-  public final Bits getDocsWithField(String field) throws IOException {
-    ensureOpen();
-    Map<String,Bits> dvFields = docsWithFieldLocal.get();
-
-    Bits previous = dvFields.get(field);
-    if (previous != null) {
-      return previous;
-    } else {
-      FieldInfo fi = getFieldInfos().fieldInfo(field);
-      if (fi == null) {
-        // Field does not exist
-        return null;
-      }
-      if (fi.getDocValuesType() == DocValuesType.NONE) {
-        // Field was not indexed with doc values
-        return null;
-      }
-      Bits dv = getDocValuesReader().getDocsWithField(fi);
-      dvFields.put(field, dv);
-      return dv;
-    }
+    return getDocValuesReader().getNumeric(fi);
   }
 
   @Override
@@ -194,105 +142,54 @@ public abstract class CodecReader extends LeafReader implements Accountable {
     if (fi == null) {
       return null;
     }
-
-    Map<String,Object> dvFields = docValuesLocal.get();
-
-    BinaryDocValues dvs = (BinaryDocValues) dvFields.get(field);
-    if (dvs == null) {
-      dvs = getDocValuesReader().getBinary(fi);
-      dvFields.put(field, dvs);
-    }
-
-    return dvs;
+    return getDocValuesReader().getBinary(fi);
   }
 
   @Override
   public final SortedDocValues getSortedDocValues(String field) throws IOException {
     ensureOpen();
-    Map<String,Object> dvFields = docValuesLocal.get();
-    
-    Object previous = dvFields.get(field);
-    if (previous != null && previous instanceof SortedDocValues) {
-      return (SortedDocValues) previous;
-    } else {
-      FieldInfo fi = getDVField(field, DocValuesType.SORTED);
-      if (fi == null) {
-        return null;
-      }
-      SortedDocValues dv = getDocValuesReader().getSorted(fi);
-      dvFields.put(field, dv);
-      return dv;
+    FieldInfo fi = getDVField(field, DocValuesType.SORTED);
+    if (fi == null) {
+      return null;
     }
+    return getDocValuesReader().getSorted(fi);
   }
   
   @Override
   public final SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
     ensureOpen();
-    Map<String,Object> dvFields = docValuesLocal.get();
 
-    Object previous = dvFields.get(field);
-    if (previous != null && previous instanceof SortedNumericDocValues) {
-      return (SortedNumericDocValues) previous;
-    } else {
-      FieldInfo fi = getDVField(field, DocValuesType.SORTED_NUMERIC);
-      if (fi == null) {
-        return null;
-      }
-      SortedNumericDocValues dv = getDocValuesReader().getSortedNumeric(fi);
-      dvFields.put(field, dv);
-      return dv;
+    FieldInfo fi = getDVField(field, DocValuesType.SORTED_NUMERIC);
+    if (fi == null) {
+      return null;
     }
+    return getDocValuesReader().getSortedNumeric(fi);
   }
 
   @Override
   public final SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
     ensureOpen();
-    Map<String,Object> dvFields = docValuesLocal.get();
-    
-    Object previous = dvFields.get(field);
-    if (previous != null && previous instanceof SortedSetDocValues) {
-      return (SortedSetDocValues) previous;
-    } else {
-      FieldInfo fi = getDVField(field, DocValuesType.SORTED_SET);
-      if (fi == null) {
-        return null;
-      }
-      SortedSetDocValues dv = getDocValuesReader().getSortedSet(fi);
-      dvFields.put(field, dv);
-      return dv;
+    FieldInfo fi = getDVField(field, DocValuesType.SORTED_SET);
+    if (fi == null) {
+      return null;
     }
+    return getDocValuesReader().getSortedSet(fi);
   }
-  
-  final CloseableThreadLocal<Map<String,NumericDocValues>> normsLocal = new CloseableThreadLocal<Map<String,NumericDocValues>>() {
-    @Override
-    protected Map<String,NumericDocValues> initialValue() {
-      return new HashMap<>();
-    }
-  };
   
   @Override
   public final NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
-    Map<String,NumericDocValues> normFields = normsLocal.get();
-
-    NumericDocValues norms = normFields.get(field);
-    if (norms != null) {
-      return norms;
-    } else {
-      FieldInfo fi = getFieldInfos().fieldInfo(field);
-      if (fi == null || !fi.hasNorms()) {
-        // Field does not exist or does not index norms
-        return null;
-      }
-      norms = getNormsReader().getNorms(fi);
-      normFields.put(field, norms);
-      return norms;
+    FieldInfo fi = getFieldInfos().fieldInfo(field);
+    if (fi == null || fi.hasNorms() == false) {
+      // Field does not exist or does not index norms
+      return null;
     }
+
+    return getNormsReader().getNorms(fi);
   }
 
   @Override
   protected void doClose() throws IOException {
-    IOUtils.close(docValuesLocal, docsWithFieldLocal, normsLocal);
   }
   
   @Override

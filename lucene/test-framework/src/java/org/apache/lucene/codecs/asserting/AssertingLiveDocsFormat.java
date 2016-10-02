@@ -106,7 +106,7 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
     @Override
     public boolean get(int index) {
       assert index >= 0;
-      assert index < in.length();
+      assert index < in.length(): "index=" + index + " vs in.length()=" + in.length();
       return in.get(index);
     }
     

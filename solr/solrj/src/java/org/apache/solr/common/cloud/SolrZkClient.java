@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
@@ -208,7 +209,7 @@ public class SolrZkClient implements Closeable {
         log.warn("VM param zkCredentialsProvider does not point to a class implementing ZkCredentialsProvider and with a non-arg constructor", t);
       }
     }
-    log.info("Using default ZkCredentialsProvider");
+    log.debug("Using default ZkCredentialsProvider");
     return new DefaultZkCredentialsProvider();
   }
 
@@ -224,7 +225,7 @@ public class SolrZkClient implements Closeable {
         log.warn("VM param zkACLProvider does not point to a class implementing ZkACLProvider and with a non-arg constructor", t);
       }
     }
-    log.info("Using default ZkACLProvider");
+    log.debug("Using default ZkACLProvider");
     return new DefaultZkACLProvider();
   }
 
@@ -263,7 +264,14 @@ public class SolrZkClient implements Closeable {
       @Override
       public void process(final WatchedEvent event) {
         log.debug("Submitting job to respond to event " + event);
-        zkCallbackExecutor.submit(() -> watcher.process(event));
+        try {
+          zkCallbackExecutor.submit(() -> watcher.process(event));
+        } catch (RejectedExecutionException e) {
+          // If not a graceful shutdown
+          if (!isClosed()) {
+            throw e;
+          }
+        }
       }
     };
   }
@@ -470,9 +478,7 @@ public class SolrZkClient implements Closeable {
    */
   public void makePath(String path, byte[] data, CreateMode createMode,
       Watcher watcher, boolean failOnExists, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
-    if (log.isInfoEnabled()) {
-      log.info("makePath: " + path);
-    }
+    log.debug("makePath: {}", path);
     boolean retry = true;
 
     if (path.startsWith("/")) {
@@ -556,10 +562,7 @@ public class SolrZkClient implements Closeable {
    */
   public Stat setData(String path, File file, boolean retryOnConnLoss) throws IOException,
       KeeperException, InterruptedException {
-    if (log.isInfoEnabled()) {
-      log.info("Write to ZooKeepeer " + file.getAbsolutePath() + " to " + path);
-    }
-
+    log.debug("Write to ZooKeeper: {} to {}", file.getAbsolutePath(), path);
     byte[] data = FileUtils.readFileToByteArray(file);
     return setData(path, data, retryOnConnLoss);
   }
@@ -760,7 +763,7 @@ public class SolrZkClient implements Closeable {
     ZkMaintenanceUtils.traverseZkTree(this, root, ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST, path -> {
       try {
         setACL(path, getZkACLProvider().getACLsToAdd(path), true);
-        log.info("Updated ACL on " + path);
+        log.debug("Updated ACL on {}", path);
       } catch (NoNodeException e) {
         // If a node was deleted, don't bother trying to set ACLs on it.
         return;

@@ -360,7 +360,7 @@ class TermAutomatonScorer extends Scorer {
   }
 
   @Override
-  public float score() {
+  public float score() throws IOException {
     // TODO: we could probably do better here, e.g. look @ freqs of actual terms involved in this doc and score differently
     return docScorer.score(docID, freq);
   }

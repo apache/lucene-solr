@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.MapSerializable;
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DOMUtil;
@@ -148,7 +148,7 @@ public class CacheConfig implements MapSerializable{
   }
 
   @Override
-  public Map<String, Object> toMap() {
+  public Map<String, Object> toMap(Map<String, Object> map) {
     Map result = Collections.unmodifiableMap(args);
     return result;
   }

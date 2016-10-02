@@ -16,6 +16,17 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -28,22 +39,11 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.processor.FieldMutatingUpdateProcessorFactory.SelectorParams;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
+import org.apache.solr.update.processor.FieldMutatingUpdateProcessorFactory.SelectorParams;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
@@ -384,18 +384,9 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       return defaultFieldType;
     }
 
-    private FieldNameSelector getDefaultSelector(final IndexSchema schema) {
-      return new FieldNameSelector() {
-        @Override
-        public boolean shouldMutate(final String fieldName) {
-          return null == schema.getFieldTypeNoEx(fieldName);
-        }
-      };
-    }
-
     private FieldNameSelector buildSelector(IndexSchema schema) {
       FieldNameSelector selector = FieldMutatingUpdateProcessor.createFieldNameSelector
-        (solrResourceLoader, schema, inclusions, getDefaultSelector(schema));
+        (solrResourceLoader, schema, inclusions, fieldName -> null == schema.getFieldTypeNoEx(fieldName));
 
       for (SelectorParams exc : exclusions) {
         selector = FieldMutatingUpdateProcessor.wrap(selector, FieldMutatingUpdateProcessor.createFieldNameSelector

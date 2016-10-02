@@ -20,13 +20,16 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A per-document byte[] with presorted values.
+ * A per-document byte[] with presorted values.  This is fundamentally an
+ * iterator over the int ord values per document, with random access APIs
+ * to resolve an int ord to BytesRef.
  * <p>
  * Per-Document values in a SortedDocValues are deduplicated, dereferenced,
  * and sorted into a dictionary of unique values. A pointer to the
  * dictionary value (ordinal) can be retrieved for each document. Ordinals
  * are dense and in increasing sorted order.
  */
+
 public abstract class SortedDocValues extends BinaryDocValues {
 
   /** Sole constructor. (For invocation by subclass 
@@ -34,22 +37,32 @@ public abstract class SortedDocValues extends BinaryDocValues {
   protected SortedDocValues() {}
 
   /**
-   * Returns the ordinal for the specified docID.
-   * @param  docID document ID to lookup
+   * Returns the ordinal for the current docID.
    * @return ordinal for the document: this is dense, starts at 0, then
-   *         increments by 1 for the next value in sorted order. Note that
-   *         missing values are indicated by -1.
+   *         increments by 1 for the next value in sorted order.
    */
-  public abstract int getOrd(int docID);
+  public abstract int ordValue();
 
   /** Retrieves the value for the specified ordinal. The returned
    * {@link BytesRef} may be re-used across calls to {@link #lookupOrd(int)}
    * so make sure to {@link BytesRef#deepCopyOf(BytesRef) copy it} if you want
    * to keep it around.
    * @param ord ordinal to lookup (must be &gt;= 0 and &lt; {@link #getValueCount()})
-   * @see #getOrd(int) 
+   * @see #ordValue() 
    */
   public abstract BytesRef lookupOrd(int ord);
+
+  private final BytesRef empty = new BytesRef();
+
+  @Override
+  public BytesRef binaryValue() {
+    int ord = ordValue();
+    if (ord == -1) {
+      return empty;
+    } else {
+      return lookupOrd(ord);
+    }
+  }
 
   /**
    * Returns the number of unique values.
@@ -57,18 +70,6 @@ public abstract class SortedDocValues extends BinaryDocValues {
    *         also equivalent to one plus the maximum ordinal.
    */
   public abstract int getValueCount();
-
-  private final BytesRef empty = new BytesRef();
-
-  @Override
-  public BytesRef get(int docID) {
-    int ord = getOrd(docID);
-    if (ord == -1) {
-      return empty;
-    } else {
-      return lookupOrd(ord);
-    }
-  }
 
   /** If {@code key} exists, returns its ordinal, else
    *  returns {@code -insertionPoint-1}, like {@code

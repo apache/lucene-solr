@@ -265,6 +265,34 @@ public class TestBooleanRewrites extends LuceneTestCase {
     assertEquals(new MatchNoDocsQuery(), searcher.rewrite(bq2));
   }
 
+  // MatchAllQuery as MUST_NOT clause cannot return anything
+  public void testMatchAllMustNot() throws IOException {
+    IndexSearcher searcher = newSearcher(new MultiReader());
+
+    // Test Must with MatchAll MustNot
+    BooleanQuery bq = new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("foo", "bar")), Occur.MUST)
+            .add(new TermQuery(new Term("foo", "baz")), Occur.FILTER)
+            .add(new TermQuery(new Term("foo", "bad")), Occur.SHOULD)
+            //
+            .add(new MatchAllDocsQuery(), Occur.MUST_NOT)
+            .build();
+
+    assertEquals(new MatchNoDocsQuery(), searcher.rewrite(bq));
+
+    // Test Must with MatchAll MustNot and other MustNot
+    BooleanQuery bq2 = new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("foo", "bar")), Occur.MUST)
+            .add(new TermQuery(new Term("foo", "baz")), Occur.FILTER)
+            .add(new TermQuery(new Term("foo", "bad")), Occur.SHOULD)
+            //
+            .add(new TermQuery(new Term("foo", "bor")), Occur.MUST_NOT)
+            .add(new MatchAllDocsQuery(), Occur.MUST_NOT)
+            .build();
+
+    assertEquals(new MatchNoDocsQuery(), searcher.rewrite(bq2));
+  }
+
   public void testRemoveMatchAllFilter() throws IOException {
     IndexSearcher searcher = newSearcher(new MultiReader());
 

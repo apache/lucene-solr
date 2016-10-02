@@ -22,11 +22,28 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.CoreStatus;
+import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.junit.AfterClass;
 import org.junit.Before;
 
@@ -52,10 +69,6 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   public static final int DEFAULT_TIMEOUT = 30;
 
-  public static Path configset(String name) {
-    return TEST_PATH().resolve("configsets").resolve(name).resolve("conf");
-  }
-
   private static class Config {
     final String name;
     final Path path;
@@ -77,6 +90,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     private JettyConfig jettyConfig = buildJettyConfig("/solr");
 
     private List<Config> configs = new ArrayList<>();
+    private Map<String, String> clusterProperties = new HashMap<>();
 
     /**
      * Create a builder
@@ -127,6 +141,16 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
 
     /**
+     * Set a cluster property
+     * @param propertyName the property name
+     * @param propertyValue the property value
+     */
+    public Builder withProperty(String propertyName, String propertyValue) {
+      this.clusterProperties.put(propertyName, propertyValue);
+      return this;
+    }
+
+    /**
      * Configure and run the {@link MiniSolrCloudCluster}
      * @throws Exception if an error occurs on startup
      */
@@ -136,12 +160,23 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       for (Config config : configs) {
         client.uploadConfig(config.path, config.name);
       }
+
+      if (clusterProperties.size() > 0) {
+        ClusterProperties props = new ClusterProperties(cluster.getSolrClient().getZkStateReader().getZkClient());
+        for (Map.Entry<String, String> entry : clusterProperties.entrySet()) {
+          props.setClusterProperty(entry.getKey(), entry.getValue());
+        }
+      }
     }
 
   }
 
   /** The cluster */
   protected static MiniSolrCloudCluster cluster;
+
+  protected SolrZkClient zkClient() {
+    return cluster.getSolrClient().getZkStateReader().getZkClient();
+  }
 
   /**
    * Call this to configure a cluster of n nodes.
@@ -166,6 +201,107 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   public void checkClusterConfiguration() {
     if (cluster == null)
       throw new RuntimeException("MiniSolrCloudCluster not configured - have you called configureCluster().configure()?");
+  }
+
+  /* Cluster helper methods ************************************/
+
+  /**
+   * Get the collection state for a particular collection
+   */
+  protected DocCollection getCollectionState(String collectionName) {
+    return cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
+  }
+
+  /**
+   * Wait for a particular collection state to appear in the cluster client's state reader
+   *
+   * This is a convenience method using the {@link #DEFAULT_TIMEOUT}
+   *
+   * @param message     a message to report on failure
+   * @param collection  the collection to watch
+   * @param predicate   a predicate to match against the collection state
+   */
+  protected void waitForState(String message, String collection, CollectionStatePredicate predicate) {
+    AtomicReference<DocCollection> state = new AtomicReference<>();
+    try {
+      cluster.getSolrClient().waitForState(collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> {
+        state.set(c);
+        return predicate.matches(n, c);
+      });
+    } catch (Exception e) {
+      fail(message + "\nLast available state: " + state.get());
+    }
+  }
+
+  /**
+   * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
+   * number of shards and replicas
+   */
+  public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
+    return (liveNodes, collectionState) -> {
+      if (collectionState.getSlices().size() != expectedShards)
+        return false;
+      for (Slice slice : collectionState) {
+        int activeReplicas = 0;
+        for (Replica replica : slice) {
+          if (replica.isActive(liveNodes))
+            activeReplicas++;
+        }
+        if (activeReplicas != expectedReplicas)
+          return false;
+      }
+      return true;
+    };
+  }
+
+  /**
+   * Get a (reproducibly) random shard from a {@link DocCollection}
+   */
+  protected Slice getRandomShard(DocCollection collection) {
+    List<Slice> shards = new ArrayList<>(collection.getActiveSlices());
+    if (shards.size() == 0)
+      fail("Couldn't get random shard for collection as it has no shards!\n" + collection.toString());
+    Collections.shuffle(shards, random());
+    return shards.get(0);
+  }
+
+  /**
+   * Get a (reproducibly) random replica from a {@link Slice}
+   */
+  protected Replica getRandomReplica(Slice slice) {
+    List<Replica> replicas = new ArrayList<>(slice.getReplicas());
+    if (replicas.size() == 0)
+      fail("Couldn't get random replica from shard as it has no replicas!\n" + slice.toString());
+    Collections.shuffle(replicas, random());
+    return replicas.get(0);
+  }
+
+  /**
+   * Get a (reproducibly) random replica from a {@link Slice} matching a predicate
+   */
+  protected Replica getRandomReplica(Slice slice, Predicate<Replica> matchPredicate) {
+    List<Replica> replicas = new ArrayList<>(slice.getReplicas());
+    if (replicas.size() == 0)
+      fail("Couldn't get random replica from shard as it has no replicas!\n" + slice.toString());
+    Collections.shuffle(replicas, random());
+    for (Replica replica : replicas) {
+      if (matchPredicate.test(replica))
+        return replica;
+    }
+    fail("Couldn't get random replica that matched conditions\n" + slice.toString());
+    return null;  // just to keep the compiler happy - fail will always throw an Exception
+  }
+
+  /**
+   * Get the {@link CoreStatus} data for a {@link Replica}
+   *
+   * This assumes that the replica is hosted on a live node.
+   */
+  protected CoreStatus getCoreStatus(Replica replica) throws IOException, SolrServerException {
+    JettySolrRunner jetty = cluster.getReplicaJetty(replica);
+    try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString(), cluster.getSolrClient().getHttpClient())) {
+      return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
+    }
   }
 
 }

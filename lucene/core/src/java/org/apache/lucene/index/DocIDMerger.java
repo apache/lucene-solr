@@ -17,6 +17,7 @@
 
 package org.apache.lucene.index;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.search.DocIdSetIterator; // javadocs
@@ -53,11 +54,11 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
     }
 
     /** Returns the next document ID from this sub reader, and {@link DocIdSetIterator#NO_MORE_DOCS} when done */
-    public abstract int nextDoc();
+    public abstract int nextDoc() throws IOException;
   }
 
   /** Construct this from the provided subs, specifying the maximum sub count */
-  public DocIDMerger(List<T> subs, int maxCount, boolean indexIsSorted) {
+  public DocIDMerger(List<T> subs, int maxCount, boolean indexIsSorted) throws IOException {
     this.subs = subs;
 
     if (indexIsSorted && maxCount > 1) {
@@ -77,12 +78,12 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
   }
 
   /** Construct this from the provided subs */
-  public DocIDMerger(List<T> subs, boolean indexIsSorted) {
+  public DocIDMerger(List<T> subs, boolean indexIsSorted) throws IOException {
     this(subs, subs.size(), indexIsSorted);
   }
 
   /** Reuse API, currently only used by postings during merge */
-  public void reset() {
+  public void reset() throws IOException {
     if (queue != null) {
       // caller may not have fully consumed the queue:
       queue.clear();
@@ -116,7 +117,7 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
   }
 
   /** Returns null when done */
-  public T next() {
+  public T next() throws IOException {
     // Loop until we find a non-deleted document
     if (queue != null) {
       T top = queue.top();

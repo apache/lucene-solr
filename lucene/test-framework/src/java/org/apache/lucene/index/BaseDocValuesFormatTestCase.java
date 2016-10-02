@@ -25,8 +25,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
@@ -49,22 +49,25 @@ import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
  * Abstract class to do basic tests for a docvalues format.
@@ -83,17 +86,13 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       doc.add(new BinaryDocValuesField("bdv", new BytesRef(TestUtil.randomSimpleString(random()))));
       doc.add(new SortedDocValuesField("sdv", new BytesRef(TestUtil.randomSimpleString(random(), 2))));
     }
-    if (codecSupportsSortedSet()) {
-      final int numValues = random().nextInt(5);
-      for (int i = 0; i < numValues; ++i) {
-        doc.add(new SortedSetDocValuesField("ssdv", new BytesRef(TestUtil.randomSimpleString(random(), 2))));
-      }
+    int numValues = random().nextInt(5);
+    for (int i = 0; i < numValues; ++i) {
+      doc.add(new SortedSetDocValuesField("ssdv", new BytesRef(TestUtil.randomSimpleString(random(), 2))));
     }
-    if (codecSupportsSortedNumeric()) {
-      final int numValues = random().nextInt(5);
-      for (int i = 0; i < numValues; ++i) {
-        doc.add(new SortedNumericDocValuesField("sndv", TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE)));
-      }
+    numValues = random().nextInt(5);
+    for (int i = 0; i < numValues; ++i) {
+      doc.add(new SortedNumericDocValuesField("sndv", TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE)));
     }
   }
 
@@ -122,7 +121,9 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
-      assertEquals(5, dv.get(hits.scoreDocs[i].doc));
+      int docID = hits.scoreDocs[i].doc;
+      assertEquals(docID, dv.advance(docID));
+      assertEquals(5, dv.longValue());
     }
 
     ireader.close();
@@ -150,11 +151,14 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      int docID = hits.scoreDocs[i].doc;
+      Document hitDoc = isearcher.doc(docID);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
+      
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
-      assertEquals(Float.floatToRawIntBits(5.7f), dv.get(hits.scoreDocs[i].doc));
+      assertEquals(docID, dv.advance(docID));
+      assertEquals(Float.floatToRawIntBits(5.7f), dv.longValue());
     }
 
     ireader.close();
@@ -183,13 +187,16 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      int docID = hits.scoreDocs[i].doc;
+      Document hitDoc = isearcher.doc(docID);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv1");
-      assertEquals(5, dv.get(hits.scoreDocs[i].doc));
+      assertEquals(docID, dv.advance(docID));
+      assertEquals(5, dv.longValue());
       dv = ireader.leaves().get(0).reader().getNumericDocValues("dv2");
-      assertEquals(17, dv.get(hits.scoreDocs[i].doc));
+      assertEquals(docID, dv.advance(docID));
+      assertEquals(17, dv.longValue());
     }
 
     ireader.close();
@@ -218,14 +225,17 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      int hitDocID = hits.scoreDocs[i].doc;
+      Document hitDoc = isearcher.doc(hitDocID);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv1");
-      BytesRef scratch = dv.get(hits.scoreDocs[i].doc);
+      assertEquals(hitDocID, dv.advance(hitDocID));
+      BytesRef scratch = dv.binaryValue();
       assertEquals(new BytesRef(longTerm), scratch);
       dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv2");
-      scratch = dv.get(hits.scoreDocs[i].doc);
+      assertEquals(hitDocID, dv.advance(hitDocID));
+      scratch = dv.binaryValue();
       assertEquals(new BytesRef(text), scratch);
     }
 
@@ -255,14 +265,16 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      int docID = hits.scoreDocs[i].doc;
+      Document hitDoc = isearcher.doc(docID);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv1");
-      assertEquals(5, dv.get(hits.scoreDocs[i].doc));
+      assertEquals(docID, dv.advance(docID));
+      assertEquals(5, dv.longValue());
       BinaryDocValues dv2 = ireader.leaves().get(0).reader().getBinaryDocValues("dv2");
-      BytesRef scratch = dv2.get(hits.scoreDocs[i].doc);
-      assertEquals(new BytesRef("hello world"), scratch);
+      assertEquals(docID, dv2.advance(docID));
+      assertEquals(new BytesRef("hello world"), dv2.binaryValue());
     }
 
     ireader.close();
@@ -292,18 +304,21 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      int docID = hits.scoreDocs[i].doc;
+      Document hitDoc = isearcher.doc(docID);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv1");
-      int ord = dv.getOrd(0);
+      assertEquals(docID, dv.advance(docID));
+      int ord = dv.ordValue();
       BytesRef scratch = dv.lookupOrd(ord);
       assertEquals(new BytesRef("hello hello"), scratch);
       NumericDocValues dv2 = ireader.leaves().get(0).reader().getNumericDocValues("dv2");
-      assertEquals(5, dv2.get(hits.scoreDocs[i].doc));
+      assertEquals(docID, dv2.advance(docID));
+      assertEquals(5, dv2.longValue());
       BinaryDocValues dv3 = ireader.leaves().get(0).reader().getBinaryDocValues("dv3");
-      scratch = dv3.get(hits.scoreDocs[i].doc);
-      assertEquals(new BytesRef("hello world"), scratch);
+      assertEquals(docID, dv3.advance(docID));
+      assertEquals(new BytesRef("hello world"), dv3.binaryValue());
     }
 
     ireader.close();
@@ -334,18 +349,21 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     BytesRef scratch = new BytesRef();
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      int docID = hits.scoreDocs[i].doc;
+      Document hitDoc = isearcher.doc(docID);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv2");
-      int ord = dv.getOrd(0);
+      assertEquals(docID, dv.advance(docID));
+      int ord = dv.ordValue();
       scratch = dv.lookupOrd(ord);
       assertEquals(new BytesRef("hello hello"), scratch);
       NumericDocValues dv2 = ireader.leaves().get(0).reader().getNumericDocValues("dv3");
-      assertEquals(5, dv2.get(hits.scoreDocs[i].doc));
+      assertEquals(docID, dv2.advance(docID));
+      assertEquals(5, dv2.longValue());
       BinaryDocValues dv3 = ireader.leaves().get(0).reader().getBinaryDocValues("dv1");
-      scratch = dv3.get(hits.scoreDocs[i].doc);
-      assertEquals(new BytesRef("hello world"), scratch);
+      assertEquals(docID, dv3.advance(docID));
+      assertEquals(new BytesRef("hello world"), dv3.binaryValue());
     }
 
     ireader.close();
@@ -372,8 +390,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
     NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
-    assertEquals(1, dv.get(0));
-    assertEquals(2, dv.get(1));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(1, dv.longValue());
+    assertEquals(1, dv.nextDoc());
+    assertEquals(2, dv.longValue());
 
     ireader.close();
     directory.close();
@@ -410,7 +430,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       } else {
         expected = 99;
       }
-      assertEquals(expected, dv.get(i));
+      assertEquals(i, dv.nextDoc());
+      assertEquals(expected, dv.longValue());
     }
 
     ireader.close();
@@ -437,8 +458,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
     NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
-    assertEquals(Long.MIN_VALUE, dv.get(0));
-    assertEquals(Long.MAX_VALUE, dv.get(1));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(Long.MIN_VALUE, dv.longValue());
+    assertEquals(1, dv.nextDoc());
+    assertEquals(Long.MAX_VALUE, dv.longValue());
 
     ireader.close();
     directory.close();
@@ -464,8 +487,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
     NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
-    assertEquals(-8841491950446638677L, dv.get(0));
-    assertEquals(9062230939892376225L, dv.get(1));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(-8841491950446638677L, dv.longValue());
+    assertEquals(1, dv.nextDoc());
+    assertEquals(9062230939892376225L, dv.longValue());
 
     ireader.close();
     directory.close();
@@ -495,12 +520,13 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      int hitDocID = hits.scoreDocs[i].doc;
+      Document hitDoc = isearcher.doc(hitDocID);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv");
-      BytesRef scratch = dv.get(hits.scoreDocs[i].doc);
-      assertEquals(new BytesRef("hello world"), scratch);
+      assertEquals(hitDocID, dv.advance(hitDocID));
+      assertEquals(new BytesRef("hello world"), dv.binaryValue());
     }
 
     ireader.close();
@@ -539,8 +565,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       } else {
         expected = "hello 2";
       }
-      scratch = dv.get(i);
-      assertEquals(expected, scratch.utf8ToString());
+      assertEquals(i, dv.nextDoc());
+      assertEquals(expected, dv.binaryValue().utf8ToString());
     }
 
     ireader.close();
@@ -569,7 +595,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.close();
     
     BinaryDocValues dv = getOnlyLeafReader(ireader).getBinaryDocValues("field");
-    assertEquals(new BytesRef(), dv.get(0));
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
     
     ireader.close();
     directory.close();
@@ -600,11 +626,13 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     BytesRef scratch = new BytesRef();
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      int docID = hits.scoreDocs[i].doc;
+      Document hitDoc = isearcher.doc(docID);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
-      scratch = dv.lookupOrd(dv.getOrd(hits.scoreDocs[i].doc));
+      assertEquals(docID, dv.advance(docID));
+      scratch = dv.lookupOrd(dv.ordValue());
       assertEquals(new BytesRef("hello world"), scratch);
     }
 
@@ -633,9 +661,11 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assert ireader.leaves().size() == 1;
     SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
     BytesRef scratch = new BytesRef();
-    scratch = dv.lookupOrd(dv.getOrd(0));
+    assertEquals(0, dv.nextDoc());
+    scratch = dv.lookupOrd(dv.ordValue());
     assertEquals("hello world 1", scratch.utf8ToString());
-    scratch = dv.lookupOrd(dv.getOrd(1));
+    assertEquals(1, dv.nextDoc());
+    scratch = dv.lookupOrd(dv.ordValue());
     assertEquals("hello world 2", scratch.utf8ToString());
 
     ireader.close();
@@ -666,13 +696,16 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assert ireader.leaves().size() == 1;
     SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
     assertEquals(2, dv.getValueCount());
-    assertEquals(0, dv.getOrd(0));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(0, dv.ordValue());
     BytesRef scratch = dv.lookupOrd(0);
     assertEquals("hello world 1", scratch.utf8ToString());
-    assertEquals(1, dv.getOrd(1));
+    assertEquals(1, dv.nextDoc());
+    assertEquals(1, dv.ordValue());
     scratch = dv.lookupOrd(1);
     assertEquals("hello world 2", scratch.utf8ToString());
-    assertEquals(0, dv.getOrd(2));
+    assertEquals(2, dv.nextDoc());
+    assertEquals(0, dv.ordValue());
 
     ireader.close();
     directory.close();
@@ -702,7 +735,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assert ireader.leaves().size() == 1;
     SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
     assertEquals(2, dv.getValueCount()); // 2 ords
-    BytesRef scratch = dv.lookupOrd(0);
+    assertEquals(0, dv.nextDoc());
+    BytesRef scratch = dv.binaryValue();
     assertEquals(new BytesRef("hello world 1"), scratch);
     scratch = dv.lookupOrd(1);
     assertEquals(new BytesRef("hello world 2"), scratch);
@@ -714,7 +748,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       } else {
         expected = "hello world 2";
       }
-      scratch = dv.lookupOrd(dv.getOrd(i));
+      if (dv.docID() < i) {
+        assertEquals(i, dv.nextDoc());
+      }
+      scratch = dv.lookupOrd(dv.ordValue());
       assertEquals(expected, scratch.utf8ToString());
     }
 
@@ -744,15 +781,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.close();
     
     SortedDocValues dv = getOnlyLeafReader(ireader).getSortedDocValues("field");
-    if (codecSupportsDocsWithField()) {
-      assertEquals(-1, dv.getOrd(0));
-      assertEquals(0, dv.getValueCount());
-    } else {
-      assertEquals(0, dv.getOrd(0));
-      assertEquals(1, dv.getValueCount());
-      BytesRef ref = dv.lookupOrd(0);
-      assertEquals(new BytesRef(), ref);
-    }
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
     
     ireader.close();
     directory.close();
@@ -774,8 +803,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
     BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv");
-    BytesRef scratch = dv.get(0);
-    assertEquals(new BytesRef("hello\nworld\r1"), scratch);
+    assertEquals(0, dv.nextDoc());
+    assertEquals(new BytesRef("hello\nworld\r1"), dv.binaryValue());
 
     ireader.close();
     directory.close();
@@ -799,13 +828,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
     SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
-    BytesRef scratch = dv.lookupOrd(dv.getOrd(0));
+    assertEquals(0, dv.nextDoc());
+    BytesRef scratch = dv.lookupOrd(dv.ordValue());
     assertEquals(new BytesRef("hello world 2"), scratch);
-    if (codecSupportsDocsWithField()) {
-      assertEquals(-1, dv.getOrd(1));
-    }
-    scratch = dv.get(1);
-    assertEquals(new BytesRef(""), scratch);
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
     ireader.close();
     directory.close();
   }
@@ -903,9 +929,11 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
     SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
-    assertEquals(0, dv.getOrd(0));
-    assertEquals(0, dv.getOrd(1));
-    BytesRef scratch = dv.lookupOrd(dv.getOrd(0));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(0, dv.ordValue());
+    assertEquals(1, dv.nextDoc());
+    assertEquals(0, dv.ordValue());
+    BytesRef scratch = dv.lookupOrd(0);
     assertEquals("", scratch.utf8ToString());
 
     ireader.close();
@@ -932,10 +960,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
     BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv");
-    BytesRef scratch = dv.get(0);
-    assertEquals("", scratch.utf8ToString());
-    scratch = dv.get(1);
-    assertEquals("", scratch.utf8ToString());
+    assertEquals(0, dv.nextDoc());
+    assertEquals("", dv.binaryValue().utf8ToString());
+    assertEquals(1, dv.nextDoc());
+    assertEquals("", dv.binaryValue().utf8ToString());
 
     ireader.close();
     directory.close();
@@ -960,8 +988,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
     BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv");
-    BytesRef scratch = dv.get(0);
-    assertEquals(new BytesRef(bytes), scratch);
+    assertEquals(0, dv.nextDoc());
+    assertEquals(new BytesRef(bytes), dv.binaryValue());
 
     ireader.close();
     directory.close();
@@ -985,9 +1013,9 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
-    BinaryDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
-    BytesRef scratch = dv.get(0);
-    assertEquals(new BytesRef(bytes), scratch);
+    BinaryDocValues dv = DocValues.getBinary(ireader.leaves().get(0).reader(), "dv");
+    assertEquals(0, dv.nextDoc());
+    assertEquals(new BytesRef(bytes), dv.binaryValue());
     ireader.close();
     directory.close();
   }
@@ -1008,10 +1036,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
     BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv");
-    byte mybytes[] = new byte[20];
-    BytesRef scratch = dv.get(0);
-    assertEquals("boo!", scratch.utf8ToString());
-    assertFalse(scratch.bytes == mybytes);
+    assertEquals(0, dv.nextDoc());
+    assertEquals("boo!", dv.binaryValue().utf8ToString());
 
     ireader.close();
     directory.close();
@@ -1032,11 +1058,11 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
-    BinaryDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
+    BinaryDocValues dv = DocValues.getBinary(ireader.leaves().get(0).reader(), "dv");
     byte mybytes[] = new byte[20];
-    BytesRef scratch = dv.get(0);
-    assertEquals("boo!", scratch.utf8ToString());
-    assertFalse(scratch.bytes == mybytes);
+    assertEquals(0, dv.nextDoc());
+    assertEquals("boo!", dv.binaryValue().utf8ToString());
+    assertFalse(dv.binaryValue().bytes == mybytes);
 
     ireader.close();
     directory.close();
@@ -1080,7 +1106,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     NumericDocValues docValues = getOnlyLeafReader(reader).getNumericDocValues("docId");
     for (int i = 0; i < scoreDocs.length; i++) {
       assertEquals(i, scoreDocs[i].doc);
-      assertEquals(i, docValues.get(scoreDocs[i].doc));
+      assertEquals(i, docValues.advance(i));
+      assertEquals(i, docValues.longValue());
     }
     reader.close();
     dir.close();
@@ -1089,11 +1116,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   public void testRandomSortedBytes() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig cfg = newIndexWriterConfig(new MockAnalyzer(random()));
-    if (!codecSupportsDocsWithField()) {
-      // if the codec doesnt support missing, we expect missing to be mapped to byte[]
-      // by the impersonator, but we have to give it a chance to merge them to this
-      cfg.setMergePolicy(newLogMergePolicy());
-    }
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, cfg);
     int numDocs = atLeast(100);
     BytesRefHash hash = new BytesRefHash();
@@ -1118,17 +1140,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       doc.add(newTextField("id", "noValue", Field.Store.YES));
       w.addDocument(doc);
     }
-    if (!codecSupportsDocsWithField()) {
-      BytesRef bytesRef = new BytesRef();
-      hash.add(bytesRef); // add empty value for the gaps
-    }
     if (rarely()) {
       w.commit();
-    }
-    if (!codecSupportsDocsWithField()) {
-      // if the codec doesnt support missing, we expect missing to be mapped to byte[]
-      // by the impersonator, but we have to give it a chance to merge them to this
-      w.forceMerge(1);
     }
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
@@ -1161,7 +1174,9 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       PostingsEnum termPostingsEnum = TestUtil.docs(random(), reader, "id", new BytesRef(entry.getKey()), null, 0);
       int docId = termPostingsEnum.nextDoc();
       expected = new BytesRef(entry.getValue());
-      final BytesRef actual = docValues.get(docId);
+      docValues = MultiDocValues.getSortedValues(reader, "field");
+      assertEquals(docId, docValues.advance(docId));
+      final BytesRef actual = docValues.binaryValue();
       assertEquals(expected, actual);
     }
 
@@ -1231,7 +1246,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       NumericDocValues docValues = r.getNumericDocValues("dv");
       for (int i = 0; i < r.maxDoc(); i++) {
         long storedValue = Long.parseLong(r.document(i).get("stored"));
-        assertEquals(storedValue, docValues.get(i));
+        assertEquals(i, docValues.nextDoc());
+        assertEquals(storedValue, docValues.longValue());
       }
     }
     ir.close();
@@ -1288,13 +1304,19 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       LeafReader r = context.reader();
       SortedNumericDocValues docValues = DocValues.getSortedNumeric(r, "dv");
       for (int i = 0; i < r.maxDoc(); i++) {
-        String expected[] = r.document(i).getValues("stored");
-        docValues.setDocument(i);
-        String actual[] = new String[docValues.count()];
-        for (int j = 0; j < actual.length; j++) {
-          actual[j] = Long.toString(docValues.valueAt(j));
+        if (i > docValues.docID()) {
+          docValues.nextDoc();
         }
-        assertArrayEquals(expected, actual);
+        String expected[] = r.document(i).getValues("stored");
+        if (i < docValues.docID()) {
+          assertEquals(0, expected.length);
+        } else {
+          String actual[] = new String[docValues.docValueCount()];
+          for (int j = 0; j < actual.length; j++) {
+            actual[j] = Long.toString(docValues.nextValue());
+          }
+          assertArrayEquals(expected, actual);
+        }
       }
     }
     ir.close();
@@ -1382,8 +1404,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       BinaryDocValues docValues = r.getBinaryDocValues("dv");
       for (int i = 0; i < r.maxDoc(); i++) {
         BytesRef binaryValue = r.document(i).getBinaryValue("stored");
-        BytesRef scratch = docValues.get(i);
-        assertEquals(binaryValue, scratch);
+        assertEquals(i, docValues.nextDoc());
+        assertEquals(binaryValue, docValues.binaryValue());
       }
     }
     ir.close();
@@ -1396,8 +1418,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       BinaryDocValues docValues = r.getBinaryDocValues("dv");
       for (int i = 0; i < r.maxDoc(); i++) {
         BytesRef binaryValue = r.document(i).getBinaryValue("stored");
-        BytesRef scratch = docValues.get(i);
-        assertEquals(binaryValue, scratch);
+        assertEquals(i, docValues.nextDoc());
+        assertEquals(binaryValue, docValues.binaryValue());
       }
     }
     ir.close();
@@ -1462,11 +1484,11 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ir = writer.getReader();
     for (LeafReaderContext context : ir.leaves()) {
       LeafReader r = context.reader();
-      BinaryDocValues docValues = r.getSortedDocValues("dv");
+      BinaryDocValues docValues = DocValues.getBinary(r, "dv");
       for (int i = 0; i < r.maxDoc(); i++) {
         BytesRef binaryValue = r.document(i).getBinaryValue("stored");
-        BytesRef scratch = docValues.get(i);
-        assertEquals(binaryValue, scratch);
+        assertEquals(i, docValues.nextDoc());
+        assertEquals(binaryValue, docValues.binaryValue());
       }
     }
     ir.close();
@@ -1476,11 +1498,11 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     ir = writer.getReader();
     for (LeafReaderContext context : ir.leaves()) {
       LeafReader r = context.reader();
-      BinaryDocValues docValues = r.getSortedDocValues("dv");
+      BinaryDocValues docValues = DocValues.getBinary(r, "dv");
       for (int i = 0; i < r.maxDoc(); i++) {
         BytesRef binaryValue = r.document(i).getBinaryValue("stored");
-        BytesRef scratch = docValues.get(i);
-        assertEquals(binaryValue, scratch);
+        assertEquals(i, docValues.nextDoc());
+        assertEquals(binaryValue, docValues.binaryValue());
       }
     }
     ir.close();
@@ -1504,7 +1526,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetOneValue() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
     
@@ -1516,8 +1537,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.close();
     
     SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
-    
-    dv.setDocument(0);
+    assertEquals(0, dv.nextDoc());
     assertEquals(0, dv.nextOrd());
     assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
@@ -1529,7 +1549,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoFields() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
     
@@ -1542,8 +1561,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.close();
     
     SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
+    assertEquals(0, dv.nextDoc());
     
-    dv.setDocument(0);
     assertEquals(0, dv.nextOrd());
     assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
@@ -1552,7 +1571,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     
     dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field2");
 
-    dv.setDocument(0);
+    assertEquals(0, dv.nextDoc());
     assertEquals(0, dv.nextOrd());
     assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
@@ -1564,7 +1583,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoDocumentsMerged() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1587,14 +1605,14 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     assertEquals(2, dv.getValueCount());
     
-    dv.setDocument(0);
+    assertEquals(0, dv.nextDoc());
     assertEquals(0, dv.nextOrd());
     assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
     BytesRef bytes = dv.lookupOrd(0);
     assertEquals(new BytesRef("hello"), bytes);
     
-    dv.setDocument(1);
+    assertEquals(1, dv.nextDoc());
     assertEquals(1, dv.nextOrd());
     assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
@@ -1606,7 +1624,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoValues() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
     
@@ -1619,8 +1636,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.close();
     
     SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
+    assertEquals(0, dv.nextDoc());
     
-    dv.setDocument(0);
     assertEquals(0, dv.nextOrd());
     assertEquals(1, dv.nextOrd());
     assertEquals(NO_MORE_ORDS, dv.nextOrd());
@@ -1636,7 +1653,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoValuesUnordered() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
     
@@ -1649,8 +1665,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.close();
     
     SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
+    assertEquals(0, dv.nextDoc());
     
-    dv.setDocument(0);
     assertEquals(0, dv.nextOrd());
     assertEquals(1, dv.nextOrd());
     assertEquals(NO_MORE_ORDS, dv.nextOrd());
@@ -1666,7 +1682,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetThreeValuesTwoDocs() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1691,12 +1706,12 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     assertEquals(3, dv.getValueCount());
     
-    dv.setDocument(0);
+    assertEquals(0, dv.nextDoc());
     assertEquals(1, dv.nextOrd());
     assertEquals(2, dv.nextOrd());
     assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
-    dv.setDocument(1);
+    assertEquals(1, dv.nextDoc());
     assertEquals(0, dv.nextOrd());
     assertEquals(1, dv.nextOrd());
     assertEquals(NO_MORE_ORDS, dv.nextOrd());
@@ -1715,7 +1730,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoDocumentsLastMissing() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1735,7 +1749,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     assertEquals(1, dv.getValueCount());
     
-    dv.setDocument(0);
+    assertEquals(0, dv.nextDoc());
     assertEquals(0, dv.nextOrd());
     assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
@@ -1747,7 +1761,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoDocumentsLastMissingMerge() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1769,7 +1782,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     assertEquals(1, dv.getValueCount());
 
-    dv.setDocument(0);
+    assertEquals(0, dv.nextDoc());
     assertEquals(0, dv.nextOrd());
     assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
@@ -1781,7 +1794,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoDocumentsFirstMissing() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1802,7 +1814,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     assertEquals(1, dv.getValueCount());
 
-    dv.setDocument(1);
+    assertEquals(1, dv.nextDoc());
     assertEquals(0, dv.nextOrd());
     assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
@@ -1814,7 +1826,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTwoDocumentsFirstMissingMerge() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1836,7 +1847,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     assertEquals(1, dv.getValueCount());
 
-    dv.setDocument(1);
+    assertEquals(1, dv.nextDoc());
     assertEquals(0, dv.nextOrd());
     assertEquals(NO_MORE_ORDS, dv.nextOrd());
     
@@ -1848,7 +1859,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetMergeAwayAllValues() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1877,7 +1887,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetTermsEnum() throws IOException {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -1998,16 +2007,21 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       for (int i = 0; i < r.maxDoc(); i++) {
         String stringValues[] = r.document(i).getValues("stored");
         if (docValues != null) {
-          docValues.setDocument(i);
+          if (docValues.docID() < i) {
+            docValues.nextDoc();
+          }
         }
-        for (int j = 0; j < stringValues.length; j++) {
-          assert docValues != null;
-          long ord = docValues.nextOrd();
-          assert ord != NO_MORE_ORDS;
-          BytesRef scratch = docValues.lookupOrd(ord);
-          assertEquals(stringValues[j], scratch.utf8ToString());
+        if (docValues != null && stringValues.length > 0) {
+          assertEquals(i, docValues.docID());
+          for (int j = 0; j < stringValues.length; j++) {
+            assert docValues != null;
+            long ord = docValues.nextOrd();
+            assert ord != NO_MORE_ORDS;
+            BytesRef scratch = docValues.lookupOrd(ord);
+            assertEquals(stringValues[j], scratch.utf8ToString());
+          }
+          assertEquals(NO_MORE_ORDS, docValues.nextOrd());
         }
-        assert docValues == null || docValues.nextOrd() == NO_MORE_ORDS;
       }
     }
     ir.close();
@@ -2020,17 +2034,20 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       SortedSetDocValues docValues = r.getSortedSetDocValues("dv");
       for (int i = 0; i < r.maxDoc(); i++) {
         String stringValues[] = r.document(i).getValues("stored");
-        if (docValues != null) {
-          docValues.setDocument(i);
+        if (docValues.docID() < i) {
+          docValues.nextDoc();
         }
-        for (int j = 0; j < stringValues.length; j++) {
-          assert docValues != null;
-          long ord = docValues.nextOrd();
-          assert ord != NO_MORE_ORDS;
-          BytesRef scratch = docValues.lookupOrd(ord);
-          assertEquals(stringValues[j], scratch.utf8ToString());
+        if (docValues != null && stringValues.length > 0) {
+          assertEquals(i, docValues.docID());
+          for (int j = 0; j < stringValues.length; j++) {
+            assert docValues != null;
+            long ord = docValues.nextOrd();
+            assert ord != NO_MORE_ORDS;
+            BytesRef scratch = docValues.lookupOrd(ord);
+            assertEquals(stringValues[j], scratch.utf8ToString());
+          }
+          assertEquals(NO_MORE_ORDS, docValues.nextOrd());
         }
-        assert docValues == null || docValues.nextOrd() == NO_MORE_ORDS;
       }
     }
     ir.close();
@@ -2039,7 +2056,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetFixedLengthVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       int fixedLength = TestUtil.nextInt(random(), 1, 10);
@@ -2048,7 +2064,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedNumericsSingleValuedVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedNumericsVsStoredFields(
@@ -2069,7 +2084,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedNumericsSingleValuedMissingVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedNumericsVsStoredFields(
@@ -2090,7 +2104,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
 
   public void testSortedNumericsMultipleValuesVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedNumericsVsStoredFields(
@@ -2111,7 +2124,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
 
   public void testSortedNumericsFewUniqueSetsVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     final long[] values = new long[TestUtil.nextInt(random(), 2, 6)];
     for (int i = 0; i < values.length; ++i) {
       values[i] = random().nextLong();
@@ -2136,7 +2148,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
 
   public void testSortedSetVariableLengthVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedSetVsStoredFields(atLeast(300), 1, 10, 16, 100);
@@ -2144,7 +2155,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
 
   public void testSortedSetFixedLengthSingleValuedVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       int fixedLength = TestUtil.nextInt(random(), 1, 10);
@@ -2153,7 +2163,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testSortedSetVariableLengthSingleValuedVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedSetVsStoredFields(atLeast(300), 1, 10, 1, 100);
@@ -2161,7 +2170,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
 
   public void testSortedSetFixedLengthFewUniqueSetsVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedSetVsStoredFields(atLeast(300), 10, 10, 6, 6);
@@ -2169,7 +2177,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
 
   public void testSortedSetVariableLengthFewUniqueSetsVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedSetVsStoredFields(atLeast(300), 1, 10, 6, 6);
@@ -2177,7 +2184,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
 
   public void testSortedSetVariableLengthManyValuesPerDocVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedSetVsStoredFields(atLeast(20), 1, 10, 500, 1000);
@@ -2185,7 +2191,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
 
   public void testSortedSetFixedLengthManyValuesPerDocVsStoredFields() throws Exception {
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedSetVsStoredFields(atLeast(20), 10, 10, 500, 1000);
@@ -2227,7 +2232,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testTwoNumbersOneMissing() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2246,17 +2250,14 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, ir.leaves().size());
     LeafReader ar = ir.leaves().get(0).reader();
     NumericDocValues dv = ar.getNumericDocValues("dv1");
-    assertEquals(0, dv.get(0));
-    assertEquals(0, dv.get(1));
-    Bits docsWithField = ar.getDocsWithField("dv1");
-    assertTrue(docsWithField.get(0));
-    assertFalse(docsWithField.get(1));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(0, dv.longValue());
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
     ir.close();
     directory.close();
   }
   
   public void testTwoNumbersOneMissingWithMerging() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2276,17 +2277,14 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, ir.leaves().size());
     LeafReader ar = ir.leaves().get(0).reader();
     NumericDocValues dv = ar.getNumericDocValues("dv1");
-    assertEquals(0, dv.get(0));
-    assertEquals(0, dv.get(1));
-    Bits docsWithField = ar.getDocsWithField("dv1");
-    assertTrue(docsWithField.get(0));
-    assertFalse(docsWithField.get(1));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(0, dv.longValue());
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
     ir.close();
     directory.close();
   }
   
   public void testThreeNumbersOneMissingWithMerging() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2310,19 +2308,15 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, ir.leaves().size());
     LeafReader ar = ir.leaves().get(0).reader();
     NumericDocValues dv = ar.getNumericDocValues("dv1");
-    assertEquals(0, dv.get(0));
-    assertEquals(0, dv.get(1));
-    assertEquals(5, dv.get(2));
-    Bits docsWithField = ar.getDocsWithField("dv1");
-    assertTrue(docsWithField.get(0));
-    assertFalse(docsWithField.get(1));
-    assertTrue(docsWithField.get(2));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(0, dv.longValue());
+    assertEquals(2, dv.nextDoc());
+    assertEquals(5, dv.longValue());
     ir.close();
     directory.close();
   }
   
   public void testTwoBytesOneMissing() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2341,19 +2335,14 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, ir.leaves().size());
     LeafReader ar = ir.leaves().get(0).reader();
     BinaryDocValues dv = ar.getBinaryDocValues("dv1");
-    BytesRef ref = dv.get(0);
-    assertEquals(new BytesRef(), ref);
-    ref = dv.get(1);
-    assertEquals(new BytesRef(), ref);
-    Bits docsWithField = ar.getDocsWithField("dv1");
-    assertTrue(docsWithField.get(0));
-    assertFalse(docsWithField.get(1));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(new BytesRef(), dv.binaryValue());
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
     ir.close();
     directory.close();
   }
   
   public void testTwoBytesOneMissingWithMerging() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2373,19 +2362,14 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, ir.leaves().size());
     LeafReader ar = ir.leaves().get(0).reader();
     BinaryDocValues dv = ar.getBinaryDocValues("dv1");
-    BytesRef ref = dv.get(0);
-    assertEquals(new BytesRef(), ref);
-    ref = dv.get(1);
-    assertEquals(new BytesRef(), ref);
-    Bits docsWithField = ar.getDocsWithField("dv1");
-    assertTrue(docsWithField.get(0));
-    assertFalse(docsWithField.get(1));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(new BytesRef(), dv.binaryValue());
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
     ir.close();
     directory.close();
   }
   
   public void testThreeBytesOneMissingWithMerging() throws IOException {
-    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
     Directory directory = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setMergePolicy(newLogMergePolicy());
@@ -2409,16 +2393,11 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, ir.leaves().size());
     LeafReader ar = ir.leaves().get(0).reader();
     BinaryDocValues dv = ar.getBinaryDocValues("dv1");
-    BytesRef ref = dv.get(0);
-    assertEquals(new BytesRef(), ref);
-    ref = dv.get(1);
-    assertEquals(new BytesRef(), ref);
-    ref = dv.get(2);
-    assertEquals(new BytesRef("boo"), ref);
-    Bits docsWithField = ar.getDocsWithField("dv1");
-    assertTrue(docsWithField.get(0));
-    assertFalse(docsWithField.get(1));
-    assertTrue(docsWithField.get(2));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(new BytesRef(), dv.binaryValue());
+    assertEquals(2, dv.nextDoc());
+    assertEquals(new BytesRef("boo"), dv.binaryValue());
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
     ir.close();
     directory.close();
   }
@@ -2488,12 +2467,15 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
               NumericDocValues numerics = r.getNumericDocValues("dvNum");
               for (int j = 0; j < r.maxDoc(); j++) {
                 BytesRef binaryValue = r.document(j).getBinaryValue("storedBin");
-                BytesRef scratch = binaries.get(j);
+                assertEquals(j, binaries.nextDoc());
+                BytesRef scratch = binaries.binaryValue();
                 assertEquals(binaryValue, scratch);
-                scratch = sorted.get(j);
+                assertEquals(j, sorted.nextDoc());
+                scratch = sorted.binaryValue();
                 assertEquals(binaryValue, scratch);
                 String expected = r.document(j).get("storedNum");
-                assertEquals(Long.parseLong(expected), numerics.get(j));
+                assertEquals(j, numerics.nextDoc());
+                assertEquals(Long.parseLong(expected), numerics.longValue());
               }
             }
             TestUtil.checkReader(ir);
@@ -2515,9 +2497,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   /** Tests dv against stored fields with threads (all types + missing) */
   @Slow
   public void testThreads2() throws Exception {
-    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
-    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
@@ -2599,46 +2578,35 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
             for (LeafReaderContext context : ir.leaves()) {
               LeafReader r = context.reader();
               BinaryDocValues binaries = r.getBinaryDocValues("dvBin");
-              Bits binaryBits = r.getDocsWithField("dvBin");
               SortedDocValues sorted = r.getSortedDocValues("dvSorted");
-              Bits sortedBits = r.getDocsWithField("dvSorted");
               NumericDocValues numerics = r.getNumericDocValues("dvNum");
-              Bits numericBits = r.getDocsWithField("dvNum");
               SortedSetDocValues sortedSet = r.getSortedSetDocValues("dvSortedSet");
-              Bits sortedSetBits = r.getDocsWithField("dvSortedSet");
               SortedNumericDocValues sortedNumeric = r.getSortedNumericDocValues("dvSortedNumeric");
-              Bits sortedNumericBits = r.getDocsWithField("dvSortedNumeric");
               for (int j = 0; j < r.maxDoc(); j++) {
                 BytesRef binaryValue = r.document(j).getBinaryValue("storedBin");
                 if (binaryValue != null) {
                   if (binaries != null) {
-                    BytesRef scratch = binaries.get(j);
+                    assertEquals(j, binaries.nextDoc());
+                    BytesRef scratch = binaries.binaryValue();
                     assertEquals(binaryValue, scratch);
-                    scratch = sorted.get(j);
+                    assertEquals(j, sorted.nextDoc());
+                    scratch = sorted.binaryValue();
                     assertEquals(binaryValue, scratch);
-                    assertTrue(binaryBits.get(j));
-                    assertTrue(sortedBits.get(j));
                   }
-                } else if (binaries != null) {
-                  assertFalse(binaryBits.get(j));
-                  assertFalse(sortedBits.get(j));
-                  assertEquals(-1, sorted.getOrd(j));
                 }
                
                 String number = r.document(j).get("storedNum");
                 if (number != null) {
                   if (numerics != null) {
-                    assertEquals(Long.parseLong(number), numerics.get(j));
+                    assertEquals(j, numerics.advance(j));
+                    assertEquals(Long.parseLong(number), numerics.longValue());
                   }
-                } else if (numerics != null) {
-                  assertFalse(numericBits.get(j));
-                  assertEquals(0, numerics.get(j));
                 }
                 
                 String values[] = r.document(j).getValues("storedSortedSet");
                 if (values.length > 0) {
                   assertNotNull(sortedSet);
-                  sortedSet.setDocument(j);
+                  assertEquals(j, sortedSet.nextDoc());
                   for (int k = 0; k < values.length; k++) {
                     long ord = sortedSet.nextOrd();
                     assertTrue(ord != SortedSetDocValues.NO_MORE_ORDS);
@@ -2646,27 +2614,17 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
                     assertEquals(values[k], value.utf8ToString());
                   }
                   assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
-                  assertTrue(sortedSetBits.get(j));
-                } else if (sortedSet != null) {
-                  sortedSet.setDocument(j);
-                  assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
-                  assertFalse(sortedSetBits.get(j));
                 }
                 
                 String numValues[] = r.document(j).getValues("storedSortedNumeric");
                 if (numValues.length > 0) {
                   assertNotNull(sortedNumeric);
-                  sortedNumeric.setDocument(j);
-                  assertEquals(numValues.length, sortedNumeric.count());
+                  assertEquals(j, sortedNumeric.nextDoc());
+                  assertEquals(numValues.length, sortedNumeric.docValueCount());
                   for (int k = 0; k < numValues.length; k++) {
-                    long v = sortedNumeric.valueAt(k);
+                    long v = sortedNumeric.nextValue();
                     assertEquals(numValues[k], Long.toString(v));
                   }
-                  assertTrue(sortedNumericBits.get(j));
-                } else if (sortedNumeric != null) {
-                  sortedNumeric.setDocument(j);
-                  assertEquals(0, sortedNumeric.count());
-                  assertFalse(sortedNumericBits.get(j));
                 }
               }
             }
@@ -2688,9 +2646,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   
   @Slow
   public void testThreads3() throws Exception {
-    assumeTrue("Codec does not support getDocsWithField", codecSupportsDocsWithField());
-    assumeTrue("Codec does not support SORTED_SET", codecSupportsSortedSet());
-    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory dir = newFSDirectory(createTempDir());
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
@@ -2785,7 +2740,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
 
       BinaryDocValues values = MultiDocValues.getBinaryValues(r, "field");
       for(int j=0;j<5;j++) {
-        BytesRef result = values.get(0);
+        assertEquals(j, values.nextDoc());
+        BytesRef result = values.binaryValue();
         assertTrue(result.length == 0 || result.length == 1<<i);
       }
       r.close();
@@ -2794,7 +2750,6 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   public void testOneSortedNumber() throws IOException {
-    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     Document doc = new Document();
@@ -2806,16 +2761,15 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader reader = DirectoryReader.open(directory);
     assert reader.leaves().size() == 1;
     SortedNumericDocValues dv = reader.leaves().get(0).reader().getSortedNumericDocValues("dv");
-    dv.setDocument(0);
-    assertEquals(1, dv.count());
-    assertEquals(5, dv.valueAt(0));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(1, dv.docValueCount());
+    assertEquals(5, dv.nextValue());
 
     reader.close();
     directory.close();
   }
   
   public void testOneSortedNumberOneMissing() throws IOException {
-    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(null));
     Document doc = new Document();
@@ -2828,17 +2782,11 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader reader = DirectoryReader.open(directory);
     assert reader.leaves().size() == 1;
     SortedNumericDocValues dv = reader.leaves().get(0).reader().getSortedNumericDocValues("dv");
-    dv.setDocument(0);
-    assertEquals(1, dv.count());
-    assertEquals(5, dv.valueAt(0));
-    dv.setDocument(1);
-    assertEquals(0, dv.count());
+    assertEquals(0, dv.nextDoc());
+    assertEquals(1, dv.docValueCount());
+    assertEquals(5, dv.nextValue());
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
     
-    Bits docsWithField = reader.leaves().get(0).reader().getDocsWithField("dv");
-    assertEquals(2, docsWithField.length());
-    assertTrue(docsWithField.get(0));
-    assertFalse(docsWithField.get(1));
-
     reader.close();
     directory.close();
   }
@@ -2865,14 +2813,13 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.close();
     
     NumericDocValues dv = getOnlyLeafReader(ireader).getNumericDocValues("field");
-    assertEquals(0, dv.get(0));
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
     
     ireader.close();
     directory.close();
   }
   
   public void testTwoSortedNumber() throws IOException {
-    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     Document doc = new Document();
@@ -2885,17 +2832,16 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader reader = DirectoryReader.open(directory);
     assert reader.leaves().size() == 1;
     SortedNumericDocValues dv = reader.leaves().get(0).reader().getSortedNumericDocValues("dv");
-    dv.setDocument(0);
-    assertEquals(2, dv.count());
-    assertEquals(-5, dv.valueAt(0));
-    assertEquals(11, dv.valueAt(1));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(2, dv.docValueCount());
+    assertEquals(-5, dv.nextValue());
+    assertEquals(11, dv.nextValue());
 
     reader.close();
     directory.close();
   }
   
   public void testTwoSortedNumberSameValue() throws IOException {
-    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     Document doc = new Document();
@@ -2908,17 +2854,16 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader reader = DirectoryReader.open(directory);
     assert reader.leaves().size() == 1;
     SortedNumericDocValues dv = reader.leaves().get(0).reader().getSortedNumericDocValues("dv");
-    dv.setDocument(0);
-    assertEquals(2, dv.count());
-    assertEquals(11, dv.valueAt(0));
-    assertEquals(11, dv.valueAt(1));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(2, dv.docValueCount());
+    assertEquals(11, dv.nextValue());
+    assertEquals(11, dv.nextValue());
 
     reader.close();
     directory.close();
   }
   
   public void testTwoSortedNumberOneMissing() throws IOException {
-    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(null));
     Document doc = new Document();
@@ -2932,24 +2877,17 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader reader = DirectoryReader.open(directory);
     assert reader.leaves().size() == 1;
     SortedNumericDocValues dv = reader.leaves().get(0).reader().getSortedNumericDocValues("dv");
-    dv.setDocument(0);
-    assertEquals(2, dv.count());
-    assertEquals(-5, dv.valueAt(0));
-    assertEquals(11, dv.valueAt(1));
-    dv.setDocument(1);
-    assertEquals(0, dv.count());
+    assertEquals(0, dv.nextDoc());
+    assertEquals(2, dv.docValueCount());
+    assertEquals(-5, dv.nextValue());
+    assertEquals(11, dv.nextValue());
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
     
-    Bits docsWithField = reader.leaves().get(0).reader().getDocsWithField("dv");
-    assertEquals(2, docsWithField.length());
-    assertTrue(docsWithField.get(0));
-    assertFalse(docsWithField.get(1));
-
     reader.close();
     directory.close();
   }
   
   public void testSortedNumberMerge() throws IOException {
-    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory directory = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(null);
     iwc.setMergePolicy(newLogMergePolicy());
@@ -2968,19 +2906,18 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader reader = DirectoryReader.open(directory);
     assert reader.leaves().size() == 1;
     SortedNumericDocValues dv = reader.leaves().get(0).reader().getSortedNumericDocValues("dv");
-    dv.setDocument(0);
-    assertEquals(1, dv.count());
-    assertEquals(11, dv.valueAt(0));
-    dv.setDocument(1);
-    assertEquals(1, dv.count());
-    assertEquals(-5, dv.valueAt(0));
+    assertEquals(0, dv.nextDoc());
+    assertEquals(1, dv.docValueCount());
+    assertEquals(11, dv.nextValue());
+    assertEquals(1, dv.nextDoc());
+    assertEquals(1, dv.docValueCount());
+    assertEquals(-5, dv.nextValue());
 
     reader.close();
     directory.close();
   }
   
   public void testSortedNumberMergeAwayAllValues() throws IOException {
-    assumeTrue("Codec does not support SORTED_NUMERIC", codecSupportsSortedNumeric());
     Directory directory = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
@@ -3002,8 +2939,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.close();
     
     SortedNumericDocValues dv = getOnlyLeafReader(ireader).getSortedNumericDocValues("field");
-    dv.setDocument(0);
-    assertEquals(0, dv.count());
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
     
     ireader.close();
     directory.close();
@@ -3169,9 +3105,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.close();
 
     SortedDocValues dv = getOnlyLeafReader(ireader).getSortedDocValues("field");
-    for (int i = 0; i < numEmptyDocs; ++i) {
-      assertEquals(-1, dv.getOrd(i));
-    }
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
 
     ireader.close();
     directory.close();
@@ -3201,10 +3135,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.close();
 
     SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
-    for (int i = 0; i < numEmptyDocs; ++i) {
-      dv.setDocument(i);
-      assertEquals(-1L, dv.nextOrd());
-    }
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
 
     ireader.close();
     directory.close();
@@ -3234,11 +3165,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.close();
 
     NumericDocValues dv = getOnlyLeafReader(ireader).getNumericDocValues("field");
-    Bits docsWithField = getOnlyLeafReader(ireader).getDocsWithField("field");
-    for (int i = 0; i < numEmptyDocs; ++i) {
-      assertEquals(0, dv.get(i));
-      assertFalse(docsWithField.get(i));
-    }
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
 
     ireader.close();
     directory.close();
@@ -3268,10 +3195,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.close();
 
     SortedNumericDocValues dv = getOnlyLeafReader(ireader).getSortedNumericDocValues("field");
-    for (int i = 0; i < numEmptyDocs; ++i) {
-      dv.setDocument(i);
-      assertEquals(0, dv.count());
-    }
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
 
     ireader.close();
     directory.close();
@@ -3301,34 +3225,126 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     iwriter.close();
 
     BinaryDocValues dv = getOnlyLeafReader(ireader).getBinaryDocValues("field");
-    Bits docsWithField = getOnlyLeafReader(ireader).getDocsWithField("field");
-    for (int i = 0; i < numEmptyDocs; ++i) {
-      assertEquals(new BytesRef(), dv.get(i));
-      assertFalse(docsWithField.get(i));
-    }
+    assertEquals(NO_MORE_DOCS, dv.nextDoc());
 
     ireader.close();
     directory.close();
   }
 
+  public void testRandomAdvanceNumeric() throws IOException {
+    final long longRange;
+    if (random().nextBoolean()) {
+      longRange = TestUtil.nextInt(random(), 1, 1024);
+    } else {
+      longRange = TestUtil.nextLong(random(), 1, Long.MAX_VALUE);
+    }
+    doTestRandomAdvance(new FieldCreator() {
+        @Override
+        public Field next() {
+          return new NumericDocValuesField("field", TestUtil.nextLong(random(), 0, longRange));
+        }
+
+        @Override
+        public DocIdSetIterator iterator(IndexReader r) throws IOException {
+          return MultiDocValues.getNumericValues(r, "field");
+        }
+      });
+  }
+
+  public void testRandomAdvanceBinary() throws IOException {
+    doTestRandomAdvance(new FieldCreator() {
+        @Override
+        public Field next() {
+          byte[] bytes = new byte[random().nextInt(10)];
+          random().nextBytes(bytes);
+          return new BinaryDocValuesField("field", new BytesRef(bytes));
+        }
+
+        @Override
+        public DocIdSetIterator iterator(IndexReader r) throws IOException {
+          return MultiDocValues.getBinaryValues(r, "field");
+        }
+      });
+  }
+
+  private interface FieldCreator {
+    public Field next();
+    public DocIdSetIterator iterator(IndexReader r) throws IOException;
+  }
+
+  private void doTestRandomAdvance(FieldCreator fieldCreator) throws IOException {
+
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(analyzer);
+    conf.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter w = new RandomIndexWriter(random(), directory, conf);
+    int numChunks = atLeast(10);
+    int id = 0;
+    Set<Integer> missingSet = new HashSet<>();
+    for(int i=0;i<numChunks;i++) {
+      // change sparseness for each chunk
+      double sparseChance = random().nextDouble();
+      int docCount = atLeast(1000);
+      for(int j=0;j<docCount;j++) {
+        Document doc = new Document();
+        doc.add(new StoredField("id", id));
+        if (random().nextDouble() > sparseChance) {
+          doc.add(fieldCreator.next());
+        } else {
+          missingSet.add(id);
+        }
+        id++;
+        w.addDocument(doc);
+      }
+    }
+
+    if (random().nextBoolean()) {
+      w.forceMerge(1);
+    }
+
+    // Now search the index:
+    IndexReader r = w.getReader();
+    BitSet missing = new FixedBitSet(r.maxDoc());
+    for(int docID=0;docID<r.maxDoc();docID++) {
+      Document doc = r.document(docID);
+      if (missingSet.contains(doc.getField("id").numericValue())) {
+        missing.set(docID);
+      }
+    }
+    
+    for(int iter=0;iter<100;iter++) {
+      DocIdSetIterator values = fieldCreator.iterator(r);
+      assertEquals(-1, values.docID());
+
+      while (true) {
+        int docID;
+        if (random().nextBoolean()) {
+          docID = values.nextDoc();
+        } else {
+          int range;
+          if (random().nextInt(10) == 7) {
+            // big jump
+            range = r.maxDoc()-values.docID();
+          } else {
+            // small jump
+            range = 25;
+          }
+          int inc = TestUtil.nextInt(random(), 1, range);
+          docID = values.advance(values.docID() + inc);
+        }
+        if (docID == NO_MORE_DOCS) {
+          break;
+        }
+        assertFalse(missing.get(docID));
+      }
+    }
+
+    IOUtils.close(r, w, directory);
+  }
+                                               
   protected boolean codecAcceptsHugeBinaryValues(String field) {
     return true;
   }
-  
-  /** Returns true if the codec "supports" docsWithField 
-   * (other codecs return MatchAllBits, because you couldnt write missing values before) */
-  protected boolean codecSupportsDocsWithField() {
-    return true;
-  }
-  
-  /** Returns true if the default codec supports SORTED_SET docvalues */ 
-  protected boolean codecSupportsSortedSet() {
-    return true;
-  }
-  
-  /** Returns true if the default codec supports SORTED_NUMERIC docvalues */ 
-  protected boolean codecSupportsSortedNumeric() {
-    return true;
-  }
-
 }

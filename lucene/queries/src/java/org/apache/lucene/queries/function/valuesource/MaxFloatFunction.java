@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
@@ -33,7 +35,7 @@ public class MaxFloatFunction extends MultiFloatFunction {
   }
 
   @Override
-  protected float func(int doc, FunctionValues[] valsArr) {
+  protected float func(int doc, FunctionValues[] valsArr) throws IOException {
     if ( ! exists(doc, valsArr) ) return 0.0f;
 
     float val = Float.NEGATIVE_INFINITY;
@@ -52,7 +54,7 @@ public class MaxFloatFunction extends MultiFloatFunction {
    * @see MultiFunction#anyExists
    */
   @Override
-  protected boolean exists(int doc, FunctionValues[] valsArr) {
+  protected boolean exists(int doc, FunctionValues[] valsArr) throws IOException {
     return MultiFunction.anyExists(doc, valsArr);
   }
 }

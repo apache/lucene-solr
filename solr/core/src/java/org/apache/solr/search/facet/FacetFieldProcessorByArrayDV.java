@@ -57,8 +57,9 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
         ordinalMap = ((MultiDocValues.MultiSortedSetDocValues)si).mapping;
       }
     } else {
+      // multi-valued view
       SortedDocValues single = FieldUtil.getSortedDocValues(fcontext.qcontext, sf, null);
-      si = DocValues.singleton(single);  // multi-valued view
+      si = DocValues.singleton(single);
       if (single instanceof MultiDocValues.MultiSortedDocValues) {
         ordinalMap = ((MultiDocValues.MultiSortedDocValues)single).mapping;
       }
@@ -185,7 +186,14 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      counts[ singleDv.getOrd(doc) + 1 ]++;
+      if (doc > singleDv.docID()) {
+        singleDv.advance(doc);
+      }
+      if (doc == singleDv.docID()) {
+        counts[ singleDv.ordValue() + 1 ]++;
+      } else {
+        counts[ 0 ]++;
+      }
     }
 
     for (int i=1; i<segMax; i++) {
@@ -203,11 +211,15 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      multiDv.setDocument(doc);
-      for(;;) {
-        int segOrd = (int)multiDv.nextOrd();
-        if (segOrd < 0) break;
-        counts[segOrd]++;
+      if (doc > multiDv.docID()) {
+        multiDv.advance(doc);
+      }
+      if (doc == multiDv.docID()) {
+        for(;;) {
+          int segOrd = (int)multiDv.nextOrd();
+          if (segOrd < 0) break;
+          counts[segOrd]++;
+        }
       }
     }
 
@@ -235,30 +247,42 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
   private void collectDocs(SortedDocValues singleDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      int segOrd = singleDv.getOrd(doc);
-      if (segOrd < 0) continue;
-      collect(doc, segOrd, toGlobal);
+      if (doc > singleDv.docID()) {
+        singleDv.advance(doc);
+      }
+      if (doc == singleDv.docID()) {
+        int segOrd = singleDv.ordValue();
+        collect(doc, segOrd, toGlobal);
+      }
     }
   }
 
   private void collectCounts(SortedDocValues singleDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      int segOrd = singleDv.getOrd(doc);
-      if (segOrd < 0) continue;
-      int ord = (int)toGlobal.get(segOrd);
-      countAcc.incrementCount(ord, 1);
+      if (doc > singleDv.docID()) {
+        singleDv.advance(doc);
+      }
+      if (doc == singleDv.docID()) {
+        int segOrd = singleDv.ordValue();
+        int ord = (int)toGlobal.get(segOrd);
+        countAcc.incrementCount(ord, 1);
+      }
     }
   }
 
   private void collectDocs(SortedSetDocValues multiDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      multiDv.setDocument(doc);
-      for(;;) {
-        int segOrd = (int)multiDv.nextOrd();
-        if (segOrd < 0) break;
-        collect(doc, segOrd, toGlobal);
+      if (doc > multiDv.docID()) {
+        multiDv.advance(doc);
+      }
+      if (doc == multiDv.docID()) {
+        for(;;) {
+          int segOrd = (int)multiDv.nextOrd();
+          if (segOrd < 0) break;
+          collect(doc, segOrd, toGlobal);
+        }
       }
     }
   }
@@ -266,12 +290,16 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
   private void collectCounts(SortedSetDocValues multiDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      multiDv.setDocument(doc);
-      for(;;) {
-        int segOrd = (int)multiDv.nextOrd();
-        if (segOrd < 0) break;
-        int ord = (int)toGlobal.get(segOrd);
-        countAcc.incrementCount(ord, 1);
+      if (doc > multiDv.docID()) {
+        multiDv.advance(doc);
+      }
+      if (doc == multiDv.docID()) {
+        for(;;) {
+          int segOrd = (int)multiDv.nextOrd();
+          if (segOrd < 0) break;
+          int ord = (int)toGlobal.get(segOrd);
+          countAcc.incrementCount(ord, 1);
+        }
       }
     }
   }

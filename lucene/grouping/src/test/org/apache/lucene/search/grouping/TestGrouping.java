@@ -757,8 +757,13 @@ public class TestGrouping extends LuceneTestCase {
 
       final DirectoryReader r = w.getReader();
       w.close();
-
-      final NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
+      
+      NumericDocValues values = MultiDocValues.getNumericValues(r, "id");
+      int[] docIDToID = new int[r.maxDoc()];
+      for(int i=0;i<r.maxDoc();i++) {
+        assertEquals(i, values.nextDoc());
+        docIDToID[i] = (int) values.longValue();
+      }
       DirectoryReader rBlocks = null;
       Directory dirBlocks = null;
 
@@ -773,7 +778,7 @@ public class TestGrouping extends LuceneTestCase {
       for(int contentID=0;contentID<3;contentID++) {
         final ScoreDoc[] hits = s.search(new TermQuery(new Term("content", "real"+contentID)), numDocs).scoreDocs;
         for(ScoreDoc hit : hits) {
-          int idValue = (int) docIDToID.get(hit.doc);
+          int idValue = docIDToID[hit.doc];
 
           final GroupDoc gd = groupDocs[idValue];
           seenIDs.add(idValue);
@@ -796,8 +801,6 @@ public class TestGrouping extends LuceneTestCase {
       dirBlocks = newDirectory();
       rBlocks = getDocBlockReader(dirBlocks, groupDocs);
       final Query lastDocInBlock = new TermQuery(new Term("groupend", "x"));
-      final NumericDocValues docIDToIDBlocks = MultiDocValues.getNumericValues(rBlocks, "id");
-      assertNotNull(docIDToIDBlocks);
       
       final IndexSearcher sBlocks = newSearcher(rBlocks);
       final ShardState shardsBlocks = new ShardState(sBlocks);
@@ -806,6 +809,14 @@ public class TestGrouping extends LuceneTestCase {
       // means a monotonic shift in scores, so we can
       // reliably remap them w/ Map:
       final Map<String,Map<Float,Float>> scoreMap = new HashMap<>();
+
+      values = MultiDocValues.getNumericValues(rBlocks, "id");
+      assertNotNull(values);
+      int[] docIDToIDBlocks = new int[rBlocks.maxDoc()];
+      for(int i=0;i<rBlocks.maxDoc();i++) {
+        assertEquals(i, values.nextDoc());
+        docIDToIDBlocks[i] = (int) values.longValue();
+      }
       
       // Tricky: must separately set .score2, because the doc
       // block index was created with possible deletions!
@@ -818,11 +829,11 @@ public class TestGrouping extends LuceneTestCase {
         //" dfnew=" + sBlocks.docFreq(new Term("content", "real"+contentID)));
         final ScoreDoc[] hits = sBlocks.search(new TermQuery(new Term("content", "real"+contentID)), numDocs).scoreDocs;
         for(ScoreDoc hit : hits) {
-          final GroupDoc gd = groupDocsByID[(int) docIDToIDBlocks.get(hit.doc)];
+          final GroupDoc gd = groupDocsByID[docIDToIDBlocks[hit.doc]];
           assertTrue(gd.score2 == 0.0);
           gd.score2 = hit.score;
-          assertEquals(gd.id, docIDToIDBlocks.get(hit.doc));
-          //System.out.println("    score=" + gd.score + " score2=" + hit.score + " id=" + docIDToIDBlocks.get(hit.doc));
+          assertEquals(gd.id, docIDToIDBlocks[hit.doc]);
+          //System.out.println("    score=" + gd.score + " score2=" + hit.score + " id=" + docIDToIDBlocks[hit.doc]);
           termScoreMap.put(gd.score, gd.score2);
         }
       }
@@ -1005,13 +1016,13 @@ public class TestGrouping extends LuceneTestCase {
             for(GroupDocs<BytesRef> gd : groupsResult.groups) {
               System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue) + " totalHits=" + gd.totalHits);
               for(ScoreDoc sd : gd.scoreDocs) {
-                System.out.println("    id=" + docIDToID.get(sd.doc) + " score=" + sd.score);
+                System.out.println("    id=" + docIDToID[sd.doc] + " score=" + sd.score);
               }
             }
             
             if (searchIter == 14) {
               for(int docIDX=0;docIDX<s.getIndexReader().maxDoc();docIDX++) {
-                System.out.println("ID=" + docIDToID.get(docIDX) + " explain=" + s.explain(query, docIDX));
+                System.out.println("ID=" + docIDToID[docIDX] + " explain=" + s.explain(query, docIDX));
               }
             }
           }
@@ -1023,7 +1034,7 @@ public class TestGrouping extends LuceneTestCase {
             for(GroupDocs<BytesRef> gd : topGroupsShards.groups) {
               System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue) + " totalHits=" + gd.totalHits);
               for(ScoreDoc sd : gd.scoreDocs) {
-                System.out.println("    id=" + docIDToID.get(sd.doc) + " score=" + sd.score);
+                System.out.println("    id=" + docIDToID[sd.doc] + " score=" + sd.score);
               }
             }
           }
@@ -1072,7 +1083,7 @@ public class TestGrouping extends LuceneTestCase {
             for(GroupDocs<BytesRef> gd : groupsResultBlocks.groups) {
               System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue.utf8ToString()) + " totalHits=" + gd.totalHits);
               for(ScoreDoc sd : gd.scoreDocs) {
-                System.out.println("    id=" + docIDToIDBlocks.get(sd.doc) + " score=" + sd.score);
+                System.out.println("    id=" + docIDToIDBlocks[sd.doc] + " score=" + sd.score);
                 if (first) {
                   System.out.println("explain: " + sBlocks.explain(query, sd.doc));
                   first = false;
@@ -1237,7 +1248,7 @@ public class TestGrouping extends LuceneTestCase {
     }
   }
 
-  private void assertEquals(NumericDocValues docIDtoID, TopGroups<BytesRef> expected, TopGroups<BytesRef> actual, boolean verifyGroupValues, boolean verifyTotalGroupCount, boolean verifySortValues, boolean testScores, boolean idvBasedImplsUsed) {
+  private void assertEquals(int[] docIDtoID, TopGroups<BytesRef> expected, TopGroups<BytesRef> actual, boolean verifyGroupValues, boolean verifyTotalGroupCount, boolean verifySortValues, boolean testScores, boolean idvBasedImplsUsed) {
     if (expected == null) {
       assertNull(actual);
       return;
@@ -1284,8 +1295,8 @@ public class TestGrouping extends LuceneTestCase {
       for(int docIDX=0;docIDX<expectedFDs.length;docIDX++) {
         final FieldDoc expectedFD = (FieldDoc) expectedFDs[docIDX];
         final FieldDoc actualFD = (FieldDoc) actualFDs[docIDX];
-        //System.out.println("  actual doc=" + docIDtoID.get(actualFD.doc) + " score=" + actualFD.score);
-        assertEquals(expectedFD.doc, docIDtoID.get(actualFD.doc));
+        //System.out.println("  actual doc=" + docIDtoID[actualFD.doc] + " score=" + actualFD.score);
+        assertEquals(expectedFD.doc, docIDtoID[actualFD.doc]);
         if (testScores) {
           assertEquals(expectedFD.score, actualFD.score, 0.1);
         } else {

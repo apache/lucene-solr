@@ -212,7 +212,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   @Override
   @SuppressWarnings("unchecked")
   public SolrResponse processMessage(ZkNodeProps message, String operation) {
-    log.info("OverseerCollectionMessageHandler.processMessage : "+ operation + " , "+ message.toString());
+    log.debug("OverseerCollectionMessageHandler.processMessage : "+ operation + " , "+ message.toString());
 
     NamedList results = new NamedList();
     try {
@@ -480,7 +480,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   }
 
   void commit(NamedList results, String slice, Replica parentShardLeader) {
-    log.info("Calling soft commit to make sub shard updates visible");
+    log.debug("Calling soft commit to make sub shard updates visible");
     String coreUrl = new ZkCoreNodeProps(parentShardLeader).getCoreUrl();
     // HttpShardHandler is hard coded to send a QueryRequest hence we go direct
     // and we force open a searcher so that we have documents to show upon switching states
@@ -537,7 +537,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   }
 
   void waitForNewShard(String collectionName, String sliceName) throws KeeperException, InterruptedException {
-    log.info("Waiting for slice {} of collection {} to be available", sliceName, collectionName);
+    log.debug("Waiting for slice {} of collection {} to be available", sliceName, collectionName);
     RTimer timer = new RTimer();
     int retryCount = 320;
     while (retryCount-- > 0) {
@@ -548,7 +548,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       }
       Slice slice = collection.getSlice(sliceName);
       if (slice != null) {
-        log.info("Waited for {}ms for slice {} of collection {} to be available",
+        log.debug("Waited for {}ms for slice {} of collection {} to be available",
             timer.getTime(), sliceName, collectionName);
         return;
       }
@@ -662,6 +662,26 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
     
     overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
+    boolean areChangesVisible = true;
+    while (!timeout.hasTimedOut()) {
+      DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
+      areChangesVisible = true;
+      for (Map.Entry<String,Object> updateEntry : message.getProperties().entrySet()) {
+        String updateKey = updateEntry.getKey();
+        if (!updateKey.equals(ZkStateReader.COLLECTION_PROP)
+            && !updateKey.equals(Overseer.QUEUE_OPERATION)
+            && !collection.get(updateKey).equals(updateEntry.getValue())){
+          areChangesVisible = false;
+          break;
+        }
+      }
+      if (areChangesVisible) break;
+      Thread.sleep(100);
+    }
+    if (!areChangesVisible)
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not modify collection " + message);
   }
 
   void cleanupCollection(String collectionName, NamedList results) throws Exception {
@@ -788,7 +808,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     
     if (configName != null) {
       String collDir = ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll;
-      log.info("creating collections conf node {} ", collDir);
+      log.debug("creating collections conf node {} ", collDir);
       byte[] data = Utils.toJSON(makeMap(ZkController.CONFIGNAME_PROP, configName));
       if (zkStateReader.getZkClient().exists(collDir, true)) {
         zkStateReader.getZkClient().setData(collDir, data, true);

@@ -43,11 +43,13 @@ public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     float[] min = new float[dimensions];
     float[] max = new float[dimensions];
 
+    float minV, maxV;
     for (int d=0; d<dimensions; ++d) {
-      min[d] = nextFloatInternal();
-      max[d] = nextFloatInternal();
+      minV = nextFloatInternal();
+      maxV = nextFloatInternal();
+      min[d] = Math.min(minV, maxV);
+      max[d] = Math.max(minV, maxV);
     }
-
     return new FloatRange(min, max);
   }
 
@@ -140,16 +142,8 @@ public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
       assert min != null && max != null && min.length > 0 && max.length > 0
           : "test box: min/max cannot be null or empty";
       assert min.length == max.length : "test box: min/max length do not agree";
-      this.min = new float[min.length];
-      this.max = new float[max.length];
-      for (int d=0; d<min.length; ++d) {
-        if (min[d] > max[d]) {
-          // swap if max < min:
-          float temp = min[d];
-          min[d] = max[d];
-          max[d] = temp;
-        }
-      }
+      this.min = min;
+      this.max = max;
     }
 
     @Override
@@ -164,7 +158,12 @@ public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected void setMin(int dim, Object val) {
-      min[dim] = (Float)val;
+      float v = (Float)val;
+      if (min[dim] < v) {
+        max[dim] = v;
+      } else {
+        min[dim] = v;
+      }
     }
 
     @Override
@@ -174,7 +173,12 @@ public class TestFloatRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected void setMax(int dim, Object val) {
-      max[dim] = (Float)val;
+      float v = (Float)val;
+      if (max[dim] > v) {
+        min[dim] = v;
+      } else {
+        max[dim] = v;
+      }
     }
 
     @Override

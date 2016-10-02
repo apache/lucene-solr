@@ -29,17 +29,8 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.*;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
@@ -148,6 +139,15 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
 
   @Override
   public NumericDocValues getNumeric(FieldInfo fieldInfo) throws IOException {
+    LegacyNumericDocValues values = getNumericNonIterator(fieldInfo);
+    if (values == null) {
+      return null;
+    } else {
+      return new LegacyNumericDocValuesWrapper(getNumericDocsWithField(fieldInfo), values);
+    }
+  }
+  
+  LegacyNumericDocValues getNumericNonIterator(FieldInfo fieldInfo) throws IOException {
     final OneField field = fields.get(fieldInfo.name);
     assert field != null;
 
@@ -161,7 +161,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
 
     decoder.setParseBigDecimal(true);
 
-    return new NumericDocValues() {
+    return new LegacyNumericDocValues() {
       @Override
       public long get(int docID) {
         try {
@@ -211,8 +211,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
     };
   }
 
-  @Override
-  public BinaryDocValues getBinary(FieldInfo fieldInfo) throws IOException {
+  private LegacyBinaryDocValues getLegacyBinary(FieldInfo fieldInfo) throws IOException {
     final OneField field = fields.get(fieldInfo.name);
 
     // SegmentCoreReaders already verifies this field is
@@ -223,7 +222,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
     final BytesRefBuilder scratch = new BytesRefBuilder();
     final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
 
-    return new BinaryDocValues() {
+    return new LegacyBinaryDocValues() {
       final BytesRefBuilder term = new BytesRefBuilder();
 
       @Override
@@ -252,6 +251,11 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
     };
   }
   
+  @Override
+  public synchronized BinaryDocValues getBinary(FieldInfo field) throws IOException {
+    return new LegacyBinaryDocValuesWrapper(getBinaryDocsWithField(field), getLegacyBinary(field));
+  }
+
   private Bits getBinaryDocsWithField(FieldInfo fieldInfo) throws IOException {
     final OneField field = fields.get(fieldInfo.name);
     final IndexInput in = data.clone();
@@ -302,7 +306,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
     final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
     final DecimalFormat ordDecoder = new DecimalFormat(field.ordPattern, new DecimalFormatSymbols(Locale.ROOT));
 
-    return new SortedDocValues() {
+    return new LegacySortedDocValuesWrapper(new LegacySortedDocValues() {
       final BytesRefBuilder term = new BytesRefBuilder();
 
       @Override
@@ -351,13 +355,13 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
       public int getValueCount() {
         return (int)field.numValues;
       }
-    };
+    }, maxDoc);
   }
   
   @Override
   public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
-    final BinaryDocValues binary = getBinary(field);
-    return new SortedNumericDocValues() {
+    final LegacyBinaryDocValues binary = getLegacyBinary(field);
+    return new LegacySortedNumericDocValuesWrapper(new LegacySortedNumericDocValues() {
       long values[];
 
       @Override
@@ -383,7 +387,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
       public int count() {
         return values.length;
       }
-    };
+      }, maxDoc);
   }
 
   @Override
@@ -398,7 +402,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
     final BytesRefBuilder scratch = new BytesRefBuilder();
     final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
     
-    return new SortedSetDocValues() {
+    return new LegacySortedSetDocValuesWrapper(new LegacySortedSetDocValues() {
       String[] currentOrds = new String[0];
       int currentIndex = 0;
       final BytesRefBuilder term = new BytesRefBuilder();
@@ -460,27 +464,9 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
       public long getValueCount() {
         return field.numValues;
       }
-    };
+      }, maxDoc);
   }
   
-  @Override
-  public Bits getDocsWithField(FieldInfo field) throws IOException {
-    switch (field.getDocValuesType()) {
-      case SORTED_SET:
-        return DocValues.docsWithValue(getSortedSet(field), maxDoc);
-      case SORTED_NUMERIC:
-        return DocValues.docsWithValue(getSortedNumeric(field), maxDoc);
-      case SORTED:
-        return DocValues.docsWithValue(getSorted(field), maxDoc);
-      case BINARY:
-        return getBinaryDocsWithField(field);
-      case NUMERIC:
-        return getNumericDocsWithField(field);
-      default:
-        throw new AssertionError();
-    }
-  }
-
   @Override
   public void close() throws IOException {
     data.close();

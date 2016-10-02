@@ -49,9 +49,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private final static int NUM_SHARD_REPLICAS = 5;
-  
-  private static final boolean VERBOSE = false;
-  
+
   private static final Pattern HOST = Pattern
       .compile(".*?\\:(\\d\\d\\d\\d)_.*");
   
@@ -173,7 +171,6 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       shard1Ports.remove(leaderPort);
       
       // kill the leader
-      if (VERBOSE) System.out.println("Killing " + leaderPort);
       containerMap.get(leaderPort).shutdown();
       
       //printLayout(zkServer.getZkAddress());
@@ -231,7 +228,6 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     // make sure we have waited long enough for the first leader to have come back
     Thread.sleep(ZkTestServer.TICK_TIME * 2 + 100);
     
-    if (VERBOSE) System.out.println("kill everyone");
     // kill everyone but the first leader that should have reconnected by now
     for (Map.Entry<Integer,CoreContainer> entry : containerMap.entrySet()) {
       if (entry.getKey() != leaderPort) {
@@ -270,7 +266,6 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     int leaderPort = 0;
     if (m.matches()) {
       leaderPort = Integer.parseInt(m.group(1));
-      if (VERBOSE) System.out.println("The leader is:" + Integer.parseInt(m.group(1)));
     } else {
       throw new IllegalStateException();
     }
@@ -279,9 +274,6 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   
   @Override
   public void tearDown() throws Exception {
-    if (VERBOSE) {
-      printLayout(zkServer.getZkHost());
-    }
 
     if (zkClient != null) {
       zkClient.close();

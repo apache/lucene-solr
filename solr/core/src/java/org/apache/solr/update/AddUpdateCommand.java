@@ -168,7 +168,6 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<Document
       {
         List<SolrInputDocument> all = flatten(solrDoc);
 
-        SchemaField uniq = req.getSchema().getUniqueKeyField();
         String idField = getHashableId();
 
         for (SolrInputDocument sdoc : all) {

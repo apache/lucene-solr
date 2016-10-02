@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -273,13 +274,14 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     // Check whether some clauses are both required and excluded
-    if (clauseSets.get(Occur.MUST_NOT).size() > 0) {
-      final Set<Query> reqAndExclQueries = new HashSet<Query>(clauseSets.get(Occur.FILTER));
-      reqAndExclQueries.addAll(clauseSets.get(Occur.MUST));
-      reqAndExclQueries.retainAll(clauseSets.get(Occur.MUST_NOT));
-
-      if (reqAndExclQueries.isEmpty() == false) {
+    final Collection<Query> mustNotClauses = clauseSets.get(Occur.MUST_NOT);
+    if (!mustNotClauses.isEmpty()) {
+      final Predicate<Query> p = clauseSets.get(Occur.MUST)::contains;
+      if (mustNotClauses.stream().anyMatch(p.or(clauseSets.get(Occur.FILTER)::contains))) {
         return new MatchNoDocsQuery("FILTER or MUST clause also in MUST_NOT");
+      }
+      if (mustNotClauses.contains(new MatchAllDocsQuery())) {
+        return new MatchNoDocsQuery("MUST_NOT clause is MatchAllDocsQuery");
       }
     }
 

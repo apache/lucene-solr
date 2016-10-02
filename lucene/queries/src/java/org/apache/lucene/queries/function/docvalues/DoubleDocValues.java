@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.queries.function.docvalues;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -35,50 +37,50 @@ public abstract class DoubleDocValues extends FunctionValues {
   }
 
   @Override
-  public byte byteVal(int doc) {
+  public byte byteVal(int doc) throws IOException {
     return (byte)doubleVal(doc);
   }
 
   @Override
-  public short shortVal(int doc) {
+  public short shortVal(int doc) throws IOException {
     return (short)doubleVal(doc);
   }
 
   @Override
-  public float floatVal(int doc) {
+  public float floatVal(int doc) throws IOException {
     return (float)doubleVal(doc);
   }
 
   @Override
-  public int intVal(int doc) {
+  public int intVal(int doc) throws IOException {
     return (int)doubleVal(doc);
   }
 
   @Override
-  public long longVal(int doc) {
+  public long longVal(int doc) throws IOException {
     return (long)doubleVal(doc);
   }
 
   @Override
-  public boolean boolVal(int doc) {
+  public boolean boolVal(int doc) throws IOException {
     return doubleVal(doc) != 0;
   }
 
   @Override
-  public abstract double doubleVal(int doc);
+  public abstract double doubleVal(int doc) throws IOException;
 
   @Override
-  public String strVal(int doc) {
+  public String strVal(int doc) throws IOException {
     return Double.toString(doubleVal(doc));
   }
 
   @Override
-  public Object objectVal(int doc) {
+  public Object objectVal(int doc) throws IOException {
     return exists(doc) ? doubleVal(doc) : null;
   }
 
   @Override
-  public String toString(int doc) {
+  public String toString(int doc) throws IOException {
     return vs.description() + '=' + strVal(doc);
   }
   
@@ -105,7 +107,7 @@ public abstract class DoubleDocValues extends FunctionValues {
     if (includeLower && includeUpper) {
       return new ValueSourceScorer(readerContext, this) {
         @Override
-        public boolean matches(int doc) {
+        public boolean matches(int doc) throws IOException {
           if (!exists(doc)) return false;
           double docVal = doubleVal(doc);
           return docVal >= l && docVal <= u;
@@ -115,7 +117,7 @@ public abstract class DoubleDocValues extends FunctionValues {
     else if (includeLower && !includeUpper) {
       return new ValueSourceScorer(readerContext, this) {
         @Override
-        public boolean matches(int doc) {
+        public boolean matches(int doc) throws IOException {
           if (!exists(doc)) return false;
           double docVal = doubleVal(doc);
           return docVal >= l && docVal < u;
@@ -125,7 +127,7 @@ public abstract class DoubleDocValues extends FunctionValues {
     else if (!includeLower && includeUpper) {
       return new ValueSourceScorer(readerContext, this) {
         @Override
-        public boolean matches(int doc) {
+        public boolean matches(int doc) throws IOException {
           if (!exists(doc)) return false;
           double docVal = doubleVal(doc);
           return docVal > l && docVal <= u;
@@ -135,7 +137,7 @@ public abstract class DoubleDocValues extends FunctionValues {
     else {
       return new ValueSourceScorer(readerContext, this) {
         @Override
-        public boolean matches(int doc) {
+        public boolean matches(int doc) throws IOException {
           if (!exists(doc)) return false;
           double docVal = doubleVal(doc);
           return docVal > l && docVal < u;
@@ -155,7 +157,7 @@ public abstract class DoubleDocValues extends FunctionValues {
       }
 
       @Override
-      public void fillValue(int doc) {
+      public void fillValue(int doc) throws IOException {
         mval.value = doubleVal(doc);
         mval.exists = exists(doc);
       }

@@ -35,6 +35,7 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -80,7 +81,23 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     sliceCount = 2;
     fixShardCount(3);
   }
-  
+
+  /**
+   * We need to turn off directUpdatesToLeadersOnly due to SOLR-9512
+   */
+  @Override
+  protected CloudSolrClient createCloudClient(String defaultCollection) {
+    CloudSolrClient client = new CloudSolrClient.Builder()
+        .withZkHost(zkServer.getZkAddress())
+        .sendDirectUpdatesToAnyShardReplica()
+        .build();
+    client.setParallelUpdates(random().nextBoolean());
+    if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
+    client.getLbClient().setConnectionTimeout(30000);
+    client.getLbClient().setSoTimeout(60000);
+    return client;
+  }
+
   /**
    * Overrides the parent implementation to install a SocketProxy in-front of the Jetty server.
    */

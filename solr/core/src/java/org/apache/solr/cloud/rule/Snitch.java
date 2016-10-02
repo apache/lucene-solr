@@ -27,7 +27,7 @@ public abstract class Snitch {
   static Set<Class> WELL_KNOWN_SNITCHES = ImmutableSet.of(ImplicitSnitch.class);
 
 
-  public abstract void getTags(String solrNode, Set<String> requestedTags, SnitchContext ctx);
+  public abstract void getTags(String solrNode, Set<String> requestedTags, org.apache.solr.common.cloud.rule.SnitchContext ctx);
 
   public abstract boolean isKnownTag(String tag);
 

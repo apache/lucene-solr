@@ -28,7 +28,10 @@ import java.util.regex.PatternSyntaxException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 import org.apache.solr.util.plugin.SolrCoreAware;
+
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_ALL_FIELDS;
 
 
 /**
@@ -101,7 +104,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * 
  * @see FieldMutatingUpdateProcessor
  * @see FieldValueMutatingUpdateProcessor
- * @see FieldMutatingUpdateProcessor.FieldNameSelector
+ * @see FieldNameSelector
  */
 public abstract class FieldMutatingUpdateProcessorFactory
   extends UpdateRequestProcessorFactory 
@@ -125,9 +128,9 @@ public abstract class FieldMutatingUpdateProcessorFactory
   private Collection<SelectorParams> exclusions 
     = new ArrayList<>();
 
-  private FieldMutatingUpdateProcessor.FieldNameSelector selector = null;
+  private FieldNameSelector selector = null;
   
-  protected final FieldMutatingUpdateProcessor.FieldNameSelector getSelector() {
+  protected final FieldNameSelector getSelector() {
     if (null != selector) return selector;
 
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -234,10 +237,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
    * 
    * @see FieldMutatingUpdateProcessor#SELECT_ALL_FIELDS
    */
-  protected FieldMutatingUpdateProcessor.FieldNameSelector 
-    getDefaultSelector(final SolrCore core) {
-
-    return FieldMutatingUpdateProcessor.SELECT_ALL_FIELDS;
-
+  protected FieldNameSelector getDefaultSelector(SolrCore core) {
+    return SELECT_ALL_FIELDS;
   }
 }

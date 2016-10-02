@@ -18,25 +18,75 @@ API Changes
 * LUCENE-7355: AnalyzingQueryParser has been removed as its functionality has
   been folded into the classic QueryParser. (Adrien Grand)
 
+* LUCENE-7407: Doc values APIs have been switched from random access
+  to iterators, enabling future codec compression improvements. (Mike
+  McCandless)
+
 Bug Fixes
 
 Improvements
-
-Other
-
-* LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
-
-* LUCENE-6968: LSH Filter (Tommaso Teofili, Andy Hind, Cao Manh Dat)
-
-* LUCENE-7360: Remove Explanation.toHtml() (Alan Woodward)
-
-======================= Lucene 6.3.0 =======================
 
 Optimizations
 
 * LUCENE-7416: BooleanQuery optimizes queries that have queries that occur both
   in the sets of SHOULD and FILTER clauses, or both in MUST/FILTER and MUST_NOT
-  clauses. (Spyros Kapnissis via Adrien Grand)
+  clauses. (Spyros Kapnissis via Adrien Grand, Uwe Schindler)
+
+Other
+
+* LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
+
+* LUCENE-7360: Remove Explanation.toHtml() (Alan Woodward)
+
+======================= Lucene 6.3.0 =======================
+
+API Changes
+
+New Features
+
+Bug Fixes
+
+Improvements
+
+* LUCENE-7439: FuzzyQuery now matches all terms within the specified
+  edit distance, even if they are short terms (Mike McCandless)
+
+Optimizations
+
+Other
+
+* LUCENE-7452: Block join query exception suggests how to find a doc, which 
+ violates orthogonality requirement. (Mikhail Khludnev)
+
+Build
+
+* LUCENE-7292: Fix build to use "--release 8" instead of "-release 8" on
+  Java 9 (this changed with recent EA build b135).  (Uwe Schindler)
+
+======================= Lucene 6.2.1 =======================
+
+API Changes
+
+* LUCENE-7436: MinHashFilter's constructor, and some of its default
+  settings, should be public.  (Doug Turnbull via Mike McCandless)
+
+Bug Fixes
+
+* LUCENE-7417: The standard Highlighter could throw an IllegalArgumentException when
+  trying to highlight a query containing a degenerate case of a MultiPhraseQuery with one
+  term.  (Thomas Kappler via David Smiley)
+
+* LUCENE-7440: Document id skipping (PostingsEnum.advance) could throw an
+  ArrayIndexOutOfBoundsException exception on large index segments (>1.8B docs)
+  with large skips. (yonik)
+
+* LUCENE-7442: MinHashFilter's ctor should validate its args.
+  (Cao Manh Dat via Steve Rowe)
+
+* LUCENE-7318: Fix backwards compatibility issues around StandardAnalyzer
+  and its components, introduced with Lucene 6.2.0. The moved classes
+  were restored in their original packages: LowercaseFilter and StopFilter,
+  as well as several utility classes.  (Uwe Schindler, Mike McCandless)
 
 ======================= Lucene 6.2.0 =======================
 
@@ -51,6 +101,8 @@ New Features
 
 * LUCENE-7381: Add point based DoubleRangeField and RangeFieldQuery for
   indexing and querying on Ranges up to 4 dimensions (Nick Knize)
+
+* LUCENE-6968: LSH Filter (Tommaso Teofili, Andy Hind, Cao Manh Dat)
 
 * LUCENE-7302: IndexWriter methods that change the index now return a
   long "sequence number" indicating the effective equivalent
@@ -76,6 +128,10 @@ New Features
   Polygon instances from a standard GeoJSON string (Robert Muir, Mike
   McCandless)
 
+* LUCENE-7395: PerFieldSimilarityWrapper requires a default similarity
+  for calculating query norm and coordination factor in Lucene 6.x.
+  Lucene 7 will no longer have those factors.  (Uwe Schindler, Sascha Markus)
+
 * SOLR-9279: Queries module: new ComparisonBoolFunction base class
   (Doug Turnbull via David Smiley)
 
@@ -95,6 +151,10 @@ Bug Fixes
 
 * LUCENE-7391: Fix performance regression in MemoryIndex's fields() introduced
   in Lucene 6. (Steve Mason via David Smiley)
+
+* LUCENE-7395, SOLR-9315: Fix PerFieldSimilarityWrapper to also delegate query
+  norm and coordination factor using a default similarity added as ctor param.
+  (Uwe Schindler, Sascha Markus)
 
 * SOLR-9413: Fix analysis/kuromoji's CSVUtil.quoteEscape logic, add TestCSVUtil test.
   (AppChecker, Christine Poerschke)
@@ -621,6 +681,9 @@ Other
 
 * LUCENE-7095: Add point values support to the numeric field query time join.
   (Martijn van Groningen, Mike McCandless)
+
+======================= Lucene 5.5.3 =======================
+(No Changes)
 
 ======================= Lucene 5.5.2 =======================
 

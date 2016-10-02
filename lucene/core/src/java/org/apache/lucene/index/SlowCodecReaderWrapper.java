@@ -224,7 +224,7 @@ public final class SlowCodecReaderWrapper {
     return new DocValuesProducer() {
 
       @Override
-      public NumericDocValues getNumeric(FieldInfo field) throws IOException {  
+      public NumericDocValues getNumeric(FieldInfo field) throws IOException {
         return reader.getNumericDocValues(field.name);
       }
 
@@ -246,11 +246,6 @@ public final class SlowCodecReaderWrapper {
       @Override
       public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
         return reader.getSortedSetDocValues(field.name);
-      }
-
-      @Override
-      public Bits getDocsWithField(FieldInfo field) throws IOException {
-        return reader.getDocsWithField(field.name);
       }
 
       @Override

@@ -16,14 +16,15 @@
  */
 package org.apache.solr.update.processor;
 
-import static org.apache.solr.common.SolrException.ErrorCode.*;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.apache.solr.common.SolrException;
-
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
-import java.util.Collections;
-import java.util.Collection;
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
 
 /**
  * An update processor that keeps only the the minimum value from any selected 
@@ -69,10 +70,8 @@ public final class MinFieldValueUpdateProcessorFactory extends FieldValueSubsetU
   }
 
   @Override
-  public FieldMutatingUpdateProcessor.FieldNameSelector 
-    getDefaultSelector(final SolrCore core) {
-    
-    return FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
+  public FieldNameSelector getDefaultSelector(SolrCore core) {
+    return SELECT_NO_FIELDS;
   }
   
 }

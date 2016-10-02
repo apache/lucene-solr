@@ -27,10 +27,12 @@ import java.util.Locale;
 import java.util.Set;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.LegacyDocValuesIterables;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -69,7 +71,12 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   }
 
   @Override
-  public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+  public void addNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    addNumericField(field, LegacyDocValuesIterables.numericIterable(field, valuesProducer, numDocs));
+  }
+
+  void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.NUMERIC || field.hasNorms();
     writeFieldEntry(field, DocValuesType.NUMERIC);
@@ -133,10 +140,10 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   }
 
   @Override
-  public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+  public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.BINARY;
-    doAddBinary(field, values);
+    doAddBinary(field, LegacyDocValuesIterables.binaryIterable(field, valuesProducer, numDocs));
   }
     
   private void doAddBinary(FieldInfo field, Iterable<BytesRef> values) throws IOException {
@@ -195,7 +202,10 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   }
   
   @Override
-  public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+  public void addSortedField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    Iterable<BytesRef> values = LegacyDocValuesIterables.valuesIterable(valuesProducer.getSorted(field));
+    Iterable<Number> docToOrd = LegacyDocValuesIterables.sortedOrdIterable(valuesProducer, field, numDocs);
+    
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.SORTED;
     writeFieldEntry(field, DocValuesType.SORTED);
@@ -272,7 +282,11 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   }
 
   @Override
-  public void addSortedNumericField(FieldInfo field, final Iterable<Number> docToValueCount, final Iterable<Number> values) throws IOException {
+  public void addSortedNumericField(FieldInfo field, final DocValuesProducer valuesProducer) throws IOException {
+
+    final Iterable<Number> docToValueCount = LegacyDocValuesIterables.sortedNumericToDocCount(valuesProducer, field, numDocs);
+    final Iterable<Number> values = LegacyDocValuesIterables.sortedNumericToValues(valuesProducer, field);
+
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.SORTED_NUMERIC;
     doAddBinary(field, new Iterable<BytesRef>() {     
@@ -314,7 +328,10 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   }
 
   @Override
-  public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
+  public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    Iterable<BytesRef> values = LegacyDocValuesIterables.valuesIterable(valuesProducer.getSortedSet(field));
+    Iterable<Number> docToOrdCount = LegacyDocValuesIterables.sortedSetOrdCountIterable(valuesProducer, field, numDocs);
+    Iterable<Number> ords = LegacyDocValuesIterables.sortedSetOrdsIterable(valuesProducer, field);
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.SORTED_SET;
     writeFieldEntry(field, DocValuesType.SORTED_SET);

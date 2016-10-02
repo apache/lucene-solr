@@ -281,7 +281,8 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
             if (random.nextFloat() <= density) {
               bits.set(docID);
               //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
-              matchValues.add(docValues.get((int) idSource.get(docID)));
+              assertEquals(docID, idSource.advance(docID));
+              matchValues.add(docValues.get((int) idSource.longValue()));
             }
           }
 

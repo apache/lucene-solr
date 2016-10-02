@@ -19,8 +19,6 @@ package org.apache.lucene.index;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.util.ByteBlockPool;
@@ -41,6 +39,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
   private final FieldInfo fieldInfo;
 
   private static final int EMPTY_ORD = -1;
+  private int nonEmptyCount;
 
   public SortedDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
@@ -72,6 +71,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
     }
 
     addOneValue(value);
+    nonEmptyCount++;
   }
 
   @Override
@@ -120,91 +120,87 @@ class SortedDocValuesWriter extends DocValuesWriter {
     }
 
     dvConsumer.addSortedField(fieldInfo,
-
-                              // ord -> value
-                              new Iterable<BytesRef>() {
+                              new EmptyDocValuesProducer() {
                                 @Override
-                                public Iterator<BytesRef> iterator() {
-                                  return new ValuesIterator(sortedValues, valueCount, hash);
-                                }
-                              },
-
-                              // doc -> ord
-                              new Iterable<Number>() {
-                                @Override
-                                public Iterator<Number> iterator() {
-                                  return new OrdsIterator(ordMap, maxDoc, ords);
+                                public SortedDocValues getSorted(FieldInfo fieldInfoIn) {
+                                  if (fieldInfoIn != fieldInfo) {
+                                    throw new IllegalArgumentException("wrong fieldInfo");
+                                  }
+                                  return new BufferedSortedDocValues(hash, valueCount, maxDoc, ords, sortedValues, ordMap, nonEmptyCount);
                                 }
                               });
   }
 
-  // iterates over the unique values we have in ram
-  private static class ValuesIterator implements Iterator<BytesRef> {
-    final int sortedValues[];
+  private static class BufferedSortedDocValues extends SortedDocValues {
     final BytesRefHash hash;
+    final int maxDoc;
     final BytesRef scratch = new BytesRef();
+    final int[] sortedValues;
+    final int[] ordMap;
+    final int cost;
     final int valueCount;
-    int ordUpto;
-    
-    ValuesIterator(int sortedValues[], int valueCount, BytesRefHash hash) {
-      this.sortedValues = sortedValues;
-      this.valueCount = valueCount;
+    private int docID = -1;
+    private int ord;
+    final PackedLongValues.Iterator iter;
+
+    public BufferedSortedDocValues(BytesRefHash hash, int valueCount, int maxDoc, PackedLongValues docToOrd, int[] sortedValues, int[] ordMap, int cost) {
       this.hash = hash;
+      this.valueCount = valueCount;
+      this.maxDoc = maxDoc;
+      this.sortedValues = sortedValues;
+      this.iter = docToOrd.iterator();
+      this.ordMap = ordMap;
+      this.cost = cost;
     }
 
     @Override
-    public boolean hasNext() {
-      return ordUpto < valueCount;
+    public int docID() {
+      return docID;
     }
 
     @Override
-    public BytesRef next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
+    public int nextDoc() {
+      while (true) {
+        docID++;
+        if (docID >= maxDoc) {
+          docID = NO_MORE_DOCS;
+          break;
+        }
+        ord = (int) iter.next();
+        if (ord != -1) {
+          ord = ordMap[ord];
+          break;
+        }
       }
-      hash.get(sortedValues[ordUpto], scratch);
-      ordUpto++;
+      return docID;
+    }
+
+    @Override
+    public int advance(int target) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      return cost;
+    }
+
+    @Override
+    public int ordValue() {
+      return ord;
+    }
+
+    @Override
+    public BytesRef lookupOrd(int ord) {
+      assert ord >= 0 && ord < sortedValues.length;
+      assert sortedValues[ord] >= 0 && sortedValues[ord] < sortedValues.length;
+      hash.get(sortedValues[ord], scratch);
       return scratch;
     }
 
     @Override
-    public void remove() {
-      throw new UnsupportedOperationException();
-    }
-  }
-  
-  // iterates over the ords for each doc we have in ram
-  private static class OrdsIterator implements Iterator<Number> {
-    final PackedLongValues.Iterator iter;
-    final int ordMap[];
-    final int maxDoc;
-    int docUpto;
-    
-    OrdsIterator(int ordMap[], int maxDoc, PackedLongValues ords) {
-      this.ordMap = ordMap;
-      this.maxDoc = maxDoc;
-      assert ords.size() == maxDoc;
-      this.iter = ords.iterator();
-    }
-    
-    @Override
-    public boolean hasNext() {
-      return docUpto < maxDoc;
-    }
-
-    @Override
-    public Number next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
-      }
-      int ord = (int) iter.next();
-      docUpto++;
-      return ord == -1 ? ord : ordMap[ord];
-    }
-
-    @Override
-    public void remove() {
-      throw new UnsupportedOperationException();
+    public int getValueCount() {
+      return valueCount;
     }
   }
 }

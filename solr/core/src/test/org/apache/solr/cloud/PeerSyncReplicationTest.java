@@ -45,6 +45,9 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.Collections.singletonList;
+
 /**
  * Test sync peer sync when a node restarts and documents are indexed when node was down.
  *
@@ -120,7 +123,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
       otherJetties.remove(neverLeader) ;
 
       // first shutdown a node that will never be a leader
-      forceNodeFailures(Arrays.asList(neverLeader));
+      forceNodeFailures(singletonList(neverLeader));
 
       // node failure and recovery via PeerSync
       log.info("Forcing PeerSync");
@@ -144,9 +147,9 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
 
       // now shutdown the original leader
       log.info("Now shutting down initial leader");
-      forceNodeFailures(Arrays.asList(initialLeaderJetty));
+      forceNodeFailures(singletonList(initialLeaderJetty));
       log.info("Updating mappings from zk");
-      Thread.sleep(15000); // sleep for a while for leader to change ...
+      LeaderFailureAfterFreshStartTest.waitForNewLeader(cloudClient, "shard1", (Replica) initialLeaderJetty.client.info, 15);
       updateMappingsFromZk(jettys, clients, true);
       assertEquals("PeerSynced node did not become leader", nodePeerSynced, shardToLeaderJetty.get("shard1"));
 

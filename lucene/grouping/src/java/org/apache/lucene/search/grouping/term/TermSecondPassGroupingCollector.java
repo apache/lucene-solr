@@ -19,8 +19,8 @@ package org.apache.lucene.search.grouping.term;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector;
@@ -30,7 +30,7 @@ import org.apache.lucene.util.SentinelIntSet;
 
 /**
  * Concrete implementation of {@link org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector} that groups based on
- * field values and more specifically uses {@link org.apache.lucene.index.SortedDocValues}
+ * field values and more specifically uses {@link SortedDocValues}
  * to collect grouped docs.
  *
  * @lucene.experimental
@@ -70,7 +70,18 @@ public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingC
 
   @Override
   protected SearchGroupDocs<BytesRef> retrieveGroup(int doc) throws IOException {
-    int slot = ordSet.find(index.getOrd(doc));
+    if (doc > index.docID()) {
+      index.advance(doc);
+    }
+
+    int ord;
+    if (doc == index.docID()) {
+      ord = index.ordValue();
+    } else {
+      ord = -1;
+    }
+    
+    int slot = ordSet.find(ord);
     if (slot >= 0) {
       return groupDocs[slot];
     }

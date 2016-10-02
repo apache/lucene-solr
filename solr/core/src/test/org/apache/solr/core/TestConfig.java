@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedHashMap;
 
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -147,8 +148,8 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     assertNull("non-null mergedSegmentWarmer", iwc.getMergedSegmentWarmer());
 
-    final int numDefaultsMapped = sic.toMap().size();
-    assertEquals("numDefaultsTested vs. numDefaultsMapped+numNullDefaults ="+sic.toMap().keySet(), numDefaultsTested, numDefaultsMapped+numNullDefaults);
+    final int numDefaultsMapped = sic.toMap(new LinkedHashMap<>()).size();
+    assertEquals("numDefaultsTested vs. numDefaultsMapped+numNullDefaults ="+sic.toMap(new LinkedHashMap<>()).keySet(), numDefaultsTested, numDefaultsMapped+numNullDefaults);
   }
 
 

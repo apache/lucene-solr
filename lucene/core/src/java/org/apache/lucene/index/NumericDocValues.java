@@ -14,22 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.index;
 
+import org.apache.lucene.search.DocIdSetIterator;
 
 /**
  * A per-document numeric value.
  */
-public abstract class NumericDocValues {
+public abstract class NumericDocValues extends DocIdSetIterator {
   
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
   protected NumericDocValues() {}
 
   /**
-   * Returns the numeric value for the specified document ID.
-   * @param docID document ID to lookup
+   * Returns the numeric value for the current document ID.
    * @return numeric value
    */
-  public abstract long get(int docID);
+  public abstract long longValue();
 }

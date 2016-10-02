@@ -161,21 +161,6 @@ class MergeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public Bits getDocsWithField(String field) throws IOException {
-    ensureOpen();
-    FieldInfo fi = getFieldInfos().fieldInfo(field);
-    if (fi == null) {
-      // Field does not exist
-      return null;
-    }
-    if (fi.getDocValuesType() == DocValuesType.NONE) {
-      // Field was not indexed with doc values
-      return null;
-    }
-    return docValues.getDocsWithField(fi);
-  }
-
-  @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
     FieldInfo fi = getFieldInfos().fieldInfo(field);

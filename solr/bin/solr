@@ -49,6 +49,9 @@ SOLR_SCRIPT="$0"
 verbose=false
 THIS_OS=`uname -s`
 
+# What version of Java is required to run this version of Solr.
+JAVA_VER_REQ="8"         # For printing in echo
+
 stop_all=false
 
 # for now, we don't support running this script from cygwin due to problems
@@ -116,16 +119,34 @@ else
   JAVA=java
 fi
 
-# test that Java exists and is executable on this server
-"$JAVA" -version >/dev/null 2>&1 || {
+# test that Java exists, is executable and correct version
+JAVA_VER=$("$JAVA" -version 2>&1)
+if [[ $? -ne 0 ]] ; then
   echo >&2 "Java not found, or an error was encountered when running java."
-  echo >&2 "A working Java 8 is required to run Solr!"
-  echo >&2 "Please install Java 8 or fix JAVA_HOME before running this script."
-  echo >&2 "Command that we tried: '${JAVA} -version'"
+  echo >&2 "A working Java $JAVA_VER_REQ JRE is required to run Solr!"
+  echo >&2 "Please install latest version of Java $JAVA_VER_REQ or set JAVA_HOME properly."
+  echo >&2 "Command that we tried: '${JAVA} -version', with response:"
+  echo >&2 "${JAVA_VER}"
+  echo
+  echo >&2 "Debug information:"
+  echo >&2 "JAVA_HOME: ${JAVA_HOME:-N/A}"
   echo >&2 "Active Path:"
   echo >&2 "${PATH}"
   exit 1
-}
+else
+  JAVA_VER=$(echo $JAVA_VER | awk -F '"' '/version/ {print $2}')
+  if [[ "$JAVA_VER" < "1.$JAVA_VER_REQ" ]] ; then
+    echo >&2 "Your current version of Java is too old to run this version of Solr"
+    echo >&2 "We found version $JAVA_VER, using command '${JAVA}'"
+    echo >&2 "Please install latest version of Java $JAVA_VER_REQ or set JAVA_HOME properly."
+    echo
+    echo >&2 "Debug information:"
+    echo >&2 "JAVA_HOME: ${JAVA_HOME:-N/A}"
+    echo >&2 "Active Path:"
+    echo >&2 "${PATH}"
+    exit 1
+  fi
+fi
 
 # Select HTTP OR HTTPS related configurations
 SOLR_URL_SCHEME=http
@@ -237,7 +258,9 @@ function print_usage() {
     echo ""
     echo "  -noprompt     Don't prompt for input; accept all defaults when running examples that accept user input"
     echo ""
-    echo "  -V            Verbose messages from this script"
+    echo "  -v and -q     Verbose (-v) or quiet (-q) logging. Sets default log level to DEBUG or WARN instead of INFO"
+    echo ""
+    echo "  -V or -version Verbose messages from this script"
     echo ""
   elif [ "$CMD" == "stop" ]; then
     echo ""
@@ -675,6 +698,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
 
   CREATE_NUM_SHARDS=1
   CREATE_REPFACT=1
+  FORCE=false
 
   if [ $# -gt 0 ]; then
     while true; do
@@ -726,6 +750,10 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
               fi
               CREATE_PORT="$2"
               shift 2
+          ;;
+          -force)
+              FORCE=true
+              shift
           ;;
           -help|-usage)
               print_usage "$SCRIPT_CMD"
@@ -784,6 +812,11 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
     exit 1
   fi
 
+  if [[ "$(whoami)" == "root" ]] && [[ "$FORCE" == "false" ]] ; then
+    echo "WARNING: Creating cores as the root user can cause Solr to fail and is not advisable. Exiting."
+    echo "         If you started Solr as root (not advisable either), force core creation by adding argument -force"
+    exit 1
+  fi
   if [ "$SCRIPT_CMD" == "create_core" ]; then
     run_tool create_core -name "$CREATE_NAME" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$CREATE_PORT/solr" \
       -confdir "$CREATE_CONFDIR" -configsetsDir "$SOLR_TIP/server/solr/configsets"
@@ -1016,6 +1049,7 @@ fi
 
 # Run in foreground (default is to run in the background)
 FG="false"
+FORCE=false
 noprompt=false
 SOLR_OPTS=($SOLR_OPTS)
 PASS_TO_RUN_EXAMPLE=
@@ -1129,8 +1163,20 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=" --verbose"
             shift
         ;;
+        -v)
+            SOLR_LOG_LEVEL=DEBUG
+            shift
+        ;;
+        -q)
+            SOLR_LOG_LEVEL=WARN
+            shift
+        ;;
         -all)
             stop_all=true
+            shift
+        ;;
+        -force)
+            FORCE=true
             shift
         ;;
         --)
@@ -1154,6 +1200,10 @@ if [ $# -gt 0 ]; then
         ;;
     esac
   done
+fi
+
+if [[ $SOLR_LOG_LEVEL ]] ; then
+  SOLR_LOG_LEVEL_OPT="-Dsolr.log.level=$SOLR_LOG_LEVEL"
 fi
 
 if [ -z "$SOLR_SERVER_DIR" ]; then
@@ -1251,6 +1301,14 @@ fi
 
 if [ -z "$STOP_PORT" ]; then
   STOP_PORT=`expr $SOLR_PORT - 1000`
+fi
+
+if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ] ; then
+  if [[ "$(whoami)" == "root" ]] && [[ "$FORCE" == "false" ]] ; then
+    echo "WARNING: Starting Solr as the root user is a security risk and not considered best practice. Exiting."
+    echo "         Please consult the Reference Guide. To override this check, start with argument '-force'"
+    exit 1
+  fi
 fi
 
 if [[ "$SCRIPT_CMD" == "start" ]]; then
@@ -1487,6 +1545,11 @@ function launch_solr() {
       echo -e "    RMI_PORT        = $RMI_PORT"
       echo -e "    REMOTE_JMX_OPTS = ${REMOTE_JMX_OPTS[@]}"
     fi
+
+    if [ "$SOLR_LOG_LEVEL" != "" ]; then
+      echo -e "    SOLR_LOG_LEVEL  = $SOLR_LOG_LEVEL"
+    fi
+
     echo -e "\n"
   fi
     
@@ -1499,7 +1562,7 @@ function launch_solr() {
   fi
 
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" \
-    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" \
+    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" $SOLR_LOG_LEVEL_OPT \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
@@ -1512,11 +1575,10 @@ function launch_solr() {
   mkdir -p "$SOLR_LOGS_DIR"
 
   if [ "$run_in_foreground" == "true" ]; then
-    echo -e "\nStarting Solr$IN_CLOUD_MODE on port $SOLR_PORT from $SOLR_SERVER_DIR\n"
     exec "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -jar start.jar "${SOLR_JETTY_CONFIG[@]}"
   else
     # run Solr in the background
-    nohup "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS \
+    nohup "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -Dsolr.log.muteconsole \
 	"-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
         -jar start.jar "${SOLR_JETTY_CONFIG[@]}" \
 	1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"

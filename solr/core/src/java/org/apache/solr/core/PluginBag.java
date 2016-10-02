@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -116,10 +117,10 @@ public class PluginBag<T> implements AutoCloseable {
 
   PluginHolder<T> createPlugin(PluginInfo info) {
     if ("true".equals(String.valueOf(info.attributes.get("runtimeLib")))) {
-      log.info(" {} : '{}'  created with runtimeLib=true ", meta.getCleanTag(), info.name);
+      log.debug(" {} : '{}'  created with runtimeLib=true ", meta.getCleanTag(), info.name);
       return new LazyPluginHolder<>(meta, info, core, core.getMemClassLoader());
     } else if ("lazy".equals(info.attributes.get("startup")) && meta.options.contains(SolrConfig.PluginOpts.LAZY)) {
-      log.info("{} : '{}' created with startup=lazy ", meta.getCleanTag(), info.name);
+      log.debug("{} : '{}' created with startup=lazy ", meta.getCleanTag(), info.name);
       return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader());
     } else {
       T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader());
@@ -227,6 +228,10 @@ public class PluginBag<T> implements AutoCloseable {
       if (meta.clazz.equals(SolrRequestHandler.class)) name = RequestHandlers.normalize(info.name);
       PluginHolder<T> old = put(name, o);
       if (old != null) log.warn("Multiple entries of {} with name {}", meta.getCleanTag(), name);
+    }
+    if (infos.size() > 0) { // Aggregate logging
+      log.debug("[{}] Initialized {} plugins of type {}: {}", solrCore.getName(), infos.size(), meta.getCleanTag(),
+          infos.stream().map(i -> i.name).collect(Collectors.toList()));
     }
     for (Map.Entry<String, T> e : defaults.entrySet()) {
       if (!contains(e.getKey())) {

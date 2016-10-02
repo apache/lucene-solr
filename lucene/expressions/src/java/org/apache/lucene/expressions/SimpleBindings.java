@@ -36,7 +36,7 @@ import org.apache.lucene.search.SortField;
  *   SimpleBindings bindings = new SimpleBindings();
  *   // document's text relevance score
  *   bindings.add(new SortField("_score", SortField.Type.SCORE));
- *   // integer NumericDocValues field (or from FieldCache) 
+ *   // integer NumericDocValues field
  *   bindings.add(new SortField("popularity", SortField.Type.INT));
  *   // another expression
  *   bindings.add("recency", myRecencyExpression);

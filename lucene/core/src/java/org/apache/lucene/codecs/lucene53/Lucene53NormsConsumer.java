@@ -20,7 +20,9 @@ package org.apache.lucene.codecs.lucene53;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.LegacyDocValuesIterables;
 import org.apache.lucene.codecs.NormsConsumer;
+import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -55,7 +57,11 @@ class Lucene53NormsConsumer extends NormsConsumer {
   }
 
   @Override
-  public void addNormsField(FieldInfo field, Iterable<Number> values) throws IOException {
+  public void addNormsField(FieldInfo field, NormsProducer normsProducer) throws IOException {
+    addNormsField(field, LegacyDocValuesIterables.normsIterable(field, normsProducer, maxDoc));
+  }
+
+  private void addNormsField(FieldInfo field, Iterable<Number> values) throws IOException {
     meta.writeVInt(field.number);
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;

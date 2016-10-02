@@ -48,7 +48,7 @@ public class DefFunction extends MultiFunction {
     return new Values(valsArr(sources, fcontext, readerContext)) {
       final int upto = valsArr.length - 1;
 
-      private FunctionValues get(int doc) {
+      private FunctionValues get(int doc) throws IOException {
         for (int i=0; i<upto; i++) {
           FunctionValues vals = valsArr[i];
           if (vals.exists(doc)) {
@@ -59,57 +59,57 @@ public class DefFunction extends MultiFunction {
       }
 
       @Override
-      public byte byteVal(int doc) {
+      public byte byteVal(int doc) throws IOException {
         return get(doc).byteVal(doc);
       }
 
       @Override
-      public short shortVal(int doc) {
+      public short shortVal(int doc) throws IOException {
         return get(doc).shortVal(doc);
       }
 
       @Override
-      public float floatVal(int doc) {
+      public float floatVal(int doc) throws IOException {
         return get(doc).floatVal(doc);
       }
 
       @Override
-      public int intVal(int doc) {
+      public int intVal(int doc) throws IOException {
         return get(doc).intVal(doc);
       }
 
       @Override
-      public long longVal(int doc) {
+      public long longVal(int doc) throws IOException {
         return get(doc).longVal(doc);
       }
 
       @Override
-      public double doubleVal(int doc) {
+      public double doubleVal(int doc) throws IOException {
         return get(doc).doubleVal(doc);
       }
 
       @Override
-      public String strVal(int doc) {
+      public String strVal(int doc) throws IOException {
         return get(doc).strVal(doc);
       }
 
       @Override
-      public boolean boolVal(int doc) {
+      public boolean boolVal(int doc) throws IOException {
         return get(doc).boolVal(doc);
       }
 
       @Override
-      public boolean bytesVal(int doc, BytesRefBuilder target) {
+      public boolean bytesVal(int doc, BytesRefBuilder target) throws IOException {
         return get(doc).bytesVal(doc, target);
       }
 
       @Override
-      public Object objectVal(int doc) {
+      public Object objectVal(int doc) throws IOException {
         return get(doc).objectVal(doc);
       }
 
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         // return true if any source is exists?
         for (FunctionValues vals : valsArr) {
           if (vals.exists(doc)) {

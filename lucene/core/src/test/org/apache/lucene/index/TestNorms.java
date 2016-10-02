@@ -94,12 +94,14 @@ public class TestNorms extends LuceneTestCase {
     
     NumericDocValues fooNorms = MultiDocValues.getNormValues(reader, "foo");
     for (int i = 0; i < reader.maxDoc(); i++) {
-      assertEquals(0, fooNorms.get(i));
+      assertEquals(i, fooNorms.nextDoc());
+      assertEquals(0, fooNorms.longValue());
     }
     
     NumericDocValues barNorms = MultiDocValues.getNormValues(reader, "bar");
     for (int i = 0; i < reader.maxDoc(); i++) {
-      assertEquals(1, barNorms.get(i));
+      assertEquals(i, barNorms.nextDoc());
+      assertEquals(1, barNorms.longValue());
     }
     
     reader.close();
@@ -115,7 +117,8 @@ public class TestNorms extends LuceneTestCase {
     for (int i = 0; i < open.maxDoc(); i++) {
       Document document = open.document(i);
       int expected = Integer.parseInt(document.get(byteTestField));
-      assertEquals(expected, normValues.get(i));
+      assertEquals(i, normValues.nextDoc());
+      assertEquals(expected, normValues.longValue());
     }
     open.close();
     dir.close();

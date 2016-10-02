@@ -19,8 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.util.ArrayUtil;
@@ -109,73 +107,82 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
     final PackedLongValues valueCounts = pendingCounts.build();
 
     dvConsumer.addSortedNumericField(fieldInfo,
-                              // doc -> valueCount
-                              new Iterable<Number>() {
-                                @Override
-                                public Iterator<Number> iterator() {
-                                  return new CountIterator(valueCounts);
-                                }
-                              },
-
-                              // values
-                              new Iterable<Number>() {
-                                @Override
-                                public Iterator<Number> iterator() {
-                                  return new ValuesIterator(values);
-                                }
-                              });
+                                     new EmptyDocValuesProducer() {
+                                       @Override
+                                       public SortedNumericDocValues getSortedNumeric(FieldInfo fieldInfoIn) {
+                                         if (fieldInfoIn != fieldInfo) {
+                                           throw new IllegalArgumentException("wrong fieldInfo");
+                                         }
+                                         return new BufferedSortedNumericDocValues(values, valueCounts);
+                                       }
+                                     });
   }
-  
-  // iterates over the values for each doc we have in ram
-  private static class ValuesIterator implements Iterator<Number> {
-    final PackedLongValues.Iterator iter;
 
-    ValuesIterator(PackedLongValues values) {
-      iter = values.iterator();
+  private static class BufferedSortedNumericDocValues extends SortedNumericDocValues {
+    final PackedLongValues.Iterator valuesIter;
+    final PackedLongValues.Iterator valueCountsIter;
+    final int maxDoc;
+    final long cost;
+    private int docID = -1;
+    private int valueCount;
+    private int valueUpto;
+
+    public BufferedSortedNumericDocValues(PackedLongValues values, PackedLongValues valueCounts) {
+      valuesIter = values.iterator();
+      valueCountsIter = valueCounts.iterator();
+      maxDoc = Math.toIntExact(valueCounts.size());
+      cost = values.size();
     }
 
     @Override
-    public boolean hasNext() {
-      return iter.hasNext();
+    public int docID() {
+      return docID;
     }
 
     @Override
-    public Number next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
+    public int nextDoc() {
+
+      // consume any un-consumed values from current doc
+      while(valueUpto < valueCount) {
+        valuesIter.next();
+        valueUpto++;
       }
-      return iter.next();
+      
+      while (true) {
+        docID++;
+        if (docID == maxDoc) {
+          docID = NO_MORE_DOCS;
+          break;
+        } else {
+          valueCount = Math.toIntExact(valueCountsIter.next());
+          if (valueCount > 0) {
+            valueUpto = 0;
+            break;
+          }
+        }
+      }
+      return docID;
     }
 
     @Override
-    public void remove() {
+    public int advance(int target) {
       throw new UnsupportedOperationException();
     }
-  }
-  
-  private static class CountIterator implements Iterator<Number> {
-    final PackedLongValues.Iterator iter;
 
-    CountIterator(PackedLongValues valueCounts) {
-      this.iter = valueCounts.iterator();
+    @Override
+    public int docValueCount() {
+      return valueCount;
     }
 
     @Override
-    public boolean hasNext() {
-      return iter.hasNext();
+    public long nextValue() {
+      valueUpto++;
+      return valuesIter.next();
     }
-
+    
     @Override
-    public Number next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
-      }
-      return iter.next();
-    }
-
-    @Override
-    public void remove() {
-      throw new UnsupportedOperationException();
+    public long cost() {
+      return cost;
     }
   }
 }

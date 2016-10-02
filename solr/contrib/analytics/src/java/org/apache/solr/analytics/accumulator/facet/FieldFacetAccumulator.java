@@ -22,13 +22,12 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.analytics.accumulator.FacetingAccumulator;
 import org.apache.solr.analytics.accumulator.ValueAccumulator;
-import org.apache.solr.analytics.util.AnalyticsParsers;
 import org.apache.solr.analytics.util.AnalyticsParsers.NumericParser;
 import org.apache.solr.analytics.util.AnalyticsParsers.Parser;
+import org.apache.solr.analytics.util.AnalyticsParsers;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.DateValueFieldType;
 import org.apache.solr.schema.SchemaField;
@@ -48,9 +47,8 @@ public class FieldFacetAccumulator extends ValueAccumulator {
   protected final boolean numField;
   protected final boolean dateField;
   protected SortedSetDocValues setValues;
-  protected SortedDocValues sortValues; 
-  protected NumericDocValues numValues; 
-  protected Bits numValuesBits; 
+  protected SortedDocValues sortValues;
+  protected NumericDocValues numValues;
   
   public FieldFacetAccumulator(SolrIndexSearcher searcher, FacetValueAccumulator parent, SchemaField schemaField) throws IOException {  
     if( !schemaField.hasDocValues() ){
@@ -80,7 +78,6 @@ public class FieldFacetAccumulator extends ValueAccumulator {
     } else {
       if (numField) {
         numValues = context.reader().getNumericDocValues(name);
-        numValuesBits = context.reader().getDocsWithField(name);
       } else {
         sortValues = context.reader().getSortedDocValues(name);
       }
@@ -96,12 +93,16 @@ public class FieldFacetAccumulator extends ValueAccumulator {
     if (multiValued) {
       boolean exists = false;
       if (setValues!=null) {
-        setValues.setDocument(doc);
-        int term;
-        while ((term = (int)setValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-          exists = true;
-          final BytesRef value = setValues.lookupOrd(term);
-          parent.collectField(doc, name, parser.parse(value) );
+        if (doc > setValues.docID()) {
+          setValues.advance(doc);
+        }
+        if (doc == setValues.docID()) {
+          int term;
+          while ((term = (int)setValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+            exists = true;
+            final BytesRef value = setValues.lookupOrd(term);
+            parent.collectField(doc, name, parser.parse(value) );
+          }
         }
       }
       if (!exists) {
@@ -110,9 +111,12 @@ public class FieldFacetAccumulator extends ValueAccumulator {
     } else {
       if(numField){
         if(numValues != null) {
-          long v = numValues.get(doc);
-          if( v != 0 || numValuesBits.get(doc) ){
-            parent.collectField(doc, name, ((NumericParser)parser).parseNum(v));
+          int valuesDocID = numValues.docID();
+          if (valuesDocID < doc) {
+            valuesDocID = numValues.advance(doc);
+          }
+          if (valuesDocID == doc) {
+            parent.collectField(doc, name, ((NumericParser)parser).parseNum(numValues.longValue()));
           } else {
             parent.collectField(doc, name, FacetingAccumulator.MISSING_VALUE );
           }
@@ -121,11 +125,13 @@ public class FieldFacetAccumulator extends ValueAccumulator {
         }
       } else {
         if(sortValues != null) {
-          final int ord = sortValues.getOrd(doc);
-          if (ord < 0) {
-            parent.collectField(doc, name, FacetingAccumulator.MISSING_VALUE );
+          if (doc > sortValues.docID()) {
+            sortValues.advance(doc);
+          }
+          if (doc == sortValues.docID()) {
+            parent.collectField(doc, name, parser.parse(sortValues.lookupOrd(sortValues.ordValue())) );
           } else {
-            parent.collectField(doc, name, parser.parse(sortValues.lookupOrd(ord)) );
+            parent.collectField(doc, name, FacetingAccumulator.MISSING_VALUE );
           }
         } else {
           parent.collectField(doc, name, FacetingAccumulator.MISSING_VALUE );

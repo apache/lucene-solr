@@ -112,6 +112,12 @@ public class RealTimeGetComponent extends SearchComponent
       return;
     }
     
+    val = params.get("getFingerprint");
+    if(val != null) {
+      processGetFingeprint(rb);
+      return;
+    }
+    
     val = params.get("getVersions");
     if (val != null) {
       processGetVersions(rb);
@@ -597,6 +603,17 @@ public class RealTimeGetComponent extends SearchComponent
     return null;
   }
 
+  
+  
+  public void processGetFingeprint(ResponseBuilder rb) throws IOException {
+    SolrQueryRequest req = rb.req;
+    SolrParams params = req.getParams();
+    
+    long maxVersion = params.getLong("getFingerprint", Long.MAX_VALUE);
+    IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Math.abs(maxVersion));
+    rb.rsp.add("fingerprint", fingerprint);
+  }
+  
 
   ///////////////////////////////////////////////////////////////////////////////////
   // Returns last versions added to index
@@ -631,7 +648,7 @@ public class RealTimeGetComponent extends SearchComponent
     // and would avoid mismatch if documents are being actively index especially during PeerSync
     if (doFingerprint) {
       IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Long.MAX_VALUE);
-      rb.rsp.add("fingerprint", fingerprint.toObject());
+      rb.rsp.add("fingerprint", fingerprint);
     }
 
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
@@ -658,7 +675,7 @@ public class RealTimeGetComponent extends SearchComponent
     boolean cantReachIsSuccess = rb.req.getParams().getBool("cantReachIsSuccess", false);
     
     PeerSync peerSync = new PeerSync(rb.req.getCore(), replicas, nVersions, cantReachIsSuccess, true);
-    boolean success = peerSync.sync();
+    boolean success = peerSync.sync().isSuccess();
     
     // TODO: more complex response?
     rb.rsp.add("sync", success);
@@ -695,7 +712,7 @@ public class RealTimeGetComponent extends SearchComponent
     if (doFingerprint) {
       long maxVersionForUpdate = Collections.min(versions, PeerSync.absComparator);
       IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Math.abs(maxVersionForUpdate));
-      rb.rsp.add("fingerprint", fingerprint.toObject());
+      rb.rsp.add("fingerprint", fingerprint);
     }
 
     List<Object> updates = new ArrayList<>(versions.size());

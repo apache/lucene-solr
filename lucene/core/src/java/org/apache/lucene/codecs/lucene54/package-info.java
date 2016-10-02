@@ -366,7 +366,7 @@
  * <li>In version 4.0, the format of the inverted index became extensible via
  * the {@link org.apache.lucene.codecs.Codec Codec} api. Fast per-document storage
  * ({@code DocValues}) was introduced. Normalization factors need no longer be a 
- * single byte, they can be any {@link org.apache.lucene.index.NumericDocValues NumericDocValues}. 
+ * single byte, they can be any {@link org.apache.lucene.index.NumericDocValues NumericDocValues}.
  * Terms need not be unicode strings, they can be any byte sequence. Term offsets 
  * can optionally be indexed into the postings lists. Payloads can be stored in the 
  * term vectors.</li>

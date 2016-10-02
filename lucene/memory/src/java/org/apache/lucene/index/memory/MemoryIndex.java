@@ -828,7 +828,7 @@ public class MemoryIndex {
     private FieldInfo fieldInfo;
 
     /** The norms for this field; computed on demand. */
-    private transient NumericDocValues norms;
+    private transient LegacyNumericDocValues norms;
 
     /**
      * Term strings and their positions for this field: Map &lt;String
@@ -937,24 +937,47 @@ public class MemoryIndex {
     }
 
     NumericDocValues getNormDocValues() {
-      if (norms == null) {
-        FieldInvertState invertState = new FieldInvertState(fieldInfo.name, fieldInfo.number,
-            numTokens, numOverlapTokens, 0, boost);
-        final long value = normSimilarity.computeNorm(invertState);
-        if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldInfo.name + ":" + value + ":" + numTokens);
-        norms = new NumericDocValues() {
+      FieldInvertState invertState = new FieldInvertState(fieldInfo.name, fieldInfo.number,
+                                                          numTokens, numOverlapTokens, 0, boost);
+      final long value = normSimilarity.computeNorm(invertState);
+      if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldInfo.name + ":" + value + ":" + numTokens);
+      return new NumericDocValues() {
+          private int docID = -1;
 
           @Override
-          public long get(int docID) {
-            if (docID != 0)
-              throw new IndexOutOfBoundsException();
-            else
-              return value;
+          public int nextDoc() {
+            docID++;
+            if (docID == 1) {
+              docID = NO_MORE_DOCS;
+            }
+            return docID;
           }
 
+          @Override
+          public int docID() {
+            return docID;
+          }
+
+          @Override
+          public int advance(int target) {
+            if (docID <= 0 && target == 0) {
+              docID = 0;
+            } else {
+              docID = NO_MORE_DOCS;
+            }
+            return docID;
+          }
+
+          @Override
+          public long cost() {
+            return 1;
+          }
+
+          @Override
+          public long longValue() {
+            return value;
+          }
         };
-      }
-      return norms;
     }
   }
   
@@ -965,13 +988,13 @@ public class MemoryIndex {
   private static final class BinaryDocValuesProducer {
 
     BytesRefHash dvBytesValuesSet;
-    final SortedDocValues sortedDocValues;
+    final LegacySortedDocValues sortedDocValues;
     final BytesRef spare = new BytesRef();
 
     int[] bytesIds;
 
     private BinaryDocValuesProducer() {
-      sortedDocValues = new SortedDocValues() {
+      sortedDocValues = new LegacySortedDocValues() {
         @Override
         public int getOrd(int docID) {
           return 0;
@@ -1004,17 +1027,17 @@ public class MemoryIndex {
     long[] dvLongValues;
     int count;
 
-    final NumericDocValues numericDocValues;
-    final SortedNumericDocValues sortedNumericDocValues;
+    final LegacyNumericDocValues numericDocValues;
+    final LegacySortedNumericDocValues sortedNumericDocValues;
 
     private NumericDocValuesProducer() {
-      this.numericDocValues = new NumericDocValues() {
+      this.numericDocValues = new LegacyNumericDocValues() {
         @Override
         public long get(int docID) {
           return dvLongValues[0];
         }
       };
-      this.sortedNumericDocValues = new SortedNumericDocValues() {
+      this.sortedNumericDocValues = new LegacySortedNumericDocValues() {
         @Override
         public void setDocument(int doc) {
         }
@@ -1101,13 +1124,12 @@ public class MemoryIndex {
     }
 
     @Override
-    public NumericDocValues getNumericDocValues(String field) {
+    public NumericDocValues getNumericDocValues(String field) throws IOException {
       Info info = getInfoForExpectedDocValuesType(field, DocValuesType.NUMERIC);
-      if (info != null) {
-        return info.numericProducer.numericDocValues;
-      } else {
+      if (info == null) {
         return null;
       }
+      return new LegacyNumericDocValuesWrapper(new Bits.MatchAllBits(1), info.numericProducer.numericDocValues);
     }
 
     @Override
@@ -1123,7 +1145,7 @@ public class MemoryIndex {
     private SortedDocValues getSortedDocValues(String field, DocValuesType docValuesType) {
       Info info = getInfoForExpectedDocValuesType(field, docValuesType);
       if (info != null) {
-        return info.binaryProducer.sortedDocValues;
+        return new LegacySortedDocValuesWrapper(info.binaryProducer.sortedDocValues, 1);
       } else {
         return null;
       }
@@ -1133,7 +1155,7 @@ public class MemoryIndex {
     public SortedNumericDocValues getSortedNumericDocValues(String field) {
       Info info = getInfoForExpectedDocValuesType(field, DocValuesType.SORTED_NUMERIC);
       if (info != null) {
-        return info.numericProducer.sortedNumericDocValues;
+        return new LegacySortedNumericDocValuesWrapper(info.numericProducer.sortedNumericDocValues, 1);
       } else {
         return null;
       }
@@ -1143,7 +1165,7 @@ public class MemoryIndex {
     public SortedSetDocValues getSortedSetDocValues(String field) {
       Info info = getInfoForExpectedDocValuesType(field, DocValuesType.SORTED_SET);
       if (info != null) {
-        return new SortedSetDocValues() {
+        return new LegacySortedSetDocValuesWrapper(new LegacySortedSetDocValues() {
 
           int index = 0;
 
@@ -1169,17 +1191,7 @@ public class MemoryIndex {
           public long getValueCount() {
             return info.binaryProducer.dvBytesValuesSet.size();
           }
-        };
-      } else {
-        return null;
-      }
-    }
-
-    @Override
-    public Bits getDocsWithField(String field) throws IOException {
-      Info info = fields.get(field);
-      if (info != null && info.fieldInfo.getDocValuesType() != DocValuesType.NONE) {
-        return new Bits.MatchAllBits(1);
+          }, 1);
       } else {
         return null;
       }

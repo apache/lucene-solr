@@ -66,21 +66,26 @@ class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
   }
 
   @Override
-  public void collect(int doc, int slotNum) {
-    subDv.setDocument(doc);
-    int segOrd = (int) subDv.nextOrd();
-    if (segOrd < 0) return;
-
-    FixedBitSet bits = arr[slotNum];
-    if (bits == null) {
-      bits = new FixedBitSet(nTerms);
-      arr[slotNum] = bits;
+  public void collect(int doc, int slotNum) throws IOException {
+    if (doc > subDv.docID()) {
+      subDv.advance(doc);
     }
+    if (doc == subDv.docID()) {
 
-    do {
-      int ord = toGlobal == null ? segOrd : (int) toGlobal.get(segOrd);
-      bits.set(ord);
-      segOrd = (int) subDv.nextOrd();
-    } while (segOrd >= 0);
+      int segOrd = (int) subDv.nextOrd();
+      assert segOrd >= 0;
+      
+      FixedBitSet bits = arr[slotNum];
+      if (bits == null) {
+        bits = new FixedBitSet(nTerms);
+        arr[slotNum] = bits;
+      }
+
+      do {
+        int ord = toGlobal == null ? segOrd : (int) toGlobal.get(segOrd);
+        bits.set(ord);
+        segOrd = (int) subDv.nextOrd();
+      } while (segOrd >= 0);
+    }
   }
 }

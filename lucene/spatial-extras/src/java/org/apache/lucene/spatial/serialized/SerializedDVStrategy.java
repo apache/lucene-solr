@@ -24,10 +24,6 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.io.BinaryCodec;
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.BinaryDocValues;
@@ -47,6 +43,10 @@ import org.apache.lucene.spatial.util.ShapePredicateValueSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.io.BinaryCodec;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Shape;
 
 
 /**
@@ -143,7 +143,11 @@ public class SerializedDVStrategy extends SpatialStrategy {
           return new Bits() {
             @Override
             public boolean get(int index) {
-              return predFuncValues.boolVal(index);
+              try {
+                return predFuncValues.boolVal(index);
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
+              }
             }
 
             @Override
@@ -196,21 +200,28 @@ public class SerializedDVStrategy extends SpatialStrategy {
         int bytesRefDoc = -1;
         BytesRefBuilder bytesRef = new BytesRefBuilder();
 
-        boolean fillBytes(int doc) {
+        boolean fillBytes(int doc) throws IOException {
           if (bytesRefDoc != doc) {
-            bytesRef.copyBytes(docValues.get(doc));
+            if (docValues.docID() < doc) {
+              docValues.advance(doc);
+            }
+            if (docValues.docID() == doc) {
+              bytesRef.copyBytes(docValues.binaryValue());
+            } else {
+              bytesRef.clear();
+            }
             bytesRefDoc = doc;
           }
           return bytesRef.length() != 0;
         }
 
         @Override
-        public boolean exists(int doc) {
+        public boolean exists(int doc) throws IOException {
           return fillBytes(doc);
         }
 
         @Override
-        public boolean bytesVal(int doc, BytesRefBuilder target) {
+        public boolean bytesVal(int doc, BytesRefBuilder target) throws IOException {
           target.clear();
           if (fillBytes(doc)) {
             target.copyBytes(bytesRef);
@@ -221,7 +232,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
         }
 
         @Override
-        public Object objectVal(int docId) {
+        public Object objectVal(int docId) throws IOException {
           if (!fillBytes(docId))
             return null;
           DataInputStream dataInput = new DataInputStream(
@@ -234,12 +245,12 @@ public class SerializedDVStrategy extends SpatialStrategy {
         }
 
         @Override
-        public Explanation explain(int doc) {
+        public Explanation explain(int doc) throws IOException {
           return Explanation.match(Float.NaN, toString(doc));
         }
 
         @Override
-        public String toString(int doc) {
+        public String toString(int doc) throws IOException {
           return description() + "=" + objectVal(doc);//TODO truncate?
         }
 

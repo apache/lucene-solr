@@ -132,7 +132,7 @@ public class DocumentValueSourceDictionary extends DocumentDictionary {
      * by the <code>weightsValueSource</code>
      * */
     @Override
-    protected long getWeight(Document doc, int docId) {    
+    protected long getWeight(Document doc, int docId) {
       if (currentWeightValues == null) {
         return 0;
       }
@@ -145,7 +145,11 @@ public class DocumentValueSourceDictionary extends DocumentDictionary {
           throw new RuntimeException(e);
         }
       }
-      return currentWeightValues.longVal(docId - starts[subIndex]);
+      try {
+        return currentWeightValues.longVal(docId - starts[subIndex]);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
 
   }

@@ -619,6 +619,12 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     return req.process( client );
   }
 
+  public static CoreStatus getCoreStatus(String coreName, SolrClient client) throws SolrServerException, IOException {
+    CoreAdminRequest req = new CoreAdminRequest();
+    req.setAction(CoreAdminAction.STATUS);
+    return new CoreStatus(req.process(client).getCoreStatus(coreName));
+  }
+
   public static CoreAdminResponse getStatus( String name, SolrClient client ) throws SolrServerException, IOException
   {
     CoreAdminRequest req = new CoreAdminRequest();
