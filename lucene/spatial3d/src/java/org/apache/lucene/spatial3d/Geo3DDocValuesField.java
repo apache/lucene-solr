@@ -67,11 +67,17 @@ public class Geo3DDocValuesField extends Field {
   private final static double yFactor = 1.0 / inverseYFactor;
   private final static double zFactor = 1.0 / inverseZFactor;
   
+  // Fudge factor for step adjustments.  This is here solely to handle inaccuracies in bounding boxes
+  // that occur because of quantization.  For unknown reasons, the fudge factor needs to be
+  // 10.0 rather than 1.0.  See LUCENE-7430.
+  
+  private final static double STEP_FUDGE = 10.0;
+  
   // These values are the delta between a value and the next value in each specific dimension
   
-  private final static double xStep = inverseXFactor;
-  private final static double yStep = inverseYFactor;
-  private final static double zStep = inverseZFactor;
+  private final static double xStep = inverseXFactor * STEP_FUDGE;
+  private final static double yStep = inverseYFactor * STEP_FUDGE;
+  private final static double zStep = inverseZFactor * STEP_FUDGE;
   
   /**
    * Type for a Geo3DDocValuesField
