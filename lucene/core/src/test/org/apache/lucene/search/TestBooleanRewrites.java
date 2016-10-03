@@ -18,6 +18,10 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -411,11 +415,16 @@ public class TestBooleanRewrites extends LuceneTestCase {
   private void assertEquals(TopDocs td1, TopDocs td2) {
     assertEquals(td1.totalHits, td2.totalHits);
     assertEquals(td1.scoreDocs.length, td2.scoreDocs.length);
-    for (int i = 0; i < td1.scoreDocs.length; ++i) {
-      ScoreDoc sd1 = td1.scoreDocs[i];
-      ScoreDoc sd2 = td2.scoreDocs[i];
-      assertEquals(sd1.doc, sd2.doc);
-      assertEquals(sd1.score, sd2.score, 0.01f);
+    Map<Integer, Float> expectedScores = Arrays.stream(td1.scoreDocs).collect(Collectors.toMap(sd -> sd.doc, sd -> sd.score));
+    Set<Integer> actualResultSet = Arrays.stream(td2.scoreDocs).map(sd -> sd.doc).collect(Collectors.toSet());
+
+    assertEquals("Set of matching documents differs",
+        expectedScores.keySet(), actualResultSet);
+
+    for (ScoreDoc scoreDoc : td2.scoreDocs) {
+      final float expectedScore = expectedScores.get(scoreDoc.doc);
+      final float actualScore = scoreDoc.score;
+      assertEquals(expectedScore, actualScore, 10e-5);
     }
   }
 }
