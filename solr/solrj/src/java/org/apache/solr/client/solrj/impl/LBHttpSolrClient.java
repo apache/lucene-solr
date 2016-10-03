@@ -117,6 +117,7 @@ public class LBHttpSolrClient extends SolrClient {
 
   private final HttpClient httpClient;
   private final boolean clientIsInternal;
+  private HttpSolrClient.Builder httpSolrClientBuilder;
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
@@ -226,7 +227,7 @@ public class LBHttpSolrClient extends SolrClient {
    */
   @Deprecated
   public LBHttpSolrClient(String... solrServerUrls) throws MalformedURLException {
-    this(null, solrServerUrls);
+    this((HttpClient) null, solrServerUrls);
   }
   
   /**
@@ -236,6 +237,17 @@ public class LBHttpSolrClient extends SolrClient {
   @Deprecated
   public LBHttpSolrClient(HttpClient httpClient, String... solrServerUrl) {
     this(httpClient, new BinaryResponseParser(), solrServerUrl);
+  }
+
+  public LBHttpSolrClient(HttpSolrClient.Builder httpSolrClientBuilder, String... solrServerUrl) {
+    clientIsInternal = false;
+    this.httpSolrClientBuilder = httpSolrClientBuilder;
+    this.httpClient = null;
+    for (String s : solrServerUrl) {
+      ServerWrapper wrapper = new ServerWrapper(makeSolrClient(s));
+      aliveServers.put(wrapper.getKey(), wrapper);
+    }
+    updateAliveList();
   }
 
   /**
@@ -290,10 +302,19 @@ public class LBHttpSolrClient extends SolrClient {
   }
 
   protected HttpSolrClient makeSolrClient(String server) {
-    HttpSolrClient client = new HttpSolrClient.Builder(server)
-        .withHttpClient(httpClient)
-        .withResponseParser(parser)
-        .build();
+    HttpSolrClient client;
+    if (httpSolrClientBuilder != null) {
+      synchronized (this) {
+        client = httpSolrClientBuilder
+            .withBaseSolrUrl(server)
+            .build();
+      }
+    } else {
+      client = new HttpSolrClient.Builder(server)
+          .withHttpClient(httpClient)
+          .withResponseParser(parser)
+          .build();
+    }
     if (requestWriter != null) {
       client.setRequestWriter(requestWriter);
     }
@@ -757,9 +778,10 @@ public class LBHttpSolrClient extends SolrClient {
     private final List<String> baseSolrUrls;
     private HttpClient httpClient;
     private ResponseParser responseParser;
-    
+    private HttpSolrClient.Builder httpSolrClientBuilder;
+
     public Builder() {
-      this.baseSolrUrls = new ArrayList<String>();
+      this.baseSolrUrls = new ArrayList<>();
       this.responseParser = new BinaryResponseParser();
     }
     
@@ -801,13 +823,24 @@ public class LBHttpSolrClient extends SolrClient {
       this.responseParser = responseParser;
       return this;
     }
-    
+
+    /**
+     * Provides a {@link HttpSolrClient.Builder} to be used for building the internally used clients.
+     */
+    public Builder withHttpSolrClientBuilder(HttpSolrClient.Builder builder) {
+      this.httpSolrClientBuilder = builder;
+      return this;
+    }
+
     /**
      * Create a {@link HttpSolrClient} based on provided configuration.
      */
     public LBHttpSolrClient build() {
       final String[] baseUrlArray = new String[baseSolrUrls.size()];
-      return new LBHttpSolrClient(httpClient, responseParser, baseSolrUrls.toArray(baseUrlArray));
+      String[] solrServerUrls = baseSolrUrls.toArray(baseUrlArray);
+      return httpSolrClientBuilder != null ?
+          new LBHttpSolrClient(httpSolrClientBuilder, solrServerUrls) :
+          new LBHttpSolrClient(httpClient, responseParser, solrServerUrls);
     }
   }
 }

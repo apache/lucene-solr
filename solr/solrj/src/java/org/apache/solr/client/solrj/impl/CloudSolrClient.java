@@ -350,7 +350,7 @@ public class CloudSolrClient extends SolrClient {
    */
   @Deprecated
   public CloudSolrClient(Collection<String> zkHosts, String chroot, HttpClient httpClient, LBHttpSolrClient lbSolrClient, boolean updatesToLeaders) {
-    this(zkHosts, chroot, httpClient, lbSolrClient, updatesToLeaders, false);
+    this(zkHosts, chroot, httpClient, lbSolrClient, updatesToLeaders, false,null);
   }
 
   /**
@@ -377,17 +377,28 @@ public class CloudSolrClient extends SolrClient {
    * @param directUpdatesToLeadersOnly
    *          If true, sends direct updates to shard leaders only.
    */
-  private CloudSolrClient(Collection<String> zkHosts, String chroot, HttpClient httpClient, LBHttpSolrClient lbSolrClient,
-      boolean updatesToLeaders, boolean directUpdatesToLeadersOnly) {
+  private CloudSolrClient(Collection<String> zkHosts,
+                          String chroot,
+                          HttpClient httpClient,
+                          LBHttpSolrClient lbSolrClient,
+                          boolean updatesToLeaders,
+                          boolean directUpdatesToLeadersOnly,
+                          LBHttpSolrClient.Builder builder) {
     this.zkHost = buildZkHostString(zkHosts, chroot);
     this.updatesToLeaders = updatesToLeaders;
     this.directUpdatesToLeadersOnly = directUpdatesToLeadersOnly;
-    
-    this.clientIsInternal = httpClient == null;
-    this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
-    
-    this.shutdownLBHttpSolrServer = lbSolrClient == null;
-    this.lbClient = lbSolrClient == null ? createLBHttpSolrClient(myClient) : lbSolrClient;
+
+    if(builder !=null){
+      this.clientIsInternal = false;
+      this.lbClient = builder.build();
+      this.shutdownLBHttpSolrServer = true;
+    } else {
+      this.clientIsInternal = httpClient == null;
+      this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
+
+      this.shutdownLBHttpSolrServer = lbSolrClient == null;
+      this.lbClient = lbSolrClient == null ? createLBHttpSolrClient(myClient) : lbSolrClient;
+    }
   }
   
   /**
@@ -1545,6 +1556,7 @@ public class CloudSolrClient extends SolrClient {
     private HttpClient httpClient;
     private String zkChroot;
     private LBHttpSolrClient loadBalancedSolrClient;
+    private LBHttpSolrClient.Builder lbClientBuilder;
     private boolean shardLeadersOnly;
     private boolean directUpdatesToLeadersOnly;
     
@@ -1570,10 +1582,20 @@ public class CloudSolrClient extends SolrClient {
     /**
      * Provides a {@link HttpClient} for the builder to use when creating clients.
      */
+    public Builder withBuilder(LBHttpSolrClient.Builder builder) {
+      this.lbClientBuilder = builder;
+      return this;
+    }
+
+    /**
+     * Provides a {@link HttpClient} for the builder to use when creating clients.
+     */
     public Builder withHttpClient(HttpClient httpClient) {
       this.httpClient = httpClient;
       return this;
     }
+
+
     
     /**
      * Provide a series of ZooKeeper client endpoints for the builder to use when creating clients.
@@ -1645,7 +1667,7 @@ public class CloudSolrClient extends SolrClient {
      */
     public CloudSolrClient build() {
       return new CloudSolrClient(zkHosts, zkChroot, httpClient, loadBalancedSolrClient,
-          shardLeadersOnly, directUpdatesToLeadersOnly);
+          shardLeadersOnly, directUpdatesToLeadersOnly, lbClientBuilder);
     }
   }
 }
