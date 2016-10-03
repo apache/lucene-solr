@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import com.google.common.collect.Lists;
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
@@ -50,7 +49,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.SystemDefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager; // jdoc
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.common.SolrException;
@@ -59,6 +58,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.Collections.singletonList;
 
 /**
  * Utility class for creating/configuring httpclient instances. 
@@ -95,7 +96,7 @@ public class HttpClientUtil {
       0, false);
 
   private static final List<HttpClientConfigurer> configurers
-      = Collections.synchronizedList(Lists.newArrayList(new HttpClientConfigurer()));
+      = Collections.synchronizedList(new ArrayList<>(singletonList(new HttpClientConfigurer())));
 
   private static final List<HttpRequestInterceptor> interceptors = Collections.synchronizedList(new ArrayList<>());
   
