@@ -386,6 +386,7 @@ public class CloudSolrClient extends SolrClient {
                           LBHttpSolrClient.Builder lbHttpSolrClientBuilder,
                           boolean updatesToLeaders,
                           boolean directUpdatesToLeadersOnly) {
+    this.zkHost = buildZkHostString(zkHosts, chroot);
     this.clientIsInternal = httpClient == null;
     this.shutdownLBHttpSolrServer = lbSolrClient == null;
     if(lbHttpSolrClientBuilder != null) lbSolrClient = lbHttpSolrClientBuilder.build();
@@ -393,7 +394,6 @@ public class CloudSolrClient extends SolrClient {
     this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
     if (lbSolrClient == null) lbSolrClient = createLBHttpSolrClient(myClient);
     this.lbClient = lbSolrClient;
-    this.zkHost = buildZkHostString(zkHosts, chroot);
     this.updatesToLeaders = updatesToLeaders;
     this.directUpdatesToLeadersOnly = directUpdatesToLeadersOnly;
   }
