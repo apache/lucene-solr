@@ -178,20 +178,20 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
 
   private int getStatusCode(String token, final String user, final String op, HttpSolrClient client)
   throws Exception {
-    SolrClient delegationTokenServer = random().nextBoolean() ?
-        new HttpSolrClient.Builder(client.getBaseURL().toString())
-            .withKerberosDelegationToken(token)
+    SolrClient delegationTokenClient;
+    if (random().nextBoolean()) delegationTokenClient = new HttpSolrClient.Builder(client.getBaseURL().toString())
+        .withKerberosDelegationToken(token)
+        .withResponseParser(client.getParser())
+        .build();
+    else delegationTokenClient = new CloudSolrClient.Builder()
+        .withZkHost((miniCluster.getZkServer().getZkAddress()))
+        .withLBHttpSolrClientBuilder(new LBHttpSolrClient.Builder()
             .withResponseParser(client.getParser())
-            .build() :
-        new CloudSolrClient.Builder()
-            .withZkHost((miniCluster.getZkServer().getZkAddress()))
-            .withBuilder(new LBHttpSolrClient.Builder()
-                .withResponseParser(client.getParser())
-                .withHttpSolrClientBuilder(
-                    new HttpSolrClient.Builder()
-                        .withKerberosDelegationToken(token)
-                ))
-            .build();
+            .withHttpSolrClientBuilder(
+                new HttpSolrClient.Builder()
+                    .withKerberosDelegationToken(token)
+            ))
+        .build();
     try {
       ModifiableSolrParams p = new ModifiableSolrParams();
       if (user != null) p.set(USER_PARAM, user);
@@ -204,13 +204,13 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
         req.setQueryParams(queryParams);
       }
       try {
-        delegationTokenServer.request(req, null);
+        delegationTokenClient.request(req, null);
         return HttpStatus.SC_OK;
       } catch (HttpSolrClient.RemoteSolrException re) {
         return re.code();
       }
     } finally {
-      delegationTokenServer.close();
+      delegationTokenClient.close();
     }
   }
 

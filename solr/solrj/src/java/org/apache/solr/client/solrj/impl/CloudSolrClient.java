@@ -341,7 +341,7 @@ public class CloudSolrClient extends SolrClient {
    *          the {@link HttpClient} instance to be used for all requests. The provided httpClient should use a
    *          multi-threaded connection manager.  If null, a default HttpClient will be used.
    * @param lbSolrClient
-   *          LBHttpSolrServer instance for requests.  If null, a default HttpClient will be used.
+   *          LBHttpSolrClient instance for requests.  If null, a default LBHttpSolrClient will be used.
    * @param updatesToLeaders
    *          If true, sends updates to shard leaders.
    *
@@ -350,7 +350,7 @@ public class CloudSolrClient extends SolrClient {
    */
   @Deprecated
   public CloudSolrClient(Collection<String> zkHosts, String chroot, HttpClient httpClient, LBHttpSolrClient lbSolrClient, boolean updatesToLeaders) {
-    this(zkHosts, chroot, httpClient, lbSolrClient, updatesToLeaders, false,null);
+    this(zkHosts, chroot, httpClient, lbSolrClient, null, updatesToLeaders, false);
   }
 
   /**
@@ -371,7 +371,9 @@ public class CloudSolrClient extends SolrClient {
    *          the {@link HttpClient} instance to be used for all requests. The provided httpClient should use a
    *          multi-threaded connection manager.  If null, a default HttpClient will be used.
    * @param lbSolrClient
-   *          LBHttpSolrServer instance for requests.  If null, a default HttpClient will be used.
+   *          LBHttpSolrClient instance for requests.  If null, a default LBHttpSolrClient will be used.
+   * @param lbHttpSolrClientBuilder
+   *          LBHttpSolrClient builder to construct the LBHttpSolrClient. If null, a default builder will be used.
    * @param updatesToLeaders
    *          If true, sends updates to shard leaders.
    * @param directUpdatesToLeadersOnly
@@ -381,24 +383,19 @@ public class CloudSolrClient extends SolrClient {
                           String chroot,
                           HttpClient httpClient,
                           LBHttpSolrClient lbSolrClient,
+                          LBHttpSolrClient.Builder lbHttpSolrClientBuilder,
                           boolean updatesToLeaders,
-                          boolean directUpdatesToLeadersOnly,
-                          LBHttpSolrClient.Builder builder) {
+                          boolean directUpdatesToLeadersOnly) {
+    this.clientIsInternal = httpClient == null;
+    this.shutdownLBHttpSolrServer = lbSolrClient == null;
+    if(lbHttpSolrClientBuilder != null) lbSolrClient = lbHttpSolrClientBuilder.build();
+    if(lbSolrClient != null) httpClient = lbSolrClient.getHttpClient();
+    this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
+    if (lbSolrClient == null) lbSolrClient = createLBHttpSolrClient(myClient);
+    this.lbClient = lbSolrClient;
     this.zkHost = buildZkHostString(zkHosts, chroot);
     this.updatesToLeaders = updatesToLeaders;
     this.directUpdatesToLeadersOnly = directUpdatesToLeadersOnly;
-
-    if(builder !=null){
-      this.clientIsInternal = false;
-      this.lbClient = builder.build();
-      this.shutdownLBHttpSolrServer = true;
-    } else {
-      this.clientIsInternal = httpClient == null;
-      this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
-
-      this.shutdownLBHttpSolrServer = lbSolrClient == null;
-      this.lbClient = lbSolrClient == null ? createLBHttpSolrClient(myClient) : lbSolrClient;
-    }
   }
   
   /**
@@ -486,7 +483,7 @@ public class CloudSolrClient extends SolrClient {
   public ResponseParser getParser() {
     return lbClient.getParser();
   }
-  
+
   /**
    * Note: This setter method is <b>not thread-safe</b>.
    * 
@@ -1582,8 +1579,8 @@ public class CloudSolrClient extends SolrClient {
     /**
      * Provides a {@link HttpClient} for the builder to use when creating clients.
      */
-    public Builder withBuilder(LBHttpSolrClient.Builder builder) {
-      this.lbClientBuilder = builder;
+    public Builder withLBHttpSolrClientBuilder(LBHttpSolrClient.Builder lbHttpSolrClientBuilder) {
+      this.lbClientBuilder = lbHttpSolrClientBuilder;
       return this;
     }
 
@@ -1596,7 +1593,6 @@ public class CloudSolrClient extends SolrClient {
     }
 
 
-    
     /**
      * Provide a series of ZooKeeper client endpoints for the builder to use when creating clients.
      * 
@@ -1666,8 +1662,8 @@ public class CloudSolrClient extends SolrClient {
      * Create a {@link CloudSolrClient} based on the provided configuration.
      */
     public CloudSolrClient build() {
-      return new CloudSolrClient(zkHosts, zkChroot, httpClient, loadBalancedSolrClient,
-          shardLeadersOnly, directUpdatesToLeadersOnly, lbClientBuilder);
+      return new CloudSolrClient(zkHosts, zkChroot, httpClient, loadBalancedSolrClient, lbClientBuilder,
+          shardLeadersOnly, directUpdatesToLeadersOnly);
     }
   }
 }

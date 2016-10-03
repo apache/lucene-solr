@@ -227,7 +227,7 @@ public class LBHttpSolrClient extends SolrClient {
    */
   @Deprecated
   public LBHttpSolrClient(String... solrServerUrls) throws MalformedURLException {
-    this((HttpClient) null, solrServerUrls);
+    this(null, solrServerUrls);
   }
   
   /**
@@ -239,13 +239,22 @@ public class LBHttpSolrClient extends SolrClient {
     this(httpClient, new BinaryResponseParser(), solrServerUrl);
   }
 
-  public LBHttpSolrClient(HttpSolrClient.Builder httpSolrClientBuilder, String... solrServerUrl) {
-    clientIsInternal = false;
+  /**
+   * The provided httpClient should use a multi-threaded connection manager
+   * @deprecated use {@link Builder} instead.  This will soon be a protected
+   * method and will only be available for use in implementing subclasses.
+   */
+  public LBHttpSolrClient(HttpSolrClient.Builder httpSolrClientBuilder,
+                          HttpClient httpClient, String... solrServerUrl) {
+    clientIsInternal = httpClient == null;
     this.httpSolrClientBuilder = httpSolrClientBuilder;
-    this.httpClient = null;
-    for (String s : solrServerUrl) {
-      ServerWrapper wrapper = new ServerWrapper(makeSolrClient(s));
-      aliveServers.put(wrapper.getKey(), wrapper);
+    httpClient = constructClient(null);
+    this.httpClient = httpClient;
+    if (solrServerUrl != null) {
+      for (String s : solrServerUrl) {
+        ServerWrapper wrapper = new ServerWrapper(makeSolrClient(s));
+        aliveServers.put(wrapper.getKey(), wrapper);
+      }
     }
     updateAliveList();
   }
@@ -258,19 +267,7 @@ public class LBHttpSolrClient extends SolrClient {
   @Deprecated
   public LBHttpSolrClient(HttpClient httpClient, ResponseParser parser, String... solrServerUrl) {
     clientIsInternal = (httpClient == null);
-    if (httpClient == null) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      if (solrServerUrl.length > 1) {
-        // we prefer retrying another server
-        params.set(HttpClientUtil.PROP_USE_RETRY, false);
-      } else {
-        params.set(HttpClientUtil.PROP_USE_RETRY, true);
-      }
-      this.httpClient = HttpClientUtil.createClient(params);
-    } else {
-      this.httpClient = httpClient;
-    }
-    
+    this.httpClient = httpClient == null ? constructClient(solrServerUrl) : httpClient;
     this.parser = parser;
     
     for (String s : solrServerUrl) {
@@ -279,7 +276,18 @@ public class LBHttpSolrClient extends SolrClient {
     }
     updateAliveList();
   }
-  
+
+  private HttpClient constructClient(String[] solrServerUrl) {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    if (solrServerUrl != null && solrServerUrl.length > 1) {
+      // we prefer retrying another server
+      params.set(HttpClientUtil.PROP_USE_RETRY, false);
+    } else {
+      params.set(HttpClientUtil.PROP_USE_RETRY, true);
+    }
+    return HttpClientUtil.createClient(params);
+  }
+
   public Set<String> getQueryParams() {
     return queryParams;
   }
@@ -307,6 +315,7 @@ public class LBHttpSolrClient extends SolrClient {
       synchronized (this) {
         client = httpSolrClientBuilder
             .withBaseSolrUrl(server)
+            .withHttpClient(httpClient)
             .build();
       }
     } else {
@@ -784,7 +793,11 @@ public class LBHttpSolrClient extends SolrClient {
       this.baseSolrUrls = new ArrayList<>();
       this.responseParser = new BinaryResponseParser();
     }
-    
+
+    public HttpSolrClient.Builder getHttpSolrClientBuilder() {
+      return httpSolrClientBuilder;
+    }
+
     /**
      * Provide a Solr endpoint to be used when configuring {@link LBHttpSolrClient} instances.
      * 
@@ -839,7 +852,7 @@ public class LBHttpSolrClient extends SolrClient {
       final String[] baseUrlArray = new String[baseSolrUrls.size()];
       String[] solrServerUrls = baseSolrUrls.toArray(baseUrlArray);
       return httpSolrClientBuilder != null ?
-          new LBHttpSolrClient(httpSolrClientBuilder, solrServerUrls) :
+          new LBHttpSolrClient(httpSolrClientBuilder, httpClient, solrServerUrls) :
           new LBHttpSolrClient(httpClient, responseParser, solrServerUrls);
     }
   }
