@@ -115,6 +115,7 @@ New Features
 * SOLR-9205: Added method LukeResponse.getSchemaFlags() which returns field
   information as an EnumSet (Fengtan, Alan Woodward)
 
+* SOLR-9520: Kerberos delegation support in SolrJ (Ishan Chattopadhyaya, noble)
 
 Bug Fixes
 ----------------------
