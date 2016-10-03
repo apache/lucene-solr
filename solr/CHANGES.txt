@@ -236,7 +236,7 @@ Other Changes
 
 * SOLR-9588: Remove Guava dependency from SolrJ (Ishan Chattopadhyaya, noble)
 
-* SOLR-8140: Remove mentions of unimplemented admin-extra from the new Admin UI
+* SOLR-8140: Remove mentions of unimplemented admin-extra from the new Admin UI (Alexandre Rafalovitch)
 
 ==================  6.2.1 ==================
 
