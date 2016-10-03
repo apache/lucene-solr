@@ -1157,14 +1157,14 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   private static Codec getCodec() {
-    if (Codec.getDefault().getName().equals("Lucene62")) {
+    if (Codec.getDefault().getName().equals("Lucene70")) {
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 16, 2048);
       double maxMBSortInHeap = 5.0 + (3*random().nextDouble());
       if (VERBOSE) {
         System.out.println("TEST: using Lucene60PointsFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
       }
 
-      return new FilterCodec("Lucene62", Codec.getDefault()) {
+      return new FilterCodec("Lucene70", Codec.getDefault()) {
         @Override
         public PointsFormat pointsFormat() {
           return new PointsFormat() {

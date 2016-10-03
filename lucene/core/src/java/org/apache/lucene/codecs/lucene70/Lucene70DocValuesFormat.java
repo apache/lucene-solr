@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene54;
+package org.apache.lucene.codecs.lucene70;
 
 
 import java.io.IOException;
@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -30,7 +29,7 @@ import org.apache.lucene.util.SmallFloat;
 import org.apache.lucene.util.packed.DirectWriter;
 
 /**
- * Lucene 5.4 DocValues format.
+ * Lucene 7.0 DocValues format.
  * <p>
  * Encodes the five per-document value types (Numeric,Binary,Sorted,SortedSet,SortedNumeric) with these strategies:
  * <p>
@@ -96,24 +95,22 @@ import org.apache.lucene.util.packed.DirectWriter;
  *   <li><tt>.dvm</tt>: DocValues metadata</li>
  * </ol>
  * @lucene.experimental
- * @deprecated Use {@link Lucene70DocValuesFormat}.
  */
-@Deprecated
-public final class Lucene54DocValuesFormat extends DocValuesFormat {
+public final class Lucene70DocValuesFormat extends DocValuesFormat {
 
   /** Sole Constructor */
-  public Lucene54DocValuesFormat() {
-    super("Lucene54");
+  public Lucene70DocValuesFormat() {
+    super("Lucene70");
   }
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene54DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new Lucene70DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
 
   @Override
   public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new Lucene54DocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new Lucene70DocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
   
   static final String DATA_CODEC = "Lucene54DocValuesData";
