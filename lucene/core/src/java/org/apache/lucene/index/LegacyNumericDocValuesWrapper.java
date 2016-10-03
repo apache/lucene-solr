@@ -30,6 +30,7 @@ public final class LegacyNumericDocValuesWrapper extends NumericDocValues {
   private final LegacyNumericDocValues values;
   private final int maxDoc;
   private int docID = -1;
+  private long value;
   
   public LegacyNumericDocValuesWrapper(Bits docsWithField, LegacyNumericDocValues values) {
     this.docsWithField = docsWithField;
@@ -51,7 +52,8 @@ public final class LegacyNumericDocValuesWrapper extends NumericDocValues {
   public int nextDoc() {
     docID++;
     while (docID < maxDoc) {
-      if (docsWithField.get(docID)) {
+      value = values.get(docID);
+      if (value != 0 || docsWithField.get(docID)) {
         return docID;
       }
       docID++;
@@ -82,7 +84,7 @@ public final class LegacyNumericDocValuesWrapper extends NumericDocValues {
 
   @Override
   public long longValue() {
-    return values.get(docID);
+    return value;
   }
 
   @Override

@@ -31,8 +31,8 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.codecs.lucene54.Lucene54DocValuesProducer.SparseBits;
-import org.apache.lucene.codecs.lucene54.Lucene54DocValuesProducer.SparseLongValues;
+import org.apache.lucene.codecs.lucene54.Lucene54DocValuesProducer.SparseNumericDocValues;
+import org.apache.lucene.codecs.lucene54.Lucene54DocValuesProducer.SparseNumericDocValuesRandomAccessWrapper;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -61,6 +61,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMFile;
@@ -427,13 +428,13 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
 
-  public void testSparseLongValues() {
+  public void testSparseLongValues() throws IOException {
     final int iters = atLeast(5);
     for (int iter = 0; iter < iters; ++iter) {
       final int numDocs = TestUtil.nextInt(random(), 0, 100);
-      final long[] docIds = new long[numDocs];
+      final int[] docIds = new int[numDocs];
       final long[] values = new long[numDocs];
-      final long maxDoc;
+      final int maxDoc;
       if (numDocs == 0) {
         maxDoc = 1 + random().nextInt(10);
       } else {
@@ -459,35 +460,51 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
           return values[Math.toIntExact(index)];
         }
       };
-      final SparseBits liveBits = new SparseBits(maxDoc, numDocs, docIdsValues);
-      // random-access
-      for (int i = 0; i < 2000; ++i) {
-        final long docId = TestUtil.nextLong(random(), 0, maxDoc - 1);
-        final boolean exists = liveBits.get(Math.toIntExact(docId));
-        assertEquals(Arrays.binarySearch(docIds, docId) >= 0, exists);
-      }
+      final SparseNumericDocValues sparseValues = new SparseNumericDocValues(numDocs, docIdsValues, valuesValues);
+
       // sequential access
-      for (int docId = 0; docId < maxDoc; docId += random().nextInt(3)) {
-        final boolean exists = liveBits.get(Math.toIntExact(docId));
-        assertEquals(Arrays.binarySearch(docIds, docId) >= 0, exists);
+      assertEquals(-1, sparseValues.docID());
+      for (int i = 0; i < docIds.length; ++i) {
+        assertEquals(docIds[i], sparseValues.nextDoc());
+      }
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, sparseValues.nextDoc());
+
+      // advance
+      for (int i = 0; i < 2000; ++i) {
+        final int target = TestUtil.nextInt(random(), 0, (int) maxDoc);
+        int index = Arrays.binarySearch(docIds, target);
+        if (index < 0) {
+          index = -1 - index;
+        }
+        sparseValues.reset();
+        if (index > 0) {
+          assertEquals(docIds[index - 1], sparseValues.advance(Math.toIntExact(docIds[index - 1])));
+        }
+        if (index == docIds.length) {
+          assertEquals(DocIdSetIterator.NO_MORE_DOCS, sparseValues.advance(target));
+        } else {
+          assertEquals(docIds[index], sparseValues.advance(target));
+        }
       }
 
-      final SparseLongValues sparseValues = new SparseLongValues(liveBits, valuesValues, missingValue);
+      final SparseNumericDocValuesRandomAccessWrapper raWrapper = new SparseNumericDocValuesRandomAccessWrapper(sparseValues, missingValue);
+
       // random-access
       for (int i = 0; i < 2000; ++i) {
-        final long docId = TestUtil.nextLong(random(), 0, maxDoc - 1);
+        final int docId = TestUtil.nextInt(random(), 0, maxDoc - 1);
         final int idx = Arrays.binarySearch(docIds, docId);
-        final long value = sparseValues.get(docId);
+        final long value = raWrapper.get(docId);
         if (idx >= 0) {
           assertEquals(values[idx], value);
         } else {
           assertEquals(missingValue, value);
         }
       }
+
       // sequential access
       for (int docId = 0; docId < maxDoc; docId += random().nextInt(3)) {
         final int idx = Arrays.binarySearch(docIds, docId);
-        final long value = sparseValues.get(docId);
+        final long value = raWrapper.get(docId);
         if (idx >= 0) {
           assertEquals(values[idx], value);
         } else {

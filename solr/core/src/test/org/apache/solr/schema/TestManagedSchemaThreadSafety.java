@@ -96,6 +96,8 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
   @AfterClass
   public static void stopZkServer() throws Exception {
     zkServer.shutdown();
+    zkServer = null;
+    loaderPath = null;
   }
 
   @Test
