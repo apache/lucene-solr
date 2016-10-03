@@ -44,7 +44,6 @@
     <dependency org="com.fasterxml.jackson.core" name="jackson-annotations"  rev="${/com.fasterxml.jackson.core/jackson-annotations}"   conf="compile"/>
     <dependency org="com.fasterxml.jackson.core" name="jackson-core" rev="${/com.fasterxml.jackson.core/jackson-core}" conf="compile"/>
     <dependency org="com.fasterxml.jackson.core" name="jackson-databind" rev="${/com.fasterxml.jackson.core/jackson-databind}" conf="compile"/>
-    <dependency org="com.google.guava" name="guava" rev="${/com.google.guava/guava}" conf="compile"/>
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>
 </ivy-module>

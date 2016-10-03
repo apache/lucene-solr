@@ -234,6 +234,8 @@ Other Changes
 
 * SOLR-5041: Add a test to make sure that a leader always recovers from log on startup. (Cao Manh Dat, shalin)
 
+* SOLR-9588: Remove Guava dependency from SolrJ (Ishan Chattopadhyaya, noble)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
