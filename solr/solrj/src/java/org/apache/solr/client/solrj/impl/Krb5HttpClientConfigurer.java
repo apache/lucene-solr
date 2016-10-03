@@ -27,7 +27,6 @@ import java.util.Set;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpException;
@@ -59,8 +58,8 @@ public class Krb5HttpClientConfigurer extends HttpClientConfigurer {
   /**
    * The jaasConfig is static, which makes it problematic for testing in the same jvm.
    * Call this function to regenerate the static config (this is not thread safe).
+   * Note: only used for tests
    */
-  @VisibleForTesting
   public static void regenerateJaasConfiguration() {
     jaasConfig = new SolrJaasConfiguration();
   }
