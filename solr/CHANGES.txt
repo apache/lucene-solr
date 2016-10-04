@@ -243,6 +243,9 @@ Other Changes
 
 * SOLR-8140: Remove mentions of unimplemented admin-extra from the new Admin UI (Alexandre Rafalovitch)
 
+* SOLR-9589: Remove jackson dependency from SolrJ (Ishan Chattopadhyaya, noble)
+
+
 ==================  6.2.1 ==================
 
 Bug Fixes
