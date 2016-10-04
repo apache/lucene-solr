@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.perfield;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -32,6 +33,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -127,6 +129,32 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     @Override
     public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
       getInstance(field).addSortedSetField(field, values, docToOrdCount, ords);
+    }
+
+    @Override
+    public void merge(MergeState mergeState) throws IOException {
+      Map<DocValuesConsumer, Collection<String>> consumersToField = new IdentityHashMap<>();
+
+      // Group each consumer by the fields it handles
+      for (FieldInfo fi : mergeState.mergeFieldInfos) {
+        DocValuesConsumer consumer = getInstance(fi);
+        Collection<String> fieldsForConsumer = consumersToField.get(consumer);
+        if (fieldsForConsumer == null) {
+          fieldsForConsumer = new ArrayList<>();
+          consumersToField.put(consumer, fieldsForConsumer);
+        }
+        fieldsForConsumer.add(fi.name);
+      }
+
+      // Delegate the merge to the appropriate consumer
+      PerFieldMergeState pfMergeState = new PerFieldMergeState(mergeState);
+      try {
+        for (Map.Entry<DocValuesConsumer, Collection<String>> e : consumersToField.entrySet()) {
+          e.getKey().merge(pfMergeState.apply(e.getValue()));
+        }
+      } finally {
+        pfMergeState.reset();
+      }
     }
 
     private DocValuesConsumer getInstance(FieldInfo field) throws IOException {
