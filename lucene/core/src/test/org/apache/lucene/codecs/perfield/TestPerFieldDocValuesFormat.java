@@ -204,28 +204,28 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
       final DocValuesConsumer consumer = delegate.fieldsConsumer(state);
       return new DocValuesConsumer() {
         @Override
-        public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+        public void addNumericField(FieldInfo field, DocValuesProducer values) throws IOException {
           consumer.addNumericField(field, values);
         }
 
         @Override
-        public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+        public void addBinaryField(FieldInfo field, DocValuesProducer values) throws IOException {
           consumer.addBinaryField(field, values);
         }
 
         @Override
-        public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
-          consumer.addSortedField(field, values, docToOrd);
+        public void addSortedField(FieldInfo field, DocValuesProducer values) throws IOException {
+          consumer.addSortedField(field, values);
         }
 
         @Override
-        public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
-          consumer.addSortedNumericField(field, docToValueCount, values);
+        public void addSortedNumericField(FieldInfo field, DocValuesProducer values) throws IOException {
+          consumer.addSortedNumericField(field, values);
         }
 
         @Override
-        public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
-          consumer.addSortedSetField(field, values, docToOrdCount, ords);
+        public void addSortedSetField(FieldInfo field, DocValuesProducer values) throws IOException {
+          consumer.addSortedSetField(field, values);
         }
 
         @Override
