@@ -31,6 +31,9 @@ Bug Fixes
   were restored in their original packages: LowercaseFilter and StopFilter,
   as well as several utility classes.  (Uwe Schindler, Mike McCandless)
 
+* LUCENE-7472: MultiFieldQueryParser.getFieldQuery() drops queries that are
+  neither BooleanQuery nor TermQuery.  (Steve Rowe)
+
 ======================= Lucene 6.2.0 =======================
 
 API Changes
