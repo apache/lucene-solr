@@ -152,6 +152,10 @@ Bug Fixes
 * SOLR-9556: OverseerAutoFailoverReplicaThread was not exiting on interrupt
   (Alan Woodward)
 
+* SOLR-9563: Collection creation could fail if an ADDREPLICA subrequest arrived
+  at a node before its local state had updated with the new collection data
+  (Alan Woodward)
+
 Optimizations
 ----------------------
 
