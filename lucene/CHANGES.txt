@@ -49,6 +49,9 @@ Bug Fixes
 * LUCENE-7472: MultiFieldQueryParser.getFieldQuery() drops queries that are
   neither BooleanQuery nor TermQuery.  (Steve Rowe)
 
+* LUCENE-7456: PerFieldPostings/DocValues was failing to delegate the
+  merge method (Julien MASSENET via Mike McCandless)
+
 Improvements
 
 * LUCENE-7439: FuzzyQuery now matches all terms within the specified
