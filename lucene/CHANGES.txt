@@ -46,6 +46,9 @@ New Features
 
 Bug Fixes
 
+* LUCENE-7472: MultiFieldQueryParser.getFieldQuery() drops queries that are
+  neither BooleanQuery nor TermQuery.  (Steve Rowe)
+
 Improvements
 
 * LUCENE-7439: FuzzyQuery now matches all terms within the specified
