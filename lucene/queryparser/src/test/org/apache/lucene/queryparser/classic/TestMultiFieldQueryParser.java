@@ -348,10 +348,10 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     Query q = parser.parse("dogs");
     assertEquals("Synonym(b:dog b:dogs) Synonym(t:dog t:dogs)", q.toString());
     q = parser.parse("guinea pig");
-    assertFalse(parser.getSplitOnWhitespace());
-    assertEquals("(Synonym(b:cavy b:guinea) Synonym(t:cavy t:guinea)) (b:pig t:pig)", q.toString());
-    parser.setSplitOnWhitespace(true);
-    q = parser.parse("guinea pig");
+    assertTrue(parser.getSplitOnWhitespace());
     assertEquals("(b:guinea t:guinea) (b:pig t:pig)", q.toString());
+    parser.setSplitOnWhitespace(false);
+    q = parser.parse("guinea pig");
+    assertEquals("(Synonym(b:cavy b:guinea) Synonym(t:cavy t:guinea)) (b:pig t:pig)", q.toString());
   }
 }
