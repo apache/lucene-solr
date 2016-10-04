@@ -155,6 +155,15 @@ class ConnectionImpl implements Connection {
 
   }
 
+  /*
+   * When using OpenLink ODBC-JDBC bridge on Windows, it runs the method ConnectionImpl.setReadOnly(String ...).
+   * The spec says that setReadOnly(boolean ...) is required. This causes the ODBC-JDBC bridge to fail on Windows.
+   * OpenLink case: http://support.openlinksw.com/support/techupdate.vsp?c=21881
+   */
+  public void setReadOnly(String readOnly) throws SQLException {
+
+  }
+
   @Override
   public boolean isReadOnly() throws SQLException {
     return true;

@@ -183,6 +183,8 @@ Other Changes
 * SOLR-8332: Factor HttpShardHandler[Factory]'s url shuffling out into a ReplicaListTransformer class.
   (Christine Poerschke, Noble Paul)
 
+* SOLR-9597: Add setReadOnly(String ...) to ConnectionImpl (Kevin Risden)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
