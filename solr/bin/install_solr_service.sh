@@ -59,31 +59,33 @@ print_error() {
   exit 1
 }
 
-proc_version=`cat /etc/*-release 2>/dev/null`
-if [[ $? -gt 0 ]]; then
-  if [ -f "/proc/version" ]; then
-    proc_version=`cat /proc/version`
-  else
-    proc_version=`uname -a`
-  fi
-fi
-
-if [[ $proc_version == *"Debian"* ]]; then
-  distro=Debian
-elif [[ $proc_version == *"Red Hat"* ]]; then
-  distro=RedHat
-elif [[ $proc_version == *"CentOS"* ]]; then
-  distro=CentOS
-elif [[ $proc_version == *"Ubuntu"* ]]; then
-  distro=Ubuntu
-elif [[ $proc_version == *"SUSE"* ]]; then
-  distro=SUSE
-elif [[ $proc_version == *"Darwin"* ]]; then
-  echo "Sorry, this script does not support macOS. You'll need to setup Solr as a service manually using the documentation provided in the Solr Reference Guide."
-  echo "You could also try installing via Homebrew (http://brew.sh/), e.g. brew install solr"
-  exit 1
-else
-  echo -e "\nERROR: Your Linux distribution ($proc_version) not supported by this script!\nYou'll need to setup Solr as a service manually using the documentation provided in the Solr Reference Guide.\n" 1>&2
+# Locate *NIX distribution by looking for match from various detection strategies
+# We start with /etc/os-release, as this will also work for Docker containers
+for command in "grep -E \"^NAME=\" /etc/os-release" \
+               "lsb_release -i" \
+               "cat /proc/version" \
+               "uname -a" ; do
+    distro_string=$(eval $command 2>/dev/null)
+    unset distro
+    if [[ ${distro_string,,} == *"debian"* ]]; then
+      distro=Debian
+    elif [[ ${distro_string,,} == *"red hat"* ]]; then
+      distro=RedHat
+    elif [[ ${distro_string,,} == *"centos"* ]]; then
+      distro=CentOS
+    elif [[ ${distro_string,,} == *"ubuntu"* ]]; then
+      distro=Ubuntu
+    elif [[ ${distro_string,,} == *"suse"* ]]; then
+      distro=SUSE
+    elif [[ ${distro_string,,} == *"darwin"* ]]; then
+      echo "Sorry, this script does not support macOS. You'll need to setup Solr as a service manually using the documentation provided in the Solr Reference Guide."
+      echo "You could also try installing via Homebrew (http://brew.sh/), e.g. brew install solr"
+      exit 1
+    fi
+    if [[ $distro ]] ; then break ; fi
+done
+if [[ ! $distro ]] ; then
+  echo -e "\nERROR: Unable to auto-detect your *NIX distribution!\nYou'll need to setup Solr as a service manually using the documentation provided in the Solr Reference Guide.\n" 1>&2
   exit 1
 fi
 

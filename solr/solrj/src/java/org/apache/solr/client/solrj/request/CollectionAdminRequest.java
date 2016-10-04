@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -319,6 +320,31 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     return new Create(collection, config, numShards, numReplicas);
   }
 
+  /**
+   * Returns a SolrRequest for creating a collection using a default configSet
+   *
+   * This requires that there is either a single configset configured in the cluster, or
+   * that there is a configset with the same name as the collection
+   *
+   * @param collection  the collection name
+   * @param numShards   the number of shards in the collection
+   * @param numReplicas the replication factor of the collection
+   */
+  public static Create createCollection(String collection, int numShards, int numReplicas) {
+    return new Create(collection, numShards, numReplicas);
+  }
+
+  /**
+   * Returns a SolrRequest for creating a collection with the implicit router
+   * @param collection  the collection name
+   * @param config      the collection config
+   * @param shards      a shard definition string
+   * @param numReplicas the replication factor of the collection
+   */
+  public static Create createCollectionWithImplicitRouter(String collection, String config, String shards, int numReplicas) {
+    return new Create(collection, config, shards, numReplicas);
+  }
+
   // CREATE request
   public static class Create extends AsyncCollectionSpecificAdminRequest {
 
@@ -349,6 +375,20 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.configName = config;
       this.numShards = numShards;
       this.replicationFactor = numReplicas;
+    }
+
+    private Create(String collection, int numShards, int numReplicas) {
+      super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
+      this.numShards = numShards;
+      this.replicationFactor = numReplicas;
+    }
+
+    private Create(String collection, String config, String shards, int numReplicas) {
+      super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
+      this.configName = config;
+      this.replicationFactor = numReplicas;
+      this.shards = shards;
+      this.routerName = ImplicitDocRouter.NAME;
     }
 
     @Deprecated
@@ -424,16 +464,20 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
 
-      params.set("collection.configName", configName);
-      params.set("createNodeSet", createNodeSet);
+      if (configName != null)
+        params.set("collection.configName", configName);
+      if (createNodeSet != null)
+        params.set("createNodeSet", createNodeSet);
       if (numShards != null) {
         params.set( ZkStateReader.NUM_SHARDS_PROP, numShards);
       }
       if (maxShardsPerNode != null) {
         params.set( "maxShardsPerNode", maxShardsPerNode);
       }
-      params.set( "router.name", routerName);
-      params.set("shards", shards);
+      if (routerName != null)
+        params.set( "router.name", routerName);
+      if (shards != null)
+        params.set("shards", shards);
       if (routerField != null) {
         params.set("router.field", routerField);
       }
