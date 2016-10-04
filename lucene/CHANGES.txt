@@ -44,6 +44,12 @@ API Changes
 
 New Features
 
+* LUCENE-7438: New "UnifiedHighlighter" derivative of the PostingsHighlighter that
+  can consume offsets from postings, term vectors, or analysis.  It can highlight phrases
+  as accurately as the standard Highlighter. Light term vectors can be used with offsets
+  in postings for fast wildcard (MultiTermQuery) highlighting.
+  (David Smiley, Timothy Rodriguez)
+
 Bug Fixes
 
 * LUCENE-7472: MultiFieldQueryParser.getFieldQuery() drops queries that are
