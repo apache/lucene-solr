@@ -16,14 +16,6 @@
  */
 package org.apache.solr.client.solrj;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.OutputStreamWriter;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -39,6 +31,14 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.OutputStreamWriter;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
 
 public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
@@ -80,7 +80,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     HttpPost post = new HttpPost(client.getBaseURL() + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
     post.setEntity(new InputStreamEntity(new ByteArrayInputStream(json.getBytes("UTF-8")), -1));
-    HttpResponse response = httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext(null));
+    HttpResponse response = httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext());
     Utils.consumeFully(response.getEntity());
     assertEquals(200, response.getStatusLine().getStatusCode());
     client.commit();

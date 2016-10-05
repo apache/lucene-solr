@@ -198,12 +198,7 @@ public class HttpClientUtil {
    *          configuration (no additional configuration) is created. 
    */
   public static CloseableHttpClient createClient(SolrParams params) {
-    return createClient(params, createPoolingConnectionManager());
-  }
-
-  /** test usage subject to change @lucene.experimental */ 
-  static PoolingHttpClientConnectionManager createPoolingConnectionManager() {
-    return new PoolingHttpClientConnectionManager(schemaRegistryProvider.getSchemaRegistry());
+    return createClient(params, new PoolingHttpClientConnectionManager(schemaRegistryProvider.getSchemaRegistry()));
   }
   
   public static CloseableHttpClient createClient(SolrParams params, PoolingHttpClientConnectionManager cm) {
@@ -401,25 +396,10 @@ public class HttpClientUtil {
   }
 
   /**
-   * @deprecated Use {@link #createNewHttpClientRequestContext(Object)}
+   * 
    */
-  @Deprecated
   public static HttpClientContext createNewHttpClientRequestContext() {
-    return httpClientRequestContextBuilder.createContext(null);
-  }
-
-  /**
-   * Create a HttpClientContext object
-   *
-   * If the client is going to be re-used, then you should pass in an object that
-   * can be used by internal connection pools as a cache key.  This is particularly
-   * important if client authentication is enabled, as SSL connections will not
-   * be re-used if no cache key is provided.
-   *
-   * @param cacheKey an Object to be used as a cache key for pooling connections
-   */
-  public static HttpClientContext createNewHttpClientRequestContext(Object cacheKey) {
-    return httpClientRequestContextBuilder.createContext(cacheKey);
+    return httpClientRequestContextBuilder.createContext();
   }
   
   public static Builder createDefaultRequestConfigBuilder() {

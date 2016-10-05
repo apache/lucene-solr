@@ -16,9 +16,6 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import java.io.ByteArrayInputStream;
-import java.util.Map;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -34,6 +31,9 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
+
+import java.io.ByteArrayInputStream;
+import java.util.Map;
 
 /**
  * TODO? perhaps use:
@@ -76,7 +76,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     HttpPost post = new HttpPost(client.getBaseURL() + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
     post.setEntity(new InputStreamEntity(new ByteArrayInputStream(json.getBytes("UTF-8")), -1));
-    HttpResponse response = httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext(null));
+    HttpResponse response = httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext());
     assertEquals(200, response.getStatusLine().getStatusCode());
     client.commit();
     QueryResponse rsp = getSolrClient().query(new SolrQuery("*:*"));
