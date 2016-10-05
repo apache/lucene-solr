@@ -471,7 +471,7 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
 
       // advance
       for (int i = 0; i < 2000; ++i) {
-        final int target = TestUtil.nextInt(random(), 0, (int) maxDoc);
+        final int target = TestUtil.nextInt(random(), 0, maxDoc);
         int index = Arrays.binarySearch(docIds, target);
         if (index < 0) {
           index = -1 - index;
