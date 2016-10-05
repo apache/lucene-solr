@@ -160,6 +160,9 @@ Bug Fixes
 
 * SOLR-9278: Index replication interactions with IndexWriter can cause deadlock. (Xunlong via Mark Miller)
 
+* SOLR-9604: Pooled SSL connections were not being re-used (Alan Woodward,
+  Mikhail Khludnev, hossman)
+
 Optimizations
 ----------------------
 

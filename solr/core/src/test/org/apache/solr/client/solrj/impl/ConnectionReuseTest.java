@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj;
+package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.net.URL;
@@ -36,12 +36,10 @@ import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHttpRequest;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.TestInjection;
@@ -134,7 +132,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
 
       route = new HttpRoute(new HttpHost(url.getHost(), url.getPort(), isSSLMode() ? "https" : "http"));
 
-      mConn = cm.requestConnection(route, null);
+      mConn = cm.requestConnection(route, HttpSolrClient.cacheKey);
 
       HttpClientConnection conn2 = getConn(mConn);
 
@@ -190,7 +188,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
   }
 
   public ConnectionRequest getClientConnectionRequest(HttpClient httpClient, HttpRoute route, PoolingHttpClientConnectionManager cm) {
-    ConnectionRequest mConn = cm.requestConnection(route, null);
+    ConnectionRequest mConn = cm.requestConnection(route, HttpSolrClient.cacheKey);
     return mConn;
   }
 
