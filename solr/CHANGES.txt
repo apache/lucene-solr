@@ -156,6 +156,9 @@ Bug Fixes
   at a node before its local state had updated with the new collection data
   (Alan Woodward)
 
+* SOLR-9604: Pooled SSL connections were not being re-used (Alan Woodward,
+  Mikhail Khludnev, hossman)
+
 Optimizations
 ----------------------
 

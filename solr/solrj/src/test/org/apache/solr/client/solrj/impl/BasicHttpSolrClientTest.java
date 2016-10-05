@@ -565,7 +565,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     CloseableHttpClient httpclient = HttpClientUtil.createClient(params);
     HttpEntity entity = null;
     try {
-      HttpResponse response = httpclient.execute(get, HttpClientUtil.createNewHttpClientRequestContext());
+      HttpResponse response = httpclient.execute(get, HttpClientUtil.createNewHttpClientRequestContext(null));
       entity = response.getEntity();
       Header ceheader = entity.getContentEncoding();
       assertNotNull(Arrays.asList(response.getAllHeaders()).toString(), ceheader);

@@ -111,7 +111,7 @@ public class JettyWebappTest extends SolrTestCaseJ4
 
     HttpClient client = HttpClients.createDefault();
     HttpRequestBase m = new HttpGet(adminPath);
-    HttpResponse response = client.execute(m, HttpClientUtil.createNewHttpClientRequestContext());
+    HttpResponse response = client.execute(m, HttpClientUtil.createNewHttpClientRequestContext(null));
     assertEquals(200, response.getStatusLine().getStatusCode());
     Header header = response.getFirstHeader("X-Frame-Options");
     assertEquals("DENY", header.getValue().toUpperCase(Locale.ROOT));

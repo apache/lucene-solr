@@ -47,6 +47,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
@@ -508,7 +509,8 @@ public class HttpSolrClient extends SolrClient {
     boolean shouldClose = true;
     try {
       // Execute the method.
-      final HttpResponse response = httpClient.execute(method, HttpClientUtil.createNewHttpClientRequestContext());
+      HttpClientContext httpClientRequestContext = HttpClientUtil.createNewHttpClientRequestContext(this);
+      final HttpResponse response = httpClient.execute(method, httpClientRequestContext);
       int httpStatus = response.getStatusLine().getStatusCode();
       
       // Read the contents
