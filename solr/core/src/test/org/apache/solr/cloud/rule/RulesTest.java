@@ -80,6 +80,8 @@ public class RulesTest extends SolrCloudTestCase {
     CollectionAdminRequest.createShard(rulesColl, "shard2").process(cluster.getSolrClient());
     CollectionAdminRequest.addReplicaToShard(rulesColl, "shard2").process(cluster.getSolrClient());
 
+    CollectionAdminRequest.deleteCollection(rulesColl).process(cluster.getSolrClient());
+
   }
 
   @Test
@@ -102,6 +104,8 @@ public class RulesTest extends SolrCloudTestCase {
     list = (List) rulesCollection.get("snitch");
     assertEquals(1, list.size());
     assertEquals ( "ImplicitSnitch", ((Map)list.get(0)).get("class"));
+
+    CollectionAdminRequest.deleteCollection(rulesColl).process(cluster.getSolrClient());
   }
 
   @Test
@@ -129,6 +133,8 @@ public class RulesTest extends SolrCloudTestCase {
     list = (List) rulesCollection.get("snitch");
     assertEquals(1, list.size());
     assertEquals("ImplicitSnitch", list.get(0).get("class"));
+
+    CollectionAdminRequest.deleteCollection(rulesColl).process(cluster.getSolrClient());
   }
 
 
@@ -150,6 +156,8 @@ public class RulesTest extends SolrCloudTestCase {
         .setRule("ip_2:" + ip_2, "ip_1:" + ip_1 + "9999")
         .setSnitch("class:ImplicitSnitch")
         .process(cluster.getSolrClient());
+
+    CollectionAdminRequest.deleteCollection(rulesColl).process(cluster.getSolrClient());
 
   }
 
@@ -192,5 +200,7 @@ public class RulesTest extends SolrCloudTestCase {
     list = (List) rulesCollection.get("snitch");
     assertEquals(1, list.size());
     assertEquals("ImplicitSnitch", ((Map) list.get(0)).get("class"));
+
+    CollectionAdminRequest.deleteCollection(rulesColl).process(cluster.getSolrClient());
   }
 }
