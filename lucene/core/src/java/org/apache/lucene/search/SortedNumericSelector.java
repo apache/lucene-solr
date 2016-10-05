@@ -83,14 +83,14 @@ public class SortedNumericSelector {
       case FLOAT:
         return new FilterNumericDocValues(view) {
           @Override
-          public long longValue() {
+          public long longValue() throws IOException {
             return NumericUtils.sortableFloatBits((int) in.longValue());
           }
         };
       case DOUBLE:
         return new FilterNumericDocValues(view) {
           @Override
-          public long longValue() {
+          public long longValue() throws IOException {
             return NumericUtils.sortableDoubleBits(in.longValue());
           }
         };

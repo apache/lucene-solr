@@ -406,7 +406,11 @@ public class LegacyDocValuesIterables {
             }
             Number result;
             if (docIDUpto == values.docID()) {
-              result = values.longValue();
+              try {
+                result = values.longValue();
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
+              }
             } else {
               // Unlike NumericDocValues, norms should return for missing values:
               result = 0;
@@ -501,7 +505,11 @@ public class LegacyDocValuesIterables {
             }
             Number result;
             if (docIDUpto == values.docID()) {
-              result = values.longValue();
+              try {
+                result = values.longValue();
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
+              }
             } else {
               result = null;
             }

@@ -139,7 +139,7 @@ public class MultiDocValues {
       }
 
       @Override
-      public long longValue() {
+      public long longValue() throws IOException {
         return currentValues.longValue();
       }
 
@@ -244,7 +244,7 @@ public class MultiDocValues {
       }
 
       @Override
-      public long longValue() {
+      public long longValue() throws IOException {
         return currentValues.longValue();
       }
 

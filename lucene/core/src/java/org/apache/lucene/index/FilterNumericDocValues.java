@@ -53,7 +53,7 @@ public abstract class FilterNumericDocValues extends NumericDocValues {
   }
 
   @Override
-  public long longValue() {
+  public long longValue() throws IOException {
     return in.longValue();
   }
 }

@@ -233,7 +233,7 @@ public abstract class DocValuesConsumer implements Closeable {
                           }
 
                           @Override
-                          public long longValue() {
+                          public long longValue() throws IOException {
                             return current.values.longValue();
                           }
                         };
@@ -495,7 +495,6 @@ public abstract class DocValuesConsumer implements Closeable {
     for (int sub=0;sub<numReaders;sub++) {
       SortedDocValues dv = dvs[sub];
       Bits liveDocs = mergeState.liveDocs[sub];
-      int maxDoc = mergeState.maxDocs[sub];
       if (liveDocs == null) {
         liveTerms[sub] = dv.termsEnum();
         weights[sub] = dv.getValueCount();
@@ -668,7 +667,6 @@ public abstract class DocValuesConsumer implements Closeable {
     for (int sub = 0; sub < liveTerms.length; sub++) {
       SortedSetDocValues dv = toMerge.get(sub);
       Bits liveDocs = mergeState.liveDocs[sub];
-      int maxDoc = mergeState.maxDocs[sub];
       if (liveDocs == null) {
         liveTerms[sub] = dv.termsEnum();
         weights[sub] = dv.getValueCount();

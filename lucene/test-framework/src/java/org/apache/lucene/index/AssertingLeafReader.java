@@ -440,7 +440,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public long longValue() {
+    public long longValue() throws IOException {
       assertThread("Numeric doc values", creationThread);
       assert in.docID() != -1;
       assert in.docID() != NO_MORE_DOCS;

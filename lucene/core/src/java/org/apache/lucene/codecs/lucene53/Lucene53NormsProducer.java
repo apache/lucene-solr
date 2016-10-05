@@ -27,14 +27,11 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.LegacyNumericDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.LegacyNumericDocValuesWrapper;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 
 import static org.apache.lucene.codecs.lucene53.Lucene53NormsFormat.VERSION_CURRENT;
@@ -117,13 +114,11 @@ class Lucene53NormsProducer extends NormsProducer {
   public NumericDocValues getNorms(FieldInfo field) throws IOException {
     final NormsEntry entry = norms.get(field.number);
 
-    LegacyNumericDocValues norms;
-
     if (entry.bytesPerValue == 0) {
       final long value = entry.offset;
-      norms = new LegacyNumericDocValues() {
+      return new NormsIterator(maxDoc) {
           @Override
-          public long get(int docID) {
+          public long longValue() {
             return value;
           }
         };
@@ -133,63 +128,41 @@ class Lucene53NormsProducer extends NormsProducer {
         switch (entry.bytesPerValue) {
         case 1: 
           slice = data.randomAccessSlice(entry.offset, maxDoc);
-          norms = new LegacyNumericDocValues() {
+          return new NormsIterator(maxDoc) {
             @Override
-            public long get(int docID) {
-              try {
-                return slice.readByte(docID);
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
+            public long longValue() throws IOException {
+              return slice.readByte(docID);
             }
           };
-          break;
         case 2: 
           slice = data.randomAccessSlice(entry.offset, maxDoc * 2L);
-          norms = new LegacyNumericDocValues() {
+          return new NormsIterator(maxDoc) {
             @Override
-            public long get(int docID) {
-              try {
-                return slice.readShort(((long)docID) << 1L);
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
+            public long longValue() throws IOException {
+              return slice.readShort(((long)docID) << 1L);
             }
           };
-          break;
         case 4: 
           slice = data.randomAccessSlice(entry.offset, maxDoc * 4L);
-          norms = new LegacyNumericDocValues() {
+          return new NormsIterator(maxDoc) {
             @Override
-            public long get(int docID) {
-              try {
-                return slice.readInt(((long)docID) << 2L);
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
+            public long longValue() throws IOException {
+              return slice.readInt(((long)docID) << 2L);
             }
           };
-          break;
         case 8: 
           slice = data.randomAccessSlice(entry.offset, maxDoc * 8L);
-          norms = new LegacyNumericDocValues() {
+          return new NormsIterator(maxDoc) {
             @Override
-            public long get(int docID) {
-              try {
-                return slice.readLong(((long)docID) << 3L);
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
+            public long longValue() throws IOException {
+              return slice.readLong(((long)docID) << 3L);
             }
           };
-          break;
         default:
           throw new AssertionError();
         }
       }
     }
-
-    return new LegacyNumericDocValuesWrapper(new Bits.MatchAllBits(maxDoc), norms);
   }
 
   @Override
@@ -215,5 +188,43 @@ class Lucene53NormsProducer extends NormsProducer {
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(fields=" + norms.size() + ")";
+  }
+
+  private static abstract class NormsIterator extends NumericDocValues {
+    private final int maxDoc;
+    protected int docID = -1;
+  
+    public NormsIterator(int maxDoc) {
+      this.maxDoc = maxDoc;
+    }
+
+    @Override
+    public int docID() {
+      return docID;
+    }
+
+    @Override
+    public int nextDoc() {
+      docID++;
+      if (docID == maxDoc) {
+        docID = NO_MORE_DOCS;
+      }
+      return docID;
+    }
+
+    @Override
+    public int advance(int target) {
+      docID = target;
+      if (docID >= maxDoc) {
+        docID = NO_MORE_DOCS;
+      }
+      return docID;
+    }
+
+    @Override
+    public long cost() {
+      // TODO
+      return 0;
+    }
   }
 }
