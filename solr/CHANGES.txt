@@ -177,6 +177,11 @@ Optimizations
 * SOLR-9446: Leader failure after creating a freshly replicated index can send nodes into recovery even if
   index was not changed (Pushkar Raste, noble)
 
+* SOLR-9592: retrieving docValues as stored values was sped up by using the proper leaf
+  reader rather than ask for a global view.  In extreme cases, this leads to a 100x speedup.
+  (Takahiro Ishikawa, yonik)
+
+
 Other Changes
 ----------------------
 

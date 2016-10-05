@@ -60,12 +60,12 @@ class BlockJoinFieldFacetAccumulator {
     fieldType = schemaField.getType();
     ordinalMap = null;
     if (schemaField.multiValued()) {
-      topSSDV = searcher.getLeafReader().getSortedSetDocValues(fieldName);
+      topSSDV = searcher.getSlowAtomicReader().getSortedSetDocValues(fieldName);
       if (topSSDV instanceof MultiDocValues.MultiSortedSetDocValues) {
         ordinalMap = ((MultiDocValues.MultiSortedSetDocValues) topSSDV).mapping;
       }
     } else {
-      SortedDocValues single = searcher.getLeafReader().getSortedDocValues(fieldName);
+      SortedDocValues single = searcher.getSlowAtomicReader().getSortedDocValues(fieldName);
       if (single instanceof MultiDocValues.MultiSortedDocValues) {
         ordinalMap = ((MultiDocValues.MultiSortedDocValues) single).mapping;
       }
