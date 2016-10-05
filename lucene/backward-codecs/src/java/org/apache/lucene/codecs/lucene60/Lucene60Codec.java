@@ -171,7 +171,7 @@ public class Lucene60Codec extends Codec {
   private final NormsFormat normsFormat = new Lucene53NormsFormat();
 
   @Override
-  public final NormsFormat normsFormat() {
+  public NormsFormat normsFormat() {
     return normsFormat;
   }
 }

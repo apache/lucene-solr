@@ -74,7 +74,7 @@ public class Lucene53NormsFormat extends NormsFormat {
   
   @Override
   public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene53NormsConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
+    throw new UnsupportedOperationException("This format can only be used for reading");
   }
 
   @Override
@@ -82,10 +82,10 @@ public class Lucene53NormsFormat extends NormsFormat {
     return new Lucene53NormsProducer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
   
-  private static final String DATA_CODEC = "Lucene53NormsData";
-  private static final String DATA_EXTENSION = "nvd";
-  private static final String METADATA_CODEC = "Lucene53NormsMetadata";
-  private static final String METADATA_EXTENSION = "nvm";
+  static final String DATA_CODEC = "Lucene53NormsData";
+  static final String DATA_EXTENSION = "nvd";
+  static final String METADATA_CODEC = "Lucene53NormsMetadata";
+  static final String METADATA_EXTENSION = "nvm";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 }

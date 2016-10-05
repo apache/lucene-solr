@@ -14,10 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.lucene62;
 
-/**
- * Components from the Lucene 5.0 index format
- * See {@link org.apache.lucene.codecs.lucene50} for an overview
- * of the index format.
- */
-package org.apache.lucene.codecs.lucene50;
+import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.lucene53.Lucene53RWNormsFormat;
+import org.apache.lucene.codecs.lucene62.Lucene62Codec;
+
+public class Lucene62RWCodec extends Lucene62Codec {
+
+  private final NormsFormat normsFormat = new Lucene53RWNormsFormat();
+
+  @Override
+  public NormsFormat normsFormat() {
+    return normsFormat;
+  }
+
+}

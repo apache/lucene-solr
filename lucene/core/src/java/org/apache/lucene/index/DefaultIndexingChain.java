@@ -665,8 +665,17 @@ final class DefaultIndexingChain extends DocConsumer {
     }
 
     public void finish() throws IOException {
-      if (fieldInfo.omitsNorms() == false && invertState.length != 0) {
-        norms.addValue(docState.docID, similarity.computeNorm(invertState));
+      if (fieldInfo.omitsNorms() == false) {
+        long normValue;
+        if (invertState.length == 0) {
+          // the field exists in this document, but it did not have
+          // any indexed tokens, so we assign a default value of zero
+          // to the norm
+          normValue = 0;
+        } else {
+          normValue = similarity.computeNorm(invertState);
+        }
+        norms.addValue(docState.docID, normValue);
       }
 
       termsHashPerField.finish();

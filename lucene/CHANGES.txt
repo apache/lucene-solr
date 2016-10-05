@@ -22,6 +22,9 @@ API Changes
   to iterators, enabling future codec compression improvements. (Mike
   McCandless)
 
+* LUCENE-7475: Norms now support sparsity, allowing to pay for what is
+  actually used. (Adrien Grand)
+
 Bug Fixes
 
 Improvements

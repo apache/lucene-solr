@@ -14,10 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.lucene53;
+
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene62.Lucene62RWCodec;
+import org.apache.lucene.index.BaseNormsFormatTestCase;
 
 /**
- * Components from the Lucene 5.3 index format
- * See {@link org.apache.lucene.codecs.lucene54} for an overview
- * of the index format.
+ * Tests Lucene53NormsFormat
  */
-package org.apache.lucene.codecs.lucene53;
+public class TestLucene53NormsFormat extends BaseNormsFormatTestCase {
+  private final Codec codec = new Lucene62RWCodec();
+
+  @Override
+  protected Codec getCodec() {
+    return codec;
+  }
+
+  @Override
+  protected boolean codecSupportsSparsity() {
+    return false;
+  }
+}

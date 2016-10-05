@@ -16,19 +16,16 @@
  */
 package org.apache.lucene.codecs.lucene53;
 
+import java.io.IOException;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene70.Lucene70Codec;
-import org.apache.lucene.index.BaseNormsFormatTestCase;
+import org.apache.lucene.codecs.NormsConsumer;
+import org.apache.lucene.index.SegmentWriteState;
 
-/**
- * Tests Lucene53NormsFormat
- */
-public class TestLucene53NormsFormat extends BaseNormsFormatTestCase {
-  private final Codec codec = new Lucene70Codec();
-  
+public class Lucene53RWNormsFormat extends Lucene53NormsFormat {
+
   @Override
-  protected Codec getCodec() {
-    return codec;
+  public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
+    return new Lucene53NormsConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
+
 }

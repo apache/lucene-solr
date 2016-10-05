@@ -187,7 +187,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
     };
   }
   
-  private Bits getNumericDocsWithField(FieldInfo fieldInfo) throws IOException {
+  public Bits getNumericDocsWithField(FieldInfo fieldInfo) throws IOException {
     final OneField field = fields.get(fieldInfo.name);
     final IndexInput in = data.clone();
     final BytesRefBuilder scratch = new BytesRefBuilder();

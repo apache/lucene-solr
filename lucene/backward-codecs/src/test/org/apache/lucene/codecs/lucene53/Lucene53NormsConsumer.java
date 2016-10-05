@@ -58,7 +58,7 @@ class Lucene53NormsConsumer extends NormsConsumer {
 
   @Override
   public void addNormsField(FieldInfo field, NormsProducer normsProducer) throws IOException {
-    addNormsField(field, LegacyDocValuesIterables.normsIterable(field, normsProducer, maxDoc));
+    addNormsField(field, LegacyDocValuesIterables.normsIterable(field, normsProducer, maxDoc, true));
   }
 
   private void addNormsField(FieldInfo field, Iterable<Number> values) throws IOException {

@@ -372,7 +372,8 @@ public class LegacyDocValuesIterables {
    *
    * @deprecated Consume {@link NumericDocValues} instead. */
   @Deprecated
-  public static Iterable<Number> normsIterable(final FieldInfo field, final NormsProducer normsProducer, final int maxDoc) {
+  public static Iterable<Number> normsIterable(final FieldInfo field,
+      final NormsProducer normsProducer, final int maxDoc, boolean missingAsZero) {
 
     return new Iterable<Number>() {
 
@@ -411,9 +412,11 @@ public class LegacyDocValuesIterables {
               } catch (IOException ioe) {
                 throw new RuntimeException(ioe);
               }
-            } else {
+            } else if (missingAsZero) {
               // Unlike NumericDocValues, norms should return for missing values:
               result = 0;
+            } else {
+              result = null;
             }
             return result;
           }

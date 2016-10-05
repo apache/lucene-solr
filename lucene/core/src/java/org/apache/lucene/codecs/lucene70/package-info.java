@@ -163,7 +163,7 @@
  * all documents omit position data.
  * </li>
  * <li>
- * {@link org.apache.lucene.codecs.lucene53.Lucene53NormsFormat Normalization factors}. 
+ * {@link org.apache.lucene.codecs.lucene70.Lucene70NormsFormat Normalization factors}. 
  * For each field in each document, a value is stored
  * that is multiplied into the score for hits on that field.
  * </li>
@@ -278,12 +278,12 @@
  * <td>Stores additional per-position metadata information such as character offsets and user payloads</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene53.Lucene53NormsFormat Norms}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene70.Lucene70NormsFormat Norms}</td>
  * <td>.nvd, .nvm</td>
  * <td>Encodes length and boost factors for docs and fields</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene54.Lucene54DocValuesFormat Per-Document Values}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat Per-Document Values}</td>
  * <td>.dvd, .dvm</td>
  * <td>Encodes additional scoring factors or other per-document information.</td>
  * </tr>

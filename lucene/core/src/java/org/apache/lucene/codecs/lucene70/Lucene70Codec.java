@@ -35,7 +35,6 @@ import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
-import org.apache.lucene.codecs.lucene53.Lucene53NormsFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60FieldInfosFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60PointsFormat;
 import org.apache.lucene.codecs.lucene62.Lucene62SegmentInfoFormat;
@@ -168,7 +167,7 @@ public class Lucene70Codec extends Codec {
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene50");
   private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene70");
 
-  private final NormsFormat normsFormat = new Lucene53NormsFormat();
+  private final NormsFormat normsFormat = new Lucene70NormsFormat();
 
   @Override
   public final NormsFormat normsFormat() {
