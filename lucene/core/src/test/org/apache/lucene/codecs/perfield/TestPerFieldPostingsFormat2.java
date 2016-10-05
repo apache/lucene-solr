@@ -342,7 +342,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     MergeRecordingPostingsFormatWrapper pf1 = new MergeRecordingPostingsFormatWrapper(TestUtil.getDefaultPostingsFormat());
     MergeRecordingPostingsFormatWrapper pf2 = new MergeRecordingPostingsFormatWrapper(TestUtil.getDefaultPostingsFormat());
 
-    IndexWriterConfig iwc = newIndexWriterConfig();
+    IndexWriterConfig iwc = new IndexWriterConfig();
     iwc.setCodec(new AssertingCodec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
