@@ -381,7 +381,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
           sortValues[i] = new LongValue(field, new LongAsc());
         }
       } else if(ft instanceof StrField) {
-        LeafReader reader = searcher.getLeafReader();
+        LeafReader reader = searcher.getSlowAtomicReader();
         SortedDocValues vals =  reader.getSortedDocValues(field);
         if(reverse) {
           sortValues[i] = new StringValue(vals, field, new IntDesc());
@@ -398,7 +398,7 @@ public class SortingResponseWriter implements QueryResponseWriter {
         // This is a bit of a hack, but since the boolean field stores ByteRefs, just like Strings
         // _and_ since "F" happens to sort before "T" (thus false sorts "less" than true)
         // we can just use the existing StringValue here.
-        LeafReader reader = searcher.getLeafReader();
+        LeafReader reader = searcher.getSlowAtomicReader();
         SortedDocValues vals =  reader.getSortedDocValues(field);
         if(reverse) {
           sortValues[i] = new StringValue(vals, field, new IntDesc());

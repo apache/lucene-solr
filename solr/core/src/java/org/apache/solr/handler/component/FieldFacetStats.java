@@ -64,7 +64,7 @@ public class FieldFacetStats {
     this.facet_sf = facet_sf;
     this.name = facet_sf.getName();
 
-    topLevelReader = searcher.getLeafReader();
+    topLevelReader = searcher.getSlowAtomicReader();
     valueSource = facet_sf.getType().getValueSource(facet_sf, null);
 
     facetStatsValues = new HashMap<>();

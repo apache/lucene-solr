@@ -37,7 +37,7 @@ class FacetFieldProcessorByArrayUIF extends FacetFieldProcessorByArray {
   @Override
   protected void findStartAndEndOrds() throws IOException {
     uif = UnInvertedField.getUnInvertedField(freq.field, fcontext.searcher);
-    te = uif.getOrdTermsEnum( fcontext.searcher.getLeafReader() );    // "te" can be null
+    te = uif.getOrdTermsEnum( fcontext.searcher.getSlowAtomicReader() );    // "te" can be null
 
     startTermIndex = 0;
     endTermIndex = uif.numTerms();  // one past the end

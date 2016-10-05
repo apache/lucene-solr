@@ -109,7 +109,7 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     IndexSchema schema = req.getSchema();
-    LeafReader leafReader = req.getSearcher().getLeafReader();
+    LeafReader leafReader = req.getSearcher().getSlowAtomicReader();
     return new ClassificationUpdateProcessor(inputFieldNames, classFieldName, minDf, minTf, k, algorithm, next, leafReader, schema);
   }
 

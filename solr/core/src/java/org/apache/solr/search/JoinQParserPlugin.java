@@ -299,8 +299,8 @@ class JoinQuery extends Query {
         fastForRandomSet = new HashDocSet(sset.getDocs(), 0, sset.size());
       }
 
-      Fields fromFields = fromSearcher.getLeafReader().fields();
-      Fields toFields = fromSearcher==toSearcher ? fromFields : toSearcher.getLeafReader().fields();
+      Fields fromFields = fromSearcher.getSlowAtomicReader().fields();
+      Fields toFields = fromSearcher==toSearcher ? fromFields : toSearcher.getSlowAtomicReader().fields();
       if (fromFields == null) return DocSet.EMPTY;
       Terms terms = fromFields.terms(fromField);
       Terms toTerms = toFields.terms(toField);
@@ -322,8 +322,8 @@ class JoinQuery extends Query {
         }
       }
 
-      Bits fromLiveDocs = fromSearcher.getLeafReader().getLiveDocs();
-      Bits toLiveDocs = fromSearcher == toSearcher ? fromLiveDocs : toSearcher.getLeafReader().getLiveDocs();
+      Bits fromLiveDocs = fromSearcher.getSlowAtomicReader().getLiveDocs();
+      Bits toLiveDocs = fromSearcher == toSearcher ? fromLiveDocs : toSearcher.getSlowAtomicReader().getLiveDocs();
 
       fromDeState = new SolrIndexSearcher.DocsEnumState();
       fromDeState.fieldName = fromField;

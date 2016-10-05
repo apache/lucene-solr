@@ -859,7 +859,7 @@ public class SimpleFacets {
 
 
     IndexSchema schema = searcher.getSchema();
-    LeafReader r = searcher.getLeafReader();
+    LeafReader r = searcher.getSlowAtomicReader();
     FieldType ft = schema.getFieldType(field);
 
     boolean sortByCount = sort.equals("count") || sort.equals("true");

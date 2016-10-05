@@ -156,7 +156,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
       }
     }
 
-    Fields fields = fcontext.searcher.getLeafReader().fields();
+    Fields fields = fcontext.searcher.getSlowAtomicReader().fields();
     Terms terms = fields == null ? null : fields.terms(sf.getName());
 
     termsEnum = null;
@@ -224,7 +224,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
           if (deState == null) {
             deState = new SolrIndexSearcher.DocsEnumState();
             deState.fieldName = sf.getName();
-            deState.liveDocs = fcontext.searcher.getLeafReader().getLiveDocs();
+            deState.liveDocs = fcontext.searcher.getSlowAtomicReader().getLiveDocs();
             deState.termsEnum = termsEnum;
             deState.postingsEnum = postingsEnum;
             deState.minSetSizeCached = minDfFilterCache;
