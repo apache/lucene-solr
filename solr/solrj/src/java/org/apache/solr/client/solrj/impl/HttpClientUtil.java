@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static java.util.Collections.singletonList;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -39,6 +41,7 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.params.ClientParamBean;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.ssl.SSLSocketFactory;
@@ -49,6 +52,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.SystemDefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.http.impl.conn.SchemeRegistryFactory;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.protocol.HttpContext;
@@ -58,8 +62,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.Collections.singletonList;
 
 /**
  * Utility class for creating/configuring httpclient instances. 
@@ -147,6 +149,11 @@ public class HttpClientUtil {
     final DefaultHttpClient httpClient = HttpClientFactory.createHttpClient();
     configureClient(httpClient, config);
     return httpClient;
+  }
+  
+  /** test usage. subject to change @lucene.experimental */ 
+  static PoolingClientConnectionManager createPoolingConnectionManager() {
+    return new PoolingClientConnectionManager(SchemeRegistryFactory.createSystemDefault());
   }
   
   /**
@@ -432,4 +439,21 @@ public class HttpClientUtil {
     }
   }
 
+  /**
+   * Create a HttpClientContext object and {@link HttpClientContext#setUserToken(Object)}
+   * to an internal singleton. It allows to reuse underneath {@link HttpClient} 
+   * in connection pools 
+   *
+   * If the client is going to be re-used, then you should pass in an object that
+   * can be used by internal connection pools as a cache key.  This is particularly
+   * important if client authentication is enabled, as SSL connections will not
+   * be re-used if no cache key is provided.
+   *
+   */
+  public static HttpClientContext createNewHttpClientRequestContext() {
+    HttpClientContext context = new HttpClientContext();
+
+    context.setUserToken(HttpSolrClient.cacheKey);
+    return context;
+  }
 }

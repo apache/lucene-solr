@@ -47,6 +47,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
@@ -150,6 +151,8 @@ public class HttpSolrClient extends SolrClient {
   private final boolean internalClient;
 
   private volatile Set<String> queryParams = Collections.emptySet();
+  
+  static final Class<HttpSolrClient> cacheKey = HttpSolrClient.class;
 
   /**
    * @param baseURL
@@ -491,8 +494,8 @@ public class HttpSolrClient extends SolrClient {
     InputStream respBody = null;
     boolean shouldClose = true;
     try {
-      // Execute the method.
-      final HttpResponse response = httpClient.execute(method);
+      HttpClientContext httpClientRequestContext = HttpClientUtil.createNewHttpClientRequestContext();
+      final HttpResponse response = httpClient.execute(method, httpClientRequestContext);
       int httpStatus = response.getStatusLine().getStatusCode();
       
       // Read the contents

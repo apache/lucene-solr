@@ -553,7 +553,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     CloseableHttpClient httpclient = HttpClientUtil.createClient(null);
     HttpEntity entity = null;
     try {
-      HttpResponse response = httpclient.execute(get);
+      HttpResponse response = httpclient.execute(get, HttpClientUtil.createNewHttpClientRequestContext());
       entity = response.getEntity();
       Header ceheader = entity.getContentEncoding();
       assertEquals("gzip", ceheader.getValue());
