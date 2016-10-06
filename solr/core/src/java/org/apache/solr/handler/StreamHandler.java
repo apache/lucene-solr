@@ -69,7 +69,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
   private StreamFactory streamFactory = new StreamFactory();
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
-  private Map<String, DaemonStream> daemons = new HashMap();
+  private Map<String, DaemonStream> daemons = new HashMap<>();
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
@@ -88,8 +88,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
      *  </lst>
      * */
 
-    String defaultCollection = null;
-    String defaultZkhost     = null;
+    String defaultCollection;
+    String defaultZkhost;
     CoreContainer coreContainer = core.getCoreDescriptor().getCoreContainer();
     this.coreName = core.getName();
 
@@ -158,7 +158,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     if(null != functionMappingsObj){
       NamedList<?> functionMappings = (NamedList<?>)functionMappingsObj;
       for(Entry<String,?> functionMapping : functionMappings){
-        Class<?> clazz = core.getResourceLoader().findClass((String)functionMapping.getValue(), Expressible.class);
+        Class<? extends Expressible> clazz = core.getResourceLoader().findClass((String)functionMapping.getValue(), Expressible.class);
         streamFactory.withFunctionName(functionMapping.getKey(), clazz);
       }
     }
@@ -186,7 +186,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       return;
     }
 
-    TupleStream tupleStream = null;
+    TupleStream tupleStream;
 
     try {
       tupleStream = this.streamFactory.constructStream(params.get("expr"));

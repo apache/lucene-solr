@@ -254,6 +254,7 @@ Other Changes
 
 * SOLR-9589: Remove jackson dependency from SolrJ (Ishan Chattopadhyaya, noble)
 
+* SOLR-8385: Narrow StreamFactory.withFunctionName clazz parameter to prevent misconfiguration (Jason Gerlowski, Kevin Risden)
 
 ==================  6.2.1 ==================
 
