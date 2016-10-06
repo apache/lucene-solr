@@ -58,6 +58,9 @@ Bug Fixes
 * LUCENE-7456: PerFieldPostings/DocValues was failing to delegate the
   merge method (Julien MASSENET via Mike McCandless)
 
+* LUCENE-7468: ASCIIFoldingFilter should not emit duplicated tokens when
+  preserve original is on. (David Causse via Adrien Grand)
+
 Improvements
 
 * LUCENE-7439: FuzzyQuery now matches all terms within the specified
