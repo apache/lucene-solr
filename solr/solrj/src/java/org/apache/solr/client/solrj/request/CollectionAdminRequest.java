@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
@@ -457,6 +458,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public Create setProperties(Properties properties) {
       this.properties = properties;
+      return this;
+    }
+
+    public Create setProperties(Map<String, String> properties) {
+      this.properties = new Properties();
+      this.properties.putAll(properties);
+      return this;
+    }
+
+    public Create withProperty(String key, String value) {
+      if (this.properties == null)
+        this.properties = new Properties();
+      this.properties.setProperty(key, value);
       return this;
     }
 

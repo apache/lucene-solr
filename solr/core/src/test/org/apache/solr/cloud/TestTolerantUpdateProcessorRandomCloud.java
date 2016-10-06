@@ -16,15 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.addErr;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.assertUpdateTolerantErrors;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delIErr;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delQErr;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.f;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.update;
-import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
-import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -42,6 +33,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -56,6 +48,15 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.addErr;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.assertUpdateTolerantErrors;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delIErr;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delQErr;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.f;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.update;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 
 /**
  * Test of TolerantUpdateProcessor using a randomized MiniSolrCloud.
@@ -81,7 +82,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   private static List<HttpSolrClient> NODE_CLIENTS;
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
     
     final String configName = "solrCloudCollectionConfig";
     final File configDir = new File(TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
@@ -102,12 +103,12 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     collectionProperties.put("config", "solrconfig-distrib-update-processor-chains.xml");
     collectionProperties.put("schema", "schema15.xml"); // string id 
 
-
-    assertNotNull(cluster.createCollection(COLLECTION_NAME, numShards, repFactor,
-                                           configName, null, null, collectionProperties));
-    
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
+        .setProperties(collectionProperties)
+        .process(CLOUD_CLIENT);
 
     if (NODE_CLIENTS != null) {
       for (HttpSolrClient client : NODE_CLIENTS) {

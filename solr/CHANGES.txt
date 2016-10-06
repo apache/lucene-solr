@@ -86,6 +86,11 @@ prefix, then you will now get an error as these options are incompatible with nu
   you may need to update the log configs to use the DEBUG level to get the
   same logging messages as before.
 
+* The create/deleteCollection methods on MiniSolrCloudCluster have been
+  deprecated.  Clients should instead use the CollectionAdminRequest API.  In
+  addition, MiniSolrCloudCluster#uploadConfigSet(File, String) has been
+  deprecated in favour of #uploadConfigSet(Path, String)
+
 New Features
 ----------------------
 * SOLR-5725: facet.method=enum can bypass exact counts calculation with facet.exists=true, it just returns 1 for 
@@ -284,6 +289,8 @@ Other Changes
 * SOLR-9627: Add QParser.getSortSpec, deprecate misleadingly named QParser.getSort (Judith Silverman, Christine Poerschke)
 
 * SOLR-9632: Add MiniSolrCloudCluster#deleteAllCollections() method (Alan Woodward)
+
+* SOLR-9634: Deprecate collection methods on MiniSolrCloudCluster (Alan Woodward)
 
 ==================  6.2.1 ==================
 
