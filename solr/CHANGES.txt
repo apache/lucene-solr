@@ -117,6 +117,8 @@ New Features
 
 * SOLR-9520: Kerberos delegation support in SolrJ (Ishan Chattopadhyaya, noble)
 
+* SOLR-9146: Parallel SQL engine should support >, >=, <, <=, <>, != syntax (Timothy Potter, Joel Bernstein, Kevin Risden)
+
 Bug Fixes
 ----------------------
 
