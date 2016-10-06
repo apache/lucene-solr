@@ -283,6 +283,8 @@ Other Changes
 
 * SOLR-9627: Add QParser.getSortSpec, deprecate misleadingly named QParser.getSort (Judith Silverman, Christine Poerschke)
 
+* SOLR-9632: Add MiniSolrCloudCluster#deleteAllCollections() method (Alan Woodward)
+
 ==================  6.2.1 ==================
 
 Bug Fixes

@@ -46,6 +46,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -398,6 +399,15 @@ public class MiniSolrCloudCluster {
         AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null)) {
       ZkConfigManager manager = new ZkConfigManager(zkClient);
       manager.uploadConfigDir(configDir.toPath(), configName);
+    }
+  }
+
+  public void deleteAllCollections() throws Exception {
+    try (ZkStateReader reader = new ZkStateReader(solrClient.getZkStateReader().getZkClient())) {
+      reader.createClusterStateWatchersAndUpdate();
+      for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
+        CollectionAdminRequest.deleteCollection(collection).process(solrClient);
+      }
     }
   }
   
