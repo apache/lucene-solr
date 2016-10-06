@@ -393,12 +393,25 @@ public class MiniSolrCloudCluster {
     jetty.stop();
     return jetty;
   }
-  
+
+  /**
+   * @deprecated Use {@link #uploadConfigSet(Path, String)}
+   */
+  @Deprecated
   public void uploadConfigDir(File configDir, String configName) throws IOException, KeeperException, InterruptedException {
+    uploadConfigSet(configDir.toPath(), configName);
+  }
+
+  /**
+   * Upload a config set
+   * @param configDir a path to the config set to upload
+   * @param configName the name to give the configset
+   */
+  public void uploadConfigSet(Path configDir, String configName) throws IOException, KeeperException, InterruptedException {
     try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
         AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null)) {
       ZkConfigManager manager = new ZkConfigManager(zkClient);
-      manager.uploadConfigDir(configDir.toPath(), configName);
+      manager.uploadConfigDir(configDir, configName);
     }
   }
 
@@ -410,13 +423,21 @@ public class MiniSolrCloudCluster {
       }
     }
   }
-  
-  public NamedList<Object> createCollection(String name, int numShards, int replicationFactor, 
+
+  /**
+   * @deprecated Use {@link CollectionAdminRequest#createCollection(String, String, int, int)}
+   */
+  @Deprecated
+  public NamedList<Object> createCollection(String name, int numShards, int replicationFactor,
       String configName, Map<String, String> collectionProperties) throws SolrServerException, IOException {
     return createCollection(name, numShards, replicationFactor, configName, null, null, collectionProperties);
   }
 
-  public NamedList<Object> createCollection(String name, int numShards, int replicationFactor, 
+  /**
+   * @deprecated Use {@link CollectionAdminRequest#createCollection(String, String, int, int)}
+   */
+  @Deprecated
+  public NamedList<Object> createCollection(String name, int numShards, int replicationFactor,
       String configName, String createNodeSet, String asyncId, Map<String, String> collectionProperties) throws SolrServerException, IOException {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CollectionAction.CREATE.name());
@@ -439,6 +460,10 @@ public class MiniSolrCloudCluster {
     return makeCollectionsRequest(params);
   }
 
+  /**
+   * @deprecated use {@link CollectionAdminRequest#deleteCollection(String)}
+   */
+  @Deprecated
   public NamedList<Object> deleteCollection(String name) throws SolrServerException, IOException {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CollectionAction.DELETE.name());

@@ -17,10 +17,8 @@
 package org.apache.solr.cloud;
 
 import javax.net.ssl.SSLContext;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.http.client.HttpClient;
@@ -40,6 +38,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -167,9 +166,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   public static void checkClusterWithCollectionCreations(final MiniSolrCloudCluster cluster,
                                                          final SSLTestConfig sslConfig) throws Exception {
 
-    cluster.uploadConfigDir(new File(SolrTestCaseJ4.TEST_HOME() + File.separator +
-                                     "collection1" + File.separator + "conf"),
-                            CONF_NAME);
+    cluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), CONF_NAME);
     
     checkCreateCollection(cluster, "first_collection");
     
@@ -196,11 +193,10 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
    */
   private static void checkCreateCollection(final MiniSolrCloudCluster cluster,
                                             final String collection) throws Exception {
-    assertNotNull(cluster.createCollection(collection,
-                                           /* 1 shard/replica per server */ NUM_SERVERS, 1,
-                                           CONF_NAME, null, null,
-                                           Collections.singletonMap("config","solrconfig-tlog.xml")));
     final CloudSolrClient cloudClient = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(collection, CONF_NAME, NUM_SERVERS, 1)
+        .withProperty("config", "solrconfig-tlog.xml")
+        .process(cloudClient);
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, zkStateReader, true, true, 330);
     assertEquals("sanity query", 0, cloudClient.query(collection, params("q","*:*")).getStatus());

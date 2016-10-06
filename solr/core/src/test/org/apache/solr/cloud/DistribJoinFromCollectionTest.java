@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static org.hamcrest.CoreMatchers.not;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -48,6 +46,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.hamcrest.CoreMatchers.not;
 
 /**
  * Tests using fromIndex that points to a collection in SolrCloud mode.
@@ -83,10 +83,10 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
     
     int shards = 2;
     int replicas = 2 ;
-    assertNotNull(cluster.createCollection(toColl, shards, replicas,
-        configName,
-        collectionProperties));
-    
+    CollectionAdminRequest.createCollection(toColl, configName, shards, replicas)
+        .setProperties(collectionProperties)
+        .process(cluster.getSolrClient());
+
     // get the set of nodes where replicas for the "to" collection exist
     Set<String> nodeSet = new HashSet<>();
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
@@ -97,14 +97,11 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
     assertTrue(nodeSet.size() > 0);
 
     // deploy the "from" collection to all nodes where the "to" collection exists
-    
-    assertNotNull(cluster.createCollection(fromColl, 1, 4,
-        configName, StringUtils.join(nodeSet,","), null,
-        collectionProperties));
-    
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(toColl, zkStateReader, false, true, 30);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(fromColl, zkStateReader, false, true, 30);
-   
+    CollectionAdminRequest.createCollection(fromColl, configName, 1, 4)
+        .setCreateNodeSet(StringUtils.join(nodeSet, ","))
+        .setProperties(collectionProperties)
+        .process(cluster.getSolrClient());
+
     toDocId = indexDoc(toColl, 1001, "a", null, "b");
     indexDoc(fromColl, 2001, "a", "c", null);
 

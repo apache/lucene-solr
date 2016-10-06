@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.net.URL;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -38,8 +37,7 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig("/solr"));
-    File configDir = getFile("solr").toPath().resolve("collection1/conf").toFile();
-    solrCluster.uploadConfigDir(configDir, "conf1");
+    solrCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");
   }
 
   @Override

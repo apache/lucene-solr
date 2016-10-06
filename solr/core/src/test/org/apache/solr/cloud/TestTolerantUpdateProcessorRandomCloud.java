@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import javax.ws.rs.HEAD;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
@@ -28,33 +29,33 @@ import java.util.Random;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.cloud.SolrCloudTestCase;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.assertUpdateTolerantErrors;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.addErr;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delIErr;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delQErr;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.f;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.update;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.ExpectedErr;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
-import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.ExpectedErr;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.addErr;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.assertUpdateTolerantErrors;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delIErr;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delQErr;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.f;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.update;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 
 /**
  * Test of TolerantUpdateProcessor using a randomized MiniSolrCloud.
@@ -77,10 +78,10 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** one HttpSolrClient for each server */
-  private static List<SolrClient> NODE_CLIENTS;
+  private static List<HttpSolrClient> NODE_CLIENTS;
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
     
     final String configName = "solrCloudCollectionConfig";
     final File configDir = new File(TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
@@ -101,15 +102,20 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     collectionProperties.put("config", "solrconfig-distrib-update-processor-chains.xml");
     collectionProperties.put("schema", "schema15.xml"); // string id 
 
-
-    assertNotNull(cluster.createCollection(COLLECTION_NAME, numShards, repFactor,
-                                           configName, null, null, collectionProperties));
-    
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
 
-    NODE_CLIENTS = new ArrayList<SolrClient>(numServers);
-    
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
+        .setProperties(collectionProperties)
+        .process(CLOUD_CLIENT);
+
+    if (NODE_CLIENTS != null) {
+      for (HttpSolrClient client : NODE_CLIENTS) {
+        client.close();
+      }
+    }
+    NODE_CLIENTS = new ArrayList<HttpSolrClient>(numServers);
+
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       URL jettyURL = jetty.getBaseUrl();
       NODE_CLIENTS.add(getHttpSolrClient(jettyURL.toString() + "/" + COLLECTION_NAME + "/"));

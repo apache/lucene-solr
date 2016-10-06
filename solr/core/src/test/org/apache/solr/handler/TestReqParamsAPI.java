@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
@@ -57,7 +58,8 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
-    cluster.createCollection(COLL_NAME, 1, 2, "conf1", null);
+    CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2)
+        .process(cluster.getSolrClient());
   }
 
   @Test
