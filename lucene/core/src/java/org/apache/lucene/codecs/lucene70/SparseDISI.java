@@ -21,7 +21,6 @@ import java.io.IOException;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RandomAccessInput;
 
 final class SparseDISI extends DocIdSetIterator {
 
@@ -51,7 +50,7 @@ final class SparseDISI extends DocIdSetIterator {
   final int maxDoc;
   final int numWords;
   final long cost;
-  final RandomAccessInput slice;
+  final IndexInput slice;
   int doc = -1;
   int wordIndex = -1;
   long word;
@@ -60,7 +59,7 @@ final class SparseDISI extends DocIdSetIterator {
   SparseDISI(int maxDoc, IndexInput in, long offset, long cost) throws IOException {
     this.maxDoc = maxDoc;
     this.numWords = (int) ((maxDoc + 63L) >>> 6);
-    this.slice = in.randomAccessSlice(offset, numWords * 8L);
+    this.slice = in.slice("docs", offset, numWords * 8L);
     this.cost = cost;
   }
 
@@ -72,7 +71,7 @@ final class SparseDISI extends DocIdSetIterator {
 
     final int targetWordIndex = target >>> 6;
     for (int i = wordIndex + 1; i <= targetWordIndex; ++i) {
-      word = slice.readLong(i << 3);
+      word = slice.readLong();
       index += Long.bitCount(word);
     }
     wordIndex = targetWordIndex;
@@ -83,7 +82,7 @@ final class SparseDISI extends DocIdSetIterator {
     }
 
     while (++wordIndex < numWords) {
-      word = slice.readLong(wordIndex << 3);
+      word = slice.readLong();
       if (word != 0) {
         index += Long.bitCount(word);
         return doc = (wordIndex << 6) + Long.numberOfTrailingZeros(word);
