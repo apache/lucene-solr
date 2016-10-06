@@ -145,6 +145,17 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertSync(client1, numVersions, true, shardsArr[0]);
     client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
 
+    // Test PeerSync after replica misses delete
+    v=2500;
+    add(client0, seenLeader, sdoc("id","2500","_version_",++v));
+    add(client1, seenLeader, sdoc("id","2500","_version_",v));
+    client0.commit(); client1.commit();
+    del(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_",Long.toString(-++v)), "2500");
+    add(client0, seenLeader, sdoc("id","2501","_version_",++v));
+    add(client1, seenLeader, sdoc("id","2501","_version_",v));
+    // Sync should be able to delete the document
+    assertSync(client1, numVersions, true, shardsArr[0]);
+    client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
 
     //
     // Test that handling reorders work when applying docs retrieved from peer
