@@ -436,11 +436,15 @@ public class IndexFetcher {
           } finally {
             writer.decref();
           }
-          solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
         }
         boolean reloadCore = false;
 
         try {
+          // we have to be careful and do this after we know isFullCopyNeeded won't be flipped
+          if (!isFullCopyNeeded) {
+            solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
+          }
+
           LOG.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
           successfulInstall = false;
 

@@ -156,6 +156,8 @@ Bug Fixes
   at a node before its local state had updated with the new collection data
   (Alan Woodward)
 
+* SOLR-9470: Index replication interactions with IndexWriter can cause deadlock. (Xunlong via Mark Miller)
+
 Optimizations
 ----------------------
 
