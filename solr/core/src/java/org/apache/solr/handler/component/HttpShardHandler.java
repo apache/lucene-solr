@@ -48,6 +48,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -319,6 +320,11 @@ public class HttpShardHandler extends ShardHandler {
       if (rb.preferredHostAddress == null) {
         log.warn("Couldn't determine current host address to prefer local shards");
       }
+    }
+    
+    String[] replicatMark = params.getParams(CursorMarkParams.REPLICA_MARK_PARAM);
+    if (replicatMark != null) {
+      rb.preferedHostAddresses = replicatMark;
     }
 
     if (shards != null) {
