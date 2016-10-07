@@ -52,6 +52,7 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<Object> _statsInfo = null;
   private NamedList<NamedList<Number>> _termsInfo = null;
   private String _cursorMarkNext = null;
+  private String _usedReplicaMark = null;
 
   // Grouping response
   private NamedList<Object> _groupedInfo = null;
@@ -616,6 +617,10 @@ public class QueryResponse extends SolrResponseBase
 
   public String getNextCursorMark() {
     return _cursorMarkNext;
+  }
+
+  public String getUsedReplicaMark() {
+    return _usedReplicaMark;
   }
 }
 

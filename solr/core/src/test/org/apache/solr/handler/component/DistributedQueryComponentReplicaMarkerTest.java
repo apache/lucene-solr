@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -93,7 +94,21 @@ public class DistributedQueryComponentReplicaMarkerTest extends SolrCloudTestCas
   }
 
   @Test
-  public void testReplicaChoiceMark() throws Exception {
-    fail("todo");
+  public void testReplicaMarkNotUsed() throws Exception {
+    QueryResponse rsp;
+    
+    rsp = cluster.getSolrClient().query(COLLECTION,
+        new SolrQuery("q", "*:*", "fl", id+",score", "sort", id+" asc", "rows", "5"));
+    assertNull(rsp.getUsedReplicaMark());
+  }
+  
+  @Test
+  public void testReplicaMarkUsed() throws Exception {
+    QueryResponse rsp;
+    
+    rsp = cluster.getSolrClient().query(COLLECTION,
+        new SolrQuery("q", "*:*", "fl", id+",score", "sort", id+" asc", "rows", "5",
+            CursorMarkParams.REPLICA_MARK_PARAM, CursorMarkParams.REPLICA_MARK_START));
+    assertNotNull(rsp.getUsedReplicaMark());
   }
 }
