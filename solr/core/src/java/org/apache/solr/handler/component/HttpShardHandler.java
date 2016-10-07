@@ -48,6 +48,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -113,7 +114,8 @@ public class HttpShardHandler extends ShardHandler {
 
   // Not thread safe... don't use in Callable.
   // Don't modify the returned URL list.
-  private List<String> getURLs(String shard, String preferredHostAddress) {
+  private List<String> getURLs(String shard, String preferredHostAddress, String[] preferredHostAddresses) {
+    // TODO: use preferredHostAddresses in this function
     List<String> urls = shardToURLs.get(shard);
     if (urls == null) {
       urls = httpShardHandlerFactory.makeURLList(shard);
@@ -155,9 +157,9 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   @Override
-  public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params, String preferredHostAddress) {
+  public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params, String preferredHostAddress, String[] preferredHostAddresses) {
     // do this outside of the callable for thread safety reasons
-    final List<String> urls = getURLs(shard, preferredHostAddress);
+    final List<String> urls = getURLs(shard, preferredHostAddress, preferredHostAddresses);
 
     //TODO: add our
 
@@ -322,6 +324,11 @@ public class HttpShardHandler extends ShardHandler {
         log.warn("Couldn't determine current host address to prefer local shards");
       }
     }
+    
+    String[] replicatMark = params.getParams(CursorMarkParams.REPLICA_MARK_PARAM);
+    if (replicatMark != null) {
+      rb.preferredHostAddresses = replicatMark;
+    }
 
     if (shards != null) {
       List<String> lst = StrUtils.splitSmart(shards, ",", true);
@@ -453,6 +460,7 @@ public class HttpShardHandler extends ShardHandler {
           }
 
           rb.shards[i] = sliceShardsStr.toString();
+          // rb.preferredHostAddresses == ???
         }
       }
     }

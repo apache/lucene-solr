@@ -20,9 +20,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 public abstract class ShardHandler {
   public abstract void prepDistributed(ResponseBuilder rb);
   public void submit(ShardRequest sreq, String shard, ModifiableSolrParams params) {
-    submit(sreq, shard, params, null);
+    submit(sreq, shard, params, null, null);
   }
-  public abstract void submit(ShardRequest sreq, String shard, ModifiableSolrParams params, String preferredHostAddress);
+  public abstract void submit(ShardRequest sreq, String shard, ModifiableSolrParams params, String preferredHostAddress, String[] preferredHostAddresses);
   public abstract ShardResponse takeCompletedIncludingErrors();
   public abstract ShardResponse takeCompletedOrError();
   public abstract void cancelAll();
