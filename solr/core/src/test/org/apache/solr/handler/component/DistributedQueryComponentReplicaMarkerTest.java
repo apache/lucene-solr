@@ -53,20 +53,21 @@ public class DistributedQueryComponentReplicaMarkerTest extends SolrCloudTestCas
   private static final String SHARD1 = "shard1";
   private static final String SHARD2 = "shard2";
 
-  private static final int sliceCount = 3;
+  private static final int numShards = 3;
+  private static final int numReplicas = 2;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(3)
+    configureCluster(numShards)
         .withSolrXml(TEST_PATH().resolve("solr-trackingshardhandler.xml"))
         .addConfig("conf", configset("cloud-dynamic"))
         .configure();
 
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 1)
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", numShards, numReplicas)
         .setMaxShardsPerNode(1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, sliceCount, 1));
+        (n, c) -> DocCollection.isFullyActive(n, c, numShards, numReplicas));
 
     new UpdateRequest()
         .add(sdoc(id, "1", "text", "a", "test_sS", "21", "payload", ByteBuffer.wrap(new byte[]{0x12, 0x62, 0x15})))
@@ -239,7 +240,7 @@ public class DistributedQueryComponentReplicaMarkerTest extends SolrCloudTestCas
     for (int i = 0; i < q.length; i += 2) {
       if (ShardParams.DISTRIB_SINGLE_PASS.equals(q[i].toString()) && Boolean.parseBoolean(q[i + 1].toString())) {
         assertTrue("distrib.singlePass=true made more requests than number of shards",
-            numRequests == sliceCount);
+            numRequests == numShards);
         distribSinglePass = true;
       }
       if (CommonParams.FL.equals(q[i].toString())) {
@@ -280,8 +281,8 @@ public class DistributedQueryComponentReplicaMarkerTest extends SolrCloudTestCas
     } else {
       // we are assuming there are facet refinement or distributed idf requests here
       assertTrue("distrib.singlePass=false made more requests than 2 * number of shards." +
-              " Actual: " + numRequests + " but expected <= " + sliceCount * 2,
-          numRequests <= sliceCount * 2);
+              " Actual: " + numRequests + " but expected <= " + numShards * 2,
+          numRequests <= numShards * 2);
 
       // only id and/or score should be requested
       assertParamsEquals(trackingQueue, COLLECTION, SHARD1,
