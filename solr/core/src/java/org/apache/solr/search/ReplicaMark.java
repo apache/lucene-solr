@@ -14,17 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.component;
-import org.apache.solr.common.params.ModifiableSolrParams;
+package org.apache.solr.search;
 
-public abstract class ShardHandler {
-  public abstract void prepDistributed(ResponseBuilder rb);
-  public void submit(ShardRequest sreq, String shard, ModifiableSolrParams params) {
-    submit(sreq, shard, params, null, null);
+import java.util.List;
+
+
+/**
+ * TODO
+ */
+public final class ReplicaMark {
+
+  private final String mark;
+
+  /**
+   * TODO
+   */
+  public ReplicaMark(String mark) {
+    this.mark = mark;
   }
-  public abstract void submit(ShardRequest sreq, String shard, ModifiableSolrParams params, String preferredHostAddress, String[] preferredHostAddresses);
-  public abstract ShardResponse takeCompletedIncludingErrors();
-  public abstract ShardResponse takeCompletedOrError();
-  public abstract void cancelAll();
-  public abstract ShardHandlerFactory getShardHandlerFactory();
+
+
+  /**
+   * Generates an new CursorMark bound for use with the same {@link SortSpec}
+   * as the current CursorMark but using the new SortValues.
+   * @param nextSortValues
+   */
+  public ReplicaMark createNext(String nextSortValues) {
+    final ReplicaMark next = new ReplicaMark(null);
+    //TODO: get the used replica set and set it
+    return new ReplicaMark("Hello");
+  }
+
+
 }

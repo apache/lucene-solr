@@ -82,6 +82,7 @@ import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.RankQuery;
+import org.apache.solr.search.ReplicaMark;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
@@ -193,6 +194,13 @@ public class QueryComponent extends SearchComponent
                                                      rb.getSortSpec());
         cursorMark.parseSerializedTotem(cursorStr);
         rb.setCursorMark(cursorMark);
+      }
+
+      final String replicaStr = rb.req.getParams().get(CursorMarkParams.REPLICA_MARK_PARAM);
+      if (null != replicaStr) {
+        final ReplicaMark replicaMark = new ReplicaMark(replicaStr);
+//        replicaMark.parseSerializedTotem(replicaStr);
+        rb.setReplicaMark(replicaMark);
       }
 
       String[] fqs = req.getParams().getParams(CommonParams.FQ);
@@ -536,7 +544,12 @@ public class QueryComponent extends SearchComponent
         rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT,
                    rb.getNextCursorMark().getSerializedTotem());
       }
+      if (null != rb.getUsedReplicaMark()) {
+        rb.rsp.add(CursorMarkParams.REPLICA_MARK_USED,
+            rb.getUsedReplicaMark());
+      }
     }
+
 
     if(rb.mergeFieldHandler != null) {
       rb.mergeFieldHandler.handleMergeFields(rb, searcher);
@@ -826,6 +839,11 @@ public class QueryComponent extends SearchComponent
     if (null != rb.getNextCursorMark()) {
       rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT,
                  rb.getNextCursorMark().getSerializedTotem());
+    }
+
+    if (null != rb.getUsedReplicaMark()) {
+      rb.rsp.add(CursorMarkParams.REPLICA_MARK_USED,
+          rb.getUsedReplicaMark());
     }
   }
 
@@ -1131,6 +1149,8 @@ public class QueryComponent extends SearchComponent
       rb.setResponseDocs(responseDocs);
 
       populateNextCursorMarkFromMergedShards(rb);
+
+      rb.setUsedReplicaMark(new ReplicaMark("a").createNext("a"));
 
       if (partialResults) {
         if(rb.rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null) {
