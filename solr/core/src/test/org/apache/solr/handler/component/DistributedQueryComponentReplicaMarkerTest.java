@@ -194,6 +194,11 @@ public class DistributedQueryComponentReplicaMarkerTest extends SolrCloudTestCas
     queryWithAsserts("q", "*:*", "sort", "payload desc");
   }
 
+  @Test
+  public void testReplicaChoiceMark() throws Exception {
+    fail("todo");
+  }
+
   private static void compareResponses(QueryResponse rsp1, QueryResponse rsp2) {
     Map<String, Integer> skipValues = new HashMap<>();
     skipValues.put("timestamp", BaseDistributedSearchTestCase.SKIPVAL);
