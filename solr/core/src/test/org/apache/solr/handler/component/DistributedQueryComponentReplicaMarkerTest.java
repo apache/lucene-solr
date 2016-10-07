@@ -110,5 +110,7 @@ public class DistributedQueryComponentReplicaMarkerTest extends SolrCloudTestCas
         new SolrQuery("q", "*:*", "fl", id+",score", "sort", id+" asc", "rows", "5",
             CursorMarkParams.REPLICA_MARK_PARAM, CursorMarkParams.REPLICA_MARK_START));
     assertNotNull(rsp.getUsedReplicaMark());
+    assertTrue("rsp does not mention "+CursorMarkParams.REPLICA_MARK_USED,
+        rsp.toString().contains(CursorMarkParams.REPLICA_MARK_USED));
   }
 }
