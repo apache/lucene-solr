@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -127,7 +128,11 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
   private static final String VALUE_CLASS_PARAM = "valueClass";
   private static final String FIELD_TYPE_PARAM = "fieldType";
   private static final String DEFAULT_FIELD_TYPE_PARAM = "defaultFieldType";
-  
+  private static final String COPY_FIELD_PARAM = "copyField";
+  private static final String DEST_PARAM = "dest";
+  private static final String MAX_CHARS_PARAM = "maxChars";
+  private static final String IS_DEFAULT_PARAM = "default";
+
   private List<TypeMapping> typeMappings = Collections.emptyList();
   private SelectorParams inclusions = new SelectorParams();
   private Collection<SelectorParams> exclusions = new ArrayList<>();
@@ -206,8 +211,59 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         throw new SolrException(SERVER_ERROR, 
             "Each '" + TYPE_MAPPING_PARAM + "' <lst/> must contain at least one '" + VALUE_CLASS_PARAM + "' <str>");
       }
-      typeMappings.add(new TypeMapping(fieldType, valueClasses));
 
+      // isDefault (optional)
+      Boolean isDefault = false;
+      Object isDefaultObj = typeMappingNamedList.remove(IS_DEFAULT_PARAM);
+      if (null != isDefaultObj) {
+        if ( ! (isDefaultObj instanceof Boolean)) {
+          throw new SolrException(SERVER_ERROR, "'" + IS_DEFAULT_PARAM + "' init param must be a <bool>");
+        }
+        if (null != typeMappingNamedList.get(IS_DEFAULT_PARAM)) {
+          throw new SolrException(SERVER_ERROR,
+              "Each '" + COPY_FIELD_PARAM + "' <lst/> may contain only one '" + IS_DEFAULT_PARAM + "' <bool>");
+        }
+        isDefault = Boolean.parseBoolean(isDefaultObj.toString());
+      }
+      
+      Collection<CopyFieldDef> copyFieldDefs = new ArrayList<>(); 
+      while (typeMappingNamedList.get(COPY_FIELD_PARAM) != null) {
+        Object copyFieldObj = typeMappingNamedList.remove(COPY_FIELD_PARAM);
+        if ( ! (copyFieldObj instanceof NamedList)) {
+          throw new SolrException(SERVER_ERROR, "'" + COPY_FIELD_PARAM + "' init param must be a <lst>");
+        }
+        NamedList copyFieldNamedList = (NamedList)copyFieldObj;
+        // dest
+        Object destObj = copyFieldNamedList.remove(DEST_PARAM);
+        if (null == destObj) {
+          throw new SolrException(SERVER_ERROR,
+              "Each '" + COPY_FIELD_PARAM + "' <lst/> must contain a '" + DEST_PARAM + "' <str>");
+        }
+        if ( ! (destObj instanceof CharSequence)) {
+          throw new SolrException(SERVER_ERROR, "'" + COPY_FIELD_PARAM + "' init param must be a <str>");
+        }
+        if (null != copyFieldNamedList.get(COPY_FIELD_PARAM)) {
+          throw new SolrException(SERVER_ERROR,
+              "Each '" + COPY_FIELD_PARAM + "' <lst/> may contain only one '" + COPY_FIELD_PARAM + "' <str>");
+        }
+        String dest = destObj.toString();
+        // maxChars (optional)
+        Integer maxChars = 0;
+        Object maxCharsObj = copyFieldNamedList.remove(MAX_CHARS_PARAM);
+        if (null != maxCharsObj) {
+          if ( ! (maxCharsObj instanceof Integer)) {
+            throw new SolrException(SERVER_ERROR, "'" + MAX_CHARS_PARAM + "' init param must be a <int>");
+          }
+          if (null != copyFieldNamedList.get(MAX_CHARS_PARAM)) {
+            throw new SolrException(SERVER_ERROR,
+                "Each '" + COPY_FIELD_PARAM + "' <lst/> may contain only one '" + MAX_CHARS_PARAM + "' <str>");
+          }
+          maxChars = Integer.parseInt(maxCharsObj.toString());
+        }
+        copyFieldDefs.add(new CopyFieldDef(dest, maxChars));
+      }
+      typeMappings.add(new TypeMapping(fieldType, valueClasses, isDefault, copyFieldDefs));
+      
       if (0 != typeMappingNamedList.size()) {
         throw new SolrException(SERVER_ERROR, 
             "Unexpected '" + TYPE_MAPPING_PARAM + "' init sub-param(s): '" + typeMappingNamedList.toString() + "'");
@@ -232,11 +288,16 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
   private static class TypeMapping {
     public String fieldTypeName;
     public Collection<String> valueClassNames;
+    public Collection<CopyFieldDef> copyFieldDefs;
     public Set<Class<?>> valueClasses;
+    public Boolean isDefault;
 
-    public TypeMapping(String fieldTypeName, Collection<String> valueClassNames) {
+    public TypeMapping(String fieldTypeName, Collection<String> valueClassNames, boolean isDefault,
+                       Collection<CopyFieldDef> copyFieldDefs) {
       this.fieldTypeName = fieldTypeName;
       this.valueClassNames = valueClassNames;
+      this.isDefault = isDefault;
+      this.copyFieldDefs = copyFieldDefs;
       // this.valueClasses population is delayed until the schema is available
     }
 
@@ -254,6 +315,42 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           throw new SolrException(SERVER_ERROR,
               "valueClass '" + valueClassName + "' not found for fieldType '" + fieldTypeName + "'");
         }
+      }
+    }
+
+    public boolean isDefault() {
+      return isDefault;
+    }
+  }
+
+  private static class CopyFieldDef {
+    private final String destGlob;
+    private final Integer maxChars;
+
+    public CopyFieldDef(String destGlob, Integer maxChars) {
+      this.destGlob = destGlob;
+      this.maxChars = maxChars;
+      if (destGlob.contains("*") && (!destGlob.startsWith("*") && !destGlob.endsWith("*"))) {
+        throw new SolrException(SERVER_ERROR, "dest '" + destGlob + 
+            "' is invalid. Must either be a plain field name or start or end with '*'");
+      }
+    }
+    
+    public Integer getMaxChars() {
+      return maxChars;
+    }
+    
+    public String getDestGlob() {
+      return destGlob;
+    }
+    
+    public String getDest(String srcFieldName) {
+      if (!destGlob.contains("*")) {
+        return destGlob;
+      } else if (destGlob.startsWith("*")) {
+        return srcFieldName + destGlob.substring(1);
+      } else {
+        return destGlob.substring(0,destGlob.length()-1) + srcFieldName;
       }
     }
   }
@@ -277,6 +374,9 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       IndexSchema oldSchema = cmd.getReq().getSchema();
       for (;;) {
         List<SchemaField> newFields = new ArrayList<>();
+        // NOCOMMIT: Need to convey maxChars in the map
+        //Map<String,Collection<CopyFieldDef>> newCopyFields = new HashMap<>();
+        Map<String,Collection<String>> newCopyFields = new HashMap<>();
         // build a selector each time through the loop b/c the schema we are
         // processing may have changed
         FieldNameSelector selector = buildSelector(oldSchema);
@@ -284,12 +384,17 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         getUnknownFields(selector, doc, unknownFields);
         for (final Map.Entry<String,List<SolrInputField>> entry : unknownFields.entrySet()) {
           String fieldName = entry.getKey();
-          String fieldTypeName = mapValueClassesToFieldType(entry.getValue());
+          String fieldTypeName = defaultFieldType;
+          TypeMapping typeMapping = mapValueClassesToFieldType(entry.getValue());
+          if (typeMapping != null) {
+            fieldTypeName = typeMapping.fieldTypeName;
+            newCopyFields.put(fieldName, typeMapping.copyFieldDefs.stream().map(cf -> cf.getDest(fieldName)).collect(Collectors.toList()));
+          } 
           newFields.add(oldSchema.newField(fieldName, fieldTypeName, Collections.<String,Object>emptyMap()));
         }
-        if (newFields.isEmpty()) {
+        if (newFields.isEmpty() && newCopyFields.isEmpty()) {
           // nothing to do - no fields will be added - exit from the retry loop
-          log.debug("No fields to add to the schema.");
+          log.debug("No fields or copyFields to add to the schema.");
           break;
         } else if ( isImmutableConfigSet(core) ) {
           final String message = "This ConfigSet is immutable.";
@@ -306,13 +411,29 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
             builder.append("{type=").append(field.getType().getTypeName()).append("}");
           }
           builder.append("]");
+          builder.append("\nCopyFields to be added to the schema: [");
+          isFirst = true;
+          for (String fieldName : newCopyFields.keySet()) {
+            builder.append(isFirst ? "" : ",");
+            isFirst = false;
+            builder.append("source=").append(fieldName).append("{");
+            // NOCOMMIT: Enable debug print when maxChars is ready
+//            for (CopyFieldDef copyFieldDef : newCopyFields.get(fieldName)) {
+//              builder.append("{dest=").append(copyFieldDef.getDest(fieldName));
+//              builder.append(", maxChars=").append(copyFieldDef.getMaxChars()).append("}");
+//            }
+            builder.append("}");
+          }
+          builder.append("]");
           log.debug(builder.toString());
         }
         // Need to hold the lock during the entire attempt to ensure that
         // the schema on the request is the latest
         synchronized (oldSchema.getSchemaUpdateLock()) {
           try {
-            IndexSchema newSchema = oldSchema.addFields(newFields);
+            // Add copyFields
+            // TODO: Needs a new method which can also take in maxChars setting
+            IndexSchema newSchema = oldSchema.addFields(newFields).addCopyFields(newCopyFields, true);
             if (null != newSchema) {
               core.setLatestSchema(newSchema);
               cmd.getReq().updateSchemaToLatest();
@@ -359,11 +480,11 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     }
 
     /**
-     * Maps all given field values' classes to a field type using the configured type mapping rules.
+     * Maps all given field values' classes to a typeMapping object
      * 
      * @param fields one or more (same-named) field values from one or more documents
      */
-    private String mapValueClassesToFieldType(List<SolrInputField> fields) {
+    private TypeMapping mapValueClassesToFieldType(List<SolrInputField> fields) {
       NEXT_TYPE_MAPPING: for (TypeMapping typeMapping : typeMappings) {
         for (SolrInputField field : fields) {
           NEXT_FIELD_VALUE: for (Object fieldValue : field.getValues()) {
@@ -378,10 +499,18 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           }
         }
         // Success! Each of this field's values is an instance of a mapped valueClass
-        return typeMapping.fieldTypeName;
+        return typeMapping;
       }
       // At least one of this field's values is not an instance of any of the mapped valueClass-s
-      return defaultFieldType;
+      // Return the typeMapping marked as default, if we have one, else return null to use fallback type 
+      List<TypeMapping> defaultMappings = typeMappings.stream().filter(TypeMapping::isDefault).collect(Collectors.toList());
+      if (defaultMappings.size() > 1) {
+        throw new SolrException(SERVER_ERROR, "Only one typeMapping can be default");
+      } else if (defaultMappings.size() == 1) {
+        return defaultMappings.get(0);
+      } else {
+        return null;
+      }
     }
 
     private FieldNameSelector buildSelector(IndexSchema schema) {
