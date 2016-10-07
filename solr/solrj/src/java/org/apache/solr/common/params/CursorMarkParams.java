@@ -43,5 +43,7 @@ public interface CursorMarkParams {
    */
   public static final String CURSOR_MARK_START = "*";
 
+  public static final String REPLICA_CHOICE_MARK_PARAM = "replicaChoiceMark";
+
 }
 
