@@ -1,0 +1,11 @@
+# A customized type mapping for WordDelimiterFilterFactory
+# the allowable types are: LOWER, UPPER, ALPHA, DIGIT, ALPHANUM, SUBWORD_DELIM
+#
+# the default for any character without a mapping is always computed from
+# Unicode character properties
+
+# Map the $, % characters to DIGIT
+# This might be useful for financial data.
+$ => DIGIT
+% => DIGIT
+& => ALPHA
