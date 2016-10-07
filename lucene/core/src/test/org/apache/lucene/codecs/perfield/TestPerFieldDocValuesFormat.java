@@ -142,7 +142,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     MergeRecordingDocValueFormatWrapper dvf1 = new MergeRecordingDocValueFormatWrapper(TestUtil.getDefaultDocValuesFormat());
     MergeRecordingDocValueFormatWrapper dvf2 = new MergeRecordingDocValueFormatWrapper(TestUtil.getDefaultDocValuesFormat());
 
-    IndexWriterConfig iwc = newIndexWriterConfig();
+    IndexWriterConfig iwc = new IndexWriterConfig();
     iwc.setCodec(new AssertingCodec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {
