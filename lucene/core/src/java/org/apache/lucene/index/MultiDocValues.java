@@ -348,7 +348,7 @@ public class MultiDocValues {
       }
 
       @Override
-      public BytesRef binaryValue() {
+      public BytesRef binaryValue() throws IOException {
         return currentValues.binaryValue();
       }
 
@@ -928,7 +928,7 @@ public class MultiDocValues {
     }
  
     @Override
-    public BytesRef lookupOrd(int ord) {
+    public BytesRef lookupOrd(int ord) throws IOException {
       int subIndex = mapping.getFirstSegmentNumber(ord);
       int segmentOrd = (int) mapping.getFirstSegmentOrd(ord);
       return values[subIndex].lookupOrd(segmentOrd);
@@ -1039,7 +1039,7 @@ public class MultiDocValues {
     }
 
     @Override
-    public BytesRef lookupOrd(long ord) {
+    public BytesRef lookupOrd(long ord) throws IOException {
       int subIndex = mapping.getFirstSegmentNumber(ord);
       long segmentOrd = mapping.getFirstSegmentOrd(ord);
       return values[subIndex].lookupOrd(segmentOrd);

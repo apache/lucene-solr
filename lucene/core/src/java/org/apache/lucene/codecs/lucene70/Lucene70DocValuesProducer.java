@@ -974,7 +974,7 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
       }
 
       @Override
-      public int lookupTerm(BytesRef key) {
+      public int lookupTerm(BytesRef key) throws IOException {
         if (binary instanceof CompressedBinaryDocValues) {
           return (int) ((CompressedBinaryDocValues)binary).lookupTerm(key);
         } else {

@@ -79,7 +79,7 @@ final class SingletonSortedSetDocValues extends SortedSetDocValues {
   }
 
   @Override
-  public BytesRef lookupOrd(long ord) {
+  public BytesRef lookupOrd(long ord) throws IOException {
     // cast is ok: single-valued cannot exceed Integer.MAX_VALUE
     return in.lookupOrd((int) ord);
   }
@@ -90,7 +90,7 @@ final class SingletonSortedSetDocValues extends SortedSetDocValues {
   }
 
   @Override
-  public long lookupTerm(BytesRef key) {
+  public long lookupTerm(BytesRef key) throws IOException {
     return in.lookupTerm(key);
   }
 

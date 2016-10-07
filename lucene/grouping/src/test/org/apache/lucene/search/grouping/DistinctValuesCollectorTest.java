@@ -352,7 +352,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
   @SuppressWarnings({"unchecked","rawtypes"})
   private <T extends Comparable> AbstractDistinctValuesCollector<AbstractDistinctValuesCollector.GroupCount<T>> createDistinctCountCollector(AbstractFirstPassGroupingCollector<T> firstPassGroupingCollector,
                                                                       String groupField,
-                                                                      String countField) {
+                                                                      String countField) throws IOException {
     Random random = random();
     Collection<SearchGroup<T>> searchGroups = firstPassGroupingCollector.getTopGroups(0, false);
     if (FunctionFirstPassGroupingCollector.class.isAssignableFrom(firstPassGroupingCollector.getClass())) {

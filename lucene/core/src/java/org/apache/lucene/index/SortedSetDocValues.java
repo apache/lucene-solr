@@ -58,7 +58,7 @@ public abstract class SortedSetDocValues extends DocIdSetIterator {
    * @param ord ordinal to lookup
    * @see #nextOrd
    */
-  public abstract BytesRef lookupOrd(long ord);
+  public abstract BytesRef lookupOrd(long ord) throws IOException;
 
   /**
    * Returns the number of unique values.
@@ -73,7 +73,7 @@ public abstract class SortedSetDocValues extends DocIdSetIterator {
    *
    *  @param key Key to look up
    **/
-  public long lookupTerm(BytesRef key) {
+  public long lookupTerm(BytesRef key) throws IOException {
     long low = 0;
     long high = getValueCount()-1;
 

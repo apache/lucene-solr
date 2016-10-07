@@ -17,6 +17,8 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
+
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -50,12 +52,12 @@ public abstract class SortedDocValues extends BinaryDocValues {
    * @param ord ordinal to lookup (must be &gt;= 0 and &lt; {@link #getValueCount()})
    * @see #ordValue() 
    */
-  public abstract BytesRef lookupOrd(int ord);
+  public abstract BytesRef lookupOrd(int ord) throws IOException;
 
   private final BytesRef empty = new BytesRef();
 
   @Override
-  public BytesRef binaryValue() {
+  public BytesRef binaryValue() throws IOException {
     int ord = ordValue();
     if (ord == -1) {
       return empty;
@@ -77,7 +79,7 @@ public abstract class SortedDocValues extends BinaryDocValues {
    *
    *  @param key Key to look up
    **/
-  public int lookupTerm(BytesRef key) {
+  public int lookupTerm(BytesRef key) throws IOException {
     int low = 0;
     int high = getValueCount()-1;
 

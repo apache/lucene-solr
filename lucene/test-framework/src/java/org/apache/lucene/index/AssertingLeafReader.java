@@ -505,7 +505,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public BytesRef binaryValue() {
+    public BytesRef binaryValue() throws IOException {
       assertThread("Binary doc values", creationThread);
       assert in.docID() != -1;
       assert in.docID() != NO_MORE_DOCS;
@@ -579,7 +579,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public BytesRef lookupOrd(int ord) {
+    public BytesRef lookupOrd(int ord) throws IOException {
       assertThread("Sorted doc values", creationThread);
       assert ord >= 0 && ord < valueCount;
       final BytesRef result = in.lookupOrd(ord);
@@ -596,7 +596,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public BytesRef binaryValue() {
+    public BytesRef binaryValue() throws IOException {
       assertThread("Sorted doc values", creationThread);
       final BytesRef result = in.binaryValue();
       assert result.isValid();
@@ -604,7 +604,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public int lookupTerm(BytesRef key) {
+    public int lookupTerm(BytesRef key) throws IOException {
       assertThread("Sorted doc values", creationThread);
       assert key.isValid();
       int result = in.lookupTerm(key);
@@ -750,7 +750,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public BytesRef lookupOrd(long ord) {
+    public BytesRef lookupOrd(long ord) throws IOException {
       assertThread("Sorted set doc values", creationThread);
       assert ord >= 0 && ord < valueCount;
       final BytesRef result = in.lookupOrd(ord);
@@ -767,7 +767,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public long lookupTerm(BytesRef key) {
+    public long lookupTerm(BytesRef key) throws IOException {
       assertThread("Sorted set doc values", creationThread);
       assert key.isValid();
       long result = in.lookupTerm(key);

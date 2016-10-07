@@ -84,7 +84,7 @@ interface GenericTermsCollector extends Collector {
         }
         
         @Override
-        public BytesRef lookupOrd(long ord) {
+        public BytesRef lookupOrd(long ord) throws IOException {
           final BytesRef val = target.lookupOrd(ord);
           out.println(val.toString()+", ");
           return val;
