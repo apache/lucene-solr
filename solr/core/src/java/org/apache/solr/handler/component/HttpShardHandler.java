@@ -161,6 +161,8 @@ public class HttpShardHandler extends ShardHandler {
     // do this outside of the callable for thread safety reasons
     final List<String> urls = getURLs(shard, preferredHostAddress, preferredHostAddresses);
 
+    //TODO: add our
+
     Callable<ShardResponse> task = () -> {
 
       ShardResponse srsp = new ShardResponse();
@@ -305,6 +307,7 @@ public class HttpShardHandler extends ShardHandler {
   public void prepDistributed(ResponseBuilder rb) {
     final SolrQueryRequest req = rb.req;
     final SolrParams params = req.getParams();
+    // TODO: use our replica param
     final String shards = params.get(ShardParams.SHARDS);
 
     // since the cost of grabbing cloud state is still up in the air, we grab it only

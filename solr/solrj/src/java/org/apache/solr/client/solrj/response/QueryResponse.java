@@ -172,6 +172,9 @@ public class QueryResponse extends SolrResponseBase
       else if ( CursorMarkParams.CURSOR_MARK_NEXT.equals( n ) ) {
         _cursorMarkNext = (String) res.getVal( i );
       }
+      else if ( CursorMarkParams.REPLICA_MARK_USED.equals( n ) ) {
+        _usedReplicaMark = (String) res.getVal( i );
+      }
     }
     if(_facetInfo != null) extractFacetInfo( _facetInfo );
   }
