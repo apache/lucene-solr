@@ -257,5 +257,7 @@ public interface CommonParams {
 
   String NAME = "name";
   String VALUE_LONG = "val";
+
+  String ROUTING_RULE = "routingRule";
 }
 

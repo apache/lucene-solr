@@ -607,6 +607,26 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       HttpClientUtil.close(client);
     }
   }
+  
+  @Test
+  public void routingRuleTest() throws Exception {
+
+    
+    
+    //TBD to look into mocking / create a cluster with some shards matching 
+    //routing rule and other do not. 
+  //  String collectionName = "CollectionWithSomeReplicasMatchingRoutingRules";
+  //  CloudSolrClient solrClient = cluster.getSolrClient();
+    
+  //  SolrQuery query = new SolrQuery("*:*");
+  //  query.add("routingRule","ip_4:11");
+  //  query.add("routingRule","ip_3:16");
+  //  QueryResponse response = solrClient.query(collectionName,query);
+    
+    //TBD to add assertions to check only matching shards gets added to 
+    // urlList for LoadBalancer to query
+    
+  }
 
   private static void checkSingleServer(NamedList<Object> response) {
     final CloudSolrClient.RouteResponse rr = (CloudSolrClient.RouteResponse) response;
@@ -619,5 +639,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
             1, entry.getValue().getServers().size());
     }
   }
+  
 
 }

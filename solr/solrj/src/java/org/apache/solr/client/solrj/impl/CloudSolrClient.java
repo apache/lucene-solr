@@ -69,6 +69,10 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.cloud.rule.ClientSnitchContext;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.common.cloud.rule.SnitchContext;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -1160,6 +1164,8 @@ public class CloudSolrClient extends SolrClient {
     connect();
     
     ClusterState clusterState = zkStateReader.getClusterState();
+    ImplicitSnitch snitch = new ImplicitSnitch();
+    SnitchContext context = new ClientSnitchContext(null, null, new HashMap<>());
     
     boolean sendToLeaders = false;
     List<String> replicas = null;
@@ -1199,7 +1205,8 @@ public class CloudSolrClient extends SolrClient {
       }
 
       String shardKeys =  reqParams.get(ShardParams._ROUTE_);
-
+      String []routingRules = reqParams.getParams(CommonParams.ROUTING_RULE);
+      
       // TODO: not a big deal because of the caching, but we could avoid looking
       // at every shard
       // when getting leaders if we tweaked some things
@@ -1227,6 +1234,8 @@ public class CloudSolrClient extends SolrClient {
         for (ZkNodeProps nodeProps : slice.getReplicasMap().values()) {
           ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
           String node = coreNodeProps.getNodeName();
+          if((routingRules!=null && routingRules.length!=0) && !nodeMatchRoutingRule(node,routingRules,snitch,context)) 
+            continue;
           if (!liveNodes.contains(coreNodeProps.getNodeName())
               || Replica.State.getState(coreNodeProps.getState()) != Replica.State.ACTIVE) continue;
           if (nodes.put(node, nodeProps) == null) {
@@ -1287,6 +1296,21 @@ public class CloudSolrClient extends SolrClient {
     LBHttpSolrClient.Req req = new LBHttpSolrClient.Req(request, theUrlList);
     LBHttpSolrClient.Rsp rsp = lbClient.request(req);
     return rsp.getResponse();
+  }
+
+  private boolean nodeMatchRoutingRule(String node, String[] routingRules, ImplicitSnitch snitch,
+      SnitchContext context) {
+    //get tags associated with this node
+    snitch.getTags(node, new HashSet<>(ImplicitSnitch.IP_SNITCHES) , context);
+    Map<String, Object> tags = context.getTags();
+    for(String routingRule : routingRules)
+    {
+      String []rule = routingRule.split(":");
+      String ip = (String) tags.get(rule[0]);
+      if(!ip.equals(rule[1])) 
+        return false;
+    }
+    return true;
   }
 
   private Set<String> getCollectionNames(ClusterState clusterState,
