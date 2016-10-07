@@ -55,16 +55,17 @@ public class DistributedQueryComponentReplicaMarkerTest extends SolrCloudTestCas
 
   private static final int numShards = 3;
   private static final int numReplicas = 2;
+  private static final int maxShardsPerNode = 1;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(numShards)
+    configureCluster(numShards*numReplicas/maxShardsPerNode)
         .withSolrXml(TEST_PATH().resolve("solr-trackingshardhandler.xml"))
         .addConfig("conf", configset("cloud-dynamic"))
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", numShards, numReplicas)
-        .setMaxShardsPerNode(1)
+        .setMaxShardsPerNode(maxShardsPerNode)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, numShards, numReplicas));
