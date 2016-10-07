@@ -54,7 +54,7 @@ log.queries=true
       { "SrchTrvRetNewRdr" SearchTravRet(10) > : 1000
     CloseReader
     OpenReader
-      { "SearchHlgtSameRdr" SearchTravRetHighlight(size[10],highlight[10],mergeContiguous[true],maxFrags[3],fields[body]) > : 1000
+      { "SearchHlgtSameRdr" SearchTravRetHighlight(type[UH]) > : 1000
 
     CloseReader
 

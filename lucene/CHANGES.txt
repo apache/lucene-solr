@@ -76,6 +76,9 @@ Other
 * LUCENE-7452: Block join query exception suggests how to find a doc, which 
  violates orthogonality requirement. (Mikhail Khludnev)
 
+* LUCENE-7438: Renovate the Benchmark module's support for benchmarking highlighting. All
+  highlighters are supported via SearchTravRetHighlight. (David Smiley)
+
 Build
 
 * LUCENE-7292: Fix build to use "--release 8" instead of "-release 8" on
