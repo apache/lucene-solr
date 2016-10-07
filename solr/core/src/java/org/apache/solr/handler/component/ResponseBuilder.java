@@ -137,6 +137,7 @@ public class ResponseBuilder
   public List<ShardRequest> outgoing;  // requests to be sent
   public List<ShardRequest> finished;  // requests that have received responses from all shards
   public String preferredHostAddress = null;
+  public String[] preferredHostAddresses = null;
   public String shortCircuitedURL;
 
   public int getShardNum(String shard) {

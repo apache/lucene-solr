@@ -113,7 +113,8 @@ public class HttpShardHandler extends ShardHandler {
 
   // Not thread safe... don't use in Callable.
   // Don't modify the returned URL list.
-  private List<String> getURLs(String shard, String preferredHostAddress) {
+  private List<String> getURLs(String shard, String preferredHostAddress, String[] preferredHostAddresses) {
+    // TODO: use preferredHostAddresses in this function
     List<String> urls = shardToURLs.get(shard);
     if (urls == null) {
       urls = httpShardHandlerFactory.makeURLList(shard);
@@ -155,9 +156,9 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   @Override
-  public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params, String preferredHostAddress) {
+  public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params, String preferredHostAddress, String[] preferredHostAddresses) {
     // do this outside of the callable for thread safety reasons
-    final List<String> urls = getURLs(shard, preferredHostAddress);
+    final List<String> urls = getURLs(shard, preferredHostAddress, preferredHostAddresses);
 
     Callable<ShardResponse> task = () -> {
 
@@ -450,6 +451,7 @@ public class HttpShardHandler extends ShardHandler {
           }
 
           rb.shards[i] = sliceShardsStr.toString();
+          // rb.preferredHostAddresses == ???
         }
       }
     }
