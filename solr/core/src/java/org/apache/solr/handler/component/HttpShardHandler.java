@@ -324,7 +324,7 @@ public class HttpShardHandler extends ShardHandler {
     
     String[] replicatMark = params.getParams(CursorMarkParams.REPLICA_MARK_PARAM);
     if (replicatMark != null) {
-      rb.preferedHostAddresses = replicatMark;
+      rb.preferredHostAddresses = replicatMark;
     }
 
     if (shards != null) {
