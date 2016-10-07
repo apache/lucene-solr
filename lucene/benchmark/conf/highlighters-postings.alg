@@ -14,55 +14,52 @@
 # * See the License for the specific language governing permissions and
 # * limitations under the License.
 # */
-# -------------------------------------------------------------------------------------
-# multi val params are iterated by NewRound's, added to reports, start with column name.
 
-ram.flush.mb=flush:32:32
-compound=cmpnd:true:false
+# For postings-offsets with light term-vectors
 
 analyzer=org.apache.lucene.analysis.standard.StandardAnalyzer
 directory=FSDirectory
+work.dir=work/enwikiPostings
+ram.flush.mb=64
+compound=false
 
 doc.stored=true
 doc.tokenized=true
+# offsets in postings:
+doc.body.offsets=true
+# term vector, but no positions/offsets with it
 doc.term.vector=true
-doc.term.vector.offsets=true
-doc.term.vector.positions=true
-log.step=2000
 
-docs.dir=reuters-out
+content.source=org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource
+docs.file=temp/enwiki-20070527-pages-articles.xml.bz2
 
-content.source=org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource
+query.maker=org.apache.lucene.benchmark.byTask.feeds.FileBasedQueryMaker
+file.query.maker.file=conf/query-phrases.txt
+log.queries=false
+log.step.SearchTravRetHighlight=-1
 
-query.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker
+highlighter=HlImpl:NONE:SH_A:UH_A:PH_P:UH_P:UH_PV
 
-# task at this depth or less would print when they start
-task.max.depth.log=2
-
-log.queries=true
-# -------------------------------------------------------------------------------------
 { "Populate"
         CreateIndex
-        { "MAddDocs" AddDoc } : 20000
-        ForceMerge(1)
+        [{ "MAddDocs" AddDoc > : 50000] : 4
         CloseIndex
-    }
-{ "Rounds"
+    } : 0
 
-    ResetSystemSoft
+{
+	"Rounds"
 
+        ResetSystemSoft
 
-    OpenReader
-      { "SearchHlgtSameRdr" SearchTravRetHighlight(maxFrags[10],fields[body]) > : 1000
+        OpenReader
 
-    CloseReader
+        { "Warm" SearchTravRetHighlight > : 1000
 
-    RepSumByPref MAddDocs
+        { "HL" SearchTravRetHighlight > : 500
 
-    NewRound
+        CloseReader
 
-} : 4
+        NewRound
+} : 6
 
-RepSumByNameRound
-RepSumByName
-RepSumByPrefRound MAddDocs
+RepSumByPrefRound HL

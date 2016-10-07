@@ -192,6 +192,8 @@
           // excludes:
           exclude(name: '**/build/**')
           exclude(name: '**/dist/**')
+          exclude(name: 'lucene/benchmark/work/**')
+          exclude(name: 'lucene/benchmark/temp/**')
           exclude(name: '**/CheckLoggingConfiguration.java')
           exclude(name: 'build.xml') // ourselves :-)
         }

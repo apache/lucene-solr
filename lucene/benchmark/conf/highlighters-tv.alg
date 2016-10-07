@@ -14,55 +14,51 @@
 # * See the License for the specific language governing permissions and
 # * limitations under the License.
 # */
-# -------------------------------------------------------------------------------------
-# multi val params are iterated by NewRound's, added to reports, start with column name.
 
-ram.flush.mb=flush:32:32
-compound=cmpnd:true:false
+# This is a full-term vector configuration.
 
 analyzer=org.apache.lucene.analysis.standard.StandardAnalyzer
 directory=FSDirectory
+work.dir=work/enwikiTermVec
+ram.flush.mb=64
+compound=false
 
 doc.stored=true
 doc.tokenized=true
 doc.term.vector=true
-doc.term.vector.offsets=true
 doc.term.vector.positions=true
-log.step=2000
+doc.term.vector.offsets=true
 
-docs.dir=reuters-out
+content.source=org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource
+docs.file=temp/enwiki-20070527-pages-articles.xml.bz2
 
-content.source=org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource
+query.maker=org.apache.lucene.benchmark.byTask.feeds.FileBasedQueryMaker
+file.query.maker.file=conf/query-terms.txt
+log.queries=false
+log.step.SearchTravRetHighlight=-1
 
-query.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker
+highlighter=HlImpl:NONE:SH_V:FVH_V:UH_V
 
-# task at this depth or less would print when they start
-task.max.depth.log=2
-
-log.queries=true
-# -------------------------------------------------------------------------------------
 { "Populate"
         CreateIndex
-        { "MAddDocs" AddDoc } : 20000
-        ForceMerge(1)
+        [{ "MAddDocs" AddDoc > : 50000] : 4
         CloseIndex
-    }
-{ "Rounds"
+    } : 0
 
-    ResetSystemSoft
+{
+	"Rounds"
 
+        ResetSystemSoft
 
-    OpenReader
-      { "SearchVecHlgtSameRdr" SearchTravRetVectorHighlight(maxFrags[10],fields[body]) > : 1000
+        OpenReader
 
-    CloseReader
+        { "Warm" SearchTravRetHighlight > : 1000
 
-    RepSumByPref MAddDocs
+        { "HL" SearchTravRetHighlight > : 500
 
-    NewRound
+        CloseReader
 
+        NewRound
 } : 4
 
-RepSumByNameRound
-RepSumByName
-RepSumByPrefRound MAddDocs
+RepSumByPrefRound HL
