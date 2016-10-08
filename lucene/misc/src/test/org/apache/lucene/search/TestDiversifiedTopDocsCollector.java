@@ -191,7 +191,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
           return vals.cost();
         }
         @Override
-        public long longValue() {
+        public long longValue() throws IOException {
           return vals == null ? -1 : vals.binaryValue().hashCode();
         }
       };

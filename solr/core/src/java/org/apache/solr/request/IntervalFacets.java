@@ -626,7 +626,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      *
      * @param sdv DocValues for the current reader
      */
-    public void updateContext(SortedDocValues sdv) {
+    public void updateContext(SortedDocValues sdv) throws IOException {
       if (start == null) {
         /*
          * Unset start. All ordinals will be greater than -1.
@@ -689,7 +689,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      *
      * @param sdv DocValues for the current reader
      */
-    public void updateContext(SortedSetDocValues sdv) {
+    public void updateContext(SortedSetDocValues sdv) throws IOException {
       if (start == null) {
         /*
          * Unset start. All ordinals will be greater than -1.

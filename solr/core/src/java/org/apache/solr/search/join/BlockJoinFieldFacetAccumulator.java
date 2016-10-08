@@ -171,7 +171,7 @@ class BlockJoinFieldFacetAccumulator {
   }
   
   /** copy paste from {@link DocValuesFacets} */
-  NamedList<Integer> getFacetValue() {
+  NamedList<Integer> getFacetValue() throws IOException {
     NamedList<Integer> facetValue = new NamedList<>();
     final CharsRefBuilder charsRef = new CharsRefBuilder(); // if there is no globs, take segment's ones
     for (int i = 1; i< (globalCounts!=null ? globalCounts.length: segmentAccums.length); i++) {

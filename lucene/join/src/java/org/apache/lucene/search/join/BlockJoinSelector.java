@@ -172,7 +172,7 @@ public class BlockJoinSelector {
       }
 
       @Override
-      public BytesRef lookupOrd(int ord) {
+      public BytesRef lookupOrd(int ord) throws IOException {
         return values.lookupOrd(ord);
       }
 

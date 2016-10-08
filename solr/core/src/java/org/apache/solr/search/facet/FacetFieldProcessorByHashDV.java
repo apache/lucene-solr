@@ -332,7 +332,13 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
 
       // TODO support SortedSetDocValues
       SortedDocValues globalDocValues = FieldUtil.getSortedDocValues(fcontext.qcontext, sf, null);
-      ((TermOrdCalc)calc).lookupOrdFunction = globalDocValues::lookupOrd;
+      ((TermOrdCalc)calc).lookupOrdFunction = ord -> {
+        try {
+          return globalDocValues.lookupOrd(ord);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      };
 
       DocSetUtil.collectSortedDocSet(fcontext.base, fcontext.searcher.getIndexReader(), new SimpleCollector() {
           SortedDocValues docValues = globalDocValues; // this segment/leaf. NN

@@ -406,7 +406,7 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public BytesRef lookupOrd(int ord) {
+    public BytesRef lookupOrd(int ord) throws IOException {
       return in.lookupOrd(ord);
     }
 
@@ -483,7 +483,7 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public BytesRef lookupOrd(long ord) {
+    public BytesRef lookupOrd(long ord) throws IOException {
       return in.lookupOrd(ord);
     }
 

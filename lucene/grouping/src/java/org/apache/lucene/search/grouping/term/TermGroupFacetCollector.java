@@ -273,7 +273,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       }
     }
     
-    private void process(int groupOrd, int facetOrd) {
+    private void process(int groupOrd, int facetOrd) throws IOException {
       if (facetOrd < startFacetOrd || facetOrd >= endFacetOrd) {
         return;
       }

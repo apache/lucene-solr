@@ -325,7 +325,7 @@ public abstract class DocValuesConsumer implements Closeable {
                          }
 
                          @Override
-                         public BytesRef binaryValue() {
+                         public BytesRef binaryValue() throws IOException {
                            return current.values.binaryValue();
                          }
                        };
@@ -573,7 +573,7 @@ public abstract class DocValuesConsumer implements Closeable {
                          public int nextDoc() throws IOException {
                            SortedDocValuesSub sub = docIDMerger.next();
                            if (sub == null) {
-                             return NO_MORE_DOCS;
+                             return docID = NO_MORE_DOCS;
                            }
                            int subOrd = sub.values.ordValue();
                            assert subOrd != -1;
@@ -603,7 +603,7 @@ public abstract class DocValuesConsumer implements Closeable {
                          }
                          
                          @Override
-                         public BytesRef lookupOrd(int ord) {
+                         public BytesRef lookupOrd(int ord) throws IOException {
                            int segmentNumber = map.getFirstSegmentNumber(ord);
                            int segmentOrd = (int) map.getFirstSegmentOrd(ord);
                            return dvs[segmentNumber].lookupOrd(segmentOrd);
@@ -773,7 +773,7 @@ public abstract class DocValuesConsumer implements Closeable {
                             }
 
                             @Override
-                            public BytesRef lookupOrd(long ord) {
+                            public BytesRef lookupOrd(long ord) throws IOException {
                               int segmentNumber = map.getFirstSegmentNumber(ord);
                               long segmentOrd = map.getFirstSegmentOrd(ord);
                               return toMerge.get(segmentNumber).lookupOrd(segmentOrd);

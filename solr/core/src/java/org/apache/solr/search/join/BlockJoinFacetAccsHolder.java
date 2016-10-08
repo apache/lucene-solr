@@ -85,7 +85,7 @@ class BlockJoinFacetAccsHolder {
     }
   }
   
-  NamedList getFacets() {
+  NamedList getFacets() throws IOException {
     NamedList<NamedList<Integer>> facets = new NamedList<>(blockJoinFieldFacetAccumulators.length);
     for (BlockJoinFieldFacetAccumulator state : blockJoinFieldFacetAccumulators) {
       facets.add(state.getFieldName(), state.getFacetValue());

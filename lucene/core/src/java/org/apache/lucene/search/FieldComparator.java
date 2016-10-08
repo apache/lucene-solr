@@ -759,7 +759,7 @@ public abstract class FieldComparator<T> {
     }
     
     @Override
-    public void setBottom(final int bottom) {
+    public void setBottom(final int bottom) throws IOException {
       bottomSlot = bottom;
 
       bottomValue = values[bottomSlot];
