@@ -37,10 +37,6 @@
       <lst name="typeMapping">
         <str name="valueClass">java.lang.String</str>
         <str name="fieldType">text</str>
-        <lst name="copyField">
-          <str name="dest">*_str</str>
-          <int name="maxChars">10</int>
-        </lst>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Boolean</str>
@@ -83,7 +79,6 @@
         <str name="fieldType">text</str>
         <lst name="copyField">
           <str name="dest">*_str</str>
-          <int name="maxChars">10</int>
         </lst>
       </lst>
       <lst name="typeMapping">
@@ -110,6 +105,31 @@
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Number</str>
         <str name="fieldType">tdouble</str>
+      </lst>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="add-fields-maxchars">
+    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="solr.DistributedUpdateProcessorFactory" />
+    <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
+      <str name="defaultFieldType">text</str>
+      <lst name="typeMapping">
+        <str name="valueClass">java.lang.String</str>
+        <str name="fieldType">text</str>
+        <lst name="copyField">
+          <str name="dest">*_str</str>
+          <int name="maxChars">10</int>
+        </lst>
+        <lst name="copyField">
+          <str name="dest">*_t</str>
+          <int name="maxChars">20</int>
+        </lst>
+        <lst name="copyField">
+          <str name="dest">*2_t</str>
+          <int name="maxChars">20</int>
+        </lst>
       </lst>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
@@ -192,10 +212,6 @@
       <lst name="typeMapping">
         <str name="valueClass">java.lang.String</str>
         <str name="fieldType">text</str>
-        <lst name="copyField">
-          <str name="dest">*_str</str>
-          <int name="maxChars">10</int>
-        </lst>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Boolean</str>

@@ -340,10 +340,6 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       return maxChars;
     }
     
-    public String getDestGlob() {
-      return destGlob;
-    }
-    
     public String getDest(String srcFieldName) {
       if (!destGlob.contains("*")) {
         return destGlob;
@@ -374,9 +370,8 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       IndexSchema oldSchema = cmd.getReq().getSchema();
       for (;;) {
         List<SchemaField> newFields = new ArrayList<>();
-        // NOCOMMIT: Need to convey maxChars in the map
-        //Map<String,Collection<CopyFieldDef>> newCopyFields = new HashMap<>();
-        Map<String,Collection<String>> newCopyFields = new HashMap<>();
+        // Group copyField defs per field and then per maxChar, to adapt to IndexSchema API 
+        Map<String,Map<Integer,List<CopyFieldDef>>> newCopyFields = new HashMap<>();
         // build a selector each time through the loop b/c the schema we are
         // processing may have changed
         FieldNameSelector selector = buildSelector(oldSchema);
@@ -388,7 +383,8 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           TypeMapping typeMapping = mapValueClassesToFieldType(entry.getValue());
           if (typeMapping != null) {
             fieldTypeName = typeMapping.fieldTypeName;
-            newCopyFields.put(fieldName, typeMapping.copyFieldDefs.stream().map(cf -> cf.getDest(fieldName)).collect(Collectors.toList()));
+            newCopyFields.put(fieldName, 
+                typeMapping.copyFieldDefs.stream().collect(Collectors.groupingBy(CopyFieldDef::getMaxChars)));
           } 
           newFields.add(oldSchema.newField(fieldName, fieldTypeName, Collections.<String,Object>emptyMap()));
         }
@@ -417,11 +413,12 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
             builder.append(isFirst ? "" : ",");
             isFirst = false;
             builder.append("source=").append(fieldName).append("{");
-            // NOCOMMIT: Enable debug print when maxChars is ready
-//            for (CopyFieldDef copyFieldDef : newCopyFields.get(fieldName)) {
-//              builder.append("{dest=").append(copyFieldDef.getDest(fieldName));
-//              builder.append(", maxChars=").append(copyFieldDef.getMaxChars()).append("}");
-//            }
+            for (List<CopyFieldDef> copyFieldDefList : newCopyFields.get(fieldName).values()) {
+              for (CopyFieldDef copyFieldDef : copyFieldDefList) {
+                builder.append("{dest=").append(copyFieldDef.getDest(fieldName));
+                builder.append(", maxChars=").append(copyFieldDef.getMaxChars()).append("}");
+              }
+            }
             builder.append("}");
           }
           builder.append("]");
@@ -432,8 +429,14 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         synchronized (oldSchema.getSchemaUpdateLock()) {
           try {
             // Add copyFields
-            // TODO: Needs a new method which can also take in maxChars setting
-            IndexSchema newSchema = oldSchema.addFields(newFields).addCopyFields(newCopyFields, true);
+            IndexSchema newSchema = oldSchema.addFields(newFields);
+            for (String srcField : newCopyFields.keySet()) {
+              for (Integer maxChars : newCopyFields.get(srcField).keySet()) {
+                newSchema = newSchema.addCopyFields(srcField, 
+                  newCopyFields.get(srcField).get(maxChars).stream().map(f -> f.getDest(srcField)).collect(Collectors.toList()), 
+                  maxChars);
+              }
+            }
             if (null != newSchema) {
               core.setLatestSchema(newSchema);
               cmd.getReq().updateSchemaToLatest();

@@ -116,6 +116,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
     assertEquals("text", schema.getFieldType(fieldName).getTypeName());
+    assertEquals(0, schema.getCopyFieldProperties(true, Collections.singleton(fieldName), null).size());
     assertU(commit());
     assertQ(req("id:4")
         ,"//arr[@name='" + fieldName + "']/str[.='" + fieldValue1.toString() + "']"
@@ -137,7 +138,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
     assertEquals("text", schema.getFieldType(fieldName).getTypeName());
-    assertEquals("string", schema.getFieldType(fieldName+"_str").getTypeName());
+    assertEquals(1, schema.getCopyFieldProperties(true, Collections.singleton(fieldName), null).size());
     assertU(commit());
     assertQ(req("id:4")
         ,"//arr[@name='" + fieldName + "']/str[.='" + fieldValue1.toString() + "']"
@@ -233,24 +234,48 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
         ,"//arr[@name='" + fieldName4 + "']/date[.='" + field4Value1String + "']");
   }
 
+  public void testStringWithCopyField() throws Exception {
+    IndexSchema schema = h.getCore().getLatestSchema();
+    final String fieldName = "stringField";
+    final String strFieldName = fieldName+"_str";
+    assertNull(schema.getFieldOrNull(fieldName));
+    String content = "This is a text that should be copied to a string field but not be cutoff";
+    SolrInputDocument d = processAdd("add-fields", doc(f("id", "1"), f(fieldName, content)));
+    assertNotNull(d);
+    schema = h.getCore().getLatestSchema();
+    assertNotNull(schema.getFieldOrNull(fieldName));
+    assertNotNull(schema.getFieldOrNull(strFieldName));
+    assertEquals("text", schema.getFieldType(fieldName).getTypeName());
+    assertEquals(1, schema.getCopyFieldProperties(true, Collections.singleton(fieldName), Collections.singleton(strFieldName)).size());
+  }
+
   public void testStringWithCopyFieldAndMaxChars() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     final String fieldName = "stringField";
     final String strFieldName = fieldName+"_str";
     assertNull(schema.getFieldOrNull(fieldName));
-    String content = "This is a string that should be copied to a string field and cutoff at 10 characters";
-    SolrInputDocument d = processAdd("add-fields", doc(f("id", "1"), f(fieldName, content)));
+    String content = "This is a text that should be copied to a string field and cutoff at 10 characters";
+    SolrInputDocument d = processAdd("add-fields-maxchars", doc(f("id", "1"), f(fieldName, content)));
     assertNotNull(d);
     System.out.println("Document is "+d);
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
     assertNotNull(schema.getFieldOrNull(strFieldName));
     assertEquals("text", schema.getFieldType(fieldName).getTypeName());
-    assertEquals("string", schema.getFieldType(strFieldName).getTypeName());
+    // We have three copyFields, one with maxChars 10 and two with maxChars 20
+    assertEquals(3, schema.getCopyFieldProperties(true, Collections.singleton(fieldName), null).size());
     assertEquals("The configured maxChars cutoff does not exist on the copyField", 10, 
         schema.getCopyFieldProperties(true, Collections.singleton(fieldName), Collections.singleton(strFieldName))
             .get(0).get("maxChars"));
+    assertEquals("The configured maxChars cutoff does not exist on the copyField", 20, 
+        schema.getCopyFieldProperties(true, Collections.singleton(fieldName), Collections.singleton(fieldName+"_t"))
+            .get(0).get("maxChars"));
+    assertEquals("The configured maxChars cutoff does not exist on the copyField", 20, 
+        schema.getCopyFieldProperties(true, Collections.singleton(fieldName), Collections.singleton(fieldName+"2_t"))
+            .get(0).get("maxChars"));
   }
+  
+  // TODO: Add a test that actually indexes a field to prove the copyField works?
   
   @After
   private void deleteCoreAndTempSolrHomeDirectory() throws Exception {
