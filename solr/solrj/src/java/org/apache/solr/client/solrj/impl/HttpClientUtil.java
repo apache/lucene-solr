@@ -442,12 +442,7 @@ public class HttpClientUtil {
   /**
    * Create a HttpClientContext object and {@link HttpClientContext#setUserToken(Object)}
    * to an internal singleton. It allows to reuse underneath {@link HttpClient} 
-   * in connection pools 
-   *
-   * If the client is going to be re-used, then you should pass in an object that
-   * can be used by internal connection pools as a cache key.  This is particularly
-   * important if client authentication is enabled, as SSL connections will not
-   * be re-used if no cache key is provided.
+   * in connection pools if client authentication is enabled.
    *
    */
   public static HttpClientContext createNewHttpClientRequestContext() {
