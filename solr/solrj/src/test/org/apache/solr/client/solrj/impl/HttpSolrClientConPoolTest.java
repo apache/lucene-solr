@@ -75,6 +75,13 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
     }
     final String barUrl = yetty.getBaseUrl().toString() + "/" + "collection1";
     
+    {
+      client1.setBaseURL(fooUrl);
+      client1.deleteByQuery("*:*");
+      client1.setBaseURL(barUrl);
+      client1.deleteByQuery("*:*");
+    }
+    
     List<String> urls = new ArrayList<>();
     for(int i=0; i<17; i++) {
       urls.add(fooUrl);
