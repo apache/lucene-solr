@@ -22,6 +22,7 @@ import java.util.Date;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -275,7 +276,18 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
             .get(0).get("maxChars"));
   }
   
-  // TODO: Add a test that actually indexes a field to prove the copyField works?
+  public void testCopyFieldByIndexing() throws Exception {
+    String content = "This is a text that should be copied to a string field and cutoff at 10 characters";
+    assertU(adoc("id", "1", "mynewfield", content));
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*").add("facet", "true").add("facet.field", "mynewfield_str");
+    assertQ(req(params)
+            , "*[count(//doc)=1]"
+            ,"//lst[@name='mynewfield_str']/int[@name='This is a '][.='1']"
+            );
+  }
   
   @After
   private void deleteCoreAndTempSolrHomeDirectory() throws Exception {
