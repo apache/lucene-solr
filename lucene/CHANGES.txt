@@ -64,6 +64,9 @@ Bug Fixes
 * LUCENE-7468: ASCIIFoldingFilter should not emit duplicated tokens when
   preserve original is on. (David Causse via Adrien Grand)
 
+* LUCENE-7484: FastVectorHighlighter failed to highlight SynonymQuery
+  (Jim Ferenczi via Mike McCandless)
+
 Improvements
 
 * LUCENE-7439: FuzzyQuery now matches all terms within the specified
