@@ -46,6 +46,7 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.highlight.DefaultEncoder;
@@ -516,6 +517,43 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
           fragListBuilder, fragmentsBuilder, preTags, postTags, encoder );
       assertEquals("<b>hero</b> <b>of</b> <b>legend</b>", bestFragments[0]);
     }
+
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+
+  public void testWithSynonym() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    FieldType type = new FieldType(TextField.TYPE_STORED);
+    type.setStoreTermVectorOffsets(true);
+    type.setStoreTermVectorPositions(true);
+    type.setStoreTermVectors(true);
+    type.freeze();
+
+    Document doc = new Document();
+    doc.add( new Field("field", "the quick brown fox", type ));
+    writer.addDocument(doc);
+    FastVectorHighlighter highlighter = new FastVectorHighlighter();
+
+    IndexReader reader = DirectoryReader.open(writer);
+    int docId = 0;
+
+    // query1: simple synonym query
+    SynonymQuery synQuery = new SynonymQuery(new Term("field", "quick"), new Term("field", "fast"));
+    FieldQuery fieldQuery  = highlighter.getFieldQuery(synQuery, reader);
+    String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 54, 1);
+    assertEquals("the <b>quick</b> brown fox", bestFragments[0]);
+
+    // query2: boolean query with synonym query
+    BooleanQuery.Builder bq =
+        new BooleanQuery.Builder()
+            .add(new BooleanClause(synQuery, Occur.MUST))
+            .add(new BooleanClause(new TermQuery(new Term("field", "fox")), Occur.MUST));
+    fieldQuery  = highlighter.getFieldQuery(bq.build(), reader);
+    bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 54, 1);
+    assertEquals("the <b>quick</b> brown <b>fox</b>", bestFragments[0]);
 
     reader.close();
     writer.close();
