@@ -406,9 +406,8 @@ public class HttpClientUtil {
    * in connection pools if client authentication is enabled.
    */
   public static HttpClientContext createNewHttpClientRequestContext() {
-    HttpClientContext context = new HttpClientContext();
+    HttpClientContext context = httpClientRequestContextBuilder.createContext(HttpSolrClient.cacheKey);
 
-    context.setUserToken(HttpSolrClient.cacheKey);
     return context;
   }
   
