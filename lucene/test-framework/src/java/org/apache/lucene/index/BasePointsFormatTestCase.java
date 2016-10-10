@@ -168,6 +168,11 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     for(LeafReaderContext ctx : r.leaves()) {
       PointValues values = ctx.reader().getPointValues();
       NumericDocValues idValues = ctx.reader().getNumericDocValues("id");
+      if (idValues == null) {
+        // this is (surprisingly) OK, because if the random IWC flushes all 10 docs before the 11th doc is added, and force merge runs, it
+        // will drop the 100% deleted segments, and the "id" field never exists in the final single doc segment
+        continue;
+      }
       if (values != null) {
         BitSet seen = new BitSet();
         values.intersect("dim",

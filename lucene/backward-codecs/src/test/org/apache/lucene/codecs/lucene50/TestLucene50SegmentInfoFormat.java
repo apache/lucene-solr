@@ -16,18 +16,25 @@
  */
 package org.apache.lucene.codecs.lucene50;
 
-
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseFieldInfoFormatTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.codecs.lucene60.Lucene60RWCodec;
+import org.apache.lucene.index.BaseSegmentInfoFormatTestCase;
+import org.apache.lucene.util.Version;
 
-/**
- * Tests Lucene50FieldInfoFormat
- */
-public class TestLucene50FieldInfoFormat extends BaseFieldInfoFormatTestCase {
+public class TestLucene50SegmentInfoFormat extends BaseSegmentInfoFormatTestCase {
 
   @Override
   protected Codec getCodec() {
-    return TestUtil.getDefaultCodec();
+    return new Lucene60RWCodec();
+  }
+
+  @Override
+  protected Version[] getVersions() {
+    return new Version[] { Version.LUCENE_6_0_0 };
+  }
+
+  @Override
+  protected boolean supportsIndexSort() {
+    return false;
   }
 }

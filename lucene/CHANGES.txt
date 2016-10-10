@@ -9,7 +9,28 @@ API Changes
 
 New Features
 
+* LUCENE-7438: New "UnifiedHighlighter" derivative of the PostingsHighlighter that
+  can consume offsets from postings, term vectors, or analysis.  It can highlight phrases
+  as accurately as the standard Highlighter. Light term vectors can be used with offsets
+  in postings for fast wildcard (MultiTermQuery) highlighting.
+  (David Smiley, Timothy Rodriguez)
+
 Bug Fixes
+
+* LUCENE-7472: MultiFieldQueryParser.getFieldQuery() drops queries that are
+  neither BooleanQuery nor TermQuery.  (Steve Rowe)
+
+* LUCENE-7456: PerFieldPostings/DocValues was failing to delegate the
+  merge method (Julien MASSENET via Mike McCandless)
+
+* LUCENE-7468: ASCIIFoldingFilter should not emit duplicated tokens when
+  preserve original is on. (David Causse via Adrien Grand)
+
+* LUCENE-7484: FastVectorHighlighter failed to highlight SynonymQuery
+  (Jim Ferenczi via Mike McCandless)
+
+* LUCENE-7476: JapaneseNumberFilter should not invoke incrementToken
+  on its input after it's exhausted (Andy Hind via Mike McCandless)
 
 Improvements
 
@@ -22,6 +43,9 @@ Other
 
 * LUCENE-7452: Block join query exception suggests how to find a doc, which 
  violates orthogonality requirement. (Mikhail Khludnev)
+
+* LUCENE-7438: Renovate the Benchmark module's support for benchmarking highlighting. All
+  highlighters are supported via SearchTravRetHighlight. (David Smiley)
 
 Build
 

@@ -20,11 +20,11 @@ package org.apache.solr.client.solrj.response;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Map;
 
@@ -77,11 +77,12 @@ public abstract class DelegationTokenResponse extends SolrResponseBase {
 
     @Override
     public NamedList<Object> processResponse(InputStream body, String encoding) {
-      ObjectMapper mapper = new ObjectMapper();
       Map map = null;
       try {
-        map = mapper.readValue(body, Map.class);
-      } catch (IOException e) {
+        ObjectBuilder builder = new ObjectBuilder(
+            new JSONParser(new InputStreamReader(body, encoding == null? "UTF-8": encoding)));
+        map = (Map)builder.getObject();
+      } catch (IOException | JSONParser.ParseException e) {
         throw new SolrException (SolrException.ErrorCode.SERVER_ERROR,
           "parsing error", e);
       }

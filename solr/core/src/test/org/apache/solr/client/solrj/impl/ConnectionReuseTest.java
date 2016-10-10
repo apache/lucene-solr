@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj;
+package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -36,11 +36,12 @@ import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.message.BasicHttpRequest;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpProtocolParams;
-import org.apache.http.protocol.BasicHttpContext;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
@@ -149,35 +150,40 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
 
       route = new HttpRoute(new HttpHost(url.getHost(), url.getPort(), isSSLMode() ? "https" : "http"));
 
-      mConn = cm.requestConnection(route, null);
+      mConn = cm.requestConnection(route, HttpSolrClient.cacheKey 
+          );
 
       ManagedClientConnection conn2 = getConn(mConn);
 
-      HttpConnectionMetrics metrics = conn2.getMetrics();
       headerRequest(target, route, conn2);
+      HttpConnectionMetrics metrics = conn2.getMetrics();
       conn2.releaseConnection();
       cm.releaseConnection(conn2, -1, TimeUnit.MILLISECONDS);
 
 
-      assertNotNull("No connection metrics found - is the connection getting aborted? server closing the connection? " + client.getClass().getSimpleName(), metrics);
+      assertNotNull("No connection metrics found - is the connection getting aborted? server closing the connection? " +
+         client.getClass().getSimpleName(), metrics);
 
       // we try and make sure the connection we get has handled all of the requests in this test
+      final long requestCount = metrics.getRequestCount();
+     // System.out.println(cm.getTotalStats() + " " + cm );
       if (client instanceof ConcurrentUpdateSolrClient) {
         // we can't fully control queue polling breaking up requests - allow a bit of leeway
         log.info("Outer loop count: {}", cnt1);
         log.info("Queue breaks: {}", queueBreaks);
         int exp = queueBreaks + 3;
         log.info("Expected: {}", exp);
-        log.info("Requests: {}", metrics.getRequestCount());
+        log.info("Requests: {}", requestCount);
         assertTrue(
             "We expected all communication via streaming client to use one connection! expected=" + exp + " got="
-                + metrics.getRequestCount(),
-            Math.max(exp, metrics.getRequestCount()) - Math.min(exp, metrics.getRequestCount()) < 3);
+                + requestCount + " "+ client.getClass().getSimpleName(), 
+            Math.max(exp, requestCount) - Math.min(exp, requestCount) < 3);
       } else {
         log.info("Outer loop count: {}", cnt1);
         log.info("Inner loop count: {}", cnt2);
-        assertTrue("We expected all communication to use one connection! " + client.getClass().getSimpleName(),
-            cnt1 * cnt2 + 2 <= metrics.getRequestCount());
+        assertTrue("We expected all communication to use one connection! " + client.getClass().getSimpleName()
+            +" "+cnt1+" "+ cnt2+ " "+ requestCount,
+            cnt1 * cnt2 + 2 <= requestCount);
       }
     }
     finally {
@@ -201,14 +207,16 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
     req.addHeader("Host", target.getHostName());
     BasicHttpParams p = new BasicHttpParams();
     HttpProtocolParams.setVersion(p, HttpVersion.HTTP_1_1);
-    if (!conn.isOpen()) conn.open(route, new BasicHttpContext(null), p);
+    if (!conn.isOpen()) {
+      conn.open(route, HttpClientUtil.createNewHttpClientRequestContext(), p);
+    }
     conn.sendRequestHeader(req);
     conn.flush();
     conn.receiveResponseHeader();
   }
 
-  public ClientConnectionRequest getClientConnectionRequest(HttpClient httpClient, HttpRoute route) {
-    ClientConnectionRequest mConn = ((PoolingClientConnectionManager) httpClient.getConnectionManager()).requestConnection(route, null);
+  public ClientConnectionRequest getClientConnectionRequest(HttpClient httpClient, HttpRoute route) { // passing second argument to mimic what happens in HttpSolrClient.execute()
+    ClientConnectionRequest mConn = ((PoolingClientConnectionManager) httpClient.getConnectionManager()).requestConnection(route, HttpSolrClient.cacheKey);
     return mConn;
   }
 

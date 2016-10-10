@@ -88,7 +88,7 @@ public class ReverseOrdFieldSource extends ValueSource {
         r = SlowCompositeReaderWrapper.wrap(new MultiReader(insaneLeaves));
       } else {
         // reuse ordinalmap
-        r = ((SolrIndexSearcher)o).getLeafReader();
+        r = ((SolrIndexSearcher)o).getSlowAtomicReader();
       }
     } else {
       IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader();

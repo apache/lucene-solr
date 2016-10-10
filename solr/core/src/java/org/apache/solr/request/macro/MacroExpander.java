@@ -108,7 +108,6 @@ public class MacroExpander {
     if (idx < 0) return val;
 
     int start = 0;  // start of the unprocessed part of the string
-    int end = 0;
     StringBuilder sb = null;
     for (;;) {
       idx = val.indexOf(macroStart, idx);

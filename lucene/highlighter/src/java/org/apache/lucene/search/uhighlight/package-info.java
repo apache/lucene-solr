@@ -14,17 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.benchmark.byTask.tasks;
-
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
 
 /**
- * Abstract class for benchmarking highlighting performance
+ * The UnifiedHighlighter -- a flexible highlighter that can get offsets from postings, term vectors, or analysis.
+ * @see org.apache.lucene.search.uhighlight.UnifiedHighlighter
  */
-public abstract class BenchmarkHighlighter {
-  public abstract int doHighlight( IndexReader reader, int doc, String field,
-      Document document, Analyzer analyzer, String text ) throws Exception ;
-}
+package org.apache.lucene.search.uhighlight;

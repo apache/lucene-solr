@@ -649,7 +649,8 @@ public class SolrCLI {
     // ensure we're requesting JSON back from Solr
     HttpGet httpGet = new HttpGet(new URIBuilder(getUrl).setParameter(CommonParams.WT, CommonParams.JSON).build());
     // make the request and get back a parsed JSON object
-    Map<String,Object> json = httpClient.execute(httpGet, new SolrResponseHandler());
+    Map<String,Object> json = httpClient.execute(httpGet, new SolrResponseHandler(), 
+                                                HttpClientUtil.createNewHttpClientRequestContext());
     // check the response JSON from Solr to see if it is an error
     Long statusCode = asLong("/responseHeader/status", json);
     if (statusCode == -1) {

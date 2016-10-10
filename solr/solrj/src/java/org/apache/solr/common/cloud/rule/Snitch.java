@@ -16,16 +16,18 @@
  */
 package org.apache.solr.common.cloud.rule;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
 /**
  *
  */
 public abstract class Snitch {
-  public static final Set<Class> WELL_KNOWN_SNITCHES = ImmutableSet.of(ImplicitSnitch.class);
-
+  public static final Set<Class> WELL_KNOWN_SNITCHES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(ImplicitSnitch.class)));
 
   public abstract void getTags(String solrNode, Set<String> requestedTags, SnitchContext ctx);
 

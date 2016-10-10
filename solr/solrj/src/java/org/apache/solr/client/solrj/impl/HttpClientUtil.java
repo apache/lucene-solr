@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static java.util.Collections.singletonList;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -27,7 +29,6 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import com.google.common.collect.Lists;
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
@@ -40,6 +41,7 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.params.ClientParamBean;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.ssl.SSLSocketFactory;
@@ -50,7 +52,8 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.SystemDefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager; // jdoc
+import org.apache.http.impl.conn.SchemeRegistryFactory;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.common.SolrException;
@@ -95,7 +98,7 @@ public class HttpClientUtil {
       0, false);
 
   private static final List<HttpClientConfigurer> configurers
-      = Collections.synchronizedList(Lists.newArrayList(new HttpClientConfigurer()));
+      = Collections.synchronizedList(new ArrayList<>(singletonList(new HttpClientConfigurer())));
 
   private static final List<HttpRequestInterceptor> interceptors = Collections.synchronizedList(new ArrayList<>());
   
@@ -146,6 +149,11 @@ public class HttpClientUtil {
     final DefaultHttpClient httpClient = HttpClientFactory.createHttpClient();
     configureClient(httpClient, config);
     return httpClient;
+  }
+  
+  /** test usage. subject to change @lucene.experimental */ 
+  static PoolingClientConnectionManager createPoolingConnectionManager() {
+    return new PoolingClientConnectionManager(SchemeRegistryFactory.createSystemDefault());
   }
   
   /**
@@ -431,4 +439,16 @@ public class HttpClientUtil {
     }
   }
 
+  /**
+   * Create a HttpClientContext object and {@link HttpClientContext#setUserToken(Object)}
+   * to an internal singleton. It allows to reuse underneath {@link HttpClient} 
+   * in connection pools if client authentication is enabled.
+   *
+   */
+  public static HttpClientContext createNewHttpClientRequestContext() {
+    HttpClientContext context = new HttpClientContext();
+
+    context.setUserToken(HttpSolrClient.cacheKey);
+    return context;
+  }
 }

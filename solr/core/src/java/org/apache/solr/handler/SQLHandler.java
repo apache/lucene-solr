@@ -916,6 +916,10 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     }
 
     protected Void visitComparisonExpression(ComparisonExpression node, StringBuilder buf) {
+      if (!(node.getLeft() instanceof StringLiteral || node.getLeft() instanceof QualifiedNameReference)) {
+        throw new RuntimeException("Left side of comparison must be a literal.");
+      }
+
       String field = getPredicateField(node.getLeft());
       String value = node.getRight().toString();
       value = stripSingleQuotes(value);
@@ -925,7 +929,49 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
         value = '"'+value+'"';
       }
 
-      buf.append('(').append(field + ":" + value).append(')');
+      String lowerBound;
+      String upperBound;
+      String lowerValue;
+      String upperValue;
+
+      ComparisonExpression.Type t = node.getType();
+      switch(t) {
+        case NOT_EQUAL:
+          buf.append('(').append('-').append(field).append(":").append(value).append(')');
+          return null;
+        case EQUAL:
+          buf.append('(').append(field).append(":").append(value).append(')');
+          return null;
+        case LESS_THAN:
+          lowerBound = "[";
+          upperBound = "}";
+          lowerValue = "*";
+          upperValue = value;
+          buf.append('(').append(field).append(":").append(lowerBound).append(lowerValue).append(" TO ").append(upperValue).append(upperBound).append(')');
+          return null;
+        case LESS_THAN_OR_EQUAL:
+          lowerBound = "[";
+          upperBound = "]";
+          lowerValue = "*";
+          upperValue = value;
+          buf.append('(').append(field).append(":").append(lowerBound).append(lowerValue).append(" TO ").append(upperValue).append(upperBound).append(')');
+          return null;
+        case GREATER_THAN:
+          lowerBound = "{";
+          upperBound = "]";
+          lowerValue = value;
+          upperValue = "*";
+          buf.append('(').append(field).append(":").append(lowerBound).append(lowerValue).append(" TO ").append(upperValue).append(upperBound).append(')');
+          return null;
+        case GREATER_THAN_OR_EQUAL:
+          lowerBound = "[";
+          upperBound = "]";
+          lowerValue = value;
+          upperValue = "*";
+          buf.append('(').append(field).append(":").append(lowerBound).append(lowerValue).append(" TO ").append(upperValue).append(upperBound).append(')');
+          return null;
+      }
+
       return null;
     }
   }
