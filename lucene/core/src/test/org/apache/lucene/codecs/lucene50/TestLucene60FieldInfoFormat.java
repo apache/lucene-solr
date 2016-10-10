@@ -22,9 +22,9 @@ import org.apache.lucene.index.BaseFieldInfoFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Tests Lucene50FieldInfoFormat
+ * Tests Lucene60FieldInfoFormat
  */
-public class TestLucene50FieldInfoFormat extends BaseFieldInfoFormatTestCase {
+public class TestLucene60FieldInfoFormat extends BaseFieldInfoFormatTestCase {
 
   @Override
   protected Codec getCodec() {
