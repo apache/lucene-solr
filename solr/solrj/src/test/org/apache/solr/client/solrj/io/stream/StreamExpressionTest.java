@@ -718,6 +718,173 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testFetchStream() throws Exception {
+
+    SolrClientCache solrClientCache = new SolrClientCache();
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1", "subject", "blah blah blah 0")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2", "subject", "blah blah blah 2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "subject", "blah blah blah 3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4", "subject", "blah blah blah 4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5", "subject", "blah blah blah 1")
+        .add(id, "5", "a_s", "hello3", "a_i", "5", "a_f", "6", "subject", "blah blah blah 5")
+        .add(id, "6", "a_s", "hello4", "a_i", "6", "a_f", "7", "subject", "blah blah blah 6")
+        .add(id, "7", "a_s", "hello3", "a_i", "7", "a_f", "8", "subject", "blah blah blah 7")
+        .add(id, "8", "a_s", "hello3", "a_i", "8", "a_f", "9", "subject", "blah blah blah 8")
+        .add(id, "9", "a_s", "hello0", "a_i", "9", "a_f", "10", "subject", "blah blah blah 9")
+        .commit(cluster.getSolrClient(), COLLECTION);
+
+    TupleStream stream;
+    List<Tuple> tuples;
+
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("fetch", FetchStream.class);
+
+    stream = factory.constructStream("fetch("+COLLECTION+",  search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), on=\"id=a_i\", batchSize=\"2\", fl=\"subject\")");
+    StreamContext context = new StreamContext();
+    context.setSolrClientCache(solrClientCache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 10);
+    Tuple t = tuples.get(0);
+    assertTrue("blah blah blah 0".equals(t.getString("subject")));
+    t = tuples.get(1);
+    assertTrue("blah blah blah 2".equals(t.getString("subject")));
+    t = tuples.get(2);
+    assertTrue("blah blah blah 3".equals(t.getString("subject")));
+    t = tuples.get(3);
+    assertTrue("blah blah blah 4".equals(t.getString("subject")));
+    t = tuples.get(4);
+    assertTrue("blah blah blah 1".equals(t.getString("subject")));
+    t = tuples.get(5);
+    assertTrue("blah blah blah 5".equals(t.getString("subject")));
+    t = tuples.get(6);
+    assertTrue("blah blah blah 6".equals(t.getString("subject")));
+    t = tuples.get(7);
+    assertTrue("blah blah blah 7".equals(t.getString("subject")));
+    t = tuples.get(8);
+    assertTrue("blah blah blah 8".equals(t.getString("subject")));
+    t = tuples.get(9);
+    assertTrue("blah blah blah 9".equals(t.getString("subject")));
+
+    //Change the batch size
+    stream = factory.constructStream("fetch("+COLLECTION+",  search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), on=\"id=a_i\", batchSize=\"3\", fl=\"subject\")");
+    context = new StreamContext();
+    context.setSolrClientCache(solrClientCache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 10);
+    t = tuples.get(0);
+    assertTrue("blah blah blah 0".equals(t.getString("subject")));
+    t = tuples.get(1);
+    assertTrue("blah blah blah 2".equals(t.getString("subject")));
+    t = tuples.get(2);
+    assertTrue("blah blah blah 3".equals(t.getString("subject")));
+    t = tuples.get(3);
+    assertTrue("blah blah blah 4".equals(t.getString("subject")));
+    t = tuples.get(4);
+    assertTrue("blah blah blah 1".equals(t.getString("subject")));
+    t = tuples.get(5);
+    assertTrue("blah blah blah 5".equals(t.getString("subject")));
+    t = tuples.get(6);
+    assertTrue("blah blah blah 6".equals(t.getString("subject")));
+    t = tuples.get(7);
+    assertTrue("blah blah blah 7".equals(t.getString("subject")));
+    t = tuples.get(8);
+    assertTrue("blah blah blah 8".equals(t.getString("subject")));
+    t = tuples.get(9);
+    assertTrue("blah blah blah 9".equals(t.getString("subject")));
+    solrClientCache.close();
+  }
+
+  @Test
+  public void testParallelFetchStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1", "subject", "blah blah blah 0")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2", "subject", "blah blah blah 2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "subject", "blah blah blah 3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4", "subject", "blah blah blah 4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5", "subject", "blah blah blah 1")
+        .add(id, "5", "a_s", "hello3", "a_i", "5", "a_f", "6", "subject", "blah blah blah 5")
+        .add(id, "6", "a_s", "hello4", "a_i", "6", "a_f", "7", "subject", "blah blah blah 6")
+        .add(id, "7", "a_s", "hello3", "a_i", "7", "a_f", "8", "subject", "blah blah blah 7")
+        .add(id, "8", "a_s", "hello3", "a_i", "8", "a_f", "9", "subject", "blah blah blah 8")
+        .add(id, "9", "a_s", "hello0", "a_i", "9", "a_f", "10", "subject", "blah blah blah 9")
+        .commit(cluster.getSolrClient(), COLLECTION);
+
+    TupleStream stream;
+    List<Tuple> tuples;
+
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("parallel", ParallelStream.class)
+        .withFunctionName("fetch", FetchStream.class);
+
+    stream = factory.constructStream("parallel("+COLLECTION+", workers=2, sort=\"a_f asc\", fetch("+COLLECTION+",  search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\", partitionKeys=\"id\"), on=\"id=a_i\", batchSize=\"2\", fl=\"subject\"))");
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 10);
+    Tuple t = tuples.get(0);
+    assertTrue("blah blah blah 0".equals(t.getString("subject")));
+    t = tuples.get(1);
+    assertTrue("blah blah blah 2".equals(t.getString("subject")));
+    t = tuples.get(2);
+    assertTrue("blah blah blah 3".equals(t.getString("subject")));
+    t = tuples.get(3);
+    assertTrue("blah blah blah 4".equals(t.getString("subject")));
+    t = tuples.get(4);
+    assertTrue("blah blah blah 1".equals(t.getString("subject")));
+    t = tuples.get(5);
+    assertTrue("blah blah blah 5".equals(t.getString("subject")));
+    t = tuples.get(6);
+    assertTrue("blah blah blah 6".equals(t.getString("subject")));
+    t = tuples.get(7);
+    assertTrue("blah blah blah 7".equals(t.getString("subject")));
+    t = tuples.get(8);
+    assertTrue("blah blah blah 8".equals(t.getString("subject")));
+    t = tuples.get(9);
+    assertTrue("blah blah blah 9".equals(t.getString("subject")));
+
+
+    stream = factory.constructStream("parallel("+COLLECTION+", workers=2, sort=\"a_f asc\", fetch("+COLLECTION+",  search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\", partitionKeys=\"id\"), on=\"id=a_i\", batchSize=\"3\", fl=\"subject\"))");
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 10);
+    t = tuples.get(0);
+    assertTrue("blah blah blah 0".equals(t.getString("subject")));
+    t = tuples.get(1);
+    assertTrue("blah blah blah 2".equals(t.getString("subject")));
+    t = tuples.get(2);
+    assertTrue("blah blah blah 3".equals(t.getString("subject")));
+    t = tuples.get(3);
+    assertTrue("blah blah blah 4".equals(t.getString("subject")));
+    t = tuples.get(4);
+    assertTrue("blah blah blah 1".equals(t.getString("subject")));
+    t = tuples.get(5);
+    assertTrue("blah blah blah 5".equals(t.getString("subject")));
+    t = tuples.get(6);
+    assertTrue("blah blah blah 6".equals(t.getString("subject")));
+    t = tuples.get(7);
+    assertTrue("blah blah blah 7".equals(t.getString("subject")));
+    t = tuples.get(8);
+    assertTrue("blah blah blah 8".equals(t.getString("subject")));
+    t = tuples.get(9);
+    assertTrue("blah blah blah 9".equals(t.getString("subject")));
+
+  }
+
+
+
+
+
+  @Test
   public void testDaemonStream() throws Exception {
 
     new UpdateRequest()
