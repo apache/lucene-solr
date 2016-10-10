@@ -63,7 +63,10 @@ class NumberUtil {
      * @see #fromHex(String, int, int)
      */
     public static String toHex(final byte[] bytes, final int offset, final int count) {
+        if(bytes == null) throw new IllegalArgumentException("Bytes is null.");
+        if(offset < 0) throw new IllegalArgumentException("Offset is negative.");
         if(offset >= bytes.length) throw new IllegalArgumentException("Offset is greater than the length (" + offset + " >= " + bytes.length + ").")/*by contract*/;
+        if(count < 0) throw new IllegalArgumentException("Count is negative.");
         final int byteCount = Math.min( (bytes.length - offset), count);
         final int upperBound = byteCount + offset;
 
@@ -93,15 +96,21 @@ class NumberUtil {
      *         specified string (in the specified range).  This will never be
      *         <code>null</code> though it may be empty if <code>string</code>
      *         is empty or <code>count</code> is zero.
-     * @throws IllegalArgumentException if <code>offset</code> is greater than
-     *         or equal to <code>string.length()</code> or if <code>count</code>
+     * @throws IllegalArgumentException if <code>string</code> is null or if
+     *         </code><code>offset</code> is greater than or equal to
+     *         <code>string.length()</code> or if <code>count</code>
      *         is not divisible by two.
      * @see #toHex(byte[], int, int)
      */
     public static byte[] fromHex(final String string, final int offset, final int count) {
+        if(string == null) throw new IllegalArgumentException("String is null.")/*by contract*/;
+        if(string.length() == 0) return new byte[0]; /*by contract*/
+        if(offset < 0) throw new IllegalArgumentException("Offset is negative.")/*by contract*/;
         if(offset >= string.length()) throw new IllegalArgumentException("Offset is greater than the length (" + offset + " >= " + string.length() + ").")/*by contract*/;
         if( (count & 0x01) != 0) throw new IllegalArgumentException("Count is not divisible by two (" + count + ").")/*by contract*/;
-        final int charCount = Math.min((string.length() - offset), count);
+        final int numberOfCharacters = string.length() - offset;
+        if( (numberOfCharacters & 0x01) != 0) throw new IllegalArgumentException("Number of characters not divisible by two (" + (string.length() - offset) + ").");
+        final int charCount = Math.min(numberOfCharacters, count);
         final int upperBound = offset + charCount;
 
         final byte[] bytes = new byte[charCount >>> 1/*aka /2*/];
