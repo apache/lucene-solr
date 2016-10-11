@@ -260,7 +260,7 @@ function print_usage() {
     echo ""
     echo "  -v and -q     Verbose (-v) or quiet (-q) logging. Sets default log level to DEBUG or WARN instead of INFO"
     echo ""
-    echo "  -V or -version Verbose messages from this script"
+    echo "  -V or -verbose Verbose messages from this script"
     echo ""
   elif [ "$CMD" == "stop" ]; then
     echo ""
