@@ -70,6 +70,9 @@ Bug Fixes
 * LUCENE-7476: JapaneseNumberFilter should not invoke incrementToken
   on its input after it's exhausted (Andy Hind via Mike McCandless)
 
+* LUCENE-7486: DisjunctionMaxQuery does not work correctly with queries that
+  return negative scores.  (Ivan Provalov, Uwe Schindler, Adrien Grand)
+
 Improvements
 
 * LUCENE-7439: FuzzyQuery now matches all terms within the specified
