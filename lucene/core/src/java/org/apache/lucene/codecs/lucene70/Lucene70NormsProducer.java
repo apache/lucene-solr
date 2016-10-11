@@ -166,10 +166,7 @@ final class Lucene70NormsProducer extends NormsProducer {
     } else {
       // sparse
       final LongValues normValues = getNormValues(entry);
-      final SparseDISI disi;
-      synchronized (data) {
-        disi = new SparseDISI(maxDoc, data, entry.docsWithFieldOffset, entry.numDocsWithField);
-      }
+      final SparseDISI disi = new SparseDISI(maxDoc, data, entry.docsWithFieldOffset, entry.numDocsWithField);
       return new NumericDocValues() {
 
         @Override
@@ -209,10 +206,7 @@ final class Lucene70NormsProducer extends NormsProducer {
         }
       };
     } else {
-      RandomAccessInput slice;
-      synchronized (data) {
-        slice = data.randomAccessSlice(entry.normsOffset, entry.numDocsWithField * (long) entry.bytesPerNorm);
-      }
+      final RandomAccessInput slice = data.randomAccessSlice(entry.normsOffset, entry.numDocsWithField * (long) entry.bytesPerNorm);
       switch (entry.bytesPerNorm) {
         case 1:
           return new LongValues() {

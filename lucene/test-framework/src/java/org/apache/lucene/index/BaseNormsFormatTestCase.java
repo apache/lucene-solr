@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -488,25 +489,21 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     
     // compare
     DirectoryReader ir = DirectoryReader.open(dir);
-    for (LeafReaderContext context : ir.leaves()) {
-      LeafReader r = context.reader();
-      NumericDocValues expected = r.getNumericDocValues("dv");
-      NumericDocValues actual = r.getNormValues("indexed");
-      assertEquals(expected == null, actual == null);
-      if (expected != null) {
-        for (int d = expected.nextDoc(); d != DocIdSetIterator.NO_MORE_DOCS; d = expected.nextDoc()) {
-          assertEquals(d, actual.nextDoc());
-          assertEquals("doc " + d, expected.longValue(), actual.longValue());
-        }
-        assertEquals(NO_MORE_DOCS, actual.nextDoc());
-      }
-    }
+    checkNormsVsDocValues(ir);
     ir.close();
     
     writer.forceMerge(1);
     
     // compare again
     ir = DirectoryReader.open(dir);
+    checkNormsVsDocValues(ir);
+    
+    writer.close();
+    ir.close();
+    dir.close();
+  }
+
+  private void checkNormsVsDocValues(IndexReader ir) throws IOException {
     for (LeafReaderContext context : ir.leaves()) {
       LeafReader r = context.reader();
       NumericDocValues expected = r.getNumericDocValues("dv");
@@ -520,12 +517,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
         assertEquals(NO_MORE_DOCS, actual.nextDoc());
       }
     }
-    
-    writer.close();
-    ir.close();
-    dir.close();
   }
-  
   
   static abstract class LongProducer {
     abstract long next();
@@ -631,6 +623,92 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
 
     r.close();
     w.close();
+    dir.close();
+  }
+
+  public void testThreads() throws Exception {
+    float density = codecSupportsSparsity() == false || random().nextBoolean() ? 1f : random().nextFloat();
+    int numDocs = atLeast(500);
+    final FixedBitSet docsWithField = new FixedBitSet(numDocs);
+    final int numDocsWithField = Math.max(1, (int) (density * numDocs));
+    if (numDocsWithField == numDocs) {
+      docsWithField.set(0, numDocs);
+    } else {
+      int i = 0;
+      while (i < numDocsWithField) {
+        int doc = random().nextInt(numDocs);
+        if (docsWithField.get(doc) == false) {
+          docsWithField.set(doc);
+          ++i;
+        }
+      }
+    }
+
+    long norms[] = new long[numDocsWithField];
+    for (int i = 0; i < numDocsWithField; i++) {
+      norms[i] = random().nextLong();
+    }
+
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
+    IndexWriterConfig conf = newIndexWriterConfig(analyzer);conf.setMergePolicy(NoMergePolicy.INSTANCE);
+    conf.setSimilarity(new CannedNormSimilarity(norms));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
+    Document doc = new Document();
+    Field idField = new StringField("id", "", Field.Store.NO);
+    Field indexedField = new TextField("indexed", "", Field.Store.NO);
+    Field dvField = new NumericDocValuesField("dv", 0);
+    doc.add(idField);
+    doc.add(indexedField);
+    doc.add(dvField);
+    
+    for (int i = 0, j = 0; i < numDocs; i++) {
+      idField.setStringValue(Integer.toString(i));
+      if (docsWithField.get(i) == false) {
+        Document doc2 = new Document();
+        doc2.add(idField);
+        writer.addDocument(doc2);
+      } else {
+        long value = norms[j++];
+        dvField.setLongValue(value);
+        indexedField.setStringValue(Long.toString(value));
+        writer.addDocument(doc);
+      }
+      if (random().nextInt(31) == 0) {
+        writer.commit();
+      }
+    }
+
+    DirectoryReader reader = writer.getReader();
+    writer.close();
+
+    final int numThreads = TestUtil.nextInt(random(), 3, 30);
+    Thread[] threads = new Thread[numThreads];
+    final CountDownLatch latch = new CountDownLatch(1);
+    for (int i = 0; i < numThreads; ++i) {
+      threads[i] = new Thread(new Runnable() {
+        @Override
+        public void run() {
+          try {
+            latch.await();
+            checkNormsVsDocValues(reader);
+            TestUtil.checkReader(reader);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        }
+      });
+    }
+
+    for (Thread thread : threads) {
+      thread.start();
+    }
+    latch.countDown();
+    for (Thread thread : threads) {
+      thread.join();
+    }
+
+    reader.close();
     dir.close();
   }
 }
