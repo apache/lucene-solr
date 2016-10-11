@@ -20,6 +20,8 @@ package org.apache.lucene.search.uhighlight;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +33,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
@@ -68,8 +71,25 @@ public abstract class FieldOffsetStrategy {
   protected List<OffsetsEnum> createOffsetsEnums(LeafReader leafReader, int doc, TokenStream tokenStream) throws IOException {
     List<OffsetsEnum> offsetsEnums = createOffsetsEnumsFromReader(leafReader, doc);
     if (automata.length > 0) {
-      offsetsEnums.add(createOffsetsEnumFromTokenStream(doc, tokenStream));
+      if (tokenStream == null) {
+        offsetsEnums.addAll(createAutomataOffsetsEnumsFromReader(doc, leafReader));
+      } else {
+        offsetsEnums.add(createOffsetsEnumFromTokenStream(doc, tokenStream));
+      }
     }
+    return offsetsEnums;
+  }
+
+  private List<OffsetsEnum> createAutomataOffsetsEnumsFromReader(int doc, LeafReader leafReader) throws IOException {
+    List<OffsetsEnum> offsetsEnums = new LinkedList<>();
+    TermsEnum termsEnum = leafReader.terms(field).iterator();
+    BytesRef term;
+    while ((term = termsEnum.next()) != null)
+      for (CharacterRunAutomaton automaton : automata) {
+        if (automaton.run(term.toString())) {
+          offsetsEnums.add(new OffsetsEnum(term, termsEnum.postings(null, PostingsEnum.OFFSETS)));
+        }
+      }
     return offsetsEnums;
   }
 
