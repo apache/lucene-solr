@@ -119,6 +119,8 @@ New Features
 
 * SOLR-9146: Parallel SQL engine should support >, >=, <, <=, <>, != syntax (Timothy Potter, Joel Bernstein, Kevin Risden)
 
+* SOLR-9337: Add fetch Streaming Expression (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
