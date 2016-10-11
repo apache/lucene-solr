@@ -33,6 +33,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
@@ -84,9 +85,11 @@ public abstract class FieldOffsetStrategy {
     List<OffsetsEnum> offsetsEnums = new LinkedList<>();
     TermsEnum termsEnum = leafReader.terms(field).iterator();
     BytesRef term;
+    CharsRefBuilder refBuilder = new CharsRefBuilder();
     while ((term = termsEnum.next()) != null) {
       for (CharacterRunAutomaton automaton : automata) {
-        if (automaton.run(term.utf8ToString())) {
+        refBuilder.copyUTF8Bytes(term);
+        if (automaton.run(refBuilder.chars(), 0, refBuilder.length())) {
           offsetsEnums.add(new OffsetsEnum(term, termsEnum.postings(null, PostingsEnum.OFFSETS)));
         }
       }
