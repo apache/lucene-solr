@@ -670,7 +670,7 @@ public class TrieField extends PrimitiveFieldType {
     ft.setStored(stored);
     ft.setTokenized(true);
     ft.setOmitNorms(field.omitNorms());
-    ft.setIndexOptions(indexed ? getIndexOptions(field, value.toString()) : IndexOptions.NONE);
+    ft.setIndexOptions(field.indexOptions());
 
     switch (type) {
       case INTEGER:

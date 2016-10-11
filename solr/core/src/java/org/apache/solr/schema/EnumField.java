@@ -387,13 +387,12 @@ public class EnumField extends PrimitiveFieldType {
     if (intValue == null || intValue.equals(DEFAULT_VALUE))
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown value for enum field: " + value.toString());
 
-    String intAsString =  intValue.toString();
     final LegacyFieldType newType = new LegacyFieldType();
 
     newType.setTokenized(field.isTokenized());
     newType.setStored(field.stored());
     newType.setOmitNorms(field.omitNorms());
-    newType.setIndexOptions(field.indexed() ? getIndexOptions(field, intAsString) : IndexOptions.NONE);
+    newType.setIndexOptions(field.indexOptions());
     newType.setStoreTermVectors(field.storeTermVector());
     newType.setStoreTermVectorOffsets(field.storeTermOffsets());
     newType.setStoreTermVectorPositions(field.storeTermPositions());

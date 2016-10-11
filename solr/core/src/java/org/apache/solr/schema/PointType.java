@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
@@ -82,9 +83,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
 
     if (field.stored()) {
       String storedVal = externalVal;  // normalize or not?
-      FieldType customType = new FieldType();
-      customType.setStored(true);
-      f.add(createField(field.getName(), storedVal, customType, 1f));
+      f.add(createField(field.getName(), storedVal, StoredField.TYPE, 1f));
     }
     
     return f;

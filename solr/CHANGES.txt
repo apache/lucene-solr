@@ -53,6 +53,10 @@ Optimizations
   check on every request and move connection lifecycle management towards the client.
   (Ryan Zezeski, Mark Miller, Shawn Heisey, Steve Davids)
 
+* SOLR-9579: Make Solr's SchemaField implement Lucene's IndexableFieldType, removing the 
+  creation of a Lucene FieldType every time a field is indexed. (John Call, yonik) 
+
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
