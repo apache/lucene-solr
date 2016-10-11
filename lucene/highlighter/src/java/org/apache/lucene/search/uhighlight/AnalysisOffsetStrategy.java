@@ -114,7 +114,7 @@ public class AnalysisOffsetStrategy extends FieldOffsetStrategy {
           return Collections.emptyList(); //No offsets for this field.
         }
         // Un-invert for the automata. Much more compact than a CachingTokenStream
-        tokenStream = MultiTermHighlighting.uninvertAndFilterTerms(foundTerms, 0, automata, content.length());
+        //tokenStream = MultiTermHighlighting.uninvertAndFilterTerms(foundTerms, 0, automata, content.length());
       }
 
     }

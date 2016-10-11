@@ -84,12 +84,13 @@ public abstract class FieldOffsetStrategy {
     List<OffsetsEnum> offsetsEnums = new LinkedList<>();
     TermsEnum termsEnum = leafReader.terms(field).iterator();
     BytesRef term;
-    while ((term = termsEnum.next()) != null)
+    while ((term = termsEnum.next()) != null) {
       for (CharacterRunAutomaton automaton : automata) {
-        if (automaton.run(term.toString())) {
+        if (automaton.run(term.utf8ToString())) {
           offsetsEnums.add(new OffsetsEnum(term, termsEnum.postings(null, PostingsEnum.OFFSETS)));
         }
       }
+    }
     return offsetsEnums;
   }
 
