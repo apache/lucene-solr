@@ -90,6 +90,7 @@ final class Lucene70NormsProducer extends NormsProducer {
   static class NormsEntry {
     byte bytesPerNorm;
     long docsWithFieldOffset;
+    long docsWithFieldLength;
     int numDocsWithField;
     long normsOffset;
   }
@@ -108,6 +109,7 @@ final class Lucene70NormsProducer extends NormsProducer {
       }
       NormsEntry entry = new NormsEntry();
       entry.docsWithFieldOffset = meta.readLong();
+      entry.docsWithFieldLength = meta.readLong();
       entry.numDocsWithField = meta.readInt();
       entry.bytesPerNorm = meta.readByte();
       switch (entry.bytesPerNorm) {
@@ -166,7 +168,7 @@ final class Lucene70NormsProducer extends NormsProducer {
     } else {
       // sparse
       final LongValues normValues = getNormValues(entry);
-      final SparseDISI disi = new SparseDISI(maxDoc, data, entry.docsWithFieldOffset, entry.numDocsWithField);
+      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField);
       return new NumericDocValues() {
 
         @Override

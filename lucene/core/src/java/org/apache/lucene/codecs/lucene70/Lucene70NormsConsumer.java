@@ -96,12 +96,16 @@ final class Lucene70NormsConsumer extends NormsConsumer {
 
     if (numDocsWithValue == 0) {
       meta.writeLong(-2);
+      meta.writeLong(0L);
     } else if (numDocsWithValue == maxDoc) {
       meta.writeLong(-1);
+      meta.writeLong(0L);
     } else {
-      meta.writeLong(data.getFilePointer());
+      long offset = data.getFilePointer();
+      meta.writeLong(offset);
       values = normsProducer.getNorms(field);
-      SparseDISI.writeBitSet(values, maxDoc, data);
+      IndexedDISI.writeBitSet(values, data);
+      meta.writeLong(data.getFilePointer() - offset);
     }
 
     meta.writeInt(numDocsWithValue);
