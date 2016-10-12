@@ -29,6 +29,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileOwnerAttributeView;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -157,7 +158,7 @@ public class SolrCLI {
       return toolExitStatus;
     }
 
-    private void setBasicAuth(CommandLine cli) throws Exception {
+    protected void setBasicAuth(CommandLine cli) throws Exception {
       String basicauth = System.getProperty("basicauth", null);
       if (basicauth != null) {
         List<String> ss = StrUtils.splitSmart(basicauth, ':');
@@ -365,6 +366,8 @@ public class SolrCLI {
       return new ZkCpTool();
     else if ("ls".equals(toolType))
       return new ZkLsTool();
+    else if ("assert".equals(toolType))
+      return new AssertTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -3126,4 +3129,214 @@ public class SolrCLI {
     }
 
   } // end RunExampleTool class
+
+  /**
+   * Asserts various conditions and exists with error code if fails, else continues with no output
+   */
+  public static class AssertTool extends ToolBase {
+
+    private static String message = null;
+    private static boolean useExitCode = false;
+    
+    public AssertTool() { this(System.out); }
+    public AssertTool(PrintStream stdout) { super(stdout); }
+
+    public String getName() {
+      return "assert";
+    }
+
+    @SuppressWarnings("static-access")
+    public Option[] getOptions() {
+      return new Option[] {
+          OptionBuilder
+              .withDescription("Asserts that we are NOT the root user")
+              .withLongOpt("not-root")
+              .create("R"),
+          OptionBuilder
+              .withDescription("Asserts that we are the root user")
+              .withLongOpt("root")
+              .create("r"),
+          OptionBuilder
+              .withDescription("Asserts that Solr is NOT started on a certain URL")
+              .withLongOpt("not-started")
+              .hasArg(true)
+              .withArgName("url")
+              .create("S"),
+          OptionBuilder
+              .withDescription("Asserts that Solr is started on a certain URL")
+              .withLongOpt("started")
+              .hasArg(true)
+              .withArgName("url")
+              .create("s"),
+          OptionBuilder
+              .withDescription("Asserts that we run as same user that owns <directory>")
+              .withLongOpt("same-user")
+              .hasArg(true)
+              .withArgName("directory")
+              .create("u"),
+          OptionBuilder
+              .withDescription("Asserts that directory <directory> exists")
+              .withLongOpt("exists")
+              .hasArg(true)
+              .withArgName("directory")
+              .create("x"),
+          OptionBuilder
+              .withDescription("Asserts that directory <directory> does NOT exist")
+              .withLongOpt("not-exists")
+              .hasArg(true)
+              .withArgName("directory")
+              .create("X"),
+          OptionBuilder
+              .withDescription("Exception message to be used in place of the default error message")
+              .withLongOpt("message")
+              .hasArg(true)
+              .withArgName("message")
+              .create("m"),
+          OptionBuilder
+              .withDescription("Return an exit code instead of printing error message on assert fail.")
+              .withLongOpt("exitcode")
+              .create("e")
+      };
+    }
+
+    public int runTool(CommandLine cli) throws Exception {
+      verbose = cli.hasOption("verbose");
+
+      int toolExitStatus = 0;
+      try {
+        setBasicAuth(cli);
+        toolExitStatus = runAssert(cli);
+      } catch (Exception exc) {
+        // since this is a CLI, spare the user the stacktrace
+        String excMsg = exc.getMessage();
+        if (excMsg != null) {
+          System.err.println("\nERROR: " + excMsg + "\n");
+          toolExitStatus = 1;
+        } else {
+          throw exc;
+        }
+      }
+      return toolExitStatus;
+    }
+
+    @Override
+    protected void runImpl(CommandLine cli) throws Exception {
+      runAssert(cli);
+    }
+
+    // Custom run method which may return exit code
+    protected int runAssert(CommandLine cli) throws Exception {
+      if (cli.getOptions().length == 0 || cli.getArgs().length > 0 || cli.hasOption("h")) {
+        new HelpFormatter().printHelp("bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-u <dir>] [-x <dir>] [-X <dir>]", getToolOptions(this));
+        return 1;
+      }
+      if (cli.hasOption("m")) {
+        message = cli.getOptionValue("m");
+      }
+      if (cli.hasOption("e")) {
+        useExitCode = true;
+      }
+      if (cli.hasOption("r")) {
+        if (assertRootUser() > 0) return 1;
+      }
+      if (cli.hasOption("R")) {
+        if (assertNotRootUser() > 0) return 1;
+      }
+      if (cli.hasOption("x")) {
+        if (assertFileExists(cli.getOptionValue("x")) > 0) return 1;
+      }
+      if (cli.hasOption("X")) {
+        if (assertFileNotExists(cli.getOptionValue("X")) > 0) return 1;
+      }
+      if (cli.hasOption("u")) {
+        if (sameUser(cli.getOptionValue("u")) > 0) return 1;
+      }
+      if (cli.hasOption("s")) {
+        if (assertSolrRunning(cli.getOptionValue("s")) > 0) return 1;
+      }
+      if (cli.hasOption("s")) {
+        if (assertSolrNotRunning(cli.getOptionValue("S")) > 0) return 1;
+      }
+      return 0;
+    }
+
+    public static int assertSolrRunning(String url) throws Exception {
+      StatusTool status = new StatusTool();
+      try {
+        status.waitToSeeSolrUp(url, 5);
+      } catch (Exception e) {
+        return exitOrException("Solr is not running on url " + url);
+      }
+      return 0;
+    }
+
+    public static int assertSolrNotRunning(String url) throws Exception {
+      StatusTool status = new StatusTool();
+      try {
+        status.waitToSeeSolrUp(url, 5);
+        return exitOrException("Solr is running on url " + url);
+      } catch (Exception e) { return 0; }
+    }
+
+    public static int sameUser(String directory) throws Exception {
+      if (Files.exists(Paths.get(directory))) {
+        String userForDir = userForDir(Paths.get(directory));
+        if (!currentUser().equals(userForDir)) {
+          return exitOrException("Must run as user " + userForDir + ". We are " + currentUser());
+        }
+      } else {
+        return exitOrException("Directory " + directory + " does not exist.");
+      }
+      return 0;
+    }
+
+    public static int assertFileExists(String directory) throws Exception {
+      if (! Files.exists(Paths.get(directory))) {
+        return exitOrException("Directory " + directory + " does not exist.");
+      }
+      return 0;
+    }
+
+    public static int assertFileNotExists(String directory) throws Exception {
+      if (Files.exists(Paths.get(directory))) {
+        return exitOrException("Directory " + directory + " should not exist.");
+      }
+      return 0;
+    }
+
+    public static int assertRootUser() throws Exception {
+      if (!currentUser().equals("root")) {
+        return exitOrException("Must run as root user");
+      }
+      return 0;
+    }
+
+    public static int assertNotRootUser() throws Exception {
+      if (currentUser().equals("root")) {
+        return exitOrException("Not allowed to run as root user");
+      }
+      return 0;
+    }
+
+    public static String currentUser() {
+      return System.getProperty("user.name");
+    }
+
+    public static String userForDir(Path pathToDir) {
+      try {
+        FileOwnerAttributeView ownerAttributeView = Files.getFileAttributeView(pathToDir, FileOwnerAttributeView.class);
+        return ownerAttributeView.getOwner().getName();
+      } catch (IOException e) {
+        return "N/A";
+      }
+    }
+
+    private static int exitOrException(String msg) throws Exception {
+      if (useExitCode) {
+        return 1;
+      } else {
+        throw new Exception(message != null ? message : msg);
+      }
+    }
+  } // end AssertTool class
 }

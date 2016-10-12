@@ -269,6 +269,8 @@ Other Changes
 
 * SOLR-8969: SQLHandler causes NPE in non-cloud mode (Markus Jelsma, Kevin Risden)
 
+* SOLR-9610: New AssertTool in SolrCLI for easier cross platform assertions from command line (janhoy)
+
 ==================  6.2.1 ==================
 
 Bug Fixes

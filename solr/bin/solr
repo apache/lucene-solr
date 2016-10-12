@@ -636,6 +636,12 @@ if [ "$SCRIPT_CMD" == "status" ]; then
   exit
 fi
 
+# assert tool
+if [ "$SCRIPT_CMD" == "assert" ]; then
+  run_tool assert $*
+  exit $?
+fi
+
 # run a healthcheck and exit if requested
 if [ "$SCRIPT_CMD" == "healthcheck" ]; then
 
@@ -1042,7 +1048,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
 fi
 
 # verify the command given is supported
-if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ]; then
+if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ] && [ "$SCRIPT_CMD" != "assert" ]; then
   print_usage "" "$SCRIPT_CMD is not a valid command!"
   exit 1
 fi
