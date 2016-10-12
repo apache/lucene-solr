@@ -18,19 +18,15 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.JSONParser;
-import org.noggit.JSONUtil;
 import org.noggit.ObjectBuilder;
 
 
