@@ -125,6 +125,8 @@ New Features
 
 * SOLR-9337: Add fetch Streaming Expression (Joel Bernstein)
 
+* SOLR-9103: Restore ability for users to add custom Streaming Expressions (Cao Manh Dat)
+
 Bug Fixes
 ----------------------
 
