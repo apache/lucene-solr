@@ -98,7 +98,7 @@ public abstract class SortedSetDocValues extends DocIdSetIterator {
    * Returns a {@link TermsEnum} over the values.
    * The enum supports {@link TermsEnum#ord()} and {@link TermsEnum#seekExact(long)}.
    */
-  public TermsEnum termsEnum() {
+  public TermsEnum termsEnum() throws IOException {
     return new SortedSetDocValuesTermsEnum(this);
   }
 }

@@ -928,7 +928,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
       }
 
       @Override
-      public TermsEnum termsEnum() {
+      public TermsEnum termsEnum() throws IOException {
         if (binary instanceof CompressedBinaryDocValues) {
           return ((CompressedBinaryDocValues)binary).getTermsEnum();
         } else {
@@ -1233,7 +1233,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
       }
 
       @Override
-      public TermsEnum termsEnum() {
+      public TermsEnum termsEnum() throws IOException {
         if (binary instanceof CompressedBinaryDocValues) {
           return ((CompressedBinaryDocValues)binary).getTermsEnum();
         } else {
@@ -1292,7 +1292,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
       }
 
       @Override
-      public TermsEnum termsEnum() {
+      public TermsEnum termsEnum() throws IOException {
         if (binary instanceof CompressedBinaryDocValues) {
           return ((CompressedBinaryDocValues) binary).getTermsEnum();
         } else {
@@ -1490,12 +1490,8 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
       }
     }
 
-    TermsEnum getTermsEnum() {
-      try {
-        return getTermsEnum(data.clone());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    TermsEnum getTermsEnum() throws IOException {
+      return getTermsEnum(data.clone());
     }
 
     private CompressedBinaryTermsEnum getTermsEnum(IndexInput input) throws IOException {

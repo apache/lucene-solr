@@ -95,7 +95,7 @@ final class SingletonSortedSetDocValues extends SortedSetDocValues {
   }
 
   @Override
-  public TermsEnum termsEnum() {
+  public TermsEnum termsEnum() throws IOException {
     return in.termsEnum();
   }
 

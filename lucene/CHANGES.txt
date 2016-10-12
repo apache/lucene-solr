@@ -29,6 +29,9 @@ Bug Fixes
 
 Improvements
 
+* LUCENE-7489: Better storage of sparse doc-values fields with the default
+  codec. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-7416: BooleanQuery optimizes queries that have queries that occur both

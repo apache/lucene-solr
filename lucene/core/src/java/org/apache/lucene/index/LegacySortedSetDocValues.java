@@ -17,6 +17,8 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
+
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -103,7 +105,7 @@ public abstract class LegacySortedSetDocValues {
    * Returns a {@link TermsEnum} over the values.
    * The enum supports {@link TermsEnum#ord()} and {@link TermsEnum#seekExact(long)}.
    */
-  public TermsEnum termsEnum() {
+  public TermsEnum termsEnum() throws IOException {
     throw new UnsupportedOperationException();
   }
 }
