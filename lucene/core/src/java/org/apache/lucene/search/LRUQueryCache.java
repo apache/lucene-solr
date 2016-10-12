@@ -56,7 +56,8 @@ import org.apache.lucene.util.RoaringDocIdSet;
  * {@link QueryCachingPolicy caching policies} that only cache on "large"
  * segments, and it is advised to not share this cache across too many indices.
  *
- * Typical usage looks like this:
+ * A default query cache and policy instance is used in IndexSearcher. If you want to replace those defaults
+ * it is typically done like this:
  * <pre class="prettyprint">
  *   final int maxNumberOfCachedQueries = 256;
  *   final long maxRamBytesUsed = 50 * 1024L * 1024L; // 50MB
@@ -64,15 +65,8 @@ import org.apache.lucene.util.RoaringDocIdSet;
  *   // it is fine to eg. store them into static variables
  *   final QueryCache queryCache = new LRUQueryCache(maxNumberOfCachedQueries, maxRamBytesUsed);
  *   final QueryCachingPolicy defaultCachingPolicy = new UsageTrackingQueryCachingPolicy();
- *
- *   // ...
- *
- *   // Then at search time
- *   Query myQuery = ...;
- *   Query myCacheQuery = queryCache.doCache(myQuery, defaultCachingPolicy);
- *   // myCacheQuery is now a wrapper around the original query that will interact with the cache
- *   IndexSearcher searcher = ...;
- *   TopDocs topDocs = searcher.search(new ConstantScoreQuery(myCacheQuery), 10);
+ *   indexSearcher.setQueryCache(queryCache);
+ *   indexSearcher.setQueryCachingPolicy(defaultCachingPolicy);
  * </pre>
  *
  * This cache exposes some global statistics ({@link #getHitCount() hit count},
