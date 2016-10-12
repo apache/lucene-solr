@@ -165,7 +165,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
             if (reader != null) {
               FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
               FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
-              if (readerFieldInfo != null) {
+              if (readerFieldInfo != null && readerFieldInfo.getPointDimensionCount() > 0) {
                 totMaxSize += reader.size(fieldInfo.name);
                 singleValuePerDoc &= reader.size(fieldInfo.name) == reader.getDocCount(fieldInfo.name);
               }
@@ -200,10 +200,9 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                 // reader's FieldInfo as we do below) because field numbers can easily be different
                 // when addIndexes(Directory...) copies over segments from another index:
 
-
                 FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
                 FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
-                if (readerFieldInfo != null) {
+                if (readerFieldInfo != null && readerFieldInfo.getPointDimensionCount() > 0) {
                   BKDReader bkdReader = reader60.readers.get(readerFieldInfo.number);
                   if (bkdReader != null) {
                     bkdReaders.add(bkdReader);

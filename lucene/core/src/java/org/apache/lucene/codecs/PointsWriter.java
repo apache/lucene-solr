@@ -47,7 +47,7 @@ public abstract class PointsWriter implements Closeable {
       PointsReader pointsReader = mergeState.pointsReaders[i];
       if (pointsReader != null) {
         FieldInfo readerFieldInfo = mergeState.fieldInfos[i].fieldInfo(fieldInfo.name);
-        if (readerFieldInfo != null) {
+        if (readerFieldInfo != null && readerFieldInfo.getPointDimensionCount() > 0) {
           maxPointCount += pointsReader.size(fieldInfo.name);
           docCount += pointsReader.getDocCount(fieldInfo.name);
         }
@@ -72,6 +72,11 @@ public abstract class PointsWriter implements Closeable {
                      FieldInfo readerFieldInfo = mergeState.fieldInfos[i].fieldInfo(fieldName);
                      if (readerFieldInfo == null) {
                        // This segment never saw this field
+                       continue;
+                     }
+
+                     if (readerFieldInfo.getPointDimensionCount() == 0) {
+                       // This segment saw this field, but the field did not index points in it:
                        continue;
                      }
 
