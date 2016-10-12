@@ -53,6 +53,9 @@ New Features
   in postings for fast wildcard (MultiTermQuery) highlighting.
   (David Smiley, Timothy Rodriguez)
 
+* LUCENE-7490: SimpleQueryParser now parses '*' to MatchAllDocsQuery
+  (Lee Hinman via Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-7472: MultiFieldQueryParser.getFieldQuery() drops queries that are
