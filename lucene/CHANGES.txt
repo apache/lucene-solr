@@ -73,6 +73,11 @@ Bug Fixes
 * LUCENE-7486: DisjunctionMaxQuery does not work correctly with queries that
   return negative scores.  (Ivan Provalov, Uwe Schindler, Adrien Grand)
 
+* LUCENE-7491: Suddenly turning on dimensional points for some fields
+  that already exist in an index but didn't previously index
+  dimensional points could cause unexpected merge exceptions (Hans
+  Lund, Mike McCandless)
+
 Improvements
 
 * LUCENE-7439: FuzzyQuery now matches all terms within the specified
