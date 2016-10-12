@@ -34,7 +34,6 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.legacy.LegacyFieldType;
 import org.apache.lucene.legacy.LegacyIntField;
