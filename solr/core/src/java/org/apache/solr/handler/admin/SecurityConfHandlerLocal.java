@@ -82,9 +82,9 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
       securityJsonOs.write(Utils.toJSON(securityConfig.getData()));
       log.debug("Persisted security.json to {}", SECURITY_JSON_PATH);
       return true;
-    } catch (IOException e) {
-      log.warn("Failed persisting security.json to {}", SECURITY_JSON_PATH, e);
-      return false;
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+          "Failed persisting security.json to " + SECURITY_JSON_PATH, e);
     }
   }
 

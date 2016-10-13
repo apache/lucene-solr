@@ -97,7 +97,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
     if (ops == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No commands");
     }
-    for (; ; ) {
+    for (int count = 1; count <= 3 ; count++ ) {
       SecurityConfig securityConfig = getSecurityConfig(true);
       Map<String, Object> data = securityConfig.getData();
       Map<String, Object> latestConf = (Map<String, Object>) data.get(key);
@@ -127,7 +127,9 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
           return;
         }
       }
+      log.debug("Security edit operation failed {} time(s)" + count);
     }
+    throw new SolrException(SERVER_ERROR, "Failed to persist security config after 3 attempts. Giving up");
   }
 
   /**
