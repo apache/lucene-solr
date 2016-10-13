@@ -458,7 +458,9 @@ public class CoreContainer {
     hostName = cfg.getNodeName();
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
-    if(isZooKeeperAware())  pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName());
+    pkiAuthenticationPlugin = isZooKeeperAware() ?
+        new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName()) :
+        new PKIAuthenticationPlugin(this, getNodeNameLocal());
 
     MDCLoggingContext.setNode(this);
 
@@ -560,6 +562,14 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       zkSys.getZkController().checkOverseerDesignate();
     }
+  }
+
+  /*
+  Builds a node name to be used with PKIAuth. 
+  // TODO: A bit hacky that we in standalone mode need to get properties from cloudConfig :-(
+   */
+  private String getNodeNameLocal() {
+    return getConfig().getCloudConfig().getHost()+":"+getConfig().getCloudConfig().getSolrHostPort()+"_solr";
   }
 
   public void securityNodeChanged() {

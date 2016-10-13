@@ -348,7 +348,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       return true;
     } else {
       try {
-        if (PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getPathInfo())) return true;
+        if (PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getServletPath())) return true;
       } catch (Exception e) {
         log.error("Unexpected error ", e);
       }
