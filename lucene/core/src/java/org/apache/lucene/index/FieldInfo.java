@@ -145,7 +145,7 @@ public final class FieldInfo {
     if (this.pointDimensionCount == 0 && dimensionCount != 0) {
       this.pointDimensionCount = dimensionCount;
       this.pointNumBytes = dimensionNumBytes;
-    } else if (this.pointDimensionCount != dimensionCount || this.pointNumBytes != dimensionNumBytes) {
+    } else if (dimensionCount != 0 && (this.pointDimensionCount != dimensionCount || this.pointNumBytes != dimensionNumBytes)) {
       throw new IllegalArgumentException("cannot change field \"" + name + "\" from points dimensionCount=" + this.pointDimensionCount + ", numBytes=" + this.pointNumBytes + " to inconsistent dimensionCount=" + dimensionCount + ", numBytes=" + dimensionNumBytes);
     }
 
