@@ -171,6 +171,8 @@ Bug Fixes
 * SOLR-9604: Pooled SSL connections were not being re-used (Alan Woodward,
   Mikhail Khludnev, hossman)
 
+* SOLR-9325: solr.log is now written to $SOLR_LOGS_DIR without changing log4j.properties (janhoy)
+
 Optimizations
 ----------------------
 
