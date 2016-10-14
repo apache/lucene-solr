@@ -162,7 +162,9 @@ public class BlockJoinSelector {
           return nextDoc();
         }
         int prevParentDocID = parents.prevSetBit(target-1);
-        values.advance(prevParentDocID+1);
+        if (values.docID() <= prevParentDocID) {
+          values.advance(prevParentDocID+1);
+        }
         return nextDoc();
       }
 
