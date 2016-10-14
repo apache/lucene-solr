@@ -729,7 +729,13 @@ IF "%STOP_KEY%"=="" set STOP_KEY=solrrocks
 
 @REM This is quite hacky, but examples rely on a different log4j.properties
 @REM so that we can write logs for examples to %SOLR_HOME%\..\logs
-set "SOLR_LOGS_DIR=%SOLR_SERVER_DIR%\logs"
+IF [%SOLR_LOGS_DIR%] == [] (
+  set "SOLR_LOGS_DIR=%SOLR_SERVER_DIR%\logs"
+) ELSE (
+  set SOLR_LOGS_DIR=%SOLR_LOGS_DIR:"=%
+)
+set SOLR_LOGS_DIR_QUOTED="%SOLR_LOGS_DIR%"
+
 set "EXAMPLE_DIR=%SOLR_TIP%\example"
 set TMP=!SOLR_HOME:%EXAMPLE_DIR%=!
 IF NOT "%TMP%"=="%SOLR_HOME%" (
@@ -965,13 +971,26 @@ IF NOT "%SOLR_SSL_OPTS%"=="" (
   set "START_OPTS=%START_OPTS% %SOLR_SSL_OPTS% !SSL_PORT_PROP!"
 )
 IF NOT "%SOLR_LOG_LEVEL%"=="" set "START_OPTS=%START_OPTS% -Dsolr.log.level=%SOLR_LOG_LEVEL%"
-
+set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED%"
 IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=file:%SOLR_SERVER_DIR%\resources\log4j.properties"
 
 cd /d "%SOLR_SERVER_DIR%"
 
-IF NOT EXIST "!SOLR_LOGS_DIR!" (
-  mkdir "!SOLR_LOGS_DIR!"
+IF NOT EXIST "%SOLR_LOGS_DIR%" (
+  mkdir "%SOLR_LOGS_DIR%"
+)
+copy /Y NUL "%SOLR_LOGS_DIR%\.writable" > NUL 2>&1 && set WRITEOK=1
+IF DEFINED WRITEOK (
+  del "%SOLR_LOGS_DIR%\.writable"
+) else (
+  echo "ERROR: Logs directory %SOLR_LOGS_DIR% is not writable or could not be created. Exiting"
+  GOTO :eof
+)
+echo " contexts etc lib modules resources scripts solr solr-webapp " > "%TEMP%\solr-pattern.txt"
+findstr /i /C:" %SOLR_LOGS_DIR% " "%TEMP%\solr-pattern.txt" 1>nul
+if %ERRORLEVEL% == 0 (
+  echo "ERROR: Logs directory %SOLR_LOGS_DIR% is invalid. Reserved for the system. Exiting"
+  GOTO :eof
 )
 
 IF NOT EXIST "%SOLR_SERVER_DIR%\tmp" (
@@ -988,13 +1007,13 @@ IF "%FG%"=="1" (
   REM run solr in the foreground
   title "Solr-%SOLR_PORT%"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
-  "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% %GCLOG_OPT%:"!SOLR_LOGS_DIR!"/solr_gc.log ^
+  "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% %GCLOG_OPT%:"!SOLR_LOGS_DIR!/solr_gc.log" ^
     -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" ^
     -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar "%SOLR_JETTY_CONFIG%"
 ) ELSE (
   START /B "Solr-%SOLR_PORT%" /D "%SOLR_SERVER_DIR%" "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
-    %GCLOG_OPT%:"!SOLR_LOGS_DIR!"/solr_gc.log -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! ^
+    %GCLOG_OPT%:"!SOLR_LOGS_DIR!/solr_gc.log" -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! ^
     -Dsolr.log.muteconsole ^
     -DSTOP.KEY=%STOP_KEY% -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" ^
     -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar ^

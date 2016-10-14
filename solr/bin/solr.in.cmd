@@ -31,6 +31,9 @@ REM Changes the logging level. Valid values: ALL, TRACE, DEBUG, INFO, WARN, ERRO
 REM This is an alternative to changing the rootLogger in log4j.properties
 REM set SOLR_LOG_LEVEL=INFO
 
+REM Location where Solr should write logs to. Absolute or relative to solr start dir
+REM set SOLR_LOGS_DIR=logs
+
 REM These GC settings have shown to work well for a number of common Solr workloads
 set GC_TUNE=-XX:NewRatio=3 ^
  -XX:SurvivorRatio=4 ^
