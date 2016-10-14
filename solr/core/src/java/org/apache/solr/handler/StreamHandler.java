@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
+import org.apache.solr.client.solrj.io.stream.CommitStream;
 import org.apache.solr.client.solrj.io.stream.ComplementStream;
 import org.apache.solr.client.solrj.io.stream.DaemonStream;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
@@ -137,6 +138,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("update", UpdateStream.class)
       .withFunctionName("jdbc", JDBCStream.class)
       .withFunctionName("topic", TopicStream.class)
+      .withFunctionName("commit", CommitStream.class)
       
       // decorator streams
       .withFunctionName("merge", MergeStream.class)

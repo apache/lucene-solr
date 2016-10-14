@@ -174,6 +174,41 @@ public class StreamFactory implements Serializable {
     return matchingStreamExpressions;   
   }
   
+  public int getIntOperand(StreamExpression expression, String paramName, Integer defaultValue) throws IOException{
+    StreamExpressionNamedParameter param = getNamedOperand(expression, paramName);
+    
+    if(null == param || null == param.getParameter() || !(param.getParameter() instanceof StreamExpressionValue)){
+      if(null != defaultValue){
+        return defaultValue;
+      }
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single '%s' parameter of type integer but didn't find one",expression, paramName));
+    }
+    String nStr = ((StreamExpressionValue)param.getParameter()).getValue();
+    try{
+      return Integer.parseInt(nStr);
+    }
+    catch(NumberFormatException e){
+      if(null != defaultValue){
+        return defaultValue;
+      }
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - %s '%s' is not a valid integer.",expression, paramName, nStr));
+    }
+  }
+
+  public boolean getBooleanOperand(StreamExpression expression, String paramName, Boolean defaultValue) throws IOException{
+    StreamExpressionNamedParameter param = getNamedOperand(expression, paramName);
+    
+    if(null == param || null == param.getParameter() || !(param.getParameter() instanceof StreamExpressionValue)){
+      if(null != defaultValue){
+        return defaultValue;
+      }
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single '%s' parameter of type boolean but didn't find one",expression, paramName));
+    }
+    String nStr = ((StreamExpressionValue)param.getParameter()).getValue();
+    return Boolean.parseBoolean(nStr);
+  }
+
+  
   public TupleStream constructStream(String expressionClause) throws IOException {
     return constructStream(StreamExpressionParser.parse(expressionClause));
   }
