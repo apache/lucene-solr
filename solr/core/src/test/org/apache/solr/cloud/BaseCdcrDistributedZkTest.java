@@ -593,6 +593,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       }
     }
 
+    this.waitForRecoveriesToFinish(temporaryCollection,zkStateReader, true);
     // delete the temporary collection - we will create our own collections later
     this.deleteCollection(temporaryCollection);
     this.waitForCollectionToDisappear(temporaryCollection);
