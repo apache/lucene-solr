@@ -423,7 +423,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     public int advance(int target) throws IOException {
       assertThread("Numeric doc values", creationThread);
       assert target >= 0;
-      assert target >= in.docID();
+      assert target > in.docID();
       int docID = in.advance(target);
       assert docID >= target;
       assert docID == NO_MORE_DOCS || docID < maxDoc;
@@ -488,7 +488,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     public int advance(int target) throws IOException {
       assertThread("Binary doc values", creationThread);
       assert target >= 0;
-      assert target >= in.docID();
+      assert target > in.docID();
       int docID = in.advance(target);
       assert docID >= target;
       assert docID == NO_MORE_DOCS || docID < maxDoc;
@@ -554,7 +554,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     public int advance(int target) throws IOException {
       assertThread("Sorted doc values", creationThread);
       assert target >= 0;
-      assert target >= in.docID();
+      assert target > in.docID();
       int docID = in.advance(target);
       assert docID >= target;
       assert docID == NO_MORE_DOCS || docID < maxDoc;
@@ -648,7 +648,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     public int advance(int target) throws IOException {
       assertThread("Sorted numeric doc values", creationThread);
       assert target >= 0;
-      assert target >= in.docID();
+      assert target > in.docID();
       int docID = in.advance(target);
       assert docID == in.docID();
       assert docID >= target;
@@ -720,7 +720,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     public int advance(int target) throws IOException {
       assertThread("Sorted set doc values", creationThread);
       assert target >= 0;
-      assert target >= in.docID();
+      assert target > in.docID();
       int docID = in.advance(target);
       assert docID == in.docID();
       assert docID >= target;

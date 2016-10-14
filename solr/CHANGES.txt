@@ -174,6 +174,8 @@ Bug Fixes
 * SOLR-9604: Pooled SSL connections were not being re-used (Alan Woodward,
   Mikhail Khludnev, hossman)
 
+* SOLR-9325: solr.log is now written to $SOLR_LOGS_DIR without changing log4j.properties (janhoy)
+
 Optimizations
 ----------------------
 
@@ -273,6 +275,8 @@ Other Changes
 * SOLR-8969: SQLHandler causes NPE in non-cloud mode (Markus Jelsma, Kevin Risden)
 
 * SOLR-9610: New AssertTool in SolrCLI for easier cross platform assertions from command line (janhoy)
+
+* SOLR-9639: Test only fix. Prevent CDCR tests from removing collection during recovery that used to blow up jvm  (Mikhail Khludnev)
 
 ==================  6.2.1 ==================
 

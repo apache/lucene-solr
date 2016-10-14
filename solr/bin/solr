@@ -1568,7 +1568,7 @@ function launch_solr() {
   fi
 
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" \
-    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" $SOLR_LOG_LEVEL_OPT \
+    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" $SOLR_LOG_LEVEL_OPT -Dsolr.log.dir="$SOLR_LOGS_DIR" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
@@ -1578,7 +1578,21 @@ function launch_solr() {
     IN_CLOUD_MODE=" in SolrCloud mode"
   fi
 
-  mkdir -p "$SOLR_LOGS_DIR"
+  mkdir -p "$SOLR_LOGS_DIR" 2>/dev/null
+  if [ $? -ne 0 ]; then
+    echo -e "\nERROR: Logs directory $SOLR_LOGS_DIR could not be created. Exiting"
+    exit 1
+  fi
+  if [ ! -w "$SOLR_LOGS_DIR" ]; then
+    echo -e "\nERROR: Logs directory $SOLR_LOGS_DIR is not writable. Exiting"
+    exit 1
+  fi
+  case "$SOLR_LOGS_DIR" in
+    contexts|etc|lib|modules|resources|scripts|solr|solr-webapp)
+      echo -e "\nERROR: Logs directory $SOLR_LOGS_DIR is invalid. Reserved for the system. Exiting"
+      exit 1
+      ;;
+  esac
 
   if [ "$run_in_foreground" == "true" ]; then
     exec "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -jar start.jar "${SOLR_JETTY_CONFIG[@]}"
