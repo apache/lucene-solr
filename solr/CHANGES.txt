@@ -275,6 +275,8 @@ Other Changes
 
 * SOLR-9639: Test only fix. Prevent CDCR tests from removing collection during recovery that used to blow up jvm  (Mikhail Khludnev)
 
+* SOLR-9625: Add HelloWorldSolrCloudTestCase class (Christine Poerschke, Alan Woodward, Alexandre Rafalovitch)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
