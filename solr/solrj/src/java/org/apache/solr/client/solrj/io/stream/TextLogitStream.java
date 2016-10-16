@@ -332,19 +332,18 @@ public class TextLogitStream extends TupleStream implements Expressible {
   }
 
   protected List<String> getShardUrls() throws IOException {
-
     try {
-
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+
+      Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
+
       ClusterState clusterState = zkStateReader.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
 
-      Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
-      List baseUrls = new ArrayList();
-
+      List<String> baseUrls = new ArrayList<>();
       for(Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
-        List<Replica> shuffler = new ArrayList();
+        List<Replica> shuffler = new ArrayList<>();
         for(Replica replica : replicas) {
           if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
             shuffler.add(replica);
@@ -359,7 +358,6 @@ public class TextLogitStream extends TupleStream implements Expressible {
       }
 
       return baseUrls;
-
     } catch (Exception e) {
       throw new IOException(e);
     }
