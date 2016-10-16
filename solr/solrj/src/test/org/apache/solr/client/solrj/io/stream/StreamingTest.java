@@ -51,253 +51,262 @@ import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- *  All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses SolrStream so
- *  SolrStream will get fully exercised through these tests.
- *
- **/
+*  All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses SolrStream so
+*  SolrStream will get fully exercised through these tests.
+*
+**/
 
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
 public class StreamingTest extends SolrCloudTestCase {
 
-  public static final int TIMEOUT = 30;
+public static final String COLLECTIONORALIAS = "streams";
 
-  public static final String COLLECTION = "streams";
+private static final StreamFactory streamFactory = new StreamFactory()
+    .withFunctionName("search", CloudSolrStream.class)
+    .withFunctionName("merge", MergeStream.class)
+    .withFunctionName("unique", UniqueStream.class)
+    .withFunctionName("top", RankStream.class)
+    .withFunctionName("reduce", ReducerStream.class)
+    .withFunctionName("group", GroupOperation.class)
+    .withFunctionName("rollup", RollupStream.class)
+    .withFunctionName("parallel", ParallelStream.class);
 
-  private static final StreamFactory streamFactory = new StreamFactory()
-      .withFunctionName("search", CloudSolrStream.class)
-      .withFunctionName("merge", MergeStream.class)
-      .withFunctionName("unique", UniqueStream.class)
-      .withFunctionName("top", RankStream.class)
-      .withFunctionName("reduce", ReducerStream.class)
-      .withFunctionName("group", GroupOperation.class)
-      .withFunctionName("rollup", RollupStream.class)
-      .withFunctionName("parallel", ParallelStream.class);
+private static String zkHost;
 
-  private static String zkHost;
-  
-  private static int numShards;
-  private static int numWorkers;
+private static int numShards;
+private static int numWorkers;
+private static boolean useAlias;
 
-  @BeforeClass
-  public static void configureCluster() throws Exception {
-    numShards = random().nextInt(2) + 1;  //1 - 3
-    numWorkers = numShards > 2 ? random().nextInt(numShards - 1) + 1 : numShards;
-    configureCluster(numShards)
-        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
-        .configure();
+@BeforeClass
+public static void configureCluster() throws Exception {
+  numShards = random().nextInt(2) + 1;  //1 - 3
+  numWorkers = numShards > 2 ? random().nextInt(numShards - 1) + 1 : numShards;
+  configureCluster(numShards)
+      .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+      .configure();
 
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", numShards, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, TIMEOUT);
-
-    zkHost = cluster.getZkServer().getZkAddress();
-    streamFactory.withCollectionZkHost(COLLECTION, zkHost);
+  String collection;
+  useAlias = random().nextBoolean();
+  if(useAlias) {
+    collection = COLLECTIONORALIAS + "_collection";
+    CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
+  } else {
+    collection = COLLECTIONORALIAS;
   }
 
-  private static final String id = "id";
+  CollectionAdminRequest.createCollection(collection, "conf", numShards, 1).process(cluster.getSolrClient());
+  AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
 
-  @Before
-  public void clearCollection() throws Exception {
-    new UpdateRequest()
-        .deleteByQuery("*:*")
-        .commit(cluster.getSolrClient(), COLLECTION);
-  }
+  zkHost = cluster.getZkServer().getZkAddress();
+  streamFactory.withCollectionZkHost(COLLECTIONORALIAS, zkHost);
+}
 
-  @Test
-  public void testUniqueStream() throws Exception {
+private static final String id = "id";
 
-    //Test CloudSolrStream and UniqueStream
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
-        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
-        .commit(cluster.getSolrClient(), COLLECTION);
+@Before
+public void clearCollection() throws Exception {
+  new UpdateRequest()
+      .deleteByQuery("*:*")
+      .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+}
 
-    SolrParams sParams = StreamingTest.mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
-    UniqueStream ustream = new UniqueStream(stream, new FieldEqualitor("a_f"));
-    List<Tuple> tuples = getTuples(ustream);
-    assertEquals(4, tuples.size());
-    assertOrder(tuples, 0,1,3,4);
+@Test
+public void testUniqueStream() throws Exception {
 
-  }
+  //Test CloudSolrStream and UniqueStream
+  new UpdateRequest()
+      .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+      .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+      .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+      .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+      .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+      .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-  @Test
-  public void testSpacesInParams() throws Exception {
+  SolrParams sParams = StreamingTest.mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc");
+  CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+  UniqueStream ustream = new UniqueStream(stream, new FieldEqualitor("a_f"));
+  List<Tuple> tuples = getTuples(ustream);
+  assertEquals(4, tuples.size());
+  assertOrder(tuples, 0,1,3,4);
 
-    SolrParams sParams = StreamingTest.mapParams("q", "*:*", "fl", "id , a_s , a_i , a_f", "sort", "a_f  asc , a_i  asc");
+}
 
-    //CloudSolrStream compares the values of the sort with the fl field.
-    //The constructor will throw an exception if the sort fields do not the
-    //a value in the field list.
+@Test
+public void testSpacesInParams() throws Exception {
 
-    CloudSolrStream stream = new CloudSolrStream("", "collection1", sParams);
-  }
+  SolrParams sParams = StreamingTest.mapParams("q", "*:*", "fl", "id , a_s , a_i , a_f", "sort", "a_f  asc , a_i  asc");
 
-  @Test
-  public void testNonePartitionKeys() throws Exception {
+  //CloudSolrStream compares the values of the sort with the fl field.
+  //The constructor will throw an exception if the sort fields do not the
+  //a value in the field list.
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+  CloudSolrStream stream = new CloudSolrStream("", "collection1", sParams);
+}
 
-    SolrParams sParamsA = StreamingTest.mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_s asc,a_f asc", "partitionKeys", "none");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
-    ParallelStream pstream = parallelStream(stream, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
-    attachStreamFactory(pstream);
-    List<Tuple> tuples = getTuples(pstream);
+@Test
+public void testNonePartitionKeys() throws Exception {
 
-    assert(tuples.size() == (10 * numWorkers)); // Each tuple will be double counted.
+  new UpdateRequest()
+      .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+      .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+      .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+      .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+      .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+      .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+      .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+      .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+      .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+      .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+      .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-  }
+  SolrParams sParamsA = StreamingTest.mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_s asc,a_f asc", "partitionKeys", "none");
+  CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+  ParallelStream pstream = parallelStream(stream, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
+  attachStreamFactory(pstream);
+  List<Tuple> tuples = getTuples(pstream);
 
-  @Test
-  public void testParallelUniqueStream() throws Exception {
+  assert(tuples.size() == (10 * numWorkers)); // Each tuple will be double counted.
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
-        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
-        .add(id, "5", "a_s", "hello1", "a_i", "10", "a_f", "1")
-        .add(id, "6", "a_s", "hello1", "a_i", "11", "a_f", "5")
-        .add(id, "7", "a_s", "hello1", "a_i", "12", "a_f", "5")
-        .add(id, "8", "a_s", "hello1", "a_i", "13", "a_f", "4")
-        .commit(cluster.getSolrClient(), COLLECTION);
+}
 
-    SolrParams sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc", "partitionKeys", "a_f");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
-    UniqueStream ustream = new UniqueStream(stream, new FieldEqualitor("a_f"));
-    ParallelStream pstream = parallelStream(ustream, new FieldComparator("a_f", ComparatorOrder.ASCENDING));
-    attachStreamFactory(pstream);
-    List<Tuple> tuples = getTuples(pstream);
-    assertEquals(5, tuples.size());
-    assertOrder(tuples, 0, 1, 3, 4, 6);
+@Test
+public void testParallelUniqueStream() throws Exception {
 
-    //Test the eofTuples
+  new UpdateRequest()
+      .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+      .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+      .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+      .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+      .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+      .add(id, "5", "a_s", "hello1", "a_i", "10", "a_f", "1")
+      .add(id, "6", "a_s", "hello1", "a_i", "11", "a_f", "5")
+      .add(id, "7", "a_s", "hello1", "a_i", "12", "a_f", "5")
+      .add(id, "8", "a_s", "hello1", "a_i", "13", "a_f", "4")
+      .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    Map<String,Tuple> eofTuples = pstream.getEofTuples();
-    assertEquals(numWorkers, eofTuples.size()); //There should be an EOF tuple for each worker.
+  SolrParams sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc", "partitionKeys", "a_f");
+  CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+  UniqueStream ustream = new UniqueStream(stream, new FieldEqualitor("a_f"));
+  ParallelStream pstream = parallelStream(ustream, new FieldComparator("a_f", ComparatorOrder.ASCENDING));
+  attachStreamFactory(pstream);
+  List<Tuple> tuples = getTuples(pstream);
+  assertEquals(5, tuples.size());
+  assertOrder(tuples, 0, 1, 3, 4, 6);
 
-  }
+  //Test the eofTuples
 
-  @Test
-  public void testMultipleFqClauses() throws Exception {
+  Map<String,Tuple> eofTuples = pstream.getEofTuples();
+  assertEquals(numWorkers, eofTuples.size()); //There should be an EOF tuple for each worker.
 
-    new UpdateRequest()
-        .add(id, "0", "a_ss", "hello0", "a_ss", "hello1", "a_i", "0", "a_f", "0")
-        .add(id, "2", "a_ss", "hello2", "a_i", "2", "a_f", "0")
-    .add(id, "3", "a_ss", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_ss", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_ss", "hello1", "a_i", "1", "a_f", "1")
-        .add(id, "5", "a_ss", "hello1", "a_i", "10", "a_f", "1")
-        .add(id, "6", "a_ss", "hello1", "a_i", "11", "a_f", "5")
-        .add(id, "7", "a_ss", "hello1", "a_i", "12", "a_f", "5")
-        .add(id, "8", "a_ss", "hello1", "a_i", "13", "a_f", "4")
-        .commit(cluster.getSolrClient(), COLLECTION);
+}
 
-    streamFactory.withCollectionZkHost(COLLECTION, zkHost);
+@Test
+public void testMultipleFqClauses() throws Exception {
 
-    ModifiableSolrParams params = new ModifiableSolrParams(mapParams("q", "*:*", "fl", "id,a_i", 
-        "sort", "a_i asc", "fq", "a_ss:hello0", "fq", "a_ss:hello1"));
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, params);
-    List<Tuple> tuples = getTuples(stream);
-    assertEquals("Multiple fq clauses should have been honored", 1, tuples.size());
-    assertEquals("should only have gotten back document 0", "0", tuples.get(0).getString("id"));
-  }
+  new UpdateRequest()
+      .add(id, "0", "a_ss", "hello0", "a_ss", "hello1", "a_i", "0", "a_f", "0")
+      .add(id, "2", "a_ss", "hello2", "a_i", "2", "a_f", "0")
+  .add(id, "3", "a_ss", "hello3", "a_i", "3", "a_f", "3")
+      .add(id, "4", "a_ss", "hello4", "a_i", "4", "a_f", "4")
+      .add(id, "1", "a_ss", "hello1", "a_i", "1", "a_f", "1")
+      .add(id, "5", "a_ss", "hello1", "a_i", "10", "a_f", "1")
+      .add(id, "6", "a_ss", "hello1", "a_i", "11", "a_f", "5")
+      .add(id, "7", "a_ss", "hello1", "a_i", "12", "a_f", "5")
+      .add(id, "8", "a_ss", "hello1", "a_i", "13", "a_f", "4")
+      .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-  @Test
-  public void testRankStream() throws Exception {
+  streamFactory.withCollectionZkHost(COLLECTIONORALIAS, zkHost);
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
-        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
-        .commit(cluster.getSolrClient(), COLLECTION);
+  ModifiableSolrParams params = new ModifiableSolrParams(mapParams("q", "*:*", "fl", "id,a_i", 
+      "sort", "a_i asc", "fq", "a_ss:hello0", "fq", "a_ss:hello1"));
+  CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, params);
+  List<Tuple> tuples = getTuples(stream);
+  assertEquals("Multiple fq clauses should have been honored", 1, tuples.size());
+  assertEquals("should only have gotten back document 0", "0", tuples.get(0).getString("id"));
+}
+
+@Test
+public void testRankStream() throws Exception {
+
+  new UpdateRequest()
+      .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+      .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+      .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+      .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+      .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+      .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
 
-    SolrParams sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i asc");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
-    RankStream rstream = new RankStream(stream, 3, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
-    List<Tuple> tuples = getTuples(rstream);
+  SolrParams sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i asc");
+  CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+  RankStream rstream = new RankStream(stream, 3, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
+  List<Tuple> tuples = getTuples(rstream);
 
-    assertEquals(3, tuples.size());
-    assertOrder(tuples, 4,3,2);
+  assertEquals(3, tuples.size());
+  assertOrder(tuples, 4,3,2);
 
-  }
+}
 
-  @Test
-  public void testParallelRankStream() throws Exception {
+@Test
+public void testParallelRankStream() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
-        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "5", "a_s", "hello1", "a_i", "5", "a_f", "1")
-        .add(id, "6", "a_s", "hello1", "a_i", "6", "a_f", "1")
-        .add(id, "7", "a_s", "hello1", "a_i", "7", "a_f", "1")
-        .add(id, "8", "a_s", "hello1", "a_i", "8", "a_f", "1")
-        .add(id, "9", "a_s", "hello1", "a_i", "9", "a_f", "1")
-        .add(id, "10", "a_s", "hello1", "a_i", "10", "a_f", "1")
-        .commit(cluster.getSolrClient(), COLLECTION);
+  new UpdateRequest()
+      .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+      .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+      .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+      .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+      .add(id, "5", "a_s", "hello1", "a_i", "5", "a_f", "1")
+      .add(id, "6", "a_s", "hello1", "a_i", "6", "a_f", "1")
+      .add(id, "7", "a_s", "hello1", "a_i", "7", "a_f", "1")
+      .add(id, "8", "a_s", "hello1", "a_i", "8", "a_f", "1")
+      .add(id, "9", "a_s", "hello1", "a_i", "9", "a_f", "1")
+      .add(id, "10", "a_s", "hello1", "a_i", "10", "a_f", "1")
+      .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    SolrParams sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i asc", "partitionKeys", "a_i");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
-    RankStream rstream = new RankStream(stream, 11, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
-    ParallelStream pstream = parallelStream(rstream, new FieldComparator("a_i", ComparatorOrder.DESCENDING));    
-    attachStreamFactory(pstream);
-    List<Tuple> tuples = getTuples(pstream);
+  SolrParams sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i asc", "partitionKeys", "a_i");
+  CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
+  RankStream rstream = new RankStream(stream, 11, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
+  ParallelStream pstream = parallelStream(rstream, new FieldComparator("a_i", ComparatorOrder.DESCENDING));    
+  attachStreamFactory(pstream);
+  List<Tuple> tuples = getTuples(pstream);
 
-    assertEquals(10, tuples.size());
-    assertOrder(tuples, 10,9,8,7,6,5,4,3,2,0);
+  assertEquals(10, tuples.size());
+  assertOrder(tuples, 10,9,8,7,6,5,4,3,2,0);
 
-  }
+}
 
-  @Test
-  public void testTrace() throws Exception {
+@Test
+public void testTrace() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+  new UpdateRequest()
+      .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+      .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+      .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+      .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+      .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+      .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+      .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+      .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+      .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+      .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+      .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    //Test with spaces in the parameter lists.
-    SolrParams sParamsA = mapParams("q", "*:*", "fl", "id,a_s, a_i,a_f", "sort", "a_s asc,a_f   asc");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
-    stream.setTrace(true);
-    List<Tuple> tuples = getTuples(stream);
-    assertEquals(COLLECTION, tuples.get(0).get("_COLLECTION_"));
-    assertEquals(COLLECTION, tuples.get(1).get("_COLLECTION_"));
-    assertEquals(COLLECTION, tuples.get(2).get("_COLLECTION_"));
-    assertEquals(COLLECTION, tuples.get(3).get("_COLLECTION_"));
+  //Test with spaces in the parameter lists.
+  SolrParams sParamsA = mapParams("q", "*:*", "fl", "id,a_s, a_i,a_f", "sort", "a_s asc,a_f   asc");
+  CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+  stream.setTrace(true);
+  List<Tuple> tuples = getTuples(stream);
+    assertEquals(COLLECTIONORALIAS, tuples.get(0).get("_COLLECTION_"));
+    assertEquals(COLLECTIONORALIAS, tuples.get(1).get("_COLLECTION_"));
+    assertEquals(COLLECTIONORALIAS, tuples.get(2).get("_COLLECTION_"));
+    assertEquals(COLLECTIONORALIAS, tuples.get(3).get("_COLLECTION_"));
   }
 
   @Test
@@ -314,11 +323,11 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     //Test with spaces in the parameter lists.
     SolrParams sParamsA = mapParams("q", "*:*", "fl", "id,a_s, a_i,  a_f", "sort", "a_s asc  ,  a_f   asc");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
     ReducerStream rstream  = new ReducerStream(stream,
                                                new FieldEqualitor("a_s"),
                                                new GroupOperation(new FieldComparator("a_f", ComparatorOrder.ASCENDING), 5));
@@ -341,7 +350,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
     //Test with spaces in the parameter lists using a comparator
     sParamsA = mapParams("q", "*:*", "fl", "id,a_s, a_i,  a_f", "sort", "a_s asc  ,  a_f   asc");
-    stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
     rstream = new ReducerStream(stream,
                                 new FieldComparator("a_s", ComparatorOrder.ASCENDING),
                                 new GroupOperation(new FieldComparator("a_f", ComparatorOrder.DESCENDING), 5));
@@ -379,11 +388,11 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     //Test with spaces in the parameter lists.
     SolrParams sParamsA = mapParams("q", "blah", "fl", "id,a_s, a_i,  a_f", "sort", "a_s asc  ,  a_f   asc");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
     ReducerStream rstream = new ReducerStream(stream,
                                               new FieldEqualitor("a_s"),
                                               new GroupOperation(new FieldComparator("a_f", ComparatorOrder.ASCENDING), 5));
@@ -408,10 +417,10 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     SolrParams sParamsA = mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_s asc,a_f asc", "partitionKeys", "a_s");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
 
     ReducerStream rstream = new ReducerStream(stream,
                                               new FieldEqualitor("a_s"),
@@ -437,7 +446,7 @@ public class StreamingTest extends SolrCloudTestCase {
     //Test Descending with Ascending subsort
 
     sParamsA = mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_s desc,a_f asc", "partitionKeys", "a_s");
-    stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
 
     rstream = new ReducerStream(stream,
                                 new FieldEqualitor("a_s"),
@@ -477,11 +486,11 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     //Test an error that comes originates from the /select handler
     SolrParams sParamsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
     ExceptionStream estream = new ExceptionStream(stream);
     Tuple t = getTuple(estream);
     assertTrue(t.EOF);
@@ -490,7 +499,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
     //Test an error that comes originates from the /export handler
     sParamsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f,score", "sort", "a_s asc", "qt", "/export");
-    stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
     estream = new ExceptionStream(stream);
     t = getTuple(estream);
     assertTrue(t.EOF);
@@ -514,11 +523,11 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     SolrParams sParamsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
-    ParallelStream pstream = new ParallelStream(zkHost, COLLECTION, stream, 2, new FieldComparator("blah", ComparatorOrder.ASCENDING));
+    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+    ParallelStream pstream = new ParallelStream(zkHost, COLLECTIONORALIAS, stream, 2, new FieldComparator("blah", ComparatorOrder.ASCENDING));
     ExceptionStream estream = new ExceptionStream(pstream);
     Tuple t = getTuple(estream);
     assertTrue(t.EOF);
@@ -529,8 +538,8 @@ public class StreamingTest extends SolrCloudTestCase {
 
     //Test an error that originates from the /select handler
     sParamsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc", "partitionKeys", "a_s");
-    stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
-    pstream = new ParallelStream(zkHost, COLLECTION, stream, 2, new FieldComparator("blah", ComparatorOrder.ASCENDING));
+    stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+    pstream = new ParallelStream(zkHost, COLLECTIONORALIAS, stream, 2, new FieldComparator("blah", ComparatorOrder.ASCENDING));
     estream = new ExceptionStream(pstream);
     t = getTuple(estream);
     assertTrue(t.EOF);
@@ -540,8 +549,8 @@ public class StreamingTest extends SolrCloudTestCase {
 
     //Test an error that originates from the /export handler
     sParamsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f,score", "sort", "a_s asc", "qt", "/export", "partitionKeys", "a_s");
-    stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
-    pstream = new ParallelStream(zkHost, COLLECTION, stream, 2, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
+    stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+    pstream = new ParallelStream(zkHost, COLLECTIONORALIAS, stream, 2, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
     estream = new ExceptionStream(pstream);
     t = getTuple(estream);
     assertTrue(t.EOF);
@@ -564,7 +573,7 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     SolrParams sParamsA = mapParams("q", "*:*");
 
@@ -578,7 +587,7 @@ public class StreamingTest extends SolrCloudTestCase {
                         new MeanMetric("a_f"),
                         new CountMetric()};
 
-    StatsStream statsStream = new StatsStream(zkHost, COLLECTION, sParamsA, metrics);
+    StatsStream statsStream = new StatsStream(zkHost, COLLECTIONORALIAS, sParamsA, metrics);
 
     List<Tuple> tuples = getTuples(statsStream);
 
@@ -624,7 +633,7 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     SolrParams sParamsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f", "sort", "a_s asc");
 
@@ -643,7 +652,7 @@ public class StreamingTest extends SolrCloudTestCase {
     FieldComparator[] sorts = {new FieldComparator("sum(a_i)",
                                                    ComparatorOrder.ASCENDING)};
 
-    FacetStream facetStream = new FacetStream(zkHost, COLLECTION, sParamsA, buckets, metrics, sorts, 100);
+    FacetStream facetStream = new FacetStream(zkHost, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
 
     List<Tuple> tuples = getTuples(facetStream);
 
@@ -725,7 +734,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
     sorts[0] = new FieldComparator("sum(a_i)", ComparatorOrder.DESCENDING);
 
-    facetStream = new FacetStream(zkHost, COLLECTION, sParamsA, buckets, metrics, sorts, 100);
+    facetStream = new FacetStream(zkHost, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
 
     tuples = getTuples(facetStream);
 
@@ -808,7 +817,7 @@ public class StreamingTest extends SolrCloudTestCase {
     sorts[0] = new FieldComparator("a_s", ComparatorOrder.DESCENDING);
 
 
-    facetStream = new FacetStream(zkHost, COLLECTION, sParamsA, buckets, metrics, sorts, 100);
+    facetStream = new FacetStream(zkHost, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
 
     tuples = getTuples(facetStream);
 
@@ -889,7 +898,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
     sorts[0] = new FieldComparator("a_s", ComparatorOrder.ASCENDING);
 
-    facetStream = new FacetStream(zkHost, COLLECTION, sParamsA, buckets, metrics, sorts, 100);
+    facetStream = new FacetStream(zkHost, COLLECTIONORALIAS, sParamsA, buckets, metrics, sorts, 100);
 
     tuples = getTuples(facetStream);
 
@@ -980,7 +989,7 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "7", "level1_s", "hello3", "level2_s", "b", "a_i", "12", "a_f", "8")
         .add(id, "8", "level1_s", "hello3", "level2_s", "b", "a_i", "13", "a_f", "9")
         .add(id, "9", "level1_s", "hello0", "level2_s", "b", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     SolrParams sParamsA = mapParams("q", "*:*", "fl", "a_i,a_f");
 
@@ -993,7 +1002,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
     FacetStream facetStream = new FacetStream(
         zkHost,
-        COLLECTION,
+        COLLECTIONORALIAS,
         sParamsA,
         buckets,
         metrics,
@@ -1073,7 +1082,7 @@ public class StreamingTest extends SolrCloudTestCase {
     sorts[1] =  new FieldComparator("level2_s", ComparatorOrder.DESCENDING );
     facetStream = new FacetStream(
         zkHost,
-        COLLECTION,
+        COLLECTIONORALIAS,
         sParamsA,
         buckets,
         metrics,
@@ -1165,10 +1174,10 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     SolrParams sParamsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f", "sort", "a_s asc");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
 
     Bucket[] buckets =  {new Bucket("a_s")};
 
@@ -1265,10 +1274,10 @@ public class StreamingTest extends SolrCloudTestCase {
     //Test will null value in the grouping field
     new UpdateRequest()
         .add(id, "12", "a_s", null, "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     sParamsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f", "sort", "a_s asc", "qt", "/export");
-    stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
 
     Bucket[] buckets1 =  {new Bucket("a_s")};
 
@@ -1313,6 +1322,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
   @Test
   public void testDaemonTopicStream() throws Exception {
+    Assume.assumeTrue(!useAlias);
 
     StreamContext context = new StreamContext();
     SolrClientCache cache = new SolrClientCache();
@@ -1321,8 +1331,8 @@ public class StreamingTest extends SolrCloudTestCase {
     SolrParams sParams = mapParams("q", "a_s:hello0", "rows", "500", "fl", "id");
 
     TopicStream topicStream = new TopicStream(zkHost,
-                                              COLLECTION,
-                                              COLLECTION,
+        COLLECTIONORALIAS,
+        COLLECTIONORALIAS,
                                               "50000000",
                                               -1,
                                               1000000, sParams);
@@ -1339,7 +1349,7 @@ public class StreamingTest extends SolrCloudTestCase {
     SolrParams sParams1 = mapParams("qt", "/get", "ids", "50000000", "fl", "id");
     int count = 0;
     while(count == 0) {
-      SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/" + COLLECTION, sParams1);
+      SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/" + COLLECTIONORALIAS, sParams1);
       List<Tuple> tuples = getTuples(solrStream);
       count = tuples.size();
       if(count > 0) {
@@ -1356,7 +1366,7 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "3", "a_s", "hello0", "a_i", "3", "a_f", "3")
         .add(id, "4", "a_s", "hello0", "a_i", "4", "a_f", "4")
         .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     for(int i=0; i<5; i++) {
       daemonStream.read();
@@ -1365,7 +1375,7 @@ public class StreamingTest extends SolrCloudTestCase {
     new UpdateRequest()
         .add(id, "5", "a_s", "hello0", "a_i", "4", "a_f", "4")
         .add(id, "6", "a_s", "hello0", "a_i", "4", "a_f", "4")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     for(int i=0; i<2; i++) {
       daemonStream.read();
@@ -1395,10 +1405,10 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     SolrParams sParamsA = mapParams("q", "*:*", "fl", "a_s,a_i,a_f", "sort", "a_s asc", "partitionKeys", "a_s");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
 
     Bucket[] buckets =  {new Bucket("a_s")};
 
@@ -1506,10 +1516,10 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     SolrParams sParamsA = mapParams("q", "blah", "fl", "id,a_s,a_i,a_f", "sort", "a_s asc,a_f asc", "partitionKeys", "a_s");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
     ReducerStream rstream = new ReducerStream(stream,
                                               new FieldEqualitor("a_s"),
                                               new GroupOperation(new FieldComparator("a_s", ComparatorOrder.ASCENDING), 2));
@@ -1526,10 +1536,10 @@ public class StreamingTest extends SolrCloudTestCase {
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "5.1", "s_multi", "a", "s_multi", "b", "i_multi",
                  "1", "i_multi", "2", "f_multi", "1.2", "f_multi", "1.3")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     SolrParams sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f,s_multi,i_multi,f_multi", "sort", "a_s asc");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
+    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
     List<Tuple> tuples = getTuples(stream);
     Tuple tuple = tuples.get(0);
 
@@ -1567,14 +1577,14 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
         .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
         .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     //Test ascending
     SolrParams sParamsA = mapParams("q", "id:(4 1)", "fl", "id,a_s,a_i", "sort", "a_i asc");
-    CloudSolrStream streamA = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    CloudSolrStream streamA = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
 
     SolrParams sParamsB = mapParams("q", "id:(0 2 3)", "fl", "id,a_s,a_i", "sort", "a_i asc");
-    CloudSolrStream streamB = new CloudSolrStream(zkHost, COLLECTION, sParamsB);
+    CloudSolrStream streamB = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsB);
 
     MergeStream mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
     List<Tuple> tuples = getTuples(mstream);
@@ -1584,10 +1594,10 @@ public class StreamingTest extends SolrCloudTestCase {
 
     //Test descending
     sParamsA = mapParams("q", "id:(4 1)", "fl", "id,a_s,a_i", "sort", "a_i desc");
-    streamA = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    streamA = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
 
     sParamsB = mapParams("q", "id:(0 2 3)", "fl", "id,a_s,a_i", "sort", "a_i desc");
-    streamB = new CloudSolrStream(zkHost, COLLECTION, sParamsB);
+    streamB = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsB);
 
     mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
     tuples = getTuples(mstream);
@@ -1598,10 +1608,10 @@ public class StreamingTest extends SolrCloudTestCase {
     //Test compound sort
 
     sParamsA = mapParams("q", "id:(2 4 1)", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc");
-    streamA = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    streamA = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
 
     sParamsB = mapParams("q", "id:(0 3)", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc");
-    streamB = new CloudSolrStream(zkHost, COLLECTION, sParamsB);
+    streamB = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsB);
 
     mstream = new MergeStream(streamA, streamB, new MultipleFieldComparator(new FieldComparator("a_f",ComparatorOrder.ASCENDING),new FieldComparator("a_i",ComparatorOrder.ASCENDING)));
     tuples = getTuples(mstream);
@@ -1610,10 +1620,10 @@ public class StreamingTest extends SolrCloudTestCase {
     assertOrder(tuples, 0,2,1,3,4);
 
     sParamsA = mapParams("q", "id:(2 4 1)", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i desc");
-    streamA = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    streamA = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
 
     sParamsB = mapParams("q", "id:(0 3)", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i desc");
-    streamB = new CloudSolrStream(zkHost, COLLECTION, sParamsB);
+    streamB = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsB);
 
     mstream = new MergeStream(streamA, streamB, new MultipleFieldComparator(new FieldComparator("a_f",ComparatorOrder.ASCENDING),new FieldComparator("a_i",ComparatorOrder.DESCENDING)));
     tuples = getTuples(mstream);
@@ -1637,14 +1647,14 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "7", "a_s", "hello3", "a_i", "7", "a_f", "3")
         .add(id, "8", "a_s", "hello4", "a_i", "11", "a_f", "4")
         .add(id, "9", "a_s", "hello1", "a_i", "100", "a_f", "1")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     //Test ascending
     SolrParams sParamsA = mapParams("q", "id:(4 1 8 7 9)", "fl", "id,a_s,a_i", "sort", "a_i asc", "partitionKeys", "a_i");
-    CloudSolrStream streamA = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    CloudSolrStream streamA = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
 
     SolrParams sParamsB = mapParams("q", "id:(0 2 3 6)", "fl", "id,a_s,a_i", "sort", "a_i asc", "partitionKeys", "a_i");
-    CloudSolrStream streamB = new CloudSolrStream(zkHost, COLLECTION, sParamsB);
+    CloudSolrStream streamB = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsB);
 
     MergeStream mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
     ParallelStream pstream = parallelStream(mstream, new FieldComparator("a_i", ComparatorOrder.ASCENDING));
@@ -1656,10 +1666,10 @@ public class StreamingTest extends SolrCloudTestCase {
 
     //Test descending
     sParamsA = mapParams("q", "id:(4 1 8 9)", "fl", "id,a_s,a_i", "sort", "a_i desc", "partitionKeys", "a_i");
-    streamA = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    streamA = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
 
     sParamsB = mapParams("q", "id:(0 2 3 6)", "fl", "id,a_s,a_i", "sort", "a_i desc", "partitionKeys", "a_i");
-    streamB = new CloudSolrStream(zkHost, COLLECTION, sParamsB);
+    streamB = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsB);
 
     mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
     pstream = parallelStream(mstream, new FieldComparator("a_i", ComparatorOrder.DESCENDING));
@@ -1685,14 +1695,14 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "7", "a_s", "hello3", "a_i", "7", "a_f", "3")
         .add(id, "8", "a_s", "hello4", "a_i", "11", "a_f", "4")
         .add(id, "9", "a_s", "hello1", "a_i", "100", "a_f", "1")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     //Test ascending
     SolrParams sParamsA = mapParams("q", "id:(4 1 8 7 9)", "fl", "id,a_s,a_i", "sort", "a_i asc", "partitionKeys", "a_i");
-    CloudSolrStream streamA = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
+    CloudSolrStream streamA = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
 
     SolrParams sParamsB = mapParams("q", "id:(0 2 3 6)", "fl", "id,a_s,a_i", "sort", "a_i asc", "partitionKeys", "a_i");
-    CloudSolrStream streamB = new CloudSolrStream(zkHost, COLLECTION, sParamsB);
+    CloudSolrStream streamB = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsB);
 
     MergeStream mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
     ParallelStream pstream = parallelStream(mstream, new FieldComparator("a_i", ComparatorOrder.ASCENDING));    
@@ -1714,13 +1724,13 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
         .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
         .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
 
     //Basic CloudSolrStream Test with Descending Sort
 
     SolrParams sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i desc");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
+    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
     List<Tuple> tuples = getTuples(stream);
 
     assertEquals(5,tuples.size());
@@ -1728,7 +1738,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
     //With Ascending Sort
     sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i asc");
-    stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
+    stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
     tuples = getTuples(stream);
 
     assertEquals(5, tuples.size());
@@ -1737,7 +1747,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
     //Test compound sort
     sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i desc");
-    stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
+    stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
     tuples = getTuples(stream);
 
     assertEquals(5, tuples.size());
@@ -1745,7 +1755,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
 
     sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc");
-    stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
+    stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
     tuples = getTuples(stream);
 
     assertEquals(5, tuples.size());
@@ -1762,7 +1772,7 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "2", "b_sing", "false", "dt_sing", "1981-04-04T01:02:03.78Z")
         .add(id, "1", "b_sing", "true", "dt_sing", "1980-04-04T01:02:03.78Z")
         .add(id, "4", "b_sing", "true", "dt_sing", "1980-04-04T01:02:03.78Z")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
 
     trySortWithQt("/export");
@@ -1772,7 +1782,7 @@ public class StreamingTest extends SolrCloudTestCase {
     //Basic CloudSolrStream Test bools desc
 
     SolrParams sParams = mapParams("q", "*:*", "qt", which, "fl", "id,b_sing", "sort", "b_sing asc,id asc");
-    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
+    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
     try  {
       List<Tuple> tuples = getTuples(stream);
 
@@ -1781,7 +1791,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
       //Basic CloudSolrStream Test bools desc
       sParams = mapParams("q", "*:*", "qt", which, "fl", "id,b_sing", "sort", "b_sing desc,id desc");
-      stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
+      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
       tuples = getTuples(stream);
 
       assertEquals (5,tuples.size());
@@ -1789,7 +1799,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
       //Basic CloudSolrStream Test dates desc
       sParams = mapParams("q", "*:*", "qt", which, "fl", "id,dt_sing", "sort", "dt_sing desc,id asc");
-      stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
+      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
       tuples = getTuples(stream);
 
       assertEquals (5,tuples.size());
@@ -1797,7 +1807,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
       //Basic CloudSolrStream Test ates desc
       sParams = mapParams("q", "*:*", "qt", which, "fl", "id,dt_sing", "sort", "dt_sing asc,id desc");
-      stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
+      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams);
       tuples = getTuples(stream);
 
       assertEquals (5,tuples.size());
@@ -1826,7 +1836,7 @@ public class StreamingTest extends SolrCloudTestCase {
             "dt_sing", "1980-01-02T11:11:33.89Z", "dt_multi", "1981-03-04T01:02:03.78Z", "dt_multi", "1981-05-24T04:05:06.99Z",
             "b_sing", "true", "b_multi", "false", "b_multi", "true"
         )
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     tryWithQt("/export");
     tryWithQt("/select");
@@ -1837,7 +1847,7 @@ public class StreamingTest extends SolrCloudTestCase {
     SolrParams sParams = StreamingTest.mapParams("q", "*:*", "qt", which, "fl", 
         "id,i_sing,i_multi,l_sing,l_multi,f_sing,f_multi,d_sing,d_multi,dt_sing,dt_multi,s_sing,s_multi,b_sing,b_multi", 
         "sort", "i_sing asc");
-    try (CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParams)) {
+    try (CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams)) {
 
       Tuple tuple = getTuple(stream); // All I really care about is that all the fields are returned. There's
 
@@ -1972,7 +1982,7 @@ public class StreamingTest extends SolrCloudTestCase {
   }
   
   private ParallelStream parallelStream(TupleStream stream, FieldComparator comparator) throws IOException {
-    ParallelStream pstream = new ParallelStream(zkHost, COLLECTION, stream, numWorkers, comparator);
+    ParallelStream pstream = new ParallelStream(zkHost, COLLECTIONORALIAS, stream, numWorkers, comparator);
     return pstream;
   }
 
@@ -2024,7 +2034,7 @@ public class StreamingTest extends SolrCloudTestCase {
 //      }
 //    }
 //    SolrParams exportParams = mapParams("q", "*:*", "qt", "/export", "fl", "id," + field, "sort", field + " " + sortDir + ",id asc");
-//    try (CloudSolrStream solrStream = new CloudSolrStream(zkHost, COLLECTION, exportParams)) {
+//    try (CloudSolrStream solrStream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, exportParams)) {
 //      List<Tuple> tuples = getTuples(solrStream);
 //      assertEquals("There should be exactly 32 responses returned", 32, tuples.size());
 //      // Since the getTuples method doesn't return the EOF tuple, these two entries should be the same size.
@@ -2040,7 +2050,7 @@ public class StreamingTest extends SolrCloudTestCase {
     List<String> selectOrder = ("asc".equals(sortDir)) ? Arrays.asList(ascOrder) : Arrays.asList(descOrder);
     List<String> selectOrderBool = ("asc".equals(sortDir)) ? Arrays.asList(ascOrderBool) : Arrays.asList(descOrderBool);
     SolrParams exportParams = mapParams("q", "*:*", "qt", "/export", "fl", "id," + field, "sort", field + " " + sortDir + ",id asc");
-    try (CloudSolrStream solrStream = new CloudSolrStream(zkHost, COLLECTION, exportParams)) {
+    try (CloudSolrStream solrStream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, exportParams)) {
       List<Tuple> tuples = getTuples(solrStream);
       assertEquals("There should be exactly 32 responses returned", 32, tuples.size());
       // Since the getTuples method doesn't return the EOF tuple, these two entries should be the same size.
@@ -2079,7 +2089,7 @@ public class StreamingTest extends SolrCloudTestCase {
     }
     SolrParams sParams = mapParams("q", "*:*", "qt", "/export", "fl", fl.toString(), "sort", "id asc");
 
-    try (CloudSolrStream solrStream = new CloudSolrStream(zkHost, COLLECTION, sParams)) {
+    try (CloudSolrStream solrStream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams)) {
       List<Tuple> tuples = getTuples(solrStream);
       assertEquals("There should be exactly 32 responses returned", 32, tuples.size());
 
@@ -2194,7 +2204,7 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(docPairs(8, "aaa"))
         .add(docPairs(8, "ooo"))
 
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     JettySolrRunner jetty = cluster.getJettySolrRunners().get(0);
 
