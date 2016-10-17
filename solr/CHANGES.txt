@@ -281,6 +281,8 @@ Other Changes
 
 * SOLR-9642: Refactor the core level snapshot cleanup mechanism to rely on Lucene (Hrishikesh Gadre via yonik)
 
+* SOLR-9627: Add QParser.getSortSpec, deprecate misleadingly named QParser.getSort (Judith Silverman, Christine Poerschke)
+
 ==================  6.2.1 ==================
 
 Bug Fixes

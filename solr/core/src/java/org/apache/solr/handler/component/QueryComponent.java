@@ -184,7 +184,7 @@ public class QueryComponent extends SearchComponent
         }
       }
 
-      rb.setSortSpec( parser.getSort(true) );
+      rb.setSortSpec( parser.getSortSpec(true) );
       rb.setQparser(parser);
 
       final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
