@@ -121,6 +121,25 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     }
     assertArrayEquals(expectedIds, actualIds);
 
+    queryResponse = cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u^10,lowerfilt1_u^1000 boost=false}30"));
+    solrDocuments = queryResponse.getResults();
+    expectedIds = new int[]{13, 14, 15, 16, 20, 22, 24, 32, 18, 19};
+    actualIds = new int[solrDocuments.size()];
+    i = 0;
+    for (SolrDocument solrDocument : solrDocuments) {
+      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+    }
+    assertArrayEquals(expectedIds, actualIds);
+
+    queryResponse = cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u^10,lowerfilt1_u^1000 boost=true}30"));
+    solrDocuments = queryResponse.getResults();
+    expectedIds = new int[]{29, 18, 19, 21, 23, 31, 13, 14, 15, 16};
+    actualIds = new int[solrDocuments.size()];
+    i = 0;
+    for (SolrDocument solrDocument : solrDocuments) {
+      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+    }
+    assertArrayEquals(expectedIds, actualIds);
   }
 
   @Test

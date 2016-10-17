@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
@@ -68,6 +69,7 @@ public class CloudMLTQParser extends QParser {
     String[] qf = localParams.getParams("qf");
     Map<String,Float> boostFields = new HashMap<>();
     MoreLikeThis mlt = new MoreLikeThis(req.getSearcher().getIndexReader());
+    Boolean boost = false;
     
     if(localParams.getInt("mintf") != null)
       mlt.setMinTermFreq(localParams.getInt("mintf"));
@@ -91,53 +93,71 @@ public class CloudMLTQParser extends QParser {
     }
 
     if(localParams.get("boost") != null) {
-      mlt.setBoost(localParams.getBool("boost"));
-      boostFields = SolrPluginUtils.parseFieldBoosts(qf);
+      boost = localParams.getBool("boost");
+      mlt.setBoost(boost);
     }
 
     mlt.setAnalyzer(req.getSchema().getIndexAnalyzer());
 
     Map<String, Collection<Object>> filteredDocument = new HashMap<>();
-    ArrayList<String> fieldNames = new ArrayList<>();
+    String[] fieldNames = null;
 
     if (qf != null) {
+      ArrayList<String> fields = new ArrayList<>();
       for (String fieldName : qf) {
         if (!StringUtils.isEmpty(fieldName))  {
           String[] strings = splitList.split(fieldName);
           for (String string : strings) {
             if (!StringUtils.isEmpty(string)) {
-              fieldNames.add(string);
+              fields.add(string);
             }
           }
         }
       }
+      // Parse field names and boosts from the fields
+      boostFields = SolrPluginUtils.parseFieldBoosts(fields.toArray(new String[0]));
+      fieldNames = boostFields.keySet().toArray(new String[0]);
     } else {
+      ArrayList<String> fields = new ArrayList<>();
       for (String field : doc.getFieldNames()) {
         // Only use fields that are stored and have an explicit analyzer.
         // This makes sense as the query uses tf/idf/.. for query construction.
         // We might want to relook and change this in the future though.
         SchemaField f = req.getSchema().getFieldOrNull(field);
         if (f != null && f.stored() && f.getType().isExplicitAnalyzer()) {
-          fieldNames.add(field);
+          fields.add(field);
         }
       }
+      fieldNames = fields.toArray(new String[0]);
     }
 
-    if( fieldNames.size() < 1 ) {
+    if (fieldNames.length < 1) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
           "MoreLikeThis requires at least one similarity field: qf" );
     }
 
-    mlt.setFieldNames(fieldNames.toArray(new String[fieldNames.size()]));
+    mlt.setFieldNames(fieldNames);
     for (String field : fieldNames) {
-      filteredDocument.put(field, doc.getFieldValues(field));
+      Collection<Object> fieldValues = doc.getFieldValues(field);
+      if (fieldValues != null) {
+        Collection<Object> values = new ArrayList<Object>();
+        for (Object val : fieldValues) {
+          if (val instanceof IndexableField) {
+            values.add(((IndexableField)val).stringValue());
+          }
+          else {
+            values.add(val);
+          }
+        }
+        filteredDocument.put(field, values);
+      }
     }
 
     try {
       Query rawMLTQuery = mlt.like(filteredDocument);
       BooleanQuery boostedMLTQuery = (BooleanQuery) rawMLTQuery;
 
-      if (boostFields.size() > 0) {
+      if (boost && boostFields.size() > 0) {
         BooleanQuery.Builder newQ = new BooleanQuery.Builder();
         newQ.setMinimumNumberShouldMatch(boostedMLTQuery.getMinimumNumberShouldMatch());
 

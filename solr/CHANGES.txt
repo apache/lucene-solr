@@ -46,6 +46,9 @@ Bug Fixes
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
   (Mark Miller, shalin)
 
+* SOLR-9644: SimpleMLTQParser and CloudMLTQParser did not handle field boosts properly 
+  and CloudMLTQParser included extra strings from the field definitions in the query.
+
 Optimizations
 ----------------------
 

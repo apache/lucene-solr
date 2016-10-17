@@ -68,6 +68,7 @@ public class SimpleMLTQParser extends QParser {
           "document with id [" + uniqueValue + "]");
       ScoreDoc[] scoreDocs = td.scoreDocs;
       MoreLikeThis mlt = new MoreLikeThis(req.getSearcher().getIndexReader());
+      Boolean boost = false;
       
       if(localParams.getInt("mintf") != null)
         mlt.setMinTermFreq(localParams.getInt("mintf"));
@@ -92,13 +93,14 @@ public class SimpleMLTQParser extends QParser {
       }
 
       if(localParams.get("boost") != null) {
-        mlt.setBoost(localParams.getBool("boost"));
-        boostFields = SolrPluginUtils.parseFieldBoosts(qf);
+        boost = localParams.getBool("boost");
+        mlt.setBoost(boost);
       }
-      
-      ArrayList<String> fields = new ArrayList<>();
 
+      String[] fieldNames = null;
+      
       if (qf != null) {
+        ArrayList<String> fields = new ArrayList<>();
         for (String fieldName : qf) {
           if (!StringUtils.isEmpty(fieldName))  {
             String[] strings = splitList.split(fieldName);
@@ -109,26 +111,31 @@ public class SimpleMLTQParser extends QParser {
             }
           }
         }
+        // Parse field names and boosts from the fields
+        boostFields = SolrPluginUtils.parseFieldBoosts(fields.toArray(new String[0]));
+        fieldNames = boostFields.keySet().toArray(new String[0]);
       } else {
-        Map<String, SchemaField> fieldNames = req.getSearcher().getSchema().getFields();
-        for (String fieldName : fieldNames.keySet()) {
-          if (fieldNames.get(fieldName).indexed() && fieldNames.get(fieldName).stored())
-            if (fieldNames.get(fieldName).getType().getNumericType() == null)
+        Map<String, SchemaField> fieldDefinitions = req.getSearcher().getSchema().getFields();
+        ArrayList<String> fields = new ArrayList<>();
+        for (String fieldName : fieldDefinitions.keySet()) {
+          if (fieldDefinitions.get(fieldName).indexed() && fieldDefinitions.get(fieldName).stored())
+            if (fieldDefinitions.get(fieldName).getType().getNumericType() == null)
               fields.add(fieldName);
         }
+        fieldNames = fields.toArray(new String[0]);
       }
-      if( fields.size() < 1 ) {
+      if (fieldNames.length < 1) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
             "MoreLikeThis requires at least one similarity field: qf" );
       }
 
-      mlt.setFieldNames(fields.toArray(new String[fields.size()]));
+      mlt.setFieldNames(fieldNames);
       mlt.setAnalyzer(req.getSchema().getIndexAnalyzer());
 
       Query rawMLTQuery = mlt.like(scoreDocs[0].doc);
       BooleanQuery boostedMLTQuery = (BooleanQuery) rawMLTQuery;
 
-      if (boostFields.size() > 0) {
+      if (boost && boostFields.size() > 0) {
         BooleanQuery.Builder newQ = new BooleanQuery.Builder();
         newQ.setMinimumNumberShouldMatch(boostedMLTQuery.getMinimumNumberShouldMatch());
 
