@@ -117,7 +117,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
           if (q != null) {
             QParser parser = QParser.getParser(q, defType, req);
             query = parser.getQuery();
-            sortSpec = parser.getSort(true);
+            sortSpec = parser.getSortSpec(true);
           }
 
           String[] fqs = req.getParams().getParams(CommonParams.FQ);
