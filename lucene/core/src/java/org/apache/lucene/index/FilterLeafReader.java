@@ -382,8 +382,8 @@ public abstract class FilterLeafReader extends LeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
-    return in.getPointValues();
+  public PointValues getPointValues(String field) throws IOException {
+    return in.getPointValues(field);
   }
 
   @Override

@@ -277,12 +277,12 @@ class FieldCacheImpl implements FieldCache {
     
     final void uninvertPoints(LeafReader reader, String field) throws IOException {
       final int maxDoc = reader.maxDoc();
-      PointValues values = reader.getPointValues();
+      PointValues values = reader.getPointValues(field);
       assert values != null;
-      assert values.size(field) > 0;
+      assert values.size() > 0;
 
       final boolean setDocsWithField;
-      final int docCount = values.getDocCount(field);
+      final int docCount = values.getDocCount();
       assert docCount <= maxDoc;
       if (docCount == maxDoc) {
         // Fast case: all docs have this field:
@@ -293,7 +293,7 @@ class FieldCacheImpl implements FieldCache {
       }
 
       BytesRef scratch = new BytesRef();
-      values.intersect(field, new IntersectVisitor() {
+      values.intersect(new IntersectVisitor() {
         @Override
         public void visit(int docID) throws IOException { 
           throw new AssertionError(); 
@@ -512,11 +512,11 @@ class FieldCacheImpl implements FieldCache {
 
     private BitsEntry createValuePoints(LeafReader reader, String field) throws IOException {
       final int maxDoc = reader.maxDoc();
-      PointValues values = reader.getPointValues();
+      PointValues values = reader.getPointValues(field);
       assert values != null;
-      assert values.size(field) > 0;
+      assert values.size() > 0;
       
-      final int docCount = values.getDocCount(field);
+      final int docCount = values.getDocCount();
       assert docCount <= maxDoc;
       if (docCount == maxDoc) {
         // Fast case: all docs have this field:
@@ -615,14 +615,14 @@ class FieldCacheImpl implements FieldCache {
         if (info.getPointDimensionCount() != 1) {
           throw new IllegalStateException("Type mismatch: " + field + " was indexed with dimensions=" + info.getPointDimensionCount());
         }
-        PointValues values = reader.getPointValues();
+        PointValues values = reader.getPointValues(field);
         // no actual points for this field (e.g. all points deleted)
-        if (values == null || values.size(field) == 0) {
+        if (values == null || values.size() == 0) {
           return DocValues.emptyNumeric();
         }
         // not single-valued
-        if (values.size(field) != values.getDocCount(field)) {
-          throw new IllegalStateException("Type mismatch: " + field + " was indexed with multiple values, numValues=" + values.size(field) + ",numDocs=" + values.getDocCount(field));
+        if (values.size() != values.getDocCount()) {
+          throw new IllegalStateException("Type mismatch: " + field + " was indexed with multiple values, numValues=" + values.size() + ",numDocs=" + values.getDocCount());
         }
       } else {
         // postings case 

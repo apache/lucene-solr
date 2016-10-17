@@ -503,8 +503,8 @@ public class TestPointValues extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(w);
 
     for(LeafReaderContext ctx : r.leaves()) {
-      PointValues points = ctx.reader().getPointValues();
-      points.intersect("int",
+      PointValues points = ctx.reader().getPointValues("int");
+      points.intersect(
                        new IntersectVisitor() {
 
                          int lastDocID = -1;
@@ -553,8 +553,7 @@ public class TestPointValues extends LuceneTestCase {
     
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
-    assertEquals(0, r.leaves().get(0).reader().getPointValues().size("int"));
-    assertEquals(0, r.leaves().get(0).reader().getPointValues().getDocCount("int"));
+    assertNull(r.leaves().get(0).reader().getPointValues("int"));
     w.close();
     r.close();
     dir.close();
@@ -611,10 +610,10 @@ public class TestPointValues extends LuceneTestCase {
       int size = 0;
       String fieldName = "int" + field;
       for(LeafReaderContext ctx : r.leaves()) {
-        PointValues points = ctx.reader().getPointValues();
-        if (ctx.reader().getFieldInfos().fieldInfo(fieldName) != null) {
-          docCount += points.getDocCount(fieldName);
-          size += points.size(fieldName);
+        PointValues points = ctx.reader().getPointValues(fieldName);
+        if (points != null) {
+          docCount += points.getDocCount();
+          size += points.size();
         }
       }
       assertEquals(fieldDocCounts[field], docCount);
@@ -738,7 +737,7 @@ public class TestPointValues extends LuceneTestCase {
     final IndexReader reader1 = DirectoryReader.open(w);
     w.forceMerge(1);
     final IndexReader reader2 = DirectoryReader.open(w);
-    final PointValues expected = getOnlyLeafReader(reader2).getPointValues();
+    final PointValues expected = getOnlyLeafReader(reader2).getPointValues("field");
     if (expected == null) {
       assertNull(PointValues.getMinPackedValue(reader1, "field"));
       assertNull(PointValues.getMaxPackedValue(reader1, "field"));
@@ -746,13 +745,13 @@ public class TestPointValues extends LuceneTestCase {
       assertEquals(0, PointValues.size(reader1, "field"));
     } else {
       assertArrayEquals(
-          expected.getMinPackedValue("field"),
+          expected.getMinPackedValue(),
           PointValues.getMinPackedValue(reader1, "field"));
       assertArrayEquals(
-          expected.getMaxPackedValue("field"),
+          expected.getMaxPackedValue(),
           PointValues.getMaxPackedValue(reader1, "field"));
-      assertEquals(expected.getDocCount("field"), PointValues.getDocCount(reader1, "field"));
-      assertEquals(expected.size("field"),  PointValues.size(reader1, "field"));
+      assertEquals(expected.getDocCount(), PointValues.getDocCount(reader1, "field"));
+      assertEquals(expected.size(),  PointValues.size(reader1, "field"));
     }
     IOUtils.close(w, reader1, reader2, dir);
   }

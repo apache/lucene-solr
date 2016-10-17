@@ -116,7 +116,7 @@ public final class DocIdSetBuilder {
   /** Create a {@link DocIdSetBuilder} instance that is optimized for
    *  accumulating docs that match the given {@link PointValues}. */
   public DocIdSetBuilder(int maxDoc, PointValues values, String field) throws IOException {
-    this(maxDoc, values.getDocCount(field), values.size(field));
+    this(maxDoc, values.getDocCount(), values.size());
   }
 
   DocIdSetBuilder(int maxDoc, int docCount, long valueCount) {

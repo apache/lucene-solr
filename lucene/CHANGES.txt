@@ -25,6 +25,8 @@ API Changes
 * LUCENE-7475: Norms now support sparsity, allowing to pay for what is
   actually used. (Adrien Grand)
 
+* LUCENE-7494: Points now have a per-field API, like doc values. (Adrien Grand)
+
 Bug Fixes
 
 Improvements

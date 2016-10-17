@@ -1486,11 +1486,11 @@ public class TestGeo3DPoint extends LuceneTestCase {
       docID - reader.leaves().get(subIndex).docBase, 3, Integer.BYTES, b);
 
     // Do first phase, where we just figure out the "path" that leads to the target docID:
-    leafReader.getPointValues().intersect(fieldName, visitor);
+    leafReader.getPointValues(fieldName).intersect(visitor);
 
     // Do second phase, where we we see how the wrapped visitor responded along that path:
     visitor.startSecondPhase();
-    leafReader.getPointValues().intersect(fieldName, visitor);
+    leafReader.getPointValues(fieldName).intersect(visitor);
 
     return b.toString();
   }

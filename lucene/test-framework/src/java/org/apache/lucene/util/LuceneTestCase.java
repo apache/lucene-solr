@@ -2601,12 +2601,12 @@ public abstract class LuceneTestCase extends Assert {
     final Map<Integer,Set<BytesRef>> docValues = new HashMap<>();
     for(LeafReaderContext ctx : reader.leaves()) {
 
-      PointValues points = ctx.reader().getPointValues();
+      PointValues points = ctx.reader().getPointValues(fieldName);
       if (points == null) {
         continue;
       }
 
-      points.intersect(fieldName,
+      points.intersect(
                        new PointValues.IntersectVisitor() {
                          @Override
                          public void visit(int docID) {

@@ -297,9 +297,8 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
-      in.intersect(fieldName,
-                   new IntersectVisitor() {
+    public void intersect(IntersectVisitor visitor) throws IOException {
+      in.intersect(new IntersectVisitor() {
                      @Override
                      public void visit(int docID) throws IOException {
                        visitor.visit(docMap.oldToNew(docID));
@@ -318,33 +317,33 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public byte[] getMinPackedValue(String fieldName) throws IOException {
-      return in.getMinPackedValue(fieldName);
+    public byte[] getMinPackedValue() throws IOException {
+      return in.getMinPackedValue();
     }
 
     @Override
-    public byte[] getMaxPackedValue(String fieldName) throws IOException {
-      return in.getMaxPackedValue(fieldName);
+    public byte[] getMaxPackedValue() throws IOException {
+      return in.getMaxPackedValue();
     }
 
     @Override
-    public int getNumDimensions(String fieldName) throws IOException {
-      return in.getNumDimensions(fieldName);
+    public int getNumDimensions() throws IOException {
+      return in.getNumDimensions();
     }
 
     @Override
-    public int getBytesPerDimension(String fieldName) throws IOException {
-      return in.getBytesPerDimension(fieldName);
+    public int getBytesPerDimension() throws IOException {
+      return in.getBytesPerDimension();
     }
 
     @Override
-    public long size(String fieldName) {
-      return in.size(fieldName);
+    public long size() {
+      return in.size();
     }
 
     @Override
-    public int getDocCount(String fieldName) {
-      return in.getDocCount(fieldName);
+    public int getDocCount() {
+      return in.getDocCount();
     }
   }
 
@@ -1049,8 +1048,8 @@ class SortingLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
-    final PointValues inPointValues = in.getPointValues();
+  public PointValues getPointValues(String fieldName) throws IOException {
+    final PointValues inPointValues = in.getPointValues(fieldName);
     if (inPointValues == null) {
       return null;
     } else {

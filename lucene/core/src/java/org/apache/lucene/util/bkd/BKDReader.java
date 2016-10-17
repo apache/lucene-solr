@@ -21,8 +21,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.PointValues.IntersectVisitor;
-import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
@@ -32,7 +31,7 @@ import org.apache.lucene.util.StringHelper;
  *
  * @lucene.experimental */
 
-public class BKDReader implements Accountable {
+public class BKDReader extends PointValues implements Accountable {
   // Packed array of byte[] holding all split values in the full binary tree:
   final private byte[] splitPackedValues; 
   final long[] leafBlockFPs;
@@ -496,26 +495,32 @@ public class BKDReader implements Accountable {
       leafBlockFPs.length * Long.BYTES;
   }
 
+  @Override
   public byte[] getMinPackedValue() {
     return minPackedValue.clone();
   }
 
+  @Override
   public byte[] getMaxPackedValue() {
     return maxPackedValue.clone();
   }
 
+  @Override
   public int getNumDimensions() {
     return numDims;
   }
 
+  @Override
   public int getBytesPerDimension() {
     return bytesPerDim;
   }
 
-  public long getPointCount() {
+  @Override
+  public long size() {
     return pointCount;
   }
 
+  @Override
   public int getDocCount() {
     return docCount;
   }

@@ -321,99 +321,10 @@ public class ParallelLeafReader extends LeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
-    return new PointValues() {
-      @Override
-      public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
-        LeafReader reader = fieldToReader.get(fieldName);
-        if (reader == null) {
-          return;
-        }
-        PointValues dimValues = reader.getPointValues();
-        if (dimValues == null) {
-          return;
-        }
-        dimValues.intersect(fieldName, visitor);
-      }
-
-      @Override
-      public byte[] getMinPackedValue(String fieldName) throws IOException {
-        LeafReader reader = fieldToReader.get(fieldName);
-        if (reader == null) {
-          return null;
-        }
-        PointValues dimValues = reader.getPointValues();
-        if (dimValues == null) {
-          return null;
-        }
-        return dimValues.getMinPackedValue(fieldName);
-      }
-
-      @Override
-      public byte[] getMaxPackedValue(String fieldName) throws IOException {
-        LeafReader reader = fieldToReader.get(fieldName);
-        if (reader == null) {
-          return null;
-        }
-        PointValues dimValues = reader.getPointValues();
-        if (dimValues == null) {
-          return null;
-        }
-        return dimValues.getMaxPackedValue(fieldName);
-      }
-
-      @Override
-      public int getNumDimensions(String fieldName) throws IOException {
-        LeafReader reader = fieldToReader.get(fieldName);
-        if (reader == null) {
-          return 0;
-        }
-        PointValues dimValues = reader.getPointValues();
-        if (dimValues == null) {
-          return 0;
-        }
-        return dimValues.getNumDimensions(fieldName);
-      }
-
-      @Override
-      public int getBytesPerDimension(String fieldName) throws IOException {
-        LeafReader reader = fieldToReader.get(fieldName);
-        if (reader == null) {
-          return 0;
-        }
-        PointValues dimValues = reader.getPointValues();
-        if (dimValues == null) {
-          return 0;
-        }
-        return dimValues.getBytesPerDimension(fieldName);
-      }
-
-      @Override
-      public long size(String fieldName) {
-        LeafReader reader = fieldToReader.get(fieldName);
-        if (reader == null) {
-          return 0;
-        }
-        PointValues dimValues = reader.getPointValues();
-        if (dimValues == null) {
-          return 0;
-        }
-        return dimValues.size(fieldName);
-      }
-
-      @Override
-      public int getDocCount(String fieldName) {
-        LeafReader reader = fieldToReader.get(fieldName);
-        if (reader == null) {
-          return 0;
-        }
-        PointValues dimValues = reader.getPointValues();
-        if (dimValues == null) {
-          return 0;
-        }
-        return dimValues.getDocCount(fieldName);
-      }
-    };
+  public PointValues getPointValues(String fieldName) throws IOException {
+    ensureOpen();
+    LeafReader reader = fieldToReader.get(fieldName);
+    return reader == null ? null : reader.getPointValues(fieldName);
   }
 
   @Override

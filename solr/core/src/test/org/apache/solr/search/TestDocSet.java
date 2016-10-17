@@ -448,7 +448,7 @@ public class TestDocSet extends LuceneTestCase {
       }
 
       @Override
-      public PointValues getPointValues() {
+      public PointValues getPointValues(String field) {
         return null;
       }
 

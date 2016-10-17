@@ -16,15 +16,16 @@
  */
 package org.apache.lucene.codecs;
 
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.BytesRef;
 
-/** {@link PointsReader} whose order of points can be changed.
+/** {@link PointValues} whose order of points can be changed.
  *  This class is useful for codecs to optimize flush.
  *  @lucene.internal */
-public abstract class MutablePointsReader extends PointsReader {
+public abstract class MutablePointValues extends PointValues {
 
   /** Sole constructor. */
-  protected MutablePointsReader() {}
+  protected MutablePointValues() {}
 
   /** Set {@code packedValue} with a reference to the packed bytes of the i-th value. */
   public abstract void getValue(int i, BytesRef packedValue);
