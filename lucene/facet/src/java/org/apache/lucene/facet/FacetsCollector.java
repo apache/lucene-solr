@@ -36,6 +36,7 @@ import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
@@ -251,23 +252,32 @@ public class FacetsCollector extends SimpleCollector implements Collector {
                                          + after.doc + " limit=" + limit);
     }
 
-    TopDocsCollector<?> hitsCollector;
-    if (sort != null) {
-      if (after != null && !(after instanceof FieldDoc)) {
-        // TODO: if we fix type safety of TopFieldDocs we can
-        // remove this
-        throw new IllegalArgumentException("after must be a FieldDoc; got " + after);
-      }
-      boolean fillFields = true;
-      hitsCollector = TopFieldCollector.create(sort, n,
-                                               (FieldDoc) after,
-                                               fillFields,
-                                               doDocScores,
-                                               doMaxScore);
+    TopDocs topDocs = null;
+    if (n==0) {
+      TotalHitCountCollector totalHitCountCollector = new TotalHitCountCollector();
+      searcher.search(q, MultiCollector.wrap(totalHitCountCollector, fc));
+      topDocs = new TopDocs(totalHitCountCollector.getTotalHits(), new ScoreDoc[0], Float.NaN);
     } else {
-      hitsCollector = TopScoreDocCollector.create(n, after);
+      TopDocsCollector<?> hitsCollector;
+      if (sort != null) {
+        if (after != null && !(after instanceof FieldDoc)) {
+          // TODO: if we fix type safety of TopFieldDocs we can
+          // remove this
+          throw new IllegalArgumentException("after must be a FieldDoc; got " + after);
+        }
+        boolean fillFields = true;
+        hitsCollector = TopFieldCollector.create(sort, n,
+                                                 (FieldDoc) after,
+                                                 fillFields,
+                                                 doDocScores,
+                                                 doMaxScore);
+      } else {
+        hitsCollector = TopScoreDocCollector.create(n, after);
+      }
+      searcher.search(q, MultiCollector.wrap(hitsCollector, fc));
+    
+      topDocs = hitsCollector.topDocs();
     }
-    searcher.search(q, MultiCollector.wrap(hitsCollector, fc));
-    return hitsCollector.topDocs();
+    return topDocs;
   }
 }

@@ -89,6 +89,9 @@ Bug Fixes
 * LUCENE-6914: Fixed DecimalDigitFilter in case of supplementary code points.
   (Hossman)
 
+* LUCENE-7493: FacetCollector.search threw an unexpected exception if
+  you asked for zero hits but wanted facets (Mahesh via Mike McCandless)
+
 Improvements
 
 * LUCENE-7439: FuzzyQuery now matches all terms within the specified
