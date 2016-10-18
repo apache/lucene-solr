@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import javax.ws.rs.HEAD;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
