@@ -86,7 +86,7 @@ Bug Fixes
   dimensional points could cause unexpected merge exceptions (Hans
   Lund, Mike McCandless)
 
-* LUCENE-7363: Fixed DecimalDigitFilter in case of supplementary code points.
+* LUCENE-6914: Fixed DecimalDigitFilter in case of supplementary code points.
   (Hossman)
 
 Improvements
