@@ -52,14 +52,6 @@ public class IndexFingerprint implements MapSerializable {
   private long numDocs;
   private long maxDoc;
 
-  public IndexFingerprint() {
-    // default constructor
-  }
-  
-  public IndexFingerprint (long maxVersionSpecified)  {
-    this.maxVersionSpecified = maxVersionSpecified;
-  }
-  
   public long getMaxVersionSpecified() {
     return maxVersionSpecified;
   }
@@ -90,62 +82,52 @@ public class IndexFingerprint implements MapSerializable {
 
   /** Opens a new realtime searcher and returns it's (possibly cached) fingerprint */
   public static IndexFingerprint getFingerprint(SolrCore core, long maxVersion) throws IOException {
-    RTimer timer = new RTimer();
     core.getUpdateHandler().getUpdateLog().openRealtimeSearcher();
     RefCounted<SolrIndexSearcher> newestSearcher = core.getUpdateHandler().getUpdateLog().uhandler.core.getRealtimeSearcher();
     try {
-      IndexFingerprint f = newestSearcher.get().getIndexFingerprint(maxVersion);
-      final double duration = timer.stop();
-      log.debug("IndexFingerprint time : {} result:{}" ,duration, f);
-      return f;
+      return newestSearcher.get().getIndexFingerprint(maxVersion);
     } finally {
       if (newestSearcher != null) {
         newestSearcher.decref();
       }
     }
-    
   }
-  
-  public static IndexFingerprint getFingerprint(SolrIndexSearcher searcher, LeafReaderContext ctx, Long maxVersion)
-      throws IOException {
+
+  /** Calculates an index fingerprint */
+  public static IndexFingerprint getFingerprint(SolrIndexSearcher searcher, long maxVersion) throws IOException {
+    RTimer timer = new RTimer();
+
     SchemaField versionField = VersionInfo.getAndCheckVersionField(searcher.getSchema());
+
+    IndexFingerprint f = new IndexFingerprint();
+    f.maxVersionSpecified = maxVersion;
+    f.maxDoc = searcher.maxDoc();
+
+    // TODO: this could be parallelized, or even cached per-segment if performance becomes an issue
     ValueSource vs = versionField.getType().getValueSource(versionField, null);
     Map funcContext = ValueSource.newContext(searcher);
     vs.createWeight(funcContext, searcher);
-    
-    IndexFingerprint f = new IndexFingerprint();
-    f.maxVersionSpecified = maxVersion;
-    f.maxDoc = ctx.reader().maxDoc();
-    f.numDocs = ctx.reader().numDocs();
-    
-    int maxDoc = ctx.reader().maxDoc();
-    Bits liveDocs = ctx.reader().getLiveDocs();
-    FunctionValues fv = vs.getValues(funcContext, ctx);
-    for (int doc = 0; doc < maxDoc; doc++) {
-      if (liveDocs != null && !liveDocs.get(doc)) continue;
-      long v = fv.longVal(doc);
-      f.maxVersionEncountered = Math.max(v, f.maxVersionEncountered);
-      if (v <= f.maxVersionSpecified) {
-        f.maxInHash = Math.max(v, f.maxInHash);
-        f.versionsHash += Hash.fmix64(v);
-        f.numVersions++;
+    for (LeafReaderContext ctx : searcher.getTopReaderContext().leaves()) {
+      int maxDoc = ctx.reader().maxDoc();
+      f.numDocs += ctx.reader().numDocs();
+      Bits liveDocs = ctx.reader().getLiveDocs();
+      FunctionValues fv = vs.getValues(funcContext, ctx);
+      for (int doc = 0; doc < maxDoc; doc++) {
+        if (liveDocs != null && !liveDocs.get(doc)) continue;
+        long v = fv.longVal(doc);
+        f.maxVersionEncountered = Math.max(v, f.maxVersionEncountered);
+        if (v <= f.maxVersionSpecified) {
+          f.maxInHash = Math.max(v, f.maxInHash);
+          f.versionsHash += Hash.fmix64(v);
+          f.numVersions++;
+        }
       }
     }
-    
-    return f;
-  }
-  
-  
-  public static IndexFingerprint reduce(IndexFingerprint acc, IndexFingerprint f2) {
-    // acc should have maxVersionSpecified already set in it using IndexFingerprint(long maxVersionSpecified) constructor
-    acc.maxDoc = Math.max(acc.maxDoc, f2.maxDoc);
-    acc.numDocs += f2.numDocs;
-    acc.maxVersionEncountered = Math.max(acc.maxVersionEncountered, f2.maxVersionEncountered);
-    acc.maxInHash = Math.max(acc.maxInHash, f2.maxInHash);
-    acc.versionsHash += f2.versionsHash;
-    acc.numVersions += f2.numVersions;
 
-    return acc;
+    final double duration = timer.stop();
+    log.info("IndexFingerprint millis:" + duration + " result:" + f);
+
+    return f;
   }
 
   /** returns 0 for equal, negative if f1 is less recent than f2, positive if more recent */
@@ -218,5 +200,4 @@ public class IndexFingerprint implements MapSerializable {
   public String toString() {
     return toMap(new LinkedHashMap<>()).toString();
   }
-
 }
