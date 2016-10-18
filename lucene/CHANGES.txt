@@ -96,6 +96,9 @@ Improvements
 
 Optimizations
 
+* LUCENE-7501: BKDReader should not store the split dimension explicitly in the
+  1D case. (Adrien Grand)
+
 Other
 
 * LUCENE-7452: Block join query exception suggests how to find a doc, which 
