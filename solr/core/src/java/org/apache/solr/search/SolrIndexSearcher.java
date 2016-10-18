@@ -277,7 +277,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     this.path = path;
     this.directoryFactory = directoryFactory;
-    this.reader = (DirectoryReader) super.getTopReaderContext().reader();
+    this.reader = (DirectoryReader) super.readerContext.reader();
     this.rawReader = r;
     this.leafReader = SlowCompositeReaderWrapper.wrap(this.reader);
     this.core = core;
