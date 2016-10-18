@@ -491,7 +491,44 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
         docsWithField = getLiveBits(entry.missingOffset, maxDoc);
       }
     }
-    return new LegacyNumericDocValuesWrapper(docsWithField, getNumeric(entry));
+    final LongValues values = getNumeric(entry);
+    return new NumericDocValues() {
+
+      int doc = -1;
+      long value;
+
+      @Override
+      public long longValue() throws IOException {
+        return value;
+      }
+
+      @Override
+      public int docID() {
+        return doc;
+      }
+
+      @Override
+      public int nextDoc() throws IOException {
+        return advance(doc + 1);
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        for (int doc = target; doc < maxDoc; ++doc) {
+          value = values.get(doc);
+          if (value != 0 || docsWithField.get(doc)) {
+            return this.doc = doc;
+          }
+        }
+        return doc = NO_MORE_DOCS;
+      }
+
+      @Override
+      public long cost() {
+        return maxDoc;
+      }
+
+    };
   }
 
   @Override
