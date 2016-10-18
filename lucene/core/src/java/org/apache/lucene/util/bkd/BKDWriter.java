@@ -82,7 +82,8 @@ public class BKDWriter implements Closeable {
   public static final int VERSION_START = 0;
   public static final int VERSION_COMPRESSED_DOC_IDS = 1;
   public static final int VERSION_COMPRESSED_VALUES = 2;
-  public static final int VERSION_CURRENT = VERSION_COMPRESSED_VALUES;
+  public static final int VERSION_IMPLICIT_SPLIT_DIM_1D = 3;
+  public static final int VERSION_CURRENT = VERSION_IMPLICIT_SPLIT_DIM_1D;
 
   /** How many bytes each docs takes in the fixed-width offline format */
   private final int bytesPerDoc;
@@ -1033,10 +1034,15 @@ public class BKDWriter implements Closeable {
     out.writeVLong(pointCount);
     out.writeVInt(docsSeen.cardinality());
 
-    // TODO: for 1D case, don't waste the first byte of each split value (it's always 0)
-
     // NOTE: splitPackedValues[0] is unused, because nodeID is 1-based:
-    out.writeBytes(splitPackedValues, 0, splitPackedValues.length);
+    if (numDims == 1) {
+      // write the index, skipping the byte used to store the split dim since it is always 0
+      for (int i = 1; i < splitPackedValues.length; i += 1 + bytesPerDim) {
+        out.writeBytes(splitPackedValues, i, bytesPerDim);
+      }
+    } else {
+      out.writeBytes(splitPackedValues, 0, splitPackedValues.length);
+    }
 
     long lastFP = 0;
     for (int i=0;i<leafBlockFPs.length;i++) {

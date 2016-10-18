@@ -139,15 +139,26 @@ class SimpleTextPointsReader extends PointsReader {
     readLine(dataIn);
     count = parseInt(SPLIT_COUNT);
 
-    byte[] splitPackedValues = new byte[count * (1 + bytesPerDim)];
+    byte[] splitPackedValues;
+    int bytesPerIndexEntry;
+    if (numDims == 1) {
+      bytesPerIndexEntry = bytesPerDim;
+    } else {
+      bytesPerIndexEntry = 1 + bytesPerDim;
+    }
+    splitPackedValues = new byte[count * bytesPerIndexEntry];
     for(int i=0;i<count;i++) {
       readLine(dataIn);
-      splitPackedValues[(1 + bytesPerDim) * i] = (byte) parseInt(SPLIT_DIM);
+      int address = bytesPerIndexEntry * i;
+      int splitDim = parseInt(SPLIT_DIM);
+      if (numDims != 1) {
+        splitPackedValues[address++] = (byte) splitDim;
+      }
       readLine(dataIn);
       assert startsWith(SPLIT_VALUE);
       BytesRef br = SimpleTextUtil.fromBytesRefString(stripPrefix(SPLIT_VALUE));
       assert br.length == bytesPerDim;
-      System.arraycopy(br.bytes, br.offset, splitPackedValues, (1 + bytesPerDim) * i + 1, bytesPerDim);
+      System.arraycopy(br.bytes, br.offset, splitPackedValues, address, bytesPerDim);
     }
 
     return new SimpleTextBKDReader(dataIn, numDims, maxPointsInLeafNode, bytesPerDim, leafBlockFPs, splitPackedValues, minValue.bytes, maxValue.bytes, pointCount, docCount);
