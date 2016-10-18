@@ -41,6 +41,9 @@ Upgrading from Solr 6.x
 * Query time join with scoring {!join score=none} (even none) doesn't handle single value numeric fields.
   Users are advised to convert these fields into string and reindex.
 
+* Deprecated collection and configset methods on MiniSolrCloudCluster have been
+  removed
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
