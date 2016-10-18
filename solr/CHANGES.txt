@@ -206,6 +206,8 @@ Optimizations
 * SOLR-9566: Don't put replicas into recovery when first creating a Collection
   (Alan Woodward)
 
+* SOLR-9506: cache IndexFingerprint for each segment (Pushkar Raste, noble)
+
 Other Changes
 ----------------------
 
