@@ -28,7 +28,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x", "Lucene41", "Lucene40", "Appending"})
-public class TestLambdaMARTModel extends TestRerankBase {
+public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
 
   @BeforeClass
@@ -42,9 +42,9 @@ public class TestLambdaMARTModel extends TestRerankBase {
     assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity","5"));
     assertU(commit());
 
-    loadFeatures("lambdamart_features.json"); // currently needed to force
+    loadFeatures("multipleadditivetreesmodel_features.json"); // currently needed to force
     // scoring on all docs
-    loadModels("lambdamartmodel.json");
+    loadModels("multipleadditivetreesmodel.json");
   }
 
   @AfterClass
@@ -54,7 +54,7 @@ public class TestLambdaMARTModel extends TestRerankBase {
 
   
   @Test
-  public void testLambdaMartScoringWithAndWithoutEfiFeatureMatches() throws Exception {
+  public void testMultipleAdditiveTreesScoringWithAndWithoutEfiFeatureMatches() throws Exception {
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
     query.add("rows", "3");
@@ -67,7 +67,7 @@ public class TestLambdaMARTModel extends TestRerankBase {
 
     // No match scores since user_query not passed in to external feature info
     // and feature depended on it.
-    query.add("rq", "{!ltr reRankDocs=3 model=lambdamartmodel efi.user_query=dsjkafljjk}");
+    query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=dsjkafljjk}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==-120.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==-120.0");
@@ -75,7 +75,7 @@ public class TestLambdaMARTModel extends TestRerankBase {
 
     // Matched user query since it was passed in
     query.remove("rq");
-    query.add("rq", "{!ltr reRankDocs=3 model=lambdamartmodel efi.user_query=w3}");
+    query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==-20.0");
@@ -85,14 +85,14 @@ public class TestLambdaMARTModel extends TestRerankBase {
 
   @Ignore
   @Test
-  public void lambdaMartTestExplain() throws Exception {
+  public void multipleAdditiveTreesTestExplain() throws Exception {
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
     query.add("fl", "*,score,[fv]");
     query.add("rows", "3");
 
     query.add("rq",
-        "{!ltr reRankDocs=3 model=lambdamartmodel efi.user_query=w3}");
+        "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3}");
 
     // test out the explain feature, make sure it returns something
     query.setParam("debugQuery", "on");
@@ -106,9 +106,9 @@ public class TestLambdaMARTModel extends TestRerankBase {
     // assertThat(qryResult, containsString("\"explain\":{"));
     // qryResult = qryResult.substring(qryResult.indexOf("explain"));
     //
-    // assertThat(qryResult, containsString("lambdamartmodel"));
+    // assertThat(qryResult, containsString("multipleadditivetreesmodel"));
     // assertThat(qryResult,
-    // containsString(LambdaMARTModel.class.getCanonicalName()));
+    // containsString(MultipleAdditiveTreesModel.class.getCanonicalName()));
     //
     // assertThat(qryResult, containsString("-100.0 = tree 0"));
     // assertThat(qryResult, containsString("50.0 = tree 0"));
@@ -123,13 +123,13 @@ public class TestLambdaMARTModel extends TestRerankBase {
   }
 
   @Test
-  public void lambdaMartTestNoParams() throws Exception {
+  public void multipleAdditiveTreesTestNoParams() throws Exception {
     final ModelException expectedException = 
-        new ModelException("no trees declared for model lambdamartmodel_no_params");
+        new ModelException("no trees declared for model multipleadditivetreesmodel_no_params");
     try {
-        createModelFromFiles("lambdamartmodel_no_params.json",
-              "lambdamart_features.json");
-        fail("lambdaMartTestNoParams failed to throw exception: "+expectedException);
+        createModelFromFiles("multipleadditivetreesmodel_no_params.json",
+              "multipleadditivetreesmodel_features.json");
+        fail("multipleAdditiveTreesTestNoParams failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
       assertEquals(expectedException.toString(), rootError.toString());
@@ -138,13 +138,13 @@ public class TestLambdaMARTModel extends TestRerankBase {
   }
 
   @Test
-  public void lambdaMartTestEmptyParams() throws Exception {
+  public void multipleAdditiveTreesTestEmptyParams() throws Exception {
     final ModelException expectedException = 
-        new ModelException("no trees declared for model lambdamartmodel_no_trees");
+        new ModelException("no trees declared for model multipleadditivetreesmodel_no_trees");
     try {
-        createModelFromFiles("lambdamartmodel_no_trees.json",
-            "lambdamart_features.json");
-        fail("lambdaMartTestEmptyParams failed to throw exception: "+expectedException);
+        createModelFromFiles("multipleadditivetreesmodel_no_trees.json",
+            "multipleadditivetreesmodel_features.json");
+        fail("multipleAdditiveTreesTestEmptyParams failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
       assertEquals(expectedException.toString(), rootError.toString());
@@ -152,13 +152,13 @@ public class TestLambdaMARTModel extends TestRerankBase {
   }
 
   @Test
-  public void lambdaMartTestNoWeight() throws Exception {
+  public void multipleAdditiveTreesTestNoWeight() throws Exception {
     final ModelException expectedException = 
-        new ModelException("LambdaMARTModel tree doesn't contain a weight");
+        new ModelException("MultipleAdditiveTreesModel tree doesn't contain a weight");
     try {
-        createModelFromFiles("lambdamartmodel_no_weight.json",
-            "lambdamart_features.json");
-        fail("lambdaMartTestNoWeight failed to throw exception: "+expectedException);
+        createModelFromFiles("multipleadditivetreesmodel_no_weight.json",
+            "multipleadditivetreesmodel_features.json");
+        fail("multipleAdditiveTreesTestNoWeight failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
       assertEquals(expectedException.toString(), rootError.toString());
@@ -166,13 +166,13 @@ public class TestLambdaMARTModel extends TestRerankBase {
   }
 
   @Test
-  public void lambdaMartTestTreesParamDoesNotContatinTree() throws Exception {
+  public void multipleAdditiveTreesTestTreesParamDoesNotContatinTree() throws Exception {
     final ModelException expectedException = 
-        new ModelException("LambdaMARTModel tree doesn't contain a tree");
+        new ModelException("MultipleAdditiveTreesModel tree doesn't contain a tree");
     try {
-        createModelFromFiles("lambdamartmodel_no_tree.json",
-            "lambdamart_features.json");
-        fail("lambdaMartTestTreesParamDoesNotContatinTree failed to throw exception: "+expectedException);
+        createModelFromFiles("multipleadditivetreesmodel_no_tree.json",
+            "multipleadditivetreesmodel_features.json");
+        fail("multipleAdditiveTreesTestTreesParamDoesNotContatinTree failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
       assertEquals(expectedException.toString(), rootError.toString());
@@ -180,26 +180,26 @@ public class TestLambdaMARTModel extends TestRerankBase {
   }
 
   @Test
-  public void lambdaMartTestNoFeaturesSpecified() throws Exception {
+  public void multipleAdditiveTreesTestNoFeaturesSpecified() throws Exception {
     final ModelException expectedException = 
-        new ModelException("no features declared for model lambdamartmodel_no_features");
+        new ModelException("no features declared for model multipleadditivetreesmodel_no_features");
     try {
-        createModelFromFiles("lambdamartmodel_no_features.json",
-            "lambdamart_features.json");
-        fail("lambdaMartTestNoFeaturesSpecified failed to throw exception: "+expectedException);
+        createModelFromFiles("multipleadditivetreesmodel_no_features.json",
+            "multipleadditivetreesmodel_features.json");
+        fail("multipleAdditiveTreesTestNoFeaturesSpecified failed to throw exception: "+expectedException);
     } catch (ModelException actualException) {
       assertEquals(expectedException.toString(), actualException.toString());
     }
   }
 
   @Test
-  public void lambdaMartTestNoRight() throws Exception {
+  public void multipleAdditiveTreesTestNoRight() throws Exception {
     final ModelException expectedException = 
-        new ModelException("LambdaMARTModel tree node is missing right");
+        new ModelException("MultipleAdditiveTreesModel tree node is missing right");
     try {
-        createModelFromFiles("lambdamartmodel_no_right.json",
-            "lambdamart_features.json");
-        fail("lambdaMartTestNoRight failed to throw exception: "+expectedException);
+        createModelFromFiles("multipleadditivetreesmodel_no_right.json",
+            "multipleadditivetreesmodel_features.json");
+        fail("multipleAdditiveTreesTestNoRight failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
       assertEquals(expectedException.toString(), rootError.toString());
@@ -207,13 +207,13 @@ public class TestLambdaMARTModel extends TestRerankBase {
   }
 
   @Test
-  public void lambdaMartTestNoLeft() throws Exception {
+  public void multipleAdditiveTreesTestNoLeft() throws Exception {
     final ModelException expectedException = 
-        new ModelException("LambdaMARTModel tree node is missing left");
+        new ModelException("MultipleAdditiveTreesModel tree node is missing left");
     try {
-        createModelFromFiles("lambdamartmodel_no_left.json",
-            "lambdamart_features.json");
-        fail("lambdaMartTestNoLeft failed to throw exception: "+expectedException);
+        createModelFromFiles("multipleadditivetreesmodel_no_left.json",
+            "multipleadditivetreesmodel_features.json");
+        fail("multipleAdditiveTreesTestNoLeft failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
       assertEquals(expectedException.toString(), rootError.toString());
@@ -221,13 +221,13 @@ public class TestLambdaMARTModel extends TestRerankBase {
   }
 
   @Test
-  public void lambdaMartTestNoThreshold() throws Exception {
+  public void multipleAdditiveTreesTestNoThreshold() throws Exception {
     final ModelException expectedException = 
-        new ModelException("LambdaMARTModel tree node is missing threshold");
+        new ModelException("MultipleAdditiveTreesModel tree node is missing threshold");
     try {
-        createModelFromFiles("lambdamartmodel_no_threshold.json",
-            "lambdamart_features.json");
-        fail("lambdaMartTestNoThreshold failed to throw exception: "+expectedException);
+        createModelFromFiles("multipleadditivetreesmodel_no_threshold.json",
+            "multipleadditivetreesmodel_features.json");
+        fail("multipleAdditiveTreesTestNoThreshold failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
       assertEquals(expectedException.toString(), rootError.toString());
@@ -235,13 +235,13 @@ public class TestLambdaMARTModel extends TestRerankBase {
   }
 
   @Test
-  public void lambdaMartTestMissingTreeFeature() throws Exception {
+  public void multipleAdditiveTreesTestMissingTreeFeature() throws Exception {
     final ModelException expectedException = 
-        new ModelException("LambdaMARTModel tree node is leaf with left=-100.0 and right=75.0");
+        new ModelException("MultipleAdditiveTreesModel tree node is leaf with left=-100.0 and right=75.0");
     try {
-        createModelFromFiles("lambdamartmodel_no_feature.json",
-              "lambdamart_features.json");
-        fail("lambdaMartTestMissingTreeFeature failed to throw exception: "+expectedException);
+        createModelFromFiles("multipleadditivetreesmodel_no_feature.json",
+              "multipleadditivetreesmodel_features.json");
+        fail("multipleAdditiveTreesTestMissingTreeFeature failed to throw exception: "+expectedException);
     } catch (ModelException actualException) {
       assertEquals(expectedException.toString(), actualException.toString());
     }

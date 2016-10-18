@@ -45,7 +45,7 @@ import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
-import org.apache.solr.ltr.model.TestRankSVMModel;
+import org.apache.solr.ltr.model.TestLinearModel;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.junit.AfterClass;
@@ -174,7 +174,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     }
 
     // when features are NOT requested in the response, only the modelFeature weights should be created
-    final LTRScoringModel ltrScoringModel1 = TestRankSVMModel.createRankSVMModel("test",
+    final LTRScoringModel ltrScoringModel1 = TestLinearModel.createLinearModel("test",
         features, norms, "test", allFeatures,
         makeFeatureWeights(features));
     LTRScoringQuery.ModelWeight modelWeight = performQuery(hits, searcher,
@@ -190,7 +190,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertEquals(validFeatures, features.size());
     
     // when features are requested in the response, weights should be created for all features
-    final LTRScoringModel ltrScoringModel2 = TestRankSVMModel.createRankSVMModel("test",
+    final LTRScoringModel ltrScoringModel2 = TestLinearModel.createLinearModel("test",
         features, norms, "test", allFeatures,
         makeFeatureWeights(features));
     modelWeight = performQuery(hits, searcher,

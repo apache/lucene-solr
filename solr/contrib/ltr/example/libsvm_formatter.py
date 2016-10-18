@@ -45,7 +45,7 @@ class LibSvmFormatter:
     def convertLibSvmModelToLtrModel(self,libSvmModelLocation, outputFile, modelName):
         with open(libSvmModelLocation, 'r') as inFile:
             with open(outputFile,'w') as convertedOutFile:
-                convertedOutFile.write('{\n\t"class":"org.apache.solr.ltr.model.RankSVMModel",\n')
+                convertedOutFile.write('{\n\t"class":"org.apache.solr.ltr.model.LinearModel",\n')
                 convertedOutFile.write('\t"name": "' + str(modelName) + '",\n')
                 convertedOutFile.write('\t"features": [\n')
                 isFirst = True;

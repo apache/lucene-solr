@@ -1,6 +1,6 @@
 {
-    "class":"org.apache.solr.ltr.model.RankSVMModel",
-    "name":"svm",
+    "class":"org.apache.solr.ltr.model.LinearModel",
+    "name":"linear",
     "features":[
     {"name":"isInStock"},
     {"name":"price"},

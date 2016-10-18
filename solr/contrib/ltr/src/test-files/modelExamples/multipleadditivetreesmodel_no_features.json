@@ -1,6 +1,6 @@
 {
-    "class":"org.apache.solr.ltr.model.LambdaMARTModel",
-    "name":"lambdamartmodel_no_features",
+    "class":"org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+    "name":"multipleadditivetreesmodel_no_features",
     "params":{
         "trees": [
             {

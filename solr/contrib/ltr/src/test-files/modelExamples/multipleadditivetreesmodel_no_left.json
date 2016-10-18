@@ -1,9 +1,9 @@
 {
-    "class":"org.apache.solr.ltr.model.LambdaMARTModel",
-    "name":"lambdamartmodel_no_left",
+    "class":"org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+    "name":"multipleadditivetreesmodel_no_left",
     "features":[
         { "name": "matchedTitle"},
-        { "name": "constantScoreToForceLambdaMARTScoreAllDocs"}
+        { "name": "constantScoreToForceMultipleAdditiveTreesScoreAllDocs"}
     ],
     "params":{
         "trees": [

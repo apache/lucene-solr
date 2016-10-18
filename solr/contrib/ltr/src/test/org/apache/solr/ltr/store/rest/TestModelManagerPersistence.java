@@ -23,7 +23,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.ValueFeature;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
@@ -70,9 +70,9 @@ public class TestModelManagerPersistence extends TestRerankBase {
         "/features/[0]/name=='feature1'");
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/test2",
         "/features/[0]/name=='feature3'");
-    loadModel("test-model", RankSVMModel.class.getCanonicalName(),
+    loadModel("test-model", LinearModel.class.getCanonicalName(),
         new String[] {"feature"}, "test", "{\"weights\":{\"feature\":1.0}}");
-    loadModel("test-model2", RankSVMModel.class.getCanonicalName(),
+    loadModel("test-model2", LinearModel.class.getCanonicalName(),
         new String[] {"feature1"}, "test1", "{\"weights\":{\"feature1\":1.0}}");
     final String fstorecontent = FileUtils
         .readFileToString(fstorefile, "UTF-8");

@@ -21,8 +21,8 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.model.LambdaMARTModel;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.MultipleAdditiveTreesModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -60,19 +60,19 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
         "{\"q\":\"foobarbat12345\",\"df\":\"title\"}");
     loadModel(
         "nomatchmodel",
-        RankSVMModel.class.getCanonicalName(),
+        LinearModel.class.getCanonicalName(),
         new String[] {"nomatchfeature", "yesmatchfeature", "nomatchfeature2"},
         "{\"weights\":{\"nomatchfeature\":1.0,\"yesmatchfeature\":1.1,\"nomatchfeature2\":1.1}}");
 
     loadFeature("nomatchfeature3", SolrFeature.class.getCanonicalName(),
         "{\"q\":\"foobarbat12345\",\"df\":\"title\"}");
-    loadModel("nomatchmodel2", RankSVMModel.class.getCanonicalName(),
+    loadModel("nomatchmodel2", LinearModel.class.getCanonicalName(),
         new String[] {"nomatchfeature3"},
         "{\"weights\":{\"nomatchfeature3\":1.0}}");
 
     loadFeature("nomatchfeature4", SolrFeature.class.getCanonicalName(),
         "noMatchFeaturesStore", "{\"q\":\"foobarbat12345\",\"df\":\"title\"}");
-    loadModel("nomatchmodel3", RankSVMModel.class.getCanonicalName(),
+    loadModel("nomatchmodel3", LinearModel.class.getCanonicalName(),
         new String[] {"nomatchfeature4"}, "noMatchFeaturesStore",
         "{\"weights\":{\"nomatchfeature4\":1.0}}");
   }
@@ -170,10 +170,10 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
   @Test
   public void tesOnlyNoMatchFeaturesInStoreAndModelReturnsNonzeroScore() throws Exception {
     // Tests model with all no matching features but expects a non 0 score
-    //  LambdaMART will return scores even for docs without any feature matches
+    //  MultipleAdditiveTrees will return scores even for docs without any feature matches
     loadModel(
         "nomatchmodel4",
-        LambdaMARTModel.class.getCanonicalName(),
+        MultipleAdditiveTreesModel.class.getCanonicalName(),
         new String[] {"nomatchfeature4"},
         "noMatchFeaturesStore",
         "{\"trees\":[{\"weight\":\"1f\", \"root\":{\"feature\": \"matchedTitle\",\"threshold\": \"0.5f\",\"left\":{\"value\" : \"-10\"},\"right\":{\"value\" : \"9\"}}}]}");

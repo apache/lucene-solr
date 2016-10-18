@@ -22,7 +22,7 @@ import java.util.Map;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,7 +55,7 @@ public class TestOriginalScoreFeature extends TestRerankBase {
   public void testOriginalScore() throws Exception {
     loadFeature("score", OriginalScoreFeature.class.getCanonicalName(), "{}");
 
-    loadModel("originalScore", RankSVMModel.class.getCanonicalName(),
+    loadModel("originalScore", LinearModel.class.getCanonicalName(),
         new String[] {"score"}, "{\"weights\":{\"score\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
@@ -108,7 +108,7 @@ public class TestOriginalScoreFeature extends TestRerankBase {
     loadFeature("c2", ValueFeature.class.getCanonicalName(), "store2",
         "{\"value\":2.0}");
 
-    loadModel("origScore", RankSVMModel.class.getCanonicalName(),
+    loadModel("origScore", LinearModel.class.getCanonicalName(),
         new String[] {"origScore"}, "store2",
         "{\"weights\":{\"origScore\":1.0}}");
 

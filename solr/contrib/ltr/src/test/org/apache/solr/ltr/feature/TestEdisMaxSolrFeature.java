@@ -18,7 +18,7 @@ package org.apache.solr.ltr.feature;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -60,7 +60,7 @@ public class TestEdisMaxSolrFeature extends TestRerankBase {
         SolrFeature.class.getCanonicalName(),
         "{\"q\":\"{!edismax qf='title description' pf='description' mm=100% boost='pow(popularity, 0.1)' v='w1' tie=0.1}\"}");
 
-    loadModel("EdisMax-model", RankSVMModel.class.getCanonicalName(),
+    loadModel("EdisMax-model", LinearModel.class.getCanonicalName(),
         new String[] {"SomeEdisMax"}, "{\"weights\":{\"SomeEdisMax\":1.0}}");
 
     final SolrQuery query = new SolrQuery();

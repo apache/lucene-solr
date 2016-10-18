@@ -7,7 +7,7 @@
         }
     },
     {
-        "name": "constantScoreToForceLambdaMARTScoreAllDocs",
+        "name": "constantScoreToForceMultipleAdditiveTreesScoreAllDocs",
         "class": "org.apache.solr.ltr.feature.ValueFeature",
         "params": {
             "value": 1

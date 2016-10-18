@@ -18,7 +18,7 @@ package org.apache.solr.ltr.feature;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,7 +58,7 @@ public class TestUserTermScoreWithQ extends TestRerankBase {
     // before();
     loadFeature("SomeTermQ", SolrFeature.class.getCanonicalName(),
         "{\"q\":\"{!terms f=popularity}88888\"}");
-    loadModel("Term-modelQ", RankSVMModel.class.getCanonicalName(),
+    loadModel("Term-modelQ", LinearModel.class.getCanonicalName(),
         new String[] {"SomeTermQ"}, "{\"weights\":{\"SomeTermQ\":1.0}}");
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");

@@ -28,7 +28,7 @@ import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.store.FeatureStore;
@@ -36,14 +36,14 @@ import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestRankSVMModel extends TestRerankBase {
+public class TestLinearModel extends TestRerankBase {
 
-  public static LTRScoringModel createRankSVMModel(String name, List<Feature> features,
+  public static LTRScoringModel createLinearModel(String name, List<Feature> features,
       List<Normalizer> norms,
       String featureStoreName, List<Feature> allFeatures,
       Map<String,Object> params) throws ModelException {
     final LTRScoringModel model = LTRScoringModel.getInstance(solrResourceLoader,
-        RankSVMModel.class.getCanonicalName(),
+        LinearModel.class.getCanonicalName(),
         name,
         features, norms, featureStoreName, allFeatures, params);
     return model;
@@ -74,7 +74,7 @@ public class TestRankSVMModel extends TestRerankBase {
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     params.put("weights", weights);
-    final LTRScoringModel ltrScoringModel = createRankSVMModel("test1",
+    final LTRScoringModel ltrScoringModel = createLinearModel("test1",
         features, norms, "test", fstore.getFeatures(),
         params);
 
@@ -93,7 +93,7 @@ public class TestRankSVMModel extends TestRerankBase {
       final List<Normalizer> norms = 
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-      final LTRScoringModel ltrScoringModel = createRankSVMModel("test2",
+      final LTRScoringModel ltrScoringModel = createLinearModel("test2",
           features, norms, "test", fstore.getFeatures(), null);
       fail("unexpectedly got here instead of catching "+expectedException);
     } catch (ModelException actualException) {
@@ -118,7 +118,7 @@ public class TestRankSVMModel extends TestRerankBase {
 
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
-      final LTRScoringModel ltrScoringModel = createRankSVMModel("test3",
+      final LTRScoringModel ltrScoringModel = createLinearModel("test3",
           features, norms, "test", fstore.getFeatures(),
               params);
       store.addModel(ltrScoringModel);
@@ -147,7 +147,7 @@ public class TestRankSVMModel extends TestRerankBase {
 
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
-      final LTRScoringModel ltrScoringModel = createRankSVMModel("test4",
+      final LTRScoringModel ltrScoringModel = createLinearModel("test4",
           features, norms, "test", fstore.getFeatures(),
               params);
       store.addModel(ltrScoringModel);
@@ -174,7 +174,7 @@ public class TestRankSVMModel extends TestRerankBase {
 
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
-      final LTRScoringModel ltrScoringModel = createRankSVMModel("test5",
+      final LTRScoringModel ltrScoringModel = createLinearModel("test5",
           features, norms, "test", fstore.getFeatures(),
               params);
       fail("unexpectedly got here instead of catching "+expectedException);
@@ -198,7 +198,7 @@ public class TestRankSVMModel extends TestRerankBase {
 
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
-      final LTRScoringModel ltrScoringModel = createRankSVMModel("test6",
+      final LTRScoringModel ltrScoringModel = createLinearModel("test6",
           features, norms, "test", fstore.getFeatures(),
           params);
       store.addModel(ltrScoringModel);

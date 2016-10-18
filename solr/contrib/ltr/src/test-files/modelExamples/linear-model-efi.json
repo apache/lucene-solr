@@ -1,6 +1,6 @@
 {
-  "class":"org.apache.solr.ltr.model.RankSVMModel",
-  "name":"svm-efi",
+  "class":"org.apache.solr.ltr.model.LinearModel",
+  "name":"linear-efi",
   "features":[
     {"name":"sampleConstant"},
     {"name":"search_number_of_nights"}

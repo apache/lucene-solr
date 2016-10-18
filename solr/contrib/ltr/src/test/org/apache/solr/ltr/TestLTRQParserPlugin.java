@@ -33,8 +33,8 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     // store = getModelStore();
     bulkIndex();
 
-    loadFeatures("features-ranksvm.json");
-    loadModels("ranksvm-model.json");
+    loadFeatures("features-linear.json");
+    loadModels("linear-model.json");
   }
 
   @AfterClass

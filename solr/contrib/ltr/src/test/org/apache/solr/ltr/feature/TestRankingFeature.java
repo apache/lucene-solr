@@ -18,7 +18,7 @@ package org.apache.solr.ltr.feature;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -62,9 +62,9 @@ public class TestRankingFeature extends TestRerankBase {
     loadFeature("unpopularityS", SolrFeature.class.getCanonicalName(),
         "{\"q\":\"{!func}div(1,popularity)\"}");
 
-    loadModel("powpularityS-model", RankSVMModel.class.getCanonicalName(),
+    loadModel("powpularityS-model", LinearModel.class.getCanonicalName(),
         new String[] {"powpularityS"}, "{\"weights\":{\"powpularityS\":1.0}}");
-    loadModel("unpopularityS-model", RankSVMModel.class.getCanonicalName(),
+    loadModel("unpopularityS-model", LinearModel.class.getCanonicalName(),
         new String[] {"unpopularityS"}, "{\"weights\":{\"unpopularityS\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
@@ -106,7 +106,7 @@ public class TestRankingFeature extends TestRerankBase {
     //bad solr ranking feature
     loadFeature("powdesS", SolrFeature.class.getCanonicalName(),
         "{\"q\":\"{!func}pow(description,2)\"}");
-    loadModel("powdesS-model", RankSVMModel.class.getCanonicalName(),
+    loadModel("powdesS-model", LinearModel.class.getCanonicalName(),
         new String[] {"powdesS"}, "{\"weights\":{\"powdesS\":1.0}}");
 
     query.remove("rq");

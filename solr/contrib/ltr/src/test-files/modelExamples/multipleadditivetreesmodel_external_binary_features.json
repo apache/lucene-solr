@@ -1,5 +1,5 @@
 {
-  "class":"org.apache.solr.ltr.model.LambdaMARTModel",
+  "class":"org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
   "name":"external_model_binary_feature",
   "features":[
     { "name": "user_device_smartphone"},

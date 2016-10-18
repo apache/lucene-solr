@@ -33,7 +33,7 @@ the techproducts example please follow these steps.
         `mkdir example/techproducts/solr/techproducts/lib`
      3. Install the plugin in the lib folder
 
-        `cp build/contrib/ltr/lucene-ltr-7.0.0-SNAPSHOT.jar example/techproducts/solr/techproducts/lib/`
+        `cp build/contrib/ltr/solr-ltr-7.0.0-SNAPSHOT.jar example/techproducts/solr/techproducts/lib/`
      4. Replace the original solrconfig with one importing all the ltr components
 
         `cp contrib/ltr/example/solrconfig.xml example/techproducts/solr/techproducts/conf/`
@@ -61,7 +61,7 @@ the techproducts example please follow these steps.
        http://localhost:8983/solr/techproducts/schema/model-store
      * Perform a reranking query using the model, and retrieve the features
 
-       http://localhost:8983/solr/techproducts/query?indent=on&q=test&wt=json&rq={!ltr%20model=svm%20reRankDocs=25%20efi.user_query=%27test%27}&fl=[features],price,score,name
+       http://localhost:8983/solr/techproducts/query?indent=on&q=test&wt=json&rq={!ltr%20model=linear%20reRankDocs=25%20efi.user_query=%27test%27}&fl=[features],price,score,name
 
 
 BONUS: Train an actual machine learning model
@@ -78,7 +78,7 @@ BONUS: Train an actual machine learning model
 
    This script deploys your features from `config.json` "featuresFile" to Solr.  Then it takes the relevance judged query
    document pairs of "userQueriesFile" and merges it with the features extracted from Solr into a training
-   file.  That file is used to train a rankSVM model, which is then deployed to Solr for you to rerank results.
+   file.  That file is used to train a linear model, which is then deployed to Solr for you to rerank results.
 
 4. Search and rerank the results using the trained model
 
@@ -153,7 +153,7 @@ using standard Solr queries. As an example:
 ]
 ```
 
-Defines four features. Anything that is a valid Solr query can be used to define
+Defines five features. Anything that is a valid Solr query can be used to define
 a feature.
 
 ### Filter Query Features
@@ -198,19 +198,18 @@ The majority of features should be possible to create using the methods describe
 above.
 
 # Defining Models
-Currently the Learning to Rank plugin supports 2 main types of
-ranking models: [Ranking SVM](http://www.cs.cornell.edu/people/tj/publications/joachims_02c.pdf)
-and [LambdaMART](http://research.microsoft.com/pubs/132652/MSR-TR-2010-82.pdf)
+Currently the Learning to Rank plugin supports 2 generalized forms of
+models: 1. Linear Model i.e. [RankSVM](http://www.cs.cornell.edu/people/tj/publications/joachims_02c.pdf), [Pranking](https://papers.nips.cc/paper/2023-pranking-with-ranking.pdf)
+and 2. Multiple Additive Trees i.e. [LambdaMART](http://research.microsoft.com/pubs/132652/MSR-TR-2010-82.pdf), [Gradient Boosted Regression Trees (GBRT)](https://papers.nips.cc/paper/3305-a-general-boosting-method-and-its-application-to-learning-ranking-functions-for-web-search.pdf)
 
-### Ranking SVM
-Currently only a linear ranking svm is supported. Use LambdaMART for
-a non-linear model. If you'd like to introduce a bias set a constant feature
+### Linear
+If you'd like to introduce a bias set a constant feature
 to the bias value you'd like and make a weight of 1.0 for that feature.
 
 ###### model.json
 ```json
 {
-    "class":"org.apache.solr.ltr.model.RankSVMModel",
+    "class":"org.apache.solr.ltr.model.LinearModel",
     "name":"myModelName",
     "features":[
         { "name": "userTextTitleMatch"},
@@ -228,27 +227,26 @@ to the bias value you'd like and make a weight of 1.0 for that feature.
 }
 ```
 
-This is an example of a toy Ranking SVM model. Type specifies the class to be
-using to interpret the model (RankSVMModel in the case of Ranking SVM).
-Name is the model identifier you will use when making request to the ltr
-framework. Features specifies the feature space that you want extracted
-when using this model. All features that appear in the model params will
-be used for scoring and must appear in the features list.  You can add
-extra features to the features list that will be computed but not used in the
-model for scoring, which can be useful for logging.
-Params are the Ranking SVM parameters.
+This is an example of a toy Linear model. Class specifies the class to be
+using to interpret the model. Name is the model identifier you will use 
+when making request to the ltr framework. Features specifies the feature 
+space that you want extracted when using this model. All features that 
+appear in the model params will be used for scoring and must appear in 
+the features list.  You can add extra features to the features list that 
+will be computed but not used in the model for scoring, which can be useful 
+for logging. Params are the Linear parameters.
 
-Good library for training SVM's (https://www.csie.ntu.edu.tw/~cjlin/liblinear/ ,
-https://www.csie.ntu.edu.tw/~cjlin/libsvm/) . You will need to convert the
-libSVM model format to the format specified above.
+Good library for training SVM, an example of a Linear model, is 
+(https://www.csie.ntu.edu.tw/~cjlin/liblinear/ , https://www.csie.ntu.edu.tw/~cjlin/libsvm/) . 
+You will need to convert the libSVM model format to the format specified above.
 
-### LambdaMART
+### Multiple Additive Trees
 
 ###### model2.json
 ```json
 {
-    "class":"org.apache.solr.ltr.model.LambdaMARTModel",
-    "name":"lambdamartmodel",
+    "class":"org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+    "name":"multipleadditivetreesmodel",
     "features":[
         { "name": "userTextTitleMatch"},
         { "name": "originalScore"}
@@ -285,17 +283,17 @@ libSVM model format to the format specified above.
     }
 }
 ```
-This is an example of a toy LambdaMART. Type specifies the class to be using to
-interpret the model (LambdaMARTModel in the case of LambdaMART). Name is the
+This is an example of a toy Multiple Additive Trees. Class specifies the class to be using to
+interpret the model. Name is the
 model identifier you will use when making request to the ltr framework.
 Features specifies the feature space that you want extracted when using this
 model. All features that appear in the model params will be used for scoring and
 must appear in the features list.  You can add extra features to the features
 list that will be computed but not used in the model for scoring, which can
-be useful for logging. Params are the LambdaMART specific parameters. In this
+be useful for logging. Params are the Multiple Additive Trees specific parameters. In this
 case we have 2 trees, one with 3 leaf nodes and one with 1 leaf node.
 
-A good library for training LambdaMART ( http://sourceforge.net/p/lemur/wiki/RankLib/ ).
+A good library for training LambdaMART, an example of Multiple Additive Trees, is ( http://sourceforge.net/p/lemur/wiki/RankLib/ ).
 You will need to convert the RankLib model format to the format specified above.
 
 # Deploy Models and Features

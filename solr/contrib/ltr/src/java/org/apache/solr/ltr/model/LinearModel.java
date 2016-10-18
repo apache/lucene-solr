@@ -26,11 +26,12 @@ import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.Normalizer;
 
 /**
- * A scoring model that computes scores using a linear Support Vector Machine (SVM) algorithm.
+ * A scoring model that computes scores using a dot product. 
+ * Example models are RankSVM and Pranking.
  * <p>
  * Example configuration:
  * <pre>{
-   "class" : "org.apache.solr.ltr.model.RankSVMModel",
+   "class" : "org.apache.solr.ltr.model.LinearModel",
    "name" : "myModelName",
    "features" : [
        { "name" : "userTextTitleMatch" },
@@ -52,8 +53,13 @@ import org.apache.solr.ltr.norm.Normalizer;
  * Thorsten Joachims. Optimizing Search Engines Using Clickthrough Data.
  * Proceedings of the ACM Conference on Knowledge Discovery and Data Mining (KDD), ACM, 2002.</a>
  * </ul>
+ * <ul>
+ * <li> <a href="https://papers.nips.cc/paper/2023-pranking-with-ranking.pdf">
+ * Koby Crammer and Yoram Singer. Pranking with Ranking.
+ * Advances in Neural Information Processing Systems (NIPS), 2001.</a>
+ * </ul>
  */
-public class RankSVMModel extends LTRScoringModel {
+public class LinearModel extends LTRScoringModel {
 
   protected Float[] featureToWeight;
 
@@ -66,7 +72,7 @@ public class RankSVMModel extends LTRScoringModel {
     }
   }
 
-  public RankSVMModel(String name, List<Feature> features,
+  public LinearModel(String name, List<Feature> features,
       List<Normalizer> norms,
       String featureStoreName, List<Feature> allFeatures,
       Map<String,Object> params) {

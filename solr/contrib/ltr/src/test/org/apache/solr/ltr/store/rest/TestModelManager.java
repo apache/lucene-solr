@@ -22,7 +22,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.FieldValueFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.apache.solr.rest.ManagedResource;
@@ -115,24 +115,24 @@ public class TestModelManager extends TestRerankBase {
     assertJPut(ManagedFeatureStore.REST_END_POINT, badfeature,
         "/error/msg/=='No setter corrresponding to \\'value\\' in "+fieldValueFeatureClassName+"'");
 
-    final String rankSVMModelClassName = RankSVMModel.class.getCanonicalName();
+    final String linearModelClassName = LinearModel.class.getCanonicalName();
 
     // Add models
-    String model = "{ \"name\":\"testmodel1\", \"class\":\""+rankSVMModelClassName+"\", \"features\":[] }";
+    String model = "{ \"name\":\"testmodel1\", \"class\":\""+linearModelClassName+"\", \"features\":[] }";
     // fails since it does not have features
     assertJPut(ManagedModelStore.REST_END_POINT, model,
         "/responseHeader/status==400");
     // fails since it does not have weights
-    model = "{ \"name\":\"testmodel2\", \"class\":\""+rankSVMModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}] }";
+    model = "{ \"name\":\"testmodel2\", \"class\":\""+linearModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}] }";
     assertJPut(ManagedModelStore.REST_END_POINT, model,
         "/responseHeader/status==400");
     // success
-    model = "{ \"name\":\"testmodel3\", \"class\":\""+rankSVMModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}}}";
+    model = "{ \"name\":\"testmodel3\", \"class\":\""+linearModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}}}";
     assertJPut(ManagedModelStore.REST_END_POINT, model,
         "/responseHeader/status==0");
     // success
-    final String multipleModels = "[{ \"name\":\"testmodel4\", \"class\":\""+rankSVMModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}} }\n"
-        + ",{ \"name\":\"testmodel5\", \"class\":\""+rankSVMModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}} } ]";
+    final String multipleModels = "[{ \"name\":\"testmodel4\", \"class\":\""+linearModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}} }\n"
+        + ",{ \"name\":\"testmodel5\", \"class\":\""+linearModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}} } ]";
     assertJPut(ManagedModelStore.REST_END_POINT, multipleModels,
         "/responseHeader/status==0");
     final String qryResult = JQ(ManagedModelStore.REST_END_POINT);
@@ -155,8 +155,8 @@ public class TestModelManager extends TestRerankBase {
 
   @Test
   public void testEndpointsFromFile() throws Exception {
-    loadFeatures("features-ranksvm.json");
-    loadModels("ranksvm-model.json");
+    loadFeatures("features-linear.json");
+    loadModels("linear-model.json");
 
     assertJQ(ManagedModelStore.REST_END_POINT,
         "/models/[0]/name=='6029760550880411648'");

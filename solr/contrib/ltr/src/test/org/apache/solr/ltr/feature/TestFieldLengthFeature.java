@@ -19,7 +19,7 @@ package org.apache.solr.ltr.feature;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -59,7 +59,7 @@ public class TestFieldLengthFeature extends TestRerankBase {
     loadFeature("description-length2", FieldLengthFeature.class.getCanonicalName(),
             "{\"field\":\"description\"}");
 
-    loadModel("description-model2", RankSVMModel.class.getCanonicalName(),
+    loadModel("description-model2", LinearModel.class.getCanonicalName(),
             new String[] {"description-length2"}, "{\"weights\":{\"description-length2\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
@@ -80,7 +80,7 @@ public class TestFieldLengthFeature extends TestRerankBase {
     loadFeature("description-length3", FieldLengthFeature.class.getCanonicalName(),
             "{\"field\":\"description\"}");
 
-    loadModel("description-model3", RankSVMModel.class.getCanonicalName(),
+    loadModel("description-model3", LinearModel.class.getCanonicalName(),
             new String[] {"description-length3"}, "{\"weights\":{\"description-length3\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
@@ -97,7 +97,7 @@ public class TestFieldLengthFeature extends TestRerankBase {
     loadFeature("title-length", FieldLengthFeature.class.getCanonicalName(),
         "{\"field\":\"title\"}");
 
-    loadModel("title-model", RankSVMModel.class.getCanonicalName(),
+    loadModel("title-model", LinearModel.class.getCanonicalName(),
         new String[] {"title-length"}, "{\"weights\":{\"title-length\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
@@ -135,7 +135,7 @@ public class TestFieldLengthFeature extends TestRerankBase {
     loadFeature("description-length",
         FieldLengthFeature.class.getCanonicalName(),
         "{\"field\":\"description\"}");
-    loadModel("description-model", RankSVMModel.class.getCanonicalName(),
+    loadModel("description-model", LinearModel.class.getCanonicalName(),
         new String[] {"description-length"},
         "{\"weights\":{\"description-length\":1.0}}");
     query.setQuery("title:w1");

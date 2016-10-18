@@ -19,7 +19,7 @@ package org.apache.solr.ltr.feature;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.store.FeatureStore;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -53,7 +53,7 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("yesmatch", SolrFeature.class.getCanonicalName(), "test1",
         "{\"q\":\"{!terms f=popularity}2\"}");
 
-    loadModel("sum1", RankSVMModel.class.getCanonicalName(), new String[] {
+    loadModel("sum1", LinearModel.class.getCanonicalName(), new String[] {
         "c1", "c2", "c3"}, "test1",
         "{\"weights\":{\"c1\":1.0,\"c2\":1.0,\"c3\":1.0}}");
 
@@ -98,7 +98,7 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("store9f1", ValueFeature.class.getCanonicalName(),
         "store9",
         "{\"value\":3.0}");
-    loadModel("store9m1", RankSVMModel.class.getCanonicalName(),
+    loadModel("store9m1", LinearModel.class.getCanonicalName(),
       new String[] {"store9f1"},
       "store9",
       "{\"weights\":{\"store9f1\":1.0}}");
@@ -142,7 +142,7 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("pop", FieldValueFeature.class.getCanonicalName(), "testgroup",
         "{\"field\":\"popularity\"}");
 
-    loadModel("sumgroup", RankSVMModel.class.getCanonicalName(), new String[] {
+    loadModel("sumgroup", LinearModel.class.getCanonicalName(), new String[] {
         "c1", "c2", "c3"}, "testgroup",
         "{\"weights\":{\"c1\":1.0,\"c2\":1.0,\"c3\":1.0}}");
 
@@ -185,7 +185,7 @@ public class TestFeatureLogging extends TestRerankBase {
     loadFeature("c4", ValueFeature.class.getCanonicalName(), "test4",
         "{\"value\":1.0}");
 
-    loadModel("sum4", RankSVMModel.class.getCanonicalName(), new String[] {
+    loadModel("sum4", LinearModel.class.getCanonicalName(), new String[] {
         "match"}, "test4",
         "{\"weights\":{\"match\":1.0}}");
 

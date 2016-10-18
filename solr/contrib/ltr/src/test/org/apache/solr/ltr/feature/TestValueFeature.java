@@ -19,7 +19,7 @@ package org.apache.solr.ltr.feature;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -76,7 +76,7 @@ public class TestValueFeature extends TestRerankBase {
   public void testRerankingWithConstantValueFeatureReplacesDocScore() throws Exception {
     loadFeature("c3", ValueFeature.class.getCanonicalName(), "c3",
         "{\"value\":2}");
-    loadModel("m3", RankSVMModel.class.getCanonicalName(), new String[] {"c3"},
+    loadModel("m3", LinearModel.class.getCanonicalName(), new String[] {"c3"},
         "c3", "{\"weights\":{\"c3\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
@@ -96,7 +96,7 @@ public class TestValueFeature extends TestRerankBase {
   public void testRerankingWithEfiValueFeatureReplacesDocScore() throws Exception {
     loadFeature("c6", ValueFeature.class.getCanonicalName(), "c6",
         "{\"value\":\"${val6}\"}");
-    loadModel("m6", RankSVMModel.class.getCanonicalName(), new String[] {"c6"},
+    loadModel("m6", LinearModel.class.getCanonicalName(), new String[] {"c6"},
         "c6", "{\"weights\":{\"c6\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
@@ -117,7 +117,7 @@ public class TestValueFeature extends TestRerankBase {
   public void testValueFeatureImplicitlyNotRequiredShouldReturnOkStatusCode() throws Exception {
     loadFeature("c5", ValueFeature.class.getCanonicalName(), "c5",
         "{\"value\":\"${val6}\"}");
-    loadModel("m5", RankSVMModel.class.getCanonicalName(), new String[] {"c5"},
+    loadModel("m5", LinearModel.class.getCanonicalName(), new String[] {"c5"},
         "c5", "{\"weights\":{\"c5\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
@@ -134,7 +134,7 @@ public class TestValueFeature extends TestRerankBase {
   public void testValueFeatureExplictlyNotRequiredShouldReturnOkStatusCode() throws Exception {
     loadFeature("c7", ValueFeature.class.getCanonicalName(), "c7",
         "{\"value\":\"${val7}\",\"required\":false}");
-    loadModel("m7", RankSVMModel.class.getCanonicalName(), new String[] {"c7"},
+    loadModel("m7", LinearModel.class.getCanonicalName(), new String[] {"c7"},
         "c7", "{\"weights\":{\"c7\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
@@ -151,7 +151,7 @@ public class TestValueFeature extends TestRerankBase {
   public void testValueFeatureRequiredShouldReturn400StatusCode() throws Exception {
     loadFeature("c8", ValueFeature.class.getCanonicalName(), "c8",
         "{\"value\":\"${val8}\",\"required\":true}");
-    loadModel("m8", RankSVMModel.class.getCanonicalName(), new String[] {"c8"},
+    loadModel("m8", LinearModel.class.getCanonicalName(), new String[] {"c8"},
         "c8", "{\"weights\":{\"c8\":1.0}}");
 
     final SolrQuery query = new SolrQuery();

@@ -31,7 +31,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.SolrFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -192,7 +192,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
     loadModel(
              "powpularityS-model",
-             RankSVMModel.class.getCanonicalName(),
+             LinearModel.class.getCanonicalName(),
              featureNames,
              featureStore,
              jsonModelParams

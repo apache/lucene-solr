@@ -19,7 +19,7 @@ package org.apache.solr.ltr.feature;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,7 +58,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     loadFeature("popularity", FieldValueFeature.class.getCanonicalName(),
             "{\"field\":\"popularity\"}");
 
-    loadModel("popularity-model", RankSVMModel.class.getCanonicalName(),
+    loadModel("popularity-model", LinearModel.class.getCanonicalName(),
             new String[] {"popularity"}, "{\"weights\":{\"popularity\":1.0}}");
   }
 
@@ -136,7 +136,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("fl", "*, score");
     query.add("rows", "4");
 
-    loadModel("popularity-model42", RankSVMModel.class.getCanonicalName(),
+    loadModel("popularity-model42", LinearModel.class.getCanonicalName(),
             new String[] {"popularity42"}, fstore, "{\"weights\":{\"popularity42\":1.0}}");
 
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
@@ -158,7 +158,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     loadFeature("not-existing-field", FieldValueFeature.class.getCanonicalName(), fstore,
             "{\"field\":\"cowabunga\"}");
 
-    loadModel("not-existing-field-model", RankSVMModel.class.getCanonicalName(),
+    loadModel("not-existing-field-model", LinearModel.class.getCanonicalName(),
             new String[] {"not-existing-field"}, fstore, "{\"weights\":{\"not-existing-field\":1.0}}");
 
     final SolrQuery query = new SolrQuery();

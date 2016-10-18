@@ -43,7 +43,7 @@ public class TestExternalValueFeatures extends TestRerankBase {
     assertU(commit());
 
     loadFeatures("external_features_for_sparse_processing.json");
-    loadModels("lambdamartmodel_external_binary_features.json");
+    loadModels("multipleadditivetreesmodel_external_binary_features.json");
   }
 
   @AfterClass

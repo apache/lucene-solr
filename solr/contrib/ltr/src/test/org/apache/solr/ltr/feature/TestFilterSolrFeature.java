@@ -19,7 +19,7 @@ package org.apache.solr.ltr.feature;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -61,7 +61,7 @@ public class TestFilterSolrFeature extends TestRerankBase {
         "{\"fq\":[\"{!terms f=popularity}88888\"]}");
     loadFeature("SomeEfiFQ", SolrFeature.class.getCanonicalName(),
         "{\"fq\":[\"{!terms f=title}${user_query}\"]}");
-    loadModel("Term-modelFQ", RankSVMModel.class.getCanonicalName(),
+    loadModel("Term-modelFQ", LinearModel.class.getCanonicalName(),
         new String[] {"SomeTermFQ", "SomeEfiFQ"},
         "{\"weights\":{\"SomeTermFQ\":1.6, \"SomeEfiFQ\":2.0}}");
     final SolrQuery query = new SolrQuery();

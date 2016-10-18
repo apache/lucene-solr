@@ -44,7 +44,7 @@ import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.feature.ValueFeature.ValueFeatureWeight;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -364,7 +364,7 @@ public class TestRerankBase extends RestTestBase {
           "{\"value\":" + i + "}");
     }
 
-    loadModel(name, RankSVMModel.class.getCanonicalName(), features,
+    loadModel(name, LinearModel.class.getCanonicalName(), features,
         "{\"weights\":{" + StringUtils.join(weights, ",") + "}}");
   }
 

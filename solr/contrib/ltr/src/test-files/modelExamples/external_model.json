@@ -1,5 +1,5 @@
 {
-    "class":"org.apache.solr.ltr.model.RankSVMModel",
+    "class":"org.apache.solr.ltr.model.LinearModel",
     "name":"externalmodel",
     "features":[
         { "name": "matchedTitle"}

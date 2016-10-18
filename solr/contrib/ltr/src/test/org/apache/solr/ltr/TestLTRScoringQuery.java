@@ -48,7 +48,7 @@ import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
-import org.apache.solr.ltr.model.TestRankSVMModel;
+import org.apache.solr.ltr.model.TestLinearModel;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.junit.Test;
@@ -136,7 +136,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
         new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
     final Map<String,Object> modelParams = makeFeatureWeights(features);
 
-    final LTRScoringModel algorithm1 = TestRankSVMModel.createRankSVMModel(
+    final LTRScoringModel algorithm1 = TestLinearModel.createLinearModel(
         "testModelName",
         features, norms, "testStoreName", allFeatures, modelParams);
 
@@ -164,7 +164,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
     assertFalse(m1.hashCode() == m0.hashCode());
     
     
-    final LTRScoringModel algorithm2 = TestRankSVMModel.createRankSVMModel(
+    final LTRScoringModel algorithm2 = TestLinearModel.createLinearModel(
         "testModelName2",
         features, norms, "testStoreName", allFeatures, modelParams);
     final LTRScoringQuery m3 = new LTRScoringQuery(algorithm2);
@@ -172,7 +172,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
     assertFalse(m1.equals(m3));
     assertFalse(m1.hashCode() == m3.hashCode());
 
-    final LTRScoringModel algorithm3 = TestRankSVMModel.createRankSVMModel(
+    final LTRScoringModel algorithm3 = TestLinearModel.createLinearModel(
         "testModelName",
         features, norms, "testStoreName3", allFeatures, modelParams);
     final LTRScoringQuery m4 = new LTRScoringQuery(algorithm3);
@@ -222,7 +222,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
     List<Normalizer> norms = 
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-    LTRScoringModel ltrScoringModel = TestRankSVMModel.createRankSVMModel("test",
+    LTRScoringModel ltrScoringModel = TestLinearModel.createLinearModel("test",
         features, norms, "test", allFeatures,
         makeFeatureWeights(features));
 
@@ -249,7 +249,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
     norms = 
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-    ltrScoringModel = TestRankSVMModel.createRankSVMModel("test",
+    ltrScoringModel = TestLinearModel.createLinearModel("test",
         features, norms, "test", allFeatures, makeFeatureWeights(features));
 
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
@@ -269,7 +269,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     try {
-      ltrScoringModel = TestRankSVMModel.createRankSVMModel("test",
+      ltrScoringModel = TestLinearModel.createLinearModel("test",
           features, norms, "test", allFeatures, makeFeatureWeights(features));
       fail("unexpectedly got here instead of catching "+expectedModelException);
       modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
@@ -296,7 +296,7 @@ public class TestLTRScoringQuery extends LuceneTestCase {
     norms = 
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),norm));
-    final LTRScoringModel normMeta = TestRankSVMModel.createRankSVMModel("test",
+    final LTRScoringModel normMeta = TestLinearModel.createLinearModel("test",
         features, norms, "test", allFeatures,
         makeFeatureWeights(features));
 

@@ -21,7 +21,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.SolrFeature;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,7 +58,7 @@ public class TestLTRWithFacet extends TestRerankBase {
     loadFeature("powpularityS", SolrFeature.class.getCanonicalName(),
         "{\"q\":\"{!func}pow(popularity,2)\"}");
 
-    loadModel("powpularityS-model", RankSVMModel.class.getCanonicalName(),
+    loadModel("powpularityS-model", LinearModel.class.getCanonicalName(),
         new String[] {"powpularityS"}, "{\"weights\":{\"powpularityS\":1.0}}");
 
     final SolrQuery query = new SolrQuery();

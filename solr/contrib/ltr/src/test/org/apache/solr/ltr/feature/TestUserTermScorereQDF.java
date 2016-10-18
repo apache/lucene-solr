@@ -18,7 +18,7 @@ package org.apache.solr.ltr.feature;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.LinearModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,7 +58,7 @@ public class TestUserTermScorereQDF extends TestRerankBase {
     // before();
     loadFeature("matchedTitleDF", SolrFeature.class.getCanonicalName(),
         "{\"q\":\"w5\",\"df\":\"title\"}");
-    loadModel("Term-matchedTitleDF", RankSVMModel.class.getCanonicalName(),
+    loadModel("Term-matchedTitleDF", LinearModel.class.getCanonicalName(),
         new String[] {"matchedTitleDF"},
         "{\"weights\":{\"matchedTitleDF\":1.0}}");
     final SolrQuery query = new SolrQuery();
