@@ -86,6 +86,9 @@ Bug Fixes
   dimensional points could cause unexpected merge exceptions (Hans
   Lund, Mike McCandless)
 
+* LUCENE-7363: Fixed DecimalDigitFilter in case of supplementary code points.
+  (Hossman)
+
 Improvements
 
 * LUCENE-7439: FuzzyQuery now matches all terms within the specified
