@@ -26,6 +26,7 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 
 /** Handles intersection of an multi-dimensional shape in byte[] space with a block KD-tree previously written with {@link BKDWriter}.
@@ -39,6 +40,7 @@ public class BKDReader implements Accountable {
   final private int leafNodeOffset;
   final int numDims;
   final int bytesPerDim;
+  final int bytesPerIndexEntry;
   final IndexInput in;
   final int maxPointsInLeafNode;
   final byte[] minPackedValue;
@@ -54,6 +56,7 @@ public class BKDReader implements Accountable {
     numDims = in.readVInt();
     maxPointsInLeafNode = in.readVInt();
     bytesPerDim = in.readVInt();
+    bytesPerIndexEntry = numDims == 1 && version >= BKDWriter.VERSION_IMPLICIT_SPLIT_DIM_1D ? bytesPerDim : bytesPerDim + 1;
     packedBytesLength = numDims * bytesPerDim;
 
     // Read index:
@@ -70,7 +73,7 @@ public class BKDReader implements Accountable {
     pointCount = in.readVLong();
     docCount = in.readVInt();
 
-    splitPackedValues = new byte[(1+bytesPerDim)*numLeaves];
+    splitPackedValues = new byte[bytesPerIndexEntry*numLeaves];
 
     // TODO: don't write split packed values[0]!
     in.readBytes(splitPackedValues, 0, splitPackedValues.length);
@@ -135,6 +138,7 @@ public class BKDReader implements Accountable {
     this.numDims = numDims;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.bytesPerDim = bytesPerDim;
+    bytesPerIndexEntry = numDims == 1 ? bytesPerDim : bytesPerDim + 1;
     packedBytesLength = numDims * bytesPerDim;
     this.leafNodeOffset = leafBlockFPs.length;
     this.leafBlockFPs = leafBlockFPs;
@@ -234,22 +238,22 @@ public class BKDReader implements Accountable {
     } else {
       // Non-leaf node:
 
-      int address = nodeID * (bytesPerDim+1);
-      int splitDim = splitPackedValues[address] & 0xff;
+      int address = nodeID * bytesPerIndexEntry;
+      int splitDim = numDims == 1 ? 0 : splitPackedValues[address++] & 0xff;
       assert splitDim < numDims;
 
       byte[] splitPackedValue = new byte[packedBytesLength];
 
       // Recurse on left sub-tree:
       System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedBytesLength);
-      System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
       verify(state,
              2*nodeID,
              cellMinPacked, splitPackedValue);
 
       // Recurse on right sub-tree:
       System.arraycopy(cellMinPacked, 0, splitPackedValue, 0, packedBytesLength);
-      System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
       verify(state,
              2*nodeID+1,
              splitPackedValue, cellMaxPacked);
@@ -457,8 +461,8 @@ public class BKDReader implements Accountable {
       // Non-leaf node: recurse on the split left and right nodes
 
       // TODO: save the unused 1 byte prefix (it's always 0) in the 1d case here:
-      int address = nodeID * (bytesPerDim+1);
-      int splitDim = splitPackedValues[address] & 0xff;
+      int address = nodeID * bytesPerIndexEntry;
+      int splitDim = numDims == 1 ? 0 : splitPackedValues[address++] & 0xff;
       assert splitDim < numDims;
 
       // TODO: can we alloc & reuse this up front?
@@ -468,14 +472,14 @@ public class BKDReader implements Accountable {
 
       // Recurse on left sub-tree:
       System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedBytesLength);
-      System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
       intersect(state,
                 2*nodeID,
                 cellMinPacked, splitPackedValue);
 
       // Recurse on right sub-tree:
       System.arraycopy(cellMinPacked, 0, splitPackedValue, 0, packedBytesLength);
-      System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
       intersect(state,
                 2*nodeID+1,
                 splitPackedValue, cellMaxPacked);
@@ -484,16 +488,16 @@ public class BKDReader implements Accountable {
 
   /** Copies the split value for this node into the provided byte array */
   public void copySplitValue(int nodeID, byte[] splitPackedValue) {
-    int address = nodeID * (bytesPerDim+1);
-    int splitDim = splitPackedValues[address] & 0xff;
+    int address = nodeID * bytesPerIndexEntry;
+    int splitDim = numDims == 1 ? 0 : splitPackedValues[address++] & 0xff;
     assert splitDim < numDims;
-    System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+    System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
   }
 
   @Override
   public long ramBytesUsed() {
-    return splitPackedValues.length +
-      leafBlockFPs.length * Long.BYTES;
+    return RamUsageEstimator.sizeOf(splitPackedValues) +
+        RamUsageEstimator.sizeOf(leafBlockFPs);
   }
 
   public byte[] getMinPackedValue() {
