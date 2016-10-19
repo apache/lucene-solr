@@ -560,12 +560,18 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         }
         
         if (allMustNot) {
-          //all are MUST_NOT: add the contextQuery to the main query instead (not as sub-query)
+          // All are MUST_NOT: add the contextQuery to the main query instead (not as sub-query)
           for (BooleanClause clause : contextQuery.clauses()) {
             query.add(clause);
           }
+        } else if (allTermsRequired == false) {
+          // We must carefully upgrade the query clauses to MUST:
+          BooleanQuery.Builder newQuery = new BooleanQuery.Builder();
+          newQuery.add(query.build(), BooleanClause.Occur.MUST);
+          newQuery.add(contextQuery, BooleanClause.Occur.MUST);
+          query = newQuery;
         } else {
-          //Add contextQuery as sub-query
+          // Add contextQuery as sub-query
           query.add(contextQuery, BooleanClause.Occur.MUST);
         }
       }
@@ -577,7 +583,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
     Query finalQuery = finishQuery(query, allTermsRequired);
 
-    //System.out.println("finalQuery=" + query);
+    //System.out.println("finalQuery=" + finalQuery);
 
     // Sort by weight, descending:
     TopFieldCollector c = TopFieldCollector.create(SORT, num, true, false, false);
