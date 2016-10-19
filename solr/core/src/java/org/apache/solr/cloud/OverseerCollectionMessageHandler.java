@@ -182,6 +182,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         .put(DELETENODE, new DeleteNodeCmd(this))
         .put(BACKUP, new BackupCmd(this))
         .put(RESTORE, new RestoreCmd(this))
+        .put(CREATESNAPSHOT, new CreateSnapshotCmd(this))
+        .put(DELETESNAPSHOT, new DeleteSnapshotCmd(this))
         .put(SPLITSHARD, new SplitShardCmd(this))
         .put(ADDROLE, new OverseerRoleCmd(this, ADDROLE, overseerPrioritizer))
         .put(REMOVEROLE, new OverseerRoleCmd(this, REMOVEROLE, overseerPrioritizer))
