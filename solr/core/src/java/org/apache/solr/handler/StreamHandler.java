@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -97,7 +98,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
   private StreamFactory streamFactory = new StreamFactory();
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
-  private Map<String, DaemonStream> daemons = new HashMap<>();
+  private Map<String, DaemonStream> daemons = Collections.synchronizedMap(new HashMap());
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
@@ -245,6 +246,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       if(daemons.containsKey(daemonStream.getId())) {
         daemons.remove(daemonStream.getId()).close();
       }
+      daemonStream.setDaemons(daemons);
       daemonStream.open();  //This will start the deamonStream
       daemons.put(daemonStream.getId(), daemonStream);
       rsp.add("result-set", new DaemonResponseStream("Deamon:"+daemonStream.getId()+" started on "+coreName));
