@@ -29,13 +29,14 @@ import org.apache.solr.update.AddUpdateCommand;
  * This is deliberately made to support only the add operation
  */
 public abstract class SimpleUpdateProcessorFactory extends UpdateRequestProcessorFactory {
-  protected final String myName;
+  protected final String myName; // if classname==XyzUpdateProcessorFactory  myName=Xyz
   protected NamedList initArgs = new NamedList();
   private static ThreadLocal<SolrQueryRequest> REQ = new ThreadLocal<>();
 
   protected SimpleUpdateProcessorFactory() {
     String simpleName = this.getClass().getSimpleName();
-    this.myName = simpleName.substring(0, simpleName.indexOf("UpdateProcessorFactory"));
+    int idx = simpleName.indexOf("UpdateProcessorFactory");
+    this.myName = idx == -1 ? simpleName : simpleName.substring(0, idx);
   }
 
   @Override

@@ -29,7 +29,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
-
+//Adds new fields to documents based on a template pattern specified via Template.field
+// request parameters (multi-valued) or 'field' value specified in initArgs
 public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory {
   @Override
   protected void process(AddUpdateCommand cmd, SolrQueryRequest req, SolrQueryResponse rsp) {
