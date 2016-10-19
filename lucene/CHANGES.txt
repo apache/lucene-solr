@@ -92,6 +92,10 @@ Bug Fixes
 * LUCENE-7493: FacetCollector.search threw an unexpected exception if
   you asked for zero hits but wanted facets (Mahesh via Mike McCandless)
 
+* LUCENE-7505: AnalyzingInfixSuggester returned invalid results when
+  allTermsRequired is false and context filters are specified (Mike
+  McCandless)
+
 Improvements
 
 * LUCENE-7439: FuzzyQuery now matches all terms within the specified
