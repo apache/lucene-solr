@@ -135,6 +135,9 @@ New Features
 
 * SOLR-9103: Restore ability for users to add custom Streaming Expressions (Cao Manh Dat)
 
+* SOLR-9657: New TemplateUpdateProcessorFactory added (noble)
+
+
 Bug Fixes
 ----------------------
 
