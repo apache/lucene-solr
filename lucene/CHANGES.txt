@@ -68,6 +68,9 @@ New Features
 
 Bug Fixes
 
+* LUCENE-7507: Upgrade morfologik-stemming to version 2.1.1 (fixes security
+  manager issue with Polish dictionary lookup). (Dawid Weiss)
+
 * LUCENE-7472: MultiFieldQueryParser.getFieldQuery() drops queries that are
   neither BooleanQuery nor TermQuery.  (Steve Rowe)
 
