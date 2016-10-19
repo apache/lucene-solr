@@ -301,7 +301,7 @@ Other Changes
 
 * SOLR-9634: Deprecate collection methods on MiniSolrCloudCluster (Alan Woodward)
 
-* SOLR-7580: Moved defaults within bin/solr.in.sh (and bin/solr.in.cmd on Windows) to bin/solr (and bin/solr.cmd)
+* SOLR-7850: Moved defaults within bin/solr.in.sh (and bin/solr.in.cmd on Windows) to bin/solr (and bin/solr.cmd)
   such that the default state of these files is to set nothing. This makes Solr work better with Docker. (David Smiley)
 
 ==================  6.2.1 ==================
