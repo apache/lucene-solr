@@ -62,6 +62,9 @@ IF NOT "%SOLR_HOST%"=="" (
 ) ELSE (
   set "SOLR_TOOL_HOST=localhost"
 )
+IF "%SOLR_JETTY_HOST%"=="" (
+  set SOLR_JETTY_HOST=0.0.0.0
+)
 
 REM Verify Java is available
 IF DEFINED SOLR_JAVA_HOME set "JAVA_HOME=%SOLR_JAVA_HOME%"
@@ -910,16 +913,36 @@ IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
 
 IF NOT "%SOLR_HEAP%"=="" set SOLR_JAVA_MEM=-Xms%SOLR_HEAP% -Xmx%SOLR_HEAP%
 IF "%SOLR_JAVA_MEM%"=="" set SOLR_JAVA_MEM=-Xms512m -Xmx512m
+IF "%SOLR_JAVA_STACK_SIZE%"=="" set SOLR_JAVA_STACK_SIZE=-Xss256k
+set SOLR_OPTS=%SOLR_JAVA_STACK_SIZE% %SOLR_OPTS%
 IF "%SOLR_TIMEZONE%"=="" set SOLR_TIMEZONE=UTC
 
-IF "!JAVA_MAJOR_VERSION!"=="7" (
-  set "GC_TUNE=%GC_TUNE% -XX:CMSFullGCsBeforeCompaction=1 -XX:CMSTriggerPermRatio=80"
-  IF !JAVA_BUILD! GEQ 40 (
-    IF !JAVA_BUILD! LEQ 51 (
-      set "GC_TUNE=!GC_TUNE! -XX:-UseSuperWord"
-      @echo WARNING: Java version !JAVA_VERSION_INFO! has known bugs with Lucene and requires the -XX:-UseSuperWord flag. Please consider upgrading your JVM.
-    )
-  )
+IF "%GC_TUNE%"=="" (
+  set GC_TUNE=-XX:NewRatio=3 ^
+   -XX:SurvivorRatio=4 ^
+   -XX:TargetSurvivorRatio=90 ^
+   -XX:MaxTenuringThreshold=8 ^
+   -XX:+UseConcMarkSweepGC ^
+   -XX:+UseParNewGC ^
+   -XX:ConcGCThreads=4 -XX:ParallelGCThreads=4 ^
+   -XX:+CMSScavengeBeforeRemark ^
+   -XX:PretenureSizeThreshold=64m ^
+   -XX:+UseCMSInitiatingOccupancyOnly ^
+   -XX:CMSInitiatingOccupancyFraction=50 ^
+   -XX:CMSMaxAbortablePrecleanTime=6000 ^
+   -XX:+CMSParallelRemarkEnabled ^
+   -XX:+ParallelRefProcEnabled ^
+   -XX:-OmitStackTraceInFastThrow
+)
+
+IF "%GC_LOG_OPTS%"=="" (
+  set GC_LOG_OPTS=-verbose:gc ^
+   -XX:+PrintHeapAtGC ^
+   -XX:+PrintGCDetails ^
+   -XX:+PrintGCDateStamps ^
+   -XX:+PrintGCTimeStamps ^
+   -XX:+PrintTenuringDistribution ^
+   -XX:+PrintGCApplicationStoppedTime
 )
 
 IF "%verbose%"=="1" (
@@ -1009,15 +1032,17 @@ IF "%FG%"=="1" (
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
   "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% %GCLOG_OPT%:"!SOLR_LOGS_DIR!/solr_gc.log" ^
     -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
-    -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" ^
-    -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar "%SOLR_JETTY_CONFIG%"
+    -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" ^
+    -Djetty.host=%SOLR_JETTY_HOST% -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
+    -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar "%SOLR_JETTY_CONFIG%"
 ) ELSE (
-  START /B "Solr-%SOLR_PORT%" /D "%SOLR_SERVER_DIR%" "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
-    %GCLOG_OPT%:"!SOLR_LOGS_DIR!/solr_gc.log" -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! ^
+  START /B "Solr-%SOLR_PORT%" /D "%SOLR_SERVER_DIR%" ^
+    "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% %GCLOG_OPT%:"!SOLR_LOGS_DIR!/solr_gc.log" ^
+    -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.log.muteconsole ^
-    -DSTOP.KEY=%STOP_KEY% -Djetty.port=%SOLR_PORT% -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" ^
-    -Djetty.home="%SOLR_SERVER_DIR%" -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar ^
-    "%SOLR_JETTY_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
+    -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" ^
+    -Djetty.host=%SOLR_JETTY_HOST% -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
+    -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar "%SOLR_JETTY_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
 
   REM now wait to see Solr come online ...

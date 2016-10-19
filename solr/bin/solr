@@ -1409,15 +1409,21 @@ if [ "`echo $java_ver_out | grep -i "IBM J9"`" != "" ]; then
   JAVA_VENDOR="IBM J9"
 fi
 
+# Establish default opts no env var set (otherwise init to empty)
+if [ -z ${GC_LOG_OPTS+x} ]; then
+  GC_LOG_OPTS=('-verbose:gc' '-XX:+PrintHeapAtGC' '-XX:+PrintGCDetails' \
+    '-XX:+PrintGCDateStamps' '-XX:+PrintGCTimeStamps' '-XX:+PrintTenuringDistribution' \
+    '-XX:+PrintGCApplicationStoppedTime')
+else
+  GC_LOG_OPTS=($GC_LOG_OPTS)
+fi
 # if verbose gc logging enabled, setup the location of the log file
 if [ "$GC_LOG_OPTS" != "" ]; then
   gc_log_flag="-Xloggc"
   if [ "$JAVA_VENDOR" == "IBM J9" ]; then
     gc_log_flag="-Xverbosegclog"
   fi
-  GC_LOG_OPTS=($GC_LOG_OPTS "$gc_log_flag:$SOLR_LOGS_DIR/solr_gc.log")
-else
-  GC_LOG_OPTS=()
+  GC_LOG_OPTS+=("$gc_log_flag:$SOLR_LOGS_DIR/solr_gc.log")
 fi
 
 # If ZK_HOST is defined, the assume SolrCloud mode
@@ -1484,6 +1490,12 @@ else
   JAVA_MEM_OPTS=("-Xms$SOLR_HEAP" "-Xmx$SOLR_HEAP")
 fi
 
+# Pick default for Java thread stack size, and then add to SOLR_OPTS
+if [ -z ${SOLR_JAVA_STACK_SIZE+x} ]; then
+  SOLR_JAVA_STACK_SIZE='-Xss256k'
+fi
+SOLR_OPTS+=($SOLR_JAVA_STACK_SIZE)
+
 if [ -z "$SOLR_TIMEZONE" ]; then
   SOLR_TIMEZONE='UTC'
 fi
@@ -1496,19 +1508,27 @@ function launch_solr() {
   
   SOLR_ADDL_ARGS="$2"
 
-  GC_TUNE=($GC_TUNE)
-  # deal with Java version specific GC and other flags
-  if [ "${JAVA_VERSION:0:3}" == "1.7" ]; then
-    # Specific Java version hacking
-    GC_TUNE+=('-XX:CMSFullGCsBeforeCompaction=1' '-XX:CMSTriggerPermRatio=80')
-    if [ "$JAVA_VENDOR" != "IBM J9" ]; then
-      JAVA_MINOR_VERSION=${JAVA_VERSION:(-2)}
-      if [[ $JAVA_MINOR_VERSION -ge 40 && $JAVA_MINOR_VERSION -le 51 ]]; then
-        GC_TUNE+=('-XX:-UseSuperWord')
-        echo -e "\nWARNING: Java version $JAVA_VERSION has known bugs with Lucene and requires the -XX:-UseSuperWord flag. Please consider upgrading your JVM.\n"
-      fi
-    fi
+  # define default GC_TUNE
+  if [ -z ${GC_TUNE+x} ]; then
+      GC_TUNE=('-XX:NewRatio=3' \
+        '-XX:SurvivorRatio=4' \
+        '-XX:TargetSurvivorRatio=90' \
+        '-XX:MaxTenuringThreshold=8' \
+        '-XX:+UseConcMarkSweepGC' \
+        '-XX:+UseParNewGC' \
+        '-XX:ConcGCThreads=4' '-XX:ParallelGCThreads=4' \
+        '-XX:+CMSScavengeBeforeRemark' \
+        '-XX:PretenureSizeThreshold=64m' \
+        '-XX:+UseCMSInitiatingOccupancyOnly' \
+        '-XX:CMSInitiatingOccupancyFraction=50' \
+        '-XX:CMSMaxAbortablePrecleanTime=6000' \
+        '-XX:+CMSParallelRemarkEnabled' \
+        '-XX:+ParallelRefProcEnabled' \
+        '-XX:-OmitStackTraceInFastThrow')
+  else
+    GC_TUNE=($GC_TUNE)
   fi
+
 
   # If SSL-related system props are set, add them to SOLR_OPTS
   if [ -n "$SOLR_SSL_OPTS" ]; then
@@ -1540,11 +1560,11 @@ function launch_solr() {
     fi
 
     if [ "$SOLR_OPTS" != "" ]; then
-      echo -e "    SOLR_OPTS        = ${SOLR_OPTS[@]}"
+      echo -e "    SOLR_OPTS       = ${SOLR_OPTS[@]}"
     fi
 
     if [ "$SOLR_ADDL_ARGS" != "" ]; then
-      echo -e "    SOLR_ADDL_ARGS   = $SOLR_ADDL_ARGS"
+      echo -e "    SOLR_ADDL_ARGS  = $SOLR_ADDL_ARGS"
     fi
 
     if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then

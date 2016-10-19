@@ -80,10 +80,10 @@ Upgrade Notes
 ----------------------
 
 * If you use the JSON Facet API (json.facet) with method=stream, you must now set sort='index asc' to get the streaming
-behavior; otherwise it won't stream.  Reminder: "method" is a hint that doesn't change defaults of other parameters.
+  behavior; otherwise it won't stream.  Reminder: "method" is a hint that doesn't change defaults of other parameters.
 
 * If you use the JSON Facet API (json.facet) to facet on a numeric field and if you use mincount=0 or if you set the
-prefix, then you will now get an error as these options are incompatible with numeric faceting.
+  prefix, then you will now get an error as these options are incompatible with numeric faceting.
 
 * Solr's logging verbosity at the INFO level has been greatly reduced, and
   you may need to update the log configs to use the DEBUG level to get the
@@ -93,6 +93,9 @@ prefix, then you will now get an error as these options are incompatible with nu
   deprecated.  Clients should instead use the CollectionAdminRequest API.  In
   addition, MiniSolrCloudCluster#uploadConfigSet(File, String) has been
   deprecated in favour of #uploadConfigSet(Path, String)
+
+* The bin/solr.in.sh (bin/solr.in.cmd on Windows) is now completely commented by default. Previously, this wasn't so,
+  which had the effect of masking existing environment variables.
 
 New Features
 ----------------------
@@ -297,6 +300,9 @@ Other Changes
 * SOLR-9632: Add MiniSolrCloudCluster#deleteAllCollections() method (Alan Woodward)
 
 * SOLR-9634: Deprecate collection methods on MiniSolrCloudCluster (Alan Woodward)
+
+* SOLR-7580: Moved defaults within bin/solr.in.sh (and bin/solr.in.cmd on Windows) to bin/solr (and bin/solr.cmd)
+  such that the default state of these files is to set nothing. This makes Solr work better with Docker. (David Smiley)
 
 ==================  6.2.1 ==================
 
