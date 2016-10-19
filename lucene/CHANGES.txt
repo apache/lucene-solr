@@ -40,6 +40,11 @@ Optimizations
   in the sets of SHOULD and FILTER clauses, or both in MUST/FILTER and MUST_NOT
   clauses. (Spyros Kapnissis via Adrien Grand, Uwe Schindler)
 
+* LUCENE-7506: FastTaxonomyFacetCounts should use CPU in proportion to
+  the size of the intersected set of hits from the query and documents
+  that have a facet value, so sparse faceting works as expected
+  (Adrien Grand via Mike McCandless)
+
 Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
@@ -91,6 +96,10 @@ Bug Fixes
 
 * LUCENE-7493: FacetCollector.search threw an unexpected exception if
   you asked for zero hits but wanted facets (Mahesh via Mike McCandless)
+
+* LUCENE-7505: AnalyzingInfixSuggester returned invalid results when
+  allTermsRequired is false and context filters are specified (Mike
+  McCandless)
 
 Improvements
 
