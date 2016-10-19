@@ -140,6 +140,7 @@ New Features
 
 * SOLR-9657: New TemplateUpdateProcessorFactory added (noble)
 
+* SOLR-9417: Allow daemons to terminate when they finish iterating a topic (Joel Bernstein)
 
 Bug Fixes
 ----------------------
