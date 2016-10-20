@@ -142,6 +142,9 @@ New Features
 
 * SOLR-9417: Allow daemons to terminate when they finish iterating a topic (Joel Bernstein)
 
+* SOLR-8370: Display configured Similarity in Schema-Browser, both global/default and per-field/field-type 
+  (janhoy, Alexandre Rafalovitch)
+
 Bug Fixes
 ----------------------
 
