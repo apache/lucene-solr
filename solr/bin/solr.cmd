@@ -860,19 +860,11 @@ IF ERRORLEVEL 1 (
   set IS_64bit=true
 )
 
-REM backup log files (use current timestamp for backup name)
-For /f "tokens=2-4 delims=/ " %%a in ('date /t') do (set mydate=%%c-%%a-%%b)
-For /f "tokens=1-2 delims=/:" %%a in ("%TIME%") do (set mytime=%%a%%b)
-set now_ts=!mydate!_!mytime!
-IF EXIST "!SOLR_LOGS_DIR!\solr.log" (
-  echo Backing up !SOLR_LOGS_DIR!\solr.log
-  move /Y "!SOLR_LOGS_DIR!\solr.log" "!SOLR_LOGS_DIR!\solr_log_!now_ts!"
-)
-
-IF EXIST "!SOLR_LOGS_DIR!\solr_gc.log" (
-  echo Backing up !SOLR_LOGS_DIR!\solr_gc.log
-  move /Y "!SOLR_LOGS_DIR!\solr_gc.log" "!SOLR_LOGS_DIR!\solr_gc_log_!now_ts!"
-)
+REM Clean up and rotate logs
+call :run_utils "-remove_old_solr_logs 7" || echo "Failed removing old solr logs"
+call :run_utils "-archive_gc_logs"        || echo "Failed archiving old GC logs"
+call :run_utils "-archive_console_logs"   || echo "Failed archiving old console logs"
+call :run_utils "-rotate_solr_logs 9"     || echo "Failed rotating old solr logs"
 
 IF NOT "%ZK_HOST%"=="" set SOLR_MODE=solrcloud
 
@@ -1134,6 +1126,16 @@ goto done
 "%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.util.SolrCLI version
+goto done
+
+:run_utils
+set "TOOL_CMD=%~1"
+"%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI utils -s "%DEFAULT_SERVER_DIR%" -l "%SOLR_LOGS_DIR%" %TOOL_CMD%
+if errorlevel 1 (
+   exit /b 1
+)
 goto done
 
 :parse_create_args
