@@ -109,6 +109,8 @@ Improvements
 * LUCENE-7439: FuzzyQuery now matches all terms within the specified
   edit distance, even if they are short terms (Mike McCandless)
 
+* LUCENE-7496: Better toString for SweetSpotSimilarity (janhoy)
+
 Optimizations
 
 * LUCENE-7501: BKDReader should not store the split dimension explicitly in the
