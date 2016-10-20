@@ -16,19 +16,11 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TextField;
-import org.apache.solr.schema.StrField;
-
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import org.apache.commons.lang.StringUtils;
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
 
 /**
  * <p>
@@ -78,15 +70,12 @@ public final class CountFieldValuesUpdateProcessorFactory extends FieldMutatingU
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
-    return new FieldMutatingUpdateProcessor(getSelector(), next) {
-      @Override
-      protected SolrInputField mutate(final SolrInputField src) {
-        SolrInputField result = new SolrInputField(src.getName());
-        result.setValue(src.getValueCount(),
-                        src.getBoost());
-        return result;
-      }
-    };
+    return mutator(getSelector(), next, src -> {
+      SolrInputField result = new SolrInputField(src.getName());
+      result.setValue(src.getValueCount(),
+          src.getBoost());
+      return result;
+    });
   }
 }
 

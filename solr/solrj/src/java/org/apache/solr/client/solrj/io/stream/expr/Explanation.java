@@ -147,6 +147,7 @@ public class Explanation {
   
   public static interface ExpressionType{
     public static final String GRAPH_SOURCE = "graph-source";
+    public static final String MACHINE_LEARNING_MODEL = "ml-model";
     public static final String STREAM_SOURCE = "stream-source";
     public static final String STREAM_DECORATOR = "stream-decorator";
     public static final String DATASTORE = "datastore";

@@ -35,7 +35,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SimplePostTool;
 import org.junit.Test;

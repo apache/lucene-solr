@@ -16,22 +16,19 @@
  */
 package org.apache.solr.core;
 
-import java.io.IOException;
-import java.io.StringReader;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.noggit.CharArr;
-import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
 
 /**
  * This class encapsulates the config overlay json file. It is immutable
@@ -232,11 +229,10 @@ public class ConfigOverlay implements MapSerializable {
   }
 
   @Override
-  public Map<String, Object> toMap() {
-    Map result = new LinkedHashMap();
-    result.put(ZNODEVER, znodeVersion);
-    result.putAll(data);
-    return result;
+  public Map<String, Object> toMap(Map<String, Object> map) {
+    map.put(ZNODEVER, znodeVersion);
+    map.putAll(data);
+    return map;
   }
 
   public Map<String, Map> getNamedPlugins(String typ) {

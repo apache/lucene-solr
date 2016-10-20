@@ -16,10 +16,10 @@
  */
 package org.apache.lucene.spatial.geopoint.search;
 
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoRelationUtils;
 
 /** Package private implementation for the public facing GeoPointInBBoxQuery delegate class.
@@ -36,8 +36,8 @@ class GeoPointInBBoxQueryImpl extends GeoPointMultiTermQuery {
    * @param maxLon upper longitude (x) value of the bounding box
    * @param maxLat upper latitude (y) value of the bounding box
    */
-  GeoPointInBBoxQueryImpl(final String field, final TermEncoding termEncoding, final double minLat, final double maxLat, final double minLon, final double maxLon) {
-    super(field, termEncoding, minLat, maxLat, minLon, maxLon);
+  GeoPointInBBoxQueryImpl(final String field, final double minLat, final double maxLat, final double minLon, final double maxLon) {
+    super(field, minLat, maxLat, minLon, maxLon);
   }
 
   @Override
@@ -72,28 +72,17 @@ class GeoPointInBBoxQueryImpl extends GeoPointMultiTermQuery {
       super(query);
     }
 
-    /**
-     * Determine whether the quad-cell crosses the shape
-     */
     @Override
-    protected boolean cellCrosses(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return GeoRelationUtils.rectCrosses(minLat, maxLat, minLon, maxLon, GeoPointInBBoxQueryImpl.this.minLat,
-                                          GeoPointInBBoxQueryImpl.this.maxLat, GeoPointInBBoxQueryImpl.this.minLon, GeoPointInBBoxQueryImpl.this.maxLon);
-    }
-
-    /**
-     * Determine whether quad-cell is within the shape
-     */
-    @Override
-    protected boolean cellWithin(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return GeoRelationUtils.rectWithin(minLat, maxLat, minLon, maxLon, GeoPointInBBoxQueryImpl.this.minLat,
-                                         GeoPointInBBoxQueryImpl.this.maxLat,
-                                         GeoPointInBBoxQueryImpl.this.minLon, GeoPointInBBoxQueryImpl.this.maxLon);
-    }
-
-    @Override
-    protected boolean cellIntersectsShape(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return cellIntersectsMBR(minLat, maxLat, minLon, maxLon);
+    protected Relation relate(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+      if (GeoRelationUtils.rectCrosses(minLat, maxLat, minLon, maxLon, GeoPointInBBoxQueryImpl.this.minLat,
+          GeoPointInBBoxQueryImpl.this.maxLat, GeoPointInBBoxQueryImpl.this.minLon, GeoPointInBBoxQueryImpl.this.maxLon)) {
+        return Relation.CELL_CROSSES_QUERY;
+      } else if (GeoRelationUtils.rectWithin(minLat, maxLat, minLon, maxLon, GeoPointInBBoxQueryImpl.this.minLat,
+          GeoPointInBBoxQueryImpl.this.maxLat,
+          GeoPointInBBoxQueryImpl.this.minLon, GeoPointInBBoxQueryImpl.this.maxLon)) {
+        return Relation.CELL_INSIDE_QUERY;
+      }
+      return Relation.CELL_OUTSIDE_QUERY;
     }
 
     @Override

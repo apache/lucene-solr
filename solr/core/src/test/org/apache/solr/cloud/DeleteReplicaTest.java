@@ -16,200 +16,110 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.CoreAdminResponse;
-import org.apache.solr.common.SolrException;
+import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.FileUtils;
-import org.apache.solr.util.TimeOut;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_IF_DOWN;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
-import static org.apache.solr.common.util.Utils.makeMap;
 
-public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
+public class DeleteReplicaTest extends SolrCloudTestCase {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  protected String getSolrXml() {
-    return "solr-no-core.xml";
-  }
-
-  public DeleteReplicaTest() {
-    sliceCount = 2;
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(4)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
   }
 
   @Test
-  @ShardsFixed(num = 4)
   public void deleteLiveReplicaTest() throws Exception {
-    String collectionName = "delLiveColl";
-    try (CloudSolrClient client = createCloudClient(null)) {
-      createCollection(collectionName, client);
 
-      waitForRecoveriesToFinish(collectionName, false);
+    final String collectionName = "delLiveColl";
 
-      DocCollection testcoll = getCommonCloudSolrClient().getZkStateReader()
-          .getClusterState().getCollection(collectionName);
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+        .process(cluster.getSolrClient());
 
-      Slice shard1 = null;
-      Replica replica1 = null;
+    DocCollection state = getCollectionState(collectionName);
+    Slice shard = getRandomShard(state);
+    Replica replica = getRandomReplica(shard, (r) -> r.getState() == Replica.State.ACTIVE);
 
-      // Get an active replica
-      for (Slice slice : testcoll.getSlices()) {
-        if(replica1 != null)
-          break;
-        if (slice.getState() == Slice.State.ACTIVE) {
-          shard1 = slice;
-          for (Replica replica : shard1.getReplicas()) {
-            if (replica.getState() == Replica.State.ACTIVE) {
-              replica1 = replica;
-              break;
-            }
-          }
-        }
-      }
+    CoreStatus coreStatus = getCoreStatus(replica);
+    Path dataDir = Paths.get(coreStatus.getDataDirectory());
 
-      if (replica1 == null) fail("no active replicas found");
+    Exception e = expectThrows(Exception.class, () -> {
+      CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName())
+          .setOnlyIfDown(true)
+          .process(cluster.getSolrClient());
+    });
+    assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().contains("state is 'active'"));
+    assertTrue("Data directory for " + replica.getName() + " should not have been deleted", Files.exists(dataDir));
 
-      String dataDir = null;
-      try (HttpSolrClient replica1Client = getHttpSolrClient(replica1.getStr("base_url"))) {
-        CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), replica1Client);
-        NamedList<Object> coreStatus = status.getCoreStatus(replica1.getStr("core"));
-        dataDir = (String) coreStatus.get("dataDir");
-      }
-      try {
-        // Should not be able to delete a replica that is up if onlyIfDown=true.
-        tryToRemoveOnlyIfDown(collectionName, client, replica1, shard1.getName());
-        fail("Should have thrown an exception here because the replica is NOT down");
-      } catch (SolrException se) {
-        assertEquals("Should see 400 here ", se.code(), 400);
-        assertTrue("Expected DeleteReplica to fail because node state is 'active' but returned message was: " + se.getMessage(), se.getMessage().contains("with onlyIfDown='true', but state is 'active'"));
-        // This bit is a little weak in that if we're screwing up and actually deleting the replica, we might get back
-        // here _before_ the datadir is deleted. But I'd rather not introduce a delay here.
-        assertTrue("dataDir for " + replica1.getName() + " should NOT have been deleted by deleteReplica API with onlyIfDown='true'",
-            new File(dataDir).exists());
-      }
+    CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName())
+        .process(cluster.getSolrClient());
+    waitForState("Expected replica " + replica.getName() + " to have been removed", collectionName, (n, c) -> {
+      Slice testShard = c.getSlice(shard.getName());
+      return testShard.getReplica(replica.getName()) == null;
+    });
 
-      removeAndWaitForReplicaGone(collectionName, client, replica1, shard1.getName());
-      assertFalse("dataDir for " + replica1.getName() + " should have been deleted by deleteReplica API", new File(dataDir).exists());
-    }
-  }
+    assertFalse("Data directory for " + replica.getName() + " should have been removed", Files.exists(dataDir));
 
-  protected void tryToRemoveOnlyIfDown(String collectionName, CloudSolrClient client, Replica replica, String shard) throws IOException, SolrServerException {
-    Map m = makeMap("collection", collectionName,
-        "action", DELETEREPLICA.toLower(),
-        "shard", shard,
-        "replica", replica.getName(),
-        ONLY_IF_DOWN, "true");
-    SolrParams params = new MapSolrParams(m);
-    SolrRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    client.request(request);
-  }
-
-  static void removeAndWaitForReplicaGone(String COLL_NAME,
-      CloudSolrClient client, Replica replica, String shard)
-      throws SolrServerException, IOException, InterruptedException {
-    Map m = makeMap("collection", COLL_NAME, "action", DELETEREPLICA.toLower(), "shard",
-        shard, "replica", replica.getName());
-    SolrParams params = new MapSolrParams(m);
-    SolrRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    client.request(request);
-    TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS);
-    boolean success = false;
-    DocCollection testcoll = null;
-    while (! timeout.hasTimedOut()) {
-      testcoll = client.getZkStateReader()
-          .getClusterState().getCollection(COLL_NAME);
-      success = testcoll.getSlice(shard).getReplica(replica.getName()) == null;
-      if (success) {
-        log.info("replica cleaned up {}/{} core {}",
-            shard + "/" + replica.getName(), replica.getStr("core"));
-        log.info("current state {}", testcoll);
-        break;
-      }
-      Thread.sleep(100);
-    }
-    assertTrue("Replica not cleaned up", success);
-  }
-
-  protected void createCollection(String COLL_NAME, CloudSolrClient client) throws Exception {
-    int replicationFactor = 2;
-    int numShards = 2;
-    int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrClient()
-        .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
-
-    Map<String, Object> props = makeMap(
-        ZkStateReader.REPLICATION_FACTOR, replicationFactor,
-        MAX_SHARDS_PER_NODE, maxShardsPerNode,
-        NUM_SLICES, numShards);
-    Map<String,List<Integer>> collectionInfos = new HashMap<>();
-    createCollection(collectionInfos, COLL_NAME, props, client);
   }
 
   @Test
-  @ShardsFixed(num = 2)
-  public void deleteReplicaAndVerifyDirectoryCleanup() throws IOException, SolrServerException, InterruptedException {
-    createCollection("deletereplica_test", 1, 2, 4);
+  public void deleteReplicaAndVerifyDirectoryCleanup() throws Exception {
 
-    Replica leader = cloudClient.getZkStateReader().getLeaderRetry("deletereplica_test", "shard1");
-    String baseUrl = (String) leader.get("base_url");
-    String core = (String) leader.get("core");
-    String leaderCoreName = leader.getName();
+    final String collectionName = "deletereplica_test";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2).process(cluster.getSolrClient());
 
-    String instanceDir;
-    String dataDir;
-
-    try (HttpSolrClient client = getHttpSolrClient(baseUrl)) {
-      CoreAdminResponse statusResp = CoreAdminRequest.getStatus(core, client);
-      NamedList r = statusResp.getCoreStatus().get(core);
-      instanceDir = (String) r.findRecursive("instanceDir");
-      dataDir = (String) r.get("dataDir");
-    }
+    Replica leader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "shard1");
 
     //Confirm that the instance and data directory exist
-    assertTrue("Instance directory doesn't exist", FileUtils.fileExists(instanceDir));
-    assertTrue("DataDirectory doesn't exist", FileUtils.fileExists(dataDir));
+    CoreStatus coreStatus = getCoreStatus(leader);
+    assertTrue("Instance directory doesn't exist", Files.exists(Paths.get(coreStatus.getInstanceDirectory())));
+    assertTrue("DataDirectory doesn't exist", Files.exists(Paths.get(coreStatus.getDataDirectory())));
 
-    new CollectionAdminRequest.DeleteReplica()
-        .setCollectionName("deletereplica_test")
-        .setShardName("shard1")
-        .setReplica(leaderCoreName)
-        .process(cloudClient);
+    CollectionAdminRequest.deleteReplica(collectionName, "shard1",leader.getName())
+        .process(cluster.getSolrClient());
 
-    Replica newLeader = cloudClient.getZkStateReader().getLeaderRetry("deletereplica_test", "shard1");
+    Replica newLeader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "shard1");
 
     assertFalse(leader.equals(newLeader));
 
     //Confirm that the instance and data directory were deleted by default
-
-    assertFalse("Instance directory still exists", FileUtils.fileExists(instanceDir));
-    assertFalse("DataDirectory still exists", FileUtils.fileExists(dataDir));
+    assertFalse("Instance directory still exists", Files.exists(Paths.get(coreStatus.getInstanceDirectory())));
+    assertFalse("DataDirectory still exists", Files.exists(Paths.get(coreStatus.getDataDirectory())));
   }
+
+  @Test
+  public void deleteReplicaByCount() throws Exception {
+
+    final String collectionName = "deleteByCount";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3).process(cluster.getSolrClient());
+    waitForState("Expected a single shard with three replicas", collectionName, clusterShape(1, 3));
+
+    CollectionAdminRequest.deleteReplicasFromShard(collectionName, "shard1", 2).process(cluster.getSolrClient());
+    waitForState("Expected a single shard with a single replica", collectionName, clusterShape(1, 1));
+
+  }
+
+  @Test
+  public void deleteReplicaByCountForAllShards() throws Exception {
+
+    final String collectionName = "deleteByCountNew";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).process(cluster.getSolrClient());
+    waitForState("Expected two shards with two replicas each", collectionName, clusterShape(2, 2));
+
+    CollectionAdminRequest.deleteReplicasFromAllShards(collectionName, 1).process(cluster.getSolrClient());
+    waitForState("Expected two shards with one replica each", collectionName, clusterShape(2, 1));
+
+  }
+
 }
+

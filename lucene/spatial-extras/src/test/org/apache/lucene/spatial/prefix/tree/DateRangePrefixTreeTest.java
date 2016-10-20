@@ -17,19 +17,34 @@
 package org.apache.lucene.spatial.prefix.tree;
 
 import java.text.ParseException;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.SpatialRelation;
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.SpatialRelation;
 
 public class DateRangePrefixTreeTest extends LuceneTestCase {
 
-  private DateRangePrefixTree tree = DateRangePrefixTree.INSTANCE;
+  @ParametersFactory(argumentFormatting = "calendar=%s")
+  public static Iterable<Object[]> parameters() {
+    return Arrays.asList(new Object[][]{
+        {"default", DateRangePrefixTree.DEFAULT_CAL},
+        {"compat", DateRangePrefixTree.JAVA_UTIL_TIME_COMPAT_CAL}
+    });
+  }
+
+  private final DateRangePrefixTree tree;
+
+  public DateRangePrefixTreeTest(String suiteName, Calendar templateCal) {
+    tree = new DateRangePrefixTree(templateCal);
+  }
 
   public void testRoundTrip() throws Exception {
     Calendar cal = tree.newCal();
@@ -79,6 +94,24 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
     roundTrip(cal);
   }
 
+  public void testToStringISO8601() {
+    Calendar cal = tree.newCal();
+    cal.setTimeInMillis(random().nextLong());
+    //  create ZonedDateTime from the calendar, then get toInstant.toString which is the ISO8601 we emulate
+    //   note: we don't simply init off of millisEpoch because of possible GregorianChangeDate discrepancy.
+    int year = cal.get(Calendar.YEAR);
+    if (cal.get(Calendar.ERA) == 0) { // BC
+      year = -year + 1;
+    }
+    String expectedISO8601 =
+        ZonedDateTime.of(year, cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH),
+          cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), cal.get(Calendar.SECOND),
+          cal.get(Calendar.MILLISECOND) * 1_000_000, ZoneOffset.UTC)
+            .toInstant().toString();
+    String resultToString = tree.toString(cal) + 'Z';
+    assertEquals(expectedISO8601, resultToString);
+  }
+
   //copies from DateRangePrefixTree
   private static final int[] CAL_FIELDS = {
       Calendar.YEAR, Calendar.MONTH, Calendar.DAY_OF_MONTH,
@@ -88,8 +121,13 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
     Calendar cal = (Calendar) calOrig.clone();
     String lastString = null;
     while (true) {
-      String calString = tree.toString(cal);
-      assert lastString == null || calString.length() < lastString.length();
+      String calString;
+      {
+        Calendar preToStringCalClone = (Calendar) cal.clone();
+        calString = tree.toString(cal);
+        assertEquals(preToStringCalClone, cal);//ensure toString doesn't modify cal state
+      }
+
       //test parseCalendar
       assertEquals(cal, tree.parseCalendar(calString));
 

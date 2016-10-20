@@ -105,7 +105,7 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
       sreq.params.set(CommonParams.START, "0");
     }
     if (rb.shards_rows > -1) {
-      // if the client set shards.rows set this explicity
+      // if the client set shards.rows set this explicitly
       sreq.params.set(CommonParams.ROWS, rb.shards_rows);
     } else {
       sreq.params.set(CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());

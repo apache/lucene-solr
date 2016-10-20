@@ -73,9 +73,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * <code>Similarity</code> for some or all fields in a Query, the behavior can be inconsistent 
  * with the behavior of explicitly configuring that same <code>Similarity</code> globally, because 
  * of differences in how some multi-field / multi-clause behavior is defined in 
- * <code>PerFieldSimilarityWrapper</code>.  In particular please consider carefully the documentation 
- * &amp; implementation of {@link Similarity#coord} and {@link Similarity#queryNorm} in 
- * {@link ClassicSimilarity} compared to {@link PerFieldSimilarityWrapper}
+ * <code>PerFieldSimilarityWrapper</code>.
  * </p>
  *
  * @see FieldType#getSimilarity
@@ -131,21 +129,32 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCo
                                   "' but that <fieldType> does not define a <similarity>");
         }
       }
-      assert null != defaultSim;
-      final Similarity defaultSimilarity = defaultSim;
-      similarity = new PerFieldSimilarityWrapper() {
-        @Override
-        public Similarity get(String name) {
-          FieldType fieldType = core.getLatestSchema().getFieldTypeNoEx(name);
-          if (fieldType == null) {
-            return defaultSimilarity;
-          } else {
-            Similarity similarity = fieldType.getSimilarity();
-            return similarity == null ? defaultSimilarity : similarity;
-          }
-        }
-      };
+      similarity = new SchemaSimilarity(defaultSim);
     }
     return similarity;
+  }
+  
+  private class SchemaSimilarity extends PerFieldSimilarityWrapper {
+    private Similarity defaultSimilarity;
+
+    public SchemaSimilarity(Similarity defaultSimilarity) {
+      this.defaultSimilarity = defaultSimilarity;
+    }
+
+    @Override
+    public Similarity get(String name) {
+      FieldType fieldType = core.getLatestSchema().getFieldTypeNoEx(name);
+      if (fieldType == null) {
+        return defaultSimilarity;
+      } else {
+        Similarity similarity = fieldType.getSimilarity();
+        return similarity == null ? defaultSimilarity : similarity;
+      }
+    }
+
+    @Override
+    public String toString() {
+      return "SchemaSimilarity. Default: " + ((get("") == null) ? "null" : get("").toString());
+    }
   }
 }

@@ -22,7 +22,6 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,6 +37,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
@@ -53,9 +54,12 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.ToleratedUpdateError;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
+import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
@@ -80,11 +84,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
-import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
-import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 /**
  * SolrJ client class to communicate with SolrCloud.
@@ -115,6 +115,7 @@ public class CloudSolrClient extends SolrClient {
   Random rand = new Random();
   
   private final boolean updatesToLeaders;
+  private final boolean directUpdatesToLeadersOnly;
   private boolean parallelUpdates = true;
   private ExecutorService threadPool = ExecutorUtil
       .newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(
@@ -143,15 +144,34 @@ public class CloudSolrClient extends SolrClient {
 
 
   protected final Map<String, ExpiringCachedDocCollection> collectionStateCache = new ConcurrentHashMap<String, ExpiringCachedDocCollection>(){
+    final Lock evictLock = new ReentrantLock(true);
     @Override
     public ExpiringCachedDocCollection get(Object key) {
       ExpiringCachedDocCollection val = super.get(key);
-      if(val == null) return null;
+      if(val == null) {
+        // a new collection is likely to be added now.
+        //check if there are stale items and remove them
+        evictStale();
+        return null;
+      }
       if(val.isExpired(timeToLive)) {
         super.remove(key);
         return null;
       }
       return val;
+    }
+
+    void evictStale() {
+      if(!evictLock.tryLock()) return;
+      try {
+        for (Entry<String, ExpiringCachedDocCollection> e : entrySet()) {
+          if(e.getValue().isExpired(timeToLive)){
+            super.remove(e.getKey());
+          }
+        }
+      } finally {
+        evictLock.unlock();
+      }
     }
 
   };
@@ -204,6 +224,7 @@ public class CloudSolrClient extends SolrClient {
       this.lbClient.setRequestWriter(new BinaryRequestWriter());
       this.lbClient.setParser(new BinaryResponseParser());
       this.updatesToLeaders = true;
+      this.directUpdatesToLeadersOnly = false;
       shutdownLBHttpSolrServer = true;
       lbClient.addQueryParams(STATE_VERSION);
   }
@@ -240,6 +261,7 @@ public class CloudSolrClient extends SolrClient {
     this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
     this.lbClient = createLBHttpSolrClient(myClient);
     this.updatesToLeaders = true;
+    this.directUpdatesToLeadersOnly = false;
     shutdownLBHttpSolrServer = true;
     lbClient.addQueryParams(STATE_VERSION);
   }
@@ -297,6 +319,7 @@ public class CloudSolrClient extends SolrClient {
     this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
     this.lbClient = createLBHttpSolrClient(myClient);
     this.updatesToLeaders = true;
+    this.directUpdatesToLeadersOnly = false;
     shutdownLBHttpSolrServer = true;
   }
   
@@ -318,7 +341,7 @@ public class CloudSolrClient extends SolrClient {
    *          the {@link HttpClient} instance to be used for all requests. The provided httpClient should use a
    *          multi-threaded connection manager.  If null, a default HttpClient will be used.
    * @param lbSolrClient
-   *          LBHttpSolrServer instance for requests.  If null, a default HttpClient will be used.
+   *          LBHttpSolrClient instance for requests.  If null, a default LBHttpSolrClient will be used.
    * @param updatesToLeaders
    *          If true, sends updates to shard leaders.
    *
@@ -327,14 +350,52 @@ public class CloudSolrClient extends SolrClient {
    */
   @Deprecated
   public CloudSolrClient(Collection<String> zkHosts, String chroot, HttpClient httpClient, LBHttpSolrClient lbSolrClient, boolean updatesToLeaders) {
+    this(zkHosts, chroot, httpClient, lbSolrClient, null, updatesToLeaders, false);
+  }
+
+  /**
+   * Create a new client object that connects to Zookeeper and is always aware
+   * of the SolrCloud state. If there is a fully redundant Zookeeper quorum and
+   * SolrCloud has enough replicas for every shard in a collection, there is no
+   * single point of failure. Updates will be sent to shard leaders by default.
+   *
+   * @param zkHosts
+   *          A Java Collection (List, Set, etc) of HOST:PORT strings, one for
+   *          each host in the zookeeper ensemble. Note that with certain
+   *          Collection types like HashSet, the order of hosts in the final
+   *          connect string may not be in the same order you added them.
+   * @param chroot
+   *          A chroot value for zookeeper, starting with a forward slash. If no
+   *          chroot is required, use null.
+   * @param httpClient
+   *          the {@link HttpClient} instance to be used for all requests. The provided httpClient should use a
+   *          multi-threaded connection manager.  If null, a default HttpClient will be used.
+   * @param lbSolrClient
+   *          LBHttpSolrClient instance for requests.  If null, a default LBHttpSolrClient will be used.
+   * @param lbHttpSolrClientBuilder
+   *          LBHttpSolrClient builder to construct the LBHttpSolrClient. If null, a default builder will be used.
+   * @param updatesToLeaders
+   *          If true, sends updates to shard leaders.
+   * @param directUpdatesToLeadersOnly
+   *          If true, sends direct updates to shard leaders only.
+   */
+  private CloudSolrClient(Collection<String> zkHosts,
+                          String chroot,
+                          HttpClient httpClient,
+                          LBHttpSolrClient lbSolrClient,
+                          LBHttpSolrClient.Builder lbHttpSolrClientBuilder,
+                          boolean updatesToLeaders,
+                          boolean directUpdatesToLeadersOnly) {
     this.zkHost = buildZkHostString(zkHosts, chroot);
-    this.updatesToLeaders = updatesToLeaders;
-    
     this.clientIsInternal = httpClient == null;
-    this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
-    
     this.shutdownLBHttpSolrServer = lbSolrClient == null;
-    this.lbClient = lbSolrClient == null ? createLBHttpSolrClient(myClient) : lbSolrClient;
+    if(lbHttpSolrClientBuilder != null) lbSolrClient = lbHttpSolrClientBuilder.build();
+    if(lbSolrClient != null) httpClient = lbSolrClient.getHttpClient();
+    this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
+    if (lbSolrClient == null) lbSolrClient = createLBHttpSolrClient(myClient);
+    this.lbClient = lbSolrClient;
+    this.updatesToLeaders = updatesToLeaders;
+    this.directUpdatesToLeadersOnly = directUpdatesToLeadersOnly;
   }
   
   /**
@@ -372,6 +433,7 @@ public class CloudSolrClient extends SolrClient {
     this.lbClient.setRequestWriter(new BinaryRequestWriter());
     this.lbClient.setParser(new BinaryResponseParser());
     this.updatesToLeaders = updatesToLeaders;
+    this.directUpdatesToLeadersOnly = false;
     shutdownLBHttpSolrServer = true;
     lbClient.addQueryParams(STATE_VERSION);
   }
@@ -412,6 +474,7 @@ public class CloudSolrClient extends SolrClient {
     this.zkHost = zkHost;
     this.lbClient = lbClient;
     this.updatesToLeaders = updatesToLeaders;
+    this.directUpdatesToLeadersOnly = false;
     shutdownLBHttpSolrServer = false;
     this.clientIsInternal = false;
     lbClient.addQueryParams(STATE_VERSION);
@@ -420,7 +483,7 @@ public class CloudSolrClient extends SolrClient {
   public ResponseParser getParser() {
     return lbClient.getParser();
   }
-  
+
   /**
    * Note: This setter method is <b>not thread-safe</b>.
    * 
@@ -572,6 +635,40 @@ public class CloudSolrClient extends SolrClient {
     zkStateReader.getConfigManager().downloadConfigDir(configName, downloadPath);
   }
 
+  /**
+   * Block until a collection state matches a predicate, or a timeout
+   *
+   * Note that the predicate may be called again even after it has returned true, so
+   * implementors should avoid changing state within the predicate call itself.
+   *
+   * @param collection the collection to watch
+   * @param wait       how long to wait
+   * @param unit       the units of the wait parameter
+   * @param predicate  a {@link CollectionStatePredicate} to check the collection state
+   * @throws InterruptedException on interrupt
+   * @throws TimeoutException     on timeout
+   */
+  public void waitForState(String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
+      throws InterruptedException, TimeoutException {
+    connect();
+    zkStateReader.waitForState(collection, wait, unit, predicate);
+  }
+
+  /**
+   * Register a CollectionStateWatcher to be called when the cluster state for a collection changes
+   *
+   * Note that the watcher is unregistered after it has been called once.  To make a watcher persistent,
+   * it should re-register itself in its {@link CollectionStateWatcher#onStateChanged(Set, DocCollection)}
+   * call
+   *
+   * @param collection the collection to watch
+   * @param watcher    a watcher that will be called when the state changes
+   */
+  public void registerCollectionStateWatcher(String collection, CollectionStateWatcher watcher) {
+    connect();
+    zkStateReader.registerCollectionStateWatcher(collection, watcher);
+  }
+
   private NamedList<Object> directUpdate(AbstractUpdateRequest request, String collection, ClusterState clusterState) throws SolrServerException {
     UpdateRequest updateRequest = (UpdateRequest) request;
     ModifiableSolrParams params = (ModifiableSolrParams) request.getParams();
@@ -612,19 +709,22 @@ public class CloudSolrClient extends SolrClient {
     //Create the URL map, which is keyed on slice name.
     //The value is a list of URLs for each replica in the slice.
     //The first value in the list is the leader for the slice.
-    Map<String,List<String>> urlMap = buildUrlMap(col);
-    if (urlMap == null) {
-      // we could not find a leader yet - use unoptimized general path
-      return null;
-    }
-
-    NamedList<Throwable> exceptions = new NamedList<>();
-    NamedList<NamedList> shardResponses = new NamedList<>();
-
-    Map<String, LBHttpSolrClient.Req> routes = updateRequest.getRoutes(router, col, urlMap, routableParams, this.idField);
+    final Map<String,List<String>> urlMap = buildUrlMap(col);
+    final Map<String, LBHttpSolrClient.Req> routes = (urlMap == null ? null : updateRequest.getRoutes(router, col, urlMap, routableParams, this.idField));
     if (routes == null) {
-      return null;
+      if (directUpdatesToLeadersOnly && hasInfoToFindLeaders(updateRequest, idField)) {
+          // we have info (documents with ids and/or ids to delete) with
+          // which to find the leaders but we could not find (all of) them
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+              "directUpdatesToLeadersOnly==true but could not find leader(s)");
+      } else {
+        // we could not find a leader or routes yet - use unoptimized general path
+        return null;
+      }
     }
+
+    final NamedList<Throwable> exceptions = new NamedList<>();
+    final NamedList<NamedList> shardResponses = new NamedList<>(routes.size()+1); // +1 for deleteQuery
 
     long start = System.nanoTime();
 
@@ -728,21 +828,23 @@ public class CloudSolrClient extends SolrClient {
       List<String> urls = new ArrayList<>();
       Replica leader = slice.getLeader();
       if (leader == null) {
+        if (directUpdatesToLeadersOnly) {
+          continue;
+        }
         // take unoptimized general path - we cannot find a leader yet
         return null;
       }
       ZkCoreNodeProps zkProps = new ZkCoreNodeProps(leader);
       String url = zkProps.getCoreUrl();
       urls.add(url);
-      Collection<Replica> replicas = slice.getReplicas();
-      Iterator<Replica> replicaIterator = replicas.iterator();
-      while (replicaIterator.hasNext()) {
-        Replica replica = replicaIterator.next();
-        if (!replica.getNodeName().equals(leader.getNodeName()) &&
-            !replica.getName().equals(leader.getName())) {
-          ZkCoreNodeProps zkProps1 = new ZkCoreNodeProps(replica);
-          String url1 = zkProps1.getCoreUrl();
-          urls.add(url1);
+      if (!directUpdatesToLeadersOnly) {
+        for (Replica replica : slice.getReplicas()) {
+          if (!replica.getNodeName().equals(leader.getNodeName()) &&
+              !replica.getName().equals(leader.getName())) {
+            ZkCoreNodeProps zkProps1 = new ZkCoreNodeProps(replica);
+            String url1 = zkProps1.getCoreUrl();
+            urls.add(url1);
+          }
         }
       }
       urlMap.put(name, urls);
@@ -897,12 +999,6 @@ public class CloudSolrClient extends SolrClient {
       collection = (reqParams != null) ? reqParams.get("collection", getDefaultCollection()) : getDefaultCollection();
     return requestWithRetryOnStaleState(request, 0, collection);
   }
-  private static final Set<String> ADMIN_PATHS = new HashSet<>(Arrays.asList(
-      CORES_HANDLER_PATH,
-      COLLECTIONS_HANDLER_PATH,
-      CONFIGSETS_HANDLER_PATH,
-      AUTHC_PATH,
-      AUTHZ_PATH));
 
   /**
    * As this class doesn't watch external collections on the client side,
@@ -961,7 +1057,7 @@ public class CloudSolrClient extends SolrClient {
     try {
       resp = sendRequest(request, collection);
       //to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from there
-      Object o = resp.get(STATE_VERSION, resp.size()-1);
+      Object o = resp == null || resp.size() == 0 ? null : resp.get(STATE_VERSION, resp.size() - 1);
       if(o != null && o instanceof Map) {
         //remove this because no one else needs this and tests would fail if they are comparing responses
         resp.remove(resp.size()-1);
@@ -1243,9 +1339,20 @@ public class CloudSolrClient extends SolrClient {
   public LBHttpSolrClient getLbClient() {
     return lbClient;
   }
+
+  public HttpClient getHttpClient() {
+    return myClient;
+  }
   
   public boolean isUpdatesToLeaders() {
     return updatesToLeaders;
+  }
+
+  /**
+   * @return true if direct updates are sent to shard leaders only
+   */
+  public boolean isDirectUpdatesToLeadersOnly() {
+    return directUpdatesToLeadersOnly;
   }
 
   /**If caches are expired they are refreshed after acquiring a lock.
@@ -1381,6 +1488,31 @@ public class CloudSolrClient extends SolrClient {
     this.lbClient.setSoTimeout(timeout);
   }
 
+  private static boolean hasInfoToFindLeaders(UpdateRequest updateRequest, String idField) {
+    final Map<SolrInputDocument,Map<String,Object>> documents = updateRequest.getDocumentsMap();
+    final Map<String,Map<String,Object>> deleteById = updateRequest.getDeleteByIdMap();
+
+    final boolean hasNoDocuments = (documents == null || documents.isEmpty());
+    final boolean hasNoDeleteById = (deleteById == null || deleteById.isEmpty());
+    if (hasNoDocuments && hasNoDeleteById) {
+      // no documents and no delete-by-id, so no info to find leader(s)
+      return false;
+    }
+
+    if (documents != null) {
+      for (final Map.Entry<SolrInputDocument,Map<String,Object>> entry : documents.entrySet()) {
+        final SolrInputDocument doc = entry.getKey();
+        final Object fieldValue = doc.getFieldValue(idField);
+        if (fieldValue == null) {
+          // a document with no id field value, so can't find leader for it
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
   private static LBHttpSolrClient createLBHttpSolrClient(HttpClient httpClient) {
     final LBHttpSolrClient lbClient = new LBHttpSolrClient.Builder()
         .withHttpClient(httpClient)
@@ -1417,7 +1549,7 @@ public class CloudSolrClient extends SolrClient {
 
     /* Log the constructed connection string and then initialize. */
     final String zkHostString = zkBuilder.toString();
-    log.info("Final constructed zkHost string: " + zkHostString);
+    log.debug("Final constructed zkHost string: " + zkHostString);
     return zkHostString;
   }
   
@@ -1429,7 +1561,9 @@ public class CloudSolrClient extends SolrClient {
     private HttpClient httpClient;
     private String zkChroot;
     private LBHttpSolrClient loadBalancedSolrClient;
+    private LBHttpSolrClient.Builder lbClientBuilder;
     private boolean shardLeadersOnly;
+    private boolean directUpdatesToLeadersOnly;
     
     public Builder() {
       this.zkHosts = new ArrayList();
@@ -1453,11 +1587,20 @@ public class CloudSolrClient extends SolrClient {
     /**
      * Provides a {@link HttpClient} for the builder to use when creating clients.
      */
+    public Builder withLBHttpSolrClientBuilder(LBHttpSolrClient.Builder lbHttpSolrClientBuilder) {
+      this.lbClientBuilder = lbHttpSolrClientBuilder;
+      return this;
+    }
+
+    /**
+     * Provides a {@link HttpClient} for the builder to use when creating clients.
+     */
     public Builder withHttpClient(HttpClient httpClient) {
       this.httpClient = httpClient;
       return this;
     }
-    
+
+
     /**
      * Provide a series of ZooKeeper client endpoints for the builder to use when creating clients.
      * 
@@ -1507,10 +1650,28 @@ public class CloudSolrClient extends SolrClient {
     }
 
     /**
+     * Tells {@link Builder} that created clients should send direct updates to shard leaders only.
+     */
+    public Builder sendDirectUpdatesToShardLeadersOnly() {
+      directUpdatesToLeadersOnly = true;
+      return this;
+    }
+
+    /**
+     * Tells {@link Builder} that created clients can send updates
+     * to any shard replica (shard leaders and non-leaders).
+     */
+    public Builder sendDirectUpdatesToAnyShardReplica() {
+      directUpdatesToLeadersOnly = false;
+      return this;
+    }
+
+    /**
      * Create a {@link CloudSolrClient} based on the provided configuration.
      */
     public CloudSolrClient build() {
-      return new CloudSolrClient(zkHosts, zkChroot, httpClient, loadBalancedSolrClient, shardLeadersOnly);
+      return new CloudSolrClient(zkHosts, zkChroot, httpClient, loadBalancedSolrClient, lbClientBuilder,
+          shardLeadersOnly, directUpdatesToLeadersOnly);
     }
   }
 }

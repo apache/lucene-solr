@@ -34,8 +34,8 @@ import org.apache.lucene.util.Bits.MatchNoBits;
 public abstract class RandomAccessWeight extends ConstantScoreWeight {
 
   /** Sole constructor. */
-  protected RandomAccessWeight(Query query) {
-    super(query);
+  protected RandomAccessWeight(Query query, float boost) {
+    super(query, boost);
   }
 
   /**

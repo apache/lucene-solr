@@ -18,8 +18,9 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.lucene.index.MultiPostingsEnum.EnumWithSlice;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -30,52 +31,66 @@ import org.apache.lucene.util.BytesRef;
  */
 
 final class MappingMultiPostingsEnum extends PostingsEnum {
-  private MultiPostingsEnum.EnumWithSlice[] subs;
-  int numSubs;
-  int upto;
-  MergeState.DocMap currentMap;
-  PostingsEnum current;
-  int currentBase;
-  int doc = -1;
-  private MergeState mergeState;
   MultiPostingsEnum multiDocsAndPositionsEnum;
   final String field;
+  final DocIDMerger<MappingPostingsSub> docIDMerger;
+  private MappingPostingsSub current;
+  private final MappingPostingsSub[] allSubs;
+  private final List<MappingPostingsSub> subs = new ArrayList<>();
+
+  private static class MappingPostingsSub extends DocIDMerger.Sub {
+    public PostingsEnum postings;
+
+    public MappingPostingsSub(MergeState.DocMap docMap) {
+      super(docMap);
+    }
+
+    @Override
+    public int nextDoc() {
+      try {
+        return postings.nextDoc();
+      } catch (IOException ioe) {
+        throw new RuntimeException(ioe);
+      }
+    }
+  }
 
   /** Sole constructor. */
-  public MappingMultiPostingsEnum(String field, MergeState mergeState) {
+  public MappingMultiPostingsEnum(String field, MergeState mergeState) throws IOException {
     this.field = field;
-    this.mergeState = mergeState;
+    allSubs = new MappingPostingsSub[mergeState.fieldsProducers.length];
+    for(int i=0;i<allSubs.length;i++) {
+      allSubs[i] = new MappingPostingsSub(mergeState.docMaps[i]);
+    }
+    this.docIDMerger = new DocIDMerger<MappingPostingsSub>(subs, allSubs.length, mergeState.segmentInfo.getIndexSort() != null);
   }
 
-  MappingMultiPostingsEnum reset(MultiPostingsEnum postingsEnum) {
-    this.numSubs = postingsEnum.getNumSubs();
-    this.subs = postingsEnum.getSubs();
-    upto = -1;
-    doc = -1;
-    current = null;
+  MappingMultiPostingsEnum reset(MultiPostingsEnum postingsEnum) throws IOException {
     this.multiDocsAndPositionsEnum = postingsEnum;
+    MultiPostingsEnum.EnumWithSlice[] subsArray = postingsEnum.getSubs();
+    int count = postingsEnum.getNumSubs();
+    subs.clear();
+    for(int i=0;i<count;i++) {
+      MappingPostingsSub sub = allSubs[subsArray[i].slice.readerIndex];
+      sub.postings = subsArray[i].postingsEnum;
+      subs.add(sub);
+    }
+    docIDMerger.reset();
     return this;
-  }
-
-  /** How many sub-readers we are merging.
-   *  @see #getSubs */
-  public int getNumSubs() {
-    return numSubs;
-  }
-
-  /** Returns sub-readers we are merging. */
-  public EnumWithSlice[] getSubs() {
-    return subs;
   }
 
   @Override
   public int freq() throws IOException {
-    return current.freq();
+    return current.postings.freq();
   }
 
   @Override
   public int docID() {
-    return doc;
+    if (current == null) {
+      return -1;
+    } else {
+      return current.mappedDocID;
+    }
   }
 
   @Override
@@ -85,66 +100,47 @@ final class MappingMultiPostingsEnum extends PostingsEnum {
 
   @Override
   public int nextDoc() throws IOException {
-    while(true) {
-      if (current == null) {
-        if (upto == numSubs-1) {
-          return this.doc = NO_MORE_DOCS;
-        } else {
-          upto++;
-          final int reader = subs[upto].slice.readerIndex;
-          current = subs[upto].postingsEnum;
-          currentBase = mergeState.docBase[reader];
-          currentMap = mergeState.docMaps[reader];
-        }
-      }
-
-      int doc = current.nextDoc();
-      if (doc != NO_MORE_DOCS) {
-        // compact deletions
-        doc = currentMap.get(doc);
-        if (doc == -1) {
-          continue;
-        }
-        return this.doc = currentBase + doc;
-      } else {
-        current = null;
-      }
+    current = docIDMerger.next();
+    if (current == null) {
+      return NO_MORE_DOCS;
+    } else {
+      return current.mappedDocID;
     }
   }
 
   @Override
   public int nextPosition() throws IOException {
-    int pos = current.nextPosition();
+    int pos = current.postings.nextPosition();
     if (pos < 0) {
-      throw new CorruptIndexException("position=" + pos + " is negative, field=\"" + field + " doc=" + doc,
-                                      mergeState.fieldsProducers[upto].toString());
+      throw new CorruptIndexException("position=" + pos + " is negative, field=\"" + field + " doc=" + current.mappedDocID,
+                                      current.postings.toString());
     } else if (pos > IndexWriter.MAX_POSITION) {
-      throw new CorruptIndexException("position=" + pos + " is too large (> IndexWriter.MAX_POSITION=" + IndexWriter.MAX_POSITION + "), field=\"" + field + "\" doc=" + doc,
-                                      mergeState.fieldsProducers[upto].toString());
+      throw new CorruptIndexException("position=" + pos + " is too large (> IndexWriter.MAX_POSITION=" + IndexWriter.MAX_POSITION + "), field=\"" + field + "\" doc=" + current.mappedDocID,
+                                      current.postings.toString());
     }
     return pos;
   }
   
   @Override
   public int startOffset() throws IOException {
-    return current.startOffset();
+    return current.postings.startOffset();
   }
   
   @Override
   public int endOffset() throws IOException {
-    return current.endOffset();
+    return current.postings.endOffset();
   }
   
   @Override
   public BytesRef getPayload() throws IOException {
-    return current.getPayload();
+    return current.postings.getPayload();
   }
 
   @Override
   public long cost() {
     long cost = 0;
-    for (EnumWithSlice enumWithSlice : subs) {
-      cost += enumWithSlice.postingsEnum.cost();
+    for (MappingPostingsSub sub : subs) {
+      cost += sub.postings.cost();
     }
     return cost;
   }

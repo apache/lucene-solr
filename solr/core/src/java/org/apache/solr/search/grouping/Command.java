@@ -18,8 +18,6 @@ package org.apache.solr.search.grouping;
 
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Sort;
-import org.apache.solr.schema.SchemaField;
-
 import java.io.IOException;
 import java.util.List;
 
@@ -47,7 +45,7 @@ public interface Command<T> {
    *
    * @return The results of the collectors
    */
-  T result();
+  T result() throws IOException;
 
   /**
    * @return The key of this command to uniquely identify itself

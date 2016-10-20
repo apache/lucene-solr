@@ -33,10 +33,8 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -364,7 +362,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     }
 
     void call() throws Exception {
-      op.call(this);
+      op.execute(this);
     }
 
   }
@@ -376,7 +374,10 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   /**
    * used by the INVOKE action of core admin handler
    */
-  public static interface Invocable {
-    public Map<String, Object> invoke(SolrQueryRequest req);
+  public interface Invocable {
+    Map<String, Object> invoke(SolrQueryRequest req);
+  }
+  interface CoreAdminOp {
+    void execute(CallInfo it) throws Exception;
   }
 }

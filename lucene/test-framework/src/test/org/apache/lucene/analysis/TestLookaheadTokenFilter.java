@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Random;
 
 public class TestLookaheadTokenFilter extends BaseTokenStreamTestCase {

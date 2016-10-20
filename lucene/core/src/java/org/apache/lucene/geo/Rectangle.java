@@ -19,8 +19,6 @@ package org.apache.lucene.geo;
 import static java.lang.Math.PI;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static java.lang.Math.toDegrees;
-import static java.lang.Math.toRadians;
 import static org.apache.lucene.geo.GeoUtils.checkLatitude;
 import static org.apache.lucene.geo.GeoUtils.checkLongitude;
 import static org.apache.lucene.geo.GeoUtils.MAX_LAT_INCL;
@@ -34,6 +32,8 @@ import static org.apache.lucene.geo.GeoUtils.sloppySin;
 import static org.apache.lucene.util.SloppyMath.TO_DEGREES;
 import static org.apache.lucene.util.SloppyMath.asin;
 import static org.apache.lucene.util.SloppyMath.cos;
+import static org.apache.lucene.util.SloppyMath.toDegrees;
+import static org.apache.lucene.util.SloppyMath.toRadians;
 
 /** Represents a lat/lon rectangle. */
 public class Rectangle {
@@ -185,5 +185,34 @@ public class Rectangle {
     }
 
     return new Rectangle(minLat, maxLat, minLon, maxLon);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    Rectangle rectangle = (Rectangle) o;
+
+    if (Double.compare(rectangle.minLat, minLat) != 0) return false;
+    if (Double.compare(rectangle.minLon, minLon) != 0) return false;
+    if (Double.compare(rectangle.maxLat, maxLat) != 0) return false;
+    return Double.compare(rectangle.maxLon, maxLon) == 0;
+
+  }
+
+  @Override
+  public int hashCode() {
+    int result;
+    long temp;
+    temp = Double.doubleToLongBits(minLat);
+    result = (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(minLon);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(maxLat);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(maxLon);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    return result;
   }
 }

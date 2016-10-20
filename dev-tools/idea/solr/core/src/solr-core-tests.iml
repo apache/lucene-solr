@@ -32,5 +32,6 @@
     <orderEntry type="module" scope="TEST" module-name="expressions" />
     <orderEntry type="module" scope="TEST" module-name="icu" />
     <orderEntry type="module" scope="TEST" module-name="analysis-extras" />
+    <orderEntry type="module" scope="TEST" module-name="backward-codecs" />
   </component>
 </module>

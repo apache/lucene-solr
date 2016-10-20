@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -474,7 +474,7 @@ final class Stemmer {
   private boolean checkCondition(int condition, char c1[], int c1off, int c1len, char c2[], int c2off, int c2len) {
     if (condition != 0) {
       CharacterRunAutomaton pattern = dictionary.patterns.get(condition);
-      int state = pattern.getInitialState();
+      int state = 0;
       for (int i = c1off; i < c1off + c1len; i++) {
         state = pattern.step(state, c1[i]);
         if (state == -1) {

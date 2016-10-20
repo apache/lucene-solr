@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -215,18 +214,19 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
           new Object[] {slabSize, bankCount,
               ((long) bankCount * (long) slabSize)});
       
-      int bufferSize = getConfig("solr.hdfs.blockcache.bufferstore.buffersize", 128);
-      int bufferCount = getConfig("solr.hdfs.blockcache.bufferstore.buffercount", 128 * 128);
+      int bsBufferSize = params.getInt("solr.hdfs.blockcache.bufferstore.buffersize", blockSize);
+      int bsBufferCount = params.getInt("solr.hdfs.blockcache.bufferstore.buffercount", 0); // this is actually total size
       
       BlockCache blockCache = getBlockDirectoryCache(numberOfBlocksPerBank,
           blockSize, bankCount, directAllocation, slabSize,
-          bufferSize, bufferCount, blockCacheGlobal);
+          bsBufferSize, bsBufferCount, blockCacheGlobal);
       
       Cache cache = new BlockDirectoryCache(blockCache, path, metrics, blockCacheGlobal);
-      hdfsDir = new HdfsDirectory(new Path(path), lockFactory, conf);
+      int readBufferSize = params.getInt("solr.hdfs.blockcache.read.buffersize", blockSize);
+      hdfsDir = new HdfsDirectory(new Path(path), lockFactory, conf, readBufferSize);
       dir = new BlockDirectory(path, hdfsDir, cache, null, blockCacheReadEnabled, false, cacheMerges, cacheReadOnce);
     } else {
-      hdfsDir = new HdfsDirectory(new Path(path), lockFactory, conf);
+      hdfsDir = new HdfsDirectory(new Path(path), conf);
       dir = hdfsDir;
     }
     if (params.getBool(LOCALITYMETRICS_ENABLED, false)) {
@@ -331,7 +331,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     }
   }
   
-  private Configuration getConf() {
+  public Configuration getConf() {
     Configuration conf = new Configuration();
     confDir = getConfig(CONFIG_DIRECTORY, null);
     HdfsUtil.addHdfsResources(conf, confDir);
@@ -409,6 +409,38 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
         + path
         + "/"
         + cd.getDataDir()));
+  }
+  
+  /**
+   * @param directory to calculate size of
+   * @return size in bytes
+   * @throws IOException on low level IO error
+   */
+  @Override
+  public long size(Directory directory) throws IOException {
+    String hdfsDirPath = getPath(directory);
+    return size(hdfsDirPath);
+  }
+  
+  /**
+   * @param path to calculate size of
+   * @return size in bytes
+   * @throws IOException on low level IO error
+   */
+  @Override
+  public long size(String path) throws IOException {
+    Path hdfsDirPath = new Path(path);
+    FileSystem fileSystem = null;
+    try {
+      fileSystem = FileSystem.newInstance(hdfsDirPath.toUri(), getConf());
+      long size = fileSystem.getContentSummary(hdfsDirPath).getLength();
+      return size;
+    } catch (IOException e) {
+      LOG.error("Error checking if hdfs path exists", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error checking if hdfs path exists", e);
+    } finally {
+      IOUtils.closeQuietly(fileSystem);
+    }
   }
   
   public String getConfDir() {

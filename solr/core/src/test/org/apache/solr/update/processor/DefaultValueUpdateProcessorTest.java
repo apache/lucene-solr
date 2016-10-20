@@ -23,12 +23,9 @@ import java.io.IOException;
 
 import org.apache.solr.SolrTestCaseJ4;
 
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-
 import org.apache.solr.core.SolrCore;
 
 import org.apache.solr.request.SolrQueryRequest;
@@ -40,9 +37,7 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 
-import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 public class DefaultValueUpdateProcessorTest extends SolrTestCaseJ4 {
 

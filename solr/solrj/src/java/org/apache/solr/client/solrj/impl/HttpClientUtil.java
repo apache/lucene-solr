@@ -55,8 +55,6 @@ import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -200,7 +198,12 @@ public class HttpClientUtil {
    *          configuration (no additional configuration) is created. 
    */
   public static CloseableHttpClient createClient(SolrParams params) {
-    return createClient(params, new PoolingHttpClientConnectionManager(schemaRegistryProvider.getSchemaRegistry()));
+    return createClient(params, createPoolingConnectionManager());
+  }
+
+  /** test usage subject to change @lucene.experimental */ 
+  static PoolingHttpClientConnectionManager createPoolingConnectionManager() {
+    return new PoolingHttpClientConnectionManager(schemaRegistryProvider.getSchemaRegistry());
   }
   
   public static CloseableHttpClient createClient(SolrParams params, PoolingHttpClientConnectionManager cm) {
@@ -221,10 +224,6 @@ public class HttpClientUtil {
       logger.debug("Creating new http client, config:" + config);
     }
  
-    if (params.get(PROP_SO_TIMEOUT) != null || params.get(PROP_CONNECTION_TIMEOUT) != null) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "The socket connect and read timeout cannot be set here and must be set");
-    }
-    
     cm.setMaxTotal(params.getInt(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000));
     cm.setDefaultMaxPerRoute(params.getInt(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 10000));
     cm.setValidateAfterInactivity(Integer.getInteger(VALIDATE_AFTER_INACTIVITY, VALIDATE_AFTER_INACTIVITY_DEFAULT));
@@ -261,7 +260,7 @@ public class HttpClientUtil {
     newHttpClientBuilder = newHttpClientBuilder.setKeepAliveStrategy(keepAliveStrat)
         .evictIdleConnections((long) Integer.getInteger(EVICT_IDLE_CONNECTIONS, EVICT_IDLE_CONNECTIONS_DEFAULT), TimeUnit.MILLISECONDS);
     
-    HttpClientBuilder builder = setupBuilder(newHttpClientBuilder, params == null ? new ModifiableSolrParams() : params);
+    HttpClientBuilder builder = setupBuilder(newHttpClientBuilder, params);
     
     HttpClient httpClient = builder.setConnectionManager(cm).build();
     
@@ -402,10 +401,14 @@ public class HttpClientUtil {
   }
 
   /**
-   * 
+   * Create a HttpClientContext object and {@link HttpClientContext#setUserToken(Object)}
+   * to an internal singleton. It allows to reuse underneath {@link HttpClient} 
+   * in connection pools if client authentication is enabled.
    */
   public static HttpClientContext createNewHttpClientRequestContext() {
-    return httpClientRequestContextBuilder.createContext();
+    HttpClientContext context = httpClientRequestContextBuilder.createContext(HttpSolrClient.cacheKey);
+
+    return context;
   }
   
   public static Builder createDefaultRequestConfigBuilder() {

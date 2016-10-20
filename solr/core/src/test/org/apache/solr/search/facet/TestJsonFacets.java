@@ -20,18 +20,16 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.tdunning.math.stats.AVLTreeDigest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.hll.HLL;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.packed.GrowableWriter;
-import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrInputDocument;
@@ -46,12 +44,19 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   private static SolrInstances servers;  // for distributed testing
   private static int origTableSize;
+  private static FacetField.FacetMethod origDefaultFacetMethod;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
     JSONTestUtil.failRepeatedKeys = true;
-    origTableSize = FacetFieldProcessorNumeric.MAXIMUM_STARTING_TABLE_SIZE;
-    FacetFieldProcessorNumeric.MAXIMUM_STARTING_TABLE_SIZE=2; // stress test resizing
+
+    origTableSize = FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE;
+    FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=2; // stress test resizing
+
+    origDefaultFacetMethod = FacetField.FacetMethod.DEFAULT_METHOD;
+    // instead of the following, see the constructor
+    //FacetField.FacetMethod.DEFAULT_METHOD = rand(FacetField.FacetMethod.values());
+
     initCore("solrconfig-tlog.xml","schema_latest.xml");
   }
 
@@ -64,11 +69,24 @@ public class TestJsonFacets extends SolrTestCaseHS {
   @AfterClass
   public static void afterTests() throws Exception {
     JSONTestUtil.failRepeatedKeys = false;
-    FacetFieldProcessorNumeric.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
+    FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
+    FacetField.FacetMethod.DEFAULT_METHOD = origDefaultFacetMethod;
     if (servers != null) {
       servers.stop();
       servers = null;
     }
+  }
+
+  // tip: when debugging a test, comment out the @ParametersFactory and edit the constructor to be no-arg
+
+  @ParametersFactory
+  public static Iterable<Object[]> parameters() {
+    // wrap each enum val in an Object[] and return as Iterable
+    return () -> Arrays.stream(FacetField.FacetMethod.values()).map(it -> new Object[]{it}).iterator();
+  }
+
+  public TestJsonFacets(FacetField.FacetMethod defMethod) {
+    FacetField.FacetMethod.DEFAULT_METHOD = defMethod; // note: the real default is restored in afterTests
   }
 
   // attempt to reproduce https://github.com/Heliosearch/heliosearch/issues/33
@@ -183,8 +201,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.commit();
   }
 
-
-  public void testStatsSimple() throws Exception {
+  @Test
+  public void testMethodStream() throws Exception {
     Client client = Client.localClient();
     indexSimple(client);
 
@@ -199,15 +217,15 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // test streaming
     assertJQ(req("q", "*:*", "rows", "0"
-            , "json.facet", "{   cat:{terms:{field:'cat_s', method:stream }}" +
-                              ", cat2:{terms:{field:'cat_s', method:stream, sort:'index asc' }}" + // default sort
-                              ", cat3:{terms:{field:'cat_s', method:stream, mincount:3 }}" + // mincount
-                              ", cat4:{terms:{field:'cat_s', method:stream, prefix:B }}" + // prefix
-                              ", cat5:{terms:{field:'cat_s', method:stream, offset:1 }}" + // offset
+            , "json.facet", "{   cat:{terms:{field:'cat_s', method:stream }}" + // won't stream; need sort:index asc
+                              ", cat2:{terms:{field:'cat_s', method:stream, sort:'index asc' }}" +
+                              ", cat3:{terms:{field:'cat_s', method:stream, sort:'index asc', mincount:3 }}" + // mincount
+                              ", cat4:{terms:{field:'cat_s', method:stream, sort:'index asc', prefix:B }}" + // prefix
+                              ", cat5:{terms:{field:'cat_s', method:stream, sort:'index asc', offset:1 }}" + // offset
                 " }"
         )
         , "facets=={count:6 " +
-            ", cat :{buckets:[{val:A, count:2},{val:B, count:3}]}" +
+            ", cat :{buckets:[{val:B, count:3},{val:A, count:2}]}" +
             ", cat2:{buckets:[{val:A, count:2},{val:B, count:3}]}" +
             ", cat3:{buckets:[{val:B, count:3}]}" +
             ", cat4:{buckets:[{val:B, count:3}]}" +
@@ -218,7 +236,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // test nested streaming under non-streaming
     assertJQ(req("q", "*:*", "rows", "0"
-        , "json.facet", "{   cat:{terms:{field:'cat_s', sort:'index asc', facet:{where:{terms:{field:where_s,method:stream}}}   }}}"
+        , "json.facet", "{   cat:{terms:{field:'cat_s', sort:'index asc', facet:{where:{terms:{field:where_s,method:stream,sort:'index asc'}}}   }}}"
         )
         , "facets=={count:6 " +
         ", cat :{buckets:[{val:A, count:2, where:{buckets:[{val:NJ,count:1},{val:NY,count:1}]}   },{val:B, count:3, where:{buckets:[{val:NJ,count:2},{val:NY,count:1}]}    }]}"
@@ -227,7 +245,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // test nested streaming under streaming
     assertJQ(req("q", "*:*", "rows", "0"
-            , "json.facet", "{   cat:{terms:{field:'cat_s', method:stream, facet:{where:{terms:{field:where_s,method:stream}}}   }}}"
+            , "json.facet", "{   cat:{terms:{field:'cat_s', method:stream,sort:'index asc', facet:{where:{terms:{field:where_s,method:stream,sort:'index asc'}}}   }}}"
         )
         , "facets=={count:6 " +
             ", cat :{buckets:[{val:A, count:2, where:{buckets:[{val:NJ,count:1},{val:NY,count:1}]}   },{val:B, count:3, where:{buckets:[{val:NJ,count:2},{val:NY,count:1}]}    }]}"
@@ -236,7 +254,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // test nested streaming with stats under streaming
     assertJQ(req("q", "*:*", "rows", "0"
-            , "json.facet", "{   cat:{terms:{field:'cat_s', method:stream, facet:{  where:{terms:{field:where_s,method:stream, facet:{x:'max(num_d)'}     }}}   }}}"
+            , "json.facet", "{   cat:{terms:{field:'cat_s', method:stream,sort:'index asc', facet:{  where:{terms:{field:where_s,method:stream,sort:'index asc',sort:'index asc', facet:{x:'max(num_d)'}     }}}   }}}"
         )
         , "facets=={count:6 " +
             ", cat :{buckets:[{val:A, count:2, where:{buckets:[{val:NJ,count:1,x:2.0},{val:NY,count:1,x:4.0}]}   },{val:B, count:3, where:{buckets:[{val:NJ,count:2,x:11.0},{val:NY,count:1,x:-5.0}]}    }]}"
@@ -246,7 +264,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // test nested streaming with stats under streaming with stats
     assertJQ(req("q", "*:*", "rows", "0",
             "facet","true"
-            , "json.facet", "{   cat:{terms:{field:'cat_s', method:stream, facet:{ y:'min(num_d)',  where:{terms:{field:where_s,method:stream, facet:{x:'max(num_d)'}     }}}   }}}"
+            , "json.facet", "{   cat:{terms:{field:'cat_s', method:stream,sort:'index asc', facet:{ y:'min(num_d)',  where:{terms:{field:where_s,method:stream,sort:'index asc', facet:{x:'max(num_d)'}     }}}   }}}"
         )
         , "facets=={count:6 " +
             ", cat :{buckets:[{val:A, count:2, y:2.0, where:{buckets:[{val:NJ,count:1,x:2.0},{val:NY,count:1,x:4.0}]}   },{val:B, count:3, y:-9.0, where:{buckets:[{val:NJ,count:2,x:11.0},{val:NY,count:1,x:-5.0}]}    }]}"
@@ -297,7 +315,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   @Test
-  public void testDistrib() throws Exception {
+  public void testStatsDistrib() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
     client.queryDefaults().set( "shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()) );
@@ -352,11 +370,11 @@ public class TestJsonFacets extends SolrTestCaseHS {
     doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sd",  "cat_s","cat_sd", "where_s","where_sd", "num_d","num_dd", "num_i","num_id", "num_is","num_lds", "num_fs","num_dds", "super_s","super_sd", "val_b","val_b", "date","date_dtd", "sparse_s","sparse_sd"    ,"multi_ss","multi_sds") );
 
     // multi-valued docvalues
-    FacetFieldProcessorDV.unwrap_singleValued_multiDv = false;  // better multi-valued coverage
+    FacetFieldProcessorByArrayDV.unwrap_singleValued_multiDv = false;  // better multi-valued coverage
     doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sds",  "cat_s","cat_sds", "where_s","where_sds", "num_d","num_d", "num_i","num_i", "num_is","num_ids", "num_fs","num_fds",    "super_s","super_sds", "val_b","val_b", "date","date_dtds", "sparse_s","sparse_sds"    ,"multi_ss","multi_sds") );
 
     // multi-valued docvalues
-    FacetFieldProcessorDV.unwrap_singleValued_multiDv = true;
+    FacetFieldProcessorByArrayDV.unwrap_singleValued_multiDv = true;
     doStatsTemplated(client, params(p,                "rows","0", "noexist","noexist_sds",  "cat_s","cat_sds", "where_s","where_sds", "num_d","num_d", "num_i","num_i", "num_is","num_ids", "num_fs","num_fds",   "super_s","super_sds", "val_b","val_b", "date","date_dtds", "sparse_s","sparse_sds"    ,"multi_ss","multi_sds") );
   }
 

@@ -423,7 +423,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         rb.setQuery(new BoostQuery(booster.include, 0f));
       } else {
         BooleanQuery.Builder newq = new BooleanQuery.Builder();
-        newq.setDisableCoord(true);
         newq.add(query, BooleanClause.Occur.SHOULD);
         newq.add(new BoostQuery(booster.include, 0f), BooleanClause.Occur.SHOULD);
         if (booster.exclude != null) {

@@ -19,9 +19,7 @@ package org.apache.solr.internal.csv;
 import java.io.StringReader;
 import java.util.Arrays;
 
-import junit.framework.Test;
 import junit.framework.TestCase;
-import junit.framework.TestSuite;
 
 /**
  * ExtendedBufferedReaderTest

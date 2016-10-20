@@ -18,18 +18,19 @@ package org.apache.lucene.classification.utils;
 
 
 import java.io.IOException;
-import java.util.HashMap;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ScoreDoc;
@@ -38,7 +39,6 @@ import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.GroupingSearch;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.uninverting.UninvertingReader;
 
 /**
  * Utility class for creating training / test / cross validation indexes from the original index.
@@ -68,11 +68,11 @@ public class DatasetSplitter {
    * @param crossValidationIndex a {@link Directory} used to write the cross validation index
    * @param analyzer             {@link Analyzer} used to create the new docs
    * @param termVectors          {@code true} if term vectors should be kept
-   * @param classFieldName       names of the field used as the label for classification
+   * @param classFieldName       name of the field used as the label for classification; this must be indexed with sorted doc values
    * @param fieldNames           names of fields that need to be put in the new indexes or <code>null</code> if all should be used
    * @throws IOException if any writing operation fails on any of the indexes
    */
-  public void split(LeafReader originalIndex, Directory trainingIndex, Directory testIndex, Directory crossValidationIndex,
+  public void split(IndexReader originalIndex, Directory trainingIndex, Directory testIndex, Directory crossValidationIndex,
                     Analyzer analyzer, boolean termVectors, String classFieldName, String... fieldNames) throws IOException {
 
     // create IWs for train / test / cv IDXs
@@ -80,30 +80,34 @@ public class DatasetSplitter {
     IndexWriter cvWriter = new IndexWriter(crossValidationIndex, new IndexWriterConfig(analyzer));
     IndexWriter trainingWriter = new IndexWriter(trainingIndex, new IndexWriterConfig(analyzer));
 
-    // try to get the exact no. of existing classes
-    Terms terms = originalIndex.terms(classFieldName);
-    long noOfClasses = -1;
-    if (terms != null) {
-      noOfClasses = terms.size();
-
+    // get the exact no. of existing classes
+    int noOfClasses = 0;
+    for (LeafReaderContext leave : originalIndex.leaves()) {
+      long valueCount = 0;
+      SortedDocValues classValues = leave.reader().getSortedDocValues(classFieldName);
+      if (classValues != null) {
+        valueCount = classValues.getValueCount();
+      } else {
+        SortedSetDocValues sortedSetDocValues = leave.reader().getSortedSetDocValues(classFieldName);
+        if (sortedSetDocValues != null) {
+          valueCount = sortedSetDocValues.getValueCount();
+        }
+      }
+      if (classValues == null) {
+        throw new IllegalStateException("field \"" + classFieldName + "\" must have sorted (set) doc values");
+      }
+      noOfClasses += valueCount;
     }
-    if (noOfClasses == -1) {
-      noOfClasses = 10000; // fallback
-    }
-
-    HashMap<String, UninvertingReader.Type> mapping = new HashMap<>();
-    mapping.put(classFieldName, UninvertingReader.Type.SORTED);
-    UninvertingReader uninvertingReader = new UninvertingReader(originalIndex, mapping);
 
     try {
 
-      IndexSearcher indexSearcher = new IndexSearcher(uninvertingReader);
+      IndexSearcher indexSearcher = new IndexSearcher(originalIndex);
       GroupingSearch gs = new GroupingSearch(classFieldName);
       gs.setGroupSort(Sort.INDEXORDER);
       gs.setSortWithinGroup(Sort.INDEXORDER);
       gs.setAllGroups(true);
       gs.setGroupDocsLimit(originalIndex.maxDoc());
-      TopGroups<Object> topGroups = gs.search(indexSearcher, new MatchAllDocsQuery(), 0, (int) noOfClasses);
+      TopGroups<Object> topGroups = gs.search(indexSearcher, new MatchAllDocsQuery(), 0, noOfClasses);
 
       // set the type to be indexed, stored, with term vectors
       FieldType ft = new FieldType(TextField.TYPE_STORED);
@@ -156,11 +160,11 @@ public class DatasetSplitter {
       testWriter.close();
       cvWriter.close();
       trainingWriter.close();
-      uninvertingReader.close();
+      originalIndex.close();
     }
   }
 
-  private Document createNewDoc(LeafReader originalIndex, FieldType ft, ScoreDoc scoreDoc, String[] fieldNames) throws IOException {
+  private Document createNewDoc(IndexReader originalIndex, FieldType ft, ScoreDoc scoreDoc, String[] fieldNames) throws IOException {
     Document doc = new Document();
     Document document = originalIndex.document(scoreDoc.doc);
     if (fieldNames != null && fieldNames.length > 0) {

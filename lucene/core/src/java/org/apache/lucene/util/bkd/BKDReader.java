@@ -20,38 +20,42 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.index.PointValues.IntersectVisitor;
-import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 
 /** Handles intersection of an multi-dimensional shape in byte[] space with a block KD-tree previously written with {@link BKDWriter}.
  *
  * @lucene.experimental */
 
-public class BKDReader implements Accountable {
+public class BKDReader extends PointValues implements Accountable {
   // Packed array of byte[] holding all split values in the full binary tree:
   final private byte[] splitPackedValues; 
   final long[] leafBlockFPs;
   final private int leafNodeOffset;
   final int numDims;
   final int bytesPerDim;
+  final int bytesPerIndexEntry;
   final IndexInput in;
   final int maxPointsInLeafNode;
   final byte[] minPackedValue;
   final byte[] maxPackedValue;
   final long pointCount;
   final int docCount;
+  final int version;
   protected final int packedBytesLength;
 
   /** Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned */
   public BKDReader(IndexInput in) throws IOException {
-    CodecUtil.checkHeader(in, BKDWriter.CODEC_NAME, BKDWriter.VERSION_START, BKDWriter.VERSION_START);
+    version = CodecUtil.checkHeader(in, BKDWriter.CODEC_NAME, BKDWriter.VERSION_START, BKDWriter.VERSION_CURRENT);
     numDims = in.readVInt();
     maxPointsInLeafNode = in.readVInt();
     bytesPerDim = in.readVInt();
+    bytesPerIndexEntry = numDims == 1 && version >= BKDWriter.VERSION_IMPLICIT_SPLIT_DIM_1D ? bytesPerDim : bytesPerDim + 1;
     packedBytesLength = numDims * bytesPerDim;
 
     // Read index:
@@ -68,7 +72,7 @@ public class BKDReader implements Accountable {
     pointCount = in.readVLong();
     docCount = in.readVInt();
 
-    splitPackedValues = new byte[(1+bytesPerDim)*numLeaves];
+    splitPackedValues = new byte[bytesPerIndexEntry*numLeaves];
 
     // TODO: don't write split packed values[0]!
     in.readBytes(splitPackedValues, 0, splitPackedValues.length);
@@ -133,6 +137,7 @@ public class BKDReader implements Accountable {
     this.numDims = numDims;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.bytesPerDim = bytesPerDim;
+    bytesPerIndexEntry = numDims == 1 ? bytesPerDim : bytesPerDim + 1;
     packedBytesLength = numDims * bytesPerDim;
     this.leafNodeOffset = leafBlockFPs.length;
     this.leafBlockFPs = leafBlockFPs;
@@ -141,6 +146,7 @@ public class BKDReader implements Accountable {
     this.maxPackedValue = maxPackedValue;
     this.pointCount = pointCount;
     this.docCount = docCount;
+    this.version = BKDWriter.VERSION_CURRENT;
     assert minPackedValue.length == packedBytesLength;
     assert maxPackedValue.length == packedBytesLength;
   }
@@ -231,22 +237,22 @@ public class BKDReader implements Accountable {
     } else {
       // Non-leaf node:
 
-      int address = nodeID * (bytesPerDim+1);
-      int splitDim = splitPackedValues[address] & 0xff;
+      int address = nodeID * bytesPerIndexEntry;
+      int splitDim = numDims == 1 ? 0 : splitPackedValues[address++] & 0xff;
       assert splitDim < numDims;
 
       byte[] splitPackedValue = new byte[packedBytesLength];
 
       // Recurse on left sub-tree:
       System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedBytesLength);
-      System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
       verify(state,
              2*nodeID,
              cellMinPacked, splitPackedValue);
 
       // Recurse on right sub-tree:
       System.arraycopy(cellMinPacked, 0, splitPackedValue, 0, packedBytesLength);
-      System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
       verify(state,
              2*nodeID+1,
              splitPackedValue, cellMaxPacked);
@@ -314,13 +320,15 @@ public class BKDReader implements Accountable {
   protected void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor) throws IOException {
     // Leaf node
     in.seek(blockFP);
-      
+
     // How many points are stored in this leaf cell:
     int count = in.readVInt();
     visitor.grow(count);
 
-    for(int i=0;i<count;i++) {
-      visitor.visit(in.readInt());
+    if (version < BKDWriter.VERSION_COMPRESSED_DOC_IDS) {
+      DocIdsWriter.readInts32(in, count, visitor);
+    } else {
+      DocIdsWriter.readInts(in, count, visitor);
     }
   }
 
@@ -330,8 +338,10 @@ public class BKDReader implements Accountable {
     // How many points are stored in this leaf cell:
     int count = in.readVInt();
 
-    for(int i=0;i<count;i++) {
-      docIDs[i] = in.readInt();
+    if (version < BKDWriter.VERSION_COMPRESSED_DOC_IDS) {
+      DocIdsWriter.readInts32(in, count, docIDs);
+    } else {
+      DocIdsWriter.readInts(in, count, docIDs);
     }
 
     return count;
@@ -339,6 +349,63 @@ public class BKDReader implements Accountable {
 
   protected void visitDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
     visitor.grow(count);
+
+    readCommonPrefixes(commonPrefixLengths, scratchPackedValue, in);
+
+    int compressedDim = version < BKDWriter.VERSION_COMPRESSED_VALUES
+        ? -1
+        : readCompressedDim(in);
+
+    if (compressedDim == -1) {
+      visitRawDocValues(commonPrefixLengths, scratchPackedValue, in, docIDs, count, visitor);
+    } else {
+      visitCompressedDocValues(commonPrefixLengths, scratchPackedValue, in, docIDs, count, visitor, compressedDim);
+    }
+  }
+
+  // Just read suffixes for every dimension
+  private void visitRawDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
+    for (int i = 0; i < count; ++i) {
+      for(int dim=0;dim<numDims;dim++) {
+        int prefix = commonPrefixLengths[dim];
+        in.readBytes(scratchPackedValue, dim*bytesPerDim + prefix, bytesPerDim - prefix);
+      }
+      visitor.visit(docIDs[i], scratchPackedValue);
+    }
+  }
+
+  private void visitCompressedDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor, int compressedDim) throws IOException {
+    // the byte at `compressedByteOffset` is compressed using run-length compression,
+    // other suffix bytes are stored verbatim
+    final int compressedByteOffset = compressedDim * bytesPerDim + commonPrefixLengths[compressedDim];
+    commonPrefixLengths[compressedDim]++;
+    int i;
+    for (i = 0; i < count; ) {
+      scratchPackedValue[compressedByteOffset] = in.readByte();
+      final int runLen = Byte.toUnsignedInt(in.readByte());
+      for (int j = 0; j < runLen; ++j) {
+        for(int dim=0;dim<numDims;dim++) {
+          int prefix = commonPrefixLengths[dim];
+          in.readBytes(scratchPackedValue, dim*bytesPerDim + prefix, bytesPerDim - prefix);
+        }
+        visitor.visit(docIDs[i+j], scratchPackedValue);
+      }
+      i += runLen;
+    }
+    if (i != count) {
+      throw new CorruptIndexException("Sub blocks do not add up to the expected count: " + count + " != " + i, in);
+    }
+  }
+
+  private int readCompressedDim(IndexInput in) throws IOException {
+    int compressedDim = in.readByte();
+    if (compressedDim < -1 || compressedDim >= numDims) {
+      throw new CorruptIndexException("Got compressedDim="+compressedDim, in);
+    }
+    return compressedDim;
+  }
+
+  private void readCommonPrefixes(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in) throws IOException {
     for(int dim=0;dim<numDims;dim++) {
       int prefix = in.readVInt();
       commonPrefixLengths[dim] = prefix;
@@ -346,13 +413,6 @@ public class BKDReader implements Accountable {
         in.readBytes(scratchPackedValue, dim*bytesPerDim, prefix);
       }
       //System.out.println("R: " + dim + " of " + numDims + " prefix=" + prefix);
-    }
-    for(int i=0;i<count;i++) {
-      for(int dim=0;dim<numDims;dim++) {
-        int prefix = commonPrefixLengths[dim];
-        in.readBytes(scratchPackedValue, dim*bytesPerDim + prefix, bytesPerDim - prefix);
-      }
-      visitor.visit(docIDs[i], scratchPackedValue);
     }
   }
 
@@ -400,8 +460,8 @@ public class BKDReader implements Accountable {
       // Non-leaf node: recurse on the split left and right nodes
 
       // TODO: save the unused 1 byte prefix (it's always 0) in the 1d case here:
-      int address = nodeID * (bytesPerDim+1);
-      int splitDim = splitPackedValues[address] & 0xff;
+      int address = nodeID * bytesPerIndexEntry;
+      int splitDim = numDims == 1 ? 0 : splitPackedValues[address++] & 0xff;
       assert splitDim < numDims;
 
       // TODO: can we alloc & reuse this up front?
@@ -411,14 +471,14 @@ public class BKDReader implements Accountable {
 
       // Recurse on left sub-tree:
       System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedBytesLength);
-      System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
       intersect(state,
                 2*nodeID,
                 cellMinPacked, splitPackedValue);
 
       // Recurse on right sub-tree:
       System.arraycopy(cellMinPacked, 0, splitPackedValue, 0, packedBytesLength);
-      System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
       intersect(state,
                 2*nodeID+1,
                 splitPackedValue, cellMaxPacked);
@@ -427,38 +487,44 @@ public class BKDReader implements Accountable {
 
   /** Copies the split value for this node into the provided byte array */
   public void copySplitValue(int nodeID, byte[] splitPackedValue) {
-    int address = nodeID * (bytesPerDim+1);
-    int splitDim = splitPackedValues[address] & 0xff;
+    int address = nodeID * bytesPerIndexEntry;
+    int splitDim = numDims == 1 ? 0 : splitPackedValues[address++] & 0xff;
     assert splitDim < numDims;
-    System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+    System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
   }
 
   @Override
   public long ramBytesUsed() {
-    return splitPackedValues.length +
-      leafBlockFPs.length * Long.BYTES;
+    return RamUsageEstimator.sizeOf(splitPackedValues) +
+        RamUsageEstimator.sizeOf(leafBlockFPs);
   }
 
+  @Override
   public byte[] getMinPackedValue() {
     return minPackedValue.clone();
   }
 
+  @Override
   public byte[] getMaxPackedValue() {
     return maxPackedValue.clone();
   }
 
+  @Override
   public int getNumDimensions() {
     return numDims;
   }
 
+  @Override
   public int getBytesPerDimension() {
     return bytesPerDim;
   }
 
-  public long getPointCount() {
+  @Override
+  public long size() {
     return pointCount;
   }
 
+  @Override
   public int getDocCount() {
     return docCount;
   }

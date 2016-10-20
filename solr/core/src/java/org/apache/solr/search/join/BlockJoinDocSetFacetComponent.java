@@ -22,16 +22,13 @@ import java.util.List;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.ResponseBuilder;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Filter;
@@ -40,11 +37,11 @@ import org.apache.solr.search.facet.BlockJoin;
 import org.apache.solr.search.join.BlockJoinFieldFacetAccumulator.AggregatableDocIter;
 
 /**
- * It does the same as BlockJoinFacetComponent, but operates on docsets, 
- * it should be faster for static mostly indexes. This component doesn't impact
- * query result caching, but hits filter cache to retrieve docsets. 
+ * Calculates facets on children documents and aggregates hits by parent documents.
+ * Enables when child.facet.field parameter specifies a field name for faceting. 
+ * So far it supports string fields only. It requires to search by {@link ToParentBlockJoinQuery}.
  * */
-public class BlockJoinDocSetFacetComponent extends BlockJoinFacetComponent {
+public class BlockJoinDocSetFacetComponent extends BlockJoinFacetComponentSupport {
   
   private final String bjqKey = this.getClass().getSimpleName()+".bjq";
   
@@ -115,27 +112,6 @@ public class BlockJoinDocSetFacetComponent extends BlockJoinFacetComponent {
     }
   }
 
-  private static final class NoDelegateFacetCollector extends BlockJoinFacetCollector {
-    {
-      setDelegate(new Collector() {
-        
-        @Override
-        public boolean needsScores() {
-          return false;
-        }
-        
-        @Override
-        public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-          return null;
-        }
-      });
-    }
-    
-    private NoDelegateFacetCollector(SolrQueryRequest req) throws IOException {
-      super(req);
-    }
-  }
-
   public BlockJoinDocSetFacetComponent() {}
   
   @Override
@@ -196,7 +172,7 @@ public class BlockJoinDocSetFacetComponent extends BlockJoinFacetComponent {
       
       Filter filter = selectedChildren.getTopFilter();
 
-      final BlockJoinFacetCollector facetCounter = new NoDelegateFacetCollector(rb.req);
+      final BlockJoinFacetAccsHolder facetCounter = new BlockJoinFacetAccsHolder(rb.req);
       
       for (int subIdx = 0; subIdx < leaves.size(); subIdx++) {
         LeafReaderContext subCtx = leaves.get(subIdx);

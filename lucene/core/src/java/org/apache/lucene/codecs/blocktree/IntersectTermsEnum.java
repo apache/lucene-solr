@@ -124,7 +124,7 @@ final class IntersectTermsEnum extends TermsEnum {
     final IntersectTermsEnumFrame f = stack[0];
     f.fp = f.fpOrig = fr.rootBlockFP;
     f.prefix = 0;
-    f.setState(runAutomaton.getInitialState());
+    f.setState(0);
     f.arc = arc;
     f.outputPrefix = arc.output;
     f.load(fr.rootCode);
@@ -348,7 +348,6 @@ final class IntersectTermsEnum extends TermsEnum {
   private boolean skipPastLastAutoPrefixTerm() throws IOException {
     assert currentFrame.isAutoPrefixTerm;
     useAutoPrefixTerm = false;
-    currentFrame.termState.isRealTerm = true;
 
     // If we last returned an auto-prefix term, we must now skip all
     // actual terms sharing that prefix.  At most, that skipping
@@ -694,7 +693,6 @@ final class IntersectTermsEnum extends TermsEnum {
           if (useAutoPrefixTerm) {
             // All suffixes of this auto-prefix term are accepted by the automaton, so we can use it:
             copyTerm();
-            currentFrame.termState.isRealTerm = false;
             return term;
           } else {
             // We move onto the next term

@@ -63,30 +63,29 @@ public class IntersectsRPTVerifyQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!super.equals(o)) return false;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
 
-    IntersectsRPTVerifyQuery that = (IntersectsRPTVerifyQuery) o;
-
-    if (!intersectsDiffQuery.equals(that.intersectsDiffQuery)) return false;
-    return predicateValueSource.equals(that.predicateValueSource);
-
+  private boolean equalsTo(IntersectsRPTVerifyQuery other) {
+    return intersectsDiffQuery.equals(other.intersectsDiffQuery) &&
+           predicateValueSource.equals(other.predicateValueSource);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
+    int result = classHash();
     result = 31 * result + intersectsDiffQuery.hashCode();
     result = 31 * result + predicateValueSource.hashCode();
     return result;
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     final Map valueSourceContext = ValueSource.newContext(searcher);
 
-    return new ConstantScoreWeight(this) {
+    return new ConstantScoreWeight(this, boost) {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         // Compute approx & exact

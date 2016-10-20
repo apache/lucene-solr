@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -27,7 +28,7 @@ import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 
-/** A base class that may be usefull for implementing DocSets */
+/** A base class that may be useful for implementing DocSets */
 abstract class DocSetBase implements DocSet {
 
   public static FixedBitSet toBitSet(DocSet set) {
@@ -161,9 +162,9 @@ abstract class DocSetBase implements DocSet {
 
   @Override
   public Filter getTopFilter() {
-    final FixedBitSet bs = getBits();
-
     return new Filter() {
+      final FixedBitSet bs = getBits();
+
       @Override
       public DocIdSet getDocIdSet(final LeafReaderContext context, Bits acceptDocs) {
         LeafReader reader = context.reader();
@@ -223,9 +224,21 @@ abstract class DocSetBase implements DocSet {
 
         }, acceptDocs2);
       }
+
       @Override
       public String toString(String field) {
         return "DocSetTopFilter";
+      }
+
+      @Override
+      public boolean equals(Object other) {
+        return sameClassAs(other) &&
+               Objects.equals(bs, getClass().cast(other).bs);
+      }
+
+      @Override
+      public int hashCode() {
+        return classHash() ^ bs.hashCode();
       }
     };
   }

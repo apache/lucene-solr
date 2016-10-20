@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.Locale;
 
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
@@ -78,14 +77,10 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
    */
   @Override
   public void onInit(List<? extends IndexCommit> commits) throws IOException {
-    // SOLR-4547: log basic data at INFO, add filenames at DEBUG.
     if (commits.isEmpty()) {
       return;
     }
-    log.info("SolrDeletionPolicy.onInit: commits: {}",
-        new CommitsLoggingInfo(commits));
-    log.debug("SolrDeletionPolicy.onInit: commits: {}",
-        new CommitsLoggingDebug(commits));
+    log.debug("SolrDeletionPolicy.onInit: commits: {}", new CommitsLoggingDebug(commits));
     updateCommits(commits);
   }
 
@@ -94,11 +89,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
    */
   @Override
   public void onCommit(List<? extends IndexCommit> commits) throws IOException {
-    // SOLR-4547: log basic data at INFO, add filenames at DEBUG.
-    log.info("SolrDeletionPolicy.onCommit: commits: {}",
-        new CommitsLoggingInfo(commits));
-    log.debug("SolrDeletionPolicy.onCommit: commits: {}",
-        new CommitsLoggingDebug(commits));
+    log.debug("SolrDeletionPolicy.onCommit: commits: {}", new CommitsLoggingDebug(commits));
     updateCommits(commits);
   }
 
@@ -159,10 +150,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
     synchronized (this) {
       long maxCommitAgeTimeStamp = -1L;
       IndexCommit newest = commits.get(commits.size() - 1);
-      // SOLR-4547: Removed the filenames from this log entry because this
-      // method is only called from methods that have just logged them
-      // at DEBUG.
-      log.info("newest commit generation = " + newest.getGeneration());
+      log.debug("newest commit generation = " + newest.getGeneration());
       int singleSegKept = (newest.getSegmentCount() == 1) ? 1 : 0;
       int totalKept = 1;
 
@@ -174,7 +162,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
         try {
           if (maxCommitAge != null) {
             if (maxCommitAgeTimeStamp==-1) {
-              DateMathParser dmp = new DateMathParser(DateMathParser.UTC, Locale.ROOT);
+              DateMathParser dmp = new DateMathParser(DateMathParser.UTC);
               maxCommitAgeTimeStamp = dmp.parseMath(maxCommitAge).getTime();
             }
             if (IndexDeletionPolicyWrapper.getCommitTimestamp(commit) < maxCommitAgeTimeStamp) {

@@ -40,12 +40,46 @@ public class SidedPlane extends Plane implements Membership {
    * Construct a sided plane from a pair of vectors describing points, and including
    * origin, plus a point p which describes the side.
    *
+   * @param pX point X to evaluate
+   * @param pY point Y to evaluate
+   * @param pZ point Z to evaluate
+   * @param A is the first in-plane point
+   * @param B is the second in-plane point
+   */
+  public SidedPlane(final double pX, final double pY, final double pZ, final Vector A, final Vector B) {
+    super(A, B);
+    sigNum = Math.signum(evaluate(pX, pY, pZ));
+    if (sigNum == 0.0)
+      throw new IllegalArgumentException("Cannot determine sidedness because check point is on plane.");
+  }
+
+  /**
+   * Construct a sided plane from a pair of vectors describing points, and including
+   * origin, plus a point p which describes the side.
+   *
    * @param p point to evaluate
    * @param A is the first in-plane point
    * @param B is the second in-plane point
    */
   public SidedPlane(final Vector p, final Vector A, final Vector B) {
     super(A, B);
+    sigNum = Math.signum(evaluate(p));
+    if (sigNum == 0.0)
+      throw new IllegalArgumentException("Cannot determine sidedness because check point is on plane.");
+  }
+
+  /**
+   * Construct a sided plane from a pair of vectors describing points, and including
+   * origin, plus a point p which describes the side.
+   *
+   * @param p point to evaluate
+   * @param A is the first in-plane point
+   * @param BX is the X value of the second in-plane point
+   * @param BY is the Y value of the second in-plane point
+   * @param BZ is the Z value of the second in-plane point
+   */
+  public SidedPlane(final Vector p, final Vector A, final double BX, final double BY, final double BZ) {
+    super(A, BX, BY, BZ);
     sigNum = Math.signum(evaluate(p));
     if (sigNum == 0.0)
       throw new IllegalArgumentException("Cannot determine sidedness because check point is on plane.");

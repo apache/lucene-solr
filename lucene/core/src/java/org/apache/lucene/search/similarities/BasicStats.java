@@ -38,15 +38,13 @@ public class BasicStats extends Similarity.SimWeight {
   
   // -------------------------- Boost-related stuff --------------------------
 
-  /** For most Similarities, the immediate and the top level query boosts are
-   * not handled differently. Hence, this field is just the product of the
-   * other two. */
-  protected float boost;
+  /** A query boost. Should be applied as a multiplicative factor to the score. */
+  protected final float boost;
   
   /** Constructor. */
-  public BasicStats(String field) {
+  public BasicStats(String field, float boost) {
     this.field = field;
-    normalize(1f, 1f);
+    this.boost = boost;
   }
   
   // ------------------------- Getter/setter methods -------------------------
@@ -105,31 +103,6 @@ public class BasicStats extends Similarity.SimWeight {
   /** Sets the total number of occurrences of this term across all documents. */
   public void setTotalTermFreq(long totalTermFreq) {
     this.totalTermFreq = totalTermFreq;
-  }
-  
-  // -------------------------- Boost-related stuff --------------------------
-  
-  /** The square of the raw normalization value.
-   * @see #rawNormalizationValue() */
-  @Override
-  public float getValueForNormalization() {
-    float rawValue = rawNormalizationValue();
-    return rawValue * rawValue;
-  }
-  
-  /** Computes the raw normalization value. This basic implementation returns
-   * the query boost. Subclasses may override this method to include other
-   * factors (such as idf), or to save the value for inclusion in
-   * {@link #normalize(float, float)}, etc.
-   */
-  protected float rawNormalizationValue() {
-    return boost;
-  }
-  
-  /** No normalization is done. {@code boost} is saved in the object, however. */
-  @Override
-  public void normalize(float queryNorm, float boost) {
-    this.boost = boost;
   }
   
   /** Returns the total boost. */

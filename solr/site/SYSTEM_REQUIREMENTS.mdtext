@@ -1,6 +1,6 @@
 # System Requirements 
 
-Apache Solr runs of Java 8 or greater.
+Apache Solr runs on Java 8 or greater.
 
 It is also recommended to always use the latest update version of your
 Java VM, because bugs may affect Solr. An overview of known JVM bugs

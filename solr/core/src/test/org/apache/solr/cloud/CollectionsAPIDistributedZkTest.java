@@ -144,7 +144,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   }
   
   protected String getSolrXml() {
-    return "solr-no-core.xml";
+    return "solr.xml";
   }
 
   
@@ -1322,7 +1322,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     boolean changed = false;
     while(! timeout.hasTimedOut()){
       Thread.sleep(10);
-      changed = Objects.equals(val,client.getZkStateReader().getClusterProps().get(name));
+      changed = Objects.equals(val,client.getZkStateReader().getClusterProperty(name, (String) null));
       if(changed) break;
     }
     return changed;

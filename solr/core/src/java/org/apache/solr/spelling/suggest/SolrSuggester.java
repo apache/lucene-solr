@@ -118,21 +118,23 @@ public class SolrSuggester implements Accountable {
     // initialize appropriate lookup instance
     factory = core.getResourceLoader().newInstance(lookupImpl, LookupFactory.class);
     lookup = factory.create(config, core);
-    core.addCloseHook(new CloseHook() {
-      @Override
-      public void preClose(SolrCore core) {
-        if (lookup != null && lookup instanceof Closeable) {
+    
+    if (lookup != null && lookup instanceof Closeable) {
+      core.addCloseHook(new CloseHook() {
+        @Override
+        public void preClose(SolrCore core) {
           try {
             ((Closeable) lookup).close();
           } catch (IOException e) {
             LOG.warn("Could not close the suggester lookup.", e);
           }
         }
-      }
-      
-      @Override
-      public void postClose(SolrCore core) {}
-    });
+
+        @Override
+        public void postClose(SolrCore core) {
+        }
+      });
+    }
 
     // if store directory is provided make it or load up the lookup with its content
     if (store != null && !store.isEmpty()) {

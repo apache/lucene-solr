@@ -105,7 +105,7 @@ public class SortedIntDocSet extends DocSetBase {
     // FUTURE: try partitioning like a sort algorithm.  Pick the midpoint of the big
     // array, find where that should be in the small array, and then recurse with
     // the top and bottom half of both arrays until they are small enough to use
-    // a fallback insersection method.
+    // a fallback intersection method.
     // NOTE: I tried this and it worked, but it was actually slower than this current
     // highly optimized approach.
 
@@ -248,7 +248,7 @@ public class SortedIntDocSet extends DocSetBase {
     int i=0,j=0;
     int doca=a[i],docb=b[j];
     for(;;) {
-      // switch on the sign bit somehow?  Hopefull JVM is smart enough to just test once.
+      // switch on the sign bit somehow? Hopefully JVM is smart enough to just test once.
 
       // Since set a is less dense then set b, doca is likely to be greater than docb so
       // check that case first.  This resulted in a 13% speedup.
@@ -774,6 +774,18 @@ public class SortedIntDocSet extends DocSetBase {
       @Override
       public String toString(String field) {
         return "SortedIntDocSetTopFilter";
+      }
+
+      // Equivalence should/could be based on docs here? How did it work previously?
+
+      @Override
+      public boolean equals(Object other) {
+        return other == this;
+      }
+
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(this);
       }
     };
   }

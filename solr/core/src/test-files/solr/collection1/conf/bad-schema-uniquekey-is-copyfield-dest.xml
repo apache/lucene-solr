@@ -17,20 +17,16 @@
 -->
 
 <schema name="bad-schema-uniquekey-is-copyfield-dest" version="1.4">
-  <types>
-    <fieldType name="string" class="solr.StrField"/>
- </types>
+  <fieldType name="string" class="solr.StrField"/>
 
- <fields>
-   <field name="id" type="string" indexed="true" stored="true"/>
-   <field name="XXX" type="string" indexed="true" stored="true"/>
+  <field name="id" type="string" indexed="true" stored="true"/>
+  <field name="XXX" type="string" indexed="true" stored="true"/>
 
-   <!-- BEGIN BAD STUFF -->
-   <copyField source="XXX" dest="id"/>
-   <!-- END BAD STUFF -->
- </fields>
+  <!-- BEGIN BAD STUFF -->
+  <copyField source="XXX" dest="id"/>
+  <!-- END BAD STUFF -->
 
- <defaultSearchField>id</defaultSearchField>
- <uniqueKey>id</uniqueKey>
+  <defaultSearchField>id</defaultSearchField>
+  <uniqueKey>id</uniqueKey>
 
 </schema>

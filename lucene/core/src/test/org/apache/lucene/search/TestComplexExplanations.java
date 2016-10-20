@@ -33,30 +33,17 @@ import org.apache.lucene.search.spans.*;
  */
 public class TestComplexExplanations extends BaseExplanationTestCase {
 
-  /**
-   * Override the Similarity used in our searcher with one that plays
-   * nice with boosts of 0.0
-   */
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    searcher.setSimilarity(createQnorm1Similarity());
+    // TODO: switch to BM25?
+    searcher.setSimilarity(new ClassicSimilarity());
   }
   
   @Override
   public void tearDown() throws Exception {
     searcher.setSimilarity(IndexSearcher.getDefaultSimilarity());
     super.tearDown();
-  }
-
-  // must be static for weight serialization tests 
-  private static ClassicSimilarity createQnorm1Similarity() {
-    return new ClassicSimilarity() {
-        @Override
-        public float queryNorm(float sumOfSquaredWeights) {
-          return 1.0f; // / (float) Math.sqrt(1.0f + sumOfSquaredWeights);
-        }
-      };
   }
 
   

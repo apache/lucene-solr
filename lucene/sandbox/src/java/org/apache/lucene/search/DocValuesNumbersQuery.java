@@ -16,18 +16,18 @@
  */
 package org.apache.lucene.search;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
 
 /**
  * Like {@link DocValuesTermsQuery}, but this query only
@@ -58,21 +58,19 @@ public class DocValuesNumbersQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (!super.equals(obj)) {
-      return false;
-    }
-    // super.equals ensures we are the same class:
-    DocValuesNumbersQuery that = (DocValuesNumbersQuery) obj;
-    if (!field.equals(that.field)) {
-      return false;
-    }
-    return numbers.equals(that.numbers);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(DocValuesNumbersQuery other) {
+    return field.equals(other.field) &&
+           numbers.equals(other.numbers);
   }
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + Objects.hash(field, numbers);
+    return 31 * classHash() + Objects.hash(field, numbers);
   }
 
   public String getField() {
@@ -97,8 +95,8 @@ public class DocValuesNumbersQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new RandomAccessWeight(this) {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new RandomAccessWeight(this, boost) {
 
       @Override
       protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
@@ -107,14 +105,21 @@ public class DocValuesNumbersQuery extends Query {
 
            @Override
            public boolean get(int doc) {
-             values.setDocument(doc);
-             int count = values.count();
-             for(int i=0;i<count;i++) {
-               if (numbers.contains(values.valueAt(i))) {
-                 return true;
+             try {
+               if (doc > values.docID()) {
+                 values.advance(doc);
                }
+               if (doc == values.docID()) {
+                 int count = values.docValueCount();
+                 for(int i=0;i<count;i++) {
+                   if (numbers.contains(values.nextValue())) {
+                     return true;
+                   }
+                 }
+               }
+             } catch (IOException ioe) {
+               throw new RuntimeException(ioe);
              }
-
              return false;
           }
 

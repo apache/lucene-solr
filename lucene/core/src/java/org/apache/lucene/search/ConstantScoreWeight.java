@@ -32,13 +32,11 @@ import org.apache.lucene.index.Term;
  */
 public abstract class ConstantScoreWeight extends Weight {
 
-  private float boost;
-  private float queryNorm;
-  private float queryWeight;
+  private final float score;
 
-  protected ConstantScoreWeight(Query query) {
+  protected ConstantScoreWeight(Query query, float score) {
     super(query);
-    normalize(1f, 1f);
+    this.score = score;
   }
 
   @Override
@@ -48,31 +46,9 @@ public abstract class ConstantScoreWeight extends Weight {
     // override if your constant-score query does wrap terms
   }
 
-  @Override
-  public final float getValueForNormalization() throws IOException {
-    return queryWeight * queryWeight;
-  }
-
-  @Override
-  public void normalize(float norm, float boost) {
-    this.boost = boost;
-    queryNorm = norm;
-    queryWeight = queryNorm * boost;
-  }
-
-  /** Return the normalization factor for this weight. */
-  protected final float queryNorm() {
-    return queryNorm;
-  }
-
-  /** Return the boost for this weight. */
-  protected final float boost() {
-    return boost;
-  }
-
   /** Return the score produced by this {@link Weight}. */
   protected final float score() {
-    return queryWeight;
+    return score;
   }
 
   @Override
@@ -92,8 +68,7 @@ public abstract class ConstantScoreWeight extends Weight {
 
     if (exists) {
       return Explanation.match(
-          queryWeight, getQuery().toString() + ", product of:",
-          Explanation.match(boost, "boost"), Explanation.match(queryNorm, "queryNorm"));
+          score, getQuery().toString() + (score == 1f ? "" : "^" + score));
     } else {
       return Explanation.noMatch(getQuery().toString() + " doesn't match id " + doc);
     }

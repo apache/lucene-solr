@@ -18,7 +18,7 @@ package org.apache.lucene.analysis.miscellaneous;
 
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.FilteringTokenFilter;
+import org.apache.lucene.analysis.FilteringTokenFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**

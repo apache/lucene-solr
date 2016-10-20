@@ -455,12 +455,7 @@ public class DataImporter {
   }
 
   public void runAsync(final RequestInfo reqParams, final DIHWriter sw) {
-    new Thread() {
-      @Override
-      public void run() {
-        runCmd(reqParams, sw);
-      }
-    }.start();
+    new Thread(() -> runCmd(reqParams, sw)).start();
   }
 
   void runCmd(RequestInfo reqParams, DIHWriter sw) {

@@ -76,7 +76,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   double randomIOExceptionRateOnOpen;
   Random randomState;
   boolean assertNoDeleteOpenFile = false;
-  boolean preventDoubleWrite = true;
   boolean trackDiskUsage = false;
   boolean useSlowOpenClosers = LuceneTestCase.TEST_NIGHTLY;
   boolean allowRandomFileNotFoundException = true;
@@ -88,6 +87,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   volatile boolean crashed;
   private ThrottledIndexOutput throttledOutput;
   private Throttling throttling = LuceneTestCase.TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
+
+  // for testing
+  boolean alwaysCorrupt;
 
   final AtomicInteger inputCloneCount = new AtomicInteger();
 
@@ -144,12 +146,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
   public void setTrackDiskUsage(boolean v) {
     trackDiskUsage = v;
-  }
-
-  /** If set to true, we throw an IOException if the same
-   *  file is opened by createOutput, ever. */
-  public void setPreventDoubleWrite(boolean value) {
-    preventDoubleWrite = value;
   }
 
   /** If set to true (the default), when we throw random
@@ -212,7 +208,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   @Override
-  public synchronized void renameFile(String source, String dest) throws IOException {
+  public synchronized void rename(String source, String dest) throws IOException {
     maybeYield();
     maybeThrowDeterministicException();
 
@@ -230,7 +226,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
     boolean success = false;
     try {
-      in.renameFile(source, dest);
+      in.rename(source, dest);
       success = true;
     } finally {
       if (success) {
@@ -240,9 +236,20 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           unSyncedFiles.add(dest);
         }
         openFilesDeleted.remove(source);
+        createdFiles.remove(source);
         createdFiles.add(dest);
       }
     }
+  }
+
+  @Override
+  public synchronized void syncMetaData() throws IOException {
+    maybeYield();
+    maybeThrowDeterministicException();
+    if (crashed) {
+      throw new IOException("cannot rename after crash");
+    }
+    in.syncMetaData();
   }
 
   public synchronized final long sizeInBytes() throws IOException {
@@ -295,6 +302,21 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   public synchronized void corruptFiles(Collection<String> files) throws IOException {
+    boolean disabled = TestUtil.disableVirusChecker(in);
+    try {
+      _corruptFiles(files);
+    } finally {
+      if (disabled) {
+        TestUtil.enableVirusChecker(in);
+      }
+    }
+  }
+    
+  private synchronized void _corruptFiles(Collection<String> files) throws IOException {
+
+    // TODO: we should also mess with any recent file renames, file deletions, if
+    // syncMetaData was not called!!
+    
     // Must make a copy because we change the incoming unsyncedFiles
     // when we create temp files, delete, etc., below:
     final List<String> filesToCorrupt = new ArrayList<>(files);
@@ -303,6 +325,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     CollectionUtil.timSort(filesToCorrupt);
     for(String name : filesToCorrupt) {
       int damage = randomState.nextInt(6);
+      if (alwaysCorrupt && damage == 3) {
+        damage = 4;
+      }
       String action = null;
 
       switch(damage) {
@@ -319,9 +344,12 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         try {
           length = fileLength(name);
         } catch (IOException ioe) {
-          // Ignore
-          continue;
+          throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
         }
+
+        // Delete original and write zeros back:
+        deleteFile(name);
+        
         byte[] zeroes = new byte[256];
         long upto = 0;
         try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
@@ -331,7 +359,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
             upto += limit;
           }
         } catch (IOException ioe) {
-          // ignore
+          throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
         }
         break;
 
@@ -347,8 +375,8 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
                IndexInput ii = in.openInput(name, LuceneTestCase.newIOContext(randomState))) {
               tempFileName = tempOut.getName();
               tempOut.copyBytes(ii, ii.length()/2);
-            } catch (IOException ioe) {
-            // ignore
+          } catch (IOException ioe) {
+            throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
           }
 
           // Delete original and copy bytes back:
@@ -357,8 +385,8 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
                IndexInput ii = in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState))) {
               out.copyBytes(ii, ii.length());
-            } catch (IOException ioe) {
-            // ignore
+          } catch (IOException ioe) {
+            throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
           }
           deleteFile(tempFileName);
         }
@@ -377,32 +405,32 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           String tempFileName = null;
           try (IndexOutput tempOut = in.createTempOutput("name", "mdw_corrupt", LuceneTestCase.newIOContext(randomState));
                IndexInput ii = in.openInput(name, LuceneTestCase.newIOContext(randomState))) {
-              tempFileName = tempOut.getName();
-              if (ii.length() > 0) {
-                // Copy first part unchanged:
-                long byteToCorrupt = (long) (randomState.nextDouble() * ii.length());
-                if (byteToCorrupt > 0) {
-                  tempOut.copyBytes(ii, byteToCorrupt);
-                }
-
-                // Randomly flip one bit from this byte:
-                byte b = ii.readByte();
-                int bitToFlip = randomState.nextInt(8);
-                b = (byte) (b ^ (1 << bitToFlip));
-                tempOut.writeByte(b);
-
-                action = "flip bit " + bitToFlip + " of byte " + byteToCorrupt + " out of " + ii.length() + " bytes";
-
-                // Copy last part unchanged:
-                long bytesLeft = ii.length() - byteToCorrupt - 1;
-                if (bytesLeft > 0) {
-                  tempOut.copyBytes(ii, bytesLeft);
-                }
-              } else {
-                action = "didn't change";
+            tempFileName = tempOut.getName();
+            if (ii.length() > 0) {
+              // Copy first part unchanged:
+              long byteToCorrupt = (long) (randomState.nextDouble() * ii.length());
+              if (byteToCorrupt > 0) {
+                tempOut.copyBytes(ii, byteToCorrupt);
               }
-            } catch (IOException ioe) {
-            // ignore
+
+              // Randomly flip one bit from this byte:
+              byte b = ii.readByte();
+              int bitToFlip = randomState.nextInt(8);
+              b = (byte) (b ^ (1 << bitToFlip));
+              tempOut.writeByte(b);
+
+              action = "flip bit " + bitToFlip + " of byte " + byteToCorrupt + " out of " + ii.length() + " bytes";
+
+              // Copy last part unchanged:
+              long bytesLeft = ii.length() - byteToCorrupt - 1;
+              if (bytesLeft > 0) {
+                tempOut.copyBytes(ii, bytesLeft);
+              }
+            } else {
+              action = "didn't change";
+            }
+          } catch (IOException ioe) {
+            throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
           }
 
           // Delete original and copy bytes back:
@@ -410,9 +438,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
           try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
                IndexInput ii = in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState))) {
-              out.copyBytes(ii, ii.length());
-            } catch (IOException ioe) {
-            // ignore
+            out.copyBytes(ii, ii.length());
+          } catch (IOException ioe) {
+            throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
           }
 
           deleteFile(tempFileName);
@@ -427,7 +455,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
           out.getFilePointer(); // just fake access to prevent compiler warning
         } catch (IOException ioe) {
-          // ignore
+          throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
         }
         break;
 
@@ -622,7 +650,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
     init();
     synchronized(this) {
-      if (preventDoubleWrite && createdFiles.contains(name) && !name.equals("segments.gen")) {
+      if (createdFiles.contains(name) && !name.equals("segments.gen")) {
         throw new IOException("file \"" + name + "\" was already written to");
       }
     }
@@ -633,22 +661,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     unSyncedFiles.add(name);
     createdFiles.add(name);
     
-    if (in instanceof RAMDirectory) {
-      RAMDirectory ramdir = (RAMDirectory) in;
-      RAMFile file = new RAMFile(ramdir);
-      RAMFile existing = ramdir.fileMap.get(name);
-    
-      // Enforce write once:
-      if (existing!=null && !name.equals("segments.gen") && preventDoubleWrite) {
-        throw new IOException("file " + name + " already exists");
-      } else {
-        if (existing!=null) {
-          ramdir.sizeInBytes.getAndAdd(-existing.sizeInBytes);
-          existing.directory = null;
-        }
-        ramdir.fileMap.put(name, file);
-      }
-    }
     //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
     IndexOutput delegateOutput = in.createOutput(name, LuceneTestCase.newIOContext(randomState, context));
     final IndexOutput io = new MockIndexOutputWrapper(this, delegateOutput, name);
@@ -759,7 +771,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       }
       ii = new SlowOpeningMockIndexInputWrapper(this, name, delegateInput);
     } else {
-      ii = new MockIndexInputWrapper(this, name, delegateInput);
+      ii = new MockIndexInputWrapper(this, name, delegateInput, null);
     }
     addFileHandle(ii, name, Handle.Input);
     return ii;
@@ -826,7 +838,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         }
         // RuntimeException instead of IOException because
         // super() does not throw IOException currently:
-        throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open files: " + openFiles, cause);
+        throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still " + openFiles.size() + " open files: " + openFiles, cause);
       }
       if (openLocks.size() > 0) {
         Exception cause = null;

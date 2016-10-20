@@ -23,10 +23,11 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -314,4 +315,60 @@ public class TestParallelLeafReader extends LuceneTestCase {
     return dir2;
   }
 
+  // not ok to have one leaf w/ index sort and another with a different index sort
+  public void testWithIndexSort1() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig iwc1 = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc1.setIndexSort(new Sort(new SortField("foo", SortField.Type.INT)));
+    IndexWriter w1 = new IndexWriter(dir1, iwc1);
+    w1.addDocument(new Document());
+    w1.commit();
+    w1.addDocument(new Document());
+    w1.forceMerge(1);
+    w1.close();
+    IndexReader r1 = DirectoryReader.open(dir1);
+
+    Directory dir2 = newDirectory();
+    IndexWriterConfig iwc2 = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc2.setIndexSort(new Sort(new SortField("bar", SortField.Type.INT)));
+    IndexWriter w2 = new IndexWriter(dir2, iwc2);
+    w2.addDocument(new Document());
+    w2.commit();
+    w2.addDocument(new Document());
+    w2.forceMerge(1);
+    w2.close();
+    IndexReader r2 = DirectoryReader.open(dir2);
+
+    String message = expectThrows(IllegalArgumentException.class, () -> {
+        new ParallelLeafReader(getOnlyLeafReader(r1), getOnlyLeafReader(r2));
+      }).getMessage();
+    assertEquals("cannot combine LeafReaders that have different index sorts: saw both sort=<int: \"foo\"> and <int: \"bar\">", message);
+    IOUtils.close(r1, dir1, r2, dir2);
+  }
+
+  // ok to have one leaf w/ index sort and the other with no sort
+  public void testWithIndexSort2() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig iwc1 = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc1.setIndexSort(new Sort(new SortField("foo", SortField.Type.INT)));
+    IndexWriter w1 = new IndexWriter(dir1, iwc1);
+    w1.addDocument(new Document());
+    w1.commit();
+    w1.addDocument(new Document());
+    w1.forceMerge(1);
+    w1.close();
+    IndexReader r1 = DirectoryReader.open(dir1);
+
+    Directory dir2 = newDirectory();
+    IndexWriterConfig iwc2 = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w2 = new IndexWriter(dir2, iwc2);
+    w2.addDocument(new Document());
+    w2.addDocument(new Document());
+    w2.close();
+
+    IndexReader r2 = DirectoryReader.open(dir2);
+    new ParallelLeafReader(false, getOnlyLeafReader(r1), getOnlyLeafReader(r2)).close();
+    new ParallelLeafReader(false, getOnlyLeafReader(r2), getOnlyLeafReader(r1)).close();
+    IOUtils.close(r1, dir1, r2, dir2);
+  }
 }

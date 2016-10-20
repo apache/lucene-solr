@@ -19,8 +19,8 @@ package org.apache.lucene.facet.taxonomy;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
+import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -61,22 +61,27 @@ public class TaxonomyFacetSumFloatAssociations extends FloatTaxonomyFacets {
         //System.out.println("  doc=" + doc);
         // TODO: use OrdinalsReader?  we'd need to add a
         // BytesRef getAssociation()?
-        final BytesRef bytesRef = dv.get(doc);
-        byte[] bytes = bytesRef.bytes;
-        int end = bytesRef.offset + bytesRef.length;
-        int offset = bytesRef.offset;
-        while (offset < end) {
-          int ord = ((bytes[offset]&0xFF) << 24) |
-            ((bytes[offset+1]&0xFF) << 16) |
-            ((bytes[offset+2]&0xFF) << 8) |
-            (bytes[offset+3]&0xFF);
-          offset += 4;
-          int value = ((bytes[offset]&0xFF) << 24) |
-            ((bytes[offset+1]&0xFF) << 16) |
-            ((bytes[offset+2]&0xFF) << 8) |
-            (bytes[offset+3]&0xFF);
-          offset += 4;
-          values[ord] += Float.intBitsToFloat(value);
+        if (dv.docID() < doc) {
+          dv.advance(doc);
+        }
+        if (dv.docID() == doc) {
+          final BytesRef bytesRef = dv.binaryValue();
+          byte[] bytes = bytesRef.bytes;
+          int end = bytesRef.offset + bytesRef.length;
+          int offset = bytesRef.offset;
+          while (offset < end) {
+            int ord = ((bytes[offset]&0xFF) << 24) |
+              ((bytes[offset+1]&0xFF) << 16) |
+              ((bytes[offset+2]&0xFF) << 8) |
+              (bytes[offset+3]&0xFF);
+            offset += 4;
+            int value = ((bytes[offset]&0xFF) << 24) |
+              ((bytes[offset+1]&0xFF) << 16) |
+              ((bytes[offset+2]&0xFF) << 8) |
+              (bytes[offset+3]&0xFF);
+            offset += 4;
+            values[ord] += Float.intBitsToFloat(value);
+          }
         }
       }
     }

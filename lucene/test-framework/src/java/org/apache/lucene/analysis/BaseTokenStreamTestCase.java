@@ -34,6 +34,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Attribute;
@@ -628,7 +629,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
           if (iw != null) {
             if (random.nextInt(7) == 0) {
               // pile up a multivalued field
-              FieldType ft = field.fieldType();
+              IndexableFieldType ft = field.fieldType();
               currentField = new Field("dummy", bogus, ft);
               doc.add(currentField);
             } else {
@@ -883,7 +884,10 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       assertTokenStreamContents(ts, 
                                 tokens.toArray(new String[tokens.size()]));
     }
-    
+
+    a.normalize("dummy", text);
+    // TODO: what can we do besides testing that the above method does not throw?
+
     if (field != null) {
       reader = new StringReader(text);
       random = new Random(seed);

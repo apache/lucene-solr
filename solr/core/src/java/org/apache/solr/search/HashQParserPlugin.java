@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReaderContext;
@@ -38,7 +39,6 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -69,6 +69,7 @@ public class HashQParserPlugin extends QParserPlugin {
       int workers = localParams.getInt("workers");
       int worker = localParams.getInt("worker");
       String keys = params.get("partitionKeys");
+      keys = keys.replace(" ", "");
       return new HashQuery(keys, workers, worker);
     }
   }
@@ -88,15 +89,21 @@ public class HashQParserPlugin extends QParserPlugin {
     }
 
     public int hashCode() {
-      return 31 * super.hashCode() + keysParam.hashCode()+workers+worker;
+      return classHash() + 
+          31 * keysParam.hashCode() + 
+          31 * workers + 
+          31 * worker;
     }
 
-    public boolean equals(Object o) {
-      if (super.equals(o) == false) {
-        return false;
-      }
-      HashQuery h = (HashQuery)o;
-      return keysParam.equals(h.keysParam) && workers == h.workers && worker == h.worker;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+
+    private boolean equalsTo(HashQuery other) {
+      return keysParam.equals(other.keysParam) && 
+             workers == other.workers && 
+             worker == other.worker;
     }
 
     public HashQuery(String keysParam, int workers, int worker) {
@@ -105,7 +112,7 @@ public class HashQParserPlugin extends QParserPlugin {
       this.worker = worker;
     }
 
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
 
       String[] keys = keysParam.split(",");
       SolrIndexSearcher solrIndexSearcher = (SolrIndexSearcher)searcher;
@@ -125,7 +132,7 @@ public class HashQParserPlugin extends QParserPlugin {
       }
 
       ConstantScoreQuery constantScoreQuery = new ConstantScoreQuery(new BitsFilter(fixedBitSets));
-      return searcher.rewrite(constantScoreQuery).createWeight(searcher, false);
+      return searcher.rewrite(constantScoreQuery).createWeight(searcher, false, boost);
     }
 
     public class BitsFilter extends Filter {
@@ -140,6 +147,21 @@ public class HashQParserPlugin extends QParserPlugin {
 
       public DocIdSet getDocIdSet(LeafReaderContext context, Bits bits) {
         return BitsFilteredDocIdSet.wrap(new BitDocIdSet(bitSets[context.ord]), bits);
+      }
+
+      @Override
+      public boolean equals(Object other) {
+        return sameClassAs(other) &&
+               equalsTo(getClass().cast(other));
+      }
+
+      private boolean equalsTo(BitsFilter other) {
+        return Arrays.equals(bitSets, other.bitSets);
+      }
+
+      @Override
+      public int hashCode() {
+        return classHash() + Arrays.asList(bitSets).hashCode();
       }
     }
 
@@ -246,7 +268,7 @@ public class HashQParserPlugin extends QParserPlugin {
 
   private interface HashKey {
     public void setNextReader(LeafReaderContext reader) throws IOException;
-    public long hashCode(int doc);
+    public long hashCode(int doc) throws IOException;
   }
 
   private class BytesHash implements HashKey {
@@ -265,8 +287,16 @@ public class HashQParserPlugin extends QParserPlugin {
       values = context.reader().getSortedDocValues(field);
     }
 
-    public long hashCode(int doc) {
-      BytesRef ref = values.get(doc);
+    public long hashCode(int doc) throws IOException {
+      if (doc > values.docID()) {
+        values.advance(doc);
+      }
+      BytesRef ref;
+      if (doc == values.docID()) {
+        ref = values.binaryValue();
+      } else {
+        ref = null;
+      }
       this.fieldType.indexedToReadable(ref, charsRefBuilder);
       CharsRef charsRef = charsRefBuilder.get();
       return charsRef.hashCode();
@@ -286,8 +316,17 @@ public class HashQParserPlugin extends QParserPlugin {
       values = context.reader().getNumericDocValues(field);
     }
 
-    public long hashCode(int doc) {
-      long l = values.get(doc);
+    public long hashCode(int doc) throws IOException {
+      int valuesDocID = values.docID();
+      if (valuesDocID < doc) {
+        valuesDocID = values.advance(doc);
+      }
+      long l;
+      if (valuesDocID == doc) {
+        l = values.longValue();
+      } else {
+        l = 0;
+      }
       return Longs.hashCode(l);
     }
   }
@@ -324,7 +363,7 @@ public class HashQParserPlugin extends QParserPlugin {
       key4.setNextReader(context);
     }
 
-    public long hashCode(int doc) {
+    public long hashCode(int doc) throws IOException {
       return key1.hashCode(doc)+key2.hashCode(doc)+key3.hashCode(doc)+key4.hashCode(doc);
     }
   }

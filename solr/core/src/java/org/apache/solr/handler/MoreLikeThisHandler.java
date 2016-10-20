@@ -23,7 +23,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +47,6 @@ import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
@@ -119,7 +117,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
           if (q != null) {
             QParser parser = QParser.getParser(q, defType, req);
             query = parser.getQuery();
-            sortSpec = parser.getSort(true);
+            sortSpec = parser.getSortSpec(true);
           }
 
           String[] fqs = req.getParams().getParams(CommonParams.FQ);
@@ -127,7 +125,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
             filters = new ArrayList<>();
             for (String fq : fqs) {
               if (fq != null && fq.trim().length() != 0) {
-                QParser fqp = QParser.getParser(fq, null, req);
+                QParser fqp = QParser.getParser(fq, req);
                 filters.add(fqp.getQuery());
               }
             }
@@ -362,7 +360,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       BooleanQuery boostedQuery = (BooleanQuery)mltquery;
       if (boostFields.size() > 0) {
         BooleanQuery.Builder newQ = new BooleanQuery.Builder();
-        newQ.setDisableCoord(boostedQuery.isCoordDisabled());
         newQ.setMinimumNumberShouldMatch(boostedQuery.getMinimumNumberShouldMatch());
         for (BooleanClause clause : boostedQuery) {
           Query q = clause.getQuery();

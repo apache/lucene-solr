@@ -26,11 +26,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.rule.ReplicaAssigner.Position;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.rule.Snitch;
+import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.junit.Test;
 
+import static java.util.Collections.singletonList;
 import static org.apache.solr.cloud.rule.Rule.parseRule;
 import static org.apache.solr.common.util.Utils.makeMap;
 
@@ -69,17 +75,45 @@ public class RuleEngineTest extends SolrTestCaseJ4{
 
     Map<Position, String> mapping = new ReplicaAssigner(
         rules,
-        shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
+        shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null ).getNodeMappings();
     assertNotNull(mapping);
 
     mapping = new ReplicaAssigner(
         rules,
-        shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
+        shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null ).getNodeMappings();
     assertNotNull(mapping);
 
+    rules = parseRules("[{role:'!overseer'}]" );
+    Map<String, Object> snitchSession = new HashMap<>();
+    List<String> preferredOverseerNodes = ImmutableList.of("127.0.0.1:49947_", "127.0.0.1:49952_");
+    ReplicaAssigner replicaAssigner = new ReplicaAssigner(
+        rules,
+        shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
+        new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null) {
 
+      @Override
+      protected SnitchContext getSnitchCtx(String node, SnitchInfoImpl info, CoreContainer cc) {
+        return new ServerSnitchContext(info, node, snitchSession,cc){
+          @Override
+          public Map getZkJson(String path) {
+            if(ZkStateReader.ROLES.equals(path)){
+              return Collections.singletonMap("overseer", preferredOverseerNodes);
+            }
+            return null;
+          }
+
+        };
+      }
+
+    };
+    mapping = replicaAssigner.getNodeMappings();
+    assertNotNull(mapping);
+
+    for (String nodeName : mapping.values()) {
+      assertFalse(preferredOverseerNodes.contains(nodeName));
+    }
 
   }
 
@@ -115,7 +149,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     Map shardVsReplicaCount = makeMap("shard1", 2, "shard2", 2);
     Map<Position, String> mapping = new ReplicaAssigner(
         rules,
-        shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
+        shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings();
     assertNotNull(mapping);
     assertFalse(mapping.containsValue("127.0.0.1:49947_"));
@@ -127,7 +161,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     shardVsReplicaCount = makeMap("shard1", 2, "shard2", 2);
     mapping = new ReplicaAssigner(
         rules,
-        shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
+        shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings0();
     assertNull(mapping);
 
@@ -139,7 +173,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     shardVsReplicaCount = makeMap("shard1", 2, "shard2", 2);
     mapping = new ReplicaAssigner(
         rules,
-        shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
+        shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings0();
     assertNotNull(mapping);
     assertFalse(mapping.containsValue("127.0.0.2:49958_"));
@@ -151,7 +185,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     shardVsReplicaCount = makeMap("shard1", 2, "shard2", 2);
     mapping = new ReplicaAssigner(
         rules,
-        shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
+        shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings();
     assertNotNull(mapping);
 
@@ -162,7 +196,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     shardVsReplicaCount = makeMap("shard1", 2, "shard2", 2);
     mapping = new ReplicaAssigner(
         rules,
-        shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
+        shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings0();
     assertNull(mapping);
 
@@ -173,7 +207,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     shardVsReplicaCount = makeMap("shard1", 2, "shard2", 2);
     mapping = new ReplicaAssigner(
         rules,
-        shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
+        shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings();
     assertNotNull(mapping);
 
@@ -204,14 +238,14 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     MockSnitch.nodeVsTags = nodeVsTags;
     Map<Position, String> mapping = new ReplicaAssigner(
         rules,
-        shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
+        shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings0();
     assertNull(mapping);
     rulesStr = "rack:*,replica:<2~";
     rules = parse(Arrays.asList(rulesStr));
     mapping = new ReplicaAssigner(
         rules,
-        shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
+        shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null ,null).getNodeMappings();
     assertNotNull(mapping);
 
@@ -219,7 +253,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
     rules = parse(Arrays.asList(rulesStr));
     mapping = new ReplicaAssigner(
         rules,
-        shardVsReplicaCount, Collections.singletonList(MockSnitch.class.getName()),
+        shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null,null ).getNodeMappings();
     assertNotNull(mapping);
   }

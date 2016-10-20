@@ -41,24 +41,24 @@ public abstract class SingleDoubleFunction extends ValueSource {
   }
 
   abstract String name();
-  abstract double func(int doc, FunctionValues vals);
+  abstract double func(int doc, FunctionValues vals) throws IOException;
 
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues vals =  source.getValues(context, readerContext);
     return new DoubleDocValues(this) {
       @Override
-      public double doubleVal(int doc) {
+      public double doubleVal(int doc) throws IOException {
         return func(doc, vals);
       }
       
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         return vals.exists(doc);
       }
 
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return name() + '(' + vals.toString(doc) + ')';
       }
     };

@@ -18,8 +18,6 @@ package org.apache.lucene.search;
 
 
 import java.util.AbstractCollection;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;

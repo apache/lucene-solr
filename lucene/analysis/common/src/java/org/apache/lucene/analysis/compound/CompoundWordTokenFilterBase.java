@@ -17,15 +17,15 @@
 package org.apache.lucene.analysis.compound;
 
 
+import java.io.IOException;
+import java.util.LinkedList;
+
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.util.CharArraySet;
-
-import java.io.IOException;
-import java.util.LinkedList;
 
 /**
  * Base class for decomposition token filters.

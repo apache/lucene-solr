@@ -79,8 +79,8 @@ class DrillSidewaysQuery extends Query {
   }
   
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    final Weight baseWeight = baseQuery.createWeight(searcher, needsScores);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    final Weight baseWeight = baseQuery.createWeight(searcher, needsScores, boost);
     final Weight[] drillDowns = new Weight[drillDownQueries.length];
     for(int dim=0;dim<drillDownQueries.length;dim++) {
       drillDowns[dim] = searcher.createNormalizedWeight(drillDownQueries[dim], false);
@@ -93,16 +93,6 @@ class DrillSidewaysQuery extends Query {
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         return baseWeight.explain(context, doc);
-      }
-
-      @Override
-      public float getValueForNormalization() throws IOException {
-        return baseWeight.getValueForNormalization();
-      }
-
-      @Override
-      public void normalize(float norm, float boost) {
-        baseWeight.normalize(norm, boost);
       }
 
       @Override
@@ -161,29 +151,24 @@ class DrillSidewaysQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + ((baseQuery == null) ? 0 : baseQuery.hashCode());
-    result = prime * result
-        + ((drillDownCollector == null) ? 0 : drillDownCollector.hashCode());
+    int result = classHash();
+    result = prime * result + Objects.hashCode(baseQuery);
+    result = prime * result + Objects.hashCode(drillDownCollector);
     result = prime * result + Arrays.hashCode(drillDownQueries);
     result = prime * result + Arrays.hashCode(drillSidewaysCollectors);
     return result;
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
-    DrillSidewaysQuery other = (DrillSidewaysQuery) obj;
-    if (baseQuery == null) {
-      if (other.baseQuery != null) return false;
-    } else if (!baseQuery.equals(other.baseQuery)) return false;
-    if (drillDownCollector == null) {
-      if (other.drillDownCollector != null) return false;
-    } else if (!drillDownCollector.equals(other.drillDownCollector)) return false;
-    if (!Arrays.equals(drillDownQueries, other.drillDownQueries)) return false;
-    if (!Arrays.equals(drillSidewaysCollectors, other.drillSidewaysCollectors)) return false;
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(DrillSidewaysQuery other) {
+    return Objects.equals(baseQuery, other.baseQuery) &&
+           Objects.equals(drillDownCollector, other.drillDownCollector) &&
+           Arrays.equals(drillDownQueries, other.drillDownQueries) &&
+           Arrays.equals(drillSidewaysCollectors, other.drillSidewaysCollectors);
   }
 }

@@ -142,7 +142,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     QueryUtils.checkEqual(q, qr);
 
     Set<Term> terms = new HashSet<>();
-    qr.createWeight(searcher, false).extractTerms(terms);
+    qr.createWeight(searcher, false, 1f).extractTerms(terms);
     assertEquals(1, terms.size());
   }
   
@@ -162,7 +162,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     QueryUtils.checkUnequal(q, qr);
 
     Set<Term> terms = new HashSet<>();
-    qr.createWeight(searcher, false).extractTerms(terms);
+    qr.createWeight(searcher, false, 1f).extractTerms(terms);
     assertEquals(2, terms.size());
   }
   
@@ -176,7 +176,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     QueryUtils.checkEqual(q, qr);
 
     HashSet<Term> set = new HashSet<>();
-    qr.createWeight(searcher, true).extractTerms(set);
+    qr.createWeight(searcher, true, 1f).extractTerms(set);
     assertEquals(2, set.size());
   }
   
@@ -252,7 +252,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     SpanQuery q  = new SpanOrQuery(q1, new FieldMaskingSpanQuery(q2, "gender"));
     check(q, new int[] { 0, 1, 2, 3, 4 });
 
-    Spans span = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans span = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(span, 0,0,1);
     assertNext(span, 1,0,1);
     assertNext(span, 1,1,2);
@@ -274,8 +274,8 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     check(qA, new int[] { 0, 1, 2, 4 });
     check(qB, new int[] { 0, 1, 2, 4 });
   
-    Spans spanA = qA.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
-    Spans spanB = qB.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spanA = qA.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spanB = qB.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     
     while (spanA.nextDoc() != Spans.NO_MORE_DOCS) {
       assertNotSame("spanB not still going", Spans.NO_MORE_DOCS, spanB.nextDoc());
@@ -300,7 +300,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
         new FieldMaskingSpanQuery(qB, "id") }, -1, false );
     check(q, new int[] { 0, 1, 2, 3 });
 
-    Spans span = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans span = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(span, 0,0,1);
     assertNext(span, 1,1,2);
     assertNext(span, 2,0,1);

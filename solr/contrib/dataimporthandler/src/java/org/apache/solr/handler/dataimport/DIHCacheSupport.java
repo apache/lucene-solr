@@ -20,11 +20,8 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrap
 
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.SolrException;

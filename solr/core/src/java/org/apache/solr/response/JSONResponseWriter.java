@@ -18,23 +18,18 @@ package org.apache.solr.response;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.ReturnFields;
-import org.apache.solr.search.SolrReturnFields;
 
 /**
  *
@@ -71,19 +66,26 @@ public class JSONResponseWriter implements QueryResponseWriter {
 
 class JSONWriter extends TextResponseWriter {
   protected String wrapperFunction;
-  private String namedListStyle;
+  final private String namedListStyle;
 
-  private static final String JSON_NL_STYLE="json.nl";
-  private static final String JSON_NL_MAP="map";
-  private static final String JSON_NL_FLAT="flat";
-  private static final String JSON_NL_ARROFARR="arrarr";
-  private static final String JSON_NL_ARROFMAP="arrmap";
-  private static final String JSON_WRAPPER_FUNCTION="json.wrf";
+  static final String JSON_NL_STYLE="json.nl";
+  static final String JSON_NL_MAP="map";
+  static final String JSON_NL_FLAT="flat";
+  static final String JSON_NL_ARROFARR="arrarr";
+  static final String JSON_NL_ARROFMAP="arrmap";
+  static final String JSON_WRAPPER_FUNCTION="json.wrf";
 
   public JSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
+    this(writer, req, rsp,
+        req.getParams().get(JSON_WRAPPER_FUNCTION),
+        req.getParams().get(JSON_NL_STYLE, JSON_NL_FLAT).intern());
+  }
+
+  public JSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp,
+                    String wrapperFunction, String namedListStyle) {
     super(writer, req, rsp);
-    namedListStyle = req.getParams().get(JSON_NL_STYLE, JSON_NL_FLAT).intern();
-    wrapperFunction = req.getParams().get(JSON_WRAPPER_FUNCTION);
+    this.wrapperFunction = wrapperFunction;
+    this.namedListStyle = namedListStyle;
   }
 
   public void writeResponse() throws IOException {

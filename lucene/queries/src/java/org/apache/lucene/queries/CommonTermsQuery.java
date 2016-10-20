@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -34,7 +35,6 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.similarities.Similarity;
 
 /**
  * A query that executes high-frequency terms in a optional sub-query to prevent
@@ -42,10 +42,7 @@ import org.apache.lucene.search.similarities.Similarity;
  * builds 2 queries off the {@link #add(Term) added} terms: low-frequency
  * terms are added to a required boolean clause and high-frequency terms are
  * added to an optional boolean clause. The optional clause is only executed if
- * the required "low-frequency" clause matches. Scores produced by this query
- * will be slightly different than plain {@link BooleanQuery} scorer mainly due to
- * differences in the {@link Similarity#coord(int,int) number of leaf queries}
- * in the required boolean clause. In most cases, high-frequency terms are
+ * the required "low-frequency" clause matches. In most cases, high-frequency terms are
  * unlikely to significantly contribute to the document score unless at least
  * one of the low-frequency terms are matched.  This query can improve
  * query execution times significantly if applicable.
@@ -68,7 +65,6 @@ public class CommonTermsQuery extends Query {
    * to do so.
    */
   protected final List<Term> terms = new ArrayList<>();
-  protected final boolean disableCoord;
   protected final float maxTermFrequency;
   protected final Occur lowFreqOccur;
   protected final Occur highFreqOccur;
@@ -94,29 +90,6 @@ public class CommonTermsQuery extends Query {
    */
   public CommonTermsQuery(Occur highFreqOccur, Occur lowFreqOccur,
       float maxTermFrequency) {
-    this(highFreqOccur, lowFreqOccur, maxTermFrequency, false);
-  }
-  
-  /**
-   * Creates a new {@link CommonTermsQuery}
-   * 
-   * @param highFreqOccur
-   *          {@link Occur} used for high frequency terms
-   * @param lowFreqOccur
-   *          {@link Occur} used for low frequency terms
-   * @param maxTermFrequency
-   *          a value in [0..1) (or absolute number &gt;=1) representing the
-   *          maximum threshold of a terms document frequency to be considered a
-   *          low frequency term.
-   * @param disableCoord
-   *          disables {@link Similarity#coord(int,int)} in scoring for the low
-   *          / high frequency sub-queries
-   * @throws IllegalArgumentException
-   *           if {@link Occur#MUST_NOT} is pass as lowFreqOccur or
-   *           highFreqOccur
-   */
-  public CommonTermsQuery(Occur highFreqOccur, Occur lowFreqOccur,
-      float maxTermFrequency, boolean disableCoord) {
     if (highFreqOccur == Occur.MUST_NOT) {
       throw new IllegalArgumentException(
           "highFreqOccur should be MUST or SHOULD but was MUST_NOT");
@@ -125,7 +98,6 @@ public class CommonTermsQuery extends Query {
       throw new IllegalArgumentException(
           "lowFreqOccur should be MUST or SHOULD but was MUST_NOT");
     }
-    this.disableCoord = disableCoord;
     this.highFreqOccur = highFreqOccur;
     this.lowFreqOccur = lowFreqOccur;
     this.maxTermFrequency = maxTermFrequency;
@@ -147,7 +119,7 @@ public class CommonTermsQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (this.terms.isEmpty()) {
-      return new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("CommonTermsQuery with no terms");
     } else if (this.terms.size() == 1) {
       return newTermQuery(this.terms.get(0), null);
     }
@@ -215,11 +187,9 @@ public class CommonTermsQuery extends Query {
       }
     }
     BooleanQuery.Builder builder = new BooleanQuery.Builder();
-    builder.setDisableCoord(true);
 
     if (lowFreqQueries.isEmpty() == false) {
       BooleanQuery.Builder lowFreq = new BooleanQuery.Builder();
-      lowFreq.setDisableCoord(disableCoord);
       for (Query query : lowFreqQueries) {
         lowFreq.add(query, lowFreqOccur);
       }
@@ -229,7 +199,6 @@ public class CommonTermsQuery extends Query {
     }
     if (highFreqQueries.isEmpty() == false) {
       BooleanQuery.Builder highFreq = new BooleanQuery.Builder();
-      highFreq.setDisableCoord(disableCoord);
       for (Query query : highFreqQueries) {
         highFreq.add(query, highFreqOccur);
       }
@@ -272,15 +241,6 @@ public class CommonTermsQuery extends Query {
         
       }
     }
-  }
-  
-  /**
-   * Returns true iff {@link Similarity#coord(int,int)} is disabled in scoring
-   * for the high and low frequency query instance. The top level query will
-   * always disable coords.
-   */
-  public boolean isCoordDisabled() {
-    return disableCoord;
   }
   
   /**
@@ -411,42 +371,33 @@ public class CommonTermsQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + (disableCoord ? 1231 : 1237);
+    int result = classHash();
     result = prime * result + Float.floatToIntBits(highFreqBoost);
-    result = prime * result
-        + ((highFreqOccur == null) ? 0 : highFreqOccur.hashCode());
+    result = prime * result + Objects.hashCode(highFreqOccur);
+    result = prime * result + Objects.hashCode(lowFreqOccur);
     result = prime * result + Float.floatToIntBits(lowFreqBoost);
-    result = prime * result
-        + ((lowFreqOccur == null) ? 0 : lowFreqOccur.hashCode());
     result = prime * result + Float.floatToIntBits(maxTermFrequency);
     result = prime * result + Float.floatToIntBits(lowFreqMinNrShouldMatch);
     result = prime * result + Float.floatToIntBits(highFreqMinNrShouldMatch);
-    result = prime * result + ((terms == null) ? 0 : terms.hashCode());
+    result = prime * result + Objects.hashCode(terms);
     return result;
   }
-  
+
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
-    CommonTermsQuery other = (CommonTermsQuery) obj;
-    if (disableCoord != other.disableCoord) return false;
-    if (Float.floatToIntBits(highFreqBoost) != Float
-        .floatToIntBits(other.highFreqBoost)) return false;
-    if (highFreqOccur != other.highFreqOccur) return false;
-    if (Float.floatToIntBits(lowFreqBoost) != Float
-        .floatToIntBits(other.lowFreqBoost)) return false;
-    if (lowFreqOccur != other.lowFreqOccur) return false;
-    if (Float.floatToIntBits(maxTermFrequency) != Float
-        .floatToIntBits(other.maxTermFrequency)) return false;
-    if (lowFreqMinNrShouldMatch != other.lowFreqMinNrShouldMatch) return false;
-    if (highFreqMinNrShouldMatch != other.highFreqMinNrShouldMatch) return false;
-    if (terms == null) {
-      if (other.terms != null) return false;
-    } else if (!terms.equals(other.terms)) return false;
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(CommonTermsQuery other) {
+    return Float.floatToIntBits(highFreqBoost) == Float.floatToIntBits(other.highFreqBoost) &&
+           highFreqOccur == other.highFreqOccur &&
+           lowFreqOccur == other.lowFreqOccur &&
+           Float.floatToIntBits(lowFreqBoost) == Float.floatToIntBits(other.lowFreqBoost) &&
+           Float.floatToIntBits(maxTermFrequency) == Float.floatToIntBits(other.maxTermFrequency) &&
+           lowFreqMinNrShouldMatch == other.lowFreqMinNrShouldMatch &&
+           highFreqMinNrShouldMatch == other.highFreqMinNrShouldMatch &&
+           terms.equals(other.terms);
   }
 
   /**

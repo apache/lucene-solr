@@ -140,6 +140,8 @@ public abstract class SearchComponent implements SolrInfoMBean, NamedListInitial
     map.put(DebugComponent.COMPONENT_NAME, DebugComponent.class);
     map.put(RealTimeGetComponent.COMPONENT_NAME, RealTimeGetComponent.class);
     map.put(ExpandComponent.COMPONENT_NAME, ExpandComponent.class);
+    map.put(TermsComponent.COMPONENT_NAME, TermsComponent.class);
+
     standard_components = Collections.unmodifiableMap(map);
   }
 

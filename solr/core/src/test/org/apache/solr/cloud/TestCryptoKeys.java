@@ -33,7 +33,6 @@ import org.apache.solr.core.TestDynamicLoading;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.util.CryptoKeys;
-import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.zookeeper.CreateMode;
 import org.junit.Test;

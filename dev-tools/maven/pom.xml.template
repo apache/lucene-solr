@@ -43,8 +43,10 @@
     <vc-browse-base-url>https://git1-us-west.apache.org/repos/asf?p=lucene-solr.git;a=tree</vc-browse-base-url>
     <specification.version>@spec.version@</specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
-    <java.compat.version>1.8</java.compat.version>
-    <jetty.version>8.1.10.v20130312</jetty.version>
+    <java.compat.version>8</java.compat.version>
+    <!-- HACK: the enforce plugin does not like new versioning: -->
+    <java.legacy-compat.version>1.${java.compat.version}</java.legacy-compat.version>
+    <jetty.version>9.3.8.v20160314</jetty.version>
 
     <!-- RandomizedTesting library system properties -->
     <tests.iters>1</tests.iters>
@@ -159,7 +161,7 @@
         <plugin>
           <groupId>de.thetaphi</groupId>
           <artifactId>forbiddenapis</artifactId>
-          <version>2.0</version>
+          <version>2.2</version>
           <configuration>
             <!--
               This is the default setting, we don't support too new Java versions.
@@ -381,7 +383,7 @@
               <rules>
                 <requireJavaVersion>
                   <message>Java ${java.compat.version}+ is required.</message>
-                  <version>[${java.compat.version},)</version>
+                  <version>[${java.legacy-compat.version},)</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
                   <message>Maven 2.2.1+ is required.</message>

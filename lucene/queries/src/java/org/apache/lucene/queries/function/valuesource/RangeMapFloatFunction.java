@@ -64,12 +64,12 @@ public class RangeMapFloatFunction extends ValueSource {
     final FunctionValues defaults = (this.defaultVal == null) ? null : defaultVal.getValues(context, readerContext);
     return new FloatDocValues(this) {
       @Override
-      public float floatVal(int doc) {
+      public float floatVal(int doc) throws IOException {
         float val = vals.floatVal(doc);
         return (val>=min && val<=max) ? targets.floatVal(doc) : (defaultVal == null ? val : defaults.floatVal(doc));
       }
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return "map(" + vals.toString(doc) + ",min=" + min + ",max=" + max + ",target=" + targets.toString(doc) + ",defaultVal=" + (defaults == null ? "null" : (defaults.toString(doc))) + ")";
       }
     };

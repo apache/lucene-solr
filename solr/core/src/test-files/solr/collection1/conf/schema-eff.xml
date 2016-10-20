@@ -19,27 +19,22 @@
 
 <schema name="example" version="1.6">
 
- <fields>
-        
-   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
-   <field name="eff" type="eff"/>
 
- </fields>
+  <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
+  <field name="eff" type="eff"/>
 
 
- <!-- Field to use to determine and enforce document uniqueness. 
-      Unless this field is marked with required="false", it will be a required field
-   -->
- <uniqueKey>id</uniqueKey>
+  <!-- Field to use to determine and enforce document uniqueness. 
+       Unless this field is marked with required="false", it will be a required field
+    -->
+  <uniqueKey>id</uniqueKey>
 
- <types>
 
-    <!-- The StrField type is not analyzed, but indexed/stored verbatim. -->
-    <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
+  <!-- The StrField type is not analyzed, but indexed/stored verbatim. -->
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
-    <!-- Our external file field type -->
-    <fieldType name="eff" class="solr.ExternalFileField"/>
+  <!-- Our external file field type -->
+  <fieldType name="eff" class="solr.ExternalFileField"/>
 
- </types>
 
 </schema>

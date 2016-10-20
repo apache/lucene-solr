@@ -43,14 +43,14 @@ final class PointInGeo3DShapeQuery extends Query {
   final String field;
   final GeoShape shape;
   final XYZBounds shapeBounds;
-  
+
   /** The lats/lons must be clockwise or counter-clockwise. */
   public PointInGeo3DShapeQuery(String field, GeoShape shape) {
     this.field = field;
     this.shape = shape;
     this.shapeBounds = new XYZBounds();
     shape.getBounds(shapeBounds);
-    
+
     if (shape instanceof BasePlanetObject) {
       BasePlanetObject planetObject = (BasePlanetObject) shape;
       if (planetObject.getPlanetModel().equals(PlanetModel.WGS84) == false) {
@@ -60,17 +60,17 @@ final class PointInGeo3DShapeQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
 
     // I don't use RandomAccessWeight here: it's no good to approximate with "match all docs"; this is an inverted structure and should be
     // used in the first pass:
 
-    return new ConstantScoreWeight(this) {
+    return new ConstantScoreWeight(this, boost) {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
-        PointValues values = reader.getPointValues();
+        PointValues values = reader.getPointValues(field);
         if (values == null) {
           return null;
         }
@@ -99,7 +99,7 @@ final class PointInGeo3DShapeQuery extends Query {
 
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
-        values.intersect(field, new PointInShapeIntersectVisitor(result, shape, shapeBounds));
+        values.intersect(new PointInShapeIntersectVisitor(result, shape, shapeBounds));
 
         return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
@@ -115,23 +115,19 @@ final class PointInGeo3DShapeQuery extends Query {
   }
 
   @Override
-  @SuppressWarnings({"unchecked","rawtypes"})
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-
-    PointInGeo3DShapeQuery that = (PointInGeo3DShapeQuery) o;
-    if (field.equals(that.field) == false) {
-      return false;
-    }
-
-    return shape.equals(that.shape);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(PointInGeo3DShapeQuery other) {
+    return field.equals(other.field) &&
+           shape.equals(other.shape);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
+    int result = classHash();
     result = 31 * result + field.hashCode();
     result = 31 * result + shape.hashCode();
     return result;

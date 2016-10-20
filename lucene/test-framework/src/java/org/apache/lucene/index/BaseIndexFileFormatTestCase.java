@@ -303,7 +303,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     Directory dir = newFSDirectory(createTempDir("justSoYouGetSomeChannelErrors"));
     Codec codec = getCodec();
     
-    SegmentInfo segmentInfo = new SegmentInfo(dir, Version.LATEST, "_0", 1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
+    SegmentInfo segmentInfo = new SegmentInfo(dir, Version.LATEST, "_0", 1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
     FieldInfo proto = oneDocReader.getFieldInfos().fieldInfo("field");
     FieldInfo field = new FieldInfo(proto.name, proto.number, proto.hasVectors(), proto.omitsNorms(), proto.hasPayloads(), 
                                     proto.getIndexOptions(), proto.getDocValuesType(), proto.getDocValuesGen(), new HashMap<>(),
@@ -330,7 +330,49 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     
     // DocValuesFormat
     try (DocValuesConsumer consumer = codec.docValuesFormat().fieldsConsumer(writeState)) {
-      consumer.addNumericField(field, Collections.singleton(5));
+      consumer.addNumericField(field,
+                               new EmptyDocValuesProducer() {
+                                 @Override
+                                 public NumericDocValues getNumeric(FieldInfo field) {
+                                   return new NumericDocValues() {
+                                     int docID = -1;
+                                 
+                                     @Override
+                                     public int docID() {
+                                       return docID;
+                                     }
+                                 
+                                     @Override
+                                     public int nextDoc() {
+                                       docID++;
+                                       if (docID == 1) {
+                                         docID = NO_MORE_DOCS;
+                                       }
+                                       return docID;
+                                     }
+
+                                     @Override
+                                     public int advance(int target) {
+                                       if (docID <= 0 && target == 0) {
+                                         docID = 0;
+                                       } else {
+                                         docID = NO_MORE_DOCS;
+                                       }
+                                       return docID;
+                                     }
+
+                                     @Override
+                                     public long cost() {
+                                       return 1;
+                                     }
+
+                                     @Override
+                                     public long longValue() {
+                                       return 5;
+                                     }
+                                   };
+                                 }
+                               });
       IOUtils.close(consumer);
       IOUtils.close(consumer);
     }
@@ -341,7 +383,62 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     
     // NormsFormat
     try (NormsConsumer consumer = codec.normsFormat().normsConsumer(writeState)) {
-      consumer.addNormsField(field, Collections.singleton(5));
+      consumer.addNormsField(field,
+                             new NormsProducer() {
+                                 @Override
+                                 public NumericDocValues getNorms(FieldInfo field) {
+                                   return new NumericDocValues() {
+                                     int docID = -1;
+                                 
+                                     @Override
+                                     public int docID() {
+                                       return docID;
+                                     }
+                                 
+                                     @Override
+                                     public int nextDoc() {
+                                       docID++;
+                                       if (docID == 1) {
+                                         docID = NO_MORE_DOCS;
+                                       }
+                                       return docID;
+                                     }
+
+                                     @Override
+                                     public int advance(int target) {
+                                       if (docID <= 0 && target == 0) {
+                                         docID = 0;
+                                       } else {
+                                         docID = NO_MORE_DOCS;
+                                       }
+                                       return docID;
+                                     }
+
+                                     @Override
+                                     public long cost() {
+                                       return 1;
+                                     }
+
+                                     @Override
+                                     public long longValue() {
+                                       return 5;
+                                     }
+                                   };
+                                 }
+
+                               @Override
+                               public void checkIntegrity() {
+                               }
+
+                               @Override
+                               public void close() {
+                               }
+
+                               @Override
+                               public long ramBytesUsed() {
+                                 return 0;
+                               }
+                             });
       IOUtils.close(consumer);
       IOUtils.close(consumer);
     }
@@ -393,7 +490,6 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     MockDirectoryWrapper dir = newMockDirectory();
     dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     dir.setUseSlowOpenClosers(false);
-    dir.setPreventDoubleWrite(false);
     dir.setRandomIOExceptionRate(0.001); // more rare
     
     // log all exceptions we hit, in case we fail (for debugging)

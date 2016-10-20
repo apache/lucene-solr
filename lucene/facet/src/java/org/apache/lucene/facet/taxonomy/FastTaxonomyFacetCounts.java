@@ -17,12 +17,14 @@
 package org.apache.lucene.facet.taxonomy;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
+import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.search.ConjunctionDISI;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 
@@ -55,11 +57,11 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
         continue;
       }
 
-      DocIdSetIterator docs = hits.bits.iterator();
+      DocIdSetIterator it = ConjunctionDISI.intersectIterators(Arrays.asList(
+          hits.bits.iterator(), dv));
       
-      int doc;
-      while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        final BytesRef bytesRef = dv.get(doc);
+      for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+        final BytesRef bytesRef = dv.binaryValue();
         byte[] bytes = bytesRef.bytes;
         int end = bytesRef.offset + bytesRef.length;
         int ord = 0;

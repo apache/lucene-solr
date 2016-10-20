@@ -78,22 +78,22 @@ public final class DocValuesRangeQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (super.equals(obj) == false) {
-      return false;
-    }
-    final DocValuesRangeQuery that = (DocValuesRangeQuery) obj;
-    return field.equals(that.field)
-        && Objects.equals(lowerVal, that.lowerVal)
-        && Objects.equals(upperVal, that.upperVal)
-        && includeLower == that.includeLower
-        && includeUpper == that.includeUpper
-        && super.equals(obj);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(DocValuesRangeQuery other) {
+    return field.equals(other.field) && 
+           Objects.equals(lowerVal, other.lowerVal) && 
+           Objects.equals(upperVal, other.upperVal) && 
+           includeLower == other.includeLower && 
+           includeUpper == other.includeUpper;
   }
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + Objects.hash(field, lowerVal, upperVal, includeLower, includeUpper);
+    return 31 * classHash() + Objects.hash(field, lowerVal, upperVal, includeLower, includeUpper);
   }
 
   public String getField() {
@@ -139,11 +139,11 @@ public final class DocValuesRangeQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     if (lowerVal == null && upperVal == null) {
       throw new IllegalStateException("Both min and max values must not be null, call rewrite first");
     }
-    return new RandomAccessWeight(DocValuesRangeQuery.this) {
+    return new RandomAccessWeight(DocValuesRangeQuery.this, boost) {
       
       @Override
       protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
@@ -183,13 +183,21 @@ public final class DocValuesRangeQuery extends Query {
 
             @Override
             public boolean get(int doc) {
-              values.setDocument(doc);
-              final int count = values.count();
-              for (int i = 0; i < count; ++i) {
-                final long value = values.valueAt(i);
-                if (value >= min && value <= max) {
-                  return true;
+              try {
+                if (doc > values.docID()) {
+                  values.advance(doc);
                 }
+                if (doc == values.docID()) {
+                  final int count = values.docValueCount();
+                  for (int i = 0; i < count; ++i) {
+                    final long value = values.nextValue();
+                    if (value >= min && value <= max) {
+                      return true;
+                    }
+                  }
+                }
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
               }
               return false;
             }
@@ -241,11 +249,19 @@ public final class DocValuesRangeQuery extends Query {
 
             @Override
             public boolean get(int doc) {
-              values.setDocument(doc);
-              for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
-                if (ord >= minOrd && ord <= maxOrd) {
-                  return true;
+              try {
+                if (doc > values.docID()) {
+                  values.advance(doc);
                 }
+                if (doc == values.docID()) {
+                  for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
+                    if (ord >= minOrd && ord <= maxOrd) {
+                      return true;
+                    }
+                  }
+                }
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
               }
               return false;
             }

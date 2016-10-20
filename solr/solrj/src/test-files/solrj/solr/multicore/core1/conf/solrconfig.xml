@@ -62,8 +62,6 @@
   </requestDispatcher>
   
   <requestHandler name="standard" class="solr.StandardRequestHandler" default="true" />
-  <requestHandler name="/analysis/field" startup="lazy" class="solr.FieldAnalysisRequestHandler" />
-
 
   <!-- config for the admin interface --> 
   <admin>

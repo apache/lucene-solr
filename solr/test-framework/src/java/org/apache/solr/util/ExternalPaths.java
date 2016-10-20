@@ -17,11 +17,7 @@
 package org.apache.solr.util;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.util.Properties;
 
-import org.apache.commons.io.*;
-import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Some tests need to reach outside the classpath to get certain resources (e.g. the example configuration).

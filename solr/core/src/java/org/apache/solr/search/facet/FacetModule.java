@@ -17,19 +17,16 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -41,6 +38,7 @@ import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.search.QueryContext;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.RTimer;
+import org.noggit.JSONUtil;
 
 public class FacetModule extends SearchComponent {
 
@@ -55,6 +53,7 @@ public class FacetModule extends SearchComponent {
 
   // Internal information passed down from the top level to shards for distributed faceting.
   private final static String FACET_STATE = "_facet_";
+  private final static String FACET_REFINE = "refine";
 
 
   public FacetComponentState getFacetComponentState(ResponseBuilder rb) {
@@ -149,12 +148,90 @@ public class FacetModule extends SearchComponent {
   }
 
 
+  private void clearFaceting(List<ShardRequest> outgoing) {
+    // turn off faceting for requests not marked as being for faceting refinements
+    for (ShardRequest sreq : outgoing) {
+      if ((sreq.purpose & PURPOSE_REFINE_JSON_FACETS) != 0) continue;
+      sreq.params.remove("json.facet");  // this just saves space... the presence of FACET_STATE really control the faceting
+      sreq.params.remove(FACET_STATE);
+    }
+  }
+
 
   @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
     FacetComponentState facetState = getFacetComponentState(rb);
     if (facetState == null) return ResponseBuilder.STAGE_DONE;
 
+    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
+      return ResponseBuilder.STAGE_DONE;
+    }
+
+    // Check if there are any refinements possible
+    if (facetState.mcontext.getSubsWithRefinement(facetState.facetRequest).isEmpty()) {
+      clearFaceting(rb.outgoing);
+      return ResponseBuilder.STAGE_DONE;
+    }
+
+    // Overlap facet refinement requests (those shards that we need a count
+    // for particular facet values from), where possible, with
+    // the requests to get fields (because we know that is the
+    // only other required phase).
+    // We do this in distributedProcess so we can look at all of the
+    // requests in the outgoing queue at once.
+
+    assert rb.shards.length == facetState.mcontext.numShards;
+    for (String shard : rb.shards) {
+      facetState.mcontext.setShard(shard);
+
+      // shard-specific refinement
+      Map<String,Object> refinement = facetState.merger.getRefinement(facetState.mcontext);
+      if (refinement == null) continue;
+
+      boolean newRequest = false;
+      ShardRequest shardsRefineRequest = null;
+
+      // try to find a request that is already going out to that shard.
+      // If nshards becomes too great, we may want to move to hashing for
+      // better scalability.
+      for (ShardRequest sreq : rb.outgoing) {
+        if ( (sreq.purpose & (ShardRequest.PURPOSE_GET_FIELDS|ShardRequest.PURPOSE_REFINE_FACETS|ShardRequest.PURPOSE_REFINE_PIVOT_FACETS)) != 0
+            && sreq.shards != null
+            && sreq.shards.length == 1
+            && sreq.shards[0].equals(shard))
+        {
+          shardsRefineRequest = sreq;
+          break;
+        }
+      }
+
+      if (shardsRefineRequest == null) {
+        // we didn't find any other suitable requests going out to that shard,
+        // so create one ourselves.
+        newRequest = true;
+        shardsRefineRequest = new ShardRequest();
+        shardsRefineRequest.shards = new String[] { shard };
+        shardsRefineRequest.params = new ModifiableSolrParams(rb.req.getParams());
+        // don't request any documents
+        shardsRefineRequest.params.remove(CommonParams.START);
+        shardsRefineRequest.params.set(CommonParams.ROWS, "0");
+        shardsRefineRequest.params.set(CommonParams.ROWS, "0");
+        shardsRefineRequest.params.set(FacetParams.FACET, false);
+      }
+
+      shardsRefineRequest.purpose |= PURPOSE_REFINE_JSON_FACETS;
+
+      Map<String,Object> fstate = new HashMap<>(1);
+      fstate.put(FACET_REFINE, refinement);
+      String fstateString = JSONUtil.toJSON(fstate);
+      shardsRefineRequest.params.add(FACET_STATE, fstateString);
+
+      if (newRequest) {
+        rb.addRequest(this, shardsRefineRequest);
+      }
+    }
+
+    // clearFaceting(rb.outgoing);
     return ResponseBuilder.STAGE_DONE;
   }
 
@@ -165,11 +242,13 @@ public class FacetModule extends SearchComponent {
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
       sreq.purpose |= FacetModule.PURPOSE_GET_JSON_FACETS;
-      sreq.params.set(FACET_STATE, "{}");
+      sreq.params.set(FACET_STATE, "{}"); // The presence of FACET_STATE (_facet_) turns on json faceting
     } else {
       // turn off faceting on other requests
-      sreq.params.remove("json.facet");
+      /*** distributedProcess will need to use other requests for refinement
+      sreq.params.remove("json.facet");  // this just saves space... the presence of FACET_STATE really control the faceting
       sreq.params.remove(FACET_STATE);
+       **/
     }
   }
 
@@ -186,8 +265,11 @@ public class FacetModule extends SearchComponent {
       if (facet == null) continue;
       if (facetState.merger == null) {
         facetState.merger = facetState.facetRequest.createFacetMerger(facet);
+        facetState.mcontext = new FacetMerger.Context( sreq.responses.size() );
       }
-      facetState.merger.merge(facet , new FacetMerger.Context());
+      facetState.mcontext.root = facet;
+      facetState.mcontext.newShard(shardRsp.getShard());
+      facetState.merger.merge(facet , facetState.mcontext);
     }
   }
 
@@ -199,6 +281,7 @@ public class FacetModule extends SearchComponent {
     if (facetState == null) return;
 
     if (facetState.merger != null) {
+      // TODO: merge any refinements
       rb.rsp.add("facets", facetState.merger.getMergedResult());
     }
   }
@@ -226,17 +309,23 @@ class FacetComponentState {
   // Only used for distributed search
   //
   FacetMerger merger;
+  FacetMerger.Context mcontext;
 }
 
-
+// base class for facet functions that can be used in a sort
 abstract class FacetSortableMerger extends FacetMerger {
   public void prepareSort() {
+  }
+
+  @Override
+  public void finish(Context mcontext) {
+    // nothing to do for simple stats...
   }
 
   /** Return the normal comparison sort order.  The sort direction is only to be used in special circumstances (such as making NaN sort
    * last regardless of sort order.)  Normal sorters do not need to pay attention to direction.
    */
-  public abstract int compareTo(FacetSortableMerger other, FacetField.SortDirection direction);
+  public abstract int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction);
 }
 
 abstract class FacetDoubleMerger extends FacetSortableMerger {
@@ -252,12 +341,12 @@ abstract class FacetDoubleMerger extends FacetSortableMerger {
 
 
   @Override
-  public int compareTo(FacetSortableMerger other, FacetField.SortDirection direction) {
+  public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
     return compare(getDouble(), ((FacetDoubleMerger)other).getDouble(), direction);
   }
 
 
-  public static int compare(double a, double b, FacetField.SortDirection direction) {
+  public static int compare(double a, double b, FacetRequest.SortDirection direction) {
     if (a < b) return -1;
     if (a > b) return 1;
 
@@ -295,7 +384,7 @@ class FacetLongMerger extends FacetSortableMerger {
   }
 
   @Override
-  public int compareTo(FacetSortableMerger other, FacetField.SortDirection direction) {
+  public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
     return Long.compare(val, ((FacetLongMerger)other).val);
   }
 }
@@ -304,15 +393,20 @@ class FacetLongMerger extends FacetSortableMerger {
 // base class for facets that create buckets (and can hence have sub-facets)
 abstract class FacetBucketMerger<FacetRequestT extends FacetRequest> extends FacetMerger {
   FacetRequestT freq;
-  int bucketNumber;
 
   public FacetBucketMerger(FacetRequestT freq) {
     this.freq = freq;
   }
 
   /** Bucketval is the representative value for the bucket.  Only applicable to terms and range queries to distinguish buckets. */
-  FacetBucket newBucket(Comparable bucketVal) {
-    return new FacetBucket(this, bucketVal, bucketNumber++);
+  FacetBucket newBucket(Comparable bucketVal, Context mcontext) {
+    return new FacetBucket(this, bucketVal, mcontext);
+  }
+
+  @Override
+  public Map<String, Object> getRefinement(Context mcontext) {
+    Collection<String> refineTags = mcontext.getSubsWithRefinement(freq);
+    return null; // FIXME
   }
 
   // do subs...
@@ -334,6 +428,7 @@ abstract class FacetBucketMerger<FacetRequestT extends FacetRequest> extends Fac
   }
 }
 
+
 class FacetQueryMerger extends FacetBucketMerger<FacetQuery> {
   FacetBucket bucket;
 
@@ -344,9 +439,30 @@ class FacetQueryMerger extends FacetBucketMerger<FacetQuery> {
   @Override
   public void merge(Object facet, Context mcontext) {
     if (bucket == null) {
-      bucket = newBucket(null);
+      bucket = newBucket(null, mcontext);
     }
     bucket.mergeBucket((SimpleOrderedMap) facet, mcontext);
+  }
+
+  @Override
+  public Map<String, Object> getRefinement(Context mcontext) {
+    Collection<String> tags;
+    if (mcontext.bucketWasMissing()) {
+      // if this bucket was missing, we need to get all subfacets that have partials (that need to list values for refinement)
+      tags = mcontext.getSubsWithPartial(freq);
+    } else {
+      tags = mcontext.getSubsWithRefinement(freq);
+    }
+
+    Map<String,Object> refinement = bucket.getRefinement(mcontext, tags);
+
+    return refinement;
+  }
+
+
+  @Override
+  public void finish(Context mcontext) {
+    // FIXME we need to propagate!!!
   }
 
   @Override
@@ -357,451 +473,3 @@ class FacetQueryMerger extends FacetBucketMerger<FacetQuery> {
 
 
 
-class FacetBucket {
-  final FacetBucketMerger parent;
-  final Comparable bucketValue;
-  final int bucketNumber;  // this is just for internal correlation (the first bucket created is bucket 0, the next bucket 1, etc)
-
-  long count;
-  Map<String, FacetMerger> subs;
-
-  public FacetBucket(FacetBucketMerger parent, Comparable bucketValue, int bucketNumber) {
-    this.parent = parent;
-    this.bucketValue = bucketValue;
-    this.bucketNumber = bucketNumber;
-  }
-
-  public long getCount() {
-    return count;
-  }
-
-  /** returns the existing merger for the given key, or null if none yet exists */
-  FacetMerger getExistingMerger(String key) {
-    if (subs == null) return null;
-    return subs.get(key);
-  }
-
-  private FacetMerger getMerger(String key, Object prototype) {
-    FacetMerger merger = null;
-    if (subs != null) {
-      merger = subs.get(key);
-      if (merger != null) return merger;
-    }
-
-    merger = parent.createFacetMerger(key, prototype);
-
-    if (merger != null) {
-      if (subs == null) {
-        subs = new HashMap<>();
-      }
-      subs.put(key, merger);
-    }
-
-    return merger;
-  }
-
-  public void mergeBucket(SimpleOrderedMap bucket, FacetMerger.Context mcontext) {
-    // todo: for refinements, we want to recurse, but not re-do stats for intermediate buckets
-
-    // drive merging off the received bucket?
-    for (int i=0; i<bucket.size(); i++) {
-      String key = bucket.getName(i);
-      Object val = bucket.getVal(i);
-      if ("count".equals(key)) {
-        count += ((Number)val).longValue();
-        continue;
-      }
-      if ("val".equals(key)) {
-        // this is taken care of at a higher level...
-        continue;
-      }
-
-      FacetMerger merger = getMerger(key, val);
-
-      if (merger != null) {
-        merger.merge( val , mcontext );
-      }
-    }
-  }
-
-
-  public SimpleOrderedMap getMergedBucket() {
-    SimpleOrderedMap out = new SimpleOrderedMap( (subs == null ? 0 : subs.size()) + 2 );
-    if (bucketValue != null) {
-      out.add("val", bucketValue);
-    }
-    out.add("count", count);
-    if (subs != null) {
-      for (Map.Entry<String,FacetMerger> mergerEntry : subs.entrySet()) {
-        FacetMerger subMerger = mergerEntry.getValue();
-        out.add(mergerEntry.getKey(), subMerger.getMergedResult());
-      }
-    }
-
-    return out;
-  }
-}
-
-
-
-class FacetFieldMerger extends FacetBucketMerger<FacetField> {
-  FacetBucket missingBucket;
-  FacetBucket allBuckets;
-  FacetMerger numBuckets;
-
-  LinkedHashMap<Object,FacetBucket> buckets = new LinkedHashMap<>();
-  List<FacetBucket> sortedBuckets;
-  int numReturnedBuckets; // the number of buckets in the bucket lists returned from all of the shards
-
-  private static class SortVal implements Comparable<SortVal> {
-    FacetBucket bucket;
-    FacetSortableMerger merger;  // make this class inner and access merger , direction in parent?
-    FacetField.SortDirection direction;
-
-    @Override
-    public int compareTo(SortVal o) {
-      int c = -merger.compareTo(o.merger, direction) * direction.getMultiplier();
-      return c == 0 ? bucket.bucketValue.compareTo(o.bucket.bucketValue) : c;
-    }
-  }
-
-  public FacetFieldMerger(FacetField freq) {
-    super(freq);
-  }
-
-  @Override
-  public void merge(Object facetResult, Context mcontext) {
-    merge((SimpleOrderedMap)facetResult, mcontext);
-  }
-
-  protected void merge(SimpleOrderedMap facetResult, Context mcontext) {
-    if (freq.missing) {
-      Object o = facetResult.get("missing");
-      if (o != null) {
-        if (missingBucket == null) {
-          missingBucket = newBucket(null);
-        }
-        missingBucket.mergeBucket((SimpleOrderedMap)o , mcontext);
-      }
-    }
-
-    if (freq.allBuckets) {
-      Object o = facetResult.get("allBuckets");
-      if (o != null) {
-        if (allBuckets == null) {
-          allBuckets = newBucket(null);
-        }
-        allBuckets.mergeBucket((SimpleOrderedMap)o , mcontext);
-      }
-    }
-
-    List<SimpleOrderedMap> bucketList = (List<SimpleOrderedMap>) facetResult.get("buckets");
-    numReturnedBuckets += bucketList.size();
-    mergeBucketList(bucketList , mcontext);
-
-    if (freq.numBuckets) {
-      Object nb = facetResult.get("numBuckets");
-      if (nb != null) {
-        if (numBuckets == null) {
-          numBuckets = new FacetNumBucketsMerger();
-        }
-        numBuckets.merge(nb , mcontext);
-      }
-    }
-
-  }
-
-  public void mergeBucketList(List<SimpleOrderedMap> bucketList, Context mcontext) {
-    for (SimpleOrderedMap bucketRes : bucketList) {
-      Comparable bucketVal = (Comparable)bucketRes.get("val");
-      FacetBucket bucket = buckets.get(bucketVal);
-      if (bucket == null) {
-        bucket = newBucket(bucketVal);
-        buckets.put(bucketVal, bucket);
-      }
-      bucket.mergeBucket( bucketRes , mcontext );
-    }
-  }
-
-  public void sortBuckets() {
-    sortedBuckets = new ArrayList<>( buckets.values() );
-
-    Comparator<FacetBucket> comparator = null;
-
-    final FacetField.SortDirection direction = freq.sortDirection;
-    final int sortMul = direction.getMultiplier();
-
-    if ("count".equals(freq.sortVariable)) {
-      comparator = (o1, o2) -> {
-        int v = -Long.compare(o1.count, o2.count) * sortMul;
-        return v == 0 ? o1.bucketValue.compareTo(o2.bucketValue) : v;
-      };
-      Collections.sort(sortedBuckets, comparator);
-    } else if ("index".equals(freq.sortVariable)) {
-      comparator = (o1, o2) -> -o1.bucketValue.compareTo(o2.bucketValue) * sortMul;
-      Collections.sort(sortedBuckets, comparator);
-    } else {
-      final String key = freq.sortVariable;
-
-      /**
-      final FacetSortableMerger[] arr = new FacetSortableMerger[buckets.size()];
-      final int[] index = new int[arr.length];
-      int start = 0;
-      int nullStart = index.length;
-      int i=0;
-      for (FacetBucket bucket : buckets.values()) {
-        FacetMerger merger = bucket.getExistingMerger(key);
-        if (merger == null) {
-          index[--nullStart] = i;
-        }
-        if (merger != null) {
-          arr[start] = (FacetSortableMerger)merger;
-          index[start] = i;
-          start++;
-        }
-        i++;
-      }
-
-      PrimUtils.sort(0, nullStart, index, new PrimUtils.IntComparator() {
-        @Override
-        public int compare(int a, int b) {
-          return arr[index[a]].compareTo(arr[index[b]], direction);
-        }
-      });
-      **/
-
-      // timsort may do better here given that the lists may be partially sorted.
-
-      List<SortVal> lst = new ArrayList<SortVal>(buckets.size());
-      List<FacetBucket> nulls = new ArrayList<FacetBucket>(buckets.size()>>1);
-      for (int i=0; i<sortedBuckets.size(); i++) {
-        FacetBucket bucket = sortedBuckets.get(i);
-        FacetMerger merger = bucket.getExistingMerger(key);
-        if (merger == null) {
-          nulls.add(bucket);
-        }
-        if (merger != null) {
-          SortVal sv = new SortVal();
-          sv.bucket = bucket;
-          sv.merger = (FacetSortableMerger)merger;
-          sv.direction = direction;
-          // sv.pos = i;  // if we need position in the future...
-          lst.add(sv);
-        }
-      }
-      Collections.sort(lst);
-      Collections.sort(nulls, (o1, o2) -> o1.bucketValue.compareTo(o2.bucketValue));
-
-      ArrayList<FacetBucket> out = new ArrayList<>(buckets.size());
-      for (SortVal sv : lst) {
-        out.add( sv.bucket );
-      }
-      out.addAll(nulls);
-      sortedBuckets = out;
-    }
-  }
-
-  @Override
-  public Object getMergedResult() {
-    SimpleOrderedMap result = new SimpleOrderedMap();
-
-    if (numBuckets != null) {
-      int removed = 0;
-      if (freq.mincount > 1) {
-        for (FacetBucket bucket : buckets.values()) {
-          if (bucket.count < freq.mincount) removed++;
-        }
-      }
-      result.add("numBuckets", ((Number)numBuckets.getMergedResult()).longValue() - removed);
-
-      // TODO: we can further increase this estimate.
-      // If not sorting by count, use a simple ratio to scale
-      // If sorting by count desc, then add up the highest_possible_missing_count from each shard
-    }
-
-    sortBuckets();
-
-    int first = (int)freq.offset;
-    int end = freq.limit >=0 ? first + (int) freq.limit : Integer.MAX_VALUE;
-    int last = Math.min(sortedBuckets.size(), end);
-
-    List<SimpleOrderedMap> resultBuckets = new ArrayList<>(Math.max(0, (last - first)));
-
-    /** this only works if there are no filters (like mincount)
-    for (int i=first; i<last; i++) {
-      FacetBucket bucket = sortedBuckets.get(i);
-      resultBuckets.add( bucket.getMergedBucket() );
-    }
-    ***/
-
-    // TODO: change effective offsets + limits at shards...
-
-    int off = (int)freq.offset;
-    int lim = freq.limit >= 0 ? (int)freq.limit : Integer.MAX_VALUE;
-    for (FacetBucket bucket : sortedBuckets) {
-      if (bucket.getCount() < freq.mincount) {
-        continue;
-      }
-
-      if (off > 0) {
-        --off;
-        continue;
-      }
-
-      if (resultBuckets.size() >= lim) {
-        break;
-      }
-
-      resultBuckets.add( bucket.getMergedBucket() );
-    }
-
-
-    result.add("buckets", resultBuckets);
-    if (missingBucket != null) {
-      result.add("missing", missingBucket.getMergedBucket());
-    }
-    if (allBuckets != null) {
-      result.add("allBuckets", allBuckets.getMergedBucket());
-    }
-
-    return result;
-  }
-
-
-  private class FacetNumBucketsMerger extends FacetMerger {
-    long sumBuckets;
-    long shardsMissingSum;
-    long shardsTruncatedSum;
-    Set<Object> values;
-
-    @Override
-    public void merge(Object facetResult, Context mcontext) {
-      SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
-      long numBuckets = ((Number)map.get("numBuckets")).longValue();
-      sumBuckets += numBuckets;
-
-      List vals = (List)map.get("vals");
-      if (vals != null) {
-        if (values == null) {
-          values = new HashSet<>(vals.size()*4);
-        }
-        values.addAll(vals);
-        if (numBuckets > values.size()) {
-          shardsTruncatedSum += numBuckets - values.size();
-        }
-      } else {
-        shardsMissingSum += numBuckets;
-      }
-    }
-
-    @Override
-    public Object getMergedResult() {
-      long exactCount = values == null ? 0 : values.size();
-      return exactCount + shardsMissingSum + shardsTruncatedSum;
-      // TODO: reduce count by (at least) number of buckets that fail to hit mincount (after merging)
-      // that should make things match for most of the small tests at least
-    }
-  }
-}
-
-
-class FacetRangeMerger extends FacetBucketMerger<FacetRange> {
-  FacetBucket beforeBucket;
-  FacetBucket afterBucket;
-  FacetBucket betweenBucket;
-
-  LinkedHashMap<Object, FacetBucket> buckets = new LinkedHashMap<Object, FacetBucket>();
-
-
-  public FacetRangeMerger(FacetRange freq) {
-    super(freq);
-  }
-
-  @Override
-  FacetMerger createFacetMerger(String key, Object val) {
-    return super.createFacetMerger(key, val);
-  }
-
-  @Override
-  public void merge(Object facetResult, Context mcontext) {
-    merge((SimpleOrderedMap) facetResult , mcontext);
-  }
-
-  public void merge(SimpleOrderedMap facetResult, Context mcontext) {
-    boolean all = freq.others.contains(FacetParams.FacetRangeOther.ALL);
-
-    if (all || freq.others.contains(FacetParams.FacetRangeOther.BEFORE)) {
-      Object o = facetResult.get("before");
-      if (o != null) {
-        if (beforeBucket == null) {
-          beforeBucket = newBucket(null);
-        }
-        beforeBucket.mergeBucket((SimpleOrderedMap)o, mcontext);
-      }
-    }
-
-    if (all || freq.others.contains(FacetParams.FacetRangeOther.AFTER)) {
-      Object o = facetResult.get("after");
-      if (o != null) {
-        if (afterBucket == null) {
-          afterBucket = newBucket(null);
-        }
-        afterBucket.mergeBucket((SimpleOrderedMap)o , mcontext);
-      }
-    }
-
-    if (all || freq.others.contains(FacetParams.FacetRangeOther.BETWEEN)) {
-      Object o = facetResult.get("between");
-      if (o != null) {
-        if (betweenBucket == null) {
-          betweenBucket = newBucket(null);
-        }
-        betweenBucket.mergeBucket((SimpleOrderedMap)o , mcontext);
-      }
-    }
-
-    List<SimpleOrderedMap> bucketList = (List<SimpleOrderedMap>) facetResult.get("buckets");
-    mergeBucketList(bucketList , mcontext);
-  }
-
-  // TODO: share more merging with field faceting
-  public void mergeBucketList(List<SimpleOrderedMap> bucketList, Context mcontext) {
-    for (SimpleOrderedMap bucketRes : bucketList) {
-      Comparable bucketVal = (Comparable)bucketRes.get("val");
-      FacetBucket bucket = buckets.get(bucketVal);
-      if (bucket == null) {
-        bucket = newBucket(bucketVal);
-        buckets.put(bucketVal, bucket);
-      }
-      bucket.mergeBucket( bucketRes , mcontext );
-    }
-  }
-
-  @Override
-  public Object getMergedResult() {
-    SimpleOrderedMap result = new SimpleOrderedMap(4);
-
-    List<SimpleOrderedMap> resultBuckets = new ArrayList<>(buckets.size());
-
-    for (FacetBucket bucket : buckets.values()) {
-       if (bucket.getCount() < freq.mincount) {
-         continue;
-       }
-      resultBuckets.add( bucket.getMergedBucket() );
-    }
-
-    result.add("buckets", resultBuckets);
-
-    if (beforeBucket != null) {
-      result.add("before", beforeBucket.getMergedBucket());
-    }
-    if (afterBucket != null) {
-      result.add("after", afterBucket.getMergedBucket());
-    }
-    if (betweenBucket != null) {
-      result.add("between", betweenBucket.getMergedBucket());
-    }
-    return result;
-
-  }
-}

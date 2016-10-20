@@ -21,8 +21,8 @@ import java.util.Arrays;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.ArrayUtil;
@@ -60,15 +60,17 @@ class BlockJoinFieldFacetAccumulator {
     fieldType = schemaField.getType();
     ordinalMap = null;
     if (schemaField.multiValued()) {
-      topSSDV = searcher.getLeafReader().getSortedSetDocValues(fieldName);
+      topSSDV = searcher.getSlowAtomicReader().getSortedSetDocValues(fieldName);
       if (topSSDV instanceof MultiDocValues.MultiSortedSetDocValues) {
         ordinalMap = ((MultiDocValues.MultiSortedSetDocValues) topSSDV).mapping;
       }
     } else {
-      SortedDocValues single = searcher.getLeafReader().getSortedDocValues(fieldName);
-      topSSDV = single == null ? null : DocValues.singleton(single);// npe friendly code
+      SortedDocValues single = searcher.getSlowAtomicReader().getSortedDocValues(fieldName);
       if (single instanceof MultiDocValues.MultiSortedDocValues) {
         ordinalMap = ((MultiDocValues.MultiSortedDocValues) single).mapping;
+      }
+      if (single != null) {
+        topSSDV = DocValues.singleton(single);
       }
     }
   }
@@ -135,18 +137,31 @@ class BlockJoinFieldFacetAccumulator {
       // some codecs may optimize SORTED_SET storage for single-valued fields
       for (iter.reset(); iter.hasNext(); ) {
         final int docNum = iter.nextDoc();
-        int term = segmentSDV.getOrd(docNum);
+        if (docNum > segmentSDV.docID()) {
+          segmentSDV.advance(docNum);
+        }
+        
+        int term;
+        if (docNum == segmentSDV.docID()) {
+          term = segmentSDV.ordValue();
+        } else {
+          term = -1;
+        }
         accumulateTermOrd(term, iter.getAggKey());
         //System.out.println("doc# "+docNum+" "+fieldName+" term# "+term+" tick "+Long.toHexString(segmentAccums[1+term]));
       }
     } else {
       for (iter.reset(); iter.hasNext(); ) {
         final int docNum = iter.nextDoc();
-        segmentSSDV.setDocument(docNum);
-        int term = (int) segmentSSDV.nextOrd();
-        do { // absent values are designated by term=-1, first iteration counts [0] as "missing", and exit, otherwise it spins 
-          accumulateTermOrd(term, iter.getAggKey());
-        } while (term>=0 && (term = (int) segmentSSDV.nextOrd()) >= 0);
+        if (docNum > segmentSSDV.docID()) {
+          segmentSSDV.advance(docNum);
+        }
+        if (docNum == segmentSSDV.docID()) {
+          int term = (int) segmentSSDV.nextOrd();
+          do { // absent values are designated by term=-1, first iteration counts [0] as "missing", and exit, otherwise it spins 
+            accumulateTermOrd(term, iter.getAggKey());
+          } while (term>=0 && (term = (int) segmentSSDV.nextOrd()) >= 0);
+        }
       }
     }
   }
@@ -156,7 +171,7 @@ class BlockJoinFieldFacetAccumulator {
   }
   
   /** copy paste from {@link DocValuesFacets} */
-  NamedList<Integer> getFacetValue() {
+  NamedList<Integer> getFacetValue() throws IOException {
     NamedList<Integer> facetValue = new NamedList<>();
     final CharsRefBuilder charsRef = new CharsRefBuilder(); // if there is no globs, take segment's ones
     for (int i = 1; i< (globalCounts!=null ? globalCounts.length: segmentAccums.length); i++) {

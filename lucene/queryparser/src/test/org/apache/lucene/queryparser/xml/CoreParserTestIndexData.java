@@ -20,7 +20,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -53,7 +52,6 @@ class CoreParserTestIndexData implements Closeable {
       Document doc = new Document();
       doc.add(LuceneTestCase.newTextField("date", date, Field.Store.YES));
       doc.add(LuceneTestCase.newTextField("contents", content, Field.Store.YES));
-      doc.add(new LegacyIntField("date2", Integer.valueOf(date), Field.Store.NO));
       doc.add(new IntPoint("date3", Integer.valueOf(date)));
       writer.addDocument(doc);
       line = d.readLine();

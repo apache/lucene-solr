@@ -63,6 +63,34 @@ public class Vector {
    * Produces a normalized final vector.
    *
    * @param A is the first vector
+   * @param BX is the X value of the second 
+   * @param BY is the Y value of the second
+   * @param BZ is the Z value of the second
+   */
+  public Vector(final Vector A, final double BX, final double BY, final double BZ) {
+    // x = u2v3 - u3v2
+    // y = u3v1 - u1v3
+    // z = u1v2 - u2v1
+    final double thisX = A.y * BZ - A.z * BY;
+    final double thisY = A.z * BX - A.x * BZ;
+    final double thisZ = A.x * BY - A.y * BX;
+    final double magnitude = magnitude(thisX, thisY, thisZ);
+    if (Math.abs(magnitude) < MINIMUM_RESOLUTION) {
+      throw new IllegalArgumentException("Degenerate/parallel vector constructed");
+    }
+    final double inverseMagnitude = 1.0 / magnitude;
+    this.x = thisX * inverseMagnitude;
+    this.y = thisY * inverseMagnitude;
+    this.z = thisZ * inverseMagnitude;
+  }
+
+  /**
+   * Construct a vector that is perpendicular to
+   * two other (non-zero) vectors.  If the vectors are parallel,
+   * IllegalArgumentException will be thrown.
+   * Produces a normalized final vector.
+   *
+   * @param A is the first vector
    * @param B is the second
    */
   public Vector(final Vector A, final Vector B) {
@@ -133,16 +161,16 @@ public class Vector {
    * @param moreBounds is the second part of the set of planes.
    * @return true if the point is within the bounds.
    */
-  public boolean isWithin(final Membership[] bounds, final Membership[] moreBounds) {
+  public boolean isWithin(final Membership[] bounds, final Membership... moreBounds) {
     // Return true if the point described is within all provided bounds
     //System.err.println("  checking if "+this+" is within bounds");
-    for (Membership bound : bounds) {
+    for (final Membership bound : bounds) {
       if (bound != null && !bound.isWithin(this)) {
         //System.err.println("    NOT within "+bound);
         return false;
       }
     }
-    for (Membership bound : moreBounds) {
+    for (final Membership bound : moreBounds) {
       if (bound != null && !bound.isWithin(this)) {
         //System.err.println("    NOT within "+bound);
         return false;
@@ -326,6 +354,20 @@ public class Vector {
    */
   public double magnitude() {
     return magnitude(x,y,z);
+  }
+
+  /**
+   * Compute whether two vectors are numerically identical.
+   * @param otherX is the other vector X.
+   * @param otherY is the other vector Y.
+   * @param otherZ is the other vector Z.
+   * @return true if they are numerically identical.
+   */
+  public boolean isNumericallyIdentical(final double otherX, final double otherY, final double otherZ) {
+    final double thisX = y * otherZ - z * otherY;
+    final double thisY = z * otherX - x * otherZ;
+    final double thisZ = x * otherY - y * otherX;
+    return thisX * thisX + thisY * thisY + thisZ * thisZ < MINIMUM_RESOLUTION_SQUARED;
   }
 
   /**

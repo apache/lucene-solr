@@ -1,5 +1,3 @@
-package org.apache.lucene.replicator.nrt;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,48 +15,15 @@ package org.apache.lucene.replicator.nrt;
  * limitations under the License.
  */
 
-import java.io.BufferedOutputStream;
-import java.io.Closeable;
-import java.io.EOFException;
-import java.io.FileNotFoundException;
+package org.apache.lucene.replicator.nrt;
+
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.OutputStreamDataOutput;
-import org.apache.lucene.store.OutputStreamIndexOutput;
-import org.apache.lucene.store.RateLimiter;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 /** Handles one set of files that need copying, either because we have a
  *  new NRT point, or we are pre-copying merged files for merge warming. */
@@ -153,6 +118,8 @@ class SimpleCopyJob extends CopyJob {
       return highPriority ? -1 : 1;
     } else if (ord < other.ord) {
       return -1;
+    } else if (ord > other.ord) {
+      return 1;
     } else {
       return 0;
     }
@@ -180,7 +147,7 @@ class SimpleCopyJob extends CopyJob {
       // NOTE: if this throws exception, then some files have been moved to their true names, and others are leftover .tmp files.  I don't
       // think heroic exception handling is necessary (no harm will come, except some leftover files),  nor warranted here (would make the
       // code more complex, for the exceptional cases when something is wrong w/ your IO system):
-      dest.dir.renameFile(tmpFileName, fileName);
+      dest.dir.rename(tmpFileName, fileName);
     }
 
     copiedFiles.clear();

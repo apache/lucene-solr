@@ -92,7 +92,6 @@ public class TestFSTs extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newMockDirectory();
-    dir.setPreventDoubleWrite(false);
   }
 
   @Override

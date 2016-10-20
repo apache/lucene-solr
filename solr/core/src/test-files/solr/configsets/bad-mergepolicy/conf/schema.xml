@@ -16,10 +16,6 @@
  limitations under the License.
 -->
 <schema name="minimal" version="1.1">
- <types>
   <fieldType name="string" class="solr.StrField"/>
- </types>
- <fields>
-   <dynamicField name="*" type="string" indexed="true" stored="true" />
- </fields>
+  <dynamicField name="*" type="string" indexed="true" stored="true"/>
 </schema>

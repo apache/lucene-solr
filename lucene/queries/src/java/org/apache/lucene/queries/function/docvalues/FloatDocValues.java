@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.queries.function.docvalues;
 
+import java.io.IOException;
+
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.mutable.MutableValue;
@@ -33,45 +35,45 @@ public abstract class FloatDocValues extends FunctionValues {
   }
 
   @Override
-  public byte byteVal(int doc) {
+  public byte byteVal(int doc) throws IOException {
     return (byte)floatVal(doc);
   }
 
   @Override
-  public short shortVal(int doc) {
+  public short shortVal(int doc) throws IOException {
     return (short)floatVal(doc);
   }
 
   @Override
-  public abstract float floatVal(int doc);
+  public abstract float floatVal(int doc) throws IOException;
 
   @Override
-  public int intVal(int doc) {
+  public int intVal(int doc) throws IOException {
     return (int)floatVal(doc);
   }
 
   @Override
-  public long longVal(int doc) {
+  public long longVal(int doc) throws IOException {
     return (long)floatVal(doc);
   }
 
   @Override
-  public double doubleVal(int doc) {
+  public double doubleVal(int doc) throws IOException {
     return (double)floatVal(doc);
   }
 
   @Override
-  public String strVal(int doc) {
+  public String strVal(int doc) throws IOException {
     return Float.toString(floatVal(doc));
   }
 
   @Override
-  public Object objectVal(int doc) {
+  public Object objectVal(int doc) throws IOException {
     return exists(doc) ? floatVal(doc) : null;
   }
 
   @Override
-  public String toString(int doc) {
+  public String toString(int doc) throws IOException {
     return vs.description() + '=' + strVal(doc);
   }
 
@@ -86,7 +88,7 @@ public abstract class FloatDocValues extends FunctionValues {
       }
 
       @Override
-      public void fillValue(int doc) {
+      public void fillValue(int doc) throws IOException {
         mval.value = floatVal(doc);
         mval.exists = exists(doc);
       }

@@ -30,7 +30,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.transform.GeoTransformerFactory;
 import org.apache.solr.response.transform.WriteableGeoJSON;
 import org.apache.solr.schema.AbstractSpatialFieldType;
 import org.apache.solr.schema.SchemaField;

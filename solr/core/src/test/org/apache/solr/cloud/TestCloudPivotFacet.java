@@ -53,6 +53,7 @@ import static org.apache.solr.common.params.FacetParams.FACET_OVERREQUEST_RATIO;
 import static org.apache.solr.common.params.FacetParams.FACET_PIVOT;
 import static org.apache.solr.common.params.FacetParams.FACET_PIVOT_MINCOUNT;
 import static org.apache.solr.common.params.FacetParams.FACET_SORT;
+import static org.apache.solr.common.params.FacetParams.FACET_DISTRIB_MCO;
 
 /**
  * <p>
@@ -83,6 +84,8 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
   // param used by test purely for tracing & validation
   private static String TRACE_MIN = "_test_min";
+  // param used by test purely for tracing & validation
+  private static String TRACE_DISTRIB_MIN = "_test_distrib_min";
   // param used by test purely for tracing & validation
   private static String TRACE_MISS = "_test_miss";
   // param used by test purely for tracing & validation
@@ -189,6 +192,12 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
         pivotP.add(FACET_PIVOT_MINCOUNT, min);
         // trace param for validation
         baseP.add(TRACE_MIN, min);
+      }
+      
+      if (random().nextBoolean()) {
+        pivotP.add(FACET_DISTRIB_MCO, "true");
+        // trace param for validation
+        baseP.add(TRACE_DISTRIB_MIN, "true");
       }
 
       if (random().nextBoolean()) {
@@ -516,7 +525,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     // randomly decide which stat tag to use
 
     // if this is 0, or stats aren't enabled, we'll be asking for a tag that doesn't exist
-    // ...which should be fine (just like excluding a taged fq that doesn't exist)
+    // ...which should be fine (just like excluding a tagged fq that doesn't exist)
     final int statTag = TestUtil.nextInt(random(), -1, 4);
       
     if (0 <= statTag) {

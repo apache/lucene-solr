@@ -392,11 +392,11 @@ public class TestValueSources extends LuceneTestCase {
         protected String name() { return "tf_based_exists"; }
 
         @Override
-        protected float func(int doc, FunctionValues[] valsArr) {
+        protected float func(int doc, FunctionValues[] valsArr) throws IOException {
           return valsArr[0].floatVal(doc);
         }
         @Override
-        protected boolean exists(int doc, FunctionValues[] valsArr) {
+        protected boolean exists(int doc, FunctionValues[] valsArr) throws IOException {
           // if tf > 0, then it should exist
           return 0 < func(doc, valsArr);
         }

@@ -16,21 +16,15 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Set;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import java.util.Random;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -49,7 +43,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Base64;
+import org.apache.solr.common.params.ModifiableSolrParams;
 
 /**
  * The ParallelStream decorates a TupleStream implementation and pushes it to N workers for parallel execution.
@@ -107,7 +101,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
 
     // Workers
     if(null == workersParam || null == workersParam.getParameter() || !(workersParam.getParameter() instanceof StreamExpressionValue)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single 'workersParam' parameter of type positive integer but didn't find one",expression));
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single 'workers' parameter of type positive integer but didn't find one",expression));
     }
     String workersStr = ((StreamExpressionValue)workersParam.getParameter()).getValue();
     int workersInt = 0;
@@ -287,16 +281,17 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
       Collections.shuffle(shuffler, new Random());
 
       for(int w=0; w<workers; w++) {
-        HashMap params = new HashMap();
-        params.put("distrib","false"); // We are the aggregator.
-        params.put("numWorkers", workers);
-        params.put("workerID", w);
-        params.put("expr", pushStream);
-        params.put("qt","/stream");
+        ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+        paramsLoc.set("distrib","false"); // We are the aggregator.
+        paramsLoc.set("numWorkers", workers);
+        paramsLoc.set("workerID", w);
+
+        paramsLoc.set("expr", pushStream.toString());
+        paramsLoc.set("qt","/stream");
         Replica rep = shuffler.get(w);
         ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
         String url = zkProps.getCoreUrl();
-        SolrStream solrStream = new SolrStream(url, params);
+        SolrStream solrStream = new SolrStream(url, paramsLoc);
         solrStreams.add(solrStream);
       }
 

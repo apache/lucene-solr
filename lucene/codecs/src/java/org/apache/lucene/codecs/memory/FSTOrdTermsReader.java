@@ -48,7 +48,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
@@ -706,7 +705,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
       /** Load frame for start arc(node) on fst */
       Frame loadFirstFrame(Frame frame) throws IOException {
         frame.arc = fst.getFirstArc(frame.arc);
-        frame.state = fsa.getInitialState();
+        frame.state = 0;
         return frame;
       }
 

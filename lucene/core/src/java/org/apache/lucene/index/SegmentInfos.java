@@ -17,6 +17,20 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -31,20 +45,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
-
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * A collection of segmentInfo objects with methods for operating on those
@@ -103,7 +103,7 @@ import java.util.Set;
  * <li>SegID is the identifier of the Codec that encoded this segment. </li>
  * <li>CommitUserData stores an optional user-supplied opaque
  * Map&lt;String,String&gt; that was passed to
- * {@link IndexWriter#setCommitData(java.util.Map)}.</li>
+ * {@link IndexWriter#setLiveCommitData(Iterable)}.</li>
  * <li>FieldInfosGen is the generation count of the fieldInfos file. If this is
  * -1, there are no updates to the fieldInfos in that segment. Anything above
  * zero means there are updates to fieldInfos stored by {@link FieldInfosFormat}
@@ -119,10 +119,6 @@ import java.util.Set;
  */
 public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo> {
 
-  /** The file format version for the segments_N codec header, since 5.0+ */
-  public static final int VERSION_50 = 4;
-  /** The file format version for the segments_N codec header, since 5.1+ */
-  public static final int VERSION_51 = 5; // use safe maps
   /** Adds the {@link Version} that committed this segments_N file, as well as the {@link Version} of the oldest segment, since 5.3+ */
   public static final int VERSION_53 = 6;
 
@@ -294,7 +290,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     if (magic != CodecUtil.CODEC_MAGIC) {
       throw new IndexFormatTooOldException(input, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
     }
-    int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_50, VERSION_CURRENT);
+    int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_53, VERSION_CURRENT);
     byte id[] = new byte[StringHelper.ID_LENGTH];
     input.readBytes(id, 0, id.length);
     CodecUtil.checkIndexHeaderSuffix(input, Long.toString(generation, Character.MAX_RADIX));
@@ -351,11 +347,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       long fieldInfosGen = input.readLong();
       long dvGen = input.readLong();
       SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, delGen, fieldInfosGen, dvGen);
-      if (format >= VERSION_51) {
-        siPerCommit.setFieldInfosFiles(input.readSetOfStrings());
-      } else {
-        siPerCommit.setFieldInfosFiles(Collections.unmodifiableSet(input.readStringSet()));
-      }
+      siPerCommit.setFieldInfosFiles(input.readSetOfStrings());
       final Map<Integer,Set<String>> dvUpdateFiles;
       final int numDVFields = input.readInt();
       if (numDVFields == 0) {
@@ -363,11 +355,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       } else {
         Map<Integer,Set<String>> map = new HashMap<>(numDVFields);
         for (int i = 0; i < numDVFields; i++) {
-          if (format >= VERSION_51) {
-            map.put(input.readInt(), input.readSetOfStrings());
-          } else {
-            map.put(input.readInt(), Collections.unmodifiableSet(input.readStringSet()));
-          }
+          map.put(input.readInt(), input.readSetOfStrings());
         }
         dvUpdateFiles = Collections.unmodifiableMap(map);
       }
@@ -381,11 +369,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       }
     }
 
-    if (format >= VERSION_51) {
-      infos.userData = input.readMapOfStrings();
-    } else {
-      infos.userData = Collections.unmodifiableMap(input.readStringStringMap());
-    }
+    infos.userData = input.readMapOfStrings();
 
     CodecUtil.checkFooter(input);
 
@@ -443,7 +427,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     String segmentFileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.PENDING_SEGMENTS,
                                                                    "",
                                                                    nextGeneration);
-    
+
     // Always advance the generation on write:
     generation = nextGeneration;
     
@@ -788,7 +772,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     try {
       final String src = IndexFileNames.fileNameFromGeneration(IndexFileNames.PENDING_SEGMENTS, "", generation);
       dest = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", generation);
-      dir.renameFile(src, dest);
+      dir.rename(src, dest);
+      dir.syncMetaData();
       success = true;
     } finally {
       if (!success) {

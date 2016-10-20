@@ -20,13 +20,17 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -42,6 +46,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -54,13 +59,13 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.BasicResultContext;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocList;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -98,8 +103,22 @@ public class RealTimeGetComponent extends SearchComponent
     if (!params.getBool(COMPONENT_NAME, true)) {
       return;
     }
-
-    String val = params.get("getVersions");
+    
+    // This seems rather kludgey, may there is better way to indicate
+    // that replica can support handling version ranges
+    String val = params.get("checkCanHandleVersionRanges");
+    if(val != null) {
+      rb.rsp.add("canHandleVersionRanges", true);
+      return;
+    }
+    
+    val = params.get("getFingerprint");
+    if(val != null) {
+      processGetFingeprint(rb);
+      return;
+    }
+    
+    val = params.get("getVersions");
     if (val != null) {
       processGetVersions(rb);
       return;
@@ -130,10 +149,9 @@ public class RealTimeGetComponent extends SearchComponent
       return;
     }
 
-    String id[] = params.getParams("id");
-    String ids[] = params.getParams("ids");
-
-    if (id == null && ids == null) {
+    final IdsRequsted reqIds = IdsRequsted.parseParams(req);
+    
+    if (reqIds.allIds.isEmpty()) {
       return;
     }
 
@@ -146,7 +164,7 @@ public class RealTimeGetComponent extends SearchComponent
         filters = filters == null ? new ArrayList<Query>(fqs.length) : new ArrayList<>(filters);
         for (String fq : fqs) {
           if (fq != null && fq.trim().length()!=0) {
-            QParser fqp = QParser.getParser(fq, null, req);
+            QParser fqp = QParser.getParser(fq, req);
             filters.add(fqp.getQuery());
           }
         }
@@ -158,20 +176,6 @@ public class RealTimeGetComponent extends SearchComponent
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
-
-    String[] allIds = id==null ? new String[0] : id;
-
-    if (ids != null) {
-      List<String> lst = new ArrayList<>();
-      for (String s : allIds) {
-        lst.add(s);
-      }
-      for (String idList : ids) {
-        lst.addAll( StrUtils.splitSmart(idList, ",", true) );
-      }
-      allIds = lst.toArray(new String[lst.size()]);
-    }
-
     SolrCore core = req.getCore();
     SchemaField idField = core.getLatestSchema().getUniqueKeyField();
     FieldType fieldType = idField.getType();
@@ -180,17 +184,23 @@ public class RealTimeGetComponent extends SearchComponent
     UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
 
     RefCounted<SolrIndexSearcher> searcherHolder = null;
+    
+    // this is initialized & set on the context *after* any searcher (re-)opening
+    ResultContext resultContext = null;
+    final DocTransformer transformer = rsp.getReturnFields().getTransformer();
 
-    DocTransformer transformer = rsp.getReturnFields().getTransformer();
-    if (transformer != null) {
-      ResultContext context = new BasicResultContext(null, rsp.getReturnFields(), null, null, req);
-      transformer.setContext(context);
-    }
+    // true in any situation where we have to use a realtime searcher rather then returning docs
+    // directly from the UpdateLog
+    final boolean mustUseRealtimeSearcher =
+      // if we have filters, we need to check those against the indexed form of the doc
+      (rb.getFilters() != null)
+      || ((null != transformer) && transformer.needsSolrIndexSearcher());
+
    try {
      SolrIndexSearcher searcher = null;
 
      BytesRefBuilder idBytes = new BytesRefBuilder();
-     for (String idStr : allIds) {
+     for (String idStr : reqIds.allIds) {
        fieldType.readableToIndexed(idStr, idBytes);
        if (ulog != null) {
          Object o = ulog.lookup(idBytes.get());
@@ -202,13 +212,13 @@ public class RealTimeGetComponent extends SearchComponent
            switch (oper) {
              case UpdateLog.ADD:
 
-               if (rb.getFilters() != null) {
-                 // we have filters, so we need to check those against the indexed form of the doc
+               if (mustUseRealtimeSearcher) {
                  if (searcherHolder != null) {
-                   // close handles to current searchers
+                   // close handles to current searchers & result context
                    searcher = null;
                    searcherHolder.decref();
                    searcherHolder = null;
+                   resultContext = null;
                  }
                  ulog.openRealtimeSearcher();  // force open a new realtime searcher
                  o = null;  // pretend we never found this record and fall through to use the searcher
@@ -216,7 +226,7 @@ public class RealTimeGetComponent extends SearchComponent
                }
 
                SolrDocument doc = toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), core.getLatestSchema());
-               if(transformer!=null) {
+               if (transformer!=null) {
                  transformer.transform(doc, -1, 0); // unknown docID
                }
               docList.add(doc);
@@ -234,6 +244,7 @@ public class RealTimeGetComponent extends SearchComponent
        if (searcher == null) {
          searcherHolder = core.getRealtimeSearcher();
          searcher = searcherHolder.get();
+         // don't bother with ResultContext yet, we won't need it if doc doesn't match filters
        }
 
        int docid = -1;
@@ -244,8 +255,9 @@ public class RealTimeGetComponent extends SearchComponent
          docid = segid + ctx.docBase;
 
          if (rb.getFilters() != null) {
-           for (Query q : rb.getFilters()) {
-             Scorer scorer = searcher.createWeight(q, false).scorer(ctx);
+           for (Query raw : rb.getFilters()) {
+             Query q = raw.rewrite(searcher.getIndexReader());
+             Scorer scorer = searcher.createWeight(q, false, 1f).scorer(ctx);
              if (scorer == null || segid != scorer.iterator().advance(segid)) {
                // filter doesn't match.
                docid = -1;
@@ -255,12 +267,17 @@ public class RealTimeGetComponent extends SearchComponent
          }
        }
 
-
        if (docid < 0) continue;
+       
        Document luceneDocument = searcher.doc(docid, rsp.getReturnFields().getLuceneFieldNames());
        SolrDocument doc = toSolrDoc(luceneDocument,  core.getLatestSchema());
        searcher.decorateDocValueFields(doc, docid, searcher.getNonStoredDVs(true));
-       if( transformer != null ) {
+       if ( null != transformer) {
+         if (null == resultContext) {
+           // either first pass, or we've re-opened searcher - either way now we setContext
+           resultContext = new RTGResultContext(rsp.getReturnFields(), searcher, req);
+           transformer.setContext(resultContext);
+         }
          transformer.transform(doc, docid, 0);
        }
        docList.add(doc);
@@ -272,18 +289,7 @@ public class RealTimeGetComponent extends SearchComponent
      }
    }
 
-
-   // if the client specified a single id=foo, then use "doc":{
-   // otherwise use a standard doclist
-
-   if (ids ==  null && allIds.length <= 1) {
-     // if the doc was not found, then use a value of null.
-     rsp.add("doc", docList.size() > 0 ? docList.get(0) : null);
-   } else {
-     docList.setNumFound(docList.size());
-     rsp.addResponse(docList);
-   }
-
+   addDocListToResponse(rb, docList);
   }
 
 
@@ -436,32 +442,20 @@ public class RealTimeGetComponent extends SearchComponent
   }
 
   public int createSubRequests(ResponseBuilder rb) throws IOException {
-    SolrParams params = rb.req.getParams();
-    String id1[] = params.getParams("id");
-    String ids[] = params.getParams("ids");
-
-    if (id1 == null && ids == null) {
+    
+    final IdsRequsted reqIds = IdsRequsted.parseParams(rb.req);
+    if (reqIds.allIds.isEmpty()) {
       return ResponseBuilder.STAGE_DONE;
     }
-
-    List<String> allIds = new ArrayList<>();
-    if (id1 != null) {
-      for (String s : id1) {
-        allIds.add(s);
-      }
-    }
-    if (ids != null) {
-      for (String s : ids) {
-        allIds.addAll( StrUtils.splitSmart(s, ",", true) );
-      }
-    }
+    
+    SolrParams params = rb.req.getParams();
 
     // TODO: handle collection=...?
 
     ZkController zkController = rb.req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
 
     // if shards=... then use that
-    if (zkController != null && params.get("shards") == null) {
+    if (zkController != null && params.get(ShardParams.SHARDS) == null) {
       CloudDescriptor cloudDescriptor = rb.req.getCore().getCoreDescriptor().getCloudDescriptor();
 
       String collection = cloudDescriptor.getCollectionName();
@@ -470,7 +464,7 @@ public class RealTimeGetComponent extends SearchComponent
 
 
       Map<String, List<String>> sliceToId = new HashMap<>();
-      for (String id : allIds) {
+      for (String id : reqIds.allIds) {
         Slice slice = coll.getRouter().getTargetSlice(id, null, null, params, coll);
 
         List<String> idsForShard = sliceToId.get(slice.getName());
@@ -483,37 +477,45 @@ public class RealTimeGetComponent extends SearchComponent
 
       for (Map.Entry<String,List<String>> entry : sliceToId.entrySet()) {
         String shard = entry.getKey();
-        String shardIdList = StrUtils.join(entry.getValue(), ',');
 
-        ShardRequest sreq = new ShardRequest();
-
-        sreq.purpose = 1;
+        ShardRequest sreq = createShardRequest(rb, entry.getValue());
         // sreq.shards = new String[]{shard};    // TODO: would be nice if this would work...
         sreq.shards = sliceToShards(rb, collection, shard);
         sreq.actualShards = sreq.shards;
-        sreq.params = new ModifiableSolrParams();
-        sreq.params.set(ShardParams.SHARDS_QT,"/get");      // TODO: how to avoid hardcoding this and hit the same handler?
-        sreq.params.set("distrib",false);
-        sreq.params.set("ids", shardIdList);
-
+        
         rb.addRequest(this, sreq);
       }      
     } else {
-      String shardIdList = StrUtils.join(allIds, ',');
-      ShardRequest sreq = new ShardRequest();
-
-      sreq.purpose = 1;
+      ShardRequest sreq = createShardRequest(rb, reqIds.allIds);
       sreq.shards = null;  // ALL
       sreq.actualShards = sreq.shards;
-      sreq.params = new ModifiableSolrParams();
-      sreq.params.set(ShardParams.SHARDS_QT,"/get");      // TODO: how to avoid hardcoding this and hit the same handler?
-      sreq.params.set("distrib",false);
-      sreq.params.set("ids", shardIdList);
 
       rb.addRequest(this, sreq);
     }
 
     return ResponseBuilder.STAGE_DONE;
+  }
+
+  /**
+   * Helper method for creating a new ShardRequest for the specified ids, based on the params 
+   * specified for the current request.  The new ShardRequest does not yet know anything about 
+   * which shard/slice it will be sent to.
+   */
+  private ShardRequest createShardRequest(final ResponseBuilder rb, final List<String> ids) {
+    final ShardRequest sreq = new ShardRequest();
+    sreq.purpose = 1;
+    sreq.params = new ModifiableSolrParams(rb.req.getParams());
+
+    // TODO: how to avoid hardcoding this and hit the same handler?
+    sreq.params.set(ShardParams.SHARDS_QT,"/get");      
+    sreq.params.set("distrib",false);
+
+    sreq.params.remove(ShardParams.SHARDS);
+    sreq.params.remove("id");
+    sreq.params.remove("ids");
+    sreq.params.set("ids", StrUtils.join(ids, ','));
+    
+    return sreq;
   }
   
   private String[] sliceToShards(ResponseBuilder rb, String collection, String slice) {
@@ -561,17 +563,31 @@ public class RealTimeGetComponent extends SearchComponent
         docList.addAll(subList);
       }
     }
+    
+    addDocListToResponse(rb, docList);
+  }
 
-    if (docList.size() <= 1 && rb.req.getParams().getParams("ids")==null) {
+  /**
+   * Encapsulates logic for how a {@link SolrDocumentList} should be added to the response
+   * based on the request params used
+   */
+  private void addDocListToResponse(final ResponseBuilder rb, final SolrDocumentList docList) {
+    assert null != docList;
+    
+    final SolrQueryResponse rsp = rb.rsp;
+    final IdsRequsted reqIds = IdsRequsted.parseParams(rb.req);
+    
+    if (reqIds.useSingleDocResponse) {
+      assert docList.size() <= 1;
       // if the doc was not found, then use a value of null.
-      rb.rsp.add("doc", docList.size() > 0 ? docList.get(0) : null);
+      rsp.add("doc", docList.size() > 0 ? docList.get(0) : null);
     } else {
       docList.setNumFound(docList.size());
-      rb.rsp.addResponse(docList);
+      rsp.addResponse(docList);
     }
   }
 
-
+                                                                                               
 
   ////////////////////////////////////////////
   ///  SolrInfoMBean
@@ -587,6 +603,17 @@ public class RealTimeGetComponent extends SearchComponent
     return null;
   }
 
+  
+  
+  public void processGetFingeprint(ResponseBuilder rb) throws IOException {
+    SolrQueryRequest req = rb.req;
+    SolrParams params = req.getParams();
+    
+    long maxVersion = params.getLong("getFingerprint", Long.MAX_VALUE);
+    IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Math.abs(maxVersion));
+    rb.rsp.add("fingerprint", fingerprint);
+  }
+  
 
   ///////////////////////////////////////////////////////////////////////////////////
   // Returns last versions added to index
@@ -617,13 +644,16 @@ public class RealTimeGetComponent extends SearchComponent
     UpdateLog ulog = req.getCore().getUpdateHandler().getUpdateLog();
     if (ulog == null) return;
 
-    try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-      rb.rsp.add("versions", recentUpdates.getVersions(nVersions));
-    }
-
+    // get fingerprint first as it will cause a soft commit
+    // and would avoid mismatch if documents are being actively index especially during PeerSync
     if (doFingerprint) {
       IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Long.MAX_VALUE);
-      rb.rsp.add("fingerprint", fingerprint.toObject());
+      rb.rsp.add("fingerprint", fingerprint);
+    }
+
+    try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
+      List<Long> versions = recentUpdates.getVersions(nVersions);
+      rb.rsp.add("versions", versions);
     }
   }
 
@@ -645,7 +675,7 @@ public class RealTimeGetComponent extends SearchComponent
     boolean cantReachIsSuccess = rb.req.getParams().getBool("cantReachIsSuccess", false);
     
     PeerSync peerSync = new PeerSync(rb.req.getCore(), replicas, nVersions, cantReachIsSuccess, true);
-    boolean success = peerSync.sync();
+    boolean success = peerSync.sync().isSuccess();
     
     // TODO: more complex response?
     rb.rsp.add("sync", success);
@@ -668,8 +698,22 @@ public class RealTimeGetComponent extends SearchComponent
     UpdateLog ulog = req.getCore().getUpdateHandler().getUpdateLog();
     if (ulog == null) return;
 
-    List<String> versions = StrUtils.splitSmart(versionsStr, ",", true);
+    // handle version ranges
+    List<Long> versions = null;
+    if (versionsStr.indexOf("...") != -1) {
+      versions = resolveVersionRanges(versionsStr, ulog);
+    } else {
+      versions = StrUtils.splitSmart(versionsStr, ",", true).stream().map(Long::parseLong)
+          .collect(Collectors.toList());
+    }
 
+    // find fingerprint for max version for which updates are requested
+    boolean doFingerprint = params.getBool("fingerprint", false);
+    if (doFingerprint) {
+      long maxVersionForUpdate = Collections.min(versions, PeerSync.absComparator);
+      IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Math.abs(maxVersionForUpdate));
+      rb.rsp.add("fingerprint", fingerprint);
+    }
 
     List<Object> updates = new ArrayList<>(versions.size());
 
@@ -677,8 +721,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: get this from cache instead of rebuilding?
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-      for (String versionStr : versions) {
-        long version = Long.parseLong(versionStr);
+      for (Long version : versions) {
         try {
           Object o = recentUpdates.lookup(version);
           if (o == null) continue;
@@ -703,5 +746,139 @@ public class RealTimeGetComponent extends SearchComponent
 
     }
   }
+  
+  
+  private List<Long> resolveVersionRanges(String versionsStr, UpdateLog ulog) {
+    if (StringUtils.isEmpty(versionsStr)) {
+      return Collections.emptyList();
+    }
+    
+    List<String> ranges = StrUtils.splitSmart(versionsStr, ",", true);
+    
+    // TODO merge ranges.
+    
+    // get all the versions from updatelog and sort them
+    List<Long> versionAvailable = null;
+    try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
+      versionAvailable = recentUpdates.getVersions(ulog.getNumRecordsToKeep());
+    }
+    // sort versions
+    Collections.sort(versionAvailable, PeerSync.absComparator);
+    
+    // This can be done with single pass over both ranges and versionsAvailable, that would require 
+    // merging ranges. We currently use Set to ensure there are no duplicates.
+    Set<Long> versionsToRet = new HashSet<>(ulog.getNumRecordsToKeep());
+    for (String range : ranges) {
+      String[] rangeBounds = range.split("\\.{3}");
+      int indexStart = Collections.binarySearch(versionAvailable, Long.valueOf(rangeBounds[1]), PeerSync.absComparator);
+      int indexEnd = Collections.binarySearch(versionAvailable, Long.valueOf(rangeBounds[0]), PeerSync.absComparator); 
+      if(indexStart >=0 && indexEnd >= 0) {
+        versionsToRet.addAll(versionAvailable.subList(indexStart, indexEnd + 1)); // indexEnd is exclusive
+      }
+    }
+    // TODO do we need to sort versions using PeerSync.absComparator?
+    return new ArrayList<>(versionsToRet);
+  }
 
+  /** 
+   * Simple struct for tracking what ids were requested and what response format is expected 
+   * acording to the request params
+   */
+  private final static class IdsRequsted {
+    /** An List (which may be empty but will never be null) of the uniqueKeys requested. */
+    public final List<String> allIds;
+    /** 
+     * true if the params provided by the user indicate that a single doc response structure 
+     * should be used.  
+     * Value is meaninless if <code>ids</code> is empty.
+     */
+    public final boolean useSingleDocResponse;
+    private IdsRequsted(List<String> allIds, boolean useSingleDocResponse) {
+      assert null != allIds;
+      this.allIds = allIds;
+      this.useSingleDocResponse = useSingleDocResponse;
+    }
+    
+    /**
+     * Parsers the <code>id</code> and <code>ids</code> params attached to the specified request object, 
+     * and returns an <code>IdsRequsted</code> struct to use for this request.
+     * The <code>IdsRequsted</code> is cached in the {@link SolrQueryRequest#getContext} so subsequent 
+     * method calls on the same request will not re-parse the params.
+     */
+    public static IdsRequsted parseParams(SolrQueryRequest req) {
+      final String contextKey = IdsRequsted.class.toString() + "_PARSED_ID_PARAMS";
+      if (req.getContext().containsKey(contextKey)) {
+        return (IdsRequsted)req.getContext().get(contextKey);
+      }
+      final SolrParams params = req.getParams();
+      final String id[] = params.getParams("id");
+      final String ids[] = params.getParams("ids");
+      
+      if (id == null && ids == null) {
+        IdsRequsted result = new IdsRequsted(Collections.<String>emptyList(), true);
+        req.getContext().put(contextKey, result);
+        return result;
+      }
+      final List<String> allIds = new ArrayList<>((null == id ? 0 : id.length)
+                                                  + (null == ids ? 0 : (2 * ids.length)));
+      if (null != id) {
+        for (String singleId : id) {
+          allIds.add(singleId);
+        }
+      }
+      if (null != ids) {
+        for (String idList : ids) {
+          allIds.addAll( StrUtils.splitSmart(idList, ",", true) );
+        }
+      }
+      // if the client specified a single id=foo, then use "doc":{
+      // otherwise use a standard doclist
+      IdsRequsted result = new IdsRequsted(allIds, (ids == null && allIds.size() <= 1));
+      req.getContext().put(contextKey, result);
+      return result;
+    }
+  }
+
+  
+  /**
+   * A lite weight ResultContext for use with RTG requests that can point at Realtime Searchers
+   */
+  private static final class RTGResultContext extends ResultContext {
+    final ReturnFields returnFields;
+    final SolrIndexSearcher searcher;
+    final SolrQueryRequest req;
+    public RTGResultContext(ReturnFields returnFields, SolrIndexSearcher searcher, SolrQueryRequest req) {
+      this.returnFields = returnFields;
+      this.searcher = searcher;
+      this.req = req;
+    }
+    
+    /** @returns null */
+    public DocList getDocList() {
+      return null;
+    }
+    
+    public ReturnFields getReturnFields() {
+      return this.returnFields;
+    }
+    
+    public SolrIndexSearcher getSearcher() {
+      return this.searcher;
+    }
+    
+    /** @returns null */
+    public Query getQuery() {
+      return null;
+    }
+    
+    public SolrQueryRequest getRequest() {
+      return this.req;
+    }
+    
+    /** @returns null */
+    public Iterator<SolrDocument> getProcessedDocuments() {
+      return null;
+    }
+  }
+  
 }

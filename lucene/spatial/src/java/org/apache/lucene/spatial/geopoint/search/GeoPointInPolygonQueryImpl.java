@@ -19,7 +19,6 @@ package org.apache.lucene.spatial.geopoint.search;
 import java.util.Objects;
 
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.PointValues.Relation;
 
@@ -31,9 +30,9 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
   private final GeoPointInPolygonQuery polygonQuery;
   private final Polygon2D polygons;
 
-  GeoPointInPolygonQueryImpl(final String field, final TermEncoding termEncoding, final GeoPointInPolygonQuery q,
+  GeoPointInPolygonQueryImpl(final String field, final GeoPointInPolygonQuery q,
                              final double minLat, final double maxLat, final double minLon, final double maxLon) {
-    super(field, termEncoding, minLat, maxLat, minLon, maxLon);
+    super(field, minLat, maxLat, minLon, maxLon);
     this.polygonQuery = Objects.requireNonNull(q);
     this.polygons = Polygon2D.create(q.polygons);
   }
@@ -58,18 +57,8 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
     }
 
     @Override
-    protected boolean cellCrosses(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return polygons.relate(minLat, maxLat, minLon, maxLon) == Relation.CELL_CROSSES_QUERY;
-    }
-
-    @Override
-    protected boolean cellWithin(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return polygons.relate(minLat, maxLat, minLon, maxLon) == Relation.CELL_INSIDE_QUERY;
-    }
-
-    @Override
-    protected boolean cellIntersectsShape(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return polygons.relate(minLat, maxLat, minLon, maxLon) != Relation.CELL_OUTSIDE_QUERY;
+    protected Relation relate(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+      return polygons.relate(minLat, maxLat, minLon, maxLon);
     }
 
     /**

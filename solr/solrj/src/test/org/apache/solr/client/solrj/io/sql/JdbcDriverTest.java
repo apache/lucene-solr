@@ -20,7 +20,6 @@ import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -52,6 +51,12 @@ public class JdbcDriverTest extends SolrTestCaseJ4 {
   @Test(expected = SQLException.class)
   public void testNoCollectionProvidedInProperties() throws Exception {
     Connection con = DriverManager.getConnection("jdbc:solr://", new Properties());
+  }
+
+  @Test(expected = SQLException.class)
+  public void testConnectionStringJumbled() throws Exception {
+    final String sampleZkHost="zoo1:9983/foo";
+    DriverManager.getConnection("solr:jdbc://" + sampleZkHost + "?collection=collection1", new Properties());
   }
 
   @Test

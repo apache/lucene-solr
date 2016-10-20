@@ -63,12 +63,12 @@ public class BoostingQuery extends Query {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
       if (needsScores == false) {
-        return match.createWeight(searcher, needsScores);
+        return match.createWeight(searcher, needsScores, boost);
       }
-      final Weight matchWeight = searcher.createWeight(match, needsScores);
-      final Weight contextWeight = searcher.createWeight(context, false);
+      final Weight matchWeight = searcher.createWeight(match, needsScores, boost);
+      final Weight contextWeight = searcher.createWeight(context, false, boost);
       return new Weight(this) {
 
         @Override
@@ -89,16 +89,6 @@ public class BoostingQuery extends Query {
           return Explanation.match(matchExplanation.getValue() * boost, "product of:",
               matchExplanation,
               Explanation.match(boost, "boost"));
-        }
-
-        @Override
-        public float getValueForNormalization() throws IOException {
-          return matchWeight.getValueForNormalization();
-        }
-
-        @Override
-        public void normalize(float norm, float boost) {
-          matchWeight.normalize(norm, boost);
         }
 
         @Override
@@ -134,11 +124,6 @@ public class BoostingQuery extends Query {
       };
     }
 
-    @Override
-    public int hashCode() {
-      return 31 * super.hashCode() + Objects.hash(match, context, boost);
-    }
-
     public Query getMatch() {
       return match;
     }
@@ -152,14 +137,20 @@ public class BoostingQuery extends Query {
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
-        return false;
-      }
-      BoostingQuery that = (BoostingQuery) obj;
-      return match.equals(that.match)
-          && context.equals(that.context)
-          && Float.floatToIntBits(boost) == Float.floatToIntBits(that.boost);
+    public int hashCode() {
+      return 31 * classHash() + Objects.hash(match, context, boost);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+
+    private boolean equalsTo(BoostingQuery other) {
+      return match.equals(other.match)
+          && context.equals(other.context)
+          && Float.floatToIntBits(boost) == Float.floatToIntBits(other.boost);
     }
 
     @Override

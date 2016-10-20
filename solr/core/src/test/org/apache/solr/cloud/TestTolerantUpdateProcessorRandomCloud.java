@@ -16,15 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.addErr;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.assertUpdateTolerantErrors;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delIErr;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delQErr;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.f;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.update;
-import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
-import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -37,10 +28,12 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -56,6 +49,15 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.addErr;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.assertUpdateTolerantErrors;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delIErr;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delQErr;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.f;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.update;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
+
 /**
  * Test of TolerantUpdateProcessor using a randomized MiniSolrCloud.
  * Reuses some utility methods in {@link TestTolerantUpdateProcessorCloud}
@@ -67,6 +69,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  */
+@SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
 public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -79,7 +82,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   private static List<HttpSolrClient> NODE_CLIENTS;
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
     
     final String configName = "solrCloudCollectionConfig";
     final File configDir = new File(TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
@@ -100,12 +103,12 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     collectionProperties.put("config", "solrconfig-distrib-update-processor-chains.xml");
     collectionProperties.put("schema", "schema15.xml"); // string id 
 
-
-    assertNotNull(cluster.createCollection(COLLECTION_NAME, numShards, repFactor,
-                                           configName, null, null, collectionProperties));
-    
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
+        .setProperties(collectionProperties)
+        .process(CLOUD_CLIENT);
 
     if (NODE_CLIENTS != null) {
       for (HttpSolrClient client : NODE_CLIENTS) {
@@ -278,10 +281,10 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
         Thread.sleep(200);
       }
 
-      // check the index contents against our expecationts
+      // check the index contents against our expectations
       final BitSet actualDocIds = allDocs(CLOUD_CLIENT, maxDocId);
       if ( expectedDocIds.cardinality() != actualDocIds.cardinality() ) {
-        log.error("cardinality missmatch: expected {} BUT actual {}",
+        log.error("cardinality mismatch: expected {} BUT actual {}",
                   expectedDocIds.cardinality(),
                   actualDocIds.cardinality());
       }
@@ -325,7 +328,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     
     assertEquals("wrong nextBit at end of all iters", -1,
                  randomUnsetBit(random(), bits, max));
-    assertEquals("wrong nextBit at redundent end of all iters", -1,
+    assertEquals("wrong nextBit at redundant end of all iters", -1,
                  randomUnsetBit(random(), bits, max));
   }
   

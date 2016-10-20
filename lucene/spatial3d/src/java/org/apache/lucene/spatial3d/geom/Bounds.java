@@ -66,6 +66,17 @@ public interface Bounds {
     final Plane verticalPlane,
     final Membership... bounds);
 
+  /** Add the intersection between two planes to the bounds description.
+   * Where the shape has intersecting planes, it is better to use this method
+   * than just adding the point, since this method takes each plane's error envelope into
+   * account.
+   *@param planetModel is the planet model.
+   *@param plane1 is the first plane.
+   *@param plane2 is the second plane.
+   *@param bounds are the membership bounds for the intersection.
+   */
+  public Bounds addIntersection(final PlanetModel planetModel, final Plane plane1, final Plane plane2, final Membership... bounds);
+
   /** Add a single point.
    *@param point is the point.
    *@return the updated Bounds object.
@@ -109,5 +120,12 @@ public interface Bounds {
    *@return the updated Bounds object.
    */
   public Bounds noBottomLatitudeBound();
+  
+  /** Signal that there is no bound whatsoever.
+   * The bound is limited only by the constraints of the
+   * planet.
+   *@return the updated Bounds object.,
+   */
+  public Bounds noBound(final PlanetModel planetModel);
   
 }

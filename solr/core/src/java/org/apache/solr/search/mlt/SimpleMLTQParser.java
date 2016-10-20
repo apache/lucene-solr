@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.mlt;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -25,7 +26,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.SolrParams;
@@ -130,7 +130,6 @@ public class SimpleMLTQParser extends QParser {
 
       if (boostFields.size() > 0) {
         BooleanQuery.Builder newQ = new BooleanQuery.Builder();
-        newQ.setDisableCoord(boostedMLTQuery.isCoordDisabled());
         newQ.setMinimumNumberShouldMatch(boostedMLTQuery.getMinimumNumberShouldMatch());
 
         for (BooleanClause clause : boostedMLTQuery) {
@@ -151,7 +150,6 @@ public class SimpleMLTQParser extends QParser {
 
       // exclude current document from results
       BooleanQuery.Builder realMLTQuery = new BooleanQuery.Builder();
-      realMLTQuery.setDisableCoord(true);
       realMLTQuery.add(boostedMLTQuery, BooleanClause.Occur.MUST);
       realMLTQuery.add(docIdQuery, BooleanClause.Occur.MUST_NOT);
 

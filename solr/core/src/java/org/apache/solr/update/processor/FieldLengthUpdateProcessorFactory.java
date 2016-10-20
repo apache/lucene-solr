@@ -17,9 +17,13 @@
 package org.apache.solr.update.processor;
 
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
+
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
+import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.valueMutator;
 
 
 /**
@@ -54,26 +58,21 @@ public final class FieldLengthUpdateProcessorFactory extends FieldMutatingUpdate
   }
 
   @Override
-  public FieldMutatingUpdateProcessor.FieldNameSelector 
-    getDefaultSelector(final SolrCore core) {
-
-    return FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
-
+  public FieldNameSelector getDefaultSelector(final SolrCore core) {
+    return SELECT_NO_FIELDS;
   }
-  
+
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
-    return new FieldValueMutatingUpdateProcessor(getSelector(), next) {
-      @Override
-      protected Object mutateValue(final Object src) {
-        if (src instanceof CharSequence) {
-          return new Integer(((CharSequence)src).length());
-        }
-        return src;
+    return valueMutator(getSelector(), next, src -> {
+      if (src instanceof CharSequence) {
+        return ((CharSequence) src).length();
       }
-    };
+      return src;
+    });
+
   }
 }
 

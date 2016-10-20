@@ -58,6 +58,7 @@ org.apache.lucene.analysis.id.IndonesianStemFilterFactory
 org.apache.lucene.analysis.in.IndicNormalizationFilterFactory
 org.apache.lucene.analysis.it.ItalianLightStemFilterFactory
 org.apache.lucene.analysis.lv.LatvianStemFilterFactory
+org.apache.lucene.analysis.minhash.MinHashFilterFactory
 org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory
 org.apache.lucene.analysis.miscellaneous.CapitalizationFilterFactory
 org.apache.lucene.analysis.miscellaneous.CodepointCountFilterFactory

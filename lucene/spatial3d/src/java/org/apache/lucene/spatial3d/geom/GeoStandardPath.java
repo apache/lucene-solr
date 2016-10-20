@@ -201,7 +201,7 @@ class GeoStandardPath extends GeoBasePath {
     double currentDistance = 0.0;
     for (PathSegment segment : segments) {
       double distance = segment.pathDistance(planetModel, distanceStyle, x,y,z);
-      if (distance != Double.MAX_VALUE)
+      if (distance != Double.POSITIVE_INFINITY)
         return currentDistance + distance;
       currentDistance += segment.fullPathDistance(distanceStyle);
     }
@@ -210,13 +210,13 @@ class GeoStandardPath extends GeoBasePath {
     currentDistance = 0.0;
     for (SegmentEndpoint endpoint : endPoints) {
       double distance = endpoint.pathDistance(distanceStyle, x, y, z);
-      if (distance != Double.MAX_VALUE)
+      if (distance != Double.POSITIVE_INFINITY)
         return currentDistance + distance;
       if (segmentIndex < segments.size())
         currentDistance += segments.get(segmentIndex++).fullPathDistance(distanceStyle);
     }
 
-    return Double.MAX_VALUE;
+    return Double.POSITIVE_INFINITY;
   }
 
   @Override
@@ -227,7 +227,7 @@ class GeoStandardPath extends GeoBasePath {
 
   @Override
   protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    double minDistance = Double.MAX_VALUE;
+    double minDistance = Double.POSITIVE_INFINITY;
     for (final SegmentEndpoint endpoint : endPoints) {
       final double newDistance = endpoint.outsideDistance(distanceStyle, x,y,z);
       if (newDistance < minDistance)
@@ -244,12 +244,14 @@ class GeoStandardPath extends GeoBasePath {
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
     for (SegmentEndpoint pathPoint : endPoints) {
-      if (pathPoint.isWithin(x, y, z))
+      if (pathPoint.isWithin(x, y, z)) {
         return true;
+      }
     }
     for (PathSegment pathSegment : segments) {
-      if (pathSegment.isWithin(x, y, z))
+      if (pathSegment.isWithin(x, y, z)) {
         return true;
+      }
     }
     return false;
   }
@@ -518,7 +520,7 @@ class GeoStandardPath extends GeoBasePath {
      */
     public double pathDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       if (!isWithin(x,y,z))
-        return Double.MAX_VALUE;
+        return Double.POSITIVE_INFINITY;
       return distanceStyle.computeDistance(this.point, x, y, z);
     }
 
@@ -626,7 +628,7 @@ class GeoStandardPath extends GeoBasePath {
       this.start = start;
       this.end = end;
       this.normalizedConnectingPlane = normalizedConnectingPlane;
-        
+      
       // Either start or end should be on the correct side
       upperConnectingPlane = new SidedPlane(start, normalizedConnectingPlane, -planeBoundingOffset);
       lowerConnectingPlane = new SidedPlane(start, normalizedConnectingPlane, planeBoundingOffset);
@@ -642,20 +644,32 @@ class GeoStandardPath extends GeoBasePath {
       if (points.length == 0) {
         throw new IllegalArgumentException("Some segment boundary points are off the ellipsoid; path too wide");
       }
+      if (points.length > 1) {
+        throw new IllegalArgumentException("Ambiguous boundary points; path too short");
+      }
       this.ULHC = points[0];
       points = upperConnectingPlane.findIntersections(planetModel, endCutoffPlane, lowerSide, startSide);
       if (points.length == 0) {
         throw new IllegalArgumentException("Some segment boundary points are off the ellipsoid; path too wide");
+      }
+      if (points.length > 1) {
+        throw new IllegalArgumentException("Ambiguous boundary points; path too short");
       }
       this.URHC = points[0];
       points = lowerConnectingPlane.findIntersections(planetModel, startCutoffPlane, upperSide, endSide);
       if (points.length == 0) {
         throw new IllegalArgumentException("Some segment boundary points are off the ellipsoid; path too wide");
       }
+      if (points.length > 1) {
+        throw new IllegalArgumentException("Ambiguous boundary points; path too short");
+      }
       this.LLHC = points[0];
       points = lowerConnectingPlane.findIntersections(planetModel, endCutoffPlane, upperSide, startSide);
       if (points.length == 0) {
         throw new IllegalArgumentException("Some segment boundary points are off the ellipsoid; path too wide");
+      }
+      if (points.length > 1) {
+        throw new IllegalArgumentException("Ambiguous boundary points; path too short");
       }
       this.LRHC = points[0];
       upperConnectingPlanePoints = new GeoPoint[]{ULHC, URHC};
@@ -713,7 +727,7 @@ class GeoStandardPath extends GeoBasePath {
      */
     public double pathDistance(final PlanetModel planetModel, final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       if (!isWithin(x,y,z))
-        return Double.MAX_VALUE;
+        return Double.POSITIVE_INFINITY;
 
       // (1) Compute normalizedPerpPlane.  If degenerate, then return point distance from start to point.
       // Want no allocations or expensive operations!  so we do this the hard way
@@ -791,11 +805,16 @@ class GeoStandardPath extends GeoBasePath {
      */
     public void getBounds(final PlanetModel planetModel, Bounds bounds) {
       // We need to do all bounding planes as well as corner points
-      bounds.addPoint(start).addPoint(end).addPoint(ULHC).addPoint(URHC).addPoint(LRHC).addPoint(LLHC);
-      bounds.addPlane(planetModel, upperConnectingPlane, lowerConnectingPlane, startCutoffPlane, endCutoffPlane);
-      bounds.addPlane(planetModel, lowerConnectingPlane, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
-      bounds.addPlane(planetModel, startCutoffPlane, endCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
-      bounds.addPlane(planetModel, endCutoffPlane, startCutoffPlane, upperConnectingPlane, lowerConnectingPlane);
+      bounds.addPoint(start).addPoint(end)
+        .addPoint(ULHC).addPoint(URHC).addPoint(LRHC).addPoint(LLHC)
+        .addPlane(planetModel, upperConnectingPlane, lowerConnectingPlane, startCutoffPlane, endCutoffPlane)
+        .addPlane(planetModel, lowerConnectingPlane, upperConnectingPlane, startCutoffPlane, endCutoffPlane)
+        .addPlane(planetModel, startCutoffPlane, endCutoffPlane, upperConnectingPlane, lowerConnectingPlane)
+        .addPlane(planetModel, endCutoffPlane, startCutoffPlane, upperConnectingPlane, lowerConnectingPlane)
+        .addIntersection(planetModel, upperConnectingPlane, startCutoffPlane, lowerConnectingPlane, endCutoffPlane)
+        .addIntersection(planetModel, startCutoffPlane, lowerConnectingPlane, endCutoffPlane, upperConnectingPlane)
+        .addIntersection(planetModel, lowerConnectingPlane, endCutoffPlane, upperConnectingPlane, startCutoffPlane)
+        .addIntersection(planetModel, endCutoffPlane, upperConnectingPlane, startCutoffPlane, lowerConnectingPlane);
     }
 
   }

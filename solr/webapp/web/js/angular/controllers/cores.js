@@ -17,7 +17,7 @@
 
 // @todo test optimize (delete stuff, watch button appear, test button/form)
 solrAdminApp.controller('CoreAdminController',
-    function($scope, $routeParams, $location, $timeout, Cores, Update, Constants){
+    function($scope, $routeParams, $location, $timeout, $route, Cores, Update, Constants){
       $scope.resetMenu("cores", Constants.IS_ROOT_PAGE);
       $scope.selectedCore = $routeParams.corename; // use 'corename' not 'core' to distinguish from /solr/:core/
       $scope.refresh = function() {
@@ -129,15 +129,15 @@ solrAdminApp.controller('CoreAdminController',
       };
 
       $scope.swapCores = function() {
-        if ($scope.swapOther) {
-          $swapMessage = "Please select a core to swap with";
+        if (!$scope.swapOther) {
+          $scope.swapMessage = "Please select a core to swap with";
         } else if ($scope.swapOther == $scope.selectedCore) {
-          $swapMessage = "Cannot swap with the same core";
+          $scope.swapMessage = "Cannot swap with the same core";
         } else {
           Cores.swap({core: $scope.selectedCore, other: $scope.swapOther}, function(data) {
             $location.path("/~cores/" + $scope.swapOther);
             delete $scope.swapOther;
-            $scope.cancelSwap();
+            $scope.cancelSwapCores();
           });
         }
       };

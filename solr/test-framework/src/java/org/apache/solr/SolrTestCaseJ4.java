@@ -31,6 +31,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -50,7 +51,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-import java.util.logging.Level;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
@@ -67,6 +67,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
@@ -74,7 +75,6 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
 import org.apache.solr.common.SolrDocument;
@@ -86,7 +86,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoresLocator;
@@ -104,13 +103,18 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.RandomizeSSL;
+import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -137,6 +141,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 })
 @SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
 @SuppressFileSystems("ExtrasFS") // might be ok, the failures with e.g. nightly runs might be "normal"
+@RandomizeSSL()
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -215,11 +220,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public TestRule solrTestRules = 
     RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
-  @BeforeClass 
-  @SuppressWarnings("unused")
-  private static void beforeClass() {
-    initCoreDataDir = createTempDir("init-core-data").toFile();
+  @BeforeClass
+  public static void setupTestCases() {
 
+    initClassLogLevels();
+
+    initCoreDataDir = createTempDir("init-core-data").toFile();
     System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
 
     System.setProperty("zookeeper.forceSync", "no");
@@ -227,6 +233,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     System.setProperty("enable.update.log", usually() ? "true" : "false");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.clustering.enabled", "false");
+    System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
@@ -241,8 +248,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   @AfterClass
-  @SuppressWarnings("unused")
-  private static void afterClass() throws Exception {
+  public static void teardownTestCases() throws Exception {
     try {
       deleteCore();
       resetExceptionIgnores();
@@ -251,7 +257,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         // if the tests passed, make sure everything was closed / released
         if (!RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
           endTrackingSearchers(120, false);
-          String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
+          String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty(30);
           assertNull(orr, orr);
         } else {
           endTrackingSearchers(15, false);
@@ -275,6 +281,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       System.clearProperty("enable.update.log");
       System.clearProperty("useCompoundFile");
       System.clearProperty("urlScheme");
+      System.clearProperty("solr.peerSync.useRangeVersions");
       
       HttpClientUtil.resetHttpClientBuilder();
 
@@ -284,6 +291,40 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     
     IpTables.unblockAllPorts();
+
+    LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
+    savedClassLogLevels.clear();
+  }
+
+  private static Map<String, String> savedClassLogLevels = new HashMap<>();
+
+  public static void initClassLogLevels() {
+    Class currentClass = RandomizedContext.current().getTargetClass();
+    LogLevel annotation = (LogLevel) currentClass.getAnnotation(LogLevel.class);
+    if (annotation == null) {
+      return;
+    }
+    Map<String, String> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
+    savedClassLogLevels.putAll(previousLevels);
+  }
+
+  private Map<String, String> savedMethodLogLevels = new HashMap<>();
+
+  @Before
+  public void initMethodLogLevels() {
+    Method method = RandomizedContext.current().getTargetMethod();
+    LogLevel annotation = method.getAnnotation(LogLevel.class);
+    if (annotation == null) {
+      return;
+    }
+    Map<String, String> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
+    savedMethodLogLevels.putAll(previousLevels);
+  }
+
+  @After
+  public void restoreMethodLogLevels() {
+    LogLevel.Configurer.restoreLogLevels(savedMethodLogLevels);
+    savedMethodLogLevels.clear();
   }
   
   protected static boolean isSSLMode() {
@@ -317,27 +358,21 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   private static SSLTestConfig buildSSLConfig() {
-    // test has been disabled
-    if (RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressSSL.class)) {
-      return new SSLTestConfig();
-    }
+
+    SSLRandomizer sslRandomizer =
+      SSLRandomizer.getSSLRandomizerForClass(RandomizedContext.current().getTargetClass());
     
-    // we don't choose ssl that often because of SOLR-5776
-    final boolean trySsl = random().nextInt(10) < 2;
-    // NOTE: clientAuth is useless unless trySsl==true, but we randomize it independently
-    // just in case it might find bugs in our test/ssl client code (ie: attempting to use
-    // SSL w/client cert to non-ssl servers)
-    boolean trySslClientAuth = random().nextInt(10) < 2;
     if (Constants.MAC_OS_X) {
       // see SOLR-9039
       // If a solution is found to remove this, please make sure to also update
       // TestMiniSolrCloudClusterSSL.testSslAndClientAuth as well.
-      trySslClientAuth = false; 
+      sslRandomizer = new SSLRandomizer(sslRandomizer.ssl, 0.0D, (sslRandomizer.debug + " w/ MAC_OS_X supressed clientAuth"));
     }
-    
-    log.info("Randomized ssl ({}) and clientAuth ({})", trySsl, trySslClientAuth);
-    
-    return new SSLTestConfig(trySsl, trySslClientAuth);
+
+    SSLTestConfig result = sslRandomizer.createSSLTestConfig();
+    log.info("Randomized ssl ({}) and clientAuth ({}) via: {}",
+             result.isSSLMode(), result.isClientAuthMode(), sslRandomizer.debug);
+    return result;
   }
 
   protected static JettyConfig buildJettyConfig(String context) {
@@ -415,13 +450,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     log.info("###Ending " + getTestName());    
     super.tearDown();
   }
-
-  @SuppressForbidden(reason = "method is specific to java.util.logging and highly suspect!")
-  public static void setLoggingLevel(Level level) {
-    java.util.logging.Logger logger = java.util.logging.Logger.getLogger("");
-    logger.setLevel(level);
-  }
-
 
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
@@ -1776,6 +1804,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public static Path TEST_PATH() { return getFile("solr/collection1").getParentFile().toPath(); }
 
+  public static Path configset(String name) {
+    return TEST_PATH().resolve("configsets").resolve(name).resolve("conf");
+  }
+
   public static Throwable getRootCause(Throwable t) {
     Throwable result = t;
     for (Throwable cause = t; null != cause; cause = cause.getCause()) {
@@ -1858,21 +1890,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf and copies
-  // the stock files in there. Seems to be indicated for some tests when we remove the default, hard-coded
-  // solr.xml from being automatically synthesized from SolrConfigXmlOld.DEFAULT_SOLR_XML.
+  // the stock files in there.
+
   public static void copySolrHomeToTemp(File dstRoot, String collection) throws IOException {
-    copySolrHomeToTemp(dstRoot, collection, false);
-  }
-  public static void copySolrHomeToTemp(File dstRoot, String collection, boolean newStyle) throws IOException {
     if (!dstRoot.exists()) {
       assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
     }
 
-    if (newStyle) {
-      FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml"), new File(dstRoot, "solr.xml"));
-    } else {
-      FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(dstRoot, "solr.xml"));
-    }
+    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(dstRoot, "solr.xml"));
 
     File subHome = new File(dstRoot, collection + File.separator + "conf");
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
@@ -2051,11 +2076,55 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return (0 == TestUtil.nextInt(random(), 0, 9)) ? unlikely : likely;
   }
   
+  public static class CloudSolrClientBuilder extends CloudSolrClient.Builder {
+
+    private boolean configuredDUTflag = false;
+
+    public CloudSolrClientBuilder() {
+      super();
+    }
+
+    @Override
+    public CloudSolrClient.Builder sendDirectUpdatesToShardLeadersOnly() {
+      configuredDUTflag = true;
+      return super.sendDirectUpdatesToShardLeadersOnly();
+    }
+
+    @Override
+    public CloudSolrClient.Builder sendDirectUpdatesToAnyShardReplica() {
+      configuredDUTflag = true;
+      return super.sendDirectUpdatesToAnyShardReplica();
+    }
+
+    private void randomlyChooseDirectUpdatesToLeadersOnly() {
+      if (random().nextBoolean()) {
+        sendDirectUpdatesToShardLeadersOnly();
+      } else {
+        sendDirectUpdatesToAnyShardReplica();
+      }
+    }
+
+    @Override
+    public CloudSolrClient build() {
+      if (configuredDUTflag == false) {
+        // flag value not explicity configured
+        if (random().nextBoolean()) {
+          // so randomly choose a value
+          randomlyChooseDirectUpdatesToLeadersOnly();
+        } else {
+          // or go with whatever the default value is
+          configuredDUTflag = true;
+        }
+      }
+      return super.build();
+    }
+  }
+
   public static CloudSolrClient getCloudSolrClient(String zkHost) {
     if (random().nextBoolean()) {
       return new CloudSolrClient(zkHost);
     }
-    return new CloudSolrClient.Builder()
+    return new CloudSolrClientBuilder()
         .withZkHost(zkHost)
         .build();
   }
@@ -2064,7 +2133,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     if (random().nextBoolean()) {
       return new CloudSolrClient(zkHost, httpClient);
     }
-    return new CloudSolrClient.Builder()
+    return new CloudSolrClientBuilder()
         .withZkHost(zkHost)
         .withHttpClient(httpClient)
         .build();
@@ -2076,12 +2145,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     
     if (shardLeadersOnly) {
-      return new CloudSolrClient.Builder()
+      return new CloudSolrClientBuilder()
           .withZkHost(zkHost)
           .sendUpdatesOnlyToShardLeaders()
           .build();
     }
-    return new CloudSolrClient.Builder()
+    return new CloudSolrClientBuilder()
         .withZkHost(zkHost)
         .sendUpdatesToAllReplicasInShard()
         .build();
@@ -2093,13 +2162,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     
     if (shardLeadersOnly) {
-      return new CloudSolrClient.Builder()
+      return new CloudSolrClientBuilder()
           .withZkHost(zkHost)
           .withHttpClient(httpClient)
           .sendUpdatesOnlyToShardLeaders()
           .build();
     }
-    return new CloudSolrClient.Builder()
+    return new CloudSolrClientBuilder()
         .withZkHost(zkHost)
         .withHttpClient(httpClient)
         .sendUpdatesToAllReplicasInShard()

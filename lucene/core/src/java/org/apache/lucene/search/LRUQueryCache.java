@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
-import org.apache.lucene.index.LeafReader.CoreClosedListener;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -40,6 +39,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
+import org.apache.lucene.util.BitDocIdSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RoaringDocIdSet;
 
@@ -55,7 +56,8 @@ import org.apache.lucene.util.RoaringDocIdSet;
  * {@link QueryCachingPolicy caching policies} that only cache on "large"
  * segments, and it is advised to not share this cache across too many indices.
  *
- * Typical usage looks like this:
+ * A default query cache and policy instance is used in IndexSearcher. If you want to replace those defaults
+ * it is typically done like this:
  * <pre class="prettyprint">
  *   final int maxNumberOfCachedQueries = 256;
  *   final long maxRamBytesUsed = 50 * 1024L * 1024L; // 50MB
@@ -63,15 +65,8 @@ import org.apache.lucene.util.RoaringDocIdSet;
  *   // it is fine to eg. store them into static variables
  *   final QueryCache queryCache = new LRUQueryCache(maxNumberOfCachedQueries, maxRamBytesUsed);
  *   final QueryCachingPolicy defaultCachingPolicy = new UsageTrackingQueryCachingPolicy();
- *
- *   // ...
- *
- *   // Then at search time
- *   Query myQuery = ...;
- *   Query myCacheQuery = queryCache.doCache(myQuery, defaultCachingPolicy);
- *   // myCacheQuery is now a wrapper around the original query that will interact with the cache
- *   IndexSearcher searcher = ...;
- *   TopDocs topDocs = searcher.search(new ConstantScoreQuery(myCacheQuery), 10);
+ *   indexSearcher.setQueryCache(queryCache);
+ *   indexSearcher.setQueryCachingPolicy(defaultCachingPolicy);
  * </pre>
  *
  * This cache exposes some global statistics ({@link #getHitCount() hit count},
@@ -314,12 +309,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
         ramBytesUsed += HASHTABLE_RAM_BYTES_PER_ENTRY;
         assert previous == null;
         // we just created a new leaf cache, need to register a close listener
-        context.reader().addCoreClosedListener(new CoreClosedListener() {
-          @Override
-          public void onClose(Object ownerCoreCacheKey) {
-            clearCoreCacheKey(ownerCoreCacheKey);
-          }
-        });
+        context.reader().addCoreClosedListener(this::clearCoreCacheKey);
       }
       leafCache.putIfAbsent(query, set);
       evictIfNecessary();
@@ -403,6 +393,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     lock.lock();
     try {
       cache.clear();
+      // Note that this also clears the uniqueQueries map since mostRecentlyUsedQueries is the uniqueQueries.keySet view:
       mostRecentlyUsedQueries.clear();
       onClear();
     } finally {
@@ -502,9 +493,39 @@ public class LRUQueryCache implements QueryCache, Accountable {
   }
 
   /**
-   * Default cache implementation: uses {@link RoaringDocIdSet}.
+   * Default cache implementation: uses {@link RoaringDocIdSet} for sets that
+   * have a density &lt; 1% and a {@link BitDocIdSet} over a {@link FixedBitSet}
+   * otherwise.
    */
   protected DocIdSet cacheImpl(BulkScorer scorer, int maxDoc) throws IOException {
+    if (scorer.cost() * 100 >= maxDoc) {
+      // FixedBitSet is faster for dense sets and will enable the random-access
+      // optimization in ConjunctionDISI
+      return cacheIntoBitSet(scorer, maxDoc);
+    } else {
+      return cacheIntoRoaringDocIdSet(scorer, maxDoc);
+    }
+  }
+
+  private static DocIdSet cacheIntoBitSet(BulkScorer scorer, int maxDoc) throws IOException {
+    final FixedBitSet bitSet = new FixedBitSet(maxDoc);
+    long cost[] = new long[1];
+    scorer.score(new LeafCollector() {
+
+      @Override
+      public void setScorer(Scorer scorer) throws IOException {}
+
+      @Override
+      public void collect(int doc) throws IOException {
+        cost[0]++;
+        bitSet.set(doc);
+      }
+
+    }, null);
+    return new BitDocIdSet(bitSet, cost[0]);
+  }
+
+  private static DocIdSet cacheIntoRoaringDocIdSet(BulkScorer scorer, int maxDoc) throws IOException {
     RoaringDocIdSet.Builder builder = new RoaringDocIdSet.Builder(maxDoc);
     scorer.score(new LeafCollector() {
 
@@ -656,7 +677,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     private final AtomicBoolean used;
 
     CachingWrapperWeight(Weight in, QueryCachingPolicy policy) {
-      super(in.getQuery());
+      super(in.getQuery(), 1f);
       this.in = in;
       this.policy = policy;
       used = new AtomicBoolean(false);

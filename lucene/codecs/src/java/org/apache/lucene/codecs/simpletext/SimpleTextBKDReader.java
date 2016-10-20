@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;

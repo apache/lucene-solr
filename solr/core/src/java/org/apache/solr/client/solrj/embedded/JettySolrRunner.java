@@ -307,9 +307,24 @@ public class JettySolrRunner {
   /**
    * Start the Jetty server
    *
+   * If the server has been started before, it will restart using the same port
+   *
    * @throws Exception if an error occurs on startup
    */
   public void start() throws Exception {
+    start(true);
+  }
+
+  /**
+   * Start the Jetty server
+   *
+   * @param reusePort when true, will start up on the same port as used by any
+   *                  previous runs of this JettySolrRunner.  If false, will use
+   *                  the port specified by the server's JettyConfig.
+   *
+   * @throws Exception if an error occurs on startup
+   */
+  public void start(boolean reusePort) throws Exception {
     // Do not let Jetty/Solr pollute the MDC for this thread
     Map<String, String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
@@ -317,7 +332,8 @@ public class JettySolrRunner {
       // if started before, make a new server
       if (startedBefore) {
         waitOnSolr = false;
-        init(lastPort);
+        int port = reusePort ? lastPort : this.config.port;
+        init(port);
       } else {
         startedBefore = true;
       }

@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.Comparator;
 
 public class TestIntervalFaceting extends SolrTestCaseJ4 {
 

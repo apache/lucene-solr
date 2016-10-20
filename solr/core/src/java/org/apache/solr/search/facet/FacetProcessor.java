@@ -45,27 +45,18 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.RTimer;
 
-public class FacetProcessor<FacetRequestT extends FacetRequest>  {
-  protected SimpleOrderedMap<Object> response;
-  protected FacetContext fcontext;
-  protected FacetRequestT freq;
+public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
+  SimpleOrderedMap<Object> response;
+  FacetContext fcontext;
+  FacetRequestT freq;
 
   LinkedHashMap<String,SlotAcc> accMap;
-  protected SlotAcc[] accs;
-  protected CountSlotAcc countAcc;
+  SlotAcc[] accs;
+  CountSlotAcc countAcc;
 
-  FacetProcessor(FacetContext fcontext, FacetRequestT freq) {
-    this.fcontext = fcontext;
-    this.freq = freq;
-  }
-
-  public void process() throws IOException {
-    handleDomainChanges();
-  }
-  
   /** factory method for invoking json facet framework as whole */
-  public static FacetProcessor<?> createProcessor(SolrQueryRequest req, 
-      Map<String, Object> params, DocSet docs){
+  public static FacetProcessor<?> createProcessor(SolrQueryRequest req,
+                                                  Map<String, Object> params, DocSet docs){
     FacetParser parser = new FacetTopParser(req);
     FacetRequest facetRequest = null;
     try {
@@ -83,37 +74,23 @@ public class FacetProcessor<FacetRequestT extends FacetRequest>  {
     return facetRequest.createFacetProcessor(fcontext);
   }
 
-  protected void handleDomainChanges() throws IOException {
+  FacetProcessor(FacetContext fcontext, FacetRequestT freq) {
+    this.fcontext = fcontext;
+    this.freq = freq;
+  }
+
+  public Object getResponse() {
+    return response;
+  }
+
+  public void process() throws IOException {
+    handleDomainChanges();
+  }
+
+  private void handleDomainChanges() throws IOException {
     if (freq.domain == null) return;
     handleFilterExclusions();
     handleBlockJoin();
-  }
-
-  private void handleBlockJoin() throws IOException {
-    if (!(freq.domain.toChildren || freq.domain.toParent)) return;
-
-    // TODO: avoid query parsing per-bucket somehow...
-    String parentStr = freq.domain.parents;
-    Query parentQuery;
-    try {
-      QParser parser = QParser.getParser(parentStr, null, fcontext.req);
-      parentQuery = parser.getQuery();
-    } catch (SyntaxError err) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing block join parent specification: " + parentStr);
-    }
-
-    BitDocSet parents = fcontext.searcher.getDocSetBits(parentQuery);
-    DocSet input = fcontext.base;
-    DocSet result;
-
-    if (freq.domain.toChildren) {
-      DocSet filt = fcontext.searcher.getDocSetBits( new MatchAllDocsQuery() );
-      result = BlockJoin.toChildren(input, parents, filt, fcontext.qcontext);
-    } else {
-      result = BlockJoin.toParents(input, parents, fcontext.qcontext);
-    }
-
-    fcontext.base = result;
   }
 
   private void handleFilterExclusions() throws IOException {
@@ -177,11 +154,44 @@ public class FacetProcessor<FacetRequestT extends FacetRequest>  {
     fcontext.base = fcontext.searcher.getDocSet(qlist);
   }
 
+  private void handleBlockJoin() throws IOException {
+    if (!(freq.domain.toChildren || freq.domain.toParent)) return;
 
-  public Object getResponse() {
-    return null;
+    // TODO: avoid query parsing per-bucket somehow...
+    String parentStr = freq.domain.parents;
+    Query parentQuery;
+    try {
+      QParser parser = QParser.getParser(parentStr, fcontext.req);
+      parentQuery = parser.getQuery();
+    } catch (SyntaxError err) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing block join parent specification: " + parentStr);
+    }
+
+    BitDocSet parents = fcontext.searcher.getDocSetBits(parentQuery);
+    DocSet input = fcontext.base;
+    DocSet result;
+
+    if (freq.domain.toChildren) {
+      DocSet filt = fcontext.searcher.getDocSetBits( new MatchAllDocsQuery() );
+      result = BlockJoin.toChildren(input, parents, filt, fcontext.qcontext);
+    } else {
+      result = BlockJoin.toParents(input, parents, fcontext.qcontext);
+    }
+
+    fcontext.base = result;
   }
 
+  protected void processStats(SimpleOrderedMap<Object> bucket, DocSet docs, int docCount) throws IOException {
+    if (docCount == 0 && !freq.processEmpty || freq.getFacetStats().size() == 0) {
+      bucket.add("count", docCount);
+      return;
+    }
+    createAccs(docCount, 1);
+    int collected = collect(docs, 0);
+    countAcc.incrementCount(0, collected);
+    assert collected == docCount;
+    addStats(bucket, 0);
+  }
 
   protected void createAccs(int docCount, int slotCount) throws IOException {
     accMap = new LinkedHashMap<>();
@@ -198,7 +208,6 @@ public class FacetProcessor<FacetRequestT extends FacetRequest>  {
       accMap.put(acc.key, acc);
     }
 
-
     accs = new SlotAcc[accMap.size()];
     int i=0;
     for (SlotAcc acc : accMap.values()) {
@@ -206,60 +215,11 @@ public class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-
-  protected void resetStats() {
+  // note: only called by enum/stream prior to collect
+  void resetStats() {
     countAcc.reset();
     for (SlotAcc acc : accs) {
       acc.reset();
-    }
-  }
-
-  protected void processStats(SimpleOrderedMap<Object> bucket, DocSet docs, int docCount) throws IOException {
-    if (docCount == 0 && !freq.processEmpty || freq.getFacetStats().size() == 0) {
-      bucket.add("count", docCount);
-      return;
-    }
-    createAccs(docCount, 1);
-    int collected = collect(docs, 0);
-    countAcc.incrementCount(0, collected);
-    assert collected == docCount;
-    addStats(bucket, 0);
-  }
-
-
-  protected void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain) throws IOException {
-
-    // TODO: what if a zero bucket has a sub-facet with an exclusion that would yield results?
-    // should we check for domain-altering exclusions, or even ask the sub-facet for
-    // it's domain and then only skip it if it's 0?
-
-    if (domain == null || domain.size() == 0 && !freq.processEmpty) {
-      return;
-    }
-
-    for (Map.Entry<String,FacetRequest> sub : freq.getSubFacets().entrySet()) {
-      // make a new context for each sub-facet since they can change the domain
-      FacetContext subContext = fcontext.sub(filter, domain);
-      FacetProcessor subProcessor = sub.getValue().createFacetProcessor(subContext);
-      if (fcontext.getDebugInfo() != null) {   // if fcontext.debugInfo != null, it means rb.debug() == true
-        FacetDebugInfo fdebug = new FacetDebugInfo();
-        subContext.setDebugInfo(fdebug);
-        fcontext.getDebugInfo().addChild(fdebug);
-        
-        fdebug.setReqDescription(sub.getValue().getFacetDescription());
-        fdebug.setProcessor(subProcessor.getClass().getSimpleName());
-        if (subContext.filter != null) fdebug.setFilter(subContext.filter.toString());
-      
-        final RTimer timer = new RTimer();
-        subProcessor.process();
-        long timeElapsed = (long) timer.getTime();
-        fdebug.setElapse(timeElapsed);
-        fdebug.putInfoItem("domainSize", (long)subContext.base.size());
-      } else {
-        subProcessor.process();
-      }
-
-      response.add( sub.getKey(), subProcessor.getResponse() );
     }
   }
 
@@ -310,7 +270,6 @@ public class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-
   void addStats(SimpleOrderedMap<Object> target, int slotNum) throws IOException {
     int count = countAcc.getCount(slotNum);
     target.add("count", count);
@@ -321,8 +280,7 @@ public class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-
-  public void fillBucket(SimpleOrderedMap<Object> bucket, Query q, DocSet result) throws IOException {
+  void fillBucket(SimpleOrderedMap<Object> bucket, Query q, DocSet result) throws IOException {
     boolean needDocSet = freq.getFacetStats().size() > 0 || freq.getSubFacets().size() > 0;
 
     // TODO: always collect counts or not???
@@ -348,7 +306,7 @@ public class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
 
     try {
-      processStats(bucket, result, (int) count);
+      processStats(bucket, result, count);
       processSubs(bucket, q, result);
     } finally {
       if (result != null) {
@@ -358,7 +316,44 @@ public class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-  public static DocSet getFieldMissing(SolrIndexSearcher searcher, DocSet docs, String fieldName) throws IOException {
+  void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain) throws IOException {
+
+    // TODO: what if a zero bucket has a sub-facet with an exclusion that would yield results?
+    // should we check for domain-altering exclusions, or even ask the sub-facet for
+    // it's domain and then only skip it if it's 0?
+
+    if (domain == null || domain.size() == 0 && !freq.processEmpty) {
+      return;
+    }
+
+    for (Map.Entry<String,FacetRequest> sub : freq.getSubFacets().entrySet()) {
+      // make a new context for each sub-facet since they can change the domain
+      FacetContext subContext = fcontext.sub(filter, domain);
+      FacetProcessor subProcessor = sub.getValue().createFacetProcessor(subContext);
+      if (fcontext.getDebugInfo() != null) {   // if fcontext.debugInfo != null, it means rb.debug() == true
+        FacetDebugInfo fdebug = new FacetDebugInfo();
+        subContext.setDebugInfo(fdebug);
+        fcontext.getDebugInfo().addChild(fdebug);
+
+        fdebug.setReqDescription(sub.getValue().getFacetDescription());
+        fdebug.setProcessor(subProcessor.getClass().getSimpleName());
+        if (subContext.filter != null) fdebug.setFilter(subContext.filter.toString());
+
+        final RTimer timer = new RTimer();
+        subProcessor.process();
+        long timeElapsed = (long) timer.getTime();
+        fdebug.setElapse(timeElapsed);
+        fdebug.putInfoItem("domainSize", (long)subContext.base.size());
+      } else {
+        subProcessor.process();
+      }
+
+      response.add( sub.getKey(), subProcessor.getResponse() );
+    }
+  }
+
+  @SuppressWarnings("unused")
+  static DocSet getFieldMissing(SolrIndexSearcher searcher, DocSet docs, String fieldName) throws IOException {
     SchemaField sf = searcher.getSchema().getField(fieldName);
     DocSet hasVal = searcher.getDocSet(sf.getType().getRangeQuery(null, sf, null, null, false, false));
     DocSet answer = docs.andNot(hasVal);
@@ -366,7 +361,7 @@ public class FacetProcessor<FacetRequestT extends FacetRequest>  {
     return answer;
   }
 
-  public static Query getFieldMissingQuery(SolrIndexSearcher searcher, String fieldName) throws IOException {
+  static Query getFieldMissingQuery(SolrIndexSearcher searcher, String fieldName) throws IOException {
     SchemaField sf = searcher.getSchema().getField(fieldName);
     Query hasVal = sf.getType().getRangeQuery(null, sf, null, null, false, false);
     BooleanQuery.Builder noVal = new BooleanQuery.Builder();

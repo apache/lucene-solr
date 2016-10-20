@@ -39,6 +39,7 @@ import org.apache.hadoop.util.JarFinder;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
@@ -67,6 +68,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Conseque
 })
 @Slow
 @Nightly
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9076")
 public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
   
   private static final boolean ENABLE_LOCAL_JOB_RUNNER = false; // for debugging only

@@ -17,23 +17,18 @@
 -->
 
 <schema name="bad-schema-nontext-analyzer" version="1.0">
-  <types>
-    <!-- BEGIN BAD STUFF -->
-    <fieldType name="bad_type" class="solr.StrField">
-      <analyzer>
-        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-      </analyzer>
-    </fieldType>
-    <!-- END BAD STUFF -->
- </types>
+  <!-- BEGIN BAD STUFF -->
+  <fieldType name="bad_type" class="solr.StrField">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+  <!-- END BAD STUFF -->
+
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
 
- <fields>
-   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-   
- </fields>
-
- <defaultSearchField>id</defaultSearchField>
- <uniqueKey>id</uniqueKey>
+  <defaultSearchField>id</defaultSearchField>
+  <uniqueKey>id</uniqueKey>
 
 </schema>

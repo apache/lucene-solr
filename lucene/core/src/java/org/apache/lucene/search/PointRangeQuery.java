@@ -24,7 +24,6 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.document.IntPoint;    // javadocs
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.DocIdSetBuilder;
@@ -98,17 +97,17 @@ public abstract class PointRangeQuery extends Query {
   }
 
   @Override
-  public final Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public final Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
 
     // We don't use RandomAccessWeight here: it's no good to approximate with "match all docs".
     // This is an inverted structure and should be used in the first pass:
 
-    return new ConstantScoreWeight(this) {
+    return new ConstantScoreWeight(this, boost) {
 
       private DocIdSet buildMatchingDocIdSet(LeafReader reader, PointValues values) throws IOException {
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
-        values.intersect(field,
+        values.intersect(
             new IntersectVisitor() {
 
               DocIdSetBuilder.BulkAdder adder;
@@ -171,27 +170,24 @@ public abstract class PointRangeQuery extends Query {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
-        PointValues values = reader.getPointValues();
+
+        PointValues values = reader.getPointValues(field);
         if (values == null) {
-          // No docs in this segment indexed any points
+          // No docs in this segment/field indexed any points
           return null;
         }
-        FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
-        if (fieldInfo == null) {
-          // No docs in this segment indexed this field at all
-          return null;
+
+        if (values.getNumDimensions() != numDims) {
+          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims=" + values.getNumDimensions() + " but this query has numDims=" + numDims);
         }
-        if (fieldInfo.getPointDimensionCount() != numDims) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims=" + fieldInfo.getPointDimensionCount() + " but this query has numDims=" + numDims);
-        }
-        if (bytesPerDim != fieldInfo.getPointNumBytes()) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() + " but this query has bytesPerDim=" + bytesPerDim);
+        if (bytesPerDim != values.getBytesPerDimension()) {
+          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + values.getBytesPerDimension() + " but this query has bytesPerDim=" + bytesPerDim);
         }
 
         boolean allDocsMatch;
-        if (values.getDocCount(field) == reader.maxDoc()) {
-          final byte[] fieldPackedLower = values.getMinPackedValue(field);
-          final byte[] fieldPackedUpper = values.getMaxPackedValue(field);
+        if (values.getDocCount() == reader.maxDoc()) {
+          final byte[] fieldPackedLower = values.getMinPackedValue();
+          final byte[] fieldPackedUpper = values.getMaxPackedValue();
           allDocsMatch = true;
           for (int i = 0; i < numDims; ++i) {
             int offset = i * bytesPerDim;
@@ -218,9 +214,29 @@ public abstract class PointRangeQuery extends Query {
     };
   }
 
+  public String getField() {
+    return field;
+  }
+
+  public int getNumDims() {
+    return numDims;
+  }
+
+  public int getBytesPerDim() {
+    return bytesPerDim;
+  }
+
+  public byte[] getLowerPoint() {
+    return lowerPoint.clone();
+  }
+
+  public byte[] getUpperPoint() {
+    return upperPoint.clone();
+  }
+
   @Override
   public final int hashCode() {
-    int hash = super.hashCode();
+    int hash = classHash();
     hash = 31 * hash + field.hashCode();
     hash = 31 * hash + Arrays.hashCode(lowerPoint);
     hash = 31 * hash + Arrays.hashCode(upperPoint);
@@ -230,33 +246,17 @@ public abstract class PointRangeQuery extends Query {
   }
 
   @Override
-  public final boolean equals(Object other) {
-    if (super.equals(other) == false) {
-      return false;
-    }
+  public final boolean equals(Object o) {
+    return sameClassAs(o) &&
+           equalsTo(getClass().cast(o));
+  }
 
-    final PointRangeQuery q = (PointRangeQuery) other;
-    if (field.equals(q.field) == false) {
-      return false;
-    }
-
-    if (q.numDims != numDims) {
-      return false;
-    }
-
-    if (q.bytesPerDim != bytesPerDim) {
-      return false;
-    }
-
-    if (Arrays.equals(lowerPoint, q.lowerPoint) == false) {
-      return false;
-    }
-    
-    if (Arrays.equals(upperPoint, q.upperPoint) == false) {
-      return false;
-    }
-
-    return true;
+  private boolean equalsTo(PointRangeQuery other) {
+    return Objects.equals(field, other.field) &&
+           numDims == other.numDims &&
+           bytesPerDim == other.bytesPerDim &&
+           Arrays.equals(lowerPoint, other.lowerPoint) &&
+           Arrays.equals(upperPoint, other.upperPoint);
   }
 
   @Override

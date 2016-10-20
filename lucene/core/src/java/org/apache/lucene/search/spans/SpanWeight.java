@@ -82,14 +82,14 @@ public abstract class SpanWeight extends Weight {
    *                     be null if scores are not required
    * @throws IOException on error
    */
-  public SpanWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermContext> termContexts) throws IOException {
+  public SpanWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermContext> termContexts, float boost) throws IOException {
     super(query);
     this.field = query.getField();
     this.similarity = searcher.getSimilarity(termContexts != null);
-    this.simWeight = buildSimWeight(query, searcher, termContexts);
+    this.simWeight = buildSimWeight(query, searcher, termContexts, boost);
   }
 
-  private Similarity.SimWeight buildSimWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermContext> termContexts) throws IOException {
+  private Similarity.SimWeight buildSimWeight(SpanQuery query, IndexSearcher searcher, Map<Term, TermContext> termContexts, float boost) throws IOException {
     if (termContexts == null || termContexts.size() == 0 || query.getField() == null)
       return null;
     TermStatistics[] termStats = new TermStatistics[termContexts.size()];
@@ -99,7 +99,7 @@ public abstract class SpanWeight extends Weight {
       i++;
     }
     CollectionStatistics collectionStats = searcher.collectionStatistics(query.getField());
-    return searcher.getSimilarity(true).computeWeight(collectionStats, termStats);
+    return similarity.computeWeight(boost, collectionStats, termStats);
   }
 
   /**
@@ -115,18 +115,6 @@ public abstract class SpanWeight extends Weight {
    * @throws IOException on error
    */
   public abstract Spans getSpans(LeafReaderContext ctx, Postings requiredPostings) throws IOException;
-
-  @Override
-  public float getValueForNormalization() throws IOException {
-    return simWeight == null ? 1.0f : simWeight.getValueForNormalization();
-  }
-
-  @Override
-  public void normalize(float queryNorm, float boost) {
-    if (simWeight != null) {
-      simWeight.normalize(queryNorm, boost);
-    }
-  }
 
   @Override
   public SpanScorer scorer(LeafReaderContext context) throws IOException {

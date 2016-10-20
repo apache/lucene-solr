@@ -41,7 +41,6 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.State;
 import org.apache.lucene.util.BytesRef;
 import org.noggit.JSONUtil;
-import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.schema.PreAnalyzedField.ParseResult;

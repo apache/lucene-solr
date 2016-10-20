@@ -20,7 +20,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.Collections;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.util.TestUtil;
@@ -28,10 +27,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.util.ContentStreamBase.ByteArrayStream;
 import org.apache.solr.common.util.ContentStreamBase.StringStream;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-
 import org.junit.BeforeClass;
 import org.junit.AfterClass;
 
@@ -171,7 +167,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     writerBinBase.write(bytes, req(), rsp);
     BinaryResponseParser parser = new BinaryResponseParser();
     NamedList<Object> out = parser.processResponse
-      (new ByteArrayInputStream(bytes.toByteArray()), /* encoding irelevent */ null);
+      (new ByteArrayInputStream(bytes.toByteArray()), /* encoding irrelevant */ null);
     assertEquals(RawResponseWriter.CONTENT, out.getName(0));
     assertEquals("test", out.getVal(0));
     assertEquals("foo", out.getName(1));
@@ -180,8 +176,8 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
   }
 
   /**
-   * Generates a new {@link RawResponseWriter} wraping the specified baseWriter name 
-   * (which much either be an implicitly definied response writer, or one explicitly 
+   * Generates a new {@link RawResponseWriter} wrapping the specified baseWriter name 
+   * (which much either be an implicitly defined response writer, or one explicitly 
    * configured in solrconfig.xml)
    *
    * @param baseWriter null or the name of a valid base writer

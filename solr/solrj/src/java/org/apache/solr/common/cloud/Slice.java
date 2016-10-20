@@ -19,6 +19,7 @@ package org.apache.solr.common.cloud;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -29,22 +30,27 @@ import org.noggit.JSONWriter;
 /**
  * A Slice contains immutable information about a logical shard (all replicas that share the same shard id).
  */
-public class Slice extends ZkNodeProps {
+public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   /** Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON. */
   public static Map<String,Slice> loadAllFromMap(Map<String, Object> genericSlices) {
     if (genericSlices == null) return Collections.emptyMap();
-    Map<String,Slice> result = new LinkedHashMap<>(genericSlices.size());
-    for (Map.Entry<String,Object> entry : genericSlices.entrySet()) {
+    Map<String, Slice> result = new LinkedHashMap<>(genericSlices.size());
+    for (Map.Entry<String, Object> entry : genericSlices.entrySet()) {
       String name = entry.getKey();
       Object val = entry.getValue();
       if (val instanceof Slice) {
-        result.put(name, (Slice)val);
+        result.put(name, (Slice) val);
       } else if (val instanceof Map) {
-        result.put(name, new Slice(name, null, (Map<String,Object>)val));
+        result.put(name, new Slice(name, null, (Map<String, Object>) val));
       }
     }
     return result;
+  }
+
+  @Override
+  public Iterator<Replica> iterator() {
+    return replicas.values().iterator();
   }
 
   /** The slice's state. */
@@ -75,7 +81,16 @@ public class Slice extends ZkNodeProps {
      * shard in that state still receives update requests from the parent shard
      * leader, however does not participate in distributed search.
      */
-    RECOVERY;
+    RECOVERY,
+
+    /**
+     * Sub-shards of a split shard are put in that state when the split is deemed failed
+     * by the overseer even though all replicas are active because either the leader node is
+     * no longer live or has a different ephemeral owner (zk session id). Such conditions can potentially
+     * lead to data loss. See SOLR-9438 for details. A shard in that state will neither receive
+     * update requests from the parent shard leader, nor participate in distributed search.
+     */
+    RECOVERY_FAILED;
     
     @Override
     public String toString() {

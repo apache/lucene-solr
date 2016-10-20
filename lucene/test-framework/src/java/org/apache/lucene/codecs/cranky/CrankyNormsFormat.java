@@ -66,11 +66,11 @@ class CrankyNormsFormat extends NormsFormat {
     }
 
     @Override
-    public void addNormsField(FieldInfo field, Iterable<Number> values) throws IOException {
+    public void addNormsField(FieldInfo field, NormsProducer valuesProducer) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from NormsConsumer.addNormsField()");
       }
-      delegate.addNormsField(field, values);
+      delegate.addNormsField(field, valuesProducer);
     }
   }
 }

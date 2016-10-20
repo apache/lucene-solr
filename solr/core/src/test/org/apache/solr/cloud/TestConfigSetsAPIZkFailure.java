@@ -36,7 +36,6 @@ import org.apache.jute.OutputArchive;
 import org.apache.jute.Record;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
@@ -135,9 +134,9 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     FileUtils.copyDirectory(configDir, tmpConfigDir);
     if (oldProps != null) {
       FileUtils.write(new File(tmpConfigDir, ConfigSetProperties.DEFAULT_FILENAME),
-          getConfigSetProps(oldProps));
+          getConfigSetProps(oldProps), StandardCharsets.UTF_8);
     }
-    solrCluster.uploadConfigDir(tmpConfigDir, baseConfigSetName);
+    solrCluster.uploadConfigSet(tmpConfigDir.toPath(), baseConfigSetName);
   }
 
   private StringBuilder getConfigSetProps(Map<String, String> map) {

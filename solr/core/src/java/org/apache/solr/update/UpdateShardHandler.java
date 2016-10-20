@@ -60,8 +60,19 @@ public class UpdateShardHandler {
     }
 
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
-    log.info("Creating UpdateShardHandler HTTP client with params: {}", clientParams);
+    if (cfg != null)  {
+      clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
+      clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
+    }
     client = HttpClientUtil.createClient(clientParams, clientConnectionManager);
+
+    // following is done only for logging complete configuration.
+    // The maxConnections and maxConnectionsPerHost have already been specified on the connection manager
+    if (cfg != null)  {
+      clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, cfg.getMaxUpdateConnections());
+      clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, cfg.getMaxUpdateConnectionsPerHost());
+    }
+    log.debug("Created UpdateShardHandler HTTP client with params: {}", clientParams);
   }
   
   public HttpClient getHttpClient() {
@@ -85,7 +96,7 @@ public class UpdateShardHandler {
 
   /**
    * In general, RecoveryStrategy threads do not do disk IO, but they open and close SolrCores
-   * in async threads, amoung other things, and can trigger disk IO, so we use this alternate 
+   * in async threads, among other things, and can trigger disk IO, so we use this alternate 
    * executor rather than the 'updateExecutor', which is interrupted on shutdown.
    * 
    * @return executor for {@link RecoveryStrategy} thread which will not be interrupted on close.
@@ -96,7 +107,7 @@ public class UpdateShardHandler {
 
   public void close() {
     try {
-      // we interrupt on purpose here, but this exectuor should not run threads that do disk IO!
+      // we interrupt on purpose here, but this executor should not run threads that do disk IO!
       ExecutorUtil.shutdownWithInterruptAndAwaitTermination(updateExecutor);
       ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
     } catch (Exception e) {

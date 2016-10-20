@@ -17,10 +17,8 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -79,8 +77,14 @@ class OldLuceneQParser extends LuceneQParser {
   }
 
   @Override
+  @Deprecated
   public SortSpec getSort(boolean useGlobal) throws SyntaxError {
-    SortSpec sort = super.getSort(useGlobal);
+    return getSortSpec(useGlobal);
+  }
+
+  @Override
+  public SortSpec getSortSpec(boolean useGlobal) throws SyntaxError {
+    SortSpec sort = super.getSortSpec(useGlobal);
     if (sortStr != null && sortStr.length()>0 && sort.getSort()==null) {
       SortSpec oldSort = SortSpecParsing.parseSortSpec(sortStr, getReq());
       if( oldSort.getSort() != null ) {

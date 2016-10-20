@@ -18,7 +18,6 @@ package org.apache.lucene.search.spell;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.suggest.InputIterator;
-import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
 

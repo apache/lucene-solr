@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -210,8 +209,18 @@ public abstract class QParser {
   /**
    * @param useGlobalParams look up sort, start, rows in global params if not in local params
    * @return the sort specification
+   * @deprecated Use the not misleadingly named getSortSpec() function instead.
    */
+  @Deprecated
   public SortSpec getSort(boolean useGlobalParams) throws SyntaxError {
+    return getSortSpec(useGlobalParams);
+  }
+
+  /**
+   * @param useGlobalParams look up sort, start, rows in global params if not in local params
+   * @return the sort specification
+   */
+  public SortSpec getSortSpec(boolean useGlobalParams) throws SyntaxError {
     getQuery(); // ensure query is parsed first
 
     String sortStr = null;
@@ -262,6 +271,17 @@ public abstract class QParser {
 
   public void addDebugInfo(NamedList<Object> debugInfo) {
     debugInfo.add("QParser", this.getClass().getSimpleName());
+  }
+
+  /** Create a <code>QParser</code> to parse <code>qstr</code>,
+   * using the "lucene" (QParserPlugin.DEFAULT_QTYPE) query parser.
+   * The query parser may be overridden by local parameters in the query
+   * string itself.  For example if
+   * qstr=<code>{!prefix f=myfield}foo</code>
+   * then the prefix query parser will be used.
+   */
+  public static QParser getParser(String qstr, SolrQueryRequest req) throws SyntaxError {
+    return getParser(qstr, QParserPlugin.DEFAULT_QTYPE, req);
   }
 
   /** Create a <code>QParser</code> to parse <code>qstr</code>,

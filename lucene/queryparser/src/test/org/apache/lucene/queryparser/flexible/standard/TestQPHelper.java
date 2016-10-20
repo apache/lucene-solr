@@ -53,8 +53,8 @@ import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.FuzzyQuery;
@@ -245,6 +245,20 @@ public class TestQPHelper extends LuceneTestCase {
     }
   }
 
+  public void assertMatchNoDocsQuery(String queryString, Analyzer a) throws Exception {
+    assertMatchNoDocsQuery(getQuery(queryString, a));
+  }
+
+  public void assertMatchNoDocsQuery(Query query) throws Exception {
+    if (query instanceof MatchNoDocsQuery) {
+      // good
+    } else if (query instanceof BooleanQuery && ((BooleanQuery) query).clauses().size() == 0) {
+      // good
+    } else {
+      fail("expected MatchNoDocsQuery or an empty BooleanQuery but got: " + query);
+    }
+  }
+
   public void assertQueryEqualsAllowLeadingWildcard(String query, Analyzer a, String result)
       throws Exception {
     Query q = getQueryAllowLeadingWildcard(query, a);
@@ -274,10 +288,9 @@ public class TestQPHelper extends LuceneTestCase {
     }
   }
 
-  public void assertWildcardQueryEquals(String query, boolean lowercase,
+  public void assertWildcardQueryEquals(String query,
       String result, boolean allowLeadingWildcard) throws Exception {
     StandardQueryParser qp = getParser(null);
-    qp.setLowercaseExpandedTerms(lowercase);
     qp.setAllowLeadingWildcard(allowLeadingWildcard);
     Query q = qp.parse(query, "field");
     String s = q.toString("field");
@@ -287,20 +300,9 @@ public class TestQPHelper extends LuceneTestCase {
     }
   }
 
-  public void assertWildcardQueryEquals(String query, boolean lowercase,
+  public void assertWildcardQueryEquals(String query,
       String result) throws Exception {
-    assertWildcardQueryEquals(query, lowercase, result, false);
-  }
-
-  public void assertWildcardQueryEquals(String query, String result)
-      throws Exception {
-    StandardQueryParser qp = getParser(null);
-    Query q = qp.parse(query, "field");
-    String s = q.toString("field");
-    if (!s.equals(result)) {
-      fail("WildcardQuery /" + query + "/ yielded /" + s + "/, expecting /"
-          + result + "/");
-    }
+    assertWildcardQueryEquals(query, result, false);
   }
 
   public Query getQueryDOA(String query, Analyzer a) throws Exception {
@@ -522,7 +524,7 @@ public class TestQPHelper extends LuceneTestCase {
 
   public void testNumber() throws Exception {
     // The numbers go away because SimpleAnalzyer ignores them
-    assertQueryEquals("3", null, "");
+    assertMatchNoDocsQuery("3", null);
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
@@ -583,32 +585,21 @@ public class TestQPHelper extends LuceneTestCase {
      */
     // First prefix queries:
     // by default, convert to lowercase:
-    assertWildcardQueryEquals("Term*", true, "term*");
+    assertWildcardQueryEquals("Term*", "term*");
     // explicitly set lowercase:
-    assertWildcardQueryEquals("term*", true, "term*");
-    assertWildcardQueryEquals("Term*", true, "term*");
-    assertWildcardQueryEquals("TERM*", true, "term*");
-    // explicitly disable lowercase conversion:
-    assertWildcardQueryEquals("term*", false, "term*");
-    assertWildcardQueryEquals("Term*", false, "Term*");
-    assertWildcardQueryEquals("TERM*", false, "TERM*");
+    assertWildcardQueryEquals("term*", "term*");
+    assertWildcardQueryEquals("Term*", "term*");
+    assertWildcardQueryEquals("TERM*", "term*");
     // Then 'full' wildcard queries:
     // by default, convert to lowercase:
     assertWildcardQueryEquals("Te?m", "te?m");
     // explicitly set lowercase:
-    assertWildcardQueryEquals("te?m", true, "te?m");
-    assertWildcardQueryEquals("Te?m", true, "te?m");
-    assertWildcardQueryEquals("TE?M", true, "te?m");
-    assertWildcardQueryEquals("Te?m*gerM", true, "te?m*germ");
-    // explicitly disable lowercase conversion:
-    assertWildcardQueryEquals("te?m", false, "te?m");
-    assertWildcardQueryEquals("Te?m", false, "Te?m");
-    assertWildcardQueryEquals("TE?M", false, "TE?M");
-    assertWildcardQueryEquals("Te?m*gerM", false, "Te?m*gerM");
+    assertWildcardQueryEquals("te?m", "te?m");
+    assertWildcardQueryEquals("Te?m", "te?m");
+    assertWildcardQueryEquals("TE?M", "te?m");
+    assertWildcardQueryEquals("Te?m*gerM", "te?m*germ");
     // Fuzzy queries:
     assertWildcardQueryEquals("Term~", "term~2");
-    assertWildcardQueryEquals("Term~", true, "term~2");
-    assertWildcardQueryEquals("Term~", false, "Term~2");
     // Range queries:
 
     // TODO: implement this on QueryParser
@@ -616,20 +607,18 @@ public class TestQPHelper extends LuceneTestCase {
     // C]': Lexical error at line 1, column 1. Encountered: "[" (91), after
     // : ""
     assertWildcardQueryEquals("[A TO C]", "[a TO c]");
-    assertWildcardQueryEquals("[A TO C]", true, "[a TO c]");
-    assertWildcardQueryEquals("[A TO C]", false, "[A TO C]");
     // Test suffix queries: first disallow
     expectThrows(QueryNodeException.class, () -> {
-      assertWildcardQueryEquals("*Term", true, "*term");
+      assertWildcardQueryEquals("*Term", "*term");
     });
 
     expectThrows(QueryNodeException.class, () -> {
-      assertWildcardQueryEquals("?Term", true, "?term");
+      assertWildcardQueryEquals("?Term", "?term");
     });
 
     // Test suffix queries: then allow
-    assertWildcardQueryEquals("*Term", true, "*term", true);
-    assertWildcardQueryEquals("?Term", true, "?term", true);
+    assertWildcardQueryEquals("*Term", "*term", true);
+    assertWildcardQueryEquals("?Term", "?term", true);
   }
 
   public void testLeadingWildcardType() throws Exception {
@@ -659,14 +648,14 @@ public class TestQPHelper extends LuceneTestCase {
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
         "+term -(phrase1 phrase2) term");
 
-    assertQueryEquals("stop^3", qpAnalyzer, "");
-    assertQueryEquals("stop", qpAnalyzer, "");
-    assertQueryEquals("(stop)^3", qpAnalyzer, "");
-    assertQueryEquals("((stop))^3", qpAnalyzer, "");
-    assertQueryEquals("(stop^3)", qpAnalyzer, "");
-    assertQueryEquals("((stop)^3)", qpAnalyzer, "");
-    assertQueryEquals("(stop)", qpAnalyzer, "");
-    assertQueryEquals("((stop))", qpAnalyzer, "");
+    assertMatchNoDocsQuery("stop^3", qpAnalyzer);
+    assertMatchNoDocsQuery("stop", qpAnalyzer);
+    assertMatchNoDocsQuery("(stop)^3", qpAnalyzer);
+    assertMatchNoDocsQuery("((stop))^3", qpAnalyzer);
+    assertMatchNoDocsQuery("(stop^3)", qpAnalyzer);
+    assertMatchNoDocsQuery("((stop)^3)", qpAnalyzer);
+    assertMatchNoDocsQuery("(stop)", qpAnalyzer);
+    assertMatchNoDocsQuery("((stop))", qpAnalyzer);
     assertTrue(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
     assertTrue(getQuery("term +stop", qpAnalyzer) instanceof TermQuery);
   }
@@ -992,7 +981,7 @@ public class TestQPHelper extends LuceneTestCase {
     q = qp2.parse("the^3", "field");
     // "the" is a stop word so the result is an empty query:
     assertNotNull(q);
-    assertEquals("", q.toString());
+    assertMatchNoDocsQuery(q);
     assertFalse(q instanceof BoostQuery);
   }
 
@@ -1145,10 +1134,10 @@ public class TestQPHelper extends LuceneTestCase {
   
   public void testRegexps() throws Exception {
     StandardQueryParser qp = new StandardQueryParser();
+    qp.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true));
     final String df = "field" ;
     RegexpQuery q = new RegexpQuery(new Term("field", "[a-z][123]"));
     assertEquals(q, qp.parse("/[a-z][123]/", df));
-    qp.setLowercaseExpandedTerms(true);
     assertEquals(q, qp.parse("/[A-Z][123]/", df));
     assertEquals(new BoostQuery(q, 0.5f), qp.parse("/[A-Z][123]/^0.5", df));
     qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);

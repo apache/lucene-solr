@@ -25,6 +25,7 @@ import java.util.BitSet;
 import java.util.List;
 
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.store.CorruptingIndexOutput;
@@ -506,6 +507,35 @@ public class TestBKD extends LuceneTestCase {
     verify(docValues, null, numDims, numBytesPerDim);
   }
 
+  // this should trigger run-length compression with lengths that are greater than 255
+  public void testOneDimTwoValues() throws Exception {
+    int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
+    int numDims = TestUtil.nextInt(random(), 1, 5);
+
+    int numDocs = atLeast(1000);
+    int theDim = random().nextInt(numDims);
+    byte[] value1 = new byte[numBytesPerDim];
+    random().nextBytes(value1);
+    byte[] value2 = new byte[numBytesPerDim];
+    random().nextBytes(value2);
+    byte[][][] docValues = new byte[numDocs][][];
+
+    for(int docID=0;docID<numDocs;docID++) {
+      byte[][] values = new byte[numDims][];
+      for(int dim=0;dim<numDims;dim++) {
+        if (dim == theDim) {
+          values[dim] = random().nextBoolean() ? value1 : value2;
+        } else {
+          values[dim] = new byte[numBytesPerDim];
+          random().nextBytes(values[dim]);
+        }
+      }
+      docValues[docID] = values;
+    }
+
+    verify(docValues, null, numDims, numBytesPerDim);
+  }
+
   public void testMultiValued() throws Exception {
     int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
     int numDims = TestUtil.nextInt(random(), 1, 5);
@@ -554,7 +584,7 @@ public class TestBKD extends LuceneTestCase {
     }
 
     List<Long> toMerge = null;
-    List<Integer> docIDBases = null;
+    List<MergeState.DocMap> docMaps = null;
     int seg = 0;
 
     BKDWriter w = new BKDWriter(numValues, dir, "_" + seg, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB, docValues.length, false);
@@ -601,9 +631,15 @@ public class TestBKD extends LuceneTestCase {
         if (useMerge && segCount == valuesInThisSeg) {
           if (toMerge == null) {
             toMerge = new ArrayList<>();
-            docIDBases = new ArrayList<>();
+            docMaps = new ArrayList<>();
           }
-          docIDBases.add(lastDocIDBase);
+          final int curDocIDBase = lastDocIDBase;
+          docMaps.add(new MergeState.DocMap() {
+              @Override
+              public int get(int docID) {
+                return curDocIDBase + docID;
+              }
+            });
           toMerge.add(w.finish(out));
           valuesInThisSeg = TestUtil.nextInt(random(), numValues/10, numValues/2);
           segCount = 0;
@@ -620,8 +656,14 @@ public class TestBKD extends LuceneTestCase {
 
       if (toMerge != null) {
         if (segCount > 0) {
-          docIDBases.add(lastDocIDBase);
           toMerge.add(w.finish(out));
+          final int curDocIDBase = lastDocIDBase;
+          docMaps.add(new MergeState.DocMap() {
+              @Override
+              public int get(int docID) {
+                return curDocIDBase + docID;
+              }
+            });
         }
         out.close();
         in = dir.openInput("bkd", IOContext.DEFAULT);
@@ -633,7 +675,7 @@ public class TestBKD extends LuceneTestCase {
           readers.add(new BKDReader(in));
         }
         out = dir.createOutput("bkd2", IOContext.DEFAULT);
-        indexFP = w.merge(out, null, readers, docIDBases);
+        indexFP = w.merge(out, docMaps, readers);
         out.close();
         in.close();
         in = dir.openInput("bkd2", IOContext.DEFAULT);
@@ -795,9 +837,6 @@ public class TestBKD extends LuceneTestCase {
     }
 
     try (Directory dir0 = newMockDirectory()) {
-      if (dir0 instanceof MockDirectoryWrapper) {
-        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
-      }
 
       Directory dir = new FilterDirectory(dir0) {
         boolean corrupted;
@@ -844,9 +883,6 @@ public class TestBKD extends LuceneTestCase {
     }
 
     try (Directory dir0 = newMockDirectory()) {
-      if (dir0 instanceof MockDirectoryWrapper) {
-        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
-      }
 
       Directory dir = new FilterDirectory(dir0) {
         boolean corrupted;

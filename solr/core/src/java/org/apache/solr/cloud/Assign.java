@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -157,7 +156,7 @@ public class Assign {
     if (createNodeList == null) { // We only care if we haven't been told to put new replicas on specific nodes.
       int availableSlots = 0;
       for (Map.Entry<String, ReplicaCount> ent : nodeNameVsShardCount.entrySet()) {
-        //ADDREPLICA can put more than maxShardsPerNode on an instnace, so this test is necessary.
+        //ADDREPLICA can put more than maxShardsPerNode on an instance, so this test is necessary.
         if (maxShardsPerNode > ent.getValue().thisCollectionNodes) {
           availableSlots += (maxShardsPerNode - ent.getValue().thisCollectionNodes);
         }

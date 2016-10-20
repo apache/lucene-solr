@@ -57,10 +57,14 @@ import org.slf4j.LoggerFactory;
 
 public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , PermissionNameProvider {
 
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private static String defaultZkhost = null;
   private static String defaultWorkerCollection = null;
 
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  static final String sqlNonCloudErrorMsg = "/sql handler only works in Solr Cloud mode";
+
+  private boolean isCloud = false;
 
   public void inform(SolrCore core) {
     CoreContainer coreContainer = core.getCoreDescriptor().getCoreContainer();
@@ -68,6 +72,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     if(coreContainer.isZooKeeperAware()) {
       defaultZkhost = core.getCoreDescriptor().getCoreContainer().getZkController().getZkServerAddress();
       defaultWorkerCollection = core.getCoreDescriptor().getCollectionName();
+      isCloud = true;
     }
   }
 
@@ -85,9 +90,13 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     params.set("workerZkhost", params.get("workerZkhost", defaultZkhost));
     params.set("aggregationMode", params.get("aggregationMode", "map_reduce"));
 
-
     TupleStream tupleStream = null;
     try {
+
+      if(!isCloud) {
+        throw new IllegalStateException(sqlNonCloudErrorMsg);
+      }
+
       if(sql == null) {
         throw new Exception("stmt parameter cannot be null");
       }

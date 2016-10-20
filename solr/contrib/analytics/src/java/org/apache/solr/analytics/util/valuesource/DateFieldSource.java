@@ -24,12 +24,11 @@ import java.util.Map;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDate;
 
@@ -59,26 +58,39 @@ public class DateFieldSource extends LongFieldSource {
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
-    final Bits valid = DocValues.getDocsWithField(readerContext.reader(), field);
     return new LongDocValues(this) {
+
+      private long getDocValue(int doc) throws IOException {
+        int arrDocID = arr.docID();
+        if (arrDocID < doc) {
+          arrDocID = arr.advance(doc);
+        }
+        if (arrDocID == doc) {
+          return arr.longValue();
+        } else {
+          return 0;
+        }
+      }
+      
       @Override
-      public long longVal(int doc) {
-        return arr.get(doc);
+      public long longVal(int doc) throws IOException {
+        return getDocValue(doc);
       }
 
       @Override
-      public boolean exists(int doc) {
-        return valid.get(doc);
+      public boolean exists(int doc) throws IOException {
+        getDocValue(doc);
+        return arr.docID() == doc;
       }
 
       @Override
-      public Object objectVal(int doc) {
-        return exists(doc) ? longToObject(arr.get(doc)) : null;
+      public Object objectVal(int doc) throws IOException {
+        return exists(doc) ? longToObject(getDocValue(doc)) : null;
       }
 
       @Override
-      public String strVal(int doc) {
-        return exists(doc) ? longToString(arr.get(doc)) : null;
+      public String strVal(int doc) throws IOException {
+        return exists(doc) ? longToString(getDocValue(doc)) : null;
       }
 
       @Override
@@ -92,8 +104,8 @@ public class DateFieldSource extends LongFieldSource {
           }
 
           @Override
-          public void fillValue(int doc) {
-            mval.value = arr.get(doc);
+          public void fillValue(int doc) throws IOException {
+            mval.value = getDocValue(doc);
             mval.exists = exists(doc);
           }
         };

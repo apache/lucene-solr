@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-//Unlike TestSolr4Spatial, not parameterized / not generic.
+//Unlike TestSolr4Spatial, not parametrized / not generic.
 public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
   @BeforeClass

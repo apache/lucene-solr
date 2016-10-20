@@ -39,6 +39,8 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterLeafReader.FilterFields;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
@@ -116,7 +118,61 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public void write(Fields fields) throws IOException {
+      Map<PostingsFormat, FieldsGroup> formatToGroups = buildFieldsGroupMapping(fields);
 
+      // Write postings
+      boolean success = false;
+      try {
+        for (Map.Entry<PostingsFormat, FieldsGroup> ent : formatToGroups.entrySet()) {
+          PostingsFormat format = ent.getKey();
+          final FieldsGroup group = ent.getValue();
+
+          // Exposes only the fields from this group:
+          Fields maskedFields = new FilterFields(fields) {
+            @Override
+            public Iterator<String> iterator() {
+              return group.fields.iterator();
+            }
+          };
+
+          FieldsConsumer consumer = format.fieldsConsumer(group.state);
+          toClose.add(consumer);
+          consumer.write(maskedFields);
+        }
+        success = true;
+      } finally {
+        if (!success) {
+          IOUtils.closeWhileHandlingException(toClose);
+        }
+      }
+    }
+
+    @Override
+    public void merge(MergeState mergeState) throws IOException {
+      Map<PostingsFormat, FieldsGroup> formatToGroups = buildFieldsGroupMapping(new MultiFields(mergeState.fieldsProducers, null));
+
+      // Merge postings
+      PerFieldMergeState pfMergeState = new PerFieldMergeState(mergeState);
+      boolean success = false;
+      try {
+        for (Map.Entry<PostingsFormat, FieldsGroup> ent : formatToGroups.entrySet()) {
+          PostingsFormat format = ent.getKey();
+          final FieldsGroup group = ent.getValue();
+
+          FieldsConsumer consumer = format.fieldsConsumer(group.state);
+          toClose.add(consumer);
+          consumer.merge(pfMergeState.apply(group.fields));
+        }
+        success = true;
+      } finally {
+        pfMergeState.reset();
+        if (!success) {
+          IOUtils.closeWhileHandlingException(toClose);
+        }
+      }
+    }
+
+    private Map<PostingsFormat, FieldsGroup> buildFieldsGroupMapping(Fields fields) {
       // Maps a PostingsFormat instance to the suffix it
       // should use
       Map<PostingsFormat,FieldsGroup> formatToGroups = new HashMap<>();
@@ -124,7 +180,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       // Holds last suffix of each PostingFormat name
       Map<String,Integer> suffixes = new HashMap<>();
 
-      // First pass: assign field -> PostingsFormat
+      // Assign field -> PostingsFormat
       for(String field : fields) {
         FieldInfo fieldInfo = writeState.fieldInfos.fieldInfo(field);
 
@@ -177,32 +233,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
                                           ", field=" + fieldInfo.name + ", old=" + previousValue + ", new=" + group.suffix);
         }
       }
-
-      // Second pass: write postings
-      boolean success = false;
-      try {
-        for(Map.Entry<PostingsFormat,FieldsGroup> ent : formatToGroups.entrySet()) {
-          PostingsFormat format = ent.getKey();
-          final FieldsGroup group = ent.getValue();
-
-          // Exposes only the fields from this group:
-          Fields maskedFields = new FilterFields(fields) {
-              @Override
-              public Iterator<String> iterator() {
-                return group.fields.iterator();
-              }
-            };
-
-          FieldsConsumer consumer = format.fieldsConsumer(group.state);
-          toClose.add(consumer);
-          consumer.write(maskedFields);
-        }
-        success = true;
-      } finally {
-        if (success == false) {
-          IOUtils.closeWhileHandlingException(toClose);
-        }
-      }
+      return formatToGroups;
     }
 
     @Override

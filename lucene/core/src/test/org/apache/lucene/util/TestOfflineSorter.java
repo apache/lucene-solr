@@ -34,7 +34,6 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.OfflineSorter.BufferSize;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.OfflineSorter.SortInfo;
@@ -260,9 +259,6 @@ public class TestOfflineSorter extends LuceneTestCase {
   public void testBitFlippedOnInput1() throws Exception {
 
     try (Directory dir0 = newMockDirectory()) {
-      if (dir0 instanceof MockDirectoryWrapper) {
-        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
-      }
 
       Directory dir = new FilterDirectory(dir0) {
         @Override
@@ -290,9 +286,6 @@ public class TestOfflineSorter extends LuceneTestCase {
   public void testBitFlippedOnInput2() throws Exception {
 
     try (Directory dir0 = newMockDirectory()) {
-      if (dir0 instanceof MockDirectoryWrapper) {
-        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
-      }
 
       Directory dir = new FilterDirectory(dir0) {
         @Override
@@ -343,9 +336,6 @@ public class TestOfflineSorter extends LuceneTestCase {
   public void testBitFlippedOnPartition1() throws Exception {
 
     try (Directory dir0 = newMockDirectory()) {
-      if (dir0 instanceof MockDirectoryWrapper) {
-        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
-      }
 
       Directory dir = new FilterDirectory(dir0) {
 
@@ -377,9 +367,6 @@ public class TestOfflineSorter extends LuceneTestCase {
   public void testBitFlippedOnPartition2() throws Exception {
 
     try (Directory dir0 = newMockDirectory()) {
-      if (dir0 instanceof MockDirectoryWrapper) {
-        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
-      }
 
       Directory dir = new FilterDirectory(dir0) {
 

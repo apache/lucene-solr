@@ -34,7 +34,7 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.fst.Util;
 
 /**
- * A {@link CompletionQuery} that match documents specified by
+ * A {@link CompletionQuery} that matches documents specified by
  * a wrapped {@link CompletionQuery} supporting boosting and/or filtering
  * by specified contexts.
  * <p>
@@ -164,8 +164,8 @@ public class ContextQuery extends CompletionQuery {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    final CompletionWeight innerWeight = ((CompletionWeight) innerQuery.createWeight(searcher, needsScores));
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    final CompletionWeight innerWeight = ((CompletionWeight) innerQuery.createWeight(searcher, needsScores, boost));
     // if separators are preserved the fst contains a SEP_LABEL
     // behind each gap. To have a matching automaton, we need to
     // include the SEP_LABEL in the query as well
@@ -315,4 +315,15 @@ public class ContextQuery extends CompletionQuery {
       return currentBoost + innerWeight.boost();
     }
   }
+
+  @Override
+  public boolean equals(Object o) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int hashCode() {
+    throw new UnsupportedOperationException();
+  }
+
 }

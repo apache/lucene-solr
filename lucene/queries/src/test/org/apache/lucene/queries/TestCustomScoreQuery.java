@@ -160,9 +160,16 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       final NumericDocValues values = DocValues.getNumeric(context.reader(), INT_FIELD);
       return new CustomScoreProvider(context) {
         @Override
-        public float customScore(int doc, float subScore, float valSrcScore) {
+        public float customScore(int doc, float subScore, float valSrcScore) throws IOException {
           assertTrue(doc <= context.reader().maxDoc());
-          return values.get(doc);
+          if (values.docID() < doc) {
+            values.advance(doc);
+          }
+          if (doc == values.docID()) {
+            return values.longValue();
+          } else {
+            return 0;
+          }
         }
       };
     }
@@ -234,7 +241,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
 
     // custom query, that should score the same as q1.
     BooleanQuery.Builder q2CustomNeutralB = new BooleanQuery.Builder();
-    q2CustomNeutralB.setDisableCoord(true);
     Query q2CustomNeutralInner = new CustomScoreQuery(q1);
     q2CustomNeutralB.add(new BoostQuery(q2CustomNeutralInner, (float)Math.sqrt(dboost)), BooleanClause.Occur.SHOULD);
     // a little tricky: we split the boost across an outer BQ and CustomScoreQuery
@@ -247,7 +253,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     Query q3CustomMul;
     {
       CustomScoreQuery csq = new CustomScoreQuery(q1, functionQuery);
-      csq.setStrict(true);
       q3CustomMul = csq;
     }
     q3CustomMul = new BoostQuery(q3CustomMul, boost);
@@ -257,7 +262,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     Query q4CustomAdd;
     {
       CustomScoreQuery csq = new CustomAddQuery(q1, functionQuery);
-      csq.setStrict(true);
       q4CustomAdd = csq;
     }
     q4CustomAdd = new BoostQuery(q4CustomAdd, boost);
@@ -267,7 +271,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     Query q5CustomMulAdd;
     {
       CustomScoreQuery csq = new CustomMulAddQuery(q1, functionQuery, functionQuery);
-      csq.setStrict(true);
       q5CustomMulAdd = csq;
     }
     q5CustomMulAdd = new BoostQuery(q5CustomMulAdd, boost);

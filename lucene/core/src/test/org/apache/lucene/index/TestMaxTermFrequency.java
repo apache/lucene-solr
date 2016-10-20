@@ -70,7 +70,8 @@ public class TestMaxTermFrequency extends LuceneTestCase {
   public void test() throws Exception {
     NumericDocValues fooNorms = MultiDocValues.getNormValues(reader, "foo");
     for (int i = 0; i < reader.maxDoc(); i++) {
-      assertEquals(expected.get(i).intValue(), fooNorms.get(i) & 0xff);
+      assertEquals(i, fooNorms.nextDoc());
+      assertEquals(expected.get(i).intValue(), fooNorms.longValue() & 0xff);
     }
   }
 
@@ -115,8 +116,6 @@ public class TestMaxTermFrequency extends LuceneTestCase {
       return norm;
     }
 
-    @Override public float coord(int overlap, int maxOverlap) { return 0; }
-    @Override public float queryNorm(float sumOfSquaredWeights) { return 0; }
     @Override public float tf(float freq) { return 0; }
     @Override public float idf(long docFreq, long docCount) { return 0; }
     @Override public float sloppyFreq(int distance) { return 0; }

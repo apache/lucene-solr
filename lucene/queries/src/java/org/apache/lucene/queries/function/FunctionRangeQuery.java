@@ -95,25 +95,26 @@ public class FunctionRangeQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof FunctionRangeQuery)) return false;
-    if (!super.equals(o)) return false;
-    FunctionRangeQuery that = (FunctionRangeQuery) o;
-    return Objects.equals(includeLower, that.includeLower) &&
-        Objects.equals(includeUpper, that.includeUpper) &&
-        Objects.equals(valueSource, that.valueSource) &&
-        Objects.equals(lowerVal, that.lowerVal) &&
-        Objects.equals(upperVal, that.upperVal);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(FunctionRangeQuery other) {
+    return Objects.equals(includeLower, other.includeLower) &&
+           Objects.equals(includeUpper, other.includeUpper) &&
+           Objects.equals(valueSource, other.valueSource) &&
+           Objects.equals(lowerVal, other.lowerVal) &&
+           Objects.equals(upperVal, other.upperVal);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), valueSource, lowerVal, upperVal, includeLower, includeUpper);
+    return classHash() ^ Objects.hash(valueSource, lowerVal, upperVal, includeLower, includeUpper);
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     return new FunctionRangeWeight(searcher);
   }
 
@@ -130,17 +131,6 @@ public class FunctionRangeQuery extends Query {
     @Override
     public void extractTerms(Set<Term> terms) {
       //none
-    }
-
-    //Note: this uses the functionValue's floatVal() as the score; queryNorm/boost is ignored.
-    @Override
-    public float getValueForNormalization() throws IOException {
-      return 1f;
-    }
-
-    @Override
-    public void normalize(float norm, float topLevelBoost) {
-      //no-op
     }
 
     @Override

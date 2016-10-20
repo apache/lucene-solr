@@ -74,12 +74,12 @@ public class TestPayloadSpans extends LuceneTestCase {
     Spans spans;
     stq = new SpanTermQuery(new Term(PayloadHelper.FIELD, "seventy"));
 
-    spans = stq.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
+    spans = stq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 100, 1, 1, 1);
 
     stq = new SpanTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "seventy"));  
-    spans = stq.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
+    spans = stq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 100, 0, 0, 0);
   }
@@ -90,7 +90,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     SpanFirstQuery sfq;
     match = new SpanTermQuery(new Term(PayloadHelper.FIELD, "one"));
     sfq = new SpanFirstQuery(match, 2);
-    Spans spans = sfq.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
+    Spans spans = sfq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
     checkSpans(spans, 109, 1, 1, 1);
     //Test more complicated subclause
     SpanQuery[] clauses = new SpanQuery[2];
@@ -98,11 +98,11 @@ public class TestPayloadSpans extends LuceneTestCase {
     clauses[1] = new SpanTermQuery(new Term(PayloadHelper.FIELD, "hundred"));
     match = new SpanNearQuery(clauses, 0, true);
     sfq = new SpanFirstQuery(match, 2);
-    checkSpans(sfq.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS), 100, 2, 1, 1);
+    checkSpans(sfq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS), 100, 2, 1, 1);
 
     match = new SpanNearQuery(clauses, 0, false);
     sfq = new SpanFirstQuery(match, 2);
-    checkSpans(sfq.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS), 100, 2, 1, 1);
+    checkSpans(sfq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS), 100, 2, 1, 1);
     
   }
   
@@ -125,7 +125,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     IndexReader reader = getOnlyLeafReader(writer.getReader());
     writer.close();
 
-    checkSpans(snq.createWeight(newSearcher(reader, false), false).getSpans(reader.leaves().get(0), SpanWeight.Postings.PAYLOADS), 1, new int[]{2});
+    checkSpans(snq.createWeight(newSearcher(reader, false), false, 1f).getSpans(reader.leaves().get(0), SpanWeight.Postings.PAYLOADS), 1, new int[]{2});
     reader.close();
     directory.close();
   }
@@ -136,7 +136,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     IndexSearcher searcher = getSearcher();
 
     stq = new SpanTermQuery(new Term(PayloadHelper.FIELD, "mark"));
-    spans = stq.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
+    spans = stq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
     assertNull(spans);
 
     SpanQuery[] clauses = new SpanQuery[3];
@@ -145,7 +145,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     clauses[2] = new SpanTermQuery(new Term(PayloadHelper.FIELD, "xx"));
     SpanNearQuery spanNearQuery = new SpanNearQuery(clauses, 12, false);
 
-    spans = spanNearQuery.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
+    spans = spanNearQuery.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 2, new int[]{3,3});
 
@@ -156,7 +156,7 @@ public class TestPayloadSpans extends LuceneTestCase {
 
     spanNearQuery = new SpanNearQuery(clauses, 6, true);
    
-    spans = spanNearQuery.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
+    spans = spanNearQuery.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
 
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 1, new int[]{3});
@@ -178,7 +178,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     SpanNearQuery nestedSpanNearQuery = new SpanNearQuery(clauses2, 6, false);
     
     // yy within 6 of xx within 6 of rr
-    spans = nestedSpanNearQuery.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
+    spans = nestedSpanNearQuery.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 2, new int[]{3,3});
     closeIndexReader.close();
@@ -209,7 +209,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     clauses3[1] = snq;
 
     SpanNearQuery nestedSpanNearQuery = new SpanNearQuery(clauses3, 6, false);
-    spans = nestedSpanNearQuery.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
+    spans = nestedSpanNearQuery.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
 
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 1, new int[]{3});
@@ -247,7 +247,7 @@ public class TestPayloadSpans extends LuceneTestCase {
      
     SpanNearQuery nestedSpanNearQuery = new SpanNearQuery(clauses3, 6, false);
 
-    spans = nestedSpanNearQuery.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
+    spans = nestedSpanNearQuery.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 2, new int[]{8, 8});
     closeIndexReader.close();
@@ -272,7 +272,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     SpanQuery[] sqs = { stq1, stq2 };
     SpanNearQuery snq = new SpanNearQuery(sqs, 1, true);
     VerifyingCollector collector = new VerifyingCollector();
-    Spans spans = snq.createWeight(is, false).getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
+    Spans spans = snq.createWeight(is, false, 1f).getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
 
     TopDocs topDocs = is.search(snq, 1);
     Set<String> payloadSet = new HashSet<>();
@@ -311,7 +311,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     SpanQuery[] sqs = { stq1, stq2 };
     SpanNearQuery snq = new SpanNearQuery(sqs, 0, true);
     VerifyingCollector collector = new VerifyingCollector();
-    Spans spans = snq.createWeight(is, false).getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
+    Spans spans = snq.createWeight(is, false, 1f).getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
 
     TopDocs topDocs = is.search(snq, 1);
     Set<String> payloadSet = new HashSet<>();
@@ -349,7 +349,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
     SpanQuery[] sqs = { stq1, stq2 };
     SpanNearQuery snq = new SpanNearQuery(sqs, 0, true);
-    Spans spans = snq.createWeight(is, false).getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
+    Spans spans = snq.createWeight(is, false, 1f).getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
 
     TopDocs topDocs = is.search(snq, 1);
     Set<String> payloadSet = new HashSet<>();

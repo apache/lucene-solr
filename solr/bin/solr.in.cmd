@@ -16,32 +16,23 @@
 
 @echo off
 
+REM Settings here will override settings in existing env vars or in bin/solr.  The default shipped state
+REM of this file is completely commented.
+
 REM By default the script will use JAVA_HOME to determine which java
 REM to use, but you can set a specific path for Solr to use without
 REM affecting other Java applications on your server/workstation.
 REM set SOLR_JAVA_HOME=
 
 REM Increase Java Min/Max Heap as needed to support your indexing / query needs
-set SOLR_JAVA_MEM=-Xms512m -Xmx512m
+REM set SOLR_JAVA_MEM=-Xms512m -Xmx512m
 
 REM Enable verbose GC logging
-set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime
+REM set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime
 
-REM These GC settings have shown to work well for a number of common Solr workloads
-set GC_TUNE=-XX:NewRatio=3 ^
- -XX:SurvivorRatio=4 ^
- -XX:TargetSurvivorRatio=90 ^
- -XX:MaxTenuringThreshold=8 ^
- -XX:+UseConcMarkSweepGC ^
- -XX:+UseParNewGC ^
- -XX:ConcGCThreads=4 -XX:ParallelGCThreads=4 ^
- -XX:+CMSScavengeBeforeRemark ^
- -XX:PretenureSizeThreshold=64m ^
- -XX:+UseCMSInitiatingOccupancyOnly ^
- -XX:CMSInitiatingOccupancyFraction=50 ^
- -XX:CMSMaxAbortablePrecleanTime=6000 ^
- -XX:+CMSParallelRemarkEnabled ^
- -XX:+ParallelRefProcEnabled
+REM Various GC settings have shown to work well for a number of common Solr workloads.
+REM See solr.cmd GC_TUNE for the default list.
+REM set GC_TUNE=-XX:NewRatio=3 -XX:SurvivorRatio=4     etc.
 
 REM Set the ZooKeeper connection string if using an external ZooKeeper ensemble
 REM e.g. host1:2181,host2:2181/chroot
@@ -61,19 +52,10 @@ REM set SOLR_TIMEZONE=UTC
 REM Set to true to activate the JMX RMI connector to allow remote JMX client applications
 REM to monitor the JVM hosting Solr; set to "false" to disable that behavior
 REM (false is recommended in production environments)
-set ENABLE_REMOTE_JMX_OPTS=false
+REM set ENABLE_REMOTE_JMX_OPTS=false
 
 REM The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
 REM set RMI_PORT=18983
-
-REM Set the host interface to listen on. Jetty will listen on all interfaces (0.0.0.0) by default.
-REM This must be an IPv4 ("a.b.c.d") or bracketed IPv6 ("[x::y]") address, not a hostname!
-set SOLR_JETTY_HOST=0.0.0.0
-
-set SOLR_OPTS=%SOLR_OPTS% -Djetty.host=%SOLR_JETTY_HOST%
-
-REM Set the thread stack size
-set SOLR_OPTS=%SOLR_OPTS% -Xss256k
 
 REM Anything you add to the SOLR_OPTS variable will be included in the java
 REM start command line as-is, in ADDITION to other options. If you specify the
@@ -85,6 +67,17 @@ REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.clustering.enabled=true
 REM Path to a directory for Solr to store cores and their data. By default, Solr will use server\solr
 REM If solr.xml is not stored in ZooKeeper, this directory needs to contain solr.xml
 REM set SOLR_HOME=
+
+REM Changes the logging level. Valid values: ALL, TRACE, DEBUG, INFO, WARN, ERROR, FATAL, OFF. Default is INFO
+REM This is an alternative to changing the rootLogger in log4j.properties
+REM set SOLR_LOG_LEVEL=INFO
+
+REM Location where Solr should write logs to. Absolute or relative to solr start dir
+REM set SOLR_LOGS_DIR=logs
+
+REM Set the host interface to listen on. Jetty will listen on all interfaces (0.0.0.0) by default.
+REM This must be an IPv4 ("a.b.c.d") or bracketed IPv6 ("[x::y]") address, not a hostname!
+REM set SOLR_JETTY_HOST=0.0.0.0
 
 REM Sets the port Solr binds to, default is 8983
 REM set SOLR_PORT=8983

@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.common.EnumFieldValue;
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.Base64;
@@ -121,7 +122,7 @@ public abstract class TextResponseWriter {
     // to get a handler might be faster (but types must be exact to do that...)
 
     // go in order of most common to least common
-    if (val==null) {
+    if (val == null) {
       writeNull(name);
     } else if (val instanceof String) {
       writeStr(name, val.toString(), true);
@@ -186,6 +187,9 @@ public abstract class TextResponseWriter {
       writeStr(name, val.toString(), true);
     } else if (val instanceof WriteableValue) {
       ((WriteableValue)val).write(name, this);
+    } else if (val instanceof MapSerializable) {
+      //todo find a better way to reuse the map more efficiently
+      writeMap(name, ((MapSerializable) val).toMap(new NamedList().asShallowMap()), false, true);
     } else {
       // default... for debugging only
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
@@ -206,7 +210,7 @@ public abstract class TextResponseWriter {
       // it may need special formatting. same for double.
       writeFloat(name, ((Float)val).floatValue());
     } else if (val instanceof Double) {
-      writeDouble(name, ((Double)val).doubleValue());
+      writeDouble(name, ((Double) val).doubleValue());
     } else if (val instanceof Short) {
       writeInt(name, val.toString());
     } else if (val instanceof Byte) {

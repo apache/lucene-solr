@@ -38,7 +38,7 @@ public abstract class MultiFloatFunction extends ValueSource {
   }
 
   abstract protected String name();
-  abstract protected float func(int doc, FunctionValues[] valsArr);
+  abstract protected float func(int doc, FunctionValues[] valsArr) throws IOException;
   /** 
    * Called by {@link FunctionValues#exists} for each document.
    *
@@ -48,7 +48,7 @@ public abstract class MultiFloatFunction extends ValueSource {
    * @see FunctionValues#exists
    * @see MultiFunction#allExists
    */
-  protected boolean exists(int doc, FunctionValues[] valsArr) {
+  protected boolean exists(int doc, FunctionValues[] valsArr) throws IOException {
     return MultiFunction.allExists(doc, valsArr);
   }
 
@@ -78,14 +78,14 @@ public abstract class MultiFloatFunction extends ValueSource {
 
     return new FloatDocValues(this) {
       @Override
-      public float floatVal(int doc) {
+      public float floatVal(int doc) throws IOException {
         return func(doc, valsArr);
       }
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         return MultiFloatFunction.this.exists(doc, valsArr);
       }
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return MultiFunction.toString(name(), valsArr, doc);
       }
     };

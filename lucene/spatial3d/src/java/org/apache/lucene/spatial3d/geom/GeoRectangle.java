@@ -203,6 +203,7 @@ class GeoRectangle extends GeoBaseBBox {
       .addVerticalPlane(planetModel, rightLon, rightPlane, topPlane, bottomPlane, leftPlane)
       .addHorizontalPlane(planetModel, bottomLat, bottomPlane, topPlane, leftPlane, rightPlane)
       .addVerticalPlane(planetModel, leftLon, leftPlane, topPlane, bottomPlane, rightPlane)
+      .addIntersection(planetModel, leftPlane, rightPlane, topPlane, bottomPlane)
       .addPoint(ULHC).addPoint(URHC).addPoint(LLHC).addPoint(LRHC);
   }
 

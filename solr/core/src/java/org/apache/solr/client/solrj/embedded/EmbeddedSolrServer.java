@@ -16,13 +16,13 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 
 import com.google.common.base.Strings;
+
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -223,7 +223,7 @@ public class EmbeddedSolrServer extends SolrClient {
 
           }.setWritableDocFields(resolver). marshal(rsp.getValues(), out);
 
-          InputStream in = new ByteArrayInputStream(out.toByteArray());
+          InputStream in = out.toInputStream();
           return (NamedList<Object>) new JavaBinCodec(resolver).unmarshal(in);
         } catch (Exception ex) {
           throw new RuntimeException(ex);

@@ -122,7 +122,7 @@ import org.apache.lucene.index.SegmentWriteState;
  *  and saving the offset/etc for each field. 
  *  @lucene.experimental
  */
-public class SimpleTextDocValuesFormat extends DocValuesFormat {
+class SimpleTextDocValuesFormat extends DocValuesFormat {
   
   public SimpleTextDocValuesFormat() {
     super("SimpleText");

@@ -160,13 +160,13 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     SolrQueryRequest ureq = req();
     CommitUpdateCommand cmtCmd = new CommitUpdateCommand(ureq, false);
     cmtCmd.waitSearcher = true;
-    assertEquals( 1, duh2.addCommands.get() );
-    assertEquals( 1, duh2.addCommandsCumulative.get() );
-    assertEquals( 0, duh2.commitCommands.get() );
+    assertEquals( 1, duh2.addCommands.longValue() );
+    assertEquals( 1, duh2.addCommandsCumulative.longValue() );
+    assertEquals( 0, duh2.commitCommands.longValue() );
     updater.commit(cmtCmd);
-    assertEquals( 0, duh2.addCommands.get() );
-    assertEquals( 1, duh2.addCommandsCumulative.get() );
-    assertEquals( 1, duh2.commitCommands.get() );
+    assertEquals( 0, duh2.addCommands.longValue() );
+    assertEquals( 1, duh2.addCommandsCumulative.longValue() );
+    assertEquals( 1, duh2.commitCommands.longValue() );
     ureq.close();
 
     assertU(adoc("id","B"));
@@ -174,13 +174,13 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     // rollback "B"
     ureq = req();
     RollbackUpdateCommand rbkCmd = new RollbackUpdateCommand(ureq);
-    assertEquals( 1, duh2.addCommands.get() );
-    assertEquals( 2, duh2.addCommandsCumulative.get() );
-    assertEquals( 0, duh2.rollbackCommands.get() );
+    assertEquals( 1, duh2.addCommands.longValue() );
+    assertEquals( 2, duh2.addCommandsCumulative.longValue() );
+    assertEquals( 0, duh2.rollbackCommands.longValue() );
     updater.rollback(rbkCmd);
-    assertEquals( 0, duh2.addCommands.get() );
-    assertEquals( 1, duh2.addCommandsCumulative.get() );
-    assertEquals( 1, duh2.rollbackCommands.get() );
+    assertEquals( 0, duh2.addCommands.longValue() );
+    assertEquals( 1, duh2.addCommandsCumulative.longValue() );
+    assertEquals( 1, duh2.rollbackCommands.longValue() );
     ureq.close();
     
     // search - "B" should not be found.
@@ -220,13 +220,13 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     SolrQueryRequest ureq = req();
     CommitUpdateCommand cmtCmd = new CommitUpdateCommand(ureq, false);
     cmtCmd.waitSearcher = true;
-    assertEquals( 2, duh2.addCommands.get() );
-    assertEquals( 2, duh2.addCommandsCumulative.get() );
-    assertEquals( 0, duh2.commitCommands.get() );
+    assertEquals( 2, duh2.addCommands.longValue() );
+    assertEquals( 2, duh2.addCommandsCumulative.longValue() );
+    assertEquals( 0, duh2.commitCommands.longValue() );
     updater.commit(cmtCmd);
-    assertEquals( 0, duh2.addCommands.get() );
-    assertEquals( 2, duh2.addCommandsCumulative.get() );
-    assertEquals( 1, duh2.commitCommands.get() );
+    assertEquals( 0, duh2.addCommands.longValue() );
+    assertEquals( 2, duh2.addCommandsCumulative.longValue() );
+    assertEquals( 1, duh2.commitCommands.longValue() );
     ureq.close();
 
     // search - "A","B" should be found.
@@ -253,14 +253,14 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     // rollback "B"
     ureq = req();
     RollbackUpdateCommand rbkCmd = new RollbackUpdateCommand(ureq);
-    assertEquals( 1, duh2.deleteByIdCommands.get() );
-    assertEquals( 1, duh2.deleteByIdCommandsCumulative.get() );
-    assertEquals( 0, duh2.rollbackCommands.get() );
+    assertEquals( 1, duh2.deleteByIdCommands.longValue() );
+    assertEquals( 1, duh2.deleteByIdCommandsCumulative.longValue() );
+    assertEquals( 0, duh2.rollbackCommands.longValue() );
     updater.rollback(rbkCmd);
     ureq.close();
-    assertEquals( 0, duh2.deleteByIdCommands.get() );
-    assertEquals( 0, duh2.deleteByIdCommandsCumulative.get() );
-    assertEquals( 1, duh2.rollbackCommands.get() );
+    assertEquals( 0, duh2.deleteByIdCommands.longValue() );
+    assertEquals( 0, duh2.deleteByIdCommandsCumulative.longValue() );
+    assertEquals( 1, duh2.rollbackCommands.longValue() );
     
     // search - "B" should be found.
     assertQ("\"B\" should be found.", req

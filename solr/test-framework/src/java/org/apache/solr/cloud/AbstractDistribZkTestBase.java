@@ -43,7 +43,6 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   private static final String ZK_HOST = "zkHost";
   private static final String ZOOKEEPER_FORCE_SYNC = "zookeeper.forceSync";
   protected static final String DEFAULT_COLLECTION = "collection1";
-  private static final boolean DEBUG = false;
   protected ZkTestServer zkServer;
   private AtomicInteger homeCount = new AtomicInteger();
 
@@ -70,7 +69,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
     System.setProperty(MockDirectoryFactory.SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE, "true");
 
-    String schema = getSchemaFile();
+    String schema = getCloudSchemaFile();
     if (schema == null) schema = "schema.xml";
     AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), getCloudSolrConfig(), schema);
 
@@ -81,6 +80,10 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   
   protected String getCloudSolrConfig() {
     return "solrconfig-tlog.xml";
+  }
+  
+  protected String getCloudSchemaFile() {
+    return getSchemaFile();
   }
   
   @Override
@@ -265,9 +268,6 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   
   @Override
   public void distribTearDown() throws Exception {
-    if (DEBUG) {
-      printLayout();
-    }
     System.clearProperty(ZK_HOST);
     System.clearProperty("collection");
     System.clearProperty(ENABLE_UPDATE_LOG);

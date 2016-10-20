@@ -24,7 +24,6 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -44,13 +43,7 @@ import org.apache.lucene.util.Bits;
  * A <code>Weight</code> is used in the following way:
  * <ol>
  * <li>A <code>Weight</code> is constructed by a top-level query, given a
- * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher, boolean)}).
- * <li>The {@link #getValueForNormalization()} method is called on the
- * <code>Weight</code> to compute the query normalization factor
- * {@link Similarity#queryNorm(float)} of the query clauses contained in the
- * query.
- * <li>The query normalization factor is passed to {@link #normalize(float, float)}. At
- * this point the weighting is complete.
+ * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher, boolean, float)}).
  * <li>A <code>Scorer</code> is constructed by
  * {@link #scorer(org.apache.lucene.index.LeafReaderContext)}.
  * </ol>
@@ -90,12 +83,6 @@ public abstract class Weight {
   public final Query getQuery() {
     return parentQuery;
   }
-  
-  /** The value for normalization of contained query clauses (e.g. sum of squared weights). */
-  public abstract float getValueForNormalization() throws IOException;
-
-  /** Assigns the query normalization factor and boost to this. */
-  public abstract void normalize(float norm, float boost);
 
   /**
    * Returns a {@link Scorer} which can iterate in order over all matching

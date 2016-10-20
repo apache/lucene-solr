@@ -35,7 +35,9 @@ import org.apache.lucene.analysis.MockCharFilter;
 import org.apache.lucene.analysis.MockFixedLengthPayloadFilter;
 import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.MockHoleInjectingTokenFilter;
+import org.apache.lucene.analysis.MockLowerCaseFilter;
 import org.apache.lucene.analysis.MockRandomLookaheadTokenFilter;
+import org.apache.lucene.analysis.MockSynonymFilter;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.MockVariableLengthPayloadFilter;
@@ -74,7 +76,9 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
       MockFixedLengthPayloadFilter.class,
       MockGraphTokenFilter.class,
       MockHoleInjectingTokenFilter.class,
+      MockLowerCaseFilter.class,
       MockRandomLookaheadTokenFilter.class,
+      MockSynonymFilter.class,
       MockTokenFilter.class,
       MockVariableLengthPayloadFilter.class,
       ValidatingTokenFilter.class,
@@ -102,7 +106,9 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
       SnowballFilter.class, // this is called SnowballPorterFilterFactory
       PatternKeywordMarkerFilter.class,
       SetKeywordMarkerFilter.class,
-      UnicodeWhitespaceTokenizer.class // a supported option via WhitespaceTokenizerFactory
+      UnicodeWhitespaceTokenizer.class, // a supported option via WhitespaceTokenizerFactory
+      org.apache.lucene.analysis.StopFilter.class, // class from core, but StopFilterFactory creates one from this module
+      org.apache.lucene.analysis.LowerCaseFilter.class // class from core, but LowerCaseFilterFactory creates one from this module
     );
   }
 

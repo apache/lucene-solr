@@ -117,7 +117,7 @@ public class TestDrillSideways extends FacetTestCase {
 
     //  case: drill-down on a single field; in this
     // case the drill-sideways + drill-down counts ==
-    // drill-down of just the query: 
+    // drill-down of just the query:
     DrillDownQuery ddq = new DrillDownQuery(config);
     ddq.add("Author", "Lisa");
     DrillSidewaysResult r = ds.search(null, ddq, 10);
@@ -361,7 +361,7 @@ public class TestDrillSideways extends FacetTestCase {
     String contentToken;
 
     public Doc() {}
-    
+
     // -1 if the doc is missing this dim, else the index
     // -into the values for this dim:
     int[] dims;
@@ -437,7 +437,7 @@ public class TestDrillSideways extends FacetTestCase {
         if (s.length() > 0) {
           values.add(s);
         }
-      } 
+      }
       dimValues[dim] = values.toArray(new String[values.size()]);
       valueCount *= 2;
     }
@@ -560,7 +560,7 @@ public class TestDrillSideways extends FacetTestCase {
 
     final SortedSetDocValuesReaderState sortedSetDVState;
     IndexSearcher s = newSearcher(r);
-    
+
     if (doUseDV) {
       sortedSetDVState = new DefaultSortedSetDocValuesReaderState(s.getIndexReader());
     } else {
@@ -650,8 +650,8 @@ public class TestDrillSideways extends FacetTestCase {
         filter = new Query() {
 
           @Override
-          public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-            return new RandomAccessWeight(this) {
+          public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+            return new RandomAccessWeight(this, boost) {
               @Override
               protected Bits getMatchingDocs(final LeafReaderContext context) throws IOException {
                 return new Bits() {
@@ -669,7 +669,7 @@ public class TestDrillSideways extends FacetTestCase {
                   public int length() {
                     return context.reader().maxDoc();
                   }
-                  
+
                 };
               }
             };
@@ -680,6 +680,15 @@ public class TestDrillSideways extends FacetTestCase {
             return "drillSidewaysTestFilter";
           }
 
+          @Override
+          public boolean equals(Object o) {
+            return o == this;
+          }
+
+          @Override
+          public int hashCode() {
+            return System.identityHashCode(this);
+          }
         };
       } else {
         filter = null;
@@ -823,7 +832,7 @@ public class TestDrillSideways extends FacetTestCase {
     int[] uniqueCounts;
     public TestFacetResult() {}
   }
-  
+
   private int[] getTopNOrds(final int[] counts, final String[] values, int topN) {
     final int[] ids = new int[counts.length];
     for(int i=0;i<ids.length;i++) {
@@ -1050,7 +1059,7 @@ public class TestDrillSideways extends FacetTestCase {
             if (expected.counts[dim][i] != 0) {
               System.out.println("        " + idx + ": " + new BytesRef(value) + ": " + expected.counts[dim][i]);
               idx++;
-            } 
+            }
           }
         }
 
@@ -1084,7 +1093,7 @@ public class TestDrillSideways extends FacetTestCase {
     DrillSideways ds = new DrillSideways(searcher, config, taxoReader);
     DrillDownQuery ddq = new DrillDownQuery(config);
     ddq.add("Author", "Lisa");
-    
+
     DrillSidewaysResult r = ds.search(ddq, 10); // this used to fail on IllegalArgEx
     assertEquals(0, r.hits.totalHits);
 
@@ -1123,7 +1132,6 @@ public class TestDrillSideways extends FacetTestCase {
     DrillSideways ds = new DrillSideways(searcher, config, taxoReader);
 
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
     bq.add(new TermQuery(new Term("field", "foo")), BooleanClause.Occur.MUST);
     bq.add(new TermQuery(new Term("field", "bar")), BooleanClause.Occur.MUST_NOT);
     DrillDownQuery ddq = new DrillDownQuery(config, bq.build());

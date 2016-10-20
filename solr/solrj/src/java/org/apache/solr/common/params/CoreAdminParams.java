@@ -108,6 +108,26 @@ public abstract class CoreAdminParams
   // Node to create a replica on for ADDREPLICA at least.
   public static final String NODE = "node";
 
+  /**
+   * A parameter to specify the name of the backup repository to be used.
+   */
+  public static final String BACKUP_REPOSITORY = "repository";
+
+  /**
+   * A parameter to specify the location where the backup should be stored.
+   */
+  public static final String BACKUP_LOCATION = "location";
+
+  /**
+   * A parameter to specify the name of the commit to be stored during the backup operation.
+   */
+  public static final String COMMIT_NAME = "commitName";
+
+  /**
+   * A boolean parameter specifying if a core is being created as part of a new collection
+   */
+  public static final String NEW_COLLECTION = "newCollection";
+
   public enum CoreAdminAction {
     STATUS(true),
     UNLOAD,
@@ -131,7 +151,10 @@ public abstract class CoreAdminParams
     INVOKE,
     //Internal APIs to backup and restore a core
     BACKUPCORE,
-    RESTORECORE;
+    RESTORECORE,
+    CREATESNAPSHOT,
+    DELETESNAPSHOT,
+    LISTSNAPSHOTS;
 
     public final boolean isRead;
 

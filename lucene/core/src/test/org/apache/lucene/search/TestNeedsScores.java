@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.Objects;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -95,13 +96,13 @@ public class TestNeedsScores extends LuceneTestCase {
     final boolean value;
     
     AssertNeedsScores(Query in, boolean value) {
-      this.in = in;
+      this.in = Objects.requireNonNull(in);
       this.value = value;
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      final Weight w = in.createWeight(searcher, needsScores);
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      final Weight w = in.createWeight(searcher, needsScores, boost);
       return new Weight(AssertNeedsScores.this) {
         @Override
         public void extractTerms(Set<Term> terms) {
@@ -111,16 +112,6 @@ public class TestNeedsScores extends LuceneTestCase {
         @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
           return w.explain(context, doc);
-        }
-
-        @Override
-        public float getValueForNormalization() throws IOException {
-          return w.getValueForNormalization();
-        }
-
-        @Override
-        public void normalize(float norm, float topLevelBoost) {
-          w.normalize(norm, topLevelBoost);
         }
 
         @Override
@@ -144,23 +135,21 @@ public class TestNeedsScores extends LuceneTestCase {
     @Override
     public int hashCode() {
       final int prime = 31;
-      int result = super.hashCode();
-      result = prime * result + ((in == null) ? 0 : in.hashCode());
+      int result = classHash();
+      result = prime * result + in.hashCode();
       result = prime * result + (value ? 1231 : 1237);
       return result;
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (this == obj) return true;
-      if (!super.equals(obj)) return false;
-      if (getClass() != obj.getClass()) return false;
-      AssertNeedsScores other = (AssertNeedsScores) obj;
-      if (in == null) {
-        if (other.in != null) return false;
-      } else if (!in.equals(other.in)) return false;
-      if (value != other.value) return false;
-      return true;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+    
+    private boolean equalsTo(AssertNeedsScores other) {
+      return in.equals(other.in) && 
+             value == other.value;
     }
 
     @Override

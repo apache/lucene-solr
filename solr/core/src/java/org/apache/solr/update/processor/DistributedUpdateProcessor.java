@@ -266,6 +266,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   //used for keeping track of replicas that have processed an add/update from the leader
   private RequestReplicationTracker replicationTracker = null;
 
+  // should we clone the document before sending it to replicas?
+  // this is set to true in the constructor if the next processors in the chain
+  // are custom and may modify the SolrInputDocument racing with its serialization for replication
+  private final boolean cloneRequiredOnLeader;
+
   public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     this(req, rsp, new AtomicUpdateDocumentMerger(req), next);
   }
@@ -295,7 +300,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
-      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS);
+      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, VERSION_FIELD);
     
     CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
     
@@ -314,6 +319,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       collection = null;
     }
 
+    boolean shouldClone = false;
+    UpdateRequestProcessor nextInChain = next;
+    while (nextInChain != null)  {
+      Class<? extends UpdateRequestProcessor> klass = nextInChain.getClass();
+      if (klass != LogUpdateProcessorFactory.LogUpdateProcessor.class
+          && klass != RunUpdateProcessor.class
+          && klass != TolerantUpdateProcessor.class)  {
+        shouldClone = true;
+        break;
+      }
+      nextInChain = nextInChain.next;
+    }
+    cloneRequiredOnLeader = shouldClone;
   }
 
   private List<Node> setupRequest(String id, SolrInputDocument doc) {
@@ -1027,7 +1045,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
             // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
             if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
-                && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+                && isReplayOrPeersync == false) {
               // we're not in an active state, and this update isn't from a replay, so buffer it.
               log.info("Leader logic applied but update log is buffering: " + cmd.getPrintableId());
               cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
@@ -1055,7 +1073,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // The leader forwarded us this update.
             cmd.setVersion(versionOnUpdate);
 
-            if (ulog.getState() != UpdateLog.State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
               // we're not in an active state, and this update isn't from a replay, so buffer it.
               cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
               ulog.add(cmd);
@@ -1086,14 +1104,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         boolean willDistrib = isLeader && nodes != null && nodes.size() > 0;
         
         SolrInputDocument clonedDoc = null;
-        if (willDistrib) {
+        if (willDistrib && cloneRequiredOnLeader) {
           clonedDoc = cmd.solrDoc.deepCopy();
         }
 
         // TODO: possibly set checkDeleteByQueries as a flag on the command?
         doLocalAdd(cmd);
         
-        if (willDistrib) {
+        if (willDistrib && cloneRequiredOnLeader) {
           cmd.solrDoc = clonedDoc;
         }
 
@@ -1429,7 +1447,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         } else {
           cmd.setVersion(-versionOnUpdate);
 
-          if (ulog.getState() != UpdateLog.State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+          if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
             // we're not in an active state, and this update isn't from a replay, so buffer it.
             cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
             ulog.deleteByQuery(cmd);
@@ -1542,7 +1560,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
             // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
             if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
-                && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+                && !isReplayOrPeersync) {
               // we're not in an active state, and this update isn't from a replay, so buffer it.
               log.info("Leader logic applied but update log is buffering: " + cmd.getId());
               cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
@@ -1567,7 +1585,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           } else {
             cmd.setVersion(-versionOnUpdate);
 
-            if (ulog.getState() != UpdateLog.State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
               // we're not in an active state, and this update isn't from a replay, so buffer it.
               cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
               ulog.delete(cmd);

@@ -18,9 +18,6 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 
-import org.apache.solr.common.SolrException;
-import static org.apache.solr.common.SolrException.ErrorCode.*;
-
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateCommand;
@@ -34,8 +31,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * This Factory can optionally save refrences to the commands it receives in 
- * BlockingQueues that tests can poll from to observe that the exepected commands 
+ * This Factory can optionally save references to the commands it receives in 
+ * BlockingQueues that tests can poll from to observe that the expected commands 
  * are executed.  By default, this factory does nothing except return the "next" 
  * processor from the chain unless it's told to {@link #startRecording()}
  */

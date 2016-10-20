@@ -47,6 +47,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
@@ -110,6 +111,8 @@ public class HttpSolrClient extends SolrClient {
   public static final String AGENT = "Solr[" + HttpSolrClient.class.getName() + "] 1.0";
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
+  static final Class<HttpSolrClient> cacheKey = HttpSolrClient.class;
   
   /**
    * The URL of the Solr server.
@@ -508,7 +511,8 @@ public class HttpSolrClient extends SolrClient {
     boolean shouldClose = true;
     try {
       // Execute the method.
-      final HttpResponse response = httpClient.execute(method, HttpClientUtil.createNewHttpClientRequestContext());
+      HttpClientContext httpClientRequestContext = HttpClientUtil.createNewHttpClientRequestContext();
+      final HttpResponse response = httpClient.execute(method, httpClientRequestContext);
       int httpStatus = response.getStatusLine().getStatusCode();
       
       // Read the contents
@@ -743,7 +747,7 @@ public class HttpSolrClient extends SolrClient {
       super(code, "Error from server at " + remoteHost + ": " + msg, th);
     }
   }
-  
+
   /**
    * Constructs {@link HttpSolrClient} instances from provided configuration.
    */
@@ -752,7 +756,17 @@ public class HttpSolrClient extends SolrClient {
     private HttpClient httpClient;
     private ResponseParser responseParser;
     private boolean compression;
-    
+    private String delegationToken;
+
+    public Builder() {
+      this.responseParser = new BinaryResponseParser();
+    }
+
+    public Builder withBaseSolrUrl(String baseSolrUrl) {
+      this.baseSolrUrl = baseSolrUrl;
+      return this;
+    }
+
     /**
      * Create a Builder object, based on the provided Solr URL.
      * 
@@ -788,7 +802,23 @@ public class HttpSolrClient extends SolrClient {
       this.compression = compression;
       return this;
     }
-    
+
+    /**
+     * Use a delegation token for authenticating via the KerberosPlugin
+     */
+    public Builder withKerberosDelegationToken(String delegationToken) {
+      this.delegationToken = delegationToken;
+      return this;
+    }
+
+    @Deprecated
+    /**
+     * @deprecated use {@link withKerberosDelegationToken(String)} instead
+     */
+    public Builder withDelegationToken(String delegationToken) {
+      this.delegationToken = delegationToken;
+      return this;
+    }
     /**
      * Create a {@link HttpSolrClient} based on provided configuration.
      */
@@ -796,7 +826,11 @@ public class HttpSolrClient extends SolrClient {
       if (baseSolrUrl == null) {
         throw new IllegalArgumentException("Cannot create HttpSolrClient without a valid baseSolrUrl!");
       }
-      return new HttpSolrClient(baseSolrUrl, httpClient, responseParser, compression);
+      if (delegationToken == null) {
+        return new HttpSolrClient(baseSolrUrl, httpClient, responseParser, compression);
+      } else {
+        return new DelegationTokenHttpSolrClient(baseSolrUrl, httpClient, responseParser, compression, delegationToken);
+      }
     }
   }
 }

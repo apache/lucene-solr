@@ -16,12 +16,19 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.junit.Ignore;
-import org.junit.Test;
-import org.apache.solr.util.DateMathParser;
-
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.TimeZone;
+
+import org.apache.solr.util.DateMathParser;
+import org.junit.Test;
 
 /**
  * <p>
@@ -103,7 +110,7 @@ public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
         .<Map<String,String>> emptyList()));
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT);
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
-    DateMathParser dmp = new DateMathParser(TimeZone.getDefault(), Locale.ROOT);
+    DateMathParser dmp = new DateMathParser(TimeZone.getDefault());
     
     String s = vri
         .replaceTokens("${dataimporter.functions.formatDate('NOW/DAY','yyyy-MM-dd HH:mm')}");
@@ -144,7 +151,7 @@ public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
     
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT);
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
-    DateMathParser dmp = new DateMathParser(TimeZone.getDefault(), Locale.ROOT);
+    DateMathParser dmp = new DateMathParser(TimeZone.getDefault());
     
     String s = resolver
         .replaceTokens("${dataimporter.functions.formatDate('NOW/DAY','yyyy-MM-dd HH:mm')}");

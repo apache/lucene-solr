@@ -122,7 +122,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   final DocumentsWriterFlushControl flushControl;
   private final IndexWriter writer;
   private final Queue<Event> events;
-
+  private long lastSeqNo;
   
   DocumentsWriter(IndexWriter writer, LiveIndexWriterConfig config, Directory directoryOrig, Directory directory) {
     this.directoryOrig = directoryOrig;
@@ -136,30 +136,46 @@ final class DocumentsWriter implements Closeable, Accountable {
     flushControl = new DocumentsWriterFlushControl(this, config, writer.bufferedUpdatesStream);
   }
   
-  synchronized boolean deleteQueries(final Query... queries) throws IOException {
+  synchronized long deleteQueries(final Query... queries) throws IOException {
     // TODO why is this synchronized?
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
-    deleteQueue.addDelete(queries);
+    long seqNo = deleteQueue.addDelete(queries);
     flushControl.doOnDelete();
-    return applyAllDeletes(deleteQueue);
+    if (applyAllDeletes(deleteQueue)) {
+      seqNo = -seqNo;
+    }
+    lastSeqNo = Math.max(lastSeqNo, seqNo);
+    return seqNo;
+  }
+
+  synchronized void setLastSeqNo(long seqNo) {
+    lastSeqNo = seqNo;
   }
 
   // TODO: we could check w/ FreqProxTermsWriter: if the
   // term doesn't exist, don't bother buffering into the
   // per-DWPT map (but still must go into the global map)
-  synchronized boolean deleteTerms(final Term... terms) throws IOException {
+  synchronized long deleteTerms(final Term... terms) throws IOException {
     // TODO why is this synchronized?
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
-    deleteQueue.addDelete(terms);
+    long seqNo = deleteQueue.addDelete(terms);
     flushControl.doOnDelete();
-    return applyAllDeletes( deleteQueue);
+    if (applyAllDeletes(deleteQueue)) {
+      seqNo = -seqNo;
+    }
+    lastSeqNo = Math.max(lastSeqNo, seqNo);
+    return seqNo;
   }
 
-  synchronized boolean updateDocValues(DocValuesUpdate... updates) throws IOException {
+  synchronized long updateDocValues(DocValuesUpdate... updates) throws IOException {
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
-    deleteQueue.addDocValuesUpdates(updates);
+    long seqNo = deleteQueue.addDocValuesUpdates(updates);
     flushControl.doOnDelete();
-    return applyAllDeletes(deleteQueue);
+    if (applyAllDeletes(deleteQueue)) {
+      seqNo = -seqNo;
+    }
+    lastSeqNo = Math.max(lastSeqNo, seqNo);
+    return seqNo;
   }
   
   DocumentsWriterDeleteQueue currentDeleteSession() {
@@ -247,6 +263,10 @@ final class DocumentsWriter implements Closeable, Accountable {
         abortedDocCount += abortThreadState(perThread);
       }
       deleteQueue.clear();
+
+      // jump over any possible in flight ops:
+      deleteQueue.skipSequenceNumbers(perThreadPool.getActiveThreadStateCount()+1);
+
       flushControl.abortPendingFlushes();
       flushControl.waitForFlush();
       success = true;
@@ -303,6 +323,17 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
   }
 
+  /** returns the maximum sequence number for all previously completed operations */
+  public long getMaxCompletedSequenceNumber() {
+    long value = lastSeqNo;
+    int limit = perThreadPool.getMaxThreadStates();
+    for(int i = 0; i < limit; i++) {
+      ThreadState perThread = perThreadPool.getThreadState(i);
+      value = Math.max(value, perThread.lastSeqNo);
+    }
+    return value;
+  }
+
   boolean anyChanges() {
     /*
      * changes are either in a DWPT or in the deleteQueue.
@@ -345,9 +376,6 @@ final class DocumentsWriter implements Closeable, Accountable {
     boolean hasEvents = false;
     if (flushControl.anyStalledThreads() || flushControl.numQueuedFlushes() > 0) {
       // Help out flushing any queued DWPTs so we can un-stall:
-      if (infoStream.isEnabled("DW")) {
-        infoStream.message("DW", "DocumentsWriter has queued dwpt; will hijack this thread to flush pending segment(s)");
-      }
       do {
         // Try pick up pending threads here if possible
         DocumentsWriterPerThread flushingDWPT;
@@ -355,17 +383,9 @@ final class DocumentsWriter implements Closeable, Accountable {
           // Don't push the delete here since the update could fail!
           hasEvents |= doFlush(flushingDWPT);
         }
-  
-        if (infoStream.isEnabled("DW") && flushControl.anyStalledThreads()) {
-          infoStream.message("DW", "WARNING DocumentsWriter has stalled threads; waiting");
-        }
         
         flushControl.waitIfStalled(); // block if stalled
       } while (flushControl.numQueuedFlushes() != 0); // still queued DWPTs try help flushing
-
-      if (infoStream.isEnabled("DW")) {
-        infoStream.message("DW", "continue indexing after helping out flushing DocumentsWriter is healthy");
-      }
     }
     return hasEvents;
   }
@@ -393,13 +413,14 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
   }
 
-  boolean updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs, final Analyzer analyzer,
-                          final Term delTerm) throws IOException, AbortingException {
+  long updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs, final Analyzer analyzer,
+                       final Term delTerm) throws IOException, AbortingException {
     boolean hasEvents = preUpdate();
 
     final ThreadState perThread = flushControl.obtainAndLock();
     final DocumentsWriterPerThread flushingDWPT;
-    
+    long seqNo;
+
     try {
       // This must happen after we've pulled the ThreadState because IW.close
       // waits for all ThreadStates to be released:
@@ -409,7 +430,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        dwpt.updateDocuments(docs, analyzer, delTerm);
+        seqNo = dwpt.updateDocuments(docs, analyzer, delTerm);
       } catch (AbortingException ae) {
         flushControl.doOnAbort(perThread);
         dwpt.abort();
@@ -422,14 +443,21 @@ final class DocumentsWriter implements Closeable, Accountable {
       }
       final boolean isUpdate = delTerm != null;
       flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
+
+      assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
+      perThread.lastSeqNo = seqNo;
+
     } finally {
       perThreadPool.release(perThread);
     }
 
-    return postUpdate(flushingDWPT, hasEvents);
+    if (postUpdate(flushingDWPT, hasEvents)) {
+      seqNo = -seqNo;
+    }
+    return seqNo;
   }
 
-  boolean updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
+  long updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
       final Term delTerm) throws IOException, AbortingException {
 
     boolean hasEvents = preUpdate();
@@ -437,6 +465,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     final ThreadState perThread = flushControl.obtainAndLock();
 
     final DocumentsWriterPerThread flushingDWPT;
+    long seqNo;
     try {
       // This must happen after we've pulled the ThreadState because IW.close
       // waits for all ThreadStates to be released:
@@ -446,7 +475,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        dwpt.updateDocument(doc, analyzer, delTerm); 
+        seqNo = dwpt.updateDocument(doc, analyzer, delTerm); 
       } catch (AbortingException ae) {
         flushControl.doOnAbort(perThread);
         dwpt.abort();
@@ -459,11 +488,19 @@ final class DocumentsWriter implements Closeable, Accountable {
       }
       final boolean isUpdate = delTerm != null;
       flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
+
+      assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
+      perThread.lastSeqNo = seqNo;
+
     } finally {
       perThreadPool.release(perThread);
     }
 
-    return postUpdate(flushingDWPT, hasEvents);
+    if (postUpdate(flushingDWPT, hasEvents)) {
+      seqNo = -seqNo;
+    }
+    
+    return seqNo;
   }
 
   private boolean doFlush(DocumentsWriterPerThread flushingDWPT) throws IOException, AbortingException {
@@ -587,20 +624,22 @@ final class DocumentsWriter implements Closeable, Accountable {
    * two stage operation; the caller must ensure (in try/finally) that finishFlush
    * is called after this method, to release the flush lock in DWFlushControl
    */
-  boolean flushAllThreads()
+  long flushAllThreads()
     throws IOException, AbortingException {
     final DocumentsWriterDeleteQueue flushingDeleteQueue;
     if (infoStream.isEnabled("DW")) {
       infoStream.message("DW", "startFullFlush");
     }
-    
+
+    long seqNo;
+
     synchronized (this) {
       pendingChangesInCurrentFullFlush = anyChanges();
       flushingDeleteQueue = deleteQueue;
       /* Cutover to a new delete queue.  This must be synced on the flush control
        * otherwise a new DWPT could sneak into the loop with an already flushing
        * delete queue */
-      flushControl.markForFullFlush(); // swaps the delQueue synced on FlushControl
+      seqNo = flushControl.markForFullFlush(); // swaps this.deleteQueue synced on FlushControl
       assert setFlushingDeleteQueue(flushingDeleteQueue);
     }
     assert currentFullFlushDelQueue != null;
@@ -620,13 +659,17 @@ final class DocumentsWriter implements Closeable, Accountable {
           infoStream.message("DW", Thread.currentThread().getName() + ": flush naked frozen global deletes");
         }
         ticketQueue.addDeletes(flushingDeleteQueue);
-      } 
+      }
       ticketQueue.forcePurge(writer);
       assert !flushingDeleteQueue.anyChanges() && !ticketQueue.hasTickets();
     } finally {
       assert flushingDeleteQueue == currentFullFlushDelQueue;
     }
-    return anythingFlushed;
+    if (anythingFlushed) {
+      return -seqNo;
+    } else {
+      return seqNo;
+    }
   }
   
   void finishFullFlush(IndexWriter indexWriter, boolean success) {
@@ -646,7 +689,6 @@ final class DocumentsWriter implements Closeable, Accountable {
     } finally {
       pendingChangesInCurrentFullFlush = false;
     }
-    
   }
 
   public LiveIndexWriterConfig getIndexWriterConfig() {

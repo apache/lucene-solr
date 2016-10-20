@@ -4,7 +4,331 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 7.0.0 =======================
-(No Changes)
+
+API Changes
+
+* LUCENE-2605: Classic QueryParser no longer splits on whitespace by default.
+  Use setSplitOnWhitespace(true) to get the old behavior.  (Steve Rowe)
+
+* LUCENE-7369: Similarity.coord and BooleanQuery.disableCoord are removed.
+  (Adrien Grand)
+
+* LUCENE-7368: Removed query normalization. (Adrien Grand)
+
+* LUCENE-7355: AnalyzingQueryParser has been removed as its functionality has
+  been folded into the classic QueryParser. (Adrien Grand)
+
+* LUCENE-7407: Doc values APIs have been switched from random access
+  to iterators, enabling future codec compression improvements. (Mike
+  McCandless)
+
+* LUCENE-7475: Norms now support sparsity, allowing to pay for what is
+  actually used. (Adrien Grand)
+
+* LUCENE-7494: Points now have a per-field API, like doc values. (Adrien Grand)
+
+Bug Fixes
+
+Improvements
+
+* LUCENE-7489: Better storage of sparse doc-values fields with the default
+  codec. (Adrien Grand)
+
+Optimizations
+
+* LUCENE-7416: BooleanQuery optimizes queries that have queries that occur both
+  in the sets of SHOULD and FILTER clauses, or both in MUST/FILTER and MUST_NOT
+  clauses. (Spyros Kapnissis via Adrien Grand, Uwe Schindler)
+
+* LUCENE-7506: FastTaxonomyFacetCounts should use CPU in proportion to
+  the size of the intersected set of hits from the query and documents
+  that have a facet value, so sparse faceting works as expected
+  (Adrien Grand via Mike McCandless)
+
+Other
+
+* LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
+
+* LUCENE-7360: Remove Explanation.toHtml() (Alan Woodward)
+
+======================= Lucene 6.3.0 =======================
+
+API Changes
+
+New Features
+
+* LUCENE-7438: New "UnifiedHighlighter" derivative of the PostingsHighlighter that
+  can consume offsets from postings, term vectors, or analysis.  It can highlight phrases
+  as accurately as the standard Highlighter. Light term vectors can be used with offsets
+  in postings for fast wildcard (MultiTermQuery) highlighting.
+  (David Smiley, Timothy Rodriguez)
+
+* LUCENE-7490: SimpleQueryParser now parses '*' to MatchAllDocsQuery
+  (Lee Hinman via Mike McCandless)
+
+Bug Fixes
+
+* LUCENE-7507: Upgrade morfologik-stemming to version 2.1.1 (fixes security
+  manager issue with Polish dictionary lookup). (Dawid Weiss)
+
+* LUCENE-7472: MultiFieldQueryParser.getFieldQuery() drops queries that are
+  neither BooleanQuery nor TermQuery.  (Steve Rowe)
+
+* LUCENE-7456: PerFieldPostings/DocValues was failing to delegate the
+  merge method (Julien MASSENET via Mike McCandless)
+
+* LUCENE-7468: ASCIIFoldingFilter should not emit duplicated tokens when
+  preserve original is on. (David Causse via Adrien Grand)
+
+* LUCENE-7484: FastVectorHighlighter failed to highlight SynonymQuery
+  (Jim Ferenczi via Mike McCandless)
+
+* LUCENE-7476: JapaneseNumberFilter should not invoke incrementToken
+  on its input after it's exhausted (Andy Hind via Mike McCandless)
+
+* LUCENE-7486: DisjunctionMaxQuery does not work correctly with queries that
+  return negative scores.  (Ivan Provalov, Uwe Schindler, Adrien Grand)
+
+* LUCENE-7491: Suddenly turning on dimensional points for some fields
+  that already exist in an index but didn't previously index
+  dimensional points could cause unexpected merge exceptions (Hans
+  Lund, Mike McCandless)
+
+* LUCENE-6914: Fixed DecimalDigitFilter in case of supplementary code points.
+  (Hossman)
+
+* LUCENE-7493: FacetCollector.search threw an unexpected exception if
+  you asked for zero hits but wanted facets (Mahesh via Mike McCandless)
+
+* LUCENE-7505: AnalyzingInfixSuggester returned invalid results when
+  allTermsRequired is false and context filters are specified (Mike
+  McCandless)
+
+Improvements
+
+* LUCENE-7439: FuzzyQuery now matches all terms within the specified
+  edit distance, even if they are short terms (Mike McCandless)
+
+* LUCENE-7496: Better toString for SweetSpotSimilarity (janhoy)
+
+Optimizations
+
+* LUCENE-7501: BKDReader should not store the split dimension explicitly in the
+  1D case. (Adrien Grand)
+
+Other
+
+* LUCENE-7452: Block join query exception suggests how to find a doc, which 
+ violates orthogonality requirement. (Mikhail Khludnev)
+
+* LUCENE-7438: Renovate the Benchmark module's support for benchmarking highlighting. All
+  highlighters are supported via SearchTravRetHighlight. (David Smiley)
+
+Build
+
+* LUCENE-7292: Fix build to use "--release 8" instead of "-release 8" on
+  Java 9 (this changed with recent EA build b135).  (Uwe Schindler)
+
+======================= Lucene 6.2.1 =======================
+
+API Changes
+
+* LUCENE-7436: MinHashFilter's constructor, and some of its default
+  settings, should be public.  (Doug Turnbull via Mike McCandless)
+
+Bug Fixes
+
+* LUCENE-7417: The standard Highlighter could throw an IllegalArgumentException when
+  trying to highlight a query containing a degenerate case of a MultiPhraseQuery with one
+  term.  (Thomas Kappler via David Smiley)
+
+* LUCENE-7440: Document id skipping (PostingsEnum.advance) could throw an
+  ArrayIndexOutOfBoundsException exception on large index segments (>1.8B docs)
+  with large skips. (yonik)
+
+* LUCENE-7442: MinHashFilter's ctor should validate its args.
+  (Cao Manh Dat via Steve Rowe)
+
+* LUCENE-7318: Fix backwards compatibility issues around StandardAnalyzer
+  and its components, introduced with Lucene 6.2.0. The moved classes
+  were restored in their original packages: LowercaseFilter and StopFilter,
+  as well as several utility classes.  (Uwe Schindler, Mike McCandless)
+
+======================= Lucene 6.2.0 =======================
+
+API Changes
+
+* ScoringWrapperSpans was removed since it had no purpose or effect as of Lucene 5.5.
+
+New Features
+
+* LUCENE-7388: Add point based IntRangeField, FloatRangeField, LongRangeField along with
+  supporting queries and tests (Nick Knize)
+
+* LUCENE-7381: Add point based DoubleRangeField and RangeFieldQuery for
+  indexing and querying on Ranges up to 4 dimensions (Nick Knize)
+
+* LUCENE-6968: LSH Filter (Tommaso Teofili, Andy Hind, Cao Manh Dat)
+
+* LUCENE-7302: IndexWriter methods that change the index now return a
+  long "sequence number" indicating the effective equivalent
+  single-threaded execution order (Mike McCandless)
+
+* LUCENE-7335: IndexWriter's commit data is now late binding,
+  recording key/values from a provided iterable based on when the
+  commit actually takes place (Mike McCandless)
+
+* LUCENE-7287: UkrainianMorfologikAnalyzer is a new dictionary-based
+  analyzer for the Ukrainian language (Andriy Rysin via Mike
+  McCandless)
+
+* LUCENE-7373: Directory.renameFile, which did both renaming and fsync
+  of the directory metadata, has been deprecated; use the new separate
+  methods Directory.rename and Directory.syncMetaData instead (Robert Muir,
+  Uwe Schindler, Mike McCandless)
+
+* LUCENE-7355: Added Analyzer#normalize(), which only applies normalization to
+  an input string. (Adrien Grand)
+
+* LUCENE-7380: Add Polygon.fromGeoJSON for more easily creating
+  Polygon instances from a standard GeoJSON string (Robert Muir, Mike
+  McCandless)
+
+* LUCENE-7395: PerFieldSimilarityWrapper requires a default similarity
+  for calculating query norm and coordination factor in Lucene 6.x.
+  Lucene 7 will no longer have those factors.  (Uwe Schindler, Sascha Markus)
+
+* SOLR-9279: Queries module: new ComparisonBoolFunction base class
+  (Doug Turnbull via David Smiley)
+
+Bug Fixes
+
+* LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
+
+* LUCENE-7340: MemoryIndex.toString() could throw NPE; fixed. Renamed to toStringDebug().
+  (Daniel Collins, David Smiley)
+
+* LUCENE-7382: Fix bug introduced by LUCENE-7355 that used the
+  wrong default AttributeFactory for new Tokenizers.
+  (Terry Smith, Uwe Schindler)
+
+* LUCENE-7389: Fix FieldType.setDimensions(...) validation for the dimensionNumBytes
+  parameter. (Martijn van Groningen)
+
+* LUCENE-7391: Fix performance regression in MemoryIndex's fields() introduced
+  in Lucene 6. (Steve Mason via David Smiley)
+
+* LUCENE-7395, SOLR-9315: Fix PerFieldSimilarityWrapper to also delegate query
+  norm and coordination factor using a default similarity added as ctor param.
+  (Uwe Schindler, Sascha Markus)
+
+* SOLR-9413: Fix analysis/kuromoji's CSVUtil.quoteEscape logic, add TestCSVUtil test.
+  (AppChecker, Christine Poerschke)
+
+* LUCENE-7419: Fix performance bug with TokenStream.end(), where it would lookup
+  PositionIncrementAttribute every time. (Mike McCandless, Robert Muir)
+
+Improvements
+
+* LUCENE-7323: Compound file writing now verifies the incoming
+  sub-files' checkums and segment IDs, to catch hardware issues or
+  filesytem bugs earlier (Robert Muir, Mike McCandless)
+
+* LUCENE-6766: Index time sorting has graduated from the misc module
+  to core, is much simpler to use, via
+  IndexWriter.setIndexSort, and now works with dimensional points.
+  (Adrien Grand, Mike McCandless)
+
+* LUCENE-5931: Detect when an application tries to reopen an
+  IndexReader after (illegally) removing the old index and
+  reindexing (Vitaly Funstein, Robert Muir, Mike McCandless)
+
+* LUCENE-6171: Lucene now passes the StandardOpenOption.CREATE_NEW
+  option when writing new files so the filesystem enforces our
+  write-once architecture, possibly catching externally caused
+  issues sooner (Robert Muir, Mike McCandless)
+
+* LUCENE-7318: StandardAnalyzer has been moved from the analysis
+  module into core and is now the default analyzer in
+  IndexWriterConfig (Robert Muir, Mike McCandless)
+
+* LUCENE-7345: RAMDirectory now enforces write-once files as well
+  (Robert Muir, Mike McCandless)
+
+* LUCENE-7337: MatchNoDocsQuery now scores with 0 normalization factor
+  and empty boolean queries now rewrite to MatchNoDocsQuery instead of
+  vice/versa (Jim Ferenczi via Mike McCandless)
+
+* LUCENE-7359: Add equals() and hashCode() to Explanation (Alan Woodward)
+
+* LUCENE-7353: ScandinavianFoldingFilterFactory and
+  ScandinavianNormalizationFilterFactory now implement MultiTermAwareComponent.
+  (Adrien Grand)
+
+* LUCENE-2605: Add classic QueryParser option setSplitOnWhitespace() to
+  control whether to split on whitespace prior to text analysis.  Default
+  behavior remains unchanged: split-on-whitespace=true. (Steve Rowe)
+
+* LUCENE-7276: MatchNoDocsQuery now includes an optional reason for
+  why it was used (Jim Ferenczi via Mike McCandless)
+
+* LUCENE-7355: AnalyzingQueryParser now only applies the subset of the analysis
+  chain that is about normalization for range/fuzzy/wildcard queries.
+  (Adrien Grand)
+
+* LUCENE-7376: Add support for ToParentBlockJoinQuery to fast vector highlighter's
+  FieldQuery. (Martijn van Groningen)
+
+* LUCENE-7385: Improve/fix assert messages in SpanScorer. (David Smiley)
+
+* LUCENE-7393: Add ICUTokenizer option to parse Myanmar text as syllables instead of words,
+  because the ICU word-breaking algorithm has some issues. This allows for the previous 
+  tokenization used before Lucene 5. (AM, Robert Muir)
+
+* LUCENE-7409: Changed MMapDirectory's unmapping to work safer, but still with
+  no guarantees. This uses a store-store barrier and yields the current thread
+  before unmapping to allow in-flight requests to finish. The new code no longer
+  uses WeakIdentityMap as it delegates all ByteBuffer reads throgh a new
+  ByteBufferGuard wrapper that is shared between all ByteBufferIndexInput clones.
+  (Robert Muir, Uwe Schindler)
+
+Optimizations
+
+* LUCENE-7330, LUCENE-7339: Speed up conjunction queries. (Adrien Grand)
+
+* LUCENE-7356: SearchGroup tweaks. (Christine Poerschke)
+
+* LUCENE-7351: Doc id compression for points. (Adrien Grand)
+
+* LUCENE-7371: Point values are now better compressed using run-length
+  encoding. (Adrien Grand)
+
+* LUCENE-7311: Cached term queries do not seek the terms dictionary anymore.
+  (Adrien Grand)
+
+* LUCENE-7396, LUCENE-7399: Faster flush of points.
+  (Adrien Grand, Mike McCandless)
+
+* LUCENE-7406: Automaton and PrefixQuery tweaks (fewer object (re)allocations).
+  (Christine Poerschke)
+
+Other
+
+* LUCENE-4787: Fixed some highlighting javadocs. (Michael Dodsworth via Adrien
+  Grand)
+
+* LUCENE-7334: Update ASM dependency to 5.1.  (Uwe Schindler)
+
+* LUCENE-7346: Update forbiddenapis to version 2.2.
+  (Uwe Schindler)
+
+* LUCENE-7360: Explanation.toHtml() is deprecated. (Alan Woodward)
+  
+* LUCENE-7372: Factor out an org.apache.lucene.search.FilterWeight class.
+  (Christine Poerschke, Adrien Grand, David Smiley)
+
+* LUCENE-7384: Removed ScoringWrapperSpans. And tweaked SpanWeight.buildSimWeight() to
+  reuse the existing Similarity instead of creating a new one. (David Smiley)
 
 ======================= Lucene 6.1.0 =======================
 
@@ -21,6 +345,10 @@ New Features
 
 * LUCENE-7234: Added InetAddressPoint.nextDown/nextUp to easily generate range
   queries with excluded bounds. (Adrien Grand)
+
+* LUCENE-7300: The misc module now has a directory wrapper that uses hard-links if
+  applicable and supported when copying files from another FSDirectory in 
+  Directory#copyFrom. (Simon Willnauer)
 
 API Changes
 
@@ -78,8 +406,14 @@ Optimizations
 * LUCENE-7237: LRUQueryCache now prefers returning an uncached Scorer than
   waiting on a lock. (Adrien Grand)
 
-* LUCENE-7261, LUCENE-7262, LUCENE-7264: Speed up DocIdSetBuilder (which is used
-  by TermsQuery, multi-term queries and point queries). (Adrien Grand)
+* LUCENE-7261, LUCENE-7262, LUCENE-7264, LUCENE-7258: Speed up DocIdSetBuilder
+  (which is used by TermsQuery, multi-term queries and several point queries).
+  (Adrien Grand, Jeff Wartes, David Smiley)
+
+* LUCENE-7299: Speed up BytesRefHash.sort() using radix sort. (Adrien Grand)
+
+* LUCENE-7306: Speed up points indexing and merging using radix sort.
+  (Adrien Grand)
 
 Bug Fixes
 
@@ -91,33 +425,34 @@ Bug Fixes
 * LUCENE-7168: Switch to stable encode for geo3d, remove quantization
   test leniency, remove dead code (Mike McCandless)
 
-* LUCENE-7187: Block join queries' Weight#extractTerms(...) implementations
-  should delegate to the wrapped weight. (Martijn van Groningen)
+* LUCENE-7301: Multiple doc values updates to the same document within
+  one update batch could be applied in the wrong order resulting in
+  the wrong updated value (Ishan Chattopadhyaya, hossman, Mike McCandless)
 
-* LUCENE-7188: remove incorrect sanity check in NRTCachingDirectory.listAll()
-  that led to IllegalStateException being thrown when nothing was wrong.
-  (David Smiley, yonik)  
+* LUCENE-7312: Fix geo3d's x/y/z double to int encoding to ensure it always
+  rounds down (Karl Wright, Mike McCandless)
 
-* LUCENE-7219: Make queryparser/xml (Point|LegacyNumeric)RangeQuery builders
-  match the underlying queries' (lower|upper)Term optionality logic.
-  (Kaneshanathan Srivisagan, Christine Poerschke)
+* LUCENE-7132: BooleanQuery sometimes assigned too-low scores in cases
+  where ranges of documents had only a single clause matching while
+  other ranges had more than one clause matching (Ahmet Arslan,
+  hossman, Mike McCandless)
 
-* LUCENE-7209: Fixed explanations of FunctionScoreQuery. (Adrien Grand)
+* LUCENE-7286: Added support for highlighting SynonymQuery. (Adrien Grand)
 
-* LUCENE-7232: Fixed InetAddressPoint.newPrefixQuery, which was generating an
-  incorrect query when the prefix length was not a multiple of 8. (Adrien Grand)
+* LUCENE-7291: Spatial heatmap faceting could mis-count when the heatmap crosses the
+  dateline and indexed non-point shapes are much bigger than the heatmap region.
+  (David Smiley)
 
-* LUCENE-7257: Fixed PointValues#size(IndexReader, String), docCount,
-  minPackedValue and maxPackedValue to skip leaves that do not have points
-  rather than raising an IllegalStateException. (Adrien Grand)
-
-Documentation
-
-* LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
-  should separately add StoredField if you want to retrieve these
-  field values at search time (Greg Huber, Robert Muir, Mike McCandless)
+* LUCENE-7333: Fix test bug where randomSimpleString() generated a filename
+  that is a reserved device name on Windows.  (Uwe Schindler, Mike McCandless)
 
 Other
+
+* LUCENE-7295: TermAutomatonQuery.hashCode calculates Automaton.toDot().hash,
+  equivalence relationship replaced with object identity. (Dawid Weiss)
+
+* LUCENE-7277: Make Query.hashCode and Query.equals abstract. (Paul Elschot, 
+  Dawid Weiss)
 
 * LUCENE-7174: Upgrade randomizedtesting to 2.3.4. (Uwe Schindler, Dawid Weiss)
 
@@ -129,6 +464,72 @@ Other
 
 * LUCENE-7263: Make queryparser/xml/CoreParser's SpanQueryBuilderFactory
   accessible to deriving classes. (Daniel Collins via Christine Poerschke)
+
+* SOLR-9109/SOLR-9121: Allow specification of a custom Ivy settings file via system
+  property "ivysettings.xml". (Misha Dmitriev, Christine Poerschke, Uwe Schindler, Steve Rowe)
+
+* LUCENE-7206: Improve the ToParentBlockJoinQuery's explain by including the explain
+  of the best matching child doc. (Ilya Kasnacheev, Jeff Evans via Martijn van Groningen)
+
+* LUCENE-7307: Add getters to the PointInSetQuery and PointRangeQuery queries.
+  (Martijn van Groningen, Adrien Grand)
+
+Build
+
+* LUCENE-7292: Use '-release' instead of '-source/-target' during
+  compilation on Java 9+ to ensure real cross-compilation.
+  (Uwe Schindler)
+  
+* LUCENE-7296: Update forbiddenapis to version 2.1.
+  (Uwe Schindler)
+  
+======================= Lucene 6.0.1 =======================
+
+New Features
+
+* LUCENE-7278: Spatial-extras DateRangePrefixTree's Calendar is now configurable, to
+  e.g. clear the Gregorian Change Date.  Also, toString(cal) is now identical to
+  DateTimeFormatter.ISO_INSTANT. (David Smiley)
+
+Bug Fixes
+
+* LUCENE-7187: Block join queries' Weight#extractTerms(...) implementations
+  should delegate to the wrapped weight. (Martijn van Groningen)
+
+* LUCENE-7209: Fixed explanations of FunctionScoreQuery. (Adrien Grand)
+
+* LUCENE-7232: Fixed InetAddressPoint.newPrefixQuery, which was generating an
+  incorrect query when the prefix length was not a multiple of 8. (Adrien Grand)
+
+* LUCENE-7279: JapaneseTokenizer throws ArrayIndexOutOfBoundsException
+  on some valid inputs (Mike McCandless)
+
+* LUCENE-7188: remove incorrect sanity check in NRTCachingDirectory.listAll()
+  that led to IllegalStateException being thrown when nothing was wrong.
+  (David Smiley, yonik)
+
+* LUCENE-7219: Make queryparser/xml (Point|LegacyNumeric)RangeQuery builders
+  match the underlying queries' (lower|upper)Term optionality logic.
+  (Kaneshanathan Srivisagan, Christine Poerschke)
+
+* LUCENE-7257: Fixed PointValues#size(IndexReader, String), docCount,
+  minPackedValue and maxPackedValue to skip leaves that do not have points
+  rather than raising an IllegalStateException. (Adrien Grand)
+
+* LUCENE-7284: GapSpans needs to implement positionsCost(). (Daniel Bigham, Alan
+  Woodward)
+
+* LUCENE-7231: WeightedSpanTermExtractor didn't deal correctly with single-term
+  phrase queries. (Eva Popenda, Alan Woodward)
+
+* LUCENE-7293: Don't try to highlight GeoPoint queries (Britta Weber,
+  Nick Knize, Mike McCandless, Uwe Schindler)
+
+Documentation
+
+* LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
+  should separately add StoredField if you want to retrieve these
+  field values at search time (Greg Huber, Robert Muir, Mike McCandless)
 
 ======================= Lucene 6.0.0 =======================
 
@@ -346,6 +747,66 @@ Other
 
 * LUCENE-7095: Add point values support to the numeric field query time join.
   (Martijn van Groningen, Mike McCandless)
+
+======================= Lucene 5.5.3 =======================
+(No Changes)
+
+======================= Lucene 5.5.2 =======================
+
+Bug Fixes
+
+* LUCENE-7065: Fix the explain for the global ordinals join query. Before the
+  explain would also indicate that non matching documents would match.
+  On top of that with score mode average, the explain would fail with a NPE.
+  (Martijn van Groningen)
+
+* LUCENE-7111: DocValuesRangeQuery.newLongRange behaves incorrectly for
+  Long.MAX_VALUE and Long.MIN_VALUE (Ishan Chattopadhyaya via Steve Rowe)
+
+* LUCENE-7139: Fix bugs in geo3d's Vincenty surface distance
+  implementation (Karl Wright via Mike McCandless)
+
+* LUCENE-7187: Block join queries' Weight#extractTerms(...) implementations
+  should delegate to the wrapped weight. (Martijn van Groningen)
+
+* LUCENE-7279: JapaneseTokenizer throws ArrayIndexOutOfBoundsException
+  on some valid inputs (Mike McCandless)
+
+* LUCENE-7219: Make queryparser/xml (Point|LegacyNumeric)RangeQuery builders
+  match the underlying queries' (lower|upper)Term optionality logic.
+  (Kaneshanathan Srivisagan, Christine Poerschke)
+
+* LUCENE-7284: GapSpans needs to implement positionsCost(). (Daniel Bigham, Alan
+  Woodward)
+
+* LUCENE-7231: WeightedSpanTermExtractor didn't deal correctly with single-term
+  phrase queries. (Eva Popenda, Alan Woodward)
+
+* LUCENE-7301: Multiple doc values updates to the same document within
+  one update batch could be applied in the wrong order resulting in
+  the wrong updated value (Ishan Chattopadhyaya, hossman, Mike McCandless)
+
+* LUCENE-7132: BooleanQuery sometimes assigned too-low scores in cases
+  where ranges of documents had only a single clause matching while
+  other ranges had more than one clause matching (Ahmet Arslan,
+  hossman, Mike McCandless)
+
+* LUCENE-7291: Spatial heatmap faceting could mis-count when the heatmap crosses the
+  dateline and indexed non-point shapes are much bigger than the heatmap region.
+  (David Smiley)
+
+======================= Lucene 5.5.1 =======================
+
+Bug fixes
+
+* LUCENE-7112: WeightedSpanTermExtractor.extractUnknownQuery is only called
+  on queries that could not be extracted. (Adrien Grand)
+
+* LUCENE-7188: remove incorrect sanity check in NRTCachingDirectory.listAll()
+  that led to IllegalStateException being thrown when nothing was wrong.
+  (David Smiley, yonik)
+
+* LUCENE-7209: Fixed explanations of FunctionScoreQuery. (Adrien Grand)
 
 ======================= Lucene 5.5.0 =======================
 

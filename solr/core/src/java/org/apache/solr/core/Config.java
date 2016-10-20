@@ -103,7 +103,7 @@ public class Config {
    * @param loader the resource loader used to obtain an input stream if 'is' is null
    * @param name the resource name used if the input stream 'is' is null
    * @param is the resource as a SAX InputSource
-   * @param prefix an optional prefix that will be preprended to all non-absolute xpath expressions
+   * @param prefix an optional prefix that will be prepended to all non-absolute xpath expressions
    */
   public Config(SolrResourceLoader loader, String name, InputSource is, String prefix, boolean substituteProps) throws ParserConfigurationException, IOException, SAXException
   {
@@ -120,7 +120,7 @@ public class Config {
         InputStream in = loader.openConfig(name);
         if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
           zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-          log.info("loaded config {} with version {} ",name,zkVersion);
+          log.debug("loaded config {} with version {} ",name,zkVersion);
         }
         is = new InputSource(in);
         is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));

@@ -89,12 +89,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     r = DirectoryReader.open(dir);
     reader = getOnlyLeafReader(r);
     searcher = new IndexSearcher(reader);
-    searcher.setSimilarity(new ClassicSimilarity() {
-      @Override
-      public float queryNorm(float sumOfSquaredWeights) {
-        return 1; // we disable queryNorm, both for debugging and ease of impl
-      }
-    });
+    searcher.setSimilarity(new ClassicSimilarity());
   }
   
   @AfterClass
@@ -338,11 +333,9 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
           boolean success = ords.add(ord);
           assert success; // no dups
           TermContext context = TermContext.build(reader.getContext(), term);
-          SimWeight w = weight.similarity.computeWeight(
+          SimWeight w = weight.similarity.computeWeight(1f,
                         searcher.collectionStatistics("field"),
                         searcher.termStatistics(term, context));
-          w.getValueForNormalization(); // ignored
-          w.normalize(1F, 1F);
           sims[(int)ord] = weight.similarity.simScorer(w, reader.getContext());
         }
       }
@@ -351,7 +344,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     @Override
     public float score() throws IOException {
       assert score != 0 : currentMatched;
-      return (float)score * ((BooleanWeight) weight).coord(currentMatched, ((BooleanWeight) weight).maxCoord);
+      return (float)score;
     }
 
     @Override
@@ -374,7 +367,12 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
           for (currentDoc = currentDoc+1; currentDoc < maxDoc; currentDoc++) {
             currentMatched = 0;
             score = 0;
-            dv.setDocument(currentDoc);
+            if (currentDoc > dv.docID()) {
+              dv.advance(currentDoc);
+            }
+            if (currentDoc != dv.docID()) {
+              continue;
+            }
             long ord;
             while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
               if (ords.contains(ord)) {

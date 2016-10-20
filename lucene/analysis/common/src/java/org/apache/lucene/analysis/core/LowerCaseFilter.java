@@ -17,19 +17,17 @@
 package org.apache.lucene.analysis.core;
 
 
-import java.io.IOException;
-
-import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.util.CharacterUtils;
 
 /**
  * Normalizes token text to lower case.
+ * <p>
+ * This class moved to Lucene Core, but a reference in the {@code analysis/common} module
+ * is preserved for documentation purposes and consistency with filter factory.
+ * @see org.apache.lucene.analysis.LowerCaseFilter
+ * @see LowerCaseFilterFactory
  */
-public final class LowerCaseFilter extends TokenFilter {
-  private final CharacterUtils charUtils = CharacterUtils.getInstance();
-  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+public final class LowerCaseFilter extends org.apache.lucene.analysis.LowerCaseFilter {
   
   /**
    * Create a new LowerCaseFilter, that normalizes token text to lower case.
@@ -40,12 +38,4 @@ public final class LowerCaseFilter extends TokenFilter {
     super(in);
   }
   
-  @Override
-  public final boolean incrementToken() throws IOException {
-    if (input.incrementToken()) {
-      charUtils.toLowerCase(termAtt.buffer(), 0, termAtt.length());
-      return true;
-    } else
-      return false;
-  }
 }

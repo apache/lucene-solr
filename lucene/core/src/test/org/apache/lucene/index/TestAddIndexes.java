@@ -39,6 +39,8 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
@@ -1084,14 +1086,14 @@ public class TestAddIndexes extends LuceneTestCase {
   }
 
   private static final class CustomPerFieldCodec extends AssertingCodec {
-    private final PostingsFormat simpleTextFormat = PostingsFormat.forName("SimpleText");
+    private final PostingsFormat directFormat = PostingsFormat.forName("Direct");
     private final PostingsFormat defaultFormat = TestUtil.getDefaultPostingsFormat();
     private final PostingsFormat memoryFormat = PostingsFormat.forName("Memory");
 
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       if (field.equals("id")) {
-        return simpleTextFormat;
+        return directFormat;
       } else if (field.equals("content")) {
         return memoryFormat;
       } else {
@@ -1280,5 +1282,54 @@ public class TestAddIndexes extends LuceneTestCase {
     w1.close();
     w2.close();
     IOUtils.close(src, dest);
+  }
+
+  public void testIllegalIndexSortChange1() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig iwc1 = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc1.setIndexSort(new Sort(new SortField("foo", SortField.Type.INT)));
+    RandomIndexWriter w1 = new RandomIndexWriter(random(), dir1, iwc1);
+    w1.addDocument(new Document());
+    w1.commit();
+    w1.addDocument(new Document());
+    w1.commit();
+    // so the index sort is in fact burned into the index:
+    w1.forceMerge(1);
+    w1.close();
+
+    Directory dir2 = newDirectory();
+    IndexWriterConfig iwc2 = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc2.setIndexSort(new Sort(new SortField("foo", SortField.Type.STRING)));
+    RandomIndexWriter w2 = new RandomIndexWriter(random(), dir2, iwc2);
+    String message = expectThrows(IllegalArgumentException.class, () -> {
+        w2.addIndexes(dir1);
+      }).getMessage();
+    assertEquals("cannot change index sort from <int: \"foo\"> to <string: \"foo\">", message);
+    IOUtils.close(dir1, w2, dir2);
+  }
+
+  public void testIllegalIndexSortChange2() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig iwc1 = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc1.setIndexSort(new Sort(new SortField("foo", SortField.Type.INT)));
+    RandomIndexWriter w1 = new RandomIndexWriter(random(), dir1, iwc1);
+    w1.addDocument(new Document());
+    w1.commit();
+    w1.addDocument(new Document());
+    w1.commit();
+    // so the index sort is in fact burned into the index:
+    w1.forceMerge(1);
+    w1.close();
+
+    Directory dir2 = newDirectory();
+    IndexWriterConfig iwc2 = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc2.setIndexSort(new Sort(new SortField("foo", SortField.Type.STRING)));
+    RandomIndexWriter w2 = new RandomIndexWriter(random(), dir2, iwc2);
+    IndexReader r1 = DirectoryReader.open(dir1);
+    String message = expectThrows(IllegalArgumentException.class, () -> {
+        w2.addIndexes((SegmentReader) getOnlyLeafReader(r1));
+      }).getMessage();
+    assertEquals("cannot change index sort from <int: \"foo\"> to <string: \"foo\">", message);
+    IOUtils.close(r1, dir1, w2, dir2);
   }
 }

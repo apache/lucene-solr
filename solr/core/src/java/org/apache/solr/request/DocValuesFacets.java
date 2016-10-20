@@ -16,9 +16,12 @@
  */
 package org.apache.solr.request;
 
+import java.io.IOException;
+import java.util.List;
+
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
@@ -37,10 +40,8 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.util.LongPriorityQueue;
-
-import java.io.IOException;
-import java.util.List;
 
 /**
  * Computes term facets for docvalues field (single or multivalued).
@@ -57,7 +58,7 @@ import java.util.List;
 public class DocValuesFacets {
   private DocValuesFacets() {}
   
-  public static NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix, String contains, boolean ignoreCase) throws IOException {
+  public static NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix, String contains, boolean ignoreCase, FacetDebugInfo fdebug) throws IOException {
     SchemaField schemaField = searcher.getSchema().getField(fieldName);
     FieldType ft = schemaField.getType();
     NamedList<Integer> res = new NamedList<>();
@@ -68,15 +69,15 @@ public class DocValuesFacets {
     final SortedSetDocValues si; // for term lookups only
     OrdinalMap ordinalMap = null; // for mapping per-segment ords to global ones
     if (multiValued) {
-      si = searcher.getLeafReader().getSortedSetDocValues(fieldName);
-      if (si instanceof MultiSortedSetDocValues) {
+      si = searcher.getSlowAtomicReader().getSortedSetDocValues(fieldName);
+      if (si instanceof MultiDocValues.MultiSortedSetDocValues) {
         ordinalMap = ((MultiSortedSetDocValues)si).mapping;
       }
     } else {
-      SortedDocValues single = searcher.getLeafReader().getSortedDocValues(fieldName);
+      SortedDocValues single = searcher.getSlowAtomicReader().getSortedDocValues(fieldName);
       si = single == null ? null : DocValues.singleton(single);
-      if (single instanceof MultiSortedDocValues) {
-        ordinalMap = ((MultiSortedDocValues)single).mapping;
+      if (single instanceof MultiDocValues.MultiSortedDocValues) {
+        ordinalMap = ((MultiDocValues.MultiSortedDocValues)single).mapping;
       }
     }
     if (si == null) {
@@ -118,6 +119,9 @@ public class DocValuesFacets {
       // count collection array only needs to be as big as the number of terms we are
       // going to collect counts for.
       final int[] counts = new int[nTerms];
+      if (fdebug != null) {
+        fdebug.putInfoItem("numBuckets", nTerms);
+      }
 
       Filter filter = docs.getTopFilter();
       List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
@@ -268,7 +272,15 @@ public class DocValuesFacets {
     final LongValues ordmap = map == null ? null : map.getGlobalOrds(subIndex);
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      int term = si.getOrd(doc);
+      if (doc > si.docID()) {
+        si.advance(doc);
+      }
+      int term;
+      if (doc == si.docID()) {
+        term = si.ordValue();
+      } else {
+        term = -1;
+      }
       if (map != null && term >= 0) {
         term = (int) ordmap.get(term);
       }
@@ -289,7 +301,14 @@ public class DocValuesFacets {
     
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      segCounts[1+si.getOrd(doc)]++;
+      if (doc > si.docID()) {
+        si.advance(doc);
+      }
+      if (doc == si.docID()) {
+        segCounts[1+si.ordValue()]++;
+      } else {
+        segCounts[0]++;
+      }
     }
     
     // migrate to global ords (if necessary)
@@ -315,23 +334,22 @@ public class DocValuesFacets {
     final LongValues ordMap = map == null ? null : map.getGlobalOrds(subIndex);
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      si.setDocument(doc);
-      // strange do-while to collect the missing count (first ord is NO_MORE_ORDS)
-      int term = (int) si.nextOrd();
-      if (term < 0) {
-        if (startTermIndex == -1) {
-          counts[0]++; // missing count
-        }
-        continue;
+      if (doc > si.docID()) {
+        si.advance(doc);
       }
-      
-      do {
-        if (map != null) {
-          term = (int) ordMap.get(term);
-        }
-        int arrIdx = term-startTermIndex;
-        if (arrIdx>=0 && arrIdx<counts.length) counts[arrIdx]++;
-      } while ((term = (int) si.nextOrd()) >= 0);
+      if (doc == si.docID()) {
+        // strange do-while to collect the missing count (first ord is NO_MORE_ORDS)
+        int term = (int) si.nextOrd();
+        do {
+          if (map != null) {
+            term = (int) ordMap.get(term);
+          }
+          int arrIdx = term-startTermIndex;
+          if (arrIdx>=0 && arrIdx<counts.length) counts[arrIdx]++;
+        } while ((term = (int) si.nextOrd()) >= 0);
+      } else if (startTermIndex == -1) {
+        counts[0]++; // missing count
+      }
     }
   }
   
@@ -347,14 +365,16 @@ public class DocValuesFacets {
     
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      si.setDocument(doc);
-      int term = (int) si.nextOrd();
-      if (term < 0) {
-        counts[0]++; // missing
-      } else {
+      if (doc > si.docID()) {
+        si.advance(doc);
+      }
+      if (doc == si.docID()) {
+        int term = (int) si.nextOrd();
         do {
           segCounts[1+term]++;
         } while ((term = (int)si.nextOrd()) >= 0);
+      } else {
+        counts[0]++; // missing
       }
     }
     

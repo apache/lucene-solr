@@ -19,37 +19,32 @@
 <!-- Test schema file for IBSimilarityFactory -->
 
 <schema name="test" version="1.0">
-  <types>
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    
-    <!-- default parameters -->
-    <fieldType name="text" class="solr.TextField">
-      <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
-      <similarity class="solr.IBSimilarityFactory">
-        <str name="distribution">SPL</str>
-        <str name="lambda">DF</str>
-        <str name="normalization">H2</str>
-      </similarity>
-    </fieldType>
-    
-    <!-- with parameters -->
-    <fieldType name="text_params" class="solr.TextField">
-      <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
-      <similarity class="solr.IBSimilarityFactory">
-        <str name="distribution">LL</str>
-        <str name="lambda">TTF</str>
-        <str name="normalization">H3</str>
-        <float name="mu">900</float>
-      </similarity>
-    </fieldType>
-   
-  </types>
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
-  <fields>
-    <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="text" type="text" indexed="true" stored="false"/>
-    <field name="text_params" type="text_params" indexed="true" stored="false"/>
-  </fields>
+  <!-- default parameters -->
+  <fieldType name="text" class="solr.TextField">
+    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+    <similarity class="solr.IBSimilarityFactory">
+      <str name="distribution">SPL</str>
+      <str name="lambda">DF</str>
+      <str name="normalization">H2</str>
+    </similarity>
+  </fieldType>
+
+  <!-- with parameters -->
+  <fieldType name="text_params" class="solr.TextField">
+    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+    <similarity class="solr.IBSimilarityFactory">
+      <str name="distribution">LL</str>
+      <str name="lambda">TTF</str>
+      <str name="normalization">H3</str>
+      <float name="mu">900</float>
+    </similarity>
+  </fieldType>
+
+  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="text" type="text" indexed="true" stored="false"/>
+  <field name="text_params" type="text_params" indexed="true" stored="false"/>
 
   <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>

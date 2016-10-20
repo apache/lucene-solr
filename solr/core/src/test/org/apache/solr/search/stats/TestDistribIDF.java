@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.stats;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
@@ -26,7 +25,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -60,10 +58,8 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    File configDir = getFile("solr").toPath().resolve("collection1/conf").toFile();
-    solrCluster.uploadConfigDir(configDir, "conf1");
-    configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
-    solrCluster.uploadConfigDir(configDir, "conf2");
+    solrCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");
+    solrCluster.uploadConfigSet(configset("configset-2"), "conf2");
   }
 
   @Override

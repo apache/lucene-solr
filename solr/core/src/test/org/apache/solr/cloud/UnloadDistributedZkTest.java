@@ -54,7 +54,7 @@ import java.util.concurrent.TimeUnit;
 public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
   protected String getSolrXml() {
-    return "solr-no-core.xml";
+    return "solr.xml";
   }
   
   public UnloadDistributedZkTest() {
@@ -68,10 +68,6 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     testUnloadLotsOfCores(); // long
     
     testUnloadShardAndCollection();
-    
-    if (DEBUG) {
-      super.printLayout();
-    }
   }
 
   private void checkCoreNamePresenceAndSliceCount(String collectionName, String coreName,

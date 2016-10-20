@@ -23,7 +23,6 @@ import java.util.IdentityHashMap;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrRequestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

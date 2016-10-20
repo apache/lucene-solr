@@ -19,9 +19,9 @@ package org.apache.lucene.analysis.ja;
 
 import java.util.Set;
 
-import org.apache.lucene.analysis.ja.tokenattributes.PartOfSpeechAttribute;
-import org.apache.lucene.analysis.util.FilteringTokenFilter;
+import org.apache.lucene.analysis.FilteringTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.ja.tokenattributes.PartOfSpeechAttribute;
 
 /**
  * Removes tokens that match a set of part-of-speech tags.

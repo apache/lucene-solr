@@ -43,6 +43,8 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 /**
  * Abstract class to do basic tests for a points format.
  * NOTE: This test focuses on the points impl, nothing else.
@@ -78,11 +80,11 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
     DirectoryReader r = DirectoryReader.open(dir);
     LeafReader sub = getOnlyLeafReader(r);
-    PointValues values = sub.getPointValues();
+    PointValues values = sub.getPointValues("dim");
 
     // Simple test: make sure intersect can visit every doc:
     BitSet seen = new BitSet();
-    values.intersect("dim",
+    values.intersect(
                      new IntersectVisitor() {
                        @Override
                        public Relation compare(byte[] minPacked, byte[] maxPacked) {
@@ -120,11 +122,11 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
     DirectoryReader r = DirectoryReader.open(dir);
     LeafReader sub = getOnlyLeafReader(r);
-    PointValues values = sub.getPointValues();
+    PointValues values = sub.getPointValues("dim");
 
     // Simple test: make sure intersect can visit every doc:
     BitSet seen = new BitSet();
-    values.intersect("dim",
+    values.intersect(
                      new IntersectVisitor() {
                        @Override
                        public Relation compare(byte[] minPacked, byte[] maxPacked) {
@@ -166,11 +168,23 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     Bits liveDocs = MultiFields.getLiveDocs(r);
 
     for(LeafReaderContext ctx : r.leaves()) {
-      PointValues values = ctx.reader().getPointValues();
+      PointValues values = ctx.reader().getPointValues("dim");
+
       NumericDocValues idValues = ctx.reader().getNumericDocValues("id");
+      if (idValues == null) {
+        // this is (surprisingly) OK, because if the random IWC flushes all 10 docs before the 11th doc is added, and force merge runs, it
+        // will drop the 100% deleted segments, and the "id" field never exists in the final single doc segment
+        continue;
+      }
+      int[] docIDToID = new int[ctx.reader().maxDoc()];
+      int docID;
+      while ((docID = idValues.nextDoc()) != NO_MORE_DOCS) {
+        docIDToID[docID] = (int) idValues.longValue();
+      }
+      
       if (values != null) {
         BitSet seen = new BitSet();
-        values.intersect("dim",
+        values.intersect(
                          new IntersectVisitor() {
                            @Override
                            public Relation compare(byte[] minPacked, byte[] maxPacked) {
@@ -183,7 +197,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
                              if (liveDocs.get(docID)) {
                                seen.set(docID);
                              }
-                             assertEquals(idValues.get(docID), NumericUtils.sortableBytesToInt(packedValue, 0));
+                             assertEquals(docIDToID[docID], NumericUtils.sortableBytesToInt(packedValue, 0));
                            }
                          });
         assertEquals(0, seen.cardinality());
@@ -327,6 +341,35 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     verify(docValues, null, numDims, numBytesPerDim);
   }
 
+  // this should trigger run-length compression with lengths that are greater than 255
+  public void testOneDimTwoValues() throws Exception {
+    int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
+    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+
+    int numDocs = atLeast(1000);
+    int theDim = random().nextInt(numDims);
+    byte[] value1 = new byte[numBytesPerDim];
+    random().nextBytes(value1);
+    byte[] value2 = new byte[numBytesPerDim];
+    random().nextBytes(value2);
+    byte[][][] docValues = new byte[numDocs][][];
+
+    for(int docID=0;docID<numDocs;docID++) {
+      byte[][] values = new byte[numDims][];
+      for(int dim=0;dim<numDims;dim++) {
+        if (dim == theDim) {
+          values[dim] = random().nextBoolean() ? value1 : value2;
+        } else {
+          values[dim] = new byte[numBytesPerDim];
+          random().nextBytes(values[dim]);
+        }
+      }
+      docValues[docID] = values;
+    }
+
+    verify(docValues, null, numDims, numBytesPerDim);
+  }
+
   // Tests on N-dimensional points where each dimension is a BigInteger
   public void testBigIntNDims() throws Exception {
 
@@ -387,14 +430,14 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
         final BitSet hits = new BitSet();
         for(LeafReaderContext ctx : r.leaves()) {
-          PointValues dimValues = ctx.reader().getPointValues();
+          PointValues dimValues = ctx.reader().getPointValues("field");
           if (dimValues == null) {
             continue;
           }
 
           final int docBase = ctx.docBase;
           
-          dimValues.intersect("field", new IntersectVisitor() {
+          dimValues.intersect(new IntersectVisitor() {
               @Override
               public void visit(int docID) {
                 hits.set(docBase+docID);
@@ -675,6 +718,14 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
       }
 
       NumericDocValues idValues = MultiDocValues.getNumericValues(r, "id");
+      int[] docIDToID = new int[r.maxDoc()];
+      {
+        int docID;
+        while ((docID = idValues.nextDoc()) != NO_MORE_DOCS) {
+          docIDToID[docID] = (int) idValues.longValue();
+        }
+      }
+
       Bits liveDocs = MultiFields.getLiveDocs(r);
 
       // Verify min/max values are correct:
@@ -684,13 +735,13 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
       byte[] maxValues = new byte[numDims*numBytesPerDim];
 
       for(LeafReaderContext ctx : r.leaves()) {
-        PointValues dimValues = ctx.reader().getPointValues();
+        PointValues dimValues = ctx.reader().getPointValues("field");
         if (dimValues == null) {
           continue;
         }
 
-        byte[] leafMinValues = dimValues.getMinPackedValue("field");
-        byte[] leafMaxValues = dimValues.getMaxPackedValue("field");
+        byte[] leafMinValues = dimValues.getMinPackedValue();
+        byte[] leafMaxValues = dimValues.getMaxPackedValue();
         for(int dim=0;dim<numDims;dim++) {
           if (StringHelper.compare(numBytesPerDim, leafMinValues, dim*numBytesPerDim, minValues, dim*numBytesPerDim) < 0) {
             System.arraycopy(leafMinValues, dim*numBytesPerDim, minValues, dim*numBytesPerDim, numBytesPerDim);
@@ -741,18 +792,18 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
         final BitSet hits = new BitSet();
 
         for(LeafReaderContext ctx : r.leaves()) {
-          PointValues dimValues = ctx.reader().getPointValues();
+          PointValues dimValues = ctx.reader().getPointValues("field");
           if (dimValues == null) {
             continue;
           }
 
           final int docBase = ctx.docBase;
 
-          dimValues.intersect("field", new PointValues.IntersectVisitor() {
+          dimValues.intersect(new PointValues.IntersectVisitor() {
               @Override
               public void visit(int docID) {
                 if (liveDocs == null || liveDocs.get(docBase+docID)) {
-                  hits.set((int) idValues.get(docBase+docID));
+                  hits.set(docIDToID[docBase+docID]);
                 }
                 //System.out.println("visit docID=" + docID);
               }
@@ -763,7 +814,6 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
                   return;
                 }
 
-                //System.out.println("visit check docID=" + docID + " id=" + idValues.get(docID));
                 for(int dim=0;dim<numDims;dim++) {
                   //System.out.println("  dim=" + dim + " value=" + new BytesRef(packedValue, dim*numBytesPerDim, numBytesPerDim));
                   if (StringHelper.compare(numBytesPerDim, packedValue, dim*numBytesPerDim, queryMin[dim], 0) < 0 ||
@@ -774,7 +824,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
                 }
 
                 //System.out.println("  yes");
-                hits.set((int) idValues.get(docBase+docID));
+                hits.set(docIDToID[docBase+docID]);
               }
 
               @Override
@@ -840,7 +890,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
         if (failCount != 0) {
           for(int docID=0;docID<r.maxDoc();docID++) {
-            System.out.println("  docID=" + docID + " id=" + idValues.get(docID));
+            System.out.println("  docID=" + docID + " id=" + docIDToID[docID]);
           }
 
           fail(failCount + " docs failed; " + successCount + " docs succeeded");
@@ -946,5 +996,28 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     // suppress this test from base class: merges for BKD trees are not stable because the tree created by merge will have a different
     // structure than the tree created by adding points separately
     return false;
+  }
+
+  // LUCENE-7491
+  public void testMixedSchema() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    iwc.setMaxBufferedDocs(2);
+    for(int i=0;i<2;i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
+      doc.add(new IntPoint("int", i));
+      w.addDocument(doc);
+    }
+    // index has 1 segment now (with 2 docs) and that segment does have points, but the "id" field in particular does NOT
+
+    Document doc = new Document();
+    doc.add(new IntPoint("id", 0));
+    w.addDocument(doc);
+    // now we write another segment where the id field does have points:
+    
+    w.forceMerge(1);
+    IOUtils.close(w, dir);
   }
 }

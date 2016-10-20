@@ -24,7 +24,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -51,7 +50,7 @@ public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTes
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected String getSolrXml() {
-    return "solr-no-core.xml";
+    return "solr.xml";
   }
 
   public DeleteLastCustomShardedReplicaTest() {

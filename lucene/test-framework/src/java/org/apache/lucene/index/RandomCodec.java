@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -50,8 +49,6 @@ import org.apache.lucene.codecs.memory.FSTPostingsFormat;
 import org.apache.lucene.codecs.memory.MemoryDocValuesFormat;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
-import org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat;
-import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -108,9 +105,10 @@ public class RandomCodec extends AssertingCodec {
 
         return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap) {
           @Override
-          public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
+          public void writeField(FieldInfo fieldInfo, PointsReader reader) throws IOException {
 
-            boolean singleValuePerDoc = values.size(fieldInfo.name) == values.getDocCount(fieldInfo.name);
+            PointValues values = reader.getValues(fieldInfo.name);
+            boolean singleValuePerDoc = values.size() == values.getDocCount();
 
             try (BKDWriter writer = new RandomlySplittingBKDWriter(writeState.segmentInfo.maxDoc(),
                                                                    writeState.directory,
@@ -119,10 +117,10 @@ public class RandomCodec extends AssertingCodec {
                                                                    fieldInfo.getPointNumBytes(),
                                                                    maxPointsInLeafNode,
                                                                    maxMBSortInHeap,
-                                                                   values.size(fieldInfo.name),
+                                                                   values.size(),
                                                                    singleValuePerDoc,
                                                                    bkdSplitRandomSeed ^ fieldInfo.name.hashCode())) {
-                values.intersect(fieldInfo.name, new IntersectVisitor() {
+                values.intersect(new IntersectVisitor() {
                     @Override
                     public void visit(int docID) {
                       throw new IllegalStateException();
@@ -159,10 +157,6 @@ public class RandomCodec extends AssertingCodec {
     PostingsFormat codec = previousMappings.get(name);
     if (codec == null) {
       codec = formats.get(Math.abs(perFieldSeed ^ name.hashCode()) % formats.size());
-      if (codec instanceof SimpleTextPostingsFormat && perFieldSeed % 5 != 0) {
-        // make simpletext rarer, choose again
-        codec = formats.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ROOT).hashCode()) % formats.size());
-      }
       previousMappings.put(name, codec);
       // Safety:
       assert previousMappings.size() < 10000: "test went insane";
@@ -175,10 +169,6 @@ public class RandomCodec extends AssertingCodec {
     DocValuesFormat codec = previousDVMappings.get(name);
     if (codec == null) {
       codec = dvFormats.get(Math.abs(perFieldSeed ^ name.hashCode()) % dvFormats.size());
-      if (codec instanceof SimpleTextDocValuesFormat && perFieldSeed % 5 != 0) {
-        // make simpletext rarer, choose again
-        codec = dvFormats.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ROOT).hashCode()) % dvFormats.size());
-      }
       previousDVMappings.put(name, codec);
       // Safety:
       assert previousDVMappings.size() < 10000: "test went insane";
@@ -214,7 +204,7 @@ public class RandomCodec extends AssertingCodec {
         new LuceneFixedGap(TestUtil.nextInt(random, 1, 1000)),
         new LuceneVarGapFixedInterval(TestUtil.nextInt(random, 1, 1000)),
         new LuceneVarGapDocFreqInterval(TestUtil.nextInt(random, 1, 100), TestUtil.nextInt(random, 1, 1000)),
-        random.nextInt(10) == 0 ? new SimpleTextPostingsFormat() : TestUtil.getDefaultPostingsFormat(),
+        TestUtil.getDefaultPostingsFormat(),
         new AssertingPostingsFormat(),
         new MemoryPostingsFormat(true, random.nextFloat()),
         new MemoryPostingsFormat(false, random.nextFloat()));
@@ -223,7 +213,7 @@ public class RandomCodec extends AssertingCodec {
         TestUtil.getDefaultDocValuesFormat(),
         new DirectDocValuesFormat(), // maybe not a great idea...
         new MemoryDocValuesFormat(),
-        random.nextInt(10) == 0 ? new SimpleTextDocValuesFormat() : TestUtil.getDefaultDocValuesFormat(),
+        TestUtil.getDefaultDocValuesFormat(),
         new AssertingDocValuesFormat());
 
     Collections.shuffle(formats, random);

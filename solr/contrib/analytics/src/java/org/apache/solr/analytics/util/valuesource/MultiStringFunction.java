@@ -40,7 +40,7 @@ public abstract class MultiStringFunction extends ValueSource {
   }
 
   abstract protected String name();
-  abstract protected CharSequence func(int doc, FunctionValues[] valsArr);
+  abstract protected CharSequence func(int doc, FunctionValues[] valsArr) throws IOException;
 
   @Override
   public String description() {
@@ -68,13 +68,13 @@ public abstract class MultiStringFunction extends ValueSource {
 
     return new StrDocValues(this) {
       @Override
-      public String strVal(int doc) {
+      public String strVal(int doc) throws IOException {
         CharSequence cs = func(doc, valsArr);
         return  cs != null ? cs.toString() : null;
       }
       
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         boolean exists = true;
         for (FunctionValues val : valsArr) {
           exists = exists & val.exists(doc);
@@ -83,7 +83,7 @@ public abstract class MultiStringFunction extends ValueSource {
       }
       
       @Override
-      public boolean bytesVal(int doc, BytesRefBuilder bytes) {
+      public boolean bytesVal(int doc, BytesRefBuilder bytes) throws IOException {
         bytes.clear();
         CharSequence cs = func(doc, valsArr);
         if( cs != null ){
@@ -95,7 +95,7 @@ public abstract class MultiStringFunction extends ValueSource {
       }
       
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append(name()).append('(');
         boolean firstTime=true;
@@ -122,7 +122,7 @@ public abstract class MultiStringFunction extends ValueSource {
           }
 
           @Override
-          public void fillValue(int doc) {
+          public void fillValue(int doc) throws IOException {
             mval.exists = bytesVal(doc, mval.value);
           }
         };

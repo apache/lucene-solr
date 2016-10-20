@@ -23,6 +23,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
@@ -64,8 +65,6 @@ public class TestNorms extends LuceneTestCase {
       return state.getLength();
     }
 
-    @Override public float coord(int overlap, int maxOverlap) { return 0; }
-    @Override public float queryNorm(float sumOfSquaredWeights) { return 0; }
     @Override public float tf(float freq) { return 0; }
     @Override public float idf(long docFreq, long docCount) { return 0; }
     @Override public float sloppyFreq(int distance) { return 0; }
@@ -96,12 +95,14 @@ public class TestNorms extends LuceneTestCase {
     
     NumericDocValues fooNorms = MultiDocValues.getNormValues(reader, "foo");
     for (int i = 0; i < reader.maxDoc(); i++) {
-      assertEquals(0, fooNorms.get(i));
+      assertEquals(i, fooNorms.nextDoc());
+      assertEquals(0, fooNorms.longValue());
     }
     
     NumericDocValues barNorms = MultiDocValues.getNormValues(reader, "bar");
     for (int i = 0; i < reader.maxDoc(); i++) {
-      assertEquals(1, barNorms.get(i));
+      assertEquals(i, barNorms.nextDoc());
+      assertEquals(1, barNorms.longValue());
     }
     
     reader.close();
@@ -117,7 +118,8 @@ public class TestNorms extends LuceneTestCase {
     for (int i = 0; i < open.maxDoc(); i++) {
       Document document = open.document(i);
       int expected = Integer.parseInt(document.get(byteTestField));
-      assertEquals(expected, normValues.get(i));
+      assertEquals(i, normValues.nextDoc());
+      assertEquals(expected, normValues.longValue());
     }
     open.close();
     dir.close();
@@ -157,23 +159,12 @@ public class TestNorms extends LuceneTestCase {
     Similarity delegate = new ClassicSimilarity();
 
     @Override
-    public float queryNorm(float sumOfSquaredWeights) {
-
-      return delegate.queryNorm(sumOfSquaredWeights);
-    }
-
-    @Override
     public Similarity get(String field) {
       if (byteTestField.equals(field)) {
         return new ByteEncodingBoostSimilarity();
       } else {
         return delegate;
       }
-    }
-
-    @Override
-    public float coord(int overlap, int maxOverlap) {
-      return delegate.coord(overlap, maxOverlap);
     }
   }
 
@@ -187,7 +178,7 @@ public class TestNorms extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
+    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       throw new UnsupportedOperationException();
     }
 
@@ -196,4 +187,24 @@ public class TestNorms extends LuceneTestCase {
       throw new UnsupportedOperationException();
     }
   } 
+
+  public void testEmptyValueVsNoValue() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig cfg = newIndexWriterConfig().setMergePolicy(newLogMergePolicy());
+    IndexWriter w = new IndexWriter(dir, cfg);
+    Document doc = new Document();
+    w.addDocument(doc);
+    doc.add(newTextField("foo", "", Store.NO));
+    w.addDocument(doc);
+    w.forceMerge(1);
+    IndexReader reader = DirectoryReader.open(w);
+    w.close();
+    LeafReader leafReader = getOnlyLeafReader(reader);
+    NumericDocValues normValues = leafReader.getNormValues("foo");
+    assertNotNull(normValues);
+    assertEquals(1, normValues.nextDoc()); // doc 0 does not have norms
+    assertEquals(0, normValues.longValue());
+    reader.close();
+    dir.close();
+  }
 }

@@ -29,6 +29,7 @@ import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -72,7 +73,8 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     "w1 xx w2 yy w3",
     "w1 w3 xx w2 yy w3 zz",
     "t1 t2 t2 t1",
-    "g x x g g x x x g g x x g"
+    "g x x g g x x x g g x x g",
+      "go to webpage"
   };
 
   protected SpanNearQuery makeQuery(String s1, String s2, String s3,
@@ -119,7 +121,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   
   public void testNearSpansNext() throws Exception {
     SpanNearQuery q = makeQuery();
-    Spans span = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans span = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(span,0,0,3);
     assertNext(span,1,0,4);
     assertFinished(span);
@@ -132,7 +134,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
    */
   public void testNearSpansAdvanceLikeNext() throws Exception {
     SpanNearQuery q = makeQuery();
-    Spans span = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans span = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertEquals(0, span.advance(0));
     assertEquals(0, span.nextStartPosition());
     assertEquals(s(0,0,3), s(span));
@@ -144,7 +146,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   
   public void testNearSpansNextThenAdvance() throws Exception {
     SpanNearQuery q = makeQuery();
-    Spans span = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans span = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNotSame(Spans.NO_MORE_DOCS, span.nextDoc());
     assertEquals(0, span.nextStartPosition());
     assertEquals(s(0,0,3), s(span));
@@ -156,7 +158,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   
   public void testNearSpansNextThenAdvancePast() throws Exception {
     SpanNearQuery q = makeQuery();
-    Spans span = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans span = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNotSame(Spans.NO_MORE_DOCS, span.nextDoc());
     assertEquals(0, span.nextStartPosition());
     assertEquals(s(0,0,3), s(span));
@@ -165,13 +167,13 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   
   public void testNearSpansAdvancePast() throws Exception {
     SpanNearQuery q = makeQuery();
-    Spans span = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans span = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertEquals(Spans.NO_MORE_DOCS, span.advance(2));
   }
   
   public void testNearSpansAdvanceTo0() throws Exception {
     SpanNearQuery q = makeQuery();
-    Spans span = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans span = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertEquals(0, span.advance(0));
     assertEquals(0, span.nextStartPosition());
     assertEquals(s(0,0,3), s(span));
@@ -179,7 +181,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
 
   public void testNearSpansAdvanceTo1() throws Exception {
     SpanNearQuery q = makeQuery();
-    Spans span = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans span = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertEquals(1, span.advance(1));
     assertEquals(0, span.nextStartPosition());
     assertEquals(s(1,0,4), s(span));
@@ -218,7 +220,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
         new SpanOrQuery(new SpanTermQuery(new Term(FIELD, "w1")), new SpanTermQuery(new Term(FIELD, "w2"))),
         new SpanTermQuery(new Term(FIELD, "w4"))
     }, 10, true);
-    Spans spans = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(spans,0,0,4);
     assertNext(spans,0,1,4);
     assertFinished(spans);
@@ -228,7 +230,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
         new SpanTermQuery(new Term(FIELD, "t1")), new SpanTermQuery(new Term(FIELD, "t2"))
     }, 1, true);
-    Spans spans = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(spans,4,0,2);
     assertFinished(spans);
   }
@@ -237,7 +239,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
         new SpanTermQuery(new Term(FIELD, "t2")), new SpanTermQuery(new Term(FIELD, "t1"))
     }, 1, true);
-    Spans spans = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(spans,4,1,4);
     assertNext(spans,4,2,4);
     assertFinished(spans);
@@ -261,7 +263,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
         .addGap(1)
         .addClause(new SpanTermQuery(new Term(FIELD, "w2")))
         .build();
-    Spans spans = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(spans, 1, 0, 3);
     assertNext(spans, 2, 0, 3);
     assertFinished(spans);
@@ -274,7 +276,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
         .addClause(new SpanTermQuery(new Term(FIELD, "w3")))
         .setSlop(1)
         .build();
-    spans = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    spans = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(spans, 2, 0, 5);
     assertNext(spans, 3, 0, 6);
     assertFinished(spans);
@@ -286,10 +288,27 @@ public class TestNearSpansOrdered extends LuceneTestCase {
         .addGap(2)
         .addClause(new SpanTermQuery(new Term(FIELD, "g")))
         .build();
-    Spans spans = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(spans, 5, 0, 4);
     assertNext(spans, 5, 9, 13);
     assertFinished(spans);
+  }
+
+  public void testNestedGaps() throws Exception {
+    SpanQuery q = SpanNearQuery.newOrderedNearQuery(FIELD)
+        .addClause(new SpanOrQuery(
+            new SpanTermQuery(new Term(FIELD, "open")),
+            SpanNearQuery.newOrderedNearQuery(FIELD)
+                .addClause(new SpanTermQuery(new Term(FIELD, "go")))
+                .addGap(1)
+                .build()
+        ))
+        .addClause(new SpanTermQuery(new Term(FIELD, "webpage")))
+        .build();
+
+    TopDocs topDocs = searcher.search(q, 1);
+    assertEquals(6, topDocs.scoreDocs[0].doc);
+
   }
 
   /*
@@ -299,7 +318,8 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     "w1 xx w2 yy w3",
     "w1 w3 xx w2 yy w3 zz",
     "t1 t2 t2 t1",
-    "g x x g g x x x g g x x g"
+    "g x x g g x x x g g x x g",
+    "go to webpage"
   };
    */
 }

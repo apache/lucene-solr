@@ -26,8 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+
+import com.google.common.base.Throwables;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
@@ -41,22 +44,15 @@ import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.lucene.spatial.query.SpatialOperation;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SpatialOptions;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.apache.solr.util.DistanceUnits;
 import org.apache.solr.util.MapListener;
 import org.apache.solr.util.SpatialUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Throwables;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -66,6 +62,8 @@ import org.locationtech.spatial4j.io.SupportedFormats;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Abstract base class for Solr FieldTypes based on a Lucene 4 {@link SpatialStrategy}.
@@ -121,7 +119,23 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
 
-    if(ctx==null) { // subclass can set this directly
+    if (ctx==null) { // subclass can set this directly
+      final String CTX_PARAM = "spatialContextFactory";
+      final String OLD_SPATIAL4J_PREFIX = "com.spatial4j.core";
+      final String NEW_SPATIAL4J_PREFIX = "org.locationtech.spatial4j";
+      for (Map.Entry<String, String> argEntry : args.entrySet()) {
+        // "JTS" is a convenience alias
+        if (argEntry.getKey().equals(CTX_PARAM) && argEntry.getValue().equals("JTS")) {
+          argEntry.setValue("org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory");
+          continue;
+        }
+        // Warn about using old Spatial4j class names
+        if (argEntry.getValue().contains(OLD_SPATIAL4J_PREFIX)) {
+          log.warn("Replace '" + OLD_SPATIAL4J_PREFIX + "' with '" + NEW_SPATIAL4J_PREFIX + "' in your schema.");
+          argEntry.setValue(argEntry.getValue().replace(OLD_SPATIAL4J_PREFIX, NEW_SPATIAL4J_PREFIX));
+        }
+      }
+
       //Solr expects us to remove the parameters we've used.
       MapListener<String, String> argsWrap = new MapListener<>(args);
       ctx = SpatialContextFactory.makeSpatialContext(argsWrap, schema.getResourceLoader().getClassLoader());
@@ -140,24 +154,21 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     }
 
     final SupportedFormats fmts = ctx.getFormats();
-    final String format = args.remove(FORMAT);
-    if (format != null) {
-      shapeWriter = fmts.getWriter(format);
-      shapeReader = fmts.getReader(format);
-      if(shapeWriter==null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unknown Shape Format: "+ format);
-      }
-      if(shapeReader==null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unknown Shape Format: "+ format);
-      }
+    String format = args.remove(FORMAT);
+    if (format == null) {
+      format = "WKT";
     }
-    else {
-      // Otherwise, pick the first supported reader/writer
-      shapeWriter = fmts.getWriters().get(0);
-      shapeReader = fmts.getReaders().get(0);
+    shapeWriter = fmts.getWriter(format);
+    shapeReader = fmts.getReader(format);
+    if(shapeWriter==null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unknown Shape Format: "+ format);
     }
+    if(shapeReader==null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unknown Shape Format: "+ format);
+    }
+
     argsParser = newSpatialArgsParser();
   }
 
@@ -233,23 +244,29 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
 
   /** Create a {@link Shape} from the input string */
   public Shape parseShape(String str) {
+    str = str.trim();
     if (str.length() == 0)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "empty string shape");
 
-    Shape shape = null;
-    if(shapeReader!=null) {
-      shape = shapeReader.readIfSupported(str);
+    // If the first char is promising, try to parse with SpatialUtils.parsePoint
+    char firstChar = str.charAt(0);
+    if (firstChar == '+' || firstChar == '-' || (firstChar >= '0' && firstChar <= '9')) {
+      try {
+        return SpatialUtils.parsePoint(str, ctx);
+      } catch (Exception e) {//ignore
+      }
     }
 
-    if(shape==null) {
-      // Try all supported formats
-      shape = ctx.getFormats().read(str);
+    try {
+      return shapeReader.read(str);
+    } catch (Exception e) {
+      String msg = "Unable to parse shape given formats" +
+          " \"lat,lon\", \"x y\" or as " + shapeReader.getFormatName() + " because " + e;
+      if (!msg.contains(str)) {
+        msg += " input: " + str;
+      }
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg, e);
     }
-
-    if(shape==null) {
-       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse shape from: "+str);
-    }
-    return shape;
   }
 
   /**
@@ -258,11 +275,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
    * The format can be selected using the initParam <code>format={WKT|GeoJSON}</code>
    */
   public String shapeToString(Shape shape) {
-    if(shapeWriter!=null) {
-      return shapeWriter.toString(shape);
-    }
-    // This will only happen if the context does not have any writers
-    throw new SolrException(ErrorCode.SERVER_ERROR, "ShapeWriter not configured");
+    return shapeWriter.toString(shape);
   }
 
   /** Called from {@link #getStrategy(String)} upon first use by fieldName. } */

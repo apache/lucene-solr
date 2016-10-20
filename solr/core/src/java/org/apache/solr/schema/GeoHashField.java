@@ -18,23 +18,23 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.locationtech.spatial4j.io.GeohashUtils;
-import org.locationtech.spatial4j.shape.Point;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SpatialOptions;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.search.function.distance.GeohashHaversineFunction;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.apache.solr.util.SpatialUtils;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.io.GeohashUtils;
+import org.locationtech.spatial4j.shape.Point;
 
 /**
  * This is a class that represents a <a

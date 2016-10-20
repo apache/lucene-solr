@@ -46,9 +46,6 @@ import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
  * see {@link org.apache.lucene.spatial.geopoint.search.GeoPointInBBoxQuery}, {@link org.apache.lucene.spatial.geopoint.search.GeoPointInPolygonQuery},
  * or {@link org.apache.lucene.spatial.geopoint.search.GeoPointDistanceQuery}
  *
- * NOTE: This indexes only high precision encoded terms which may result in visiting a high number
- * of terms for large queries. See LUCENE-6481 for a future improvement.
- *
  * @lucene.experimental
  */
 public final class GeoPointField extends Field {
@@ -69,80 +66,30 @@ public final class GeoPointField extends Field {
   private static final int BUF_SIZE_LONG = 28/8 + 1;
 
   /**
-   * <b>Expert:</b> Optional flag to select term encoding for GeoPointField types
-   */
-  public enum TermEncoding {
-    /**
-     * encodes prefix terms only resulting in a small index and faster queries - use with
-     * {@code GeoPointTokenStream}
-     */
-    PREFIX,
-    /**
-     * @deprecated encodes prefix and full resolution terms - use with
-     * {@link org.apache.lucene.analysis.LegacyNumericTokenStream}
-     */
-    @Deprecated
-    NUMERIC
-  }
-
-  /**
-   * @deprecated Type for a GeoPointField that is not stored:
-   * normalization factors, frequencies, and positions are omitted.
-   */
-  @Deprecated
-  public static final FieldType NUMERIC_TYPE_NOT_STORED = new FieldType();
-  static {
-    NUMERIC_TYPE_NOT_STORED.setTokenized(false);
-    NUMERIC_TYPE_NOT_STORED.setOmitNorms(true);
-    NUMERIC_TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS);
-    NUMERIC_TYPE_NOT_STORED.setDocValuesType(DocValuesType.SORTED_NUMERIC);
-    NUMERIC_TYPE_NOT_STORED.setNumericType(FieldType.LegacyNumericType.LONG);
-    NUMERIC_TYPE_NOT_STORED.setNumericPrecisionStep(PRECISION_STEP);
-    NUMERIC_TYPE_NOT_STORED.freeze();
-  }
-
-  /**
-   * @deprecated Type for a stored GeoPointField:
-   * normalization factors, frequencies, and positions are omitted.
-   */
-  @Deprecated
-  public static final FieldType NUMERIC_TYPE_STORED = new FieldType();
-  static {
-    NUMERIC_TYPE_STORED.setTokenized(false);
-    NUMERIC_TYPE_STORED.setOmitNorms(true);
-    NUMERIC_TYPE_STORED.setIndexOptions(IndexOptions.DOCS);
-    NUMERIC_TYPE_STORED.setDocValuesType(DocValuesType.SORTED_NUMERIC);
-    NUMERIC_TYPE_STORED.setNumericType(FieldType.LegacyNumericType.LONG);
-    NUMERIC_TYPE_STORED.setNumericPrecisionStep(PRECISION_STEP);
-    NUMERIC_TYPE_STORED.setStored(true);
-    NUMERIC_TYPE_STORED.freeze();
-  }
-
-  /**
    * Type for a GeoPointField that is not stored:
    * normalization factors, frequencies, and positions are omitted.
    */
-  public static final FieldType PREFIX_TYPE_NOT_STORED = new FieldType();
+  public static final FieldType TYPE_NOT_STORED = new FieldType();
   static {
-    PREFIX_TYPE_NOT_STORED.setTokenized(false);
-    PREFIX_TYPE_NOT_STORED.setOmitNorms(true);
-    PREFIX_TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS);
-    PREFIX_TYPE_NOT_STORED.setDocValuesType(DocValuesType.SORTED_NUMERIC);
-    PREFIX_TYPE_NOT_STORED.freeze();
+    TYPE_NOT_STORED.setTokenized(false);
+    TYPE_NOT_STORED.setOmitNorms(true);
+    TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS);
+    TYPE_NOT_STORED.setDocValuesType(DocValuesType.SORTED_NUMERIC);
+    TYPE_NOT_STORED.freeze();
   }
 
   /**
    * Type for a stored GeoPointField:
    * normalization factors, frequencies, and positions are omitted.
    */
-  public static final FieldType PREFIX_TYPE_STORED = new FieldType();
+  public static final FieldType TYPE_STORED = new FieldType();
   static {
-    PREFIX_TYPE_STORED.setTokenized(false);
-    PREFIX_TYPE_STORED.setOmitNorms(true);
-    PREFIX_TYPE_STORED.setIndexOptions(IndexOptions.DOCS);
-    PREFIX_TYPE_STORED.setDocValuesType(DocValuesType.SORTED_NUMERIC);
-    PREFIX_TYPE_STORED.setStored(true);
-    PREFIX_TYPE_STORED.freeze();
+    TYPE_STORED.setTokenized(false);
+    TYPE_STORED.setOmitNorms(true);
+    TYPE_STORED.setIndexOptions(IndexOptions.DOCS);
+    TYPE_STORED.setDocValuesType(DocValuesType.SORTED_NUMERIC);
+    TYPE_STORED.setStored(true);
+    TYPE_STORED.freeze();
   }
 
   /** Creates a stored or un-stored GeoPointField
@@ -156,28 +103,13 @@ public final class GeoPointField extends Field {
     this(name, latitude, longitude, getFieldType(stored));
   }
 
-  /** Creates a stored or un-stored GeoPointField using the specified {@link TermEncoding} method
-   *  @param name field name
-   *  @param latitude latitude double value [-90.0 : 90.0]
-   *  @param longitude longitude double value [-180.0 : 180.0]
-   *  @param termEncoding encoding type to use ({@link TermEncoding#NUMERIC} Terms, or {@link TermEncoding#PREFIX} only Terms)
-   *  @param stored Store.YES if the content should also be stored
-   *  @throws IllegalArgumentException if the field name is null.
-   */
-  @Deprecated
-  public GeoPointField(String name, double latitude, double longitude, TermEncoding termEncoding, Store stored) {
-    this(name, latitude, longitude, getFieldType(termEncoding, stored));
-  }
-
   /** Expert: allows you to customize the {@link
    *  FieldType}.
    *  @param name field name
    *  @param latitude latitude double value [-90.0 : 90.0]
    *  @param longitude longitude double value [-180.0 : 180.0]
-   *  @param type customized field type: must have {@link FieldType#numericType()}
-   *         of {@link org.apache.lucene.document.FieldType.LegacyNumericType#LONG}.
-   *  @throws IllegalArgumentException if the field name or type is null, or
-   *          if the field type does not have a LONG numericType()
+   *  @param type customized field type
+   *  @throws IllegalArgumentException if the field name or type is null
    */
   public GeoPointField(String name, double latitude, double longitude, FieldType type) {
     super(name, type);
@@ -193,12 +125,6 @@ public final class GeoPointField extends Field {
       if (type.docValuesType() != DocValuesType.SORTED_NUMERIC) {
         throw new IllegalArgumentException("type.docValuesType() must be SORTED_NUMERIC but got " + type.docValuesType());
       }
-      if (type.numericType() != null) {
-        // make sure numericType is a LONG
-        if (type.numericType() != FieldType.LegacyNumericType.LONG) {
-          throw new IllegalArgumentException("type.numericType() must be LONG but got " + type.numericType());
-        }
-      }
     } else {
       throw new IllegalArgumentException("type.indexOptions() must be one of NONE or DOCS but got " + type.indexOptions());
     }
@@ -207,20 +133,14 @@ public final class GeoPointField extends Field {
     fieldsData = encodeLatLon(latitude, longitude);
   }
 
-  private static FieldType getFieldType(Store stored) {
-    return getFieldType(TermEncoding.PREFIX, stored);
-  }
-
   /**
-   * @deprecated
    * Static helper method for returning a valid FieldType based on termEncoding and stored options
    */
-  @Deprecated
-  private static FieldType getFieldType(TermEncoding termEncoding, Store stored) {
+  private static FieldType getFieldType(Store stored) {
     if (stored == Store.YES) {
-      return termEncoding == TermEncoding.PREFIX ? PREFIX_TYPE_STORED : NUMERIC_TYPE_STORED;
+      return TYPE_STORED;
     } else if (stored == Store.NO) {
-      return termEncoding == TermEncoding.PREFIX ? PREFIX_TYPE_NOT_STORED : NUMERIC_TYPE_NOT_STORED;
+      return TYPE_NOT_STORED;
     } else {
       throw new IllegalArgumentException("stored option must be NO or YES but got " + stored);
     }
@@ -231,12 +151,6 @@ public final class GeoPointField extends Field {
     if (fieldType().indexOptions() == IndexOptions.NONE) {
       // not indexed
       return null;
-    }
-
-    // if numericType is set
-    if (type.numericType() != null) {
-      // return numeric encoding
-      return super.tokenStream(analyzer, reuse);
     }
 
     if (reuse instanceof GeoPointTokenStream == false) {

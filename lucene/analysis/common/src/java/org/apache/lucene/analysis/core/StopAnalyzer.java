@@ -17,17 +17,18 @@
 package org.apache.lucene.analysis.core;
 
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
 
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.StopwordAnalyzerBase;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
-import org.apache.lucene.analysis.util.WordlistLoader;
+import org.apache.lucene.analysis.WordlistLoader;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 
 /** 
  * Filters {@link LetterTokenizer} with {@link LowerCaseFilter} and {@link StopFilter}.
@@ -36,19 +37,7 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
   
   /** An unmodifiable set containing some common English words that are not usually useful
   for searching.*/
-  public static final CharArraySet ENGLISH_STOP_WORDS_SET;
-  
-  static {
-    final List<String> stopWords = Arrays.asList(
-      "a", "an", "and", "are", "as", "at", "be", "but", "by",
-      "for", "if", "in", "into", "is", "it",
-      "no", "not", "of", "on", "or", "such",
-      "that", "the", "their", "then", "there", "these",
-      "they", "this", "to", "was", "will", "with"
-    );
-    final CharArraySet stopSet = new CharArraySet(stopWords, false);
-    ENGLISH_STOP_WORDS_SET = CharArraySet.unmodifiableSet(stopSet); 
-  }
+  public static final CharArraySet ENGLISH_STOP_WORDS_SET = StandardAnalyzer.ENGLISH_STOP_WORDS_SET;
   
   /** Builds an analyzer which removes words in
    *  {@link #ENGLISH_STOP_WORDS_SET}.
@@ -90,6 +79,11 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new LowerCaseTokenizer();
     return new TokenStreamComponents(source, new StopFilter(source, stopwords));
+  }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    return new LowerCaseFilter(in);
   }
 }
 

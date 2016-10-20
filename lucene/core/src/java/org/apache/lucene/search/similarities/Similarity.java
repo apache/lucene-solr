@@ -19,7 +19,6 @@ package org.apache.lucene.search.similarities;
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -78,16 +77,12 @@ import java.util.Collections;
  * <a name="querytime">Query time</a>
  * At query-time, Queries interact with the Similarity via these steps:
  * <ol>
- *   <li>The {@link #computeWeight(CollectionStatistics, TermStatistics...)} method is called a single time,
+ *   <li>The {@link #computeWeight(float, CollectionStatistics, TermStatistics...)} method is called a single time,
  *       allowing the implementation to compute any statistics (such as IDF, average document length, etc)
  *       across <i>the entire collection</i>. The {@link TermStatistics} and {@link CollectionStatistics} passed in 
  *       already contain all of the raw statistics involved, so a Similarity can freely use any combination
  *       of statistics without causing any additional I/O. Lucene makes no assumption about what is 
  *       stored in the returned {@link Similarity.SimWeight} object.
- *   <li>The query normalization process occurs a single time: {@link Similarity.SimWeight#getValueForNormalization()}
- *       is called for each query leaf node, {@link Similarity#queryNorm(float)} is called for the top-level
- *       query, and finally {@link Similarity.SimWeight#normalize(float, float)} passes down the normalization value
- *       and any top-level boosts (e.g. from enclosing {@link BooleanQuery}s).
  *   <li>For each segment in the index, the Query creates a {@link #simScorer(SimWeight, org.apache.lucene.index.LeafReaderContext)}
  *       The score() method is called for each matching document.
  * </ol>
@@ -109,37 +104,6 @@ public abstract class Similarity {
    */
   public Similarity() {}
   
-  /** Hook to integrate coordinate-level matching.
-   * <p>
-   * By default this is disabled (returns <code>1</code>), as with
-   * most modern models this will only skew performance, but some
-   * implementations such as {@link TFIDFSimilarity} override this.
-   *
-   * @param overlap the number of query terms matched in the document
-   * @param maxOverlap the total number of terms in the query
-   * @return a score factor based on term overlap with the query
-   */
-  public float coord(int overlap, int maxOverlap) {
-    return 1f;
-  }
-  
-  /** Computes the normalization value for a query given the sum of the
-   * normalized weights {@link SimWeight#getValueForNormalization()} of 
-   * each of the query terms.  This value is passed back to the 
-   * weight ({@link SimWeight#normalize(float, float)} of each query 
-   * term, to provide a hook to attempt to make scores from different
-   * queries comparable.
-   * <p>
-   * By default this is disabled (returns <code>1</code>), but some
-   * implementations such as {@link TFIDFSimilarity} override this.
-   * 
-   * @param valueForNormalization the sum of the term normalization values
-   * @return a normalization factor for query weights
-   */
-  public float queryNorm(float valueForNormalization) {
-    return 1f;
-  }
-  
   /**
    * Computes the normalization value for a field, given the accumulated
    * state of term processing for this field (see {@link FieldInvertState}).
@@ -158,15 +122,17 @@ public abstract class Similarity {
   /**
    * Compute any collection-level weight (e.g. IDF, average document length, etc) needed for scoring a query.
    *
+   * @param boost a multiplicative factor to apply to the produces scores
    * @param collectionStats collection-level statistics, such as the number of tokens in the collection.
    * @param termStats term-level statistics, such as the document frequency of a term across the collection.
    * @return SimWeight object with the information this Similarity needs to score a query.
    */
-  public abstract SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats);
+  public abstract SimWeight computeWeight(float boost,
+      CollectionStatistics collectionStats, TermStatistics... termStats);
 
   /**
    * Creates a new {@link Similarity.SimScorer} to score matching documents from a segment of the inverted index.
-   * @param weight collection information from {@link #computeWeight(CollectionStatistics, TermStatistics...)}
+   * @param weight collection information from {@link #computeWeight(float, CollectionStatistics, TermStatistics...)}
    * @param context segment of the inverted index to be scored.
    * @return SloppySimScorer for scoring documents across <code>context</code>
    * @throws IOException if there is a low-level I/O error
@@ -195,7 +161,7 @@ public abstract class Similarity {
      * @param freq sloppy term frequency
      * @return document's score
      */
-    public abstract float score(int doc, float freq);
+    public abstract float score(int doc, float freq) throws IOException;
 
     /** Computes the amount of a sloppy phrase match, based on an edit distance. */
     public abstract float computeSlopFactor(int distance);
@@ -209,7 +175,7 @@ public abstract class Similarity {
      * @param freq Explanation of how the sloppy term frequency was computed
      * @return document's score
      */
-    public Explanation explain(int doc, Explanation freq) {
+    public Explanation explain(int doc, Explanation freq) throws IOException {
       return Explanation.match(
           score(doc, freq.getValue()),
           "score(doc=" + doc + ",freq=" + freq.getValue() +"), with freq of:",
@@ -229,24 +195,6 @@ public abstract class Similarity {
      * constructors, typically implicit.)
      */
     public SimWeight() {}
-    
-    /** The value for normalization of contained query clauses (e.g. sum of squared weights).
-     * <p>
-     * NOTE: a Similarity implementation might not use any query normalization at all,
-     * it's not required. However, if it wants to participate in query normalization,
-     * it can return a value here.
-     */
-    public abstract float getValueForNormalization();
-    
-    /** Assigns the query normalization factor and boost from parent queries to this.
-     * <p>
-     * NOTE: a Similarity implementation might not use this normalized value at all,
-     * it's not required. However, it's usually a good idea to at least incorporate 
-     * the boost into its score.
-     * <p>
-     * NOTE: If this method is called several times, it behaves as if only the
-     * last call was performed.
-     */
-    public abstract void normalize(float queryNorm, float boost);
+
   }
 }

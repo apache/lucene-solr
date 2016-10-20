@@ -19,33 +19,32 @@
 <!-- Test schema file for CollationField -->
 
 <schema name="test" version="1.0">
-  <types>
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
-    <!-- basic text field -->
-    <fieldType name="text" class="solr.TextField">
-      <analyzer>
-        <tokenizer class="solr.StandardTokenizerFactory"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
-      </analyzer>
-    </fieldType>
-    
-    <fieldType name="sort_ar_t"       class="solr.ICUCollationField" locale="ar"/>
-    <fieldType name="sort_de_t"       class="solr.ICUCollationField" locale="de" strength="primary"/>
-    <fieldType name="sort_tr_canon_t" class="solr.ICUCollationField" locale="tr" strength="primary"   decomposition="canonical"/>
-    <fieldType name="sort_da_t"       class="solr.ICUCollationField" locale="da" strength="primary"/>
-    <fieldType name="sort_custom_t"   class="solr.ICUCollationField" custom="customrules.dat" strength="primary"/>
-  </types>
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
-  <fields>
-    <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="text" type="text" indexed="true" stored="false"/>
-    <field name="sort_ar"       type="sort_ar_t"       indexed="true" stored="false" multiValued="false"/>
-    <field name="sort_de"       type="sort_de_t"       indexed="true" stored="false" multiValued="false"/>
-    <field name="sort_tr_canon" type="sort_tr_canon_t" indexed="true" stored="false" multiValued="false"/>
-    <field name="sort_da"       type="sort_da_t"       indexed="true" stored="false" multiValued="false"/>
-    <field name="sort_custom"   type="sort_custom_t"   indexed="true" stored="false" multiValued="false"/>
-  </fields>
+  <!-- basic text field -->
+  <fieldType name="text" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
+  <fieldType name="sort_ar_t" class="solr.ICUCollationField" locale="ar"/>
+  <fieldType name="sort_de_t" class="solr.ICUCollationField" locale="de" strength="primary"/>
+  <fieldType name="sort_tr_canon_t" class="solr.ICUCollationField" locale="tr" strength="primary"
+             decomposition="canonical"/>
+  <fieldType name="sort_da_t" class="solr.ICUCollationField" locale="da" strength="primary"/>
+  <fieldType name="sort_custom_t" class="solr.ICUCollationField" custom="customrules.dat" strength="primary"/>
+
+  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="text" type="text" indexed="true" stored="false"/>
+  <field name="sort_ar" type="sort_ar_t" indexed="true" stored="false" multiValued="false"/>
+  <field name="sort_de" type="sort_de_t" indexed="true" stored="false" multiValued="false"/>
+  <field name="sort_tr_canon" type="sort_tr_canon_t" indexed="true" stored="false" multiValued="false"/>
+  <field name="sort_da" type="sort_da_t" indexed="true" stored="false" multiValued="false"/>
+  <field name="sort_custom" type="sort_custom_t" indexed="true" stored="false" multiValued="false"/>
+
 
   <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>

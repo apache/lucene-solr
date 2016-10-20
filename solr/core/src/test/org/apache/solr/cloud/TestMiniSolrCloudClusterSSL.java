@@ -16,44 +16,36 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
-
-import java.util.Collections;
-import java.util.List;
-import java.io.File;
-import java.io.IOException;
-
 import javax.net.ssl.SSLContext;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
-import org.apache.solr.util.SSLTestConfig;
-
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpHead;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.config.Registry;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-
 import org.apache.lucene.util.Constants;
-
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
 import org.junit.Before;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -175,9 +167,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   public static void checkClusterWithCollectionCreations(final MiniSolrCloudCluster cluster,
                                                          final SSLTestConfig sslConfig) throws Exception {
 
-    cluster.uploadConfigDir(new File(SolrTestCaseJ4.TEST_HOME() + File.separator +
-                                     "collection1" + File.separator + "conf"),
-                            CONF_NAME);
+    cluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), CONF_NAME);
     
     checkCreateCollection(cluster, "first_collection");
     
@@ -204,11 +194,10 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
    */
   private static void checkCreateCollection(final MiniSolrCloudCluster cluster,
                                             final String collection) throws Exception {
-    assertNotNull(cluster.createCollection(collection,
-                                           /* 1 shard/replica per server */ NUM_SERVERS, 1,
-                                           CONF_NAME, null, null,
-                                           Collections.singletonMap("config","solrconfig-tlog.xml")));
     final CloudSolrClient cloudClient = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(collection, CONF_NAME, NUM_SERVERS, 1)
+        .withProperty("config", "solrconfig-tlog.xml")
+        .process(cloudClient);
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, zkStateReader, true, true, 330);
     assertEquals("sanity query", 0, cloudClient.query(collection, params("q","*:*")).getStatus());
@@ -241,7 +230,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       }
       
       // sanity check the HttpClient used under the hood by our the cluster's CloudSolrClient
-      // ensure it has the neccessary protocols/credentials for each jetty server
+      // ensure it has the necessary protocols/credentials for each jetty server
       //
       // NOTE: we're not responsible for closing the cloud client
       final HttpClient cloudClient = cluster.getSolrClient().getLbClient().getHttpClient();
@@ -265,7 +254,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
         // verify simple HTTP(S) client can't do HEAD request for URL with wrong protocol
         try (CloseableHttpClient client = getSslAwareClientWithNoClientCerts()) {
           final String wrongUrl = wrongBaseURL + "/admin/cores";
-          // vastly diff exception details betwen plain http vs https, not worried about details here
+          // vastly diff exception details between plain http vs https, not worried about details here
           expectThrows(IOException.class, () -> {
               doHeadRequest(client, wrongUrl);
             });
@@ -335,7 +324,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
    */
   public static HttpSolrClient getRandomizedHttpSolrClient(String url) {
     // NOTE: at the moment, SolrTestCaseJ4 already returns "new HttpSolrClient" most of the time,
-    // so this method may seem redundent -- but the point here is to sanity check 2 things:
+    // so this method may seem redundant -- but the point here is to sanity check 2 things:
     // 1) a direct test that "new HttpSolrClient" works given the current JVM/sysprop defaults
     // 2) a sanity check that whatever getHttpSolrClient(String) returns will work regardless of
     //    current test configuration.

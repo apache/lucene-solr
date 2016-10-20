@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.util.Arrays;
 
 import org.apache.lucene.index.Term;
+import org.junit.Test;
 
 /**
  * TestExplanations subclass focusing on basic query types
@@ -385,21 +386,18 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   }
   public void testBQ14() throws Exception {
     BooleanQuery.Builder q = new BooleanQuery.Builder();
-    q.setDisableCoord(true);
     q.add(new TermQuery(new Term(FIELD, "QQQQQ")), BooleanClause.Occur.SHOULD);
     q.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
     qtest(q.build(), new int[] { 0,1,2,3 });
   }
   public void testBQ15() throws Exception {
     BooleanQuery.Builder q = new BooleanQuery.Builder();
-    q.setDisableCoord(true);
     q.add(new TermQuery(new Term(FIELD, "QQQQQ")), BooleanClause.Occur.MUST_NOT);
     q.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
     qtest(q.build(), new int[] { 0,1,2,3 });
   }
   public void testBQ16() throws Exception {
     BooleanQuery.Builder q = new BooleanQuery.Builder();
-    q.setDisableCoord(true);
     q.add(new TermQuery(new Term(FIELD, "QQQQQ")), BooleanClause.Occur.SHOULD);
 
     BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
@@ -411,7 +409,6 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   }
   public void testBQ17() throws Exception {
     BooleanQuery.Builder q = new BooleanQuery.Builder();
-    q.setDisableCoord(true);
     q.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.SHOULD);
 
     BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
@@ -439,6 +436,15 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     q.add(new TermQuery(new Term(FIELD, "w4")), BooleanClause.Occur.SHOULD);
     
     qtest(q.build(), new int[] { 0,3 });
+    
+  }
+  
+  public void testBQ21() throws Exception {
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
+    q.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
+    q.add(new TermQuery(new Term(FIELD, "zz")), BooleanClause.Occur.SHOULD);
+    
+    qtest(q.build(), new int[] { 1,2,3 });
     
   }
 
@@ -694,6 +700,34 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   public void testSynonymQuery() throws Exception {
     SynonymQuery query = new SynonymQuery(new Term(FIELD, "w1"), new Term(FIELD, "w2"));
     qtest(query, new int[] { 0,1,2,3 });
+  }
+
+  @Test
+  public void testEquality() {
+
+    Explanation e1 = Explanation.match(1f, "an explanation");
+    Explanation e2 = Explanation.match(1f, "an explanation", Explanation.match(1f, "a subexplanation"));
+    Explanation e25 = Explanation.match(1f, "an explanation",
+        Explanation.match(1f, "a subexplanation", Explanation.match(1f, "a subsubexplanation")));
+    Explanation e3 = Explanation.match(1f, "an explanation");
+    Explanation e4 = Explanation.match(2f, "an explanation");
+    Explanation e5 = Explanation.noMatch("an explanation");
+    Explanation e6 = Explanation.noMatch("an explanation", Explanation.match(1f, "a subexplanation"));
+    Explanation e7 = Explanation.noMatch("an explanation");
+    Explanation e8 = Explanation.match(1f, "another explanation");
+
+    assertEquals(e1, e3);
+    assertFalse(e1.equals(e2));
+    assertFalse(e2.equals(e25));
+    assertFalse(e1.equals(e4));
+    assertFalse(e1.equals(e5));
+    assertEquals(e5, e7);
+    assertFalse(e5.equals(e6));
+    assertFalse(e1.equals(e8));
+
+    assertEquals(e1.hashCode(), e3.hashCode());
+    assertEquals(e5.hashCode(), e7.hashCode());
+
   }
 
 }

@@ -55,35 +55,23 @@ public class FunctionQuery extends Query {
 
   protected class FunctionWeight extends Weight {
     protected final IndexSearcher searcher;
-    protected float queryNorm, boost, queryWeight;
+    protected final float boost;
     protected final Map context;
 
-    public FunctionWeight(IndexSearcher searcher) throws IOException {
+    public FunctionWeight(IndexSearcher searcher, float boost) throws IOException {
       super(FunctionQuery.this);
       this.searcher = searcher;
       this.context = ValueSource.newContext(searcher);
       func.createWeight(context, searcher);
-      normalize(1f, 1f);;
+      this.boost = boost;
     }
 
     @Override
     public void extractTerms(Set<Term> terms) {}
 
     @Override
-    public float getValueForNormalization() throws IOException {
-      return queryWeight * queryWeight;
-    }
-
-    @Override
-    public void normalize(float norm, float boost) {
-      this.queryNorm = norm;
-      this.boost = boost;
-      this.queryWeight = norm * boost;
-    }
-
-    @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      return new AllScorer(context, this, queryWeight);
+      return new AllScorer(context, this, boost);
     }
 
     @Override
@@ -96,14 +84,14 @@ public class FunctionQuery extends Query {
     final IndexReader reader;
     final FunctionWeight weight;
     final int maxDoc;
-    final float qWeight;
+    final float boost;
     final DocIdSetIterator iterator;
     final FunctionValues vals;
 
-    public AllScorer(LeafReaderContext context, FunctionWeight w, float qWeight) throws IOException {
+    public AllScorer(LeafReaderContext context, FunctionWeight w, float boost) throws IOException {
       super(w);
       this.weight = w;
-      this.qWeight = qWeight;
+      this.boost = boost;
       this.reader = context.reader();
       this.maxDoc = reader.maxDoc();
       iterator = DocIdSetIterator.all(context.reader().maxDoc());
@@ -122,7 +110,7 @@ public class FunctionQuery extends Query {
 
     @Override
     public float score() throws IOException {
-      float score = qWeight * vals.floatVal(docID());
+      float score = boost * vals.floatVal(docID());
 
       // Current Lucene priority queues can't handle NaN and -Infinity, so
       // map to -Float.MAX_VALUE. This conditional handles both -infinity
@@ -136,20 +124,19 @@ public class FunctionQuery extends Query {
     }
 
     public Explanation explain(int doc) throws IOException {
-      float sc = qWeight * vals.floatVal(doc);
+      float sc = boost * vals.floatVal(doc);
 
       return Explanation.match(sc, "FunctionQuery(" + func + "), product of:",
           vals.explain(doc),
-          Explanation.match(weight.boost, "boost"),
-          Explanation.match(weight.queryNorm, "queryNorm"));
+          Explanation.match(weight.boost, "boost"));
     }
 
   }
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new FunctionQuery.FunctionWeight(searcher);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new FunctionQuery.FunctionWeight(searcher, boost);
   }
 
 
@@ -163,15 +150,13 @@ public class FunctionQuery extends Query {
 
   /** Returns true if <code>o</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (!FunctionQuery.class.isInstance(o)) return false;
-    FunctionQuery other = (FunctionQuery)o;
-    return super.equals(o)
-            && this.func.equals(other.func);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           func.equals(((FunctionQuery) other).func);
   }
 
   @Override
   public int hashCode() {
-    return super.hashCode() ^ func.hashCode();
+    return classHash() ^ func.hashCode();
   }
 }

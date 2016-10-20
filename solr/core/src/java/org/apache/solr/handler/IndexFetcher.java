@@ -305,6 +305,9 @@ public class IndexFetcher {
       long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
       long latestGeneration = (Long) response.get(GENERATION);
 
+      LOG.info("Master's generation: " + latestGeneration);
+      LOG.info("Master's version: " + latestVersion);
+
       // TODO: make sure that getLatestCommit only returns commit points for the main index (i.e. no side-car indexes)
       IndexCommit commit = solrCore.getDeletionPolicy().getLatestCommit();
       if (commit == null) {
@@ -323,6 +326,7 @@ public class IndexFetcher {
         }
       }
 
+      LOG.info("Slave's generation: " + commit.getGeneration());
 
       if (latestVersion == 0L) {
         if (forceReplication && commit.getGeneration() != 0) {
@@ -350,8 +354,6 @@ public class IndexFetcher {
         successfulInstall = true;
         return true;
       }
-      LOG.info("Master's generation: " + latestGeneration);
-      LOG.info("Slave's generation: " + commit.getGeneration());
       LOG.info("Starting replication process");
       // get the list of files first
       fetchFileList(latestGeneration);
@@ -431,11 +433,15 @@ public class IndexFetcher {
           } finally {
             writer.decref();
           }
-          solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
         }
         boolean reloadCore = false;
 
         try {
+          // we have to be careful and do this after we know isFullCopyNeeded won't be flipped
+          if (!isFullCopyNeeded) {
+            solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
+          }
+
           LOG.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
           successfulInstall = false;
 
@@ -468,9 +474,9 @@ public class IndexFetcher {
                 // let the system know we are changing dir's and the old one
                 // may be closed
                 if (indexDir != null) {
-                  LOG.info("removing old index directory " + indexDir);
                   solrCore.getDirectoryFactory().doneWithDirectory(indexDir);
-                  solrCore.getDirectoryFactory().remove(indexDir);
+                  // Cleanup all index files not associated with any *named* snapshot.
+                  solrCore.deleteNonSnapshotIndexFiles(indexDirPath);
                 }
               }
 
@@ -565,7 +571,10 @@ public class IndexFetcher {
         }
       }
 
-      core.getUpdateHandler().getSolrCoreState().setLastReplicateIndexSuccess(successfulInstall);
+      if (core.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+        // we only track replication success in SolrCloud mode
+        core.getUpdateHandler().getSolrCoreState().setLastReplicateIndexSuccess(successfulInstall);
+      }
 
       filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = tlogFilesToDownload = tlogFilesDownloaded = null;
       markReplicationStop();
@@ -735,14 +744,14 @@ public class IndexFetcher {
   }
 
   private void openNewSearcherAndUpdateCommitPoint() throws IOException {
-    SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
-        new ModifiableSolrParams());
-
     RefCounted<SolrIndexSearcher> searcher = null;
     IndexCommit commitPoint;
+    // must get the latest solrCore object because the one we have might be closed because of a reload
+    // todo stop keeping solrCore around
+    SolrCore core = solrCore.getCoreDescriptor().getCoreContainer().getCore(solrCore.getName());
     try {
       Future[] waitSearcher = new Future[1];
-      searcher = solrCore.getSearcher(true, true, waitSearcher, true);
+      searcher = core.getSearcher(true, true, waitSearcher, true);
       if (waitSearcher[0] != null) {
         try {
           waitSearcher[0].get();
@@ -752,10 +761,10 @@ public class IndexFetcher {
       }
       commitPoint = searcher.get().getIndexReader().getIndexCommit();
     } finally {
-      req.close();
       if (searcher != null) {
         searcher.decref();
       }
+      core.close();
     }
 
     // update the commit point in replication handler
@@ -765,18 +774,15 @@ public class IndexFetcher {
 
   private void reloadCore() {
     final CountDownLatch latch = new CountDownLatch(1);
-    new Thread() {
-      @Override
-      public void run() {
-        try {
-          solrCore.getCoreDescriptor().getCoreContainer().reload(solrCore.getName());
-        } catch (Exception e) {
-          LOG.error("Could not reload core ", e);
-        } finally {
-          latch.countDown();
-        }
+    new Thread(() -> {
+      try {
+        solrCore.getCoreDescriptor().getCoreContainer().reload(solrCore.getName());
+      } catch (Exception e) {
+        LOG.error("Could not reload core ", e);
+      } finally {
+        latch.countDown();
       }
-    }.start();
+    }).start();
     try {
       latch.await();
     } catch (InterruptedException e) {

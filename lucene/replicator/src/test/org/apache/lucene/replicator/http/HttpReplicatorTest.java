@@ -93,7 +93,7 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
   private void publishRevision(int id) throws IOException {
     Document doc = new Document();
     writer.addDocument(doc);
-    writer.setCommitData(Collections.singletonMap("ID", Integer.toString(id, 16)));
+    writer.setLiveCommitData(Collections.singletonMap("ID", Integer.toString(id, 16)).entrySet());
     writer.commit();
     serverReplicator.publish(new IndexRevision(writer));
   }

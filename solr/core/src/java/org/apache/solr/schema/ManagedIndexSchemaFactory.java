@@ -30,8 +30,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.CloseHook;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -154,6 +152,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
             byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
             schemaZkVersion = stat.getVersion();
             schemaInputStream = new ByteArrayInputStream(data);
+            loadedResource = managedSchemaPath;
             warnIfNonManagedSchemaExists();
           } catch (Exception e1) {
             if (e1 instanceof InterruptedException) {

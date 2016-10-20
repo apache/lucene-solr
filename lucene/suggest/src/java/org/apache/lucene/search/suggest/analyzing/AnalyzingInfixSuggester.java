@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -56,7 +55,6 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.SortingMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
@@ -232,7 +230,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     // This way all merged segments will be sorted at
     // merge time, allow for per-segment early termination
     // when those segments are searched:
-    iwc.setMergePolicy(new SortingMergePolicy(iwc.getMergePolicy(), SORT));
+    iwc.setIndexSort(SORT);
 
     return iwc;
   }
@@ -562,12 +560,18 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         }
         
         if (allMustNot) {
-          //all are MUST_NOT: add the contextQuery to the main query instead (not as sub-query)
+          // All are MUST_NOT: add the contextQuery to the main query instead (not as sub-query)
           for (BooleanClause clause : contextQuery.clauses()) {
             query.add(clause);
           }
+        } else if (allTermsRequired == false) {
+          // We must carefully upgrade the query clauses to MUST:
+          BooleanQuery.Builder newQuery = new BooleanQuery.Builder();
+          newQuery.add(query.build(), BooleanClause.Occur.MUST);
+          newQuery.add(contextQuery, BooleanClause.Occur.MUST);
+          query = newQuery;
         } else {
-          //Add contextQuery as sub-query
+          // Add contextQuery as sub-query
           query.add(contextQuery, BooleanClause.Occur.MUST);
         }
       }
@@ -579,17 +583,16 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
     Query finalQuery = finishQuery(query, allTermsRequired);
 
-    //System.out.println("finalQuery=" + query);
+    //System.out.println("finalQuery=" + finalQuery);
 
     // Sort by weight, descending:
     TopFieldCollector c = TopFieldCollector.create(SORT, num, true, false, false);
 
     // We sorted postings by weight during indexing, so we
     // only retrieve the first num hits now:
-    final SortingMergePolicy sortingMergePolicy = (SortingMergePolicy) writer.getConfig().getMergePolicy();
-    Collector c2 = new EarlyTerminatingSortingCollector(c, SORT, num, sortingMergePolicy.getSort());
-    IndexSearcher searcher = searcherMgr.acquire();
+    Collector c2 = new EarlyTerminatingSortingCollector(c, SORT, num);
     List<LookupResult> results = null;
+    IndexSearcher searcher = searcherMgr.acquire();
     try {
       //System.out.println("got searcher=" + searcher);
       searcher.search(finalQuery, c2);
@@ -623,22 +626,27 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
                                              boolean doHighlight, Set<String> matchedTokens, String prefixToken)
       throws IOException {
 
-    BinaryDocValues textDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), TEXT_FIELD_NAME);
-
-    // This will just be null if app didn't pass payloads to build():
-    // TODO: maybe just stored fields?  they compress...
-    BinaryDocValues payloadsDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), "payloads");
     List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     List<LookupResult> results = new ArrayList<>();
     for (int i=0;i<hits.scoreDocs.length;i++) {
       FieldDoc fd = (FieldDoc) hits.scoreDocs[i];
-      BytesRef term = textDV.get(fd.doc);
+      BinaryDocValues textDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), TEXT_FIELD_NAME);
+      textDV.advance(fd.doc);
+      BytesRef term = textDV.binaryValue();
       String text = term.utf8ToString();
       long score = (Long) fd.fields[0];
 
+      // This will just be null if app didn't pass payloads to build():
+      // TODO: maybe just stored fields?  they compress...
+      BinaryDocValues payloadsDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), "payloads");
+
       BytesRef payload;
       if (payloadsDV != null) {
-        payload = BytesRef.deepCopyOf(payloadsDV.get(fd.doc));
+        if (payloadsDV.advance(fd.doc) == fd.doc) {
+          payload = BytesRef.deepCopyOf(payloadsDV.binaryValue());
+        } else {
+          payload = new BytesRef(BytesRef.EMPTY_BYTES);
+        }
       } else {
         payload = null;
       }
@@ -649,11 +657,13 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       Set<BytesRef> contexts;
       if (contextsDV != null) {
         contexts = new HashSet<BytesRef>();
-        contextsDV.setDocument(fd.doc - leaves.get(segment).docBase);
-        long ord;
-        while ((ord = contextsDV.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-          BytesRef context = BytesRef.deepCopyOf(contextsDV.lookupOrd(ord));
-          contexts.add(context);
+        int targetDocID = fd.doc - leaves.get(segment).docBase;
+        if (contextsDV.advance(targetDocID) == targetDocID) {
+          long ord;
+          while ((ord = contextsDV.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+            BytesRef context = BytesRef.deepCopyOf(contextsDV.lookupOrd(ord));
+            contexts.add(context);
+          }
         }
       } else {
         contexts = null;

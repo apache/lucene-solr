@@ -322,8 +322,8 @@ public class GeoTestUtil {
     for(int i=0;i<gons;i++) {
       double angle = 360.0-i*(360.0/gons);
       //System.out.println("  angle " + angle);
-      double x = Math.cos(Math.toRadians(angle));
-      double y = Math.sin(Math.toRadians(angle));
+      double x = Math.cos(SloppyMath.toRadians(angle));
+      double y = Math.sin(SloppyMath.toRadians(angle));
       double factor = 2.0;
       double step = 1.0;
       int last = 0;
@@ -476,8 +476,8 @@ public class GeoTestUtil {
         }
         double len = radius * (1.0 - radiusDelta + radiusDelta * random().nextDouble());
         //System.out.println("    len=" + len);
-        double lat = centerLat + len * Math.cos(Math.toRadians(angle));
-        double lon = centerLon + len * Math.sin(Math.toRadians(angle));
+        double lat = centerLat + len * Math.cos(SloppyMath.toRadians(angle));
+        double lon = centerLon + len * Math.sin(SloppyMath.toRadians(angle));
         if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL) {
           // cannot cross dateline: try again!
           continue newPoly;

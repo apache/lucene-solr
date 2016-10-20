@@ -109,7 +109,7 @@ public class PercentileAgg extends SimpleAggValueSource {
       digests = new AVLTreeDigest[numSlots];
     }
 
-    public void collect(int doc, int slotNum) {
+    public void collect(int doc, int slotNum) throws IOException {
       if (!values.exists(doc)) return;
       double val = values.doubleVal(doc);
 
@@ -207,7 +207,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetField.SortDirection direction) {
+    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
       return Double.compare(getSortVal(), ((Merger) other).getSortVal());
     }
 

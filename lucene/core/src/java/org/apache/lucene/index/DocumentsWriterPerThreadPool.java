@@ -17,8 +17,6 @@
 package org.apache.lucene.index;
 
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.ThreadInterruptedException;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
@@ -60,6 +58,9 @@ final class DocumentsWriterPerThreadPool {
     // TODO this should really be part of DocumentsWriterFlushControl
     // write access guarded by DocumentsWriterFlushControl
     long bytesUsed = 0;
+
+    // set by DocumentsWriter after each indexing op finishes
+    volatile long lastSeqNo;
 
     ThreadState(DocumentsWriterPerThread dpwt) {
       this.dwpt = dpwt;
@@ -226,22 +227,8 @@ final class DocumentsWriterPerThreadPool {
     return threadStates.get(ord);
   }
 
+  // TODO: merge this with getActiveThreadStateCount: they are the same!
   synchronized int getMaxThreadStates() {
     return threadStates.size();
-  }
-
-  /**
-   * Returns the ThreadState with the minimum estimated number of threads
-   * waiting to acquire its lock or <code>null</code> if no {@link ThreadState}
-   * is yet visible to the calling thread.
-   */
-  ThreadState minContendedThreadState() {
-    ThreadState minThreadState = null;
-    for (ThreadState state : threadStates) {
-      if (minThreadState == null || state.getQueueLength() < minThreadState.getQueueLength()) {
-        minThreadState = state;
-      }
-    }
-    return minThreadState;
   }
 }

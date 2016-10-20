@@ -45,7 +45,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.cloud.ReplicaPropertiesBase.verifyUniqueAcrossCollection;
@@ -336,7 +335,7 @@ public class CollectionsAPISolrJTest extends AbstractFullDistribZkTestBase {
     while(! timeout.hasTimedOut()){
       Thread.sleep(10);
       changed = Objects.equals("false",
-          cloudClient.getZkStateReader().getClusterProps().get(ZkStateReader.LEGACY_CLOUD));
+          cloudClient.getZkStateReader().getClusterProperty(ZkStateReader.LEGACY_CLOUD, "none"));
       if(changed) break;
     }
     assertTrue("The Cluster property wasn't set", changed);
@@ -351,7 +350,7 @@ public class CollectionsAPISolrJTest extends AbstractFullDistribZkTestBase {
     changed = false;
     while(! timeout.hasTimedOut()) {
       Thread.sleep(10);
-      changed = (cloudClient.getZkStateReader().getClusterProps().get(ZkStateReader.LEGACY_CLOUD) == null);
+      changed = (cloudClient.getZkStateReader().getClusterProperty(ZkStateReader.LEGACY_CLOUD, (String) null) == null);
       if(changed)  
         break;
     }

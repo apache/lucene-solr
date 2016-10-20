@@ -19,10 +19,6 @@ package org.apache.lucene.classification;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.search.Query;
-
 /**
  * A classifier, see <code>http://en.wikipedia.org/wiki/Classifier_(mathematics)</code>, which assign classes of type
  * <code>T</code>

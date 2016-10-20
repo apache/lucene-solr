@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -40,6 +41,20 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-transformers.xml", "schema.xml");
+  }
+
+  public void testRequestTimeUrp(){
+    SolrCore core = h.getCore();
+    ModifiableSolrParams params = new ModifiableSolrParams()
+        .add("processor", "Template")
+        .add("Template.field", "id_t:${firstName}_${lastName}")
+        .add("Template.field", "another_t:${lastName}_${firstName}")
+        .add("Template.field", "missing_t:${lastName}_${unKnown}");
+    UpdateRequestProcessorChain chain = core.getUpdateProcessorChain(params);
+    List<UpdateRequestProcessorFactory> l = chain.getProcessors();
+    assertTrue(l.get(0) instanceof TemplateUpdateProcessorFactory);
+
+
   }
   
   public void testConfiguration() throws Exception 
@@ -77,7 +92,7 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
   public void testUpdateDistribChainSkipping() throws Exception {
 
     // a key part of this test is verifying that LogUpdateProcessor is found in all chains because it
-    // is a @RunAllways processor -- but in order for that to work, we have to sanity check that the log
+    // is a @RunAlways processor -- but in order for that to work, we have to sanity check that the log
     // level is at least "INFO" otherwise the factory won't even produce a processor and all our assertions
     // are for nought.  (see LogUpdateProcessorFactory.getInstance)
     //

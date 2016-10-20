@@ -60,29 +60,26 @@ final class GlobalOrdinalsQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new W(this, toQuery.createWeight(searcher, false));
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new W(this, toQuery.createWeight(searcher, false, 1f), boost);
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
 
-    GlobalOrdinalsQuery that = (GlobalOrdinalsQuery) o;
-
-    if (!fromQuery.equals(that.fromQuery)) return false;
-    if (!joinField.equals(that.joinField)) return false;
-    if (!toQuery.equals(that.toQuery)) return false;
-    if (!indexReader.equals(that.indexReader)) return false;
-
-    return true;
+  private boolean equalsTo(GlobalOrdinalsQuery other) {
+    return fromQuery.equals(other.fromQuery) &&
+           joinField.equals(other.joinField) &&
+           toQuery.equals(other.toQuery) &&
+           indexReader.equals(other.indexReader);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
+    int result = classHash();
     result = 31 * result + joinField.hashCode();
     result = 31 * result + toQuery.hashCode();
     result = 31 * result + fromQuery.hashCode();
@@ -101,8 +98,8 @@ final class GlobalOrdinalsQuery extends Query {
 
     private final Weight approximationWeight;
 
-    W(Query query, Weight approximationWeight) {
-      super(query);
+    W(Query query, Weight approximationWeight, float boost) {
+      super(query, boost);
       this.approximationWeight = approximationWeight;
     }
 
@@ -116,10 +113,10 @@ final class GlobalOrdinalsQuery extends Query {
         return Explanation.noMatch("Not a match");
       }
 
-      int segmentOrd = values.getOrd(doc);
-      if (segmentOrd == -1) {
+      if (values.advance(doc) != doc) {
         return Explanation.noMatch("Not a match");
       }
+      int segmentOrd = values.ordValue();
       BytesRef joinValue = values.lookupOrd(segmentOrd);
 
       int ord;
@@ -173,8 +170,12 @@ final class GlobalOrdinalsQuery extends Query {
 
         @Override
         public boolean matches() throws IOException {
-          final long segmentOrd = values.getOrd(approximation.docID());
-          if (segmentOrd != -1) {
+          int docID = approximation.docID();
+          if (docID > values.docID()) {
+            values.advance(docID);
+          }
+          if (docID == values.docID()) {
+            final long segmentOrd = values.ordValue();
             final long globalOrd = segmentOrdToGlobalOrdLookup.get(segmentOrd);
             if (foundOrds.get(globalOrd)) {
               return true;
@@ -207,9 +208,12 @@ final class GlobalOrdinalsQuery extends Query {
 
         @Override
         public boolean matches() throws IOException {
-          final long segmentOrd = values.getOrd(approximation.docID());
-          if (segmentOrd != -1) {
-            if (foundOrds.get(segmentOrd)) {
+          int docID = approximation.docID();
+          if (docID > values.docID()) {
+            values.advance(docID);
+          }
+          if (docID == values.docID()) {
+            if (foundOrds.get(values.ordValue())) {
               return true;
             }
           }

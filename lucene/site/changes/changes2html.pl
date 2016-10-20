@@ -117,10 +117,10 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
   }
 
   # Section heading: no leading whitespace, initial word capitalized,
-  #                  five words or less, and no trailing punctuation, 
+  #                  six words or less, and no trailing punctuation,
   #                  except colons - don't match the one otherwise matching
   #                  non-section-name by excluding "StandardTokenizer"
-  if (    /^(?!.*StandardTokenizer)([A-Z]\S*(?:\s+\S+){0,4})(?<![-.;!()])\s*$/
+  if (    /^(?!.*StandardTokenizer)([A-Z]\S*(?:\s+\S+){0,5})(?<![-.;!()])\s*$/
       and not $in_major_component_versions_section) {
     my $heading = $1;
     $heading =~ s/:$//; # Strip trailing colon, if any

@@ -1,40 +1,3 @@
-package org.apache.lucene.search.join;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
-import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.document.FloatPoint;
-import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.LongPoint;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.PointValues.IntersectVisitor;
-import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.index.PrefixCodedTerms;
-import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.ConstantScoreScorer;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PointInSetQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.BitSetIterator;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.FixedBitSet;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -51,6 +14,40 @@ import org.apache.lucene.util.FixedBitSet;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.lucene.search.join;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.function.BiFunction;
+
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.index.PrefixCodedTerms;
+import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PointInSetQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.BitSetIterator;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.FixedBitSet;
 
 // A TermsIncludingScoreQuery variant for point values:
 abstract class PointInSetIncludingScoreQuery extends Query {
@@ -121,8 +118,7 @@ abstract class PointInSetIncludingScoreQuery extends Query {
   }
 
   @Override
-  public final Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    final Weight originalWeight = originalQuery.createWeight(searcher, needsScores);
+  public final Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     return new Weight(this) {
 
       @Override
@@ -142,22 +138,8 @@ abstract class PointInSetIncludingScoreQuery extends Query {
       }
 
       @Override
-      public float getValueForNormalization() throws IOException {
-        return originalWeight.getValueForNormalization();
-      }
-
-      @Override
-      public void normalize(float norm, float boost) {
-        originalWeight.normalize(norm, boost);
-      }
-
-      @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
-        PointValues values = reader.getPointValues();
-        if (values == null) {
-          return null;
-        }
         FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
         if (fieldInfo == null) {
           return null;
@@ -168,10 +150,14 @@ abstract class PointInSetIncludingScoreQuery extends Query {
         if (fieldInfo.getPointNumBytes() != bytesPerDim) {
           throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() + " but this query has bytesPerDim=" + bytesPerDim);
         }
+        PointValues values = reader.getPointValues(field);
+        if (values == null) {
+          return null;
+        }
 
         FixedBitSet result = new FixedBitSet(reader.maxDoc());
         float[] scores = new float[reader.maxDoc()];
-        values.intersect(field, new MergePointVisitor(sortedPackedPoints, result, scores));
+        values.intersect(new MergePointVisitor(sortedPackedPoints, result, scores));
         return new Scorer(this) {
 
           DocIdSetIterator disi = new BitSetIterator(result, 10L);
@@ -289,7 +275,7 @@ abstract class PointInSetIncludingScoreQuery extends Query {
 
   @Override
   public final int hashCode() {
-    int hash = super.hashCode();
+    int hash = classHash();
     hash = 31 * hash + field.hashCode();
     hash = 31 * hash + originalQuery.hashCode();
     hash = 31 * hash + sortedPackedPointsHashCode;
@@ -299,16 +285,16 @@ abstract class PointInSetIncludingScoreQuery extends Query {
 
   @Override
   public final boolean equals(Object other) {
-    if (super.equals(other)) {
-      final PointInSetIncludingScoreQuery q = (PointInSetIncludingScoreQuery) other;
-      return q.field.equals(field) &&
-        q.originalQuery.equals(originalQuery) &&
-        q.bytesPerDim == bytesPerDim &&
-        q.sortedPackedPointsHashCode == sortedPackedPointsHashCode &&
-        q.sortedPackedPoints.equals(sortedPackedPoints);
-    }
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
 
-    return false;
+  private boolean equalsTo(PointInSetIncludingScoreQuery other) {
+    return other.field.equals(field) &&
+           other.originalQuery.equals(originalQuery) &&
+           other.bytesPerDim == bytesPerDim &&
+           other.sortedPackedPointsHashCode == sortedPackedPointsHashCode &&
+           other.sortedPackedPoints.equals(sortedPackedPoints);
   }
 
   @Override

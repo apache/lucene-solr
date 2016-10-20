@@ -17,8 +17,7 @@
 package org.apache.solr.handler;
 
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -27,12 +26,12 @@ import java.util.concurrent.Future;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,10 +40,12 @@ public class RestoreCore implements Callable<Boolean> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String backupName;
-  private final String backupLocation;
+  private final URI backupLocation;
   private final SolrCore core;
+  private final BackupRepository backupRepo;
 
-  public RestoreCore(SolrCore core, String location, String name) {
+  public RestoreCore(BackupRepository backupRepo, SolrCore core, URI location, String name) {
+    this.backupRepo = backupRepo;
     this.core = core;
     this.backupLocation = location;
     this.backupName = name;
@@ -57,27 +58,28 @@ public class RestoreCore implements Callable<Boolean> {
 
   public boolean doRestore() throws Exception {
 
-    Path backupPath = Paths.get(backupLocation).resolve(backupName);
+    URI backupPath = backupRepo.resolve(backupLocation, backupName);
     SimpleDateFormat dateFormat = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT);
     String restoreIndexName = "restore." + dateFormat.format(new Date());
     String restoreIndexPath = core.getDataDir() + restoreIndexName;
 
+    String indexDirPath = core.getIndexDir();
     Directory restoreIndexDir = null;
     Directory indexDir = null;
-    try (Directory backupDir = FSDirectory.open(backupPath)) {
+    try {
 
       restoreIndexDir = core.getDirectoryFactory().get(restoreIndexPath,
           DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
 
       //Prefer local copy.
-      indexDir = core.getDirectoryFactory().get(core.getIndexDir(),
+      indexDir = core.getDirectoryFactory().get(indexDirPath,
           DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
 
       //Move all files from backupDir to restoreIndexDir
-      for (String filename : backupDir.listAll()) {
+      for (String filename : backupRepo.listAll(backupPath)) {
         checkInterrupted();
         log.info("Copying file {} to restore directory ", filename);
-        try (IndexInput indexInput = backupDir.openInput(filename, IOContext.READONCE)) {
+        try (IndexInput indexInput = backupRepo.openInput(backupPath, filename, IOContext.READONCE)) {
           Long checksum = null;
           try {
             checksum = CodecUtil.retrieveChecksum(indexInput);
@@ -88,12 +90,13 @@ public class RestoreCore implements Callable<Boolean> {
           IndexFetcher.CompareResult compareResult = IndexFetcher.compareFile(indexDir, filename, length, checksum);
           if (!compareResult.equal ||
               (IndexFetcher.filesToAlwaysDownloadIfNoChecksums(filename, length, compareResult))) {
-            restoreIndexDir.copyFrom(backupDir, filename, filename, IOContext.READONCE);
+            backupRepo.copyFileTo(backupPath, filename, restoreIndexDir);
           } else {
             //prefer local copy
             restoreIndexDir.copyFrom(indexDir, filename, filename, IOContext.READONCE);
           }
         } catch (Exception e) {
+          log.warn("Exception while restoring the backup index ", e);
           throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
         }
       }
@@ -108,7 +111,7 @@ public class RestoreCore implements Callable<Boolean> {
         log.info("Successfully restored to the backup index");
       } catch (Exception e) {
         //Rollback to the old index directory. Delete the restore index directory and mark the restore as failed.
-        log.warn("Could not switch to restored index. Rolling back to the current index");
+        log.warn("Could not switch to restored index. Rolling back to the current index", e);
         Directory dir = null;
         try {
           dir = core.getDirectoryFactory().get(core.getDataDir(), DirectoryFactory.DirContext.META_DATA,
@@ -128,7 +131,8 @@ public class RestoreCore implements Callable<Boolean> {
       }
       if (success) {
         core.getDirectoryFactory().doneWithDirectory(indexDir);
-        core.getDirectoryFactory().remove(indexDir);
+        // Cleanup all index files not associated with any *named* snapshot.
+        core.deleteNonSnapshotIndexFiles(indexDirPath);
       }
 
       return true;

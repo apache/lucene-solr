@@ -27,9 +27,9 @@ public class GeoCircleTest extends LuceneTestCase {
     GeoPoint gp;
     c = GeoCircleFactory.makeGeoCircle(PlanetModel.SPHERE, 0.0, -0.5, 0.1);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
-    assertEquals(Double.MAX_VALUE, c.computeDistance(DistanceStyle.ARC,gp), 0.0);
-    assertEquals(Double.MAX_VALUE, c.computeDistance(DistanceStyle.NORMAL,gp), 0.0);
-    assertEquals(Double.MAX_VALUE, c.computeDistance(DistanceStyle.NORMAL,gp), 0.0);
+    assertEquals(Double.POSITIVE_INFINITY, c.computeDistance(DistanceStyle.ARC,gp), 0.0);
+    assertEquals(Double.POSITIVE_INFINITY, c.computeDistance(DistanceStyle.NORMAL,gp), 0.0);
+    assertEquals(Double.POSITIVE_INFINITY, c.computeDistance(DistanceStyle.NORMAL,gp), 0.0);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
     assertEquals(0.0, c.computeDistance(DistanceStyle.ARC,gp), 0.000001);
     assertEquals(0.0, c.computeDistance(DistanceStyle.NORMAL,gp), 0.000001);
@@ -118,10 +118,6 @@ public class GeoCircleTest extends LuceneTestCase {
       xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
     relationship = area.getRelationship(c);
     assertTrue(relationship == GeoArea.OVERLAPS || relationship == GeoArea.WITHIN);
-    // Point is actually outside the bounds, and outside the shape
-    assertTrue(!area.isWithin(p1));
-    // Approximate point the same
-    assertTrue(!area.isWithin(p2));
     
     // Eleventh BKD discovered failure
     c = GeoCircleFactory.makeGeoCircle(PlanetModel.SPHERE,-0.004431288600558495,-0.003687846671278374,1.704543429364245E-8);
@@ -407,6 +403,20 @@ public class GeoCircleTest extends LuceneTestCase {
     assertTrue(gc.isWithin(gp));
     assertTrue(solid.isWithin(gpOnSurface)); // This fails
     assertTrue(solid.isWithin(gp));
+  }
+  
+  @Test
+  public void testBoundsFailureCase2() {
+    final GeoCircle gc = GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, -2.7574435614238194E-13, 0.0, 1.5887859182593391);
+    final GeoPoint gp = new GeoPoint(PlanetModel.WGS84, 0.7980359504429014, 1.5964981068121482);
+    final XYZBounds bounds = new XYZBounds();
+    gc.getBounds(bounds);
+    System.out.println("Bounds = "+bounds);
+    System.out.println("Point = "+gp);
+    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, bounds.getMinimumX(), bounds.getMaximumX(), bounds.getMinimumY(), bounds.getMaximumY(), bounds.getMinimumZ(), bounds.getMaximumZ());
+    
+    assert gc.isWithin(gp)?solid.isWithin(gp):true;
+    
   }
   
 }

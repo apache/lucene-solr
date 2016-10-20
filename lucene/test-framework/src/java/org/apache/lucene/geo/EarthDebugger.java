@@ -1,5 +1,3 @@
-package org.apache.lucene.geo;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.geo;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.lucene.geo;
 
 import org.apache.lucene.util.SloppyMath;
 
@@ -207,8 +207,8 @@ public class EarthDebugger {
 
     newAngle:
     while (angle < 360) {
-      double x = Math.cos(Math.toRadians(angle));
-      double y = Math.sin(Math.toRadians(angle));
+      double x = Math.cos(SloppyMath.toRadians(angle));
+      double y = Math.sin(SloppyMath.toRadians(angle));
       double factor = 2.0;
       double step = 1.0;
       int last = 0;

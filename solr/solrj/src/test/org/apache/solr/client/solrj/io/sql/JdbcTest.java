@@ -22,6 +22,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -400,7 +401,6 @@ public class JdbcTest extends SolrCloudTestCase {
   @Ignore("Fix error checking")
   @Test
   public void testErrorPropagation() throws Exception {
-
     //Test error propagation
     Properties props = new Properties();
     props.put("aggregationMode", "facet");
@@ -413,6 +413,24 @@ public class JdbcTest extends SolrCloudTestCase {
           assertTrue(errorMessage.contains("Group by queries must include at least one aggregate function"));
         }
       }
+    }
+  }
+
+  @Test
+  public void testSQLExceptionThrownWhenQueryAndConnUseDiffCollections() throws Exception  {
+    String badCollection = COLLECTION + "bad";
+    String connectionString = "jdbc:solr://" + zkHost + "?collection=" + badCollection;
+    String sql = "select id, a_i, a_s, a_f from " + badCollection + " order by a_i desc limit 2";
+
+    //Bad connection string: wrong collection name
+    try(Connection connection = DriverManager.getConnection(connectionString)) {
+      try (Statement statement = connection.createStatement()) {
+        try (ResultSet ignored = statement.executeQuery(sql)) {
+          fail("Expected query against wrong collection to throw a SQLException.");
+        }
+      }
+    } catch (SQLException ignore) {
+      // Expected exception due to miss matched collection
     }
   }
 
@@ -605,13 +623,13 @@ public class JdbcTest extends SolrCloudTestCase {
     assertEquals("my_float_col".length(), resultSetMetaData.getColumnDisplaySize(4));
     assertEquals("testnull_i".length(), resultSetMetaData.getColumnDisplaySize(5));
 
-    assertEquals("Long", resultSetMetaData.getColumnTypeName(1));
+    assertEquals("String", resultSetMetaData.getColumnTypeName(1));
     assertEquals("Long", resultSetMetaData.getColumnTypeName(2));
     assertEquals("String", resultSetMetaData.getColumnTypeName(3));
     assertEquals("Double", resultSetMetaData.getColumnTypeName(4));
     assertEquals("Long", resultSetMetaData.getColumnTypeName(5));
 
-    assertEquals(Types.DOUBLE, resultSetMetaData.getColumnType(1));
+    assertEquals(Types.VARCHAR, resultSetMetaData.getColumnType(1));
     assertEquals(Types.DOUBLE, resultSetMetaData.getColumnType(2));
     assertEquals(Types.VARCHAR, resultSetMetaData.getColumnType(3));
     assertEquals(Types.DOUBLE, resultSetMetaData.getColumnType(4));

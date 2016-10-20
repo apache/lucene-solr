@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 import org.apache.lucene.search.QueryCache;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -381,8 +382,8 @@ public abstract class FilterLeafReader extends LeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
-    return in.getPointValues();
+  public PointValues getPointValues(String field) throws IOException {
+    return in.getPointValues(field);
   }
 
   @Override
@@ -466,9 +467,9 @@ public abstract class FilterLeafReader extends LeafReader {
   }
 
   @Override
-  public Bits getDocsWithField(String field) throws IOException {
+  public Sort getIndexSort() {
     ensureOpen();
-    return in.getDocsWithField(field);
+    return in.getIndexSort();
   }
 
   @Override

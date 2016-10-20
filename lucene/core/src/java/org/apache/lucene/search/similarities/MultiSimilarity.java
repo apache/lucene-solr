@@ -50,10 +50,10 @@ public class MultiSimilarity extends Similarity {
   }
 
   @Override
-  public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
+  public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
     SimWeight subStats[] = new SimWeight[sims.length];
     for (int i = 0; i < subStats.length; i++) {
-      subStats[i] = sims[i].computeWeight(collectionStats, termStats);
+      subStats[i] = sims[i].computeWeight(boost, collectionStats, termStats);
     }
     return new MultiStats(subStats);
   }
@@ -75,7 +75,7 @@ public class MultiSimilarity extends Similarity {
     }
     
     @Override
-    public float score(int doc, float freq) {
+    public float score(int doc, float freq) throws IOException {
       float sum = 0.0f;
       for (SimScorer subScorer : subScorers) {
         sum += subScorer.score(doc, freq);
@@ -84,7 +84,7 @@ public class MultiSimilarity extends Similarity {
     }
 
     @Override
-    public Explanation explain(int doc, Explanation freq) {
+    public Explanation explain(int doc, Explanation freq) throws IOException {
       List<Explanation> subs = new ArrayList<>();
       for (SimScorer subScorer : subScorers) {
         subs.add(subScorer.explain(doc, freq));
@@ -108,22 +108,6 @@ public class MultiSimilarity extends Similarity {
     
     MultiStats(SimWeight subStats[]) {
       this.subStats = subStats;
-    }
-    
-    @Override
-    public float getValueForNormalization() {
-      float sum = 0.0f;
-      for (SimWeight stat : subStats) {
-        sum += stat.getValueForNormalization();
-      }
-      return sum / subStats.length;
-    }
-
-    @Override
-    public void normalize(float queryNorm, float boost) {
-      for (SimWeight stat : subStats) {
-        stat.normalize(queryNorm, boost);
-      }
     }
   }
 }

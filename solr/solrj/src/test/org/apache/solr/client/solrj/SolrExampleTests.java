@@ -17,10 +17,19 @@
 package org.apache.solr.client.solrj;
 
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+
 import com.google.common.collect.Maps;
-
 import junit.framework.Assert;
-
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -41,12 +50,13 @@ import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RangeFacet;
-import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.response.RangeFacet.Count;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
@@ -56,17 +66,6 @@ import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
 
 import static org.junit.internal.matchers.StringContains.containsString;
 
@@ -182,12 +181,15 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     // test a second query, test making a copy of the main query
     SolrQuery query2 = query.getCopy();
     query2.addFilterQuery("inStock:true");
+    Assert.assertFalse(query.getFilterQueries() == query2.getFilterQueries());
     response = client.query( query2 );
     Assert.assertEquals(1, query2.getFilterQueries().length);
     Assert.assertEquals(0, response.getStatus());
     Assert.assertEquals(2, response.getResults().getNumFound() );
-    Assert.assertFalse(query.getFilterQueries() == query2.getFilterQueries());
-
+    for (SolrDocument outDoc : response.getResults()) {
+      assertEquals(true, outDoc.getFieldValue("inStock"));
+    }
+    
     // sanity check round tripping of params...
     query = new SolrQuery("foo");
     query.addFilterQuery("{!field f=inStock}true");
@@ -695,7 +697,10 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     luke.setShowSchema( true );
     rsp = luke.process( client );
-    assertNotNull( rsp.getFieldTypeInfo() ); 
+    assertNotNull( rsp.getFieldTypeInfo() );
+    assertNotNull(rsp.getFieldInfo().get("id").getSchemaFlags());
+    assertTrue(rsp.getFieldInfo().get("id").getSchemaFlags().contains(FieldFlag.INDEXED));
+
   }
 
  @Test

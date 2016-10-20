@@ -55,14 +55,6 @@ public class StandardQueryConfigHandler extends QueryConfigHandler {
      * @see StandardQueryParser#getEnablePositionIncrements()
      */
     final public static ConfigurationKey<Boolean> ENABLE_POSITION_INCREMENTS = ConfigurationKey.newInstance();
-    
-    /**
-     * Key used to set whether expanded terms should be lower-cased
-     * 
-     * @see StandardQueryParser#setLowercaseExpandedTerms(boolean)
-     * @see StandardQueryParser#getLowercaseExpandedTerms()
-     */
-    final public static ConfigurationKey<Boolean> LOWERCASE_EXPANDED_TERMS = ConfigurationKey.newInstance();
 
     /**
      * Key used to set whether leading wildcards are supported
@@ -167,38 +159,18 @@ public class StandardQueryConfigHandler extends QueryConfigHandler {
     final public static ConfigurationKey<Float> BOOST = ConfigurationKey.newInstance();
     
     /**
-     * Key used to set a field to its {@link LegacyNumericConfig}.
-     * 
-     * @see StandardQueryParser#setLegacyNumericConfigMap(Map)
-     * @see StandardQueryParser#getLegacyNumericConfigMap()
-     * @deprecated Index with Points instead and use {@link #POINTS_CONFIG}
-     */
-    @Deprecated
-    final public static ConfigurationKey<LegacyNumericConfig> LEGACY_NUMERIC_CONFIG = ConfigurationKey.newInstance();
-    
-    /**
-     * Key used to set the {@link LegacyNumericConfig} in {@link FieldConfig} for numeric fields.
-     * 
-     * @see StandardQueryParser#setLegacyNumericConfigMap(Map)
-     * @see StandardQueryParser#getLegacyNumericConfigMap()
-     * @deprecated Index with Points instead and use {@link #POINTS_CONFIG_MAP}
-     */
-    @Deprecated
-    final public static ConfigurationKey<Map<String,LegacyNumericConfig>> LEGACY_NUMERIC_CONFIG_MAP = ConfigurationKey.newInstance();
-    
-    /**
      * Key used to set a field to its {@link PointsConfig}.
      * 
-     * @see StandardQueryParser#setLegacyNumericConfigMap(Map)
-     * @see StandardQueryParser#getLegacyNumericConfigMap()
+     * @see StandardQueryParser#setPointsConfigMap(Map)
+     * @see StandardQueryParser#getPointsConfigMap()
      */
     final public static ConfigurationKey<PointsConfig> POINTS_CONFIG = ConfigurationKey.newInstance();
 
     /**
      * Key used to set the {@link PointsConfig} in {@link FieldConfig} for point fields.
      * 
-     * @see StandardQueryParser#setLegacyNumericConfigMap(Map)
-     * @see StandardQueryParser#getLegacyNumericConfigMap()
+     * @see StandardQueryParser#setPointsConfigMap(Map)
+     * @see StandardQueryParser#getPointsConfigMap()
      */
     final public static ConfigurationKey<Map<String,PointsConfig>> POINTS_CONFIG_MAP = ConfigurationKey.newInstance();
 
@@ -215,7 +187,6 @@ public class StandardQueryConfigHandler extends QueryConfigHandler {
     // Add listener that will build the FieldConfig.
     addFieldConfigListener(new FieldBoostMapFCListener(this));
     addFieldConfigListener(new FieldDateResolutionFCListener(this));
-    addFieldConfigListener(new LegacyNumericFieldConfigListener(this));
     addFieldConfigListener(new PointsConfigListener(this));
     
     // Default Values
@@ -223,7 +194,6 @@ public class StandardQueryConfigHandler extends QueryConfigHandler {
     set(ConfigurationKeys.ANALYZER, null); //default value 2.4
     set(ConfigurationKeys.DEFAULT_OPERATOR, Operator.OR);
     set(ConfigurationKeys.PHRASE_SLOP, 0); //default value 2.4
-    set(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS, true); //default value 2.4
     set(ConfigurationKeys.ENABLE_POSITION_INCREMENTS, false); //default value 2.4
     set(ConfigurationKeys.FIELD_BOOST_MAP, new LinkedHashMap<String, Float>());
     set(ConfigurationKeys.FUZZY_CONFIG, new FuzzyConfig());

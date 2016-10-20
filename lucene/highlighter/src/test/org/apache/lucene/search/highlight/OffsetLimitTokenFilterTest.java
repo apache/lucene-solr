@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search.highlight;
 
-import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.*;

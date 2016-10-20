@@ -17,7 +17,9 @@
 package org.apache.lucene.util;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.Terms;
@@ -56,13 +58,32 @@ public final class DocIdSetBuilder {
     }
   }
 
-  private class BufferAdder extends BulkAdder {
+  private static class Buffer {
+    int[] array;
+    int length;
+
+    Buffer(int length) {
+      this.array = new int[length];
+      this.length = 0;
+    }
+
+    Buffer(int[] array, int length) {
+      this.array = array;
+      this.length = length;
+    }
+  }
+
+  private static class BufferAdder extends BulkAdder {
+    final Buffer buffer;
+
+    BufferAdder(Buffer buffer) {
+      this.buffer = buffer;
+    }
 
     @Override
     public void add(int doc) {
-      buffer[bufferSize++] = doc;
+      buffer.array[buffer.length++] = doc;
     }
-
   }
 
   private final int maxDoc;
@@ -71,13 +92,13 @@ public final class DocIdSetBuilder {
   final boolean multivalued;
   final double numValuesPerDoc;
 
-  private int[] buffer;
-  private int bufferSize;
+  private List<Buffer> buffers = new ArrayList<>();
+  private int totalAllocated; // accumulated size of the allocated buffers
 
   private FixedBitSet bitSet;
 
   private long counter = -1;
-  private BulkAdder adder = new BufferAdder();
+  private BulkAdder adder;
 
   /**
    * Create a builder that can contain doc IDs between {@code 0} and {@code maxDoc}.
@@ -95,7 +116,7 @@ public final class DocIdSetBuilder {
   /** Create a {@link DocIdSetBuilder} instance that is optimized for
    *  accumulating docs that match the given {@link PointValues}. */
   public DocIdSetBuilder(int maxDoc, PointValues values, String field) throws IOException {
-    this(maxDoc, values.getDocCount(field), values.size(field));
+    this(maxDoc, values.getDocCount(), values.size());
   }
 
   DocIdSetBuilder(int maxDoc, int docCount, long valueCount) {
@@ -118,30 +139,7 @@ public final class DocIdSetBuilder {
     // of using a full bitset even for quite sparse data
     this.threshold = maxDoc >>> 7;
 
-    this.buffer = new int[0];
-    this.bufferSize = 0;
     this.bitSet = null;
-  }
-
-  private void upgradeToBitSet() {
-    assert bitSet == null;
-    bitSet = new FixedBitSet(maxDoc);
-    for (int i = 0; i < bufferSize; ++i) {
-      bitSet.set(buffer[i]);
-    }
-    counter = this.bufferSize;
-    this.buffer = null;
-    this.bufferSize = 0;
-    this.adder = new FixedBitSetAdder(bitSet);
-  }
-
-  /** Grows the buffer to at least minSize, but never larger than threshold. */
-  private void growBuffer(int minSize) {
-    assert minSize < threshold;
-    if (buffer.length < minSize) {
-      int nextSize = Math.min(threshold, ArrayUtil.oversize(minSize, Integer.BYTES));
-      buffer = Arrays.copyOf(buffer, nextSize);
-    }
   }
 
   /**
@@ -150,35 +148,21 @@ public final class DocIdSetBuilder {
    * {@link DocIdSetIterator}, you should rather use {@link RoaringDocIdSet.Builder}.
    */
   public void add(DocIdSetIterator iter) throws IOException {
-    grow((int) Math.min(Integer.MAX_VALUE, iter.cost()));
-
     if (bitSet != null) {
       bitSet.or(iter);
-    } else {
-      while (true) {
-        assert buffer.length <= threshold;
-        final int end = buffer.length;
-        for (int i = bufferSize; i < end; ++i) {
-          final int doc = iter.nextDoc();
-          if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-            bufferSize = i;
-            return;
-          }
-          buffer[bufferSize++] = doc;
-        }
-        bufferSize = end;
-
-        if (bufferSize + 1 >= threshold) {
-          break;
-        }
-
-        growBuffer(bufferSize+1);
+      return;
+    }
+    int cost = (int) Math.min(Integer.MAX_VALUE, iter.cost());
+    BulkAdder adder = grow(cost);
+    for (int i = 0; i < cost; ++i) {
+      int doc = iter.nextDoc();
+      if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+        return;
       }
-
-      upgradeToBitSet();
-      for (int doc = iter.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iter.nextDoc()) {
-        bitSet.set(doc);
-      }
+      adder.add(doc);
+    }
+    for (int doc = iter.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iter.nextDoc()) {
+      grow(1).add(doc);
     }
   }
 
@@ -188,9 +172,8 @@ public final class DocIdSetBuilder {
    */
   public BulkAdder grow(int numDocs) {
     if (bitSet == null) {
-      final long newLength = (long) bufferSize + numDocs;
-      if (newLength < threshold) {
-        growBuffer((int) newLength);
+      if ((long) totalAllocated + numDocs <= threshold) {
+        ensureBufferCapacity(numDocs);
       } else {
         upgradeToBitSet();
         counter += numDocs;
@@ -199,6 +182,131 @@ public final class DocIdSetBuilder {
       counter += numDocs;
     }
     return adder;
+  }
+
+  private void ensureBufferCapacity(int numDocs) {
+    if (buffers.isEmpty()) {
+      addBuffer(additionalCapacity(numDocs));
+      return;
+    }
+
+    Buffer current = buffers.get(buffers.size() - 1);
+    if (current.array.length - current.length >= numDocs) {
+      // current buffer is large enough
+      return;
+    }
+    if (current.length < current.array.length - (current.array.length >>> 3)) {
+      // current buffer is less than 7/8 full, resize rather than waste space
+      growBuffer(current, additionalCapacity(numDocs));
+    } else {
+      addBuffer(additionalCapacity(numDocs));
+    }
+  }
+
+  private int additionalCapacity(int numDocs) {
+    // exponential growth: the new array has a size equal to the sum of what
+    // has been allocated so far
+    int c = totalAllocated;
+    // but is also >= numDocs + 1 so that we can store the next batch of docs
+    // (plus an empty slot so that we are more likely to reuse the array in build())
+    c = Math.max(numDocs + 1, c);
+    // avoid cold starts
+    c = Math.max(32, c);
+    // do not go beyond the threshold
+    c = Math.min(threshold - totalAllocated, c);
+    return c;
+  }
+
+  private Buffer addBuffer(int len) {
+    Buffer buffer = new Buffer(len);
+    buffers.add(buffer);
+    adder = new BufferAdder(buffer);
+    totalAllocated += buffer.array.length;
+    return buffer;
+  }
+
+  private void growBuffer(Buffer buffer, int additionalCapacity) {
+    buffer.array = Arrays.copyOf(buffer.array, buffer.array.length + additionalCapacity);
+    totalAllocated += additionalCapacity;
+  }
+
+  private void upgradeToBitSet() {
+    assert bitSet == null;
+    FixedBitSet bitSet = new FixedBitSet(maxDoc);
+    long counter = 0;
+    for (Buffer buffer : buffers) {
+      int[] array = buffer.array;
+      int length = buffer.length;
+      counter += length;
+      for (int i = 0; i < length; ++i) {
+        bitSet.set(array[i]);
+      }
+    }
+    this.bitSet = bitSet;
+    this.counter = counter;
+    this.buffers = null;
+    this.adder = new FixedBitSetAdder(bitSet);
+  }
+
+  /**
+   * Build a {@link DocIdSet} from the accumulated doc IDs.
+   */
+  public DocIdSet build() {
+    try {
+      if (bitSet != null) {
+        assert counter >= 0;
+        final long cost = Math.round(counter / numValuesPerDoc);
+        return new BitDocIdSet(bitSet, cost);
+      } else {
+        Buffer concatenated = concat(buffers);
+        LSBRadixSorter sorter = new LSBRadixSorter();
+        sorter.sort(PackedInts.bitsRequired(maxDoc - 1), concatenated.array, concatenated.length);
+        final int l;
+        if (multivalued) {
+          l = dedup(concatenated.array, concatenated.length);
+        } else {
+          assert noDups(concatenated.array, concatenated.length);
+          l = concatenated.length;
+        }
+        assert l <= concatenated.length;
+        concatenated.array[l] = DocIdSetIterator.NO_MORE_DOCS;
+        return new IntArrayDocIdSet(concatenated.array, l);
+      }
+    } finally {
+      this.buffers = null;
+      this.bitSet = null;
+    }
+  }
+
+  /**
+   * Concatenate the buffers in any order, leaving at least one empty slot in
+   * the end
+   * NOTE: this method might reuse one of the arrays
+   */
+  private static Buffer concat(List<Buffer> buffers) {
+    int totalLength = 0;
+    Buffer largestBuffer = null;
+    for (Buffer buffer : buffers) {
+      totalLength += buffer.length;
+      if (largestBuffer == null || buffer.array.length > largestBuffer.array.length) {
+        largestBuffer = buffer;
+      }
+    }
+    if (largestBuffer == null) {
+      return new Buffer(1);
+    }
+    int[] docs = largestBuffer.array;
+    if (docs.length < totalLength + 1) {
+      docs = Arrays.copyOf(docs, totalLength + 1);
+    }
+    totalLength = largestBuffer.length;
+    for (Buffer buffer : buffers) {
+      if (buffer != largestBuffer) {
+        System.arraycopy(buffer.array, 0, docs, totalLength, buffer.length);
+        totalLength += buffer.length;
+      }
+    }
+    return new Buffer(docs, totalLength);
   }
 
   private static int dedup(int[] arr, int length) {
@@ -223,37 +331,6 @@ public final class DocIdSetBuilder {
       assert a[i-1] < a[i];
     }
     return true;
-  }
-
-  /**
-   * Build a {@link DocIdSet} from the accumulated doc IDs.
-   */
-  public DocIdSet build() {
-    try {
-      if (bitSet != null) {
-        assert counter >= 0;
-        final long cost = Math.round(counter / numValuesPerDoc);
-        return new BitDocIdSet(bitSet, cost);
-      } else {
-        LSBRadixSorter sorter = new LSBRadixSorter();
-        sorter.sort(PackedInts.bitsRequired(maxDoc - 1), buffer, bufferSize);
-        final int l;
-        if (multivalued) {
-          l = dedup(buffer, bufferSize);
-        } else {
-          assert noDups(buffer, bufferSize);
-          l = bufferSize;
-        }
-        assert l <= bufferSize;
-        buffer = ArrayUtil.grow(buffer, l + 1);
-        buffer[l] = DocIdSetIterator.NO_MORE_DOCS;
-        return new IntArrayDocIdSet(buffer, l);
-      }
-    } finally {
-      this.buffer = null;
-      this.bufferSize = 0;
-      this.bitSet = null;
-    }
   }
 
 }

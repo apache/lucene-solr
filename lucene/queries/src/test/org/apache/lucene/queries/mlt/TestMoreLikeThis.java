@@ -41,7 +41,6 @@ import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Test;
 
 public class TestMoreLikeThis extends LuceneTestCase {
 
@@ -266,6 +265,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     return writer.numDocs() - 1;
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-7161")
   public void testMultiFieldShouldReturnPerFieldBooleanQuery() throws Exception {
     IndexReader reader = null;
     Directory dir = newDirectory();
@@ -281,10 +281,10 @@ public class TestMoreLikeThis extends LuceneTestCase {
 
       // add series of shop docs
       RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-      for (int i = 0; i < 100; i++) {
+      for (int i = 0; i < 300; i++) {
         addShopDoc(writer, "it", itShopItemForSale, itShopItemNotForSale);
       }
-      for (int i = 0; i < 30; i++) {
+      for (int i = 0; i < 300; i++) {
         addShopDoc(writer, "clothes", clothesShopItemForSale, clothesShopItemNotForSale);
       }
       // Input Document is a clothes shop

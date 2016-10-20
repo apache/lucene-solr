@@ -213,6 +213,12 @@ public class LatLonBounds implements Bounds {
   }
 
   @Override
+  public Bounds addIntersection(final PlanetModel planetModel, final Plane plane1, final Plane plane2, final Membership... bounds) {
+    plane1.recordBounds(planetModel, this, plane2, bounds);
+    return this;
+  }
+
+  @Override
   public Bounds addPoint(GeoPoint point) {
     if (!noLongitudeBound) {
       // Get a longitude value
@@ -247,6 +253,11 @@ public class LatLonBounds implements Bounds {
     return this;
   }
 
+  @Override
+  public Bounds noBound(final PlanetModel planetModel) {
+    return noLongitudeBound().noTopLatitudeBound().noBottomLatitudeBound();
+  }
+  
   // Protected methods
   
   /** Update latitude bound.

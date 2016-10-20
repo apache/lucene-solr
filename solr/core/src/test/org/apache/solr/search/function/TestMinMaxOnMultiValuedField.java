@@ -24,12 +24,8 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 @SuppressCodecs({"Memory", "SimpleText"}) // see TestSortedSetSelector
 public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {

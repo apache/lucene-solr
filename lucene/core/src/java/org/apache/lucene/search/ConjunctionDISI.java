@@ -19,11 +19,15 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitSet;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.CollectionUtil;
 
 /** A conjunction of DocIdSetIterators.
@@ -31,11 +35,13 @@ import org.apache.lucene.util.CollectionUtil;
  * <br>Public only for use in {@link org.apache.lucene.search.spans}.
  * @lucene.internal
  */
-public class ConjunctionDISI extends DocIdSetIterator {
+public final class ConjunctionDISI extends DocIdSetIterator {
 
-  /** Create a conjunction over the provided {@link Scorer}s, taking advantage
-   *  of {@link TwoPhaseIterator}. */
-  public static ConjunctionDISI intersectScorers(List<Scorer> scorers) {
+  /** Create a conjunction over the provided {@link Scorer}s. Note that the
+   * returned {@link DocIdSetIterator} might leverage two-phase iteration in
+   * which case it is possible to retrieve the {@link TwoPhaseIterator} using
+   * {@link TwoPhaseIterator#unwrap}. */
+  public static DocIdSetIterator intersectScorers(List<Scorer> scorers) {
     if (scorers.size() < 2) {
       throw new IllegalArgumentException("Cannot make a ConjunctionDISI of less than 2 iterators");
     }
@@ -45,15 +51,14 @@ public class ConjunctionDISI extends DocIdSetIterator {
       addScorer(scorer, allIterators, twoPhaseIterators);
     }
 
-    if (twoPhaseIterators.isEmpty()) {
-      return new ConjunctionDISI(allIterators);
-    } else {
-      return new TwoPhase(allIterators, twoPhaseIterators);
-    }
+    return createConjunction(allIterators, twoPhaseIterators);
   }
 
-  /** Create a conjunction over the provided DocIdSetIterators. */
-  public static ConjunctionDISI intersectIterators(List<DocIdSetIterator> iterators) {
+  /** Create a conjunction over the provided DocIdSetIterators. Note that the
+   * returned {@link DocIdSetIterator} might leverage two-phase iteration in
+   * which case it is possible to retrieve the {@link TwoPhaseIterator} using
+   * {@link TwoPhaseIterator#unwrap}. */
+  public static DocIdSetIterator intersectIterators(List<DocIdSetIterator> iterators) {
     if (iterators.size() < 2) {
       throw new IllegalArgumentException("Cannot make a ConjunctionDISI of less than 2 iterators");
     }
@@ -63,16 +68,14 @@ public class ConjunctionDISI extends DocIdSetIterator {
       addIterator(iterator, allIterators, twoPhaseIterators);
     }
 
-    if (twoPhaseIterators.isEmpty()) {
-      return new ConjunctionDISI(allIterators);
-    } else {
-      return new TwoPhase(allIterators, twoPhaseIterators);
-    }
+    return createConjunction(allIterators, twoPhaseIterators);
   }
 
-  /** Create a conjunction over the provided {@link Scorer}s, taking advantage
-   *  of {@link TwoPhaseIterator}. */
-  public static ConjunctionDISI intersectSpans(List<Spans> spanList) {
+  /** Create a conjunction over the provided {@link Spans}. Note that the
+   * returned {@link DocIdSetIterator} might leverage two-phase iteration in
+   * which case it is possible to retrieve the {@link TwoPhaseIterator} using
+   * {@link TwoPhaseIterator#unwrap}. */
+  public static DocIdSetIterator intersectSpans(List<Spans> spanList) {
     if (spanList.size() < 2) {
       throw new IllegalArgumentException("Cannot make a ConjunctionDISI of less than 2 iterators");
     }
@@ -82,11 +85,7 @@ public class ConjunctionDISI extends DocIdSetIterator {
       addSpans(spans, allIterators, twoPhaseIterators);
     }
 
-    if (twoPhaseIterators.isEmpty()) {
-      return new ConjunctionDISI(allIterators);
-    } else {
-      return new TwoPhase(allIterators, twoPhaseIterators);
-    }
+    return createConjunction(allIterators, twoPhaseIterators);
   }
 
   /** Adds the scorer, possibly splitting up into two phases or collapsing if it is another conjunction */
@@ -110,17 +109,20 @@ public class ConjunctionDISI extends DocIdSetIterator {
   }
 
   private static void addIterator(DocIdSetIterator disi, List<DocIdSetIterator> allIterators, List<TwoPhaseIterator> twoPhaseIterators) {
-    // Check for exactly this class for collapsing. Subclasses can do their own optimizations.
-    if (disi.getClass() == ConjunctionDISI.class || disi.getClass() == TwoPhase.class) {
+    TwoPhaseIterator twoPhase = TwoPhaseIterator.unwrap(disi);
+    if (twoPhase != null) {
+      addTwoPhaseIterator(twoPhase, allIterators, twoPhaseIterators);
+    } else if (disi.getClass() == ConjunctionDISI.class) { // Check for exactly this class for collapsing
       ConjunctionDISI conjunction = (ConjunctionDISI) disi;
       // subconjuctions have already split themselves into two phase iterators and others, so we can take those
       // iterators as they are and move them up to this conjunction
-      allIterators.add(conjunction.lead);
+      allIterators.add(conjunction.lead1);
+      allIterators.add(conjunction.lead2);
       Collections.addAll(allIterators, conjunction.others);
-      if (conjunction.getClass() == TwoPhase.class) {
-        TwoPhase twoPhase = (TwoPhase) conjunction;
-        Collections.addAll(twoPhaseIterators, twoPhase.twoPhaseView.twoPhaseIterators);
-      }
+    } else if (disi.getClass() == BitSetConjunctionDISI.class) {
+      BitSetConjunctionDISI conjunction = (BitSetConjunctionDISI) disi;
+      allIterators.add(conjunction.lead);
+      Collections.addAll(allIterators, conjunction.bitSetIterators);
     } else {
       allIterators.add(disi);
     }
@@ -128,13 +130,52 @@ public class ConjunctionDISI extends DocIdSetIterator {
 
   private static void addTwoPhaseIterator(TwoPhaseIterator twoPhaseIter, List<DocIdSetIterator> allIterators, List<TwoPhaseIterator> twoPhaseIterators) {
     addIterator(twoPhaseIter.approximation(), allIterators, twoPhaseIterators);
-    twoPhaseIterators.add(twoPhaseIter);
+    if (twoPhaseIter.getClass() == ConjunctionTwoPhaseIterator.class) { // Check for exactly this class for collapsing
+      Collections.addAll(twoPhaseIterators, ((ConjunctionTwoPhaseIterator) twoPhaseIter).twoPhaseIterators);
+    } else {
+      twoPhaseIterators.add(twoPhaseIter);
+    }
   }
 
-  final DocIdSetIterator lead;
+  private static DocIdSetIterator createConjunction(
+      List<DocIdSetIterator> allIterators,
+      List<TwoPhaseIterator> twoPhaseIterators) {
+    long minCost = allIterators.stream().mapToLong(DocIdSetIterator::cost).min().getAsLong();
+    List<BitSetIterator> bitSetIterators = new ArrayList<>();
+    List<DocIdSetIterator> iterators = new ArrayList<>();
+    for (DocIdSetIterator iterator : allIterators) {
+      if (iterator.cost() > minCost && iterator instanceof BitSetIterator) {
+        // we put all bitset iterators into bitSetIterators
+        // except if they have the minimum cost, since we need
+        // them to lead the iteration in that case
+        bitSetIterators.add((BitSetIterator) iterator);
+      } else {
+        iterators.add(iterator);
+      }
+    }
+
+    DocIdSetIterator disi;
+    if (iterators.size() == 1) {
+      disi = iterators.get(0);
+    } else {
+      disi = new ConjunctionDISI(iterators);
+    }
+
+    if (bitSetIterators.size() > 0) {
+      disi = new BitSetConjunctionDISI(disi, bitSetIterators);
+    }
+
+    if (twoPhaseIterators.isEmpty() == false) {
+      disi = TwoPhaseIterator.asDocIdSetIterator(new ConjunctionTwoPhaseIterator(disi, twoPhaseIterators));
+    }
+
+    return disi;
+  }
+
+  final DocIdSetIterator lead1, lead2;
   final DocIdSetIterator[] others;
 
-  ConjunctionDISI(List<? extends DocIdSetIterator> iterators) {
+  private ConjunctionDISI(List<? extends DocIdSetIterator> iterators) {
     assert iterators.size() >= 2;
     // Sort the array the first time to allow the least frequent DocsEnum to
     // lead the matching.
@@ -144,84 +185,140 @@ public class ConjunctionDISI extends DocIdSetIterator {
         return Long.compare(o1.cost(), o2.cost());
       }
     });
-    lead = iterators.get(0);
-    others = iterators.subList(1, iterators.size()).toArray(new DocIdSetIterator[0]);
-  }
-
-  protected boolean matches() throws IOException {
-    return true;
-  }
-
-  TwoPhaseIterator asTwoPhaseIterator() {
-    return null;
+    lead1 = iterators.get(0);
+    lead2 = iterators.get(1);
+    others = iterators.subList(2, iterators.size()).toArray(new DocIdSetIterator[0]);
   }
 
   private int doNext(int doc) throws IOException {
-    for(;;) {
+    advanceHead: for(;;) {
+      assert doc == lead1.docID();
 
-      if (doc == NO_MORE_DOCS) {
-        // we need this check because it is only ok to call #matches when positioned
-        return NO_MORE_DOCS;
+      // find agreement between the two iterators with the lower costs
+      // we special case them because they do not need the
+      // 'other.docID() < doc' check that the 'others' iterators need
+      final int next2 = lead2.advance(doc);
+      if (next2 != doc) {
+        doc = lead1.advance(next2);
+        if (next2 != doc) {
+          continue;
+        }
       }
 
-      advanceHead: for(;;) {
-        for (DocIdSetIterator other : others) {
-          // invariant: docsAndFreqs[i].doc <= doc at this point.
+      // then find agreement with other iterators
+      for (DocIdSetIterator other : others) {
+        // other.doc may already be equal to doc if we "continued advanceHead"
+        // on the previous iteration and the advance on the lead scorer exactly matched.
+        if (other.docID() < doc) {
+          final int next = other.advance(doc);
 
-          // docsAndFreqs[i].doc may already be equal to doc if we "broke advanceHead"
-          // on the previous iteration and the advance on the lead scorer exactly matched.
-          if (other.docID() < doc) {
-            final int next = other.advance(doc);
-
-            if (next > doc) {
-              // DocsEnum beyond the current doc - break and advance lead to the new highest doc.
-              doc = lead.advance(next);
-              break advanceHead;
-            }
+          if (next > doc) {
+            // iterator beyond the current doc - advance lead and continue to the new highest doc.
+            doc = lead1.advance(next);
+            continue advanceHead;
           }
         }
-
-        if (matches()) {
-          // success - all DocsEnums are on the same doc
-          return doc;
-        } else {
-          doc = lead.nextDoc();
-          break advanceHead;
-        }
       }
+
+      // success - all iterators are on the same doc
+      return doc;
     }
   }
 
   @Override
   public int advance(int target) throws IOException {
-    return doNext(lead.advance(target));
+    return doNext(lead1.advance(target));
   }
 
   @Override
   public int docID() {
-    return lead.docID();
+    return lead1.docID();
   }
 
   @Override
   public int nextDoc() throws IOException {
-    return doNext(lead.nextDoc());
+    return doNext(lead1.nextDoc());
   }
 
   @Override
   public long cost() {
-    return lead.cost(); // overestimate
+    return lead1.cost(); // overestimate
+  }
+
+  /** Conjunction between a {@link DocIdSetIterator} and one or more {@link BitSetIterator}s. */
+  private static class BitSetConjunctionDISI extends DocIdSetIterator {
+
+    private final DocIdSetIterator lead;
+    private final BitSetIterator[] bitSetIterators;
+    private final BitSet[] bitSets;
+    private final int minLength;
+
+    BitSetConjunctionDISI(DocIdSetIterator lead, Collection<BitSetIterator> bitSetIterators) {
+      this.lead = lead;
+      assert bitSetIterators.size() > 0;
+      this.bitSetIterators = bitSetIterators.toArray(new BitSetIterator[0]);
+      // Put the least costly iterators first so that we exit as soon as possible
+      ArrayUtil.timSort(this.bitSetIterators, (a, b) -> Long.compare(a.cost(), b.cost()));
+      this.bitSets = new BitSet[this.bitSetIterators.length];
+      int minLen = Integer.MAX_VALUE;
+      for (int i = 0; i < this.bitSetIterators.length; ++i) {
+        BitSet bitSet = this.bitSetIterators[i].getBitSet();
+        this.bitSets[i] = bitSet;
+        minLen = Math.min(minLen, bitSet.length());
+      }
+      this.minLength = minLen;
+    }
+
+    @Override
+    public int docID() {
+      return lead.docID();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return doNext(lead.nextDoc());
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return doNext(lead.advance(target));
+    }
+
+    private int doNext(int doc) throws IOException {
+      advanceLead: for (;; doc = lead.nextDoc()) {
+        if (doc >= minLength) {
+          return NO_MORE_DOCS;
+        }
+        for (BitSet bitSet : bitSets) {
+          if (bitSet.get(doc) == false) {
+            continue advanceLead;
+          }
+        }
+        for (BitSetIterator iterator : bitSetIterators) {
+          iterator.setDocId(doc);
+        }
+        return doc;
+      }
+    }
+
+    @Override
+    public long cost() {
+      return lead.cost();
+    }
+
   }
 
   /**
-   * {@link TwoPhaseIterator} view of a {@link TwoPhase} conjunction.
+   * {@link TwoPhaseIterator} implementing a conjunction.
    */
-  private static class TwoPhaseConjunctionDISI extends TwoPhaseIterator {
+  private static final class ConjunctionTwoPhaseIterator extends TwoPhaseIterator {
 
     private final TwoPhaseIterator[] twoPhaseIterators;
     private final float matchCost;
 
-    private TwoPhaseConjunctionDISI(List<? extends DocIdSetIterator> iterators, List<TwoPhaseIterator> twoPhaseIterators) {
-      super(new ConjunctionDISI(iterators));
+    private ConjunctionTwoPhaseIterator(DocIdSetIterator approximation,
+        List<? extends TwoPhaseIterator> twoPhaseIterators) {
+      super(approximation);
       assert twoPhaseIterators.size() > 0;
 
       CollectionUtil.timSort(twoPhaseIterators, new Comparator<TwoPhaseIterator>() {
@@ -257,39 +354,6 @@ public class ConjunctionDISI extends DocIdSetIterator {
       return matchCost;
     }
 
-  }
-
-  /**
-   * A conjunction DISI built on top of approximations. This implementation
-   * verifies that documents actually match by consulting the provided
-   * {@link TwoPhaseIterator}s.
-   *
-   * Another important difference with {@link ConjunctionDISI} is that this
-   * implementation supports approximations too: the approximation of this
-   * impl is the conjunction of the approximations of the wrapped iterators.
-   * This allows eg. {@code +"A B" +C} to be approximated as
-   * {@code +(+A +B) +C}.
-   */
-  // NOTE: this is essentially the same as TwoPhaseDocIdSetIterator.asDocIdSetIterator
-  // but is its own impl in order to be able to expose a two-phase view
-  private static class TwoPhase extends ConjunctionDISI {
-
-    final TwoPhaseConjunctionDISI twoPhaseView;
-
-    private TwoPhase(List<? extends DocIdSetIterator> iterators, List<TwoPhaseIterator> twoPhaseIterators) {
-      super(iterators);
-      twoPhaseView = new TwoPhaseConjunctionDISI(iterators, twoPhaseIterators);
-    }
-
-    @Override
-    public TwoPhaseConjunctionDISI asTwoPhaseIterator() {
-      return twoPhaseView;
-    }
-
-    @Override
-    protected boolean matches() throws IOException {
-      return twoPhaseView.matches();
-    }
   }
 
 }

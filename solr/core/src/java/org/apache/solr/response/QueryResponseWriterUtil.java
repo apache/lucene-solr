@@ -36,7 +36,7 @@ public final class QueryResponseWriterUtil {
   /**
    * Writes the response writer's result to the given output stream.
    * This method inspects the specified writer to determine if it is a 
-   * {@link BinaryQueryResponseWriter} or not to delegate to the approprate method.
+   * {@link BinaryQueryResponseWriter} or not to delegate to the appropriate method.
    * @see BinaryQueryResponseWriter#write(OutputStream,SolrQueryRequest,SolrQueryResponse)
    * @see BinaryQueryResponseWriter#write(Writer,SolrQueryRequest,SolrQueryResponse)
    */

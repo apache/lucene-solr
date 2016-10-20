@@ -17,6 +17,7 @@
 package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -25,7 +26,9 @@ import org.apache.solr.handler.component.SpellCheckComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.Test;
 
@@ -35,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -96,15 +98,20 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount; assertEquals(pathToClassMap.get("/admin/threads"), "solr.ThreadDumpHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/config"), "solr.SolrConfigHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/export"), "solr.SearchHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/terms"), "solr.SearchHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/get"), "solr.RealTimeGetHandler");
       ++ihCount; assertEquals(pathToClassMap.get(ReplicationHandler.PATH), "solr.ReplicationHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/schema"), "solr.SchemaHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/sql"), "solr.SQLHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/stream"), "solr.StreamHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/graph"), "solr.GraphHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/update"), "solr.UpdateRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/update/csv"), "solr.UpdateRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/update/json"), "solr.UpdateRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/update/json/docs"), "solr.UpdateRequestHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/analysis/document"), "solr.DocumentAnalysisRequestHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/analysis/field"), "solr.FieldAnalysisRequestHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/debug/dump"), "solr.DumpRequestHandler");
     }
     assertEquals("wrong number of implicit handlers", ihCount, implicitHandlers.size());
   }
@@ -256,6 +263,63 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertEquals("wrong config for maxBooleanClauses", 1024, solrConfig.booleanQueryMaxClauseCount);
     assertEquals("wrong config for enableLazyFieldLoading", true, solrConfig.enableLazyFieldLoading);
     assertEquals("wrong config for queryResultWindowSize", 10, solrConfig.queryResultWindowSize);
+  }
+
+  /**
+   * Test that's meant to be run with many iterations to expose a leak of SolrIndexSearcher when a core is closed
+   * due to a reload. Without the fix, this test fails with most iters=1000 runs.
+   */
+  @Test
+  public void testReloadLeak() throws Exception {
+    final ExecutorService executor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(1, new DefaultSolrThreadFactory("testReloadLeak"));
+
+    // Continuously open new searcher while core is not closed, and reload core to try to reproduce searcher leak.
+    // While in practice we never continuously open new searchers, this is trying to make up for the fact that opening
+    // a searcher in this empty core is very fast by opening new searchers continuously to increase the likelihood
+    // for race.
+    SolrCore core = h.getCore();
+    assertTrue("Refcount != 1", core.getOpenCount() == 1);
+    executor.execute(new NewSearcherRunnable(core));
+
+    // Since we called getCore() vs getCoreInc() and don't own a refCount, the container should decRef the core
+    // and close it when we call reload.
+    h.reload();
+
+    executor.shutdown();
+    executor.awaitTermination(1, TimeUnit.MINUTES);
+
+    // Check that all cores are closed and no searcher references are leaked.
+    assertTrue("SolrCore " + core + " is not closed", core.isClosed());
+    assertTrue(core.areAllSearcherReferencesEmpty());
+  }
+
+  private static class NewSearcherRunnable implements Runnable {
+    private final SolrCore core;
+
+    NewSearcherRunnable(SolrCore core) {
+      this.core = core;
+    }
+
+    @Override
+    public void run() {
+      while (!core.isClosed()) {
+        try {
+          RefCounted<SolrIndexSearcher> newSearcher = null;
+          try {
+            newSearcher = core.openNewSearcher(true, true);
+          } finally {
+            if (newSearcher != null) {
+              newSearcher.decref();
+            }
+          }
+        } catch (SolrException e) {
+          if (!core.isClosed()) {
+            throw e;
+          }
+        }
+      }
+    }
   }
 
 }

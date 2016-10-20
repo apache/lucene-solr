@@ -20,8 +20,10 @@ from scriptutil import *
 
 import argparse
 import re
+from configparser import ConfigParser, ExtendedInterpolation
+from textwrap import dedent
 
-def update_changes(filename, new_version):
+def update_changes(filename, new_version, init_changes = '(No Changes)\n\n'):
   print('  adding new section to %s...' % filename, end='', flush=True)
   matcher = re.compile(r'\d+\.\d+\.\d+\s+===')
   def edit(buffer, match, line):
@@ -30,7 +32,7 @@ def update_changes(filename, new_version):
     match = new_version.previous_dot_matcher.search(line)
     if match is not None:
       buffer.append(line.replace(match.group(0), new_version.dot))
-      buffer.append('(No Changes)\n\n')
+      buffer.append(init_changes)
     buffer.append(line)
     return match is not None
      
@@ -48,28 +50,36 @@ def add_constant(new_version, deprecate):
     last = buffer[-1]
     if last.strip() != '@Deprecated':
       spaces = ' ' * (len(last) - len(last.lstrip()) - 1)
-      buffer[-1] = spaces + (' * @deprecated (%s) Use latest\n' % new_version)
-      buffer.append(spaces + ' */\n')
-      buffer.append(spaces + '@Deprecated\n')
+      del buffer[-1] # Remove comment closer line
+      if (len(buffer) >= 4 and re.search('for Lucene.\s*$', buffer[-1]) != None):
+        del buffer[-3:] # drop the trailing lines '<p> / Use this to get the latest ... / ... for Lucene.'
+      buffer.append(( '{0} * @deprecated ({1}) Use latest\n'
+                    + '{0} */\n'
+                    + '{0}@Deprecated\n').format(spaces, new_version))
 
   def buffer_constant(buffer, line):
     spaces = ' ' * (len(line) - len(line.lstrip()))
-    buffer.append('\n' + spaces + '/**\n')
-    buffer.append(spaces + ' * Match settings and bugs in Lucene\'s %s release.\n' % new_version)
+    buffer.append(( '\n{0}/**\n'
+                  + '{0} * Match settings and bugs in Lucene\'s {1} release.\n')
+                  .format(spaces, new_version))
     if deprecate:
-      buffer.append(spaces + ' * @deprecated Use latest\n')
-    buffer.append(spaces + ' */\n')
+      buffer.append('%s * @deprecated Use latest\n' % spaces)
+    else:
+      buffer.append(( '{0} * <p>\n'
+                    + '{0} * Use this to get the latest &amp; greatest settings, bug\n'
+                    + '{0} * fixes, etc, for Lucene.\n').format(spaces))
+    buffer.append('%s */\n' % spaces)
     if deprecate:
-      buffer.append(spaces + '@Deprecated\n')
-    buffer.append(spaces + 'public static final Version %s = new Version(%d, %d, %d);\n' %
-                  (new_version.constant, new_version.major, new_version.minor, new_version.bugfix))
+      buffer.append('%s@Deprecated\n' % spaces)
+    buffer.append('{0}public static final Version {1} = new Version({2}, {3}, {4});\n'.format
+                  (spaces, new_version.constant, new_version.major, new_version.minor, new_version.bugfix))
   
   class Edit(object):
     found = -1
     def __call__(self, buffer, match, line):
       if new_version.constant in line:
         return None # constant already exists
-      # outter match is just to find lines declaring version constants
+      # outer match is just to find lines declaring version constants
       match = prev_matcher.search(line)
       if match is not None:
         ensure_deprecated(buffer) # old version should be deprecated
@@ -163,51 +173,67 @@ def check_solr_version_tests():
   os.chdir(base_dir)
   print('ok')
 
-def read_config():
+def read_config(current_version):
   parser = argparse.ArgumentParser(description='Add a new version')
   parser.add_argument('version', type=Version.parse)
-  parser.add_argument('-c', '--changeid', type=str, help='Git ChangeId (commit hash) for downstream version change to merge')
-  c = parser.parse_args()
+  newconf = parser.parse_args()
 
-  c.branch_type = find_branch_type()
-  c.matching_branch = c.version.is_bugfix_release() and c.branch_type == BranchType.release or \
-                      c.version.is_minor_release() and c.branch_type == BranchType.stable or \
-                      c.version.is_major_release() and c.branch_type == BranchType.major
+  newconf.branch_type = find_branch_type()
+  newconf.is_latest_version = newconf.version.on_or_after(current_version)
 
-  print ("branch_type is %s " % c.branch_type)
-  if c.changeid and c.version.is_major_release():
-    parser.error('Cannot use --changeid for major release')
-  if c.changeid and c.matching_branch:
-    parser.error('Cannot use --changeid on branch that new version will originate on')
-  if c.version.is_bugfix_release() and c.branch_type in [BranchType.major, BranchType.stable] and not c.changeid:
-    parser.error('Adding bugfix release on master or stable branch requires --changeid')
-  if c.version.is_minor_release() and c.branch_type in [BranchType.major] and not c.changeid:
-    parser.error('Adding minor release on master branch requires --changeid')
+  print ("branch_type is %s " % newconf.branch_type)
 
-  return c
+  return newconf
+
+# Hack ConfigParser, designed to parse INI files, to parse & interpolate Java .properties files
+def parse_properties_file(filename):
+  contents = open(filename, encoding='ISO-8859-1').read().replace('%', '%%') # Escape interpolation metachar
+  parser = ConfigParser(interpolation=ExtendedInterpolation())               # Handle ${property-name} interpolation
+  parser.read_string("[DUMMY_SECTION]\n" + contents)                         # Add required section
+  return dict(parser.items('DUMMY_SECTION'))
+
+def get_solr_init_changes():
+  return dedent('''
+    Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+    Versions of Major Components
+    ---------------------
+    Apache Tika %(org.apache.tika.version)s
+    Carrot2 %(/org.carrot2/carrot2-mini)s
+    Velocity %(/org.apache.velocity/velocity)s and Velocity Tools %(/org.apache.velocity/velocity-tools)s
+    Apache UIMA %(org.apache.uima.version)s
+    Apache ZooKeeper %(/org.apache.zookeeper/zookeeper)s
+    Jetty %(org.eclipse.jetty.version)s
+
+
+    (No Changes)\n\n
+    ''' % parse_properties_file('lucene/ivy-versions.properties'))
   
 def main():
-  c = read_config()
+  current_version = Version.parse(find_current_version())
+  newconf = read_config(current_version)
 
-  if c.changeid:
-    cherry_pick_change(c.changeid)
+  print('\nAdding new version %s' % newconf.version)
+  update_changes('lucene/CHANGES.txt', newconf.version)
+  update_changes('solr/CHANGES.txt', newconf.version, get_solr_init_changes())
 
-  print('\nAdding new version %s' % c.version)
-  update_changes('lucene/CHANGES.txt', c.version)
-  update_changes('solr/CHANGES.txt', c.version)
-  add_constant(c.version, not c.matching_branch) 
+  latest_or_backcompat = newconf.is_latest_version or current_version.is_back_compat_with(newconf.version)
+  if latest_or_backcompat:
+    add_constant(newconf.version, not newconf.is_latest_version)
+  else:
+    print('\nNot adding constant for version %s because it is no longer supported' % newconf.version)
 
-  if not c.changeid:
+  if newconf.is_latest_version:
     print('\nUpdating latest version')
-    update_build_version(c.version)
-    update_latest_constant(c.version)
-    update_example_solrconfigs(c.version)
+    update_build_version(newconf.version)
+    update_latest_constant(newconf.version)
+    update_example_solrconfigs(newconf.version)
 
-  if c.version.is_major_release():
+  if newconf.version.is_major_release():
     print('\nTODO: ')
     print('  - Move backcompat oldIndexes to unsupportedIndexes in TestBackwardsCompatibility')
     print('  - Update IndexFormatTooOldException throw cases')
-  else:
+  elif latest_or_backcompat:
     print('\nTesting changes')
     check_lucene_version_tests()
     check_solr_version_tests()

@@ -35,35 +35,13 @@ public class RandomSimilarity extends PerFieldSimilarityWrapper {
   final List<Similarity> knownSims;
   Map<String,Similarity> previousMappings = new HashMap<>();
   final int perFieldSeed;
-  final int coordType; // 0 = no coord, 1 = coord, 2 = crazy coord
   final boolean shouldQueryNorm;
   
   public RandomSimilarity(Random random) {
     perFieldSeed = random.nextInt();
-    coordType = random.nextInt(3);
     shouldQueryNorm = random.nextBoolean();
     knownSims = new ArrayList<>(allSims);
     Collections.shuffle(knownSims, random);
-  }
-  
-  @Override
-  public float coord(int overlap, int maxOverlap) {
-    if (coordType == 0) {
-      return 1.0f;
-    } else if (coordType == 1) {
-      return defaultSim.coord(overlap, maxOverlap);
-    } else {
-      return overlap / ((float)maxOverlap + 1);
-    }
-  }
-  
-  @Override
-  public float queryNorm(float sumOfSquaredWeights) {
-    if (shouldQueryNorm) {
-      return defaultSim.queryNorm(sumOfSquaredWeights);
-    } else {
-      return 1.0f;
-    }
   }
   
   @Override
@@ -138,14 +116,6 @@ public class RandomSimilarity extends PerFieldSimilarityWrapper {
   
   @Override
   public synchronized String toString() {
-    final String coordMethod;
-    if (coordType == 0) {
-      coordMethod = "no";
-    } else if (coordType == 1) {
-      coordMethod = "yes";
-    } else {
-      coordMethod = "crazy";
-    }
-    return "RandomSimilarity(queryNorm=" + shouldQueryNorm + ",coord=" + coordMethod + "): " + previousMappings.toString();
+    return "RandomSimilarity(queryNorm=" + shouldQueryNorm + "): " + previousMappings.toString();
   }
 }

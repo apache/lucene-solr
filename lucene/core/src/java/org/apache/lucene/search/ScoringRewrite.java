@@ -54,9 +54,7 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
   public final static ScoringRewrite<BooleanQuery.Builder> SCORING_BOOLEAN_REWRITE = new ScoringRewrite<BooleanQuery.Builder>() {
     @Override
     protected BooleanQuery.Builder getTopLevelBuilder() {
-      BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      builder.setDisableCoord(true);
-      return builder;
+      return new BooleanQuery.Builder();
     }
 
     @Override
@@ -115,7 +113,7 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
       for (int i = 0; i < size; i++) {
         final int pos = sort[i];
         final Term term = new Term(query.getField(), col.terms.get(pos, new BytesRef()));
-        assert termStates[pos].hasOnlyRealTerms() == false || reader.docFreq(term) == termStates[pos].docFreq();
+        assert reader.docFreq(term) == termStates[pos].docFreq();
         addClause(builder, term, termStates[pos].docFreq(), boost[pos], termStates[pos]);
       }
     }

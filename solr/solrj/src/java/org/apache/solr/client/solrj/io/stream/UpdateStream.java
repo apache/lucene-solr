@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 public class UpdateStream extends TupleStream implements Expressible {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static String BATCH_INDEXED_FIELD_NAME = "batchIndexed"; // field name in summary tuple for #docs updated in batch
   private String collection;
   private String zkHost;
   private int updateBatchSize;
@@ -307,7 +308,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     Map m = new HashMap();
     this.totalDocsIndex += batchSize;
     ++batchNumber;
-    m.put("batchIndexed", batchSize);
+    m.put(BATCH_INDEXED_FIELD_NAME, batchSize);
     m.put("totalIndexed", this.totalDocsIndex);
     m.put("batchNumber", batchNumber);
     if(coreName != null) {

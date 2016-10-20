@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.store.BaseDirectoryWrapper;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
@@ -51,7 +50,7 @@ public class TestSegmentInfos extends LuceneTestCase {
 
     SegmentInfos sis = new SegmentInfos();
     SegmentInfo info = new SegmentInfo(dir, Version.LUCENE_6_0_0, "_0", 1, false, Codec.getDefault(), 
-                                       Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap());
+                                       Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
     SegmentCommitInfo commitInfo = new SegmentCommitInfo(info, 0, -1, -1, -1);
@@ -73,14 +72,14 @@ public class TestSegmentInfos extends LuceneTestCase {
 
     SegmentInfos sis = new SegmentInfos();
     SegmentInfo info = new SegmentInfo(dir, Version.LUCENE_6_0_0, "_0", 1, false, Codec.getDefault(), 
-                                       Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap());
+                                       Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
     SegmentCommitInfo commitInfo = new SegmentCommitInfo(info, 0, -1, -1, -1);
     sis.add(commitInfo);
 
     info = new SegmentInfo(dir, Version.LUCENE_6_0_0, "_1", 1, false, Codec.getDefault(), 
-                                       Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap());
+                           Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
     commitInfo = new SegmentCommitInfo(info, 0, -1, -1, -1);

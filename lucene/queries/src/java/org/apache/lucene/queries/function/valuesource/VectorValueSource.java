@@ -61,43 +61,42 @@ public class VectorValueSource extends MultiValueSource {
       final FunctionValues y = sources.get(1).getValues(context, readerContext);
       return new FunctionValues() {
         @Override
-        public void byteVal(int doc, byte[] vals) {
+        public void byteVal(int doc, byte[] vals) throws IOException {
           vals[0] = x.byteVal(doc);
           vals[1] = y.byteVal(doc);
         }
-
         @Override
-        public void shortVal(int doc, short[] vals) {
+        public void shortVal(int doc, short[] vals) throws IOException {
           vals[0] = x.shortVal(doc);
           vals[1] = y.shortVal(doc);
         }
         @Override
-        public void intVal(int doc, int[] vals) {
+        public void intVal(int doc, int[] vals) throws IOException {
           vals[0] = x.intVal(doc);
           vals[1] = y.intVal(doc);
         }
         @Override
-        public void longVal(int doc, long[] vals) {
+        public void longVal(int doc, long[] vals) throws IOException {
           vals[0] = x.longVal(doc);
           vals[1] = y.longVal(doc);
         }
         @Override
-        public void floatVal(int doc, float[] vals) {
+        public void floatVal(int doc, float[] vals) throws IOException {
           vals[0] = x.floatVal(doc);
           vals[1] = y.floatVal(doc);
         }
         @Override
-        public void doubleVal(int doc, double[] vals) {
+        public void doubleVal(int doc, double[] vals) throws IOException {
           vals[0] = x.doubleVal(doc);
           vals[1] = y.doubleVal(doc);
         }
         @Override
-        public void strVal(int doc, String[] vals) {
+        public void strVal(int doc, String[] vals) throws IOException {
           vals[0] = x.strVal(doc);
           vals[1] = y.strVal(doc);
         }
         @Override
-        public String toString(int doc) {
+        public String toString(int doc) throws IOException {
           return name() + "(" + x.toString(doc) + "," + y.toString(doc) + ")";
         }
       };
@@ -111,56 +110,56 @@ public class VectorValueSource extends MultiValueSource {
 
     return new FunctionValues() {
       @Override
-      public void byteVal(int doc, byte[] vals) {
+      public void byteVal(int doc, byte[] vals) throws IOException {
         for (int i = 0; i < valsArr.length; i++) {
           vals[i] = valsArr[i].byteVal(doc);
         }
       }
 
       @Override
-      public void shortVal(int doc, short[] vals) {
+      public void shortVal(int doc, short[] vals) throws IOException {
         for (int i = 0; i < valsArr.length; i++) {
           vals[i] = valsArr[i].shortVal(doc);
         }
       }
 
       @Override
-      public void floatVal(int doc, float[] vals) {
+      public void floatVal(int doc, float[] vals) throws IOException {
         for (int i = 0; i < valsArr.length; i++) {
           vals[i] = valsArr[i].floatVal(doc);
         }
       }
 
       @Override
-      public void intVal(int doc, int[] vals) {
+      public void intVal(int doc, int[] vals) throws IOException {
         for (int i = 0; i < valsArr.length; i++) {
           vals[i] = valsArr[i].intVal(doc);
         }
       }
 
       @Override
-      public void longVal(int doc, long[] vals) {
+      public void longVal(int doc, long[] vals) throws IOException {
         for (int i = 0; i < valsArr.length; i++) {
           vals[i] = valsArr[i].longVal(doc);
         }
       }
 
       @Override
-      public void doubleVal(int doc, double[] vals) {
+      public void doubleVal(int doc, double[] vals) throws IOException {
         for (int i = 0; i < valsArr.length; i++) {
           vals[i] = valsArr[i].doubleVal(doc);
         }
       }
 
       @Override
-      public void strVal(int doc, String[] vals) {
+      public void strVal(int doc, String[] vals) throws IOException {
         for (int i = 0; i < valsArr.length; i++) {
           vals[i] = valsArr[i].strVal(doc);
         }
       }
 
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append(name()).append('(');
         boolean firstTime = true;

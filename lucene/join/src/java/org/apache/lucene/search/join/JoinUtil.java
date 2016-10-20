@@ -26,7 +26,6 @@ import java.util.function.BiConsumer;
 import java.util.function.LongFunction;
 
 import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
@@ -103,58 +102,12 @@ public final class JoinUtil {
       termsWithScoreCollector = GenericTermsCollector.createCollectorMV(mvFunction, scoreMode);
     } else {
       Function<BinaryDocValues> svFunction = DocValuesTermsCollector.binaryDocValues(fromField);
-      termsWithScoreCollector =  GenericTermsCollector.createCollectorSV(svFunction, scoreMode);
+      termsWithScoreCollector = GenericTermsCollector.createCollectorSV(svFunction, scoreMode);
     }
     
-    return createJoinQuery(multipleValuesPerDocument, toField, fromQuery, fromSearcher, scoreMode,
-        termsWithScoreCollector);
-    
+    return createJoinQuery(multipleValuesPerDocument, toField, fromQuery, fromSearcher, scoreMode, termsWithScoreCollector);
   }
   
-  /**
-   * @deprecated Because {@link LegacyNumericType} is deprecated, instead use {@link #createJoinQuery(String, boolean, String, Class, Query, IndexSearcher, ScoreMode)}
-   *
-   * Method for query time joining for numeric fields. It supports multi- and single- values longs and ints. 
-   * All considerations from {@link JoinUtil#createJoinQuery(String, boolean, String, Query, IndexSearcher, ScoreMode)} are applicable here too,
-   * though memory consumption might be higher.
-   * <p>
-   *
-   * @param fromField                 The from field to join from
-   * @param multipleValuesPerDocument Whether the from field has multiple terms per document
-   *                                  when true fromField might be {@link DocValuesType#SORTED_NUMERIC},
-   *                                  otherwise fromField should be {@link DocValuesType#NUMERIC}
-   * @param toField                   The to field to join to, should be {@link org.apache.lucene.document.LegacyIntField} or {@link org.apache.lucene.document.LegacyLongField}
-   * @param numericType               either {@link org.apache.lucene.document.FieldType.LegacyNumericType#INT} or {@link org.apache.lucene.document.FieldType.LegacyNumericType#LONG}, it should correspond to fromField and toField types
-   * @param fromQuery                 The query to match documents on the from side
-   * @param fromSearcher              The searcher that executed the specified fromQuery
-   * @param scoreMode                 Instructs how scores from the fromQuery are mapped to the returned query
-   * @return a {@link Query} instance that can be used to join documents based on the
-   *         terms in the from and to field
-   * @throws IOException If I/O related errors occur
-   */
-  @Deprecated
-  public static Query createJoinQuery(String fromField,
-      boolean multipleValuesPerDocument,
-      String toField, LegacyNumericType numericType,
-      Query fromQuery,
-      IndexSearcher fromSearcher,
-      ScoreMode scoreMode) throws IOException {
-    
-    final GenericTermsCollector termsCollector;
-     
-    if (multipleValuesPerDocument) {
-      Function<SortedSetDocValues> mvFunction = DocValuesTermsCollector.sortedNumericAsSortedSetDocValues(fromField,numericType);
-      termsCollector = GenericTermsCollector.createCollectorMV(mvFunction, scoreMode);
-    } else {
-      Function<BinaryDocValues> svFunction = DocValuesTermsCollector.numericAsBinaryDocValues(fromField,numericType);
-      termsCollector =  GenericTermsCollector.createCollectorSV(svFunction, scoreMode);
-    }
-    
-    return createJoinQuery(multipleValuesPerDocument, toField, fromQuery, fromSearcher, scoreMode,
-        termsCollector);
-    
-  }
-
   /**
    * Method for query time joining for numeric fields. It supports multi- and single- values longs, ints, floats and longs.
    * All considerations from {@link JoinUtil#createJoinQuery(String, boolean, String, Query, IndexSearcher, ScoreMode)} are applicable here too,
@@ -247,12 +200,16 @@ public final class JoinUtil {
 
         @Override
         public void collect(int doc) throws IOException {
-          sortedNumericDocValues.setDocument(doc);
-          for (int i = 0; i < sortedNumericDocValues.count(); i++) {
-            long value = sortedNumericDocValues.valueAt(i);
-            joinValues.add(value);
-            if (needsScore) {
-              scoreAggregator.accept(value, scorer.score());
+          if (doc > sortedNumericDocValues.docID()) {
+            sortedNumericDocValues.advance(doc);
+          }
+          if (doc == sortedNumericDocValues.docID()) {
+            for (int i = 0; i < sortedNumericDocValues.docValueCount(); i++) {
+              long value = sortedNumericDocValues.nextValue();
+              joinValues.add(value);
+              if (needsScore) {
+                scoreAggregator.accept(value, scorer.score());
+              }
             }
           }
         }
@@ -277,10 +234,29 @@ public final class JoinUtil {
 
         NumericDocValues numericDocValues;
         Scorer scorer;
+        private int lastDocID = -1;
+
+        private boolean docsInOrder(int docID) {
+          if (docID < lastDocID) {
+            throw new AssertionError("docs out of order: lastDocID=" + lastDocID + " vs docID=" + docID);
+          }
+          lastDocID = docID;
+          return true;
+        }
 
         @Override
         public void collect(int doc) throws IOException {
-          long value = numericDocValues.get(doc);
+          assert docsInOrder(doc);
+          int dvDocID = numericDocValues.docID();
+          if (dvDocID < doc) {
+            dvDocID = numericDocValues.advance(doc);
+          }
+          long value;
+          if (dvDocID == doc) {
+            value = numericDocValues.longValue();
+          } else {
+            value = 0;
+          }
           joinValues.add(value);
           if (needsScore) {
             scoreAggregator.accept(value, scorer.score());
@@ -290,6 +266,7 @@ public final class JoinUtil {
         @Override
         protected void doSetNextReader(LeafReaderContext context) throws IOException {
           numericDocValues = DocValues.getNumeric(context.reader(), fromField);
+          lastDocID = -1;
         }
 
         @Override
@@ -494,7 +471,7 @@ public final class JoinUtil {
     int numSegments = indexReader.leaves().size();
     final long valueCount;
     if (numSegments == 0) {
-      return new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("JoinUtil.createJoinQuery with no segments");
     } else if (numSegments == 1) {
       // No need to use the ordinal map, because there is just one segment.
       ordinalMap = null;
@@ -503,7 +480,7 @@ public final class JoinUtil {
       if (joinSortedDocValues != null) {
         valueCount = joinSortedDocValues.getValueCount();
       } else {
-        return new MatchNoDocsQuery();
+        return new MatchNoDocsQuery("JoinUtil.createJoinQuery: no join values");
       }
     } else {
       if (ordinalMap == null) {

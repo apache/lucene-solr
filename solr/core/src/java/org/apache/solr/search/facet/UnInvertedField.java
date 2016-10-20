@@ -27,17 +27,15 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.uninverting.DocTermOrds;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
@@ -45,6 +43,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.uninverting.DocTermOrds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,7 +136,7 @@ public class UnInvertedField extends DocTermOrds {
       if (deState == null) {
         deState = new SolrIndexSearcher.DocsEnumState();
         deState.fieldName = field;
-        deState.liveDocs = searcher.getLeafReader().getLiveDocs();
+        deState.liveDocs = searcher.getSlowAtomicReader().getLiveDocs();
         deState.termsEnum = te;  // TODO: check for MultiTermsEnum in SolrIndexSearcher could now fail?
         deState.postingsEnum = postingsEnum;
         deState.minSetSizeCached = maxTermDocFreq;
@@ -240,7 +239,7 @@ public class UnInvertedField extends DocTermOrds {
 
     public TermsEnum getTermsEnum() throws IOException {
       if (te == null) {
-        te = getOrdTermsEnum(searcher.getLeafReader());
+        te = getOrdTermsEnum(searcher.getSlowAtomicReader());
       }
       return te;
     }
@@ -306,7 +305,7 @@ public class UnInvertedField extends DocTermOrds {
 
 
 
-  private void getCounts(FacetFieldProcessorUIF processor, CountSlotAcc counts) throws IOException {
+  private void getCounts(FacetFieldProcessorByArrayUIF processor, CountSlotAcc counts) throws IOException {
     DocSet docs = processor.fcontext.base;
     int baseSize = docs.size();
     int maxDoc = searcher.maxDoc();
@@ -398,7 +397,7 @@ public class UnInvertedField extends DocTermOrds {
 
 
 
-  public void collectDocs(FacetFieldProcessorUIF processor) throws IOException {
+  public void collectDocs(FacetFieldProcessorByArrayUIF processor) throws IOException {
     if (processor.collectAcc==null && processor.allBucketsAcc == null && processor.startTermIndex == 0 && processor.endTermIndex >= numTermsInField) {
       getCounts(processor, processor.countAcc);
       return;
@@ -409,7 +408,7 @@ public class UnInvertedField extends DocTermOrds {
 
   // called from FieldFacetProcessor
   // TODO: do a callback version that can be specialized!
-  public void collectDocsGeneric(FacetFieldProcessorUIF processor) throws IOException {
+  public void collectDocsGeneric(FacetFieldProcessorByArrayUIF processor) throws IOException {
     use.incrementAndGet();
 
     int startTermIndex = processor.startTermIndex;

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
@@ -55,11 +56,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
-import org.apache.lucene.spatial3d.geom.XYZSolid;
-import org.apache.lucene.spatial3d.geom.XYZSolidFactory;
 import org.apache.lucene.spatial3d.geom.GeoArea;
 import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
-import org.apache.lucene.spatial3d.geom.GeoBBox;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
 import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
 import org.apache.lucene.spatial3d.geom.GeoPathFactory;
@@ -71,6 +69,8 @@ import org.apache.lucene.spatial3d.geom.Plane;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.SidedPlane;
 import org.apache.lucene.spatial3d.geom.XYZBounds;
+import org.apache.lucene.spatial3d.geom.XYZSolid;
+import org.apache.lucene.spatial3d.geom.XYZSolidFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
@@ -85,14 +85,14 @@ import com.carrotsearch.randomizedtesting.generators.RandomInts;
 public class TestGeo3DPoint extends LuceneTestCase {
 
   private static Codec getCodec() {
-    if (Codec.getDefault().getName().equals("Lucene60")) {
+    if (Codec.getDefault().getName().equals("Lucene70")) {
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 16, 2048);
       double maxMBSortInHeap = 3.0 + (3*random().nextDouble());
       if (VERBOSE) {
         System.out.println("TEST: using Lucene60PointsFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
       }
 
-      return new FilterCodec("Lucene60", Codec.getDefault()) {
+      return new FilterCodec("Lucene70", Codec.getDefault()) {
         @Override
         public PointsFormat pointsFormat() {
           return new PointsFormat() {
@@ -132,7 +132,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
   }
 
   private static double toRadians(double degrees) {
-    return degrees * Geo3DPoint.RADIANS_PER_DEGREE;
+    return degrees * Geo3DUtil.RADIANS_PER_DEGREE;
   }
 
   private static class Cell {
@@ -235,6 +235,29 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
       if (VERBOSE) {
         log.println("  root cell: " + root);
+      }
+
+      // make sure the root cell (XYZBounds) does in fact contain all points that the shape contains
+      {
+        boolean fail = false;
+        for(int docID=0;docID<numDocs;docID++) {
+          if (root.contains(docs[docID]) == false) {
+            boolean expected = shape.isWithin(unquantizedDocs[docID]);
+            if (expected) {
+              log.println("    doc=" + docID + " is contained by shape but is outside the returned XYZBounds");
+              log.println("      unquantized=" + unquantizedDocs[docID]);
+              log.println("      quantized=" + docs[docID]);
+              fail = true;
+            }
+          }
+        }
+
+        if (fail) {
+          log.println("  shape=" + shape);
+          log.println("  bounds=" + bounds);
+          System.out.print(sw.toString());
+          fail("invalid bounds for shape=" + shape);
+        }
       }
 
       List<Cell> queue = new ArrayList<>();
@@ -430,7 +453,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
           } else {
             log.println("doc=" + docID + " should match but did not");
           }
-          log.println("  point=" + docs[docID]);
+          log.println("  point=" + point);
+          log.println("  mappedPoint=" + mappedPoint);
           fail = true;
         }
       }
@@ -767,8 +791,6 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
     final int iters = atLeast(100);
 
-    NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
-
     for (int iter=0;iter<iters;iter++) {
 
       /*
@@ -811,8 +833,11 @@ public class TestGeo3DPoint extends LuceneTestCase {
         System.err.println("  hitCount: " + hits.cardinality());
       }
       
+      NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
+
       for(int docID=0;docID<r.maxDoc();docID++) {
-        int id = (int) docIDToID.get(docID);
+        assertEquals(docID, docIDToID.nextDoc());
+        int id = (int) docIDToID.longValue();
         GeoPoint point = points[id];
         GeoPoint unquantizedPoint = unquantizedPoints[id];
         if (point != null && unquantizedPoint != null) {
@@ -1178,6 +1203,55 @@ public class TestGeo3DPoint extends LuceneTestCase {
     }
   }
 
+  // poached from TestGeoEncodingUtils.testLatitudeQuantization:
+
+  /**
+   * step through some integers, ensuring they decode to their expected double values.
+   * double values start at -planetMax and increase by Geo3DUtil.DECODE for each integer.
+   * check edge cases within the double range and random doubles within the range too.
+   */
+  public void testQuantization() throws Exception {
+    Random random = random();
+    for (int i = 0; i < 10000; i++) {
+      int encoded = random.nextInt();
+      if (encoded < Geo3DUtil.MIN_ENCODED_VALUE) {
+        continue;
+      }
+      if (encoded > Geo3DUtil.MAX_ENCODED_VALUE) {
+        continue;
+      }
+      double min = encoded * Geo3DUtil.DECODE;
+      double decoded = Geo3DUtil.decodeValueFloor(encoded);
+      // should exactly equal expected value
+      assertEquals(min, decoded, 0.0D);
+      // should round-trip
+      assertEquals(encoded, Geo3DUtil.encodeValue(decoded));
+      // test within the range
+      if (encoded != Integer.MAX_VALUE) {
+        // this is the next representable value
+        // all double values between [min .. max) should encode to the current integer
+        double max = min + Geo3DUtil.DECODE;
+        assertEquals(max, Geo3DUtil.decodeValueFloor(encoded+1), 0.0D);
+        assertEquals(encoded+1, Geo3DUtil.encodeValue(max));
+
+        // first and last doubles in range that will be quantized
+        double minEdge = Math.nextUp(min);
+        double maxEdge = Math.nextDown(max);
+        assertEquals(encoded, Geo3DUtil.encodeValue(minEdge));
+        assertEquals(encoded, Geo3DUtil.encodeValue(maxEdge));
+
+        // check random values within the double range
+        long minBits = NumericUtils.doubleToSortableLong(minEdge);
+        long maxBits = NumericUtils.doubleToSortableLong(maxEdge);
+        for (int j = 0; j < 100; j++) {
+          double value = NumericUtils.sortableLongToDouble(TestUtil.nextLong(random, minBits, maxBits));
+          // round down
+          assertEquals(encoded,   Geo3DUtil.encodeValue(value));
+        }
+      }
+    }
+  }
+
   public void testEncodeDecodeIsStable() throws Exception {
 
     int iters = atLeast(1000);
@@ -1407,14 +1481,16 @@ public class TestGeo3DPoint extends LuceneTestCase {
     b.append("target is in leaf " + leafReader + " of full reader " + reader + "\n");
 
     DocIdSetBuilder hits = new DocIdSetBuilder(leafReader.maxDoc());
-    ExplainingVisitor visitor = new ExplainingVisitor(shape, targetDocPoint, scaledDocPoint, new PointInShapeIntersectVisitor(hits, shape, bounds), docID - reader.leaves().get(subIndex).docBase, 3, Integer.BYTES, b);
+    ExplainingVisitor visitor = new ExplainingVisitor(shape, targetDocPoint, scaledDocPoint,
+      new PointInShapeIntersectVisitor(hits, shape, bounds),
+      docID - reader.leaves().get(subIndex).docBase, 3, Integer.BYTES, b);
 
     // Do first phase, where we just figure out the "path" that leads to the target docID:
-    leafReader.getPointValues().intersect(fieldName, visitor);
+    leafReader.getPointValues(fieldName).intersect(visitor);
 
     // Do second phase, where we we see how the wrapped visitor responded along that path:
     visitor.startSecondPhase();
-    leafReader.getPointValues().intersect(fieldName, visitor);
+    leafReader.getPointValues(fieldName).intersect(visitor);
 
     return b.toString();
   }

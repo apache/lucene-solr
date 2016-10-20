@@ -129,7 +129,7 @@ class GeoDegeneratePoint extends GeoPoint implements GeoBBox, GeoCircle {
   public double computeDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
     if (isWithin(x,y,z))
       return 0.0;
-    return Double.MAX_VALUE;
+    return Double.POSITIVE_INFINITY;
   }
   
   @Override

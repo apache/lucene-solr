@@ -16,14 +16,10 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-import java.io.StringWriter;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
 /**
