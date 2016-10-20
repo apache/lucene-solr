@@ -362,6 +362,12 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
                                      }
 
                                      @Override
+                                    public boolean advanceExact(int target) throws IOException {
+                                      docID = target;
+                                      return target == 0;
+                                    }
+
+                                     @Override
                                      public long cost() {
                                        return 1;
                                      }
@@ -413,6 +419,12 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
                                        }
                                        return docID;
                                      }
+
+                                     @Override
+                                    public boolean advanceExact(int target) throws IOException {
+                                      docID = target;
+                                      return target == 0;
+                                    }
 
                                      @Override
                                      public long cost() {

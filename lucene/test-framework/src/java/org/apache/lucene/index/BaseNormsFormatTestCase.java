@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.LongSupplier;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -59,9 +60,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(1, new LongProducer() {
+      doTestNormsVersusDocValues(1, new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
         }
       });
@@ -73,9 +74,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(random().nextDouble(), new LongProducer() {
+      doTestNormsVersusDocValues(random().nextDouble(), new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
         }
       });
@@ -86,9 +87,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(1, new LongProducer() {
+      doTestNormsVersusDocValues(1, new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return TestUtil.nextLong(r, Short.MIN_VALUE, Short.MAX_VALUE);
         }
       });
@@ -100,9 +101,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(random().nextDouble(), new LongProducer() {
+      doTestNormsVersusDocValues(random().nextDouble(), new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return TestUtil.nextLong(r, Short.MIN_VALUE, Short.MAX_VALUE);
         }
       });
@@ -113,9 +114,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(1, new LongProducer() {
+      doTestNormsVersusDocValues(1, new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return TestUtil.nextLong(r, Long.MIN_VALUE, Long.MAX_VALUE);
         }
       });
@@ -127,9 +128,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(random().nextDouble(), new LongProducer() {
+      doTestNormsVersusDocValues(random().nextDouble(), new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return TestUtil.nextLong(r, Long.MIN_VALUE, Long.MAX_VALUE);
         }
       });
@@ -140,9 +141,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(1, new LongProducer() {
+      doTestNormsVersusDocValues(1, new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           int thingToDo = r.nextInt(3);
           switch (thingToDo) {
             case 0: return Long.MIN_VALUE;
@@ -159,9 +160,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(random().nextDouble(), new LongProducer() {
+      doTestNormsVersusDocValues(random().nextDouble(), new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           int thingToDo = r.nextInt(3);
           switch (thingToDo) {
             case 0: return Long.MIN_VALUE;
@@ -177,9 +178,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(1, new LongProducer() {
+      doTestNormsVersusDocValues(1, new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return r.nextBoolean() ? 20 : 3;
         }
       });
@@ -191,9 +192,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(random().nextDouble(), new LongProducer() {
+      doTestNormsVersusDocValues(random().nextDouble(), new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return r.nextBoolean() ? 20 : 3;
         }
       });
@@ -204,9 +205,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(1, new LongProducer() {
+      doTestNormsVersusDocValues(1, new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return r.nextBoolean() ? 1000000L : -5000;
         }
       });
@@ -218,9 +219,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(random().nextDouble(), new LongProducer() {
+      doTestNormsVersusDocValues(random().nextDouble(), new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return r.nextBoolean() ? 1000000L : -5000;
         }
       });
@@ -230,9 +231,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
   public void testAllZeros() throws Exception {
     int iterations = atLeast(1);
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(1, new LongProducer() {
+      doTestNormsVersusDocValues(1, new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return 0;
         }
       });
@@ -243,9 +244,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     assumeTrue("Requires sparse norms support", codecSupportsSparsity());
     int iterations = atLeast(1);
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(random().nextDouble(), new LongProducer() {
+      doTestNormsVersusDocValues(random().nextDouble(), new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return 0;
         }
       });
@@ -256,9 +257,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     int iterations = atLeast(1);
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
-      doTestNormsVersusDocValues(1, new LongProducer() {
+      doTestNormsVersusDocValues(1, new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return r.nextInt(100) == 0 ? TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE) : 0;
         }
       });
@@ -270,9 +271,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
       final long commonValue = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
-      doTestNormsVersusDocValues(1, new LongProducer() {
+      doTestNormsVersusDocValues(1, new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return r.nextInt(100) == 0 ? TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE) : commonValue;
         }
       });
@@ -285,9 +286,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     final Random r = random();
     for (int i = 0; i < iterations; i++) {
       final long commonValue = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
-      doTestNormsVersusDocValues(random().nextDouble(), new LongProducer() {
+      doTestNormsVersusDocValues(random().nextDouble(), new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return r.nextInt(100) == 0 ? TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE) : commonValue;
         }
       });
@@ -300,9 +301,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     for (int i = 0; i < iterations; i++) {
       final long commonValue = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
       final long uncommonValue = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
-      doTestNormsVersusDocValues(1, new LongProducer() {
+      doTestNormsVersusDocValues(1, new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return r.nextInt(100) == 0 ? uncommonValue : commonValue;
         }
       });
@@ -316,9 +317,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     for (int i = 0; i < iterations; i++) {
       final long commonValue = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
       final long uncommonValue = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
-      doTestNormsVersusDocValues(random().nextDouble(), new LongProducer() {
+      doTestNormsVersusDocValues(random().nextDouble(), new LongSupplier() {
         @Override
-        long next() {
+        public long getAsLong() {
           return r.nextInt(100) == 0 ? uncommonValue : commonValue;
         }
       });
@@ -337,9 +338,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     for (int j = 0; j < numOtherValues; ++j) {
       otherValues[j] = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
     }
-    doTestNormsVersusDocValues(1, new LongProducer() {
+    doTestNormsVersusDocValues(1, new LongSupplier() {
       @Override
-      long next() {
+      public long getAsLong() {
         return r.nextInt(100) == 0 ? otherValues[r.nextInt(numOtherValues - 1)] : commonValues[r.nextInt(N - 1)];
       }
     });
@@ -358,9 +359,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     for (int j = 0; j < numOtherValues; ++j) {
       otherValues[j] = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
     }
-    doTestNormsVersusDocValues(random().nextDouble(), new LongProducer() {
+    doTestNormsVersusDocValues(random().nextDouble(), new LongSupplier() {
       @Override
-      long next() {
+      public long getAsLong() {
         return r.nextInt(100) == 0 ? otherValues[r.nextInt(numOtherValues - 1)] : commonValues[r.nextInt(N - 1)];
       }
     });
@@ -386,9 +387,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
         for (int j = 0; j < numOtherValues; ++j) {
           otherValues[j] = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
         }
-        doTestNormsVersusDocValues(1, new LongProducer() {
+        doTestNormsVersusDocValues(1, new LongSupplier() {
           @Override
-          long next() {
+          public long getAsLong() {
             return r.nextInt(100) == 0 ? otherValues[r.nextInt(numOtherValues - 1)] : commonValues[r.nextInt(N - 1)];
           }
         });
@@ -417,9 +418,9 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
         for (int j = 0; j < numOtherValues; ++j) {
           otherValues[j] = TestUtil.nextLong(r, Byte.MIN_VALUE, Byte.MAX_VALUE);
         }
-        doTestNormsVersusDocValues(random().nextDouble(), new LongProducer() {
+        doTestNormsVersusDocValues(random().nextDouble(), new LongSupplier() {
           @Override
-          long next() {
+          public long getAsLong() {
             return r.nextInt(100) == 0 ? otherValues[r.nextInt(numOtherValues - 1)] : commonValues[r.nextInt(N - 1)];
           }
         });
@@ -427,7 +428,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     }
   }
 
-  private void doTestNormsVersusDocValues(double density, LongProducer longs) throws Exception {
+  private void doTestNormsVersusDocValues(double density, LongSupplier longs) throws Exception {
     int numDocs = atLeast(500);
     final FixedBitSet docsWithField = new FixedBitSet(numDocs);
     final int numDocsWithField = Math.max(1, (int) (density * numDocs));
@@ -445,7 +446,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     }
     long norms[] = new long[numDocsWithField];
     for (int i = 0; i < numDocsWithField; i++) {
-      norms[i] = longs.next();
+      norms[i] = longs.getAsLong();
     }
     
     Directory dir = newDirectory();
@@ -517,10 +518,6 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
         assertEquals(NO_MORE_DOCS, actual.nextDoc());
       }
     }
-  }
-  
-  static abstract class LongProducer {
-    abstract long next();
   }
   
   static class CannedNormSimilarity extends Similarity {

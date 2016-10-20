@@ -139,6 +139,27 @@ public class MultiDocValues {
       }
 
       @Override
+      public boolean advanceExact(int targetDocID) throws IOException {
+        if (targetDocID <= docID) {
+          throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
+        }
+        int readerIndex = ReaderUtil.subIndex(targetDocID, leaves);
+        if (readerIndex >= nextLeaf) {
+          if (readerIndex == leaves.size()) {
+            throw new IllegalArgumentException("Out of range: " + targetDocID);
+          }
+          currentLeaf = leaves.get(readerIndex);
+          currentValues = currentLeaf.reader().getNormValues(field);
+          nextLeaf = readerIndex+1;
+        }
+        docID = targetDocID;
+        if (currentValues == null) {
+          return false;
+        }
+        return currentValues.advanceExact(targetDocID - currentLeaf.docBase);
+      }
+
+      @Override
       public long longValue() throws IOException {
         return currentValues.longValue();
       }
@@ -244,6 +265,26 @@ public class MultiDocValues {
       }
 
       @Override
+      public boolean advanceExact(int targetDocID) throws IOException {
+        if (targetDocID <= docID) {
+          throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
+        }
+        int readerIndex = ReaderUtil.subIndex(targetDocID, leaves);
+        if (readerIndex >= nextLeaf) {
+          if (readerIndex == leaves.size()) {
+            throw new IllegalArgumentException("Out of range: " + targetDocID);
+          }
+          currentLeaf = leaves.get(readerIndex);
+          currentValues = currentLeaf.reader().getNumericDocValues(field);
+          nextLeaf = readerIndex+1;
+        }
+        docID = targetDocID;
+        if (currentValues == null) {
+          return false;
+        }
+        return currentValues.advanceExact(targetDocID - currentLeaf.docBase);
+      }
+      @Override
       public long longValue() throws IOException {
         return currentValues.longValue();
       }
@@ -345,6 +386,27 @@ public class MultiDocValues {
           docID = currentLeaf.docBase + newDocID;
           return docID;
         }
+      }
+
+      @Override
+      public boolean advanceExact(int targetDocID) throws IOException {
+        if (targetDocID <= docID) {
+          throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
+        }
+        int readerIndex = ReaderUtil.subIndex(targetDocID, leaves);
+        if (readerIndex >= nextLeaf) {
+          if (readerIndex == leaves.size()) {
+            throw new IllegalArgumentException("Out of range: " + targetDocID);
+          }
+          currentLeaf = leaves.get(readerIndex);
+          currentValues = currentLeaf.reader().getBinaryDocValues(field);
+          nextLeaf = readerIndex+1;
+        }
+        docID = targetDocID;
+        if (currentValues == null) {
+          return false;
+        }
+        return currentValues.advanceExact(targetDocID - currentLeaf.docBase);
       }
 
       @Override
@@ -459,6 +521,27 @@ public class MultiDocValues {
           docID = currentLeaf.docBase + newDocID;
           return docID;
         }
+      }
+
+      @Override
+      public boolean advanceExact(int targetDocID) throws IOException {
+        if (targetDocID <= docID) {
+          throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
+        }
+        int readerIndex = ReaderUtil.subIndex(targetDocID, leaves);
+        if (readerIndex >= nextLeaf) {
+          if (readerIndex == leaves.size()) {
+            throw new IllegalArgumentException("Out of range: " + targetDocID);
+          }
+          currentLeaf = leaves.get(readerIndex);
+          currentValues = values[readerIndex];
+          nextLeaf = readerIndex+1;
+        }
+        docID = targetDocID;
+        if (currentValues == null) {
+          return false;
+        }
+        return currentValues.advanceExact(targetDocID - currentLeaf.docBase);
       }
 
       @Override
@@ -923,6 +1006,27 @@ public class MultiDocValues {
     }
     
     @Override
+    public boolean advanceExact(int targetDocID) throws IOException {
+      if (targetDocID <= docID) {
+        throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
+      }
+      int readerIndex = ReaderUtil.subIndex(targetDocID, docStarts);
+      if (readerIndex >= nextLeaf) {
+        if (readerIndex == values.length) {
+          throw new IllegalArgumentException("Out of range: " + targetDocID);
+        }
+        currentDocStart = docStarts[readerIndex];
+        currentValues = values[readerIndex];
+        nextLeaf = readerIndex+1;
+      }
+      docID = targetDocID;
+      if (currentValues == null) {
+        return false;
+      }
+      return currentValues.advanceExact(targetDocID - currentDocStart);
+    }
+    
+    @Override
     public int ordValue() {
       return (int) mapping.getGlobalOrds(nextLeaf-1).get(currentValues.ordValue());
     }
@@ -1026,6 +1130,27 @@ public class MultiDocValues {
         docID = currentDocStart + newDocID;
         return docID;
       }
+    }
+
+    @Override
+    public boolean advanceExact(int targetDocID) throws IOException {
+      if (targetDocID < docID) {
+        throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
+      }
+      int readerIndex = ReaderUtil.subIndex(targetDocID, docStarts);
+      if (readerIndex >= nextLeaf) {
+        if (readerIndex == values.length) {
+          throw new IllegalArgumentException("Out of range: " + targetDocID);
+        }
+        currentDocStart = docStarts[readerIndex];
+        currentValues = values[readerIndex];
+        nextLeaf = readerIndex+1;
+      }
+      docID = targetDocID;
+      if (currentValues == null) {
+        return false;
+      }
+      return currentValues.advanceExact(targetDocID - currentDocStart);
     }
 
     @Override

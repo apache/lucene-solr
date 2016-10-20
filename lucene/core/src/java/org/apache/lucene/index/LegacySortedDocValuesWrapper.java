@@ -17,6 +17,8 @@
 
 package org.apache.lucene.index;
 
+import java.io.IOException;
+
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -68,6 +70,13 @@ public final class LegacySortedDocValuesWrapper extends SortedDocValues {
       nextDoc();
     }
     return docID;
+  }
+
+  @Override
+  public boolean advanceExact(int target) throws IOException {
+    docID = target;
+    ord = values.getOrd(docID);
+    return ord != -1;
   }
 
   @Override

@@ -398,6 +398,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     private final NumericDocValues in;
     private final int maxDoc;
     private int lastDocID = -1;
+    private boolean exists;
     
     public AssertingNumericDocValues(NumericDocValues in, int maxDoc) {
       this.in = in;
@@ -420,6 +421,7 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert docID == NO_MORE_DOCS || docID < maxDoc;
       assert docID == in.docID();
       lastDocID = docID;
+      exists = docID != NO_MORE_DOCS;
       return docID;
     }
 
@@ -432,7 +434,20 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert docID >= target;
       assert docID == NO_MORE_DOCS || docID < maxDoc;
       lastDocID = docID;
+      exists = docID != NO_MORE_DOCS;
       return docID;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      assertThread("Numeric doc values", creationThread);
+      assert target >= 0;
+      assert target >= in.docID();
+      assert target < maxDoc;
+      exists = in.advanceExact(target);
+      assert in.docID() == target;
+      lastDocID = target;
+      return exists;
     }
 
     @Override
@@ -446,8 +461,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     @Override
     public long longValue() throws IOException {
       assertThread("Numeric doc values", creationThread);
-      assert in.docID() != -1;
-      assert in.docID() != NO_MORE_DOCS;
+      assert exists;
       return in.longValue();
     }    
 
@@ -463,6 +477,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     private final BinaryDocValues in;
     private final int maxDoc;
     private int lastDocID = -1;
+    private boolean exists;
     
     public AssertingBinaryDocValues(BinaryDocValues in, int maxDoc) {
       this.in = in;
@@ -485,6 +500,7 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert docID == NO_MORE_DOCS || docID < maxDoc;
       assert docID == in.docID();
       lastDocID = docID;
+      exists = docID != NO_MORE_DOCS;
       return docID;
     }
 
@@ -497,7 +513,20 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert docID >= target;
       assert docID == NO_MORE_DOCS || docID < maxDoc;
       lastDocID = docID;
+      exists = docID != NO_MORE_DOCS;
       return docID;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      assertThread("Numeric doc values", creationThread);
+      assert target >= 0;
+      assert target >= in.docID();
+      assert target < maxDoc;
+      exists = in.advanceExact(target);
+      assert in.docID() == target;
+      lastDocID = target;
+      return exists;
     }
 
     @Override
@@ -511,8 +540,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     @Override
     public BytesRef binaryValue() throws IOException {
       assertThread("Binary doc values", creationThread);
-      assert in.docID() != -1;
-      assert in.docID() != NO_MORE_DOCS;
+      assert exists;
       return in.binaryValue();
     }
 
@@ -529,6 +557,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     private final int maxDoc;
     private final int valueCount;
     private int lastDocID = -1;
+    private boolean exists;
     
     public AssertingSortedDocValues(SortedDocValues in, int maxDoc) {
       this.in = in;
@@ -551,6 +580,7 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert docID == NO_MORE_DOCS || docID < maxDoc;
       assert docID == in.docID();
       lastDocID = docID;
+      exists = docID != NO_MORE_DOCS;
       return docID;
     }
 
@@ -563,7 +593,20 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert docID >= target;
       assert docID == NO_MORE_DOCS || docID < maxDoc;
       lastDocID = docID;
+      exists = docID != NO_MORE_DOCS;
       return docID;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      assertThread("Numeric doc values", creationThread);
+      assert target >= 0;
+      assert target >= in.docID();
+      assert target < maxDoc;
+      exists = in.advanceExact(target);
+      assert in.docID() == target;
+      lastDocID = target;
+      return exists;
     }
 
     @Override
@@ -577,6 +620,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     @Override
     public int ordValue() {
       assertThread("Sorted doc values", creationThread);
+      assert exists;
       int ord = in.ordValue();
       assert ord >= -1 && ord < valueCount;
       return ord;
@@ -625,6 +669,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     private final int maxDoc;
     private int lastDocID = -1;
     private int valueUpto;
+    private boolean exists;
     
     public AssertingSortedNumericDocValues(SortedNumericDocValues in, int maxDoc) {
       this.in = in;
@@ -645,6 +690,7 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert docID == in.docID();
       lastDocID = docID;
       valueUpto = 0;
+      exists = docID != NO_MORE_DOCS;
       return docID;
     }
 
@@ -659,7 +705,21 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert docID == NO_MORE_DOCS || docID < maxDoc;
       lastDocID = docID;
       valueUpto = 0;
+      exists = docID != NO_MORE_DOCS;
       return docID;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      assertThread("Numeric doc values", creationThread);
+      assert target >= 0;
+      assert target >= in.docID();
+      assert target < maxDoc;
+      exists = in.advanceExact(target);
+      assert in.docID() == target;
+      lastDocID = target;
+      valueUpto = 0;
+      return exists;
     }
 
     @Override
@@ -673,6 +733,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     @Override
     public long nextValue() throws IOException {
       assertThread("Sorted numeric doc values", creationThread);
+      assert exists;
       assert valueUpto < in.docValueCount(): "valueUpto=" + valueUpto + " in.docValueCount()=" + in.docValueCount();
       valueUpto++;
       return in.nextValue();
@@ -681,6 +742,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     @Override
     public int docValueCount() {
       assertThread("Sorted numeric doc values", creationThread);
+      assert exists;
       assert in.docValueCount() > 0;
       return in.docValueCount();
     } 
@@ -693,7 +755,8 @@ public class AssertingLeafReader extends FilterLeafReader {
     private final int maxDoc;
     private final long valueCount;
     private int lastDocID = -1;
-    long lastOrd = NO_MORE_ORDS;
+    private long lastOrd = NO_MORE_ORDS;
+    private boolean exists;
     
     public AssertingSortedSetDocValues(SortedSetDocValues in, int maxDoc) {
       this.in = in;
@@ -717,6 +780,7 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert docID == in.docID();
       lastDocID = docID;
       lastOrd = -2;
+      exists = docID != NO_MORE_DOCS;
       return docID;
     }
 
@@ -731,7 +795,21 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert docID == NO_MORE_DOCS || docID < maxDoc;
       lastDocID = docID;
       lastOrd = -2;
+      exists = docID != NO_MORE_DOCS;
       return docID;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      assertThread("Numeric doc values", creationThread);
+      assert target >= 0;
+      assert target >= in.docID();
+      assert target < maxDoc;
+      exists = in.advanceExact(target);
+      assert in.docID() == target;
+      lastDocID = target;
+      lastOrd = -2;
+      return exists;
     }
 
     @Override
@@ -746,6 +824,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     public long nextOrd() throws IOException {
       assertThread("Sorted set doc values", creationThread);
       assert lastOrd != NO_MORE_ORDS;
+      assert exists;
       long ord = in.nextOrd();
       assert ord < valueCount;
       assert ord == NO_MORE_ORDS || ord > lastOrd;

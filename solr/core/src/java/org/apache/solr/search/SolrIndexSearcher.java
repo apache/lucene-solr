@@ -795,7 +795,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               continue;
             }
             Long val;
-            if (ndv.advance(localId) == localId) {
+            if (ndv.advanceExact(localId)) {
               val = ndv.longValue();
             } else {
               continue;
@@ -820,7 +820,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               continue;
             }
             BytesRef value;
-            if (bdv.advance(localId) == localId) {
+            if (bdv.advanceExact(localId)) {
               value = BytesRef.deepCopyOf(bdv.binaryValue());
             } else {
               continue;
@@ -832,7 +832,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             if (sdv == null) {
               continue;
             }
-            if (sdv.advance(localId) == localId) {
+            if (sdv.advanceExact(localId)) {
               final BytesRef bRef = sdv.binaryValue();
               // Special handling for Boolean fields since they're stored as 'T' and 'F'.
               if (schemaField.getType() instanceof BoolField) {

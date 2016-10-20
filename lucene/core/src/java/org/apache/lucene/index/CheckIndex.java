@@ -2062,13 +2062,83 @@ public final class CheckIndex implements Closeable {
     return status;
   }
 
+  @FunctionalInterface
+  private static interface DocValuesIteratorSupplier {
+    DocValuesIterator get(FieldInfo fi) throws IOException;
+  }
+
+  private static void checkDVIterator(FieldInfo fi, int maxDoc, DocValuesIteratorSupplier producer) throws IOException {
+    String field = fi.name;
+
+    // Check advance
+    DocValuesIterator it1 = producer.get(fi);
+    DocValuesIterator it2 = producer.get(fi);
+    int i = 0;
+    for (int doc = it1.nextDoc(); ; doc = it1.nextDoc()) {
+
+      if (i++ % 10 == 1) {
+        int doc2 = it2.advance(doc - 1);
+        if (doc2 < doc - 1) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + (doc-1) + " went backwords (got: " + doc2 + ")");
+        }
+        if (doc2 == doc - 1) {
+          doc2 = it2.nextDoc();
+        }
+        if (doc2 != doc) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + doc + " was not found through advance() (got: " + doc2 + ")");
+        }
+        if (it2.docID() != doc) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + doc + " reports wrong doc ID (got: " + it2.docID() + ")");
+        }
+      }
+
+      if (doc == NO_MORE_DOCS) {
+        break;
+      }
+    }
+
+    // Check advanceExact
+    it1 = producer.get(fi);
+    it2 = producer.get(fi);
+    i = 0;
+    int lastDoc = -1;
+    for (int doc = it1.nextDoc(); doc != NO_MORE_DOCS ; doc = it1.nextDoc()) {
+
+      if (i++ % 13 == 1) {
+        boolean found = it2.advanceExact(doc - 1);
+        if ((doc - 1 == lastDoc) != found) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + (doc-1) + " disagrees about whether document exists (got: " + found + ")");
+        }
+        if (it2.docID() != doc - 1) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + (doc-1) + " reports wrong doc ID (got: " + it2.docID() + ")");
+        }
+        
+        boolean found2 = it2.advanceExact(doc - 1);
+        if (found != found2) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + (doc-1) + " has unstable advanceExact");
+        }
+
+        if (i % 1 == 0) {
+          int doc2 = it2.nextDoc();
+          if (doc != doc2) {
+            throw new RuntimeException("dv iterator field=" + field + ": doc=" + doc + " was not found through advance() (got: " + doc2 + ")");
+          }
+          if (it2.docID() != doc) {
+            throw new RuntimeException("dv iterator field=" + field + ": doc=" + doc + " reports wrong doc ID (got: " + it2.docID() + ")");
+          }
+        }
+      }
+
+      lastDoc = doc;
+    }
+  }
+
   private static void checkBinaryDocValues(String fieldName, int maxDoc, BinaryDocValues bdv) throws IOException {
     int doc;
     if (bdv.docID() != -1) {
       throw new RuntimeException("binary dv iterator for field: " + fieldName + " should start at docID=-1, but got " + bdv.docID());
     }
     // TODO: we could add stats to DVs, e.g. total doc count w/ a value for this field
-    // TODO: check advance too
     while ((doc = bdv.nextDoc()) != NO_MORE_DOCS) {
       BytesRef value = bdv.binaryValue();
       value.isValid();
@@ -2083,7 +2153,6 @@ public final class CheckIndex implements Closeable {
     FixedBitSet seenOrds = new FixedBitSet(dv.getValueCount());
     int maxOrd2 = -1;
     int docID;
-    // TODO: check advance too
     while ((docID = dv.nextDoc()) != NO_MORE_DOCS) {
       int ord = dv.ordValue();
       if (ord == -1) {
@@ -2119,7 +2188,6 @@ public final class CheckIndex implements Closeable {
     LongBitSet seenOrds = new LongBitSet(dv.getValueCount());
     long maxOrd2 = -1;
     int docID;
-    // TODO: check advance too
     while ((docID = dv.nextDoc()) != NO_MORE_DOCS) {
       long lastOrd = -1;
       long ord;
@@ -2164,7 +2232,6 @@ public final class CheckIndex implements Closeable {
     if (ndv.docID() != -1) {
       throw new RuntimeException("dv iterator for field: " + fieldName + " should start at docID=-1, but got " + ndv.docID());
     }
-    // TODO: check advance too
     while (true) {
       int docID = ndv.nextDoc();
       if (docID == NO_MORE_DOCS) {
@@ -2191,7 +2258,6 @@ public final class CheckIndex implements Closeable {
       throw new RuntimeException("dv iterator for field: " + fieldName + " should start at docID=-1, but got " + ndv.docID());
     }
     // TODO: we could add stats to DVs, e.g. total doc count w/ a value for this field
-    // TODO: check advance too
     while ((doc = ndv.nextDoc()) != NO_MORE_DOCS) {
       ndv.longValue();
     }
@@ -2201,23 +2267,28 @@ public final class CheckIndex implements Closeable {
     switch(fi.getDocValuesType()) {
       case SORTED:
         status.totalSortedFields++;
+        checkDVIterator(fi, maxDoc, dvReader::getSorted);
         checkBinaryDocValues(fi.name, maxDoc, dvReader.getSorted(fi));
         checkSortedDocValues(fi.name, maxDoc, dvReader.getSorted(fi));
         break;
       case SORTED_NUMERIC:
         status.totalSortedNumericFields++;
+        checkDVIterator(fi, maxDoc, dvReader::getSortedNumeric);
         checkSortedNumericDocValues(fi.name, maxDoc, dvReader.getSortedNumeric(fi));
         break;
       case SORTED_SET:
         status.totalSortedSetFields++;
+        checkDVIterator(fi, maxDoc, dvReader::getSortedSet);
         checkSortedSetDocValues(fi.name, maxDoc, dvReader.getSortedSet(fi));
         break;
       case BINARY:
         status.totalBinaryFields++;
+        checkDVIterator(fi, maxDoc, dvReader::getBinary);
         checkBinaryDocValues(fi.name, maxDoc, dvReader.getBinary(fi));
         break;
       case NUMERIC:
         status.totalNumericFields++;
+        checkDVIterator(fi, maxDoc, dvReader::getNumeric);
         checkNumericDocValues(fi.name, dvReader.getNumeric(fi));
         break;
       default:
