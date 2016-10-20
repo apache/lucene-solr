@@ -3363,7 +3363,7 @@ public class SolrCLI {
     public UtilsTool(PrintStream stdout) { super(stdout); }
 
     public String getName() {
-      return "prestart";
+      return "utils";
     }
 
     @SuppressWarnings("static-access")
@@ -3483,7 +3483,7 @@ public class SolrCLI {
           -> a.isRegularFile() && String.valueOf(f.getFileName()).endsWith("-console.log"))
           .collect(Collectors.toList());
       if (files.size() > 0) {
-        out("Archiving " + files.size() + " console log files");
+        out("Archiving " + files.size() + " console log files to " + archivePath);
         for (Path p : files) {
           Files.move(p, archivePath.resolve(p.getFileName()), StandardCopyOption.REPLACE_EXISTING);
         }
@@ -3571,7 +3571,7 @@ public class SolrCLI {
         throw new Exception("Command requires the -l <log-directory> option");
       }
       if (!logsPath.isAbsolute()) {
-        if (serverPath != null && serverPath.isAbsolute() && serverPath.toFile().exists()) {
+        if (serverPath != null && serverPath.isAbsolute() && Files.exists(serverPath)) {
           logsPath = serverPath.resolve(logsPath);
         } else {
           throw new Exception("Logs directory must be an absolute path, or -s must be supplied");
