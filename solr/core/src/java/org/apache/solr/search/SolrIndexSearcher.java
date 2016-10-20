@@ -33,6 +33,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -2464,17 +2466,21 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     final SolrIndexSearcher searcher = this;
     final AtomicReference<IOException> exception = new AtomicReference<>();
     try {
-    return searcher.getTopReaderContext().leaves().stream().map(ctx -> {
-      try {
-        return searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion);
-      } catch (IOException e) {
-        exception.set(e);
-        return null;
-      }
-    })
-      .filter(java.util.Objects::nonNull)
-      .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
-    }finally {
+      List<IndexFingerprint> segmementFingerprints = 
+          searcher.getTopReaderContext().leaves().parallelStream().map(ctx -> {
+            try {
+              return searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion);
+            } catch (IOException e) {
+              exception.set(e);
+              return null;
+            }
+          })
+          .filter(java.util.Objects::nonNull)
+          .collect(Collectors.toList());
+
+      return segmementFingerprints.stream().reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
+
+    } finally {
       if (exception.get() != null) throw exception.get();
     }
   }
