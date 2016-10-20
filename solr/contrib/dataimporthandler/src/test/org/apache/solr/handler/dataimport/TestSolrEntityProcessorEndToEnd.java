@@ -260,7 +260,36 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     
     assertQ(req("*:*"), "//result[@numFound='0']");
   }
-    
+
+  public void testFullImportCursorPaging() {
+    assertQ(req("*:*"), "//result[@numFound='0']");
+
+    try {
+      addDocumentsToSolr(generateSolrDocuments(7));
+      runFullImport(generateDIHConfig("query='*:*' sort='id asc' rows='2'", false));
+    } catch (Exception e) {
+      LOG.error(e.getMessage(), e);
+      fail(e.getMessage());
+    }
+
+    assertQ(req("*:*"), "//result[@numFound='7']");
+    assertQ(req("id:3"), "//result[@numFound='1']", "//result/doc/arr[@name='desc'][.='Description3']");
+  }
+
+  public void testFullImportCursorPagingInvalidSort() {
+    assertQ(req("*:*"), "//result[@numFound='0']");
+    try {
+      addDocumentsToSolr(generateSolrDocuments(7));
+      // will throw 'Cursor functionality requires a sort containing a uniqueKey field tie breaker'
+      runFullImport(generateDIHConfig("query='*:*' sort='date asc' rows='2'", false));
+    } catch (Exception e) {
+      LOG.error(e.getMessage(), e);
+      fail(e.getMessage());
+    }
+
+    assertQ(req("*:*"), "//result[@numFound='0']");
+  }
+
   private static List<Map<String,Object>> generateSolrDocuments(int num) {
     List<Map<String,Object>> docList = new ArrayList<>();
     for (int i = 1; i <= num; i++) {

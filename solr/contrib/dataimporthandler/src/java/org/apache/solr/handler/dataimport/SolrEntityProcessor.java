@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +74,8 @@ public class SolrEntityProcessor extends EntityProcessorBase {
   private String[] fields;
   private String requestHandler;// 'qt' param
   private int timeout = TIMEOUT_SECS;
-  
+  private String sortBy;
+
   @Override
   public void destroy() {
     try {
@@ -127,6 +129,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
     } catch (MalformedURLException e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE, e);
     }
+
   }
   
   @Override
@@ -134,12 +137,18 @@ public class SolrEntityProcessor extends EntityProcessorBase {
     buildIterator();
     return getNext();
   }
-  
+
+  private void buildIterator(){
+    sortBy = context.getResolvedEntityAttribute(CommonParams.SORT);
+    if(sortBy != null) buildCursorIterator();
+    else buildBasicIterator();
+  }
+
   /**
    * The following method changes the rowIterator mutable field. It requires
    * external synchronization. 
    */
-  private void buildIterator() {
+  private void buildBasicIterator() {
     if (rowIterator != null)  {
       SolrDocumentListIterator documentListIterator = (SolrDocumentListIterator) rowIterator;
       if (!documentListIterator.hasNext() && documentListIterator.hasMoreRows()) {
@@ -158,6 +167,26 @@ public class SolrEntityProcessor extends EntityProcessorBase {
     }
   }
   
+  private void buildCursorIterator() {
+    if (rowIterator != null)  {
+      SolrDocumentCursorIterator documentListIterator = (SolrDocumentCursorIterator) rowIterator;
+      if (!documentListIterator.hasNext() && documentListIterator.hasMoreRows()) {
+        String cursorMark = documentListIterator.getNextCursorMark();
+        QueryResponse response = doQuery(cursorMark);
+        if (response != null) {
+          rowIterator = new SolrDocumentCursorIterator(cursorMark, response);
+        }
+      }
+    } else  {
+      String cursorMark = "*";
+      QueryResponse response = doQuery(cursorMark);
+      if (response != null) {
+        rowIterator = new SolrDocumentCursorIterator(cursorMark, response);
+      }
+      return;
+    }
+  }
+
   protected SolrDocumentList doQuery(int start) {
     this.queryString = context.getResolvedEntityAttribute(QUERY);
     if (this.queryString == null) {
@@ -213,6 +242,64 @@ public class SolrEntityProcessor extends EntityProcessorBase {
     return response == null ? null : response.getResults();
   }
   
+  protected QueryResponse doQuery(String cursorMark) {
+    this.queryString = context.getResolvedEntityAttribute(QUERY);
+    if (this.queryString == null) {
+      throw new DataImportHandlerException(
+          DataImportHandlerException.SEVERE,
+          "SolrEntityProcessor: parameter 'query' is required"
+      );
+    }
+
+    String rowsP = context.getResolvedEntityAttribute(CommonParams.ROWS);
+    if (rowsP != null) {
+      rows = Integer.parseInt(rowsP);
+    }
+
+    String fqAsString = context.getResolvedEntityAttribute(CommonParams.FQ);
+    if (fqAsString != null) {
+      this.filterQueries = fqAsString.split(",");
+    }
+
+    String fieldsAsString = context.getResolvedEntityAttribute(CommonParams.FL);
+    if (fieldsAsString != null) {
+      this.fields = fieldsAsString.split(",");
+    }
+    this.requestHandler = context.getResolvedEntityAttribute(CommonParams.QT);
+    String timeoutAsString = context.getResolvedEntityAttribute(TIMEOUT);
+    if (timeoutAsString != null) {
+      this.timeout = Integer.parseInt(timeoutAsString);
+    }
+
+    SolrQuery solrQuery = new SolrQuery(queryString);
+    solrQuery.setRows(rows);
+    solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
+    if (fields != null) {
+      for (String field : fields) {
+        solrQuery.addField(field);
+      }
+    }
+    solrQuery.setRequestHandler(requestHandler);
+    solrQuery.setFilterQueries(filterQueries);
+    solrQuery.set(CommonParams.SORT, sortBy);
+
+    QueryResponse response = null;
+    try {
+      response = solrClient.query(solrQuery);
+    } catch (SolrServerException | IOException e) {
+      if (ABORT.equals(onError)) {
+        wrapAndThrow(SEVERE, e);
+      } else if (SKIP.equals(onError)) {
+        wrapAndThrow(DataImportHandlerException.SKIP_ROW, e);
+      }
+    }
+
+    return response;
+  }
+
+  /**
+   * iterate using basic paging
+   */
   private static class SolrDocumentListIterator implements Iterator<Map<String,Object>> {
     
     private final int start;
@@ -266,4 +353,51 @@ public class SolrEntityProcessor extends EntityProcessorBase {
     }
   }
   
+  /**
+   *  iterate using cursor paging
+   */
+  private static class SolrDocumentCursorIterator implements Iterator<Map<String,Object>> {
+
+    private final String currentCursorMark;
+    private final String nextCursorMark;
+    private final Iterator<SolrDocument> solrDocumentIterator;
+
+    public SolrDocumentCursorIterator(String currentCursorMark, QueryResponse response) {
+      this.currentCursorMark = currentCursorMark;
+      this.solrDocumentIterator = response.getResults().iterator();
+      this.nextCursorMark = response.getNextCursorMark();
+    }
+
+    @Override
+    public boolean hasNext() {
+      return solrDocumentIterator.hasNext();
+    }
+
+    @Override
+    public Map<String,Object> next() {
+      SolrDocument solrDocument = solrDocumentIterator.next();
+
+      HashMap<String,Object> map = new HashMap<>();
+      Collection<String> fields = solrDocument.getFieldNames();
+      for (String field : fields) {
+        Object fieldValue = solrDocument.getFieldValue(field);
+        map.put(field, fieldValue);
+      }
+      return map;
+    }
+
+    public boolean hasMoreRows() {
+      return !currentCursorMark.equals(nextCursorMark);
+    }
+
+    public String getNextCursorMark(){
+      return nextCursorMark;
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
 }
