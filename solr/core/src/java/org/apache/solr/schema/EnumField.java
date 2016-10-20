@@ -34,7 +34,6 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.legacy.LegacyFieldType;
 import org.apache.lucene.legacy.LegacyIntField;
@@ -387,13 +386,12 @@ public class EnumField extends PrimitiveFieldType {
     if (intValue == null || intValue.equals(DEFAULT_VALUE))
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown value for enum field: " + value.toString());
 
-    String intAsString =  intValue.toString();
     final LegacyFieldType newType = new LegacyFieldType();
 
     newType.setTokenized(field.isTokenized());
     newType.setStored(field.stored());
     newType.setOmitNorms(field.omitNorms());
-    newType.setIndexOptions(field.indexed() ? getIndexOptions(field, intAsString) : IndexOptions.NONE);
+    newType.setIndexOptions(field.indexOptions());
     newType.setStoreTermVectors(field.storeTermVector());
     newType.setStoreTermVectorOffsets(field.storeTermOffsets());
     newType.setStoreTermVectorPositions(field.storeTermPositions());

@@ -162,7 +162,9 @@ public class BlockJoinSelector {
           return nextDoc();
         }
         int prevParentDocID = parents.prevSetBit(target-1);
-        values.advance(prevParentDocID+1);
+        if (values.docID() <= prevParentDocID) {
+          values.advance(prevParentDocID+1);
+        }
         return nextDoc();
       }
 
@@ -172,7 +174,7 @@ public class BlockJoinSelector {
       }
 
       @Override
-      public BytesRef lookupOrd(int ord) {
+      public BytesRef lookupOrd(int ord) throws IOException {
         return values.lookupOrd(ord);
       }
 

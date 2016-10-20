@@ -38,11 +38,6 @@ public final class LegacyNumericDocValuesWrapper extends NumericDocValues {
     this.maxDoc = docsWithField.length();
   }
 
-  /** Constructor used only for norms */
-  public LegacyNumericDocValuesWrapper(int maxDoc, LegacyNumericDocValues values) {
-    this(new Bits.MatchAllBits(maxDoc), values);
-  }
-
   @Override
   public int docID() {
     return docID;
@@ -64,9 +59,7 @@ public final class LegacyNumericDocValuesWrapper extends NumericDocValues {
 
   @Override
   public int advance(int target) {
-    if (target < docID) {
-      throw new IllegalArgumentException("cannot advance backwards: docID=" + docID + " target=" + target);
-    }
+    assert target >= docID: "target=" + target + " docID=" + docID;
     if (target == NO_MORE_DOCS) {
       this.docID = NO_MORE_DOCS;
     } else {

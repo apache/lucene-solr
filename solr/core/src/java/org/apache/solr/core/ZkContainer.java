@@ -173,12 +173,12 @@ public class ZkContainer {
     return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
 
-  public void registerInZk(final SolrCore core, boolean background) {
+  public void registerInZk(final SolrCore core, boolean background, boolean skipRecovery) {
     Runnable r = () -> {
       MDCLoggingContext.setCore(core);
       try {
         try {
-          zkController.register(core.getName(), core.getCoreDescriptor());
+          zkController.register(core.getName(), core.getCoreDescriptor(), skipRecovery);
         } catch (InterruptedException e) {
           // Restore the interrupted status
           Thread.currentThread().interrupt();

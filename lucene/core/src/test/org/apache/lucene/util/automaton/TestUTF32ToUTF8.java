@@ -166,12 +166,12 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
     CharacterRunAutomaton cra = new CharacterRunAutomaton(automaton);
     ByteRunAutomaton bra = new ByteRunAutomaton(automaton);
     // make sure character dfa accepts empty string
-    assertTrue(cra.isAccept(cra.getInitialState()));
+    assertTrue(cra.isAccept(0));
     assertTrue(cra.run(""));
     assertTrue(cra.run(new char[0], 0, 0));
 
     // make sure byte dfa accepts empty string
-    assertTrue(bra.isAccept(bra.getInitialState()));
+    assertTrue(bra.isAccept(0));
     assertTrue(bra.run(new byte[0], 0, 0));
   }
   

@@ -16,13 +16,31 @@
  */
 package org.apache.solr.common.util;
 
+import java.util.Objects;
+import java.util.function.Function;
+
 public interface Cache<K, V> {
-  public V put(K key, V val);
+  V put(K key, V val);
 
-  public V get(K key);
+  V get(K key);
 
-  public V remove(K key);
+  V remove(K key);
 
-  public void clear();
+  void clear();
+
+  default V computeIfAbsent(K key,
+                            Function<? super K, ? extends V> mappingFunction) {
+    Objects.requireNonNull(mappingFunction);
+    V v;
+    if ((v = get(key)) == null) {
+      V newValue;
+      if ((newValue = mappingFunction.apply(key)) != null) {
+        put(key, newValue);
+        return newValue;
+      }
+    }
+
+    return v;
+  }
 
 }

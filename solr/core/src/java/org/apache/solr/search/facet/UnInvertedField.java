@@ -136,7 +136,7 @@ public class UnInvertedField extends DocTermOrds {
       if (deState == null) {
         deState = new SolrIndexSearcher.DocsEnumState();
         deState.fieldName = field;
-        deState.liveDocs = searcher.getLeafReader().getLiveDocs();
+        deState.liveDocs = searcher.getSlowAtomicReader().getLiveDocs();
         deState.termsEnum = te;  // TODO: check for MultiTermsEnum in SolrIndexSearcher could now fail?
         deState.postingsEnum = postingsEnum;
         deState.minSetSizeCached = maxTermDocFreq;
@@ -239,7 +239,7 @@ public class UnInvertedField extends DocTermOrds {
 
     public TermsEnum getTermsEnum() throws IOException {
       if (te == null) {
-        te = getOrdTermsEnum(searcher.getLeafReader());
+        te = getOrdTermsEnum(searcher.getSlowAtomicReader());
       }
       return te;
     }

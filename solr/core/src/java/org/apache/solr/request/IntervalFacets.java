@@ -201,7 +201,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
             longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
               @Override
-              public long longValue() {
+              public long longValue() throws IOException {
                 long bits = super.longValue();
                 if (bits < 0) bits ^= 0x7fffffffffffffffL;
                 return bits;
@@ -212,7 +212,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
             longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
               @Override
-              public long longValue() {
+              public long longValue() throws IOException {
                 long bits = super.longValue();
                 if (bits < 0) bits ^= 0x7fffffffffffffffL;
                 return bits;
@@ -626,7 +626,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      *
      * @param sdv DocValues for the current reader
      */
-    public void updateContext(SortedDocValues sdv) {
+    public void updateContext(SortedDocValues sdv) throws IOException {
       if (start == null) {
         /*
          * Unset start. All ordinals will be greater than -1.
@@ -689,7 +689,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      *
      * @param sdv DocValues for the current reader
      */
-    public void updateContext(SortedSetDocValues sdv) {
+    public void updateContext(SortedSetDocValues sdv) throws IOException {
       if (start == null) {
         /*
          * Unset start. All ordinals will be greater than -1.

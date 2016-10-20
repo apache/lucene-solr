@@ -134,9 +134,6 @@ public final class ASCIIFoldingFilter extends TokenFilter {
    */
   public void foldToASCII(char[] input, int length)
   {
-    if (preserveOriginal) {
-      state = captureState();
-    }
     // Worst-case length required:
     final int maxSizeNeeded = 4 * length;
     if (output.length < maxSizeNeeded) {
@@ -144,6 +141,27 @@ public final class ASCIIFoldingFilter extends TokenFilter {
     }
 
     outputPos = foldToASCII(input, 0, output, 0, length);
+    if (preserveOriginal && needToPreserve(input, length)) {
+      state = captureState();
+    }
+  }
+
+  /**
+   * Check if foldToASCII generated a different token.
+   * @param input original term
+   * @param inputLength length of the original term
+   * @return true if foldToASCII generated a different token
+   */
+  private boolean needToPreserve(char[] input, int inputLength) {
+    if(inputLength != outputPos) {
+      return true;
+    }
+    for(int i = 0; i < inputLength; i++) {
+      if(input[i] != output[i]) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

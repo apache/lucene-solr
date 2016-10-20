@@ -406,7 +406,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return reader.docFreq(term);
   }
 
-  public final LeafReader getLeafReader() {
+  /**
+   * Not recommended to call this method unless there is some particular reason due to internally calling {@link SlowCompositeReaderWrapper}.
+   * Use {@link IndexSearcher#leafContexts} to get the sub readers instead of using this method.
+   */
+  public final LeafReader getSlowAtomicReader() {
     return leafReader;
   }
 
@@ -759,7 +763,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   public void decorateDocValueFields(@SuppressWarnings("rawtypes") SolrDocumentBase doc, int docid, Set<String> fields)
       throws IOException {
-    final LeafReader reader = getLeafReader();
+    final int subIndex = ReaderUtil.subIndex(docid, leafContexts);
+    final int localId = docid - leafContexts.get(subIndex).docBase;
+    final LeafReader leafReader = leafContexts.get(subIndex).reader();
     for (String fieldName : fields) {
       final SchemaField schemaField = schema.getFieldOrNull(fieldName);
       if (schemaField == null || !schemaField.hasDocValues() || doc.containsKey(fieldName)) {
@@ -768,9 +774,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
 
       if (schemaField.multiValued()) {
-        final SortedSetDocValues values = reader.getSortedSetDocValues(fieldName);
+        final SortedSetDocValues values = leafReader.getSortedSetDocValues(fieldName);
         if (values != null && values.getValueCount() > 0) {
-          if (values.advance(docid) == docid) {
+          if (values.advance(localId) == localId) {
             final List<Object> outValues = new LinkedList<Object>();
             for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
               final BytesRef value = values.lookupOrd(ord);
@@ -785,8 +791,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         switch (dvType) {
           case NUMERIC:
             final NumericDocValues ndv = leafReader.getNumericDocValues(fieldName);
+            if (ndv == null) {
+              continue;
+            }
             Long val;
-            if (ndv.advance(docid) == docid) {
+            if (ndv.advance(localId) == localId) {
               val = ndv.longValue();
             } else {
               continue;
@@ -807,8 +816,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             break;
           case BINARY:
             BinaryDocValues bdv = leafReader.getBinaryDocValues(fieldName);
+            if (bdv == null) {
+              continue;
+            }
             BytesRef value;
-            if (bdv.advance(docid) == docid) {
+            if (bdv.advance(localId) == localId) {
               value = BytesRef.deepCopyOf(bdv.binaryValue());
             } else {
               continue;
@@ -817,7 +829,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             break;
           case SORTED:
             SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
-            if (sdv.advance(docid) == docid) {
+            if (sdv == null) {
+              continue;
+            }
+            if (sdv.advance(localId) == localId) {
               final BytesRef bRef = sdv.binaryValue();
               // Special handling for Boolean fields since they're stored as 'T' and 'F'.
               if (schemaField.getType() instanceof BoolField) {

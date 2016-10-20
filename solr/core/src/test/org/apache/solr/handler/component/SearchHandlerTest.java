@@ -16,13 +16,13 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -122,19 +122,14 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       // create collection
       String collectionName = "testSolrCloudCollection";
       String configName = "solrCloudCollectionConfig";
-      File configDir = new File(SolrTestCaseJ4.TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
-      miniCluster.uploadConfigDir(configDir, configName);
-      miniCluster.createCollection(collectionName, 2, 2, configName, null); 
-   
-      
+      miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
+
+      CollectionAdminRequest.createCollection(collectionName, configName, 2, 2)
+          .process(miniCluster.getSolrClient());
     
       QueryRequest req = new QueryRequest();
       QueryResponse rsp = req.process(cloudSolrClient, collectionName);
       assertTrue(rsp.getResponseHeader().getBooleanArg("zkConnected"));
-    
-      
-      // delete the collection we created earlier
-      miniCluster.deleteCollection(collectionName);
 
     }
     finally {

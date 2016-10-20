@@ -23,6 +23,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
@@ -186,4 +187,24 @@ public class TestNorms extends LuceneTestCase {
       throw new UnsupportedOperationException();
     }
   } 
+
+  public void testEmptyValueVsNoValue() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig cfg = newIndexWriterConfig().setMergePolicy(newLogMergePolicy());
+    IndexWriter w = new IndexWriter(dir, cfg);
+    Document doc = new Document();
+    w.addDocument(doc);
+    doc.add(newTextField("foo", "", Store.NO));
+    w.addDocument(doc);
+    w.forceMerge(1);
+    IndexReader reader = DirectoryReader.open(w);
+    w.close();
+    LeafReader leafReader = getOnlyLeafReader(reader);
+    NumericDocValues normValues = leafReader.getNormValues("foo");
+    assertNotNull(normValues);
+    assertEquals(1, normValues.nextDoc()); // doc 0 does not have norms
+    assertEquals(0, normValues.longValue());
+    reader.close();
+    dir.close();
+  }
 }

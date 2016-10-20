@@ -55,7 +55,7 @@ public abstract class FilterBinaryDocValues extends BinaryDocValues {
   }
 
   @Override
-  public BytesRef binaryValue() {
+  public BytesRef binaryValue() throws IOException {
     return in.binaryValue();
   }
 }

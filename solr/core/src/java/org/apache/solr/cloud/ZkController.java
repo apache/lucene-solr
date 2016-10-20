@@ -43,6 +43,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Strings;
 import org.apache.commons.lang.StringUtils;
@@ -230,7 +231,7 @@ public class ZkController {
 
     public Object call() throws Exception {
       log.info("Registering core {} afterExpiration? {}", descriptor.getName(), afterExpiration);
-      register(descriptor.getName(), descriptor, recoverReloadedCores, afterExpiration);
+      register(descriptor.getName(), descriptor, recoverReloadedCores, afterExpiration, false);
       return descriptor;
     }
   }
@@ -353,7 +354,7 @@ public class ZkController {
                     if (executorService != null) {
                       executorService.submit(new RegisterCoreAsync(descriptor, true, true));
                     } else {
-                      register(descriptor.getName(), descriptor, true, true);
+                      register(descriptor.getName(), descriptor, true, true, false);
                     }
                   } catch (Exception e) {
                     SolrException.log(log, "Error registering SolrCore", e);
@@ -839,8 +840,8 @@ public class ZkController {
    *
    * @return the shardId for the SolrCore
    */
-  public String register(String coreName, final CoreDescriptor desc) throws Exception {
-    return register(coreName, desc, false, false);
+  public String register(String coreName, final CoreDescriptor desc, boolean skipRecovery) throws Exception {
+    return register(coreName, desc, false, false, skipRecovery);
   }
 
 
@@ -849,7 +850,8 @@ public class ZkController {
    *
    * @return the shardId for the SolrCore
    */
-  public String register(String coreName, final CoreDescriptor desc, boolean recoverReloadedCores, boolean afterExpiration) throws Exception {
+  public String register(String coreName, final CoreDescriptor desc, boolean recoverReloadedCores,
+                         boolean afterExpiration, boolean skipRecovery) throws Exception {
     try (SolrCore core = cc.getCore(desc.getName())) {
       MDCLoggingContext.setCore(core);
     }
@@ -928,8 +930,8 @@ public class ZkController {
             }
           }
         }
-        boolean didRecovery = checkRecovery(coreName, desc, recoverReloadedCores, isLeader, cloudDesc, collection,
-            coreZkNodeName, shardId, leaderProps, core, cc, afterExpiration);
+        boolean didRecovery
+            = checkRecovery(recoverReloadedCores, isLeader, skipRecovery, collection, coreZkNodeName, core, cc, afterExpiration);
         if (!didRecovery) {
           publish(desc, Replica.State.ACTIVE);
         }
@@ -1079,10 +1081,8 @@ public class ZkController {
   /**
    * Returns whether or not a recovery was started
    */
-  private boolean checkRecovery(String coreName, final CoreDescriptor desc,
-                                boolean recoverReloadedCores, final boolean isLeader,
-                                final CloudDescriptor cloudDesc, final String collection,
-                                final String shardZkNodeName, String shardId, ZkNodeProps leaderProps,
+  private boolean checkRecovery(boolean recoverReloadedCores, final boolean isLeader, boolean skipRecovery,
+                                final String collection, String shardId,
                                 SolrCore core, CoreContainer cc, boolean afterExpiration) {
     if (SKIP_AUTO_RECOVERY) {
       log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
@@ -1091,7 +1091,7 @@ public class ZkController {
     boolean doRecovery = true;
     if (!isLeader) {
 
-      if (!afterExpiration && core.isReloaded() && !recoverReloadedCores) {
+      if (skipRecovery || (!afterExpiration && core.isReloaded() && !recoverReloadedCores)) {
         doRecovery = false;
       }
 
@@ -1524,34 +1524,43 @@ public class ZkController {
     if (!Overseer.isLegacy(zkStateReader)) {
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
       String coreNodeName = cloudDesc.getCoreNodeName();
-      assert coreNodeName != null : "SolrCore: " + cd.getName() + " has no coreNodeName";
+      if (coreNodeName == null)
+        throw new SolrException(ErrorCode.SERVER_ERROR, "No coreNodeName for " + cd);
       if (cloudDesc.getShardId() == null) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "No shard id for :" + cd);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "No shard id for " + cd);
       }
-      long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS);
-      String errMessage = null;
-      while (System.nanoTime() < endTime) {
-        Slice slice = zkStateReader.getClusterState().getSlice(cd.getCollectionName(), cloudDesc.getShardId());
-        if (slice == null) {
-          errMessage = "Invalid slice : " + cloudDesc.getShardId();
-          continue;
-        }
-        if (slice.getReplica(coreNodeName) != null) {
+
+      AtomicReference<String> errorMessage = new AtomicReference<>();
+      AtomicReference<DocCollection> collectionState = new AtomicReference<>();
+      try {
+        zkStateReader.waitForState(cd.getCollectionName(), 3, TimeUnit.SECONDS, (n, c) -> {
+          collectionState.set(c);
+          if (c == null)
+            return false;
+          Slice slice = c.getSlice(cloudDesc.getShardId());
+          if (slice == null) {
+            errorMessage.set("Invalid shard: " + cloudDesc.getShardId());
+            return false;
+          }
           Replica replica = slice.getReplica(coreNodeName);
+          if (replica == null) {
+            errorMessage.set("coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId());
+            return false;
+          }
           String baseUrl = replica.getStr(BASE_URL_PROP);
           String coreName = replica.getStr(CORE_NAME_PROP);
           if (baseUrl.equals(this.baseURL) && coreName.equals(cd.getName())) {
-            return;
-          } else {
-            errMessage = "replica with coreNodeName " + coreNodeName + " exists but with a different name or base_url";
+            return true;
           }
-        }
-        Thread.sleep(100);
+          errorMessage.set("coreNodeName " + coreNodeName + " exists, but does not match expected node or core name");
+          return false;
+        });
+      } catch (TimeoutException e) {
+        String error = errorMessage.get();
+        if (error == null)
+          error = "Replica " + coreNodeName + " is not present in cluster state";
+        throw new SolrException(ErrorCode.SERVER_ERROR, error + ": " + collectionState.get());
       }
-      if (errMessage == null) {
-        errMessage = "replica " + coreNodeName + " is not present in cluster state";
-      }
-      throw new SolrException(ErrorCode.SERVER_ERROR, errMessage + ". state : " + zkStateReader.getClusterState().getCollection(cd.getCollectionName()));
     }
   }
 

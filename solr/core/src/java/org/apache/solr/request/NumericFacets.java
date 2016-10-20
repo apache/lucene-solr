@@ -163,7 +163,7 @@ final class NumericFacets {
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
             longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
               @Override
-              public long longValue() {
+              public long longValue() throws IOException {
                 long bits = super.longValue();
                 if (bits < 0) bits ^= 0x7fffffffffffffffL;
                 return bits;
@@ -174,7 +174,7 @@ final class NumericFacets {
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
             longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
               @Override
-              public long longValue() {
+              public long longValue() throws IOException {
                 long bits = super.longValue();
                 if (bits < 0) bits ^= 0x7fffffffffffffffL;
                 return bits;
@@ -266,7 +266,7 @@ final class NumericFacets {
         for (int i = 0; i < result.size(); ++i) {
           alreadySeen.add(result.getName(i));
         }
-        final Terms terms = searcher.getLeafReader().terms(fieldName);
+        final Terms terms = searcher.getSlowAtomicReader().terms(fieldName);
         if (terms != null) {
           final String prefixStr = TrieField.getMainValuePrefix(ft);
           final BytesRef prefix;
@@ -319,7 +319,7 @@ final class NumericFacets {
         final FunctionValues values = vs.getValues(Collections.emptyMap(), leaves.get(readerIdx));
         counts.put(values.strVal(entry.docID - leaves.get(readerIdx).docBase), entry.count);
       }
-      final Terms terms = searcher.getLeafReader().terms(fieldName);
+      final Terms terms = searcher.getSlowAtomicReader().terms(fieldName);
       if (terms != null) {
         final String prefixStr = TrieField.getMainValuePrefix(ft);
         final BytesRef prefix;

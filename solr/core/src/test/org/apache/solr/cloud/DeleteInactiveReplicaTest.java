@@ -85,7 +85,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     CoreContainer.CoreLoadFailure loadFailure = cc.getCoreInitFailures().get(replica.getCoreName());
     assertNotNull("Deleted core was still loaded!", loadFailure);
     assertTrue("Unexpected load failure message: " + loadFailure.exception.getMessage(),
-        loadFailure.exception.getMessage().contains("not present in cluster state"));
+        loadFailure.exception.getMessage().contains("does not exist in shard"));
 
     // Check that we can't create a core with no coreNodeName
     try (SolrClient queryClient = getHttpSolrClient(jetty.getBaseUrl().toString())) {

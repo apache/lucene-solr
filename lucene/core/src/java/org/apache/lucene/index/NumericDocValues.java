@@ -17,6 +17,8 @@
 
 package org.apache.lucene.index;
 
+import java.io.IOException;
+
 import org.apache.lucene.search.DocIdSetIterator;
 
 /**
@@ -32,5 +34,5 @@ public abstract class NumericDocValues extends DocIdSetIterator {
    * Returns the numeric value for the current document ID.
    * @return numeric value
    */
-  public abstract long longValue();
+  public abstract long longValue() throws IOException;
 }

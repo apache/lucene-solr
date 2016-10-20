@@ -31,9 +31,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
-import org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker;
 import org.apache.lucene.benchmark.byTask.stats.TaskStats;
-import org.apache.lucene.benchmark.byTask.tasks.CountingHighlighterTestTask;
 import org.apache.lucene.benchmark.byTask.tasks.CountingSearchTestTask;
 import org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
@@ -157,110 +155,6 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     // the search threads hadn't yet succeeded in starting
     // up and then they start up and do no searching:
     //assertTrue(CountingSearchTestTask.numSearches > 0);
-  }
-
-  public void testHighlighting() throws Exception {
-    // 1. alg definition (required in every "logic" test)
-    String algLines[] = {
-        "doc.stored=true",
-        "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
-        "docs.file=" + getReuters20LinesFile(),
-        "query.maker=" + ReutersQueryMaker.class.getName(),
-        "ResetSystemErase",
-        "CreateIndex",
-        "{ AddDoc } : 100",
-        "ForceMerge(1)",
-        "CloseIndex",
-        "OpenReader",
-        "{ CountingHighlighterTest(size[1],highlight[1],mergeContiguous[true],maxFrags[1],fields[body]) } : 200",
-        "CloseReader",
-    };
-
-    // 2. we test this value later
-    CountingHighlighterTestTask.numHighlightedResults = 0;
-    CountingHighlighterTestTask.numDocsRetrieved = 0;
-    // 3. execute the algorithm  (required in every "logic" test)
-    Benchmark benchmark = execBenchmark(algLines);
-
-    // 4. test specific checks after the benchmark run completed.
-    assertEquals("TestSearchTask was supposed to be called!",92,CountingHighlighterTestTask.numDocsRetrieved);
-    //pretty hard to figure out a priori how many docs are going to have highlighted fragments returned, but we can never have more than the number of docs
-    //we probably should use a different doc/query maker, but...
-    assertTrue("TestSearchTask was supposed to be called!", CountingHighlighterTestTask.numDocsRetrieved >= CountingHighlighterTestTask.numHighlightedResults && CountingHighlighterTestTask.numHighlightedResults > 0);
-
-    assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
-    // now we should be able to open the index for write.
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
-    iw.close();
-    IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
-    assertEquals("100 docs were added to the index, this is what we expect to find!",100,ir.numDocs());
-    ir.close();
-  }
-
-  public void testHighlightingTV() throws Exception {
-    // 1. alg definition (required in every "logic" test)
-    String algLines[] = {
-        "doc.stored=true",//doc storage is required in order to have text to highlight
-        "doc.term.vector=true",
-        "doc.term.vector.offsets=true",
-        "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
-        "docs.file=" + getReuters20LinesFile(),
-        "query.maker=" + ReutersQueryMaker.class.getName(),
-        "ResetSystemErase",
-        "CreateIndex",
-        "{ AddDoc } : 1000",
-        "ForceMerge(1)",
-        "CloseIndex",
-        "OpenReader",
-        "{ CountingHighlighterTest(size[1],highlight[1],mergeContiguous[true],maxFrags[1],fields[body]) } : 200",
-        "CloseReader",
-    };
-
-    // 2. we test this value later
-    CountingHighlighterTestTask.numHighlightedResults = 0;
-    CountingHighlighterTestTask.numDocsRetrieved = 0;
-    // 3. execute the algorithm  (required in every "logic" test)
-    Benchmark benchmark = execBenchmark(algLines);
-
-    // 4. test specific checks after the benchmark run completed.
-    assertEquals("TestSearchTask was supposed to be called!",92,CountingHighlighterTestTask.numDocsRetrieved);
-    //pretty hard to figure out a priori how many docs are going to have highlighted fragments returned, but we can never have more than the number of docs
-    //we probably should use a different doc/query maker, but...
-    assertTrue("TestSearchTask was supposed to be called!", CountingHighlighterTestTask.numDocsRetrieved >= CountingHighlighterTestTask.numHighlightedResults && CountingHighlighterTestTask.numHighlightedResults > 0);
-
-    assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
-    // now we should be able to open the index for write.
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
-    iw.close();
-    IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
-    assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
-    ir.close();
-  }
-
-  public void testHighlightingNoTvNoStore() throws Exception {
-    // 1. alg definition (required in every "logic" test)
-    String algLines[] = {
-        "doc.stored=false",
-        "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
-        "docs.file=" + getReuters20LinesFile(),
-        "query.maker=" + ReutersQueryMaker.class.getName(),
-        "ResetSystemErase",
-        "CreateIndex",
-        "{ AddDoc } : 1000",
-        "ForceMerge(1)",
-        "CloseIndex",
-        "OpenReader",
-        "{ CountingHighlighterTest(size[1],highlight[1],mergeContiguous[true],maxFrags[1],fields[body]) } : 200",
-        "CloseReader",
-    };
-
-    // 2. we test this value later
-    CountingHighlighterTestTask.numHighlightedResults = 0;
-    CountingHighlighterTestTask.numDocsRetrieved = 0;
-    // 3. execute the algorithm  (required in every "logic" test)
-    expectThrows(Exception.class, () -> {
-      execBenchmark(algLines);
-    });
   }
 
   /**

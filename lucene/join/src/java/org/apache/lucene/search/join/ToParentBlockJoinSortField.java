@@ -175,7 +175,7 @@ public class ToParentBlockJoinSortField extends SortField {
         }
         return new FilterNumericDocValues(BlockJoinSelector.wrap(sortedNumeric, type, parents, children)) {
           @Override
-          public long longValue() {
+          public long longValue() throws IOException {
             // undo the numericutils sortability
             return NumericUtils.sortableFloatBits((int) super.longValue());
           }
@@ -199,7 +199,7 @@ public class ToParentBlockJoinSortField extends SortField {
         }
         return new FilterNumericDocValues(BlockJoinSelector.wrap(sortedNumeric, type, parents, children)) {
           @Override
-          public long longValue() {
+          public long longValue() throws IOException {
             // undo the numericutils sortability
             return NumericUtils.sortableDoubleBits(super.longValue());
           }

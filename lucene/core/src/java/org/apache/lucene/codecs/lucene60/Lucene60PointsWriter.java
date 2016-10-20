@@ -25,13 +25,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.MutablePointsReader;
+import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.SegmentWriteState;
@@ -85,9 +86,10 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
   }
 
   @Override
-  public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
+  public void writeField(FieldInfo fieldInfo, PointsReader reader) throws IOException {
 
-    boolean singleValuePerDoc = values.size(fieldInfo.name) == values.getDocCount(fieldInfo.name);
+    PointValues values = reader.getValues(fieldInfo.name);
+    boolean singleValuePerDoc = values.size() == values.getDocCount();
 
     try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
                                           writeState.directory,
@@ -96,18 +98,18 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                           fieldInfo.getPointNumBytes(),
                                           maxPointsInLeafNode,
                                           maxMBSortInHeap,
-                                          values.size(fieldInfo.name),
+                                          values.size(),
                                           singleValuePerDoc)) {
 
-      if (values instanceof MutablePointsReader) {
-        final long fp = writer.writeField(dataOut, fieldInfo.name, (MutablePointsReader) values);
+      if (values instanceof MutablePointValues) {
+        final long fp = writer.writeField(dataOut, fieldInfo.name, (MutablePointValues) values);
         if (fp != -1) {
           indexFPs.put(fieldInfo.name, fp);
         }
         return;
       }
 
-      values.intersect(fieldInfo.name, new IntersectVisitor() {
+      values.intersect(new IntersectVisitor() {
           @Override
           public void visit(int docID) {
             throw new IllegalStateException();
@@ -165,9 +167,12 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
             if (reader != null) {
               FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
               FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
-              if (readerFieldInfo != null) {
-                totMaxSize += reader.size(fieldInfo.name);
-                singleValuePerDoc &= reader.size(fieldInfo.name) == reader.getDocCount(fieldInfo.name);
+              if (readerFieldInfo != null && readerFieldInfo.getPointDimensionCount() > 0) {
+                PointValues values = reader.getValues(fieldInfo.name);
+                if (values != null) {
+                  totMaxSize += values.size();
+                  singleValuePerDoc &= values.size() == values.getDocCount();
+                }
               }
             }
           }
@@ -200,10 +205,9 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                 // reader's FieldInfo as we do below) because field numbers can easily be different
                 // when addIndexes(Directory...) copies over segments from another index:
 
-
                 FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
                 FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
-                if (readerFieldInfo != null) {
+                if (readerFieldInfo != null && readerFieldInfo.getPointDimensionCount() > 0) {
                   BKDReader bkdReader = reader60.readers.get(readerFieldInfo.number);
                   if (bkdReader != null) {
                     bkdReaders.add(bkdReader);

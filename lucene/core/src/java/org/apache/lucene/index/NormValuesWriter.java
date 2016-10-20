@@ -21,7 +21,10 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
@@ -29,29 +32,34 @@ import org.apache.lucene.util.packed.PackedLongValues;
  *  segment flushes. */
 class NormValuesWriter {
 
-  private final static long MISSING = 0L;
-
+  private FixedBitSet docsWithField;
   private PackedLongValues.Builder pending;
   private final Counter iwBytesUsed;
   private long bytesUsed;
   private final FieldInfo fieldInfo;
+  private int lastDocID = -1;
 
   public NormValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+    docsWithField = new FixedBitSet(64);
     pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
-    bytesUsed = pending.ramBytesUsed();
+    bytesUsed = pending.ramBytesUsed() + docsWithField.ramBytesUsed();
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
     iwBytesUsed.addAndGet(bytesUsed);
   }
 
   public void addValue(int docID, long value) {
-    // Fill in any holes:
-    for (int i = (int)pending.size(); i < docID; ++i) {
-      pending.add(MISSING);
+    if (docID <= lastDocID) {
+      throw new IllegalArgumentException("Norm for \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
     }
 
     pending.add(value);
+    docsWithField = FixedBitSet.ensureCapacity(docsWithField, docID);
+    docsWithField.set(docID);
+
     updateBytesUsed();
+
+    lastDocID = docID;
   }
 
   private void updateBytesUsed() {
@@ -65,7 +73,6 @@ class NormValuesWriter {
 
   public void flush(SegmentWriteState state, NormsConsumer normsConsumer) throws IOException {
 
-    final int maxDoc = state.segmentInfo.maxDoc();
     final PackedLongValues values = pending.build();
 
     normsConsumer.addNormsField(fieldInfo,
@@ -75,7 +82,7 @@ class NormValuesWriter {
                                    if (fieldInfo != NormValuesWriter.this.fieldInfo) {
                                      throw new IllegalArgumentException("wrong fieldInfo");
                                    }
-                                   return new BufferedNorms(maxDoc, values);
+                                   return new BufferedNorms(values, docsWithField);
                                   }
 
                                   @Override
@@ -98,36 +105,28 @@ class NormValuesWriter {
   // iterates over the values we have in ram
   private static class BufferedNorms extends NumericDocValues {
     final PackedLongValues.Iterator iter;
-    final int size;
-    final int maxDoc;
-    private int docID = -1;
+    final DocIdSetIterator docsWithField;
     private long value;
-    
-    BufferedNorms(int maxDoc, PackedLongValues values) {
-      this.maxDoc = maxDoc;
+
+    BufferedNorms(PackedLongValues values, FixedBitSet docsWithFields) {
       this.iter = values.iterator();
-      this.size = (int) values.size();
-    }
-    
-    @Override
-    public int docID() {
-      return docID;
+      this.docsWithField = new BitSetIterator(docsWithFields, values.size());
     }
 
     @Override
-    public int nextDoc() {
-      docID++;
-      if (docID == maxDoc) {
-        docID = NO_MORE_DOCS;
-      }
-      if (docID < size) {
+    public int docID() {
+      return docsWithField.docID();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      int docID = docsWithField.nextDoc();
+      if (docID != NO_MORE_DOCS) {
         value = iter.next();
-      } else {
-        value = MISSING;
       }
       return docID;
     }
-    
+
     @Override
     public int advance(int target) {
       throw new UnsupportedOperationException();
@@ -135,7 +134,7 @@ class NormValuesWriter {
 
     @Override
     public long cost() {
-      return maxDoc;
+      return docsWithField.cost();
     }
 
     @Override

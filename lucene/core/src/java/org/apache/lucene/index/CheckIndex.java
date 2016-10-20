@@ -1793,8 +1793,8 @@ public final class CheckIndex implements Closeable {
     try {
 
       if (fieldInfos.hasPointValues()) {
-        PointsReader values = reader.getPointsReader();
-        if (values == null) {
+        PointsReader pointsReader = reader.getPointsReader();
+        if (pointsReader == null) {
           throw new RuntimeException("there are fields with points, but reader.getPointsReader() is null");
         }
         for (FieldInfo fieldInfo : fieldInfos) {
@@ -1812,9 +1812,13 @@ public final class CheckIndex implements Closeable {
 
             long[] pointCountSeen = new long[1];
 
-            byte[] globalMinPackedValue = values.getMinPackedValue(fieldInfo.name);
-            long size = values.size(fieldInfo.name);
-            int docCount = values.getDocCount(fieldInfo.name);
+            PointValues values = pointsReader.getValues(fieldInfo.name);
+            if (values == null) {
+              continue;
+            }
+            byte[] globalMinPackedValue = values.getMinPackedValue();
+            long size = values.size();
+            int docCount = values.getDocCount();
 
             if (docCount > size) {
               throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have size=" + size + " points and inconsistent docCount=" + docCount);
@@ -1831,7 +1835,7 @@ public final class CheckIndex implements Closeable {
             } else if (globalMinPackedValue.length != packedBytesCount) {
               throw new RuntimeException("getMinPackedValue for field \"" + fieldInfo.name + "\" return length=" + globalMinPackedValue.length + " array, but should be " + packedBytesCount);
             }
-            byte[] globalMaxPackedValue = values.getMaxPackedValue(fieldInfo.name);
+            byte[] globalMaxPackedValue = values.getMaxPackedValue();
             if (globalMaxPackedValue == null) {
               if (size != 0) {
                 throw new RuntimeException("getMaxPackedValue is null points for field \"" + fieldInfo.name + "\" yet size=" + size);
@@ -1840,8 +1844,7 @@ public final class CheckIndex implements Closeable {
               throw new RuntimeException("getMaxPackedValue for field \"" + fieldInfo.name + "\" return length=" + globalMaxPackedValue.length + " array, but should be " + packedBytesCount);
             }
 
-            values.intersect(fieldInfo.name,
-                             new PointValues.IntersectVisitor() {
+            values.intersect(new PointValues.IntersectVisitor() {
 
                                private int lastDocID = -1;
 

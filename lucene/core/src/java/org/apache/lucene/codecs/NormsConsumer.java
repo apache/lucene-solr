@@ -163,7 +163,7 @@ public abstract class NormsConsumer implements Closeable {
                           }
 
                           @Override
-                          public long longValue() {
+                          public long longValue() throws IOException {
                             return current.values.longValue();
                           }
                         };

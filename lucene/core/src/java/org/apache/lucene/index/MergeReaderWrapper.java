@@ -197,8 +197,8 @@ class MergeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
-    return in.getPointValues();
+  public PointValues getPointValues(String fieldName) throws IOException {
+    return in.getPointValues(fieldName);
   }
 
   @Override

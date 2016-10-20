@@ -229,7 +229,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
         return predicate.matches(n, c);
       });
     } catch (Exception e) {
-      fail(message + "\nLast available state: " + state.get());
+      fail(message + "\n" + e.getMessage() + "\nLast available state: " + state.get());
     }
   }
 
@@ -239,6 +239,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
     return (liveNodes, collectionState) -> {
+      if (collectionState == null)
+        return false;
       if (collectionState.getSlices().size() != expectedShards)
         return false;
       for (Slice slice : collectionState) {
@@ -257,7 +259,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   /**
    * Get a (reproducibly) random shard from a {@link DocCollection}
    */
-  protected Slice getRandomShard(DocCollection collection) {
+  protected static Slice getRandomShard(DocCollection collection) {
     List<Slice> shards = new ArrayList<>(collection.getActiveSlices());
     if (shards.size() == 0)
       fail("Couldn't get random shard for collection as it has no shards!\n" + collection.toString());
@@ -268,7 +270,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   /**
    * Get a (reproducibly) random replica from a {@link Slice}
    */
-  protected Replica getRandomReplica(Slice slice) {
+  protected static Replica getRandomReplica(Slice slice) {
     List<Replica> replicas = new ArrayList<>(slice.getReplicas());
     if (replicas.size() == 0)
       fail("Couldn't get random replica from shard as it has no replicas!\n" + slice.toString());
@@ -279,7 +281,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   /**
    * Get a (reproducibly) random replica from a {@link Slice} matching a predicate
    */
-  protected Replica getRandomReplica(Slice slice, Predicate<Replica> matchPredicate) {
+  protected static Replica getRandomReplica(Slice slice, Predicate<Replica> matchPredicate) {
     List<Replica> replicas = new ArrayList<>(slice.getReplicas());
     if (replicas.size() == 0)
       fail("Couldn't get random replica from shard as it has no replicas!\n" + slice.toString());
@@ -297,7 +299,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    *
    * This assumes that the replica is hosted on a live node.
    */
-  protected CoreStatus getCoreStatus(Replica replica) throws IOException, SolrServerException {
+  protected static CoreStatus getCoreStatus(Replica replica) throws IOException, SolrServerException {
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
     try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString(), cluster.getSolrClient().getHttpClient())) {
       return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);

@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -82,9 +82,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     }
 
     if (field.stored()) {
-      FieldType customType = new FieldType();
-      customType.setStored(true);
-      f.add(createField(field.getName(), externalVal, customType, 1f));
+      f.add(createField(field.getName(), externalVal, StoredField.TYPE, 1f));
     }
     return f;
   }

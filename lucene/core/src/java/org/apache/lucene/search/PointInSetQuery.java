@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
@@ -116,21 +115,18 @@ public abstract class PointInSetQuery extends Query {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
-        PointValues values = reader.getPointValues();
+
+        PointValues values = reader.getPointValues(field);
         if (values == null) {
-          // No docs in this segment indexed any points
+          // No docs in this segment/field indexed any points
           return null;
         }
-        FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
-        if (fieldInfo == null) {
-          // No docs in this segment indexed this field at all
-          return null;
+
+        if (values.getNumDimensions() != numDims) {
+          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims=" + values.getNumDimensions() + " but this query has numDims=" + numDims);
         }
-        if (fieldInfo.getPointDimensionCount() != numDims) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims=" + fieldInfo.getPointDimensionCount() + " but this query has numDims=" + numDims);
-        }
-        if (fieldInfo.getPointNumBytes() != bytesPerDim) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() + " but this query has bytesPerDim=" + bytesPerDim);
+        if (values.getBytesPerDimension() != bytesPerDim) {
+          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + values.getBytesPerDimension() + " but this query has bytesPerDim=" + bytesPerDim);
         }
 
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
@@ -138,7 +134,7 @@ public abstract class PointInSetQuery extends Query {
         if (numDims == 1) {
 
           // We optimize this common case, effectively doing a merge sort of the indexed values vs the queried set:
-          values.intersect(field, new MergePointVisitor(sortedPackedPoints, result));
+          values.intersect(new MergePointVisitor(sortedPackedPoints, result));
 
         } else {
           // NOTE: this is naive implementation, where for each point we re-walk the KD tree to intersect.  We could instead do a similar
@@ -148,7 +144,7 @@ public abstract class PointInSetQuery extends Query {
           TermIterator iterator = sortedPackedPoints.iterator();
           for (BytesRef point = iterator.next(); point != null; point = iterator.next()) {
             visitor.setPoint(point);
-            values.intersect(field, visitor);
+            values.intersect(visitor);
           }
         }
 

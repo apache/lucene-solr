@@ -320,7 +320,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           method.addHeader("User-Agent", HttpSolrClient.AGENT);
           method.addHeader("Content-Type", contentType);
 
-          response = client.getHttpClient().execute(method, HttpClientUtil.createNewHttpClientRequestContext());
+          response = client.getHttpClient()
+              .execute(method, HttpClientUtil.createNewHttpClientRequestContext());
           rspBody = response.getEntity().getContent();
           int statusCode = response.getStatusLine().getStatusCode();
           if (statusCode != HttpStatus.SC_OK) {

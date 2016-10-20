@@ -110,7 +110,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     if (term == null) {
       assert seekBytesRef.length() == 0;
       // return the empty term, as it's valid
-      if (runAutomaton.isAccept(runAutomaton.getInitialState())) {   
+      if (runAutomaton.isAccept(0)) {   
         return seekBytesRef.get();
       }
     } else {
@@ -135,7 +135,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   private void setLinear(int position) {
     assert linear == false;
     
-    int state = runAutomaton.getInitialState();
+    int state = 0;
     assert state == 0;
     int maxInterval = 0xff;
     //System.out.println("setLinear pos=" + position + " seekbytesRef=" + seekBytesRef);
@@ -182,7 +182,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     int state;
     int pos = 0;
     savedStates.grow(seekBytesRef.length()+1);
-    savedStates.setIntAt(0, runAutomaton.getInitialState());
+    savedStates.setIntAt(0, 0);
     
     while (true) {
       curGen++;

@@ -92,7 +92,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     return getDim(dim, ordRange, topN);
   }
 
-  private final FacetResult getDim(String dim, OrdRange ordRange, int topN) {
+  private final FacetResult getDim(String dim, OrdRange ordRange, int topN) throws IOException {
 
     TopOrdAndIntQueue q = null;
 
@@ -262,7 +262,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
   }
 
   @Override
-  public Number getSpecificValue(String dim, String... path) {
+  public Number getSpecificValue(String dim, String... path) throws IOException {
     if (path.length != 1) {
       throw new IllegalArgumentException("path must be length=1");
     }

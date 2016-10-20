@@ -29,6 +29,10 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileOwnerAttributeView;
+import java.time.Instant;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,6 +47,8 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -107,11 +113,11 @@ import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.params.CommonParams.NAME;
+
 /**
  * Command-line utility for working with Solr.
  */
 public class SolrCLI {
-
   /**
    * Defines the interface to a Solr tool that can be run from this command-line app.
    */
@@ -157,7 +163,7 @@ public class SolrCLI {
       return toolExitStatus;
     }
 
-    private void setBasicAuth(CommandLine cli) throws Exception {
+    protected void setBasicAuth(CommandLine cli) throws Exception {
       String basicauth = System.getProperty("basicauth", null);
       if (basicauth != null) {
         List<String> ss = StrUtils.splitSmart(basicauth, ':');
@@ -232,7 +238,6 @@ public class SolrCLI {
   };
 
   private static void exit(int exitStatus) {
-    // TODO: determine if we're running in a test and don't exit
     try {
       System.exit(exitStatus);
     } catch (java.lang.SecurityException secExc) {
@@ -258,6 +263,18 @@ public class SolrCLI {
       exit(0);
     }
 
+    Tool tool = findTool(args);
+    CommandLine cli = parseCmdLine(args, tool.getOptions());
+    System.exit(tool.runTool(cli));
+  }
+
+  public static Tool findTool(String[] args) throws Exception {
+    String toolType = args[0].trim().toLowerCase(Locale.ROOT);
+    return newTool(toolType);
+  }
+
+  public static CommandLine parseCmdLine(String[] args, Option[] toolOptions) throws Exception {
+
     String builderClassName = System.getProperty("solr.authentication.httpclient.builder");
     if (builderClassName!=null) {
       try {
@@ -270,10 +287,6 @@ public class SolrCLI {
         throw new RuntimeException("Error during loading of configurer '"+builderClassName+"'.", ex);
       }
     }
-
-    // Determine the tool
-    String toolType = args[0].trim().toLowerCase(Locale.ROOT);
-    Tool tool = newTool(toolType);
 
     // the parser doesn't like -D props
     List<String> toolArgList = new ArrayList<String>();
@@ -290,7 +303,7 @@ public class SolrCLI {
 
     // process command-line args to configure this application
     CommandLine cli = 
-        processCommandLineArgs(joinCommonAndToolOptions(tool.getOptions()), toolArgs);
+        processCommandLineArgs(joinCommonAndToolOptions(toolOptions), toolArgs);
 
     List argList = cli.getArgList();
     argList.addAll(dashDList);
@@ -302,8 +315,7 @@ public class SolrCLI {
       checkSslStoreSysProp(solrInstallDir, "trustStore");
     }
 
-    // run the tool
-    exit(tool.runTool(cli));
+    return cli;
   }
 
   protected static void checkSslStoreSysProp(String solrInstallDir, String key) {
@@ -365,6 +377,10 @@ public class SolrCLI {
       return new ZkCpTool();
     else if ("ls".equals(toolType))
       return new ZkLsTool();
+    else if ("assert".equals(toolType))
+      return new AssertTool();
+    else if ("utils".equals(toolType))
+      return new UtilsTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -3126,4 +3142,456 @@ public class SolrCLI {
     }
 
   } // end RunExampleTool class
+
+  /**
+   * Asserts various conditions and exists with error code if fails, else continues with no output
+   */
+  public static class AssertTool extends ToolBase {
+
+    private static String message = null;
+    private static boolean useExitCode = false;
+    
+    public AssertTool() { this(System.out); }
+    public AssertTool(PrintStream stdout) { super(stdout); }
+
+    public String getName() {
+      return "assert";
+    }
+
+    @SuppressWarnings("static-access")
+    public Option[] getOptions() {
+      return new Option[] {
+          OptionBuilder
+              .withDescription("Asserts that we are NOT the root user")
+              .withLongOpt("not-root")
+              .create("R"),
+          OptionBuilder
+              .withDescription("Asserts that we are the root user")
+              .withLongOpt("root")
+              .create("r"),
+          OptionBuilder
+              .withDescription("Asserts that Solr is NOT started on a certain URL")
+              .withLongOpt("not-started")
+              .hasArg(true)
+              .withArgName("url")
+              .create("S"),
+          OptionBuilder
+              .withDescription("Asserts that Solr is started on a certain URL")
+              .withLongOpt("started")
+              .hasArg(true)
+              .withArgName("url")
+              .create("s"),
+          OptionBuilder
+              .withDescription("Asserts that we run as same user that owns <directory>")
+              .withLongOpt("same-user")
+              .hasArg(true)
+              .withArgName("directory")
+              .create("u"),
+          OptionBuilder
+              .withDescription("Asserts that directory <directory> exists")
+              .withLongOpt("exists")
+              .hasArg(true)
+              .withArgName("directory")
+              .create("x"),
+          OptionBuilder
+              .withDescription("Asserts that directory <directory> does NOT exist")
+              .withLongOpt("not-exists")
+              .hasArg(true)
+              .withArgName("directory")
+              .create("X"),
+          OptionBuilder
+              .withDescription("Exception message to be used in place of the default error message")
+              .withLongOpt("message")
+              .hasArg(true)
+              .withArgName("message")
+              .create("m"),
+          OptionBuilder
+              .withDescription("Return an exit code instead of printing error message on assert fail.")
+              .withLongOpt("exitcode")
+              .create("e")
+      };
+    }
+
+    public int runTool(CommandLine cli) throws Exception {
+      verbose = cli.hasOption("verbose");
+
+      int toolExitStatus = 0;
+      try {
+        setBasicAuth(cli);
+        toolExitStatus = runAssert(cli);
+      } catch (Exception exc) {
+        // since this is a CLI, spare the user the stacktrace
+        String excMsg = exc.getMessage();
+        if (excMsg != null) {
+          System.err.println("\nERROR: " + excMsg + "\n");
+          toolExitStatus = 1;
+        } else {
+          throw exc;
+        }
+      }
+      return toolExitStatus;
+    }
+
+    @Override
+    protected void runImpl(CommandLine cli) throws Exception {
+      runAssert(cli);
+    }
+
+    // Custom run method which may return exit code
+    protected int runAssert(CommandLine cli) throws Exception {
+      if (cli.getOptions().length == 0 || cli.getArgs().length > 0 || cli.hasOption("h")) {
+        new HelpFormatter().printHelp("bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-u <dir>] [-x <dir>] [-X <dir>]", getToolOptions(this));
+        return 1;
+      }
+      if (cli.hasOption("m")) {
+        message = cli.getOptionValue("m");
+      }
+      if (cli.hasOption("e")) {
+        useExitCode = true;
+      }
+      if (cli.hasOption("r")) {
+        if (assertRootUser() > 0) return 1;
+      }
+      if (cli.hasOption("R")) {
+        if (assertNotRootUser() > 0) return 1;
+      }
+      if (cli.hasOption("x")) {
+        if (assertFileExists(cli.getOptionValue("x")) > 0) return 1;
+      }
+      if (cli.hasOption("X")) {
+        if (assertFileNotExists(cli.getOptionValue("X")) > 0) return 1;
+      }
+      if (cli.hasOption("u")) {
+        if (sameUser(cli.getOptionValue("u")) > 0) return 1;
+      }
+      if (cli.hasOption("s")) {
+        if (assertSolrRunning(cli.getOptionValue("s")) > 0) return 1;
+      }
+      if (cli.hasOption("s")) {
+        if (assertSolrNotRunning(cli.getOptionValue("S")) > 0) return 1;
+      }
+      return 0;
+    }
+
+    public static int assertSolrRunning(String url) throws Exception {
+      StatusTool status = new StatusTool();
+      try {
+        status.waitToSeeSolrUp(url, 5);
+      } catch (Exception e) {
+        return exitOrException("Solr is not running on url " + url);
+      }
+      return 0;
+    }
+
+    public static int assertSolrNotRunning(String url) throws Exception {
+      StatusTool status = new StatusTool();
+      try {
+        status.waitToSeeSolrUp(url, 5);
+        return exitOrException("Solr is running on url " + url);
+      } catch (Exception e) { return 0; }
+    }
+
+    public static int sameUser(String directory) throws Exception {
+      if (Files.exists(Paths.get(directory))) {
+        String userForDir = userForDir(Paths.get(directory));
+        if (!currentUser().equals(userForDir)) {
+          return exitOrException("Must run as user " + userForDir + ". We are " + currentUser());
+        }
+      } else {
+        return exitOrException("Directory " + directory + " does not exist.");
+      }
+      return 0;
+    }
+
+    public static int assertFileExists(String directory) throws Exception {
+      if (! Files.exists(Paths.get(directory))) {
+        return exitOrException("Directory " + directory + " does not exist.");
+      }
+      return 0;
+    }
+
+    public static int assertFileNotExists(String directory) throws Exception {
+      if (Files.exists(Paths.get(directory))) {
+        return exitOrException("Directory " + directory + " should not exist.");
+      }
+      return 0;
+    }
+
+    public static int assertRootUser() throws Exception {
+      if (!currentUser().equals("root")) {
+        return exitOrException("Must run as root user");
+      }
+      return 0;
+    }
+
+    public static int assertNotRootUser() throws Exception {
+      if (currentUser().equals("root")) {
+        return exitOrException("Not allowed to run as root user");
+      }
+      return 0;
+    }
+
+    public static String currentUser() {
+      return System.getProperty("user.name");
+    }
+
+    public static String userForDir(Path pathToDir) {
+      try {
+        FileOwnerAttributeView ownerAttributeView = Files.getFileAttributeView(pathToDir, FileOwnerAttributeView.class);
+        return ownerAttributeView.getOwner().getName();
+      } catch (IOException e) {
+        return "N/A";
+      }
+    }
+
+    private static int exitOrException(String msg) throws Exception {
+      if (useExitCode) {
+        return 1;
+      } else {
+        throw new Exception(message != null ? message : msg);
+      }
+    }
+  } // end AssertTool class
+  
+  public static class UtilsTool extends ToolBase {
+    private Path serverPath;
+    private Path logsPath;
+    private boolean beQuiet;
+
+    public UtilsTool() { this(System.out); }
+    public UtilsTool(PrintStream stdout) { super(stdout); }
+
+    public String getName() {
+      return "utils";
+    }
+
+    @SuppressWarnings("static-access")
+    public Option[] getOptions() {
+      return new Option[]{
+          OptionBuilder
+              .withArgName("path")
+              .hasArg()
+              .withDescription("Path to server dir. Required if logs path is relative")
+              .create("s"),
+          OptionBuilder
+              .withArgName("path")
+              .hasArg()
+              .withDescription("Path to logs dir. If relative, also provide server dir with -s")
+              .create("l"),
+          OptionBuilder
+              .withDescription("Be quiet, don't print to stdout, only return exit codes")
+              .create("q"),
+          OptionBuilder
+              .withArgName("daysToKeep")
+              .hasArg()
+              .withType(Integer.class)
+              .withDescription("Path to logs directory")
+              .create("remove_old_solr_logs"),
+          OptionBuilder
+              .withArgName("generations")
+              .hasArg()
+              .withType(Integer.class)
+              .withDescription("Rotate solr.log to solr.log.1 etc")
+              .create("rotate_solr_logs"),
+          OptionBuilder
+              .withDescription("Archive old garbage collection logs into archive/")
+              .create("archive_gc_logs"),
+          OptionBuilder
+              .withDescription("Archive old console logs into archive/")
+              .create("archive_console_logs")
+      };
+    }
+
+    @Override
+    public int runTool(CommandLine cli) throws Exception {
+      if (cli.getOptions().length == 0 || cli.getArgs().length > 0 || cli.hasOption("h")) {
+        new HelpFormatter().printHelp("bin/solr utils [OPTIONS]", getToolOptions(this));
+        return 1;
+      }
+      if (cli.hasOption("s")) {
+        serverPath = Paths.get(cli.getOptionValue("s"));
+      }
+      if (cli.hasOption("l")) {
+        logsPath = Paths.get(cli.getOptionValue("l"));
+      }
+      if (cli.hasOption("q")) {
+        beQuiet = cli.hasOption("q");
+      }
+      if (cli.hasOption("remove_old_solr_logs")) {
+        if (removeOldSolrLogs(Integer.parseInt(cli.getOptionValue("remove_old_solr_logs"))) > 0) return 1;
+      }
+      if (cli.hasOption("rotate_solr_logs")) {
+        if (rotateSolrLogs(Integer.parseInt(cli.getOptionValue("rotate_solr_logs"))) > 0) return 1;
+      }
+      if (cli.hasOption("archive_gc_logs")) {
+        if (archiveGcLogs() > 0) return 1;
+      }
+      if (cli.hasOption("archive_console_logs")) {
+        if (archiveConsoleLogs() > 0) return 1;
+      }
+      return 0;
+    }
+
+    /**
+     * Moves gc logs into archived/
+     * @return 0 on success
+     * @throws Exception on failure
+     */
+    public int archiveGcLogs() throws Exception {
+      prepareLogsPath();
+      Path archivePath = logsPath.resolve("archived");
+      if (!archivePath.toFile().exists()) {
+        Files.createDirectories(archivePath);
+      }
+      List<Path> archived = Files.find(archivePath, 1, (f, a) 
+          -> a.isRegularFile() && String.valueOf(f.getFileName()).startsWith("solr_gc_"))
+          .collect(Collectors.toList());
+      for (Path p : archived) {
+        Files.delete(p);
+      }
+      List<Path> files = Files.find(logsPath, 1, (f, a) 
+          -> a.isRegularFile() && String.valueOf(f.getFileName()).startsWith("solr_gc_"))
+          .collect(Collectors.toList());
+      if (files.size() > 0) {
+        out("Archiving " + files.size() + " old GC log files to " + archivePath);
+        for (Path p : files) {
+          Files.move(p, archivePath.resolve(p.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+        }
+      }
+      return 0;
+    }
+
+    /**
+     * Moves console log(s) into archiced/
+     * @return 0 on success
+     * @throws Exception on failure
+     */
+    public int archiveConsoleLogs() throws Exception {
+      prepareLogsPath();
+      Path archivePath = logsPath.resolve("archived");
+      if (!archivePath.toFile().exists()) {
+        Files.createDirectories(archivePath);
+      }
+      List<Path> archived = Files.find(archivePath, 1, (f, a) 
+          -> a.isRegularFile() && String.valueOf(f.getFileName()).endsWith("-console.log"))
+          .collect(Collectors.toList());
+      for (Path p : archived) {        
+        Files.delete(p);
+      }
+      List<Path> files = Files.find(logsPath, 1, (f, a) 
+          -> a.isRegularFile() && String.valueOf(f.getFileName()).endsWith("-console.log"))
+          .collect(Collectors.toList());
+      if (files.size() > 0) {
+        out("Archiving " + files.size() + " console log files to " + archivePath);
+        for (Path p : files) {
+          Files.move(p, archivePath.resolve(p.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+        }
+      }
+      return 0;
+    }
+
+    /**
+     * Rotates solr.log before starting Solr. Mimics log4j2 behavior, i.e. with generations=9:
+     * <pre>
+     *   solr.log.9 (and higher) are deleted
+     *   solr.log.8 -&gt; solr.log.9
+     *   solr.log.7 -&gt; solr.log.8
+     *   ...
+     *   solr.log   -&gt; solr.log.1
+     * </pre>
+     * @param generations number of generations to keep. Should agree with setting in log4j.properties
+     * @return 0 if success
+     * @throws Exception if problems
+     */
+    public int rotateSolrLogs(int generations) throws Exception {
+      prepareLogsPath();
+      if (logsPath.toFile().exists() && logsPath.resolve("solr.log").toFile().exists()) {
+        out("Rotating solr logs, keeping a max of "+generations+" generations");
+        try (Stream<Path> files = Files.find(logsPath, 1, 
+            (f, a) -> a.isRegularFile() && String.valueOf(f.getFileName()).startsWith("solr.log."))
+            .sorted((b,a) -> new Integer(a.getFileName().toString().substring(9))
+                  .compareTo(new Integer(b.getFileName().toString().substring(9))))) {
+          files.forEach(p -> {
+            try {
+              int number = Integer.parseInt(p.getFileName().toString().substring(9));
+              if (number >= generations) {
+                Files.delete(p);
+              } else {
+                Path renamed = p.getParent().resolve("solr.log." + (number + 1));
+                Files.move(p, renamed);
+              }
+            } catch (IOException e) {
+              out("Problem during rotation of log files: " + e.getMessage());
+            }
+          });
+        } catch (NumberFormatException nfe) {
+          throw new Exception("Do not know how to rotate solr.log.<ext> with non-numeric extension. Rotate aborted.", nfe);
+        }
+        Files.move(logsPath.resolve("solr.log"), logsPath.resolve("solr.log.1"));
+      }
+      
+      return 0;
+    }
+
+    /**
+     * Deletes time-stamped old solr logs, if older than n days 
+     * @param daysToKeep number of days logs to keep before deleting
+     * @return 0 on success
+     * @throws Exception on failure
+     */
+    public int removeOldSolrLogs(int daysToKeep) throws Exception {
+      prepareLogsPath();
+      if (logsPath.toFile().exists()) {
+        try (Stream<Path> stream = Files.find(logsPath, 2, (f, a) -> a.isRegularFile() 
+            && Instant.now().minus(Period.ofDays(daysToKeep)).isAfter(a.lastModifiedTime().toInstant())
+            && String.valueOf(f.getFileName()).startsWith("solr_log_"))) {
+          List<Path> files = stream.collect(Collectors.toList());
+          if (files.size() > 0) {
+            out("Deleting "+files.size() + " solr_log_* files older than " + daysToKeep + " days.");
+            for (Path p : files) {
+              Files.delete(p);
+            }
+          }
+        }
+      }
+      return 0;
+    }
+
+    // Private methods to follow
+    
+    private void out(String message) {
+      if (!beQuiet) {
+        stdout.print(message + "\n");
+      }
+    }
+
+    private void prepareLogsPath() throws Exception {
+      if (logsPath == null) {
+        throw new Exception("Command requires the -l <log-directory> option");
+      }
+      if (!logsPath.isAbsolute()) {
+        if (serverPath != null && serverPath.isAbsolute() && Files.exists(serverPath)) {
+          logsPath = serverPath.resolve(logsPath);
+        } else {
+          throw new Exception("Logs directory must be an absolute path, or -s must be supplied");
+        }
+      }
+    }
+    
+    @Override
+    protected void runImpl(CommandLine cli) throws Exception {
+    }
+    
+    public void setLogPath(Path logsPath) {
+      this.logsPath = logsPath; 
+    }
+
+    public void setServerPath(Path serverPath) {
+      this.serverPath = serverPath; 
+    }
+    
+    public void setQuiet(boolean shouldPrintStdout) {
+      this.beQuiet = shouldPrintStdout; 
+    }
+  } // end UtilsTool class  
 }

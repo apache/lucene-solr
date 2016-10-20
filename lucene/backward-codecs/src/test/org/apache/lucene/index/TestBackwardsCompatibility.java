@@ -1481,7 +1481,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
   
-  static long getValue(BinaryDocValues bdv) {
+  static long getValue(BinaryDocValues bdv) throws IOException {
     BytesRef term = bdv.binaryValue();
     int idx = term.offset;
     byte b = term.bytes[idx++];
