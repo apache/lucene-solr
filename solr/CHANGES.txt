@@ -86,8 +86,12 @@ Upgrade Notes
   prefix, then you will now get an error as these options are incompatible with numeric faceting.
 
 * Solr's logging verbosity at the INFO level has been greatly reduced, and
-  you may need to update the log configs to use the DEBUG level to get the
-  same logging messages as before.
+  you may need to update the log configs to use the DEBUG level to see all the
+  logging messages you used to see at INFO level before.
+
+* We are no longer backing up solr.log and solr_gc.log files in date-stamped copies forever. If you relied on
+  the solr_log_<date> or solr_gc_log_<date> being in the logs folder that will no longer be the case. 
+  See SOLR-9570 for details.
 
 * The create/deleteCollection methods on MiniSolrCloudCluster have been
   deprecated.  Clients should instead use the CollectionAdminRequest API.  In
@@ -307,6 +311,13 @@ Other Changes
 
 * SOLR-7850: Moved defaults within bin/solr.in.sh (and bin/solr.in.cmd on Windows) to bin/solr (and bin/solr.cmd)
   such that the default state of these files is to set nothing. This makes Solr work better with Docker. (David Smiley)
+
+* SOLR-9570: Various log tidying now happens at Solr startup:
+  Old solr_log_<date> and solr_gc_log_<date> files are removed, avoiding disks to fill up,
+  solr.log.X files are rotated, preserving solr.log from last run in solr.log.1, solr.log.1 => solr.log.2 etc
+  solr-*-console.log files are moved into $SOLR_LOGS_DIR/archived/ instead of being overwritten
+  Last JVM garbage collection log solr_gc.log is moved into $SOLR_LOGS_DIR/archived/
+  (janhoy)  
 
 ==================  6.2.1 ==================
 
