@@ -14,33 +14,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.common.util;
 
-import java.util.Objects;
+
+import java.util.Map;
 import java.util.function.Function;
 
-public interface Cache<K, V> {
-  V put(K key, V val);
+// A cache backed by a map
+public class MapBackedCache<K, V> implements Cache<K, V> {
 
-  V get(K key);
+  private final Map<K, V> map;
 
-  V remove(K key);
-
-  void clear();
-
-  default V computeIfAbsent(K key,
-                            Function<? super K, ? extends V> mappingFunction) {
-    Objects.requireNonNull(mappingFunction);
-    V v;
-    if ((v = get(key)) == null) {
-      V newValue;
-      if ((newValue = mappingFunction.apply(key)) != null) {
-        put(key, newValue);
-        return newValue;
-      }
-    }
-
-    return v;
+  public MapBackedCache(Map<K, V> map) {
+    this.map = map;
   }
 
+  @Override
+  public V put(K key, V val) {
+    return map.put(key, val);
+  }
+
+  @Override
+  public V get(K key) {
+    return map.get(key);
+  }
+
+  @Override
+  public V remove(K key) {
+    return map.remove(key);
+  }
+
+  @Override
+  public void clear() {
+    map.clear();
+  }
+
+  @Override
+  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+    return map.computeIfAbsent(key, mappingFunction);
+  }
 }

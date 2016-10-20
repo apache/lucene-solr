@@ -25,6 +25,8 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.common.util.Cache;
+import org.apache.solr.common.util.MapBackedCache;
 import org.apache.solr.update.processor.TemplateUpdateProcessorFactory;
 
 import static org.apache.solr.update.processor.TemplateUpdateProcessorFactory.Resolved;
@@ -55,7 +57,7 @@ public class VariableResolver {
       .compile("^(\\w*?)\\((.*?)\\)$");
   private Map<String,Object> rootNamespace;
   private Map<String,Evaluator> evaluators;
-  private Map<String,Resolved> cache = new WeakHashMap<>();
+  private Cache<String,Resolved> cache = new MapBackedCache<>(new WeakHashMap<>());
   private Function<String,Object> fun = this::resolve;
 
   public static final String FUNCTIONS_NAMESPACE = "dataimporter.functions.";
