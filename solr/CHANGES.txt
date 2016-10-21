@@ -149,6 +149,9 @@ New Features
 * SOLR-8370: Display configured Similarity in Schema-Browser, both global/default and per-field/field-type 
   (janhoy, Alexandre Rafalovitch)
 
+* SOLR-9326: Ability to create/delete/list snapshots at collection level.
+  (Hrishikesh Gadre via yonik)
+
 Bug Fixes
 ----------------------
 
