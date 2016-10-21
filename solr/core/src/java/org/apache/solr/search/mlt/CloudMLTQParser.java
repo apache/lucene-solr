@@ -69,16 +69,29 @@ public class CloudMLTQParser extends QParser {
     Map<String,Float> boostFields = new HashMap<>();
     MoreLikeThis mlt = new MoreLikeThis(req.getSearcher().getIndexReader());
     
-    mlt.setMinTermFreq(localParams.getInt("mintf", MoreLikeThis.DEFAULT_MIN_TERM_FREQ));
-    mlt.setMinDocFreq(localParams.getInt("mindf", MoreLikeThis.DEFAULT_MIN_DOC_FREQ));
-    mlt.setMinWordLen(localParams.getInt("minwl", MoreLikeThis.DEFAULT_MIN_WORD_LENGTH));
-    mlt.setMaxWordLen(localParams.getInt("maxwl", MoreLikeThis.DEFAULT_MIN_WORD_LENGTH));
-    mlt.setMaxQueryTerms(localParams.getInt("maxqt",MoreLikeThis.DEFAULT_MAX_QUERY_TERMS));
-    mlt.setMaxNumTokensParsed(localParams.getInt("maxntp",MoreLikeThis.DEFAULT_MAX_NUM_TOKENS_PARSED));
-    mlt.setMaxDocFreq(localParams.getInt("maxdf", MoreLikeThis.DEFAULT_MAX_DOC_FREQ));
+    if(localParams.getInt("mintf") != null)
+      mlt.setMinTermFreq(localParams.getInt("mintf"));
+
+    mlt.setMinDocFreq(localParams.getInt("mindf", 0));
+
+    if(localParams.get("minwl") != null)
+      mlt.setMinWordLen(localParams.getInt("minwl"));
+
+    if(localParams.get("maxwl") != null)
+      mlt.setMaxWordLen(localParams.getInt("maxwl"));
+
+    if(localParams.get("maxqt") != null)
+      mlt.setMaxQueryTerms(localParams.getInt("maxqt"));
+
+    if(localParams.get("maxntp") != null)
+      mlt.setMaxNumTokensParsed(localParams.getInt("maxntp"));
+    
+    if(localParams.get("maxdf") != null) {
+      mlt.setMaxDocFreq(localParams.getInt("maxdf"));
+    }
 
     if(localParams.get("boost") != null) {
-      mlt.setBoost(localParams.getBool("boost", false));
+      mlt.setBoost(localParams.getBool("boost"));
       boostFields = SolrPluginUtils.parseFieldBoosts(qf);
     }
 
