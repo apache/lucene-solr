@@ -31,6 +31,7 @@ import java.util.Random;
 import java.util.function.Predicate;
 
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -38,13 +39,16 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -81,8 +85,125 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testBasicAuthForQueryRequest() throws Exception
+  {
+    String authcPrefix = "/admin/authentication";
+    
+    NamedList<Object> rsp;
+    HttpClient cl = null;
+    try {
+    
+      cl = HttpClientUtil.createClient(null);
+      JettySolrRunner randomJetty = cluster.getRandomJetty(random());
+      String baseUrl = randomJetty.getBaseUrl().toString();
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
+      zkClient().setData("/security.json", STD_CONF.replaceAll("'", "\"").getBytes(UTF_8), true);
+     // verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
+      SolrQuery query = new SolrQuery("kumar");
+      query.add("routingRule","ip_4:192");
+      query.add("routingRule","ip_3:168");
+      query.add("routingRule","cores:>2");
+      
+      SolrRequest<QueryResponse> req = new QueryRequest(query);
+      String userName = "solruser";
+      String password = "Salt256";
+  //  req.setBasicAuthCredentials(userName, password);    
+    
+    
+      req.setBasicAuthCredentials(userName, password);  
+    //  QueryResponse response = req.process(cluster.getSolrClient(), COLLECTION);
+      HttpSolrClient.RemoteSolrException exp = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+        req.process(cluster.getSolrClient(), COLLECTION);
+      });
+      assertEquals(401, exp.code());
+    }
+      finally {
+        if (cl != null) {
+          HttpClientUtil.close(cl);
+        }
+      }
+      
+  }
+  
+  @Test
+  public void testBasicAuthForDeleteRequest() throws Exception
+  {
+    String authcPrefix = "/admin/authentication";
+    
+    NamedList<Object> rsp;
+    HttpClient cl = null;
+    try {
+    
+      cl = HttpClientUtil.createClient(null);
+      JettySolrRunner randomJetty = cluster.getRandomJetty(random());
+      String baseUrl = randomJetty.getBaseUrl().toString();
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
+      zkClient().setData("/security.json", STD_CONF.replaceAll("'", "\"").getBytes(UTF_8), true);
+     // verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
+      String id="1";
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id",id);
+      UpdateRequest update = new UpdateRequest();
+      update.setBasicAuthCredentials("harry1","HarryIsUberCool1");
+      update.deleteById(id);
+      update.setCommitWithin(-1);
+      
+     
+    //  QueryResponse response = req.process(cluster.getSolrClient(), COLLECTION);
+      HttpSolrClient.RemoteSolrException exp = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+        update.process(cluster.getSolrClient(), COLLECTION);
+      });
+      assertEquals(401, exp.code());
+    }
+      finally {
+        if (cl != null) {
+          HttpClientUtil.close(cl);
+        }
+      }
+      
+  }
+  
+  
+  @Test
+  public void testBasicAuthForUpdateRequest() throws Exception
+  {
+    String authcPrefix = "/admin/authentication";
+    
+    NamedList<Object> rsp;
+    HttpClient cl = null;
+    try {
+    
+      cl = HttpClientUtil.createClient(null);
+      JettySolrRunner randomJetty = cluster.getRandomJetty(random());
+      String baseUrl = randomJetty.getBaseUrl().toString();
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
+      zkClient().setData("/security.json", STD_CONF.replaceAll("'", "\"").getBytes(UTF_8), true);
+     // verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id","1");
+      UpdateRequest update = new UpdateRequest();
+      update.setBasicAuthCredentials("harry1","HarryIsUberCool1");
+      update.add(doc);
+      update.setCommitWithin(-1);
+      
+     
+    //  QueryResponse response = req.process(cluster.getSolrClient(), COLLECTION);
+      HttpSolrClient.RemoteSolrException exp = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+        update.process(cluster.getSolrClient(), COLLECTION);
+      });
+      assertEquals(401, exp.code());
+    }
+      finally {
+        if (cl != null) {
+          HttpClientUtil.close(cl);
+        }
+      }
+      
+  }
+  
+ 
   public void testBasicAuth() throws Exception {
-
+    
     String authcPrefix = "/admin/authentication";
     String authzPrefix = "/admin/authorization";
 
@@ -118,17 +239,12 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
           "'set-user': {'harry':'HarryIsUberCool'}\n" +
           "}";
 
-      HttpPost httpPost = new HttpPost(baseUrl + authcPrefix);
-      setBasicAuthHeader(httpPost, "solr", "SolrRocks");
-      httpPost.setEntity(new ByteArrayEntity(command.getBytes(UTF_8)));
-      httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
-      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
-      HttpResponse r = cl.execute(httpPost);
-      int statusCode = r.getStatusLine().getStatusCode();
-      Utils.consumeFully(r.getEntity());
-      assertEquals("proper_cred sent, but access denied", 200, statusCode);
-
-      baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+      //positive test
+      executeCommand(baseUrl + authcPrefix,  cl, command, "solr", "SolrRocks","proper_cred sent, but access denied", 200);
+      
+      //negative test
+      executeCommand(baseUrl + authcPrefix,  cl, command, "solr", "IRock","wrong_cred sent, and access should be denied", 401);
+   //   baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
 
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/credentials/harry", NOT_NULL_PREDICATE, 20);
       command = "{\n" +
@@ -181,18 +297,22 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
 
       executeCommand(baseUrl + authzPrefix, cl,"{set-permission : { name : update , role : admin}}", "harry", "HarryIsUberCool");
 
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.setField("id","4");
-      UpdateRequest update = new UpdateRequest();
-      update.setBasicAuthCredentials("harry","HarryIsUberCool");
-      update.add(doc);
-      update.setCommitWithin(100);
-      cluster.getSolrClient().request(update, COLLECTION);
-
-
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + PKIAuthenticationPlugin.PATH + "?wt=json", "key", NOT_NULL_PREDICATE, 20);
+      
+      cluster.getZkServer().getZkAddress();
+      
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id","1");
+      UpdateRequest update = new UpdateRequest();
+      update.setBasicAuthCredentials("harry1","HarryIsUberCool1");
+      update.add(doc);
+      update.setCommitWithin(-1);
+      update.process(cluster.getSolrClient(), COLLECTION);
+     
+
+  
 
       String[] toolArgs = new String[]{
           "status", "-solr", baseUrl};
@@ -219,8 +339,23 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
     }
   }
 
+  private void executeCommand(String url, HttpClient cl, String payload, String user, String pwd,
+      String message, long expected) throws ClientProtocolException, IOException {
+    HttpResponse r = httpPost(url, cl, payload, user, pwd);
+    assertEquals(message, expected, r.getStatusLine().getStatusCode());
+    Utils.consumeFully(r.getEntity());
+  }
+
+
   public static void executeCommand(String url, HttpClient cl, String payload, String user, String pwd)
       throws IOException {
+    HttpResponse r = httpPost(url, cl, payload, user, pwd);
+    assertEquals(200, r.getStatusLine().getStatusCode());
+    Utils.consumeFully(r.getEntity());
+  }
+  
+  private static HttpResponse httpPost(String url, HttpClient cl, String payload, String user, String pwd)
+      throws IOException, ClientProtocolException {
     HttpPost httpPost;
     HttpResponse r;
     httpPost = new HttpPost(url);
@@ -228,8 +363,7 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
     httpPost.setEntity(new ByteArrayEntity(payload.getBytes(UTF_8)));
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     r = cl.execute(httpPost);
-    assertEquals(200, r.getStatusLine().getStatusCode());
-    Utils.consumeFully(r.getEntity());
+    return r;
   }
 
   public static void verifySecurityStatus(HttpClient cl, String url, String objPath,
