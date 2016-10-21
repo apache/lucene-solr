@@ -1431,7 +1431,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       sLen = params.get(LEN);
       compress = params.get(COMPRESSION);
       useChecksum = params.getBool(CHECKSUM, false);
-      indexGen = params.getLong(GENERATION, null);
+      indexGen = params.getLong(GENERATION);
       if (useChecksum) {
         checksum = new Adler32();
       }

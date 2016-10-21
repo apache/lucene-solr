@@ -1887,7 +1887,7 @@ public class ZkController {
         elect.setup(context);
         electionContexts.put(contextKey, context);
         
-        elect.retryElection(context, params.getBool(REJOIN_AT_HEAD_PROP));
+        elect.retryElection(context, params.getBool(REJOIN_AT_HEAD_PROP, false));
       }
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);
