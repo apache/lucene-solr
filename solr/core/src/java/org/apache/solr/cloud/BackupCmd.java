@@ -19,16 +19,21 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -36,6 +41,10 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
+import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
+import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.SnapshotStatus;
+import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +72,21 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     String asyncId = message.getStr(ASYNC);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
 
+    String commitName = message.getStr(CoreAdminParams.COMMIT_NAME);
+    Optional<CollectionSnapshotMetaData> snapshotMeta = Optional.empty();
+    if (commitName != null) {
+      SolrZkClient zkClient = ocmh.overseer.getZkController().getZkClient();
+      snapshotMeta = SolrSnapshotManager.getCollectionLevelSnapshot(zkClient, collectionName, commitName);
+      if (!snapshotMeta.isPresent()) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Snapshot with name " + commitName
+            + " does not exist for collection " + collectionName);
+      }
+      if (snapshotMeta.get().getStatus() != SnapshotStatus.Successful) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Snapshot with name " + commitName + " for collection " + collectionName
+            + " has not completed successfully. The status is " + snapshotMeta.get().getStatus());
+      }
+    }
+
     Map<String, String> requestMap = new HashMap<>();
     Instant startTime = Instant.now();
 
@@ -85,8 +109,28 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     log.info("Starting backup of collection={} with backupName={} at location={}", collectionName, backupName,
         backupPath);
 
+    Collection<String> shardsToConsider = Collections.emptySet();
+    if (snapshotMeta.isPresent()) {
+      shardsToConsider = snapshotMeta.get().getShards();
+    }
+
     for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getActiveSlices()) {
-      Replica replica = slice.getLeader();
+      Replica replica = null;
+
+      if (snapshotMeta.isPresent()) {
+        if (!shardsToConsider.contains(slice.getName())) {
+          log.warn("Skipping the backup for shard {} since it wasn't part of the collection {} when snapshot {} was created.",
+              slice.getName(), collectionName, snapshotMeta.get().getName());
+          continue;
+        }
+        replica = selectReplicaWithSnapshot(snapshotMeta.get(), slice);
+      } else {
+        // Note - Actually this can return a null value when there is no leader for this shard.
+        replica = slice.getLeader();
+        if (replica == null) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "No 'leader' replica available for shard " + slice.getName() + " of collection " + collectionName);
+        }
+      }
 
       String coreName = replica.getStr(CORE_NAME_PROP);
 
@@ -96,6 +140,9 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
       params.set(CoreAdminParams.BACKUP_REPOSITORY, repo);
       params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString()); // note: index dir will be here then the "snapshot." + slice name
       params.set(CORE_NAME_PROP, coreName);
+      if (snapshotMeta.isPresent()) {
+        params.set(CoreAdminParams.COMMIT_NAME, snapshotMeta.get().getName());
+      }
 
       ocmh.sendShardRequest(replica.getNodeName(), params, shardHandler, asyncId, requestMap);
       log.debug("Sent backup request to core={} for backupName={}", coreName, backupName);
@@ -128,5 +175,31 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     backupMgr.writeBackupProperties(location, backupName, properties);
 
     log.info("Completed backing up ZK data for backupName={}", backupName);
+  }
+
+  private Replica selectReplicaWithSnapshot(CollectionSnapshotMetaData snapshotMeta, Slice slice) {
+    // The goal here is to choose the snapshot of the replica which was the leader at the time snapshot was created.
+    // If that is not possible, we choose any other replica for the given shard.
+    Collection<CoreSnapshotMetaData> snapshots = snapshotMeta.getReplicaSnapshotsForShard(slice.getName());
+
+    Optional<CoreSnapshotMetaData> leaderCore = snapshots.stream().filter(x -> x.isLeader()).findFirst();
+    if (leaderCore.isPresent()) {
+      log.info("Replica {} was the leader when snapshot {} was created.", leaderCore.get().getCoreName(), snapshotMeta.getName());
+      Replica r = slice.getReplica(leaderCore.get().getCoreName());
+      if ((r != null) && !r.getState().equals(State.DOWN)) {
+        return r;
+      }
+    }
+
+    Optional<Replica> r = slice.getReplicas().stream()
+                               .filter(x -> x.getState() != State.DOWN && snapshotMeta.isSnapshotExists(slice.getName(), x))
+                               .findFirst();
+
+    if (!r.isPresent()) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+          "Unable to find any live replica with a snapshot named " + snapshotMeta.getName() + " for shard " + slice.getName());
+    }
+
+    return r.get();
   }
 }

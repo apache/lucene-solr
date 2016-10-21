@@ -22,7 +22,7 @@ import java.util.Random;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.Bits;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 /** Wraps a Scorer with additional checks */
 final class AssertingBulkScorer extends BulkScorer {
@@ -82,7 +82,7 @@ final class AssertingBulkScorer extends BulkScorer {
       assert next == DocIdSetIterator.NO_MORE_DOCS;
       return DocIdSetIterator.NO_MORE_DOCS;
     } else {
-      return RandomInts.randomIntBetween(random, max, next);
+      return RandomNumbers.randomIntBetween(random, max, next);
     }
   }
 
