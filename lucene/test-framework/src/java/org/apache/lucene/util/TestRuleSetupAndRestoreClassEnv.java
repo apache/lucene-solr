@@ -73,12 +73,16 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
   Codec codec;
 
   /**
+   * Indicates whether the rule has executed its {@link #before()} method fully.
+   */
+  private boolean initialized;
+
+  /**
    * @see SuppressCodecs
    */
   HashSet<String> avoidCodecs;
 
   static class ThreadNameFixingPrintStreamInfoStream extends PrintStreamInfoStream {
-
     public ThreadNameFixingPrintStreamInfoStream(PrintStream out) {
       super(out);
     }
@@ -99,6 +103,10 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       stream.println(component + " " + messageID + " [" + getTimestamp() + "; " + name + "]: " + message);    
     }
   }
+  
+  public boolean isInitialized() {
+    return initialized;
+  }
 
   @Override
   protected void before() throws Exception {
@@ -113,7 +121,6 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     if (VERBOSE) {
       System.out.println("Loaded codecs: " + Codec.availableCodecs());
       System.out.println("Loaded postingsFormats: " + PostingsFormat.availablePostingsFormats());
-
     }
 
     savedInfoStream = InfoStream.getDefault();
@@ -235,6 +242,8 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     }
 
     LuceneTestCase.setLiveIWCFlushMode(flushMode);
+
+    initialized = true;
   }
 
   /**
