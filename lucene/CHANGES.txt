@@ -118,6 +118,8 @@ Optimizations
 
 Other
 
+* LUCENE-7513: Upgrade randomizedtesting to 2.4.0. (Dawid Weiss)
+
 * LUCENE-7452: Block join query exception suggests how to find a doc, which 
  violates orthogonality requirement. (Mikhail Khludnev)
 

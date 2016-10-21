@@ -100,7 +100,7 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.junit.Assert;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 /**
@@ -429,7 +429,7 @@ public final class TestUtil {
 
   /** start and end are BOTH inclusive */
   public static int nextInt(Random r, int start, int end) {
-    return RandomInts.randomIntBetween(r, start, end);
+    return RandomNumbers.randomIntBetween(r, start, end);
   }
 
   /** start and end are BOTH inclusive */
@@ -580,7 +580,7 @@ public final class TestUtil {
     final StringBuilder regexp = new StringBuilder(maxLength);
     for (int i = nextInt(r, 0, maxLength); i > 0; i--) {
       if (r.nextBoolean()) {
-        regexp.append((char) RandomInts.randomIntBetween(r, 'a', 'z'));
+        regexp.append((char) RandomNumbers.randomIntBetween(r, 'a', 'z'));
       } else {
         regexp.append(RandomPicks.randomFrom(r, ops));
       }
