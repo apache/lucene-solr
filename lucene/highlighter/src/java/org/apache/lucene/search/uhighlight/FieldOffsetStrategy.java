@@ -20,6 +20,7 @@ package org.apache.lucene.search.uhighlight;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -69,16 +70,18 @@ public abstract class FieldOffsetStrategy {
   protected List<OffsetsEnum> createOffsetsEnums(LeafReader leafReader, int doc, TokenStream tokenStream) throws IOException {
     List<OffsetsEnum> offsetsEnums = createOffsetsEnumsFromReader(leafReader, doc);
     if (automata.length > 0) {
-      if (tokenStream == null) {
-        offsetsEnums.addAll(createAutomataOffsetsEnumsFromReader(doc, leafReader));
-      } else {
-        offsetsEnums.add(createOffsetsEnumFromTokenStream(doc, tokenStream));
-      }
+      offsetsEnums.addAll(createOffsetsEnumsForAutomata(leafReader, doc, tokenStream));
     }
     return offsetsEnums;
   }
 
-  private List<OffsetsEnum> createAutomataOffsetsEnumsFromReader(int doc, LeafReader leafReader) throws IOException {
+  protected List<OffsetsEnum> createOffsetsEnumsForAutomata(LeafReader leafReader, int doc, TokenStream tokenStream) throws IOException {
+    //Prefers to get automata offsets from the Postings unless a tokenstream is provided
+    return tokenStream == null ? createAutomataOffsetsEnumsFromReader(leafReader) :
+        createAutomataOffsetsEnumsFromTokenStream(doc, tokenStream);
+  }
+
+  private List<OffsetsEnum> createAutomataOffsetsEnumsFromReader(LeafReader leafReader) throws IOException {
     List<OffsetsEnum> offsetsEnums = new LinkedList<>();
     TermsEnum termsEnum = leafReader.terms(field).iterator();
     BytesRef term;
@@ -129,13 +132,13 @@ public abstract class FieldOffsetStrategy {
     return offsetsEnums;
   }
 
-  protected OffsetsEnum createOffsetsEnumFromTokenStream(int doc, TokenStream tokenStream) throws IOException {
+  private List<OffsetsEnum> createAutomataOffsetsEnumsFromTokenStream(int doc, TokenStream tokenStream) throws IOException {
     // if there are automata (MTQ), we have to initialize the "fake" enum wrapping them.
     assert tokenStream != null;
     // TODO Opt: we sometimes evaluate the automata twice when this TS isn't the original; can we avoid?
     PostingsEnum mtqPostingsEnum = MultiTermHighlighting.getDocsEnum(tokenStream, automata);
     assert mtqPostingsEnum instanceof Closeable; // FYI we propagate close() later.
     mtqPostingsEnum.advance(doc);
-    return new OffsetsEnum(null, mtqPostingsEnum);
+    return Collections.singletonList(new OffsetsEnum(null, mtqPostingsEnum));
   }
 }
