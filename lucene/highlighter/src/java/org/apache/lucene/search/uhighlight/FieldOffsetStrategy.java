@@ -20,7 +20,7 @@ package org.apache.lucene.search.uhighlight;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +34,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
@@ -73,7 +72,7 @@ public abstract class FieldOffsetStrategy {
     List<OffsetsEnum> offsetsEnums = createOffsetsEnumsFromReader(leafReader, doc);
     if (automata.length > 0) {
       if (tokenStream == null) {
-        offsetsEnums.addAll(createAutomataOffsetsEnumsFromReader(doc, leafReader));
+        offsetsEnums.addAll(createAutomataOffsetsEnumsFromReader(leafReader));
       } else {
         offsetsEnums.add(createOffsetsEnumFromTokenStream(doc, tokenStream));
       }
@@ -81,8 +80,13 @@ public abstract class FieldOffsetStrategy {
     return offsetsEnums;
   }
 
-  private List<OffsetsEnum> createAutomataOffsetsEnumsFromReader(int doc, LeafReader leafReader) throws IOException {
-    List<OffsetsEnum> offsetsEnums = new LinkedList<>();
+  private List<OffsetsEnum> createAutomataOffsetsEnumsFromReader(LeafReader leafReader) throws IOException {
+    //debatable if a LinkedList is faster, but depends on the number of encountered terms
+    Map<CharacterRunAutomaton, List<PostingsEnum>> automataPostings = new HashMap<>(automata.length);
+    for (CharacterRunAutomaton automaton : automata) {
+      automataPostings.put(automaton, new LinkedList<>());
+    }
+
     TermsEnum termsEnum = leafReader.terms(field).iterator();
     BytesRef term;
     CharsRefBuilder refBuilder = new CharsRefBuilder();
@@ -90,10 +94,19 @@ public abstract class FieldOffsetStrategy {
       for (CharacterRunAutomaton automaton : automata) {
         refBuilder.copyUTF8Bytes(term);
         if (automaton.run(refBuilder.chars(), 0, refBuilder.length())) {
-          offsetsEnums.add(new OffsetsEnum(term, termsEnum.postings(null, PostingsEnum.OFFSETS)));
+          automataPostings.get(automaton).add(termsEnum.postings(null, PostingsEnum.OFFSETS));
         }
       }
     }
+
+    List<OffsetsEnum> offsetsEnums = new LinkedList<>();
+    for (Map.Entry<CharacterRunAutomaton, List<PostingsEnum>> automatonPostings : automataPostings.entrySet()) {
+      BytesRef wildcardTerm = new BytesRef(automatonPostings.getKey().toString());
+      offsetsEnums.add(new OffsetsEnum(wildcardTerm, new CompositePostingsEnum(wildcardTerm, automatonPostings.getValue())));
+    }
+
+
+
     return offsetsEnums;
   }
 
