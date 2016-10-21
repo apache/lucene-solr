@@ -56,19 +56,19 @@ public class AnalysisOffsetStrategy extends FieldOffsetStrategy {
     // Automata (Wildcards / MultiTermQuery):
     this.automata = automata;
 
-    if (terms.length > 0 && !strictPhrases.hasPositionSensitivity()) {
+    if (terms.length > 0 && !this.phraseHelper.hasPositionSensitivity()) {
       this.automata = convertTermsToAutomata(terms, automata);
       // clear the terms array now that we've moved them to be expressed as automata
       terms = ZERO_LEN_BYTES_REF_ARRAY;
     }
 
-    if (terms.length > 0 || strictPhrases.willRewrite()) { //needs MemoryIndex
+    if (terms.length > 0 || this.phraseHelper.willRewrite()) { //needs MemoryIndex
       // init MemoryIndex
-      boolean storePayloads = strictPhrases.hasPositionSensitivity(); // might be needed
+      boolean storePayloads = this.phraseHelper.hasPositionSensitivity(); // might be needed
       memoryIndex = new MemoryIndex(true, storePayloads);//true==store offsets
       leafReader = (LeafReader) memoryIndex.createSearcher().getIndexReader();
       // preFilter for MemoryIndex
-      preMemIndexFilterAutomaton = buildCombinedAutomaton(field, terms, this.automata, strictPhrases);
+      preMemIndexFilterAutomaton = buildCombinedAutomaton(field, terms, this.automata, this.phraseHelper);
     } else {
       memoryIndex = null;
       leafReader = null;

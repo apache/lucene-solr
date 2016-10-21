@@ -52,7 +52,7 @@ public class TermVectorOffsetStrategy extends FieldOffsetStrategy {
     }
 
     LeafReader leafReader = null;
-    if ((terms.length > 0) || strictPhrases.willRewrite()) {
+    if ((terms.length > 0) || phraseHelper.willRewrite()) {
       leafReader = new TermVectorLeafReader(field, tvTerms);
       docId = 0;
     }

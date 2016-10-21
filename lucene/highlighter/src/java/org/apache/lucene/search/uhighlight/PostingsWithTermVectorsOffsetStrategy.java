@@ -66,6 +66,6 @@ public class PostingsWithTermVectorsOffsetStrategy extends FieldOffsetStrategy {
 
   @Override
   public UnifiedHighlighter.OffsetSource getOffsetSource() {
-    return UnifiedHighlighter.OffsetSource.POSTINGS;
+    return UnifiedHighlighter.OffsetSource.POSTINGS_WITH_TERM_VECTORS;
   }
 }
