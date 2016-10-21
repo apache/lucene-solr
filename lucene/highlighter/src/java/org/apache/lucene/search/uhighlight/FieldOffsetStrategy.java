@@ -20,7 +20,6 @@ package org.apache.lucene.search.uhighlight;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +32,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
@@ -45,14 +43,14 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 public abstract class FieldOffsetStrategy {
 
   protected final String field;
+  protected final PhraseHelper phraseHelper; // Query: position-sensitive information TODO: rename
   protected BytesRef[] terms; // Query: free-standing terms
-  protected PhraseHelper strictPhrases; // Query: position-sensitive information TODO: rename
   protected CharacterRunAutomaton[] automata; // Query: free-standing wildcards (multi-term query)
 
   public FieldOffsetStrategy(String field, BytesRef[] queryTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
     this.field = field;
     this.terms = queryTerms;
-    this.strictPhrases = phraseHelper;
+    this.phraseHelper = phraseHelper;
     this.automata = automata;
   }
 
@@ -72,7 +70,7 @@ public abstract class FieldOffsetStrategy {
     List<OffsetsEnum> offsetsEnums = createOffsetsEnumsFromReader(leafReader, doc);
     if (automata.length > 0) {
       if (tokenStream == null) {
-        offsetsEnums.addAll(createAutomataOffsetsEnumsFromReader(leafReader));
+        offsetsEnums.addAll(createAutomataOffsetsEnumsFromReader(doc, leafReader));
       } else {
         offsetsEnums.add(createOffsetsEnumFromTokenStream(doc, tokenStream));
       }
@@ -80,33 +78,17 @@ public abstract class FieldOffsetStrategy {
     return offsetsEnums;
   }
 
-  private List<OffsetsEnum> createAutomataOffsetsEnumsFromReader(LeafReader leafReader) throws IOException {
-    //debatable if a LinkedList is faster, but depends on the number of encountered terms
-    Map<CharacterRunAutomaton, List<PostingsEnum>> automataPostings = new HashMap<>(automata.length);
-    for (CharacterRunAutomaton automaton : automata) {
-      automataPostings.put(automaton, new LinkedList<>());
-    }
-
+  private List<OffsetsEnum> createAutomataOffsetsEnumsFromReader(int doc, LeafReader leafReader) throws IOException {
+    List<OffsetsEnum> offsetsEnums = new LinkedList<>();
     TermsEnum termsEnum = leafReader.terms(field).iterator();
     BytesRef term;
-    CharsRefBuilder refBuilder = new CharsRefBuilder();
     while ((term = termsEnum.next()) != null) {
       for (CharacterRunAutomaton automaton : automata) {
-        refBuilder.copyUTF8Bytes(term);
-        if (automaton.run(refBuilder.chars(), 0, refBuilder.length())) {
-          automataPostings.get(automaton).add(termsEnum.postings(null, PostingsEnum.OFFSETS));
+        if (automaton.run(term.utf8ToString())) {
+          offsetsEnums.add(new OffsetsEnum(term, termsEnum.postings(null, PostingsEnum.OFFSETS)));
         }
       }
     }
-
-    List<OffsetsEnum> offsetsEnums = new LinkedList<>();
-    for (Map.Entry<CharacterRunAutomaton, List<PostingsEnum>> automatonPostings : automataPostings.entrySet()) {
-      BytesRef wildcardTerm = new BytesRef(automatonPostings.getKey().toString());
-      offsetsEnums.add(new OffsetsEnum(wildcardTerm, new CompositePostingsEnum(wildcardTerm, automatonPostings.getValue())));
-    }
-
-
-
     return offsetsEnums;
   }
 
@@ -114,10 +96,10 @@ public abstract class FieldOffsetStrategy {
     // For strict positions, get a Map of term to Spans:
     //    note: ScriptPhraseHelper.NONE does the right thing for these method calls
     final Map<BytesRef, Spans> strictPhrasesTermToSpans =
-        strictPhrases.getTermToSpans(atomicReader, doc);
+        phraseHelper.getTermToSpans(atomicReader, doc);
     // Usually simply wraps terms in a List; but if willRewrite() then can be expanded
     final List<BytesRef> sourceTerms =
-        strictPhrases.expandTermsIfRewrite(terms, strictPhrasesTermToSpans);
+        phraseHelper.expandTermsIfRewrite(terms, strictPhrasesTermToSpans);
 
     final List<OffsetsEnum> offsetsEnums = new ArrayList<>(sourceTerms.size() + 1);
 
@@ -136,7 +118,7 @@ public abstract class FieldOffsetStrategy {
         if (doc != postingsEnum.advance(doc)) { // now it's positioned, although may be exhausted
           continue;
         }
-        postingsEnum = strictPhrases.filterPostings(term, postingsEnum, strictPhrasesTermToSpans.get(term));
+        postingsEnum = phraseHelper.filterPostings(term, postingsEnum, strictPhrasesTermToSpans.get(term));
         if (postingsEnum == null) {
           continue;// completely filtered out
         }

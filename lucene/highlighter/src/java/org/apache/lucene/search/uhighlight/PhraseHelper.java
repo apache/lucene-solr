@@ -251,7 +251,7 @@ public class PhraseHelper {
   }
 
   /**
-   * Returns terms as a List, but expanded to any terms in strictPhrases' keySet if present.  That can only
+   * Returns terms as a List, but expanded to any terms in phraseHelper' keySet if present.  That can only
    * happen if willRewrite() is true.
    */
   List<BytesRef> expandTermsIfRewrite(BytesRef[] terms, Map<BytesRef, Spans> strictPhrasesTermToSpans) {
