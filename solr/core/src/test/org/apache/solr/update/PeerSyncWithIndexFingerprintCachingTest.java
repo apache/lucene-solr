@@ -68,20 +68,17 @@ public class PeerSyncWithIndexFingerprintCachingTest extends BaseDistributedSear
     SolrClient client0 = clients.get(0);
     SolrClient client1 = clients.get(1);
 
-    long v = 0;
-
-    // Test PeerSync after replica misses delete
-    v=2500;
-    for(int i=0; i < 8; ++i) {
-      add(client0, seenLeader, sdoc("id", ""+i,"_version_",i));
-      add(client1, seenLeader, sdoc("id",""+i,"_version_",i));
+    long v =1;
+    for(; v < 8; ++v) {
+      add(client0, seenLeader, sdoc("id", ""+v,"_version_",v));
+      add(client1, seenLeader, sdoc("id",""+v,"_version_",v));
       
     }
     client0.commit(); client1.commit();
     
     IndexFingerprint before = getFingerprint(client0, Long.MAX_VALUE);
     
-    del(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_",Long.toString(25)), "2");
+    del(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_",Long.toString(-++v)), "2");
     client0.commit(); 
     
     IndexFingerprint after = getFingerprint(client0, Long.MAX_VALUE);

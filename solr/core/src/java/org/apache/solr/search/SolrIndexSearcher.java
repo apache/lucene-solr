@@ -33,9 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -200,8 +198,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private final String path;
   private boolean releaseDirectory;
-
-  private final Map<Long, IndexFingerprint> maxVersionFingerprintCache = new ConcurrentHashMap<>();
 
   private final NamedList<Object> readerStats;
 
@@ -2447,27 +2443,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * gets a cached version of the IndexFingerprint for this searcher
    **/
   public IndexFingerprint getIndexFingerprint(long maxVersion) throws IOException {
-    final AtomicReference<IOException> exception = new AtomicReference<>();
-    try {
-      return maxVersionFingerprintCache.computeIfAbsent(maxVersion, key -> {
-        try {
-          return computeFromPerSegmentIndexFingerprint(maxVersion);
-        } catch (IOException e) {
-          exception.set(e);
-          return null;
-        }
-      });
-    } finally {
-      if (exception.get() != null) throw exception.get();
-    }
-  }
-  
-  private IndexFingerprint computeFromPerSegmentIndexFingerprint(long maxVersion) throws IOException {
     final SolrIndexSearcher searcher = this;
     final AtomicReference<IOException> exception = new AtomicReference<>();
     try {
-      List<IndexFingerprint> segmementFingerprints = 
-          searcher.getTopReaderContext().leaves().parallelStream().map(ctx -> {
+       return searcher.getTopReaderContext().leaves().stream().map(ctx -> {
             try {
               return searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion);
             } catch (IOException e) {
@@ -2476,9 +2455,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             }
           })
           .filter(java.util.Objects::nonNull)
-          .collect(Collectors.toList());
-
-      return segmementFingerprints.stream().reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
+          .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
 
     } finally {
       if (exception.get() != null) throw exception.get();
