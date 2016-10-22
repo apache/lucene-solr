@@ -152,6 +152,8 @@ New Features
 * SOLR-9326: Ability to create/delete/list snapshots at collection level.
   (Hrishikesh Gadre via yonik)
 
+* SOLR-9662: New parameter -u <user:pass> in bin/post to pass basicauth credentials (janhoy)
+
 Bug Fixes
 ----------------------
 
