@@ -3267,7 +3267,7 @@ public class SolrCLI {
       if (cli.hasOption("s")) {
         if (assertSolrRunning(cli.getOptionValue("s")) > 0) return 1;
       }
-      if (cli.hasOption("s")) {
+      if (cli.hasOption("S")) {
         if (assertSolrNotRunning(cli.getOptionValue("S")) > 0) return 1;
       }
       return 0;
