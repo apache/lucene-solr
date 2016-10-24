@@ -55,6 +55,10 @@ public class UtilsToolTest extends SolrTestCaseJ4 {
       "solr_log_20160304", 
       "solr-8983-console.log",
       "solr_gc_log_20160102", 
+      "solr_gcnotremove", 
+      "solr_gc.log", 
+      "solr_gc.log.0", 
+      "solr_gc.log.0.current", 
       "solr_gc_log_2");
   
   @Before
@@ -136,7 +140,7 @@ public class UtilsToolTest extends SolrTestCaseJ4 {
     String[] args = {"utils", "-archive_gc_logs", "-l", dir.toString()};
     assertEquals(files.size(), fileCount());
     assertEquals(0, runTool(args));
-    assertEquals(files.size()-2, fileCount());
+    assertEquals(files.size()-5, fileCount());
     assertFalse(listFiles().contains("solr_gc_log_2"));
     assertTrue(Files.exists(dir.resolve("archived").resolve("solr_gc_log_2")));
     assertEquals(0, runTool(args));
