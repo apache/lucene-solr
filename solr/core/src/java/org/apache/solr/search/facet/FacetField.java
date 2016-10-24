@@ -29,6 +29,7 @@ import org.apache.solr.schema.SchemaField;
 abstract class FacetRequestSorted extends FacetRequest {
   long offset;
   long limit;
+  int overrequest = -1; // Number of buckets to request beyond the limit to do internally during distributed search. -1 means default.
   long mincount;
   String sortVariable;
   SortDirection sortDirection;

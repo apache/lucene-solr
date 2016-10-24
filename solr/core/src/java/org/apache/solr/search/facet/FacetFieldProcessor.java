@@ -212,12 +212,24 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     final int off = fcontext.isShard() ? 0 : (int) freq.offset;
-    // add a modest amount of over-request if this is a shard request
-    final int lim = freq.limit >= 0 ? (fcontext.isShard() ? (int)(freq.limit*1.1+4) : (int)freq.limit) : Integer.MAX_VALUE;
+
+    long effectiveLimit = Integer.MAX_VALUE; // use max-int instead of max-long to avoid overflow
+    if (freq.limit >= 0) {
+      effectiveLimit = freq.limit;
+      if (fcontext.isShard()) {
+        // add over-request if this is a shard request
+        if (freq.overrequest == -1) {
+          effectiveLimit = (long) (effectiveLimit*1.1+4); // default: add 10% plus 4 (to overrequest for very small limits)
+        } else {
+          effectiveLimit += freq.overrequest;
+        }
+      }
+    }
+
 
     final int sortMul = freq.sortDirection.getMultiplier();
 
-    int maxTopVals = (int) (lim >= 0 ? (long) off + lim : Integer.MAX_VALUE - 1);
+    int maxTopVals = (int) (effectiveLimit >= 0 ? Math.min(off + effectiveLimit, Integer.MAX_VALUE - 1) : Integer.MAX_VALUE - 1);
     maxTopVals = Math.min(maxTopVals, slotCardinality);
     final SlotAcc sortAcc = this.sortAcc, indexOrderAcc = this.indexOrderAcc;
     final BiPredicate<Slot,Slot> orderPredicate;
@@ -258,7 +270,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
           bottom.slot = slotNum;
           bottom = queue.updateTop();
         }
-      } else if (lim > 0) {
+      } else if (effectiveLimit > 0) {
         // queue not full
         Slot s = new Slot();
         s.slot = slotNum;
@@ -304,7 +316,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     // if we are deep paging, we don't have to order the highest "offset" counts.
     int collectCount = Math.max(0, queue.size() - off);
-    assert collectCount <= lim;
+    assert collectCount <= effectiveLimit;
     int[] sortedSlots = new int[collectCount];
     for (int i = collectCount - 1; i >= 0; i--) {
       sortedSlots[i] = queue.pop().slot;
