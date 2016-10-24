@@ -200,6 +200,8 @@ Bug Fixes
 
 * SOLR-9325: solr.log is now written to $SOLR_LOGS_DIR without changing log4j.properties (janhoy)
 
+* SOLR-9518: Kerberos Delegation Tokens don't work without a chrooted ZK (Ishan Chattopadhyaya,via noble)
+
 Optimizations
 ----------------------
 
