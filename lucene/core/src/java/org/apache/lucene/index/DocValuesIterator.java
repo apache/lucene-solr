@@ -14,26 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.index;
 
 import java.io.IOException;
 
-/**
- * A per-document numeric value.
- */
-public abstract class NumericDocValues extends DocValuesIterator {
-  
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
-  protected NumericDocValues() {}
+import org.apache.lucene.search.DocIdSetIterator;
 
-  /**
-   * Returns the numeric value for the current document ID.
-   * It is illegal to call this method after {@link #advanceExact(int)}
-   * returned {@code false}.
-   * @return numeric value
-   */
-  public abstract long longValue() throws IOException;
+abstract class DocValuesIterator extends DocIdSetIterator {
+
+  /** Advance the iterator to exactly {@code target} and return whether
+   *  {@code target} has a value.
+   *  {@code target} must be greater than or equal to the current
+   *  {@link #docID() doc ID} and must be a valid doc ID, ie. &ge; 0 and
+   *  &lt; {@code maxDoc}.
+   *  After this method returns, {@link #docID()} retuns {@code target}. */
+  public abstract boolean advanceExact(int target) throws IOException;
 
 }

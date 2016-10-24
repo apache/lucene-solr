@@ -477,6 +477,12 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
           }
 
           @Override
+          public boolean advanceExact(int target) throws IOException {
+            docID = target;
+            return true;
+          }
+
+          @Override
           public long cost() {
             // TODO
             return 0;
@@ -521,6 +527,13 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
           }
         }
         return doc = NO_MORE_DOCS;
+      }
+
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        doc = target;
+        value = values.get(doc);
+        return value != 0 || docsWithField.get(doc);
       }
 
       @Override
@@ -693,6 +706,16 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
 
       index = (int) hiIndex;
       return doc = hiDoc;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (advance(target) == target) {
+        return true;
+      }
+      --index;
+      doc = target;
+      return false;
     }
 
     @Override
@@ -891,6 +914,11 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
         }
 
         @Override
+        public boolean advanceExact(int target) throws IOException {
+          return sparseValues.advanceExact(target);
+        }
+
+        @Override
         public long cost() {
           return sparseValues.cost();
         }
@@ -933,7 +961,14 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
           return nextDoc();
         }
       }
-          
+
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        docID = target;
+        ord = (int) ordinals.get(target);
+        return ord != -1;
+      }
+
       @Override
       public int ordValue() {
         return ord;
@@ -1017,6 +1052,11 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
           }
 
           @Override
+          public boolean advanceExact(int target) throws IOException {
+            return sparseValues.advanceExact(target);
+          }
+
+          @Override
           public long cost() {
             return sparseValues.cost();
           }
@@ -1058,6 +1098,12 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
             docID = target-1;
             return nextDoc();
           }
+        }
+
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          docID = target;
+          return docsWithField.get(docID);
         }
 
         @Override
@@ -1122,6 +1168,14 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
         }
         
         @Override
+        public boolean advanceExact(int target) throws IOException {
+          docID = target;
+          startOffset = ordIndex.get(docID);
+          endOffset = ordIndex.get(docID+1L);
+          return endOffset > startOffset;
+        }
+        
+        @Override
         public long cost() {
           // TODO
           return 0;
@@ -1182,6 +1236,15 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
             docID = target-1;
             return nextDoc();
           }
+        }
+        
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          docID = target;
+          int ord = (int) ordinals.get(docID);
+          startOffset = offsets[ord];
+          endOffset = offsets[ord+1];
+          return endOffset > startOffset;
         }
         
         @Override

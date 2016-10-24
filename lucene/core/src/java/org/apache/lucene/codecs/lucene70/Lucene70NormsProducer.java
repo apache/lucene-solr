@@ -160,6 +160,12 @@ final class Lucene70NormsProducer extends NormsProducer {
         }
 
         @Override
+        public boolean advanceExact(int target) throws IOException {
+          this.doc = target;
+          return true;
+        }
+
+        @Override
         public long cost() {
           return maxDoc;
         }
@@ -174,6 +180,11 @@ final class Lucene70NormsProducer extends NormsProducer {
         @Override
         public int advance(int target) throws IOException {
           return disi.advance(target);
+        }
+
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          return disi.advanceExact(target);
         }
 
         @Override

@@ -178,11 +178,7 @@ public abstract class FieldComparator<T> {
     }
 
     private double getValueForDoc(int doc) throws IOException {
-      int curDocID = currentReaderValues.docID();
-      if (doc > curDocID) {
-        curDocID = currentReaderValues.advance(doc);
-      }
-      if (doc == curDocID) {
+      if (currentReaderValues.advanceExact(doc)) {
         return Double.longBitsToDouble(currentReaderValues.longValue());
       } else {
         return missingValue;
@@ -242,11 +238,7 @@ public abstract class FieldComparator<T> {
     }
     
     private float getValueForDoc(int doc) throws IOException {
-      int curDocID = currentReaderValues.docID();
-      if (doc > curDocID) {
-        curDocID = currentReaderValues.advance(doc);
-      }
-      if (doc == curDocID) {
+      if (currentReaderValues.advanceExact(doc)) {
         return Float.intBitsToFloat((int) currentReaderValues.longValue());
       } else {
         return missingValue;
@@ -308,11 +300,7 @@ public abstract class FieldComparator<T> {
     }
 
     private int getValueForDoc(int doc) throws IOException {
-      int curDocID = currentReaderValues.docID();
-      if (doc > curDocID) {
-        curDocID = currentReaderValues.advance(doc);
-      }
-      if (doc == curDocID) {
+      if (currentReaderValues.advanceExact(doc)) {
         return (int) currentReaderValues.longValue();
       } else {
         return missingValue;
@@ -372,11 +360,7 @@ public abstract class FieldComparator<T> {
     }
 
     private long getValueForDoc(int doc) throws IOException {
-      int curDocID = currentReaderValues.docID();
-      if (doc > curDocID) {
-        curDocID = currentReaderValues.advance(doc);
-      }
-      if (doc == curDocID) {
+      if (currentReaderValues.advanceExact(doc)) {
         return currentReaderValues.longValue();
       } else {
         return missingValue;
@@ -656,15 +640,11 @@ public abstract class FieldComparator<T> {
     }
 
     private int getOrdForDoc(int doc) throws IOException {
-      int curDocID = termsIndex.docID();
-      if (doc > curDocID) {
-        if (termsIndex.advance(doc) == doc) {
-          return termsIndex.ordValue();
-        }
-      } else if (doc == curDocID) {
+      if (termsIndex.advanceExact(doc)) {
         return termsIndex.ordValue();
+      } else {
+        return -1;
       }
-      return -1;
     }
 
     @Override
@@ -864,11 +844,7 @@ public abstract class FieldComparator<T> {
     }
 
     private BytesRef getValueForDoc(int doc) throws IOException {
-      int curDocID = docTerms.docID();
-      if (doc > curDocID) {
-        curDocID = docTerms.advance(doc);
-      }
-      if (doc == curDocID) {
+      if (docTerms.advanceExact(doc)) {
         return docTerms.binaryValue();
       } else {
         return null;

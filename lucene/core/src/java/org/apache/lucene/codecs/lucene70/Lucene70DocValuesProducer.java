@@ -375,6 +375,12 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
         }
 
         @Override
+        public boolean advanceExact(int target) {
+          doc = target;
+          return true;
+        }
+
+        @Override
         public long cost() {
           return maxDoc;
         }
@@ -389,6 +395,11 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
         @Override
         public int advance(int target) throws IOException {
           return disi.advance(target);
+        }
+
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          return disi.advanceExact(target);
         }
 
         @Override
@@ -521,6 +532,12 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
         }
 
         @Override
+        public boolean advanceExact(int target) throws IOException {
+          doc = target;
+          return true;
+        }
+
+        @Override
         public BytesRef binaryValue() throws IOException {
           return bytesRefs.get(doc);
         }
@@ -548,6 +565,11 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
         @Override
         public int advance(int target) throws IOException {
           return disi.advance(target);
+        }
+
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          return disi.advanceExact(target);
         }
 
         @Override
@@ -616,6 +638,12 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
         }
 
         @Override
+        public boolean advanceExact(int target) {
+          doc = target;
+          return true;
+        }
+
+        @Override
         public int ordValue() {
           return (int) ords.get(doc);
         }
@@ -643,6 +671,11 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
         @Override
         public int advance(int target) throws IOException {
           return disi.advance(target);
+        }
+
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          return disi.advanceExact(target);
         }
 
         @Override
@@ -960,6 +993,15 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
         }
 
         @Override
+        public boolean advanceExact(int target) throws IOException {
+          start = addresses.get(target);
+          end = addresses.get(target + 1L);
+          count = (int) (end - start);
+          doc = target;
+          return true;
+        }
+
+        @Override
         public long nextValue() throws IOException {
           return values.get(start++);
         }
@@ -998,6 +1040,12 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
         public int advance(int target) throws IOException {
           set = false;
           return disi.advance(target);
+        }
+
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          set = false;
+          return disi.advanceExact(target);
         }
 
         @Override
@@ -1073,6 +1121,14 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
         }
 
         @Override
+        public boolean advanceExact(int target) throws IOException {
+          start = addresses.get(target);
+          end = addresses.get(target + 1L);
+          doc = target;
+          return true;
+        }
+
+        @Override
         public long nextOrd() throws IOException {
           if (start == end) {
             return NO_MORE_ORDS;
@@ -1110,6 +1166,12 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
         public int advance(int target) throws IOException {
           set = false;
           return disi.advance(target);
+        }
+
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          set = false;
+          return disi.advanceExact(target);
         }
 
         @Override

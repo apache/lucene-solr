@@ -970,6 +970,12 @@ public class MemoryIndex {
           }
 
           @Override
+          public boolean advanceExact(int target) throws IOException {
+            docID = target;
+            return docID == 0;
+          }
+
+          @Override
           public long cost() {
             return 1;
           }

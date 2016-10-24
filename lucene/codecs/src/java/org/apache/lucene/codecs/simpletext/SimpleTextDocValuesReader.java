@@ -144,7 +144,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
     if (values == null) {
       return null;
     } else {
-      DocIdSetIterator docsWithField = getNumericDocsWithField(fieldInfo);
+      DocValuesIterator docsWithField = getNumericDocsWithField(fieldInfo);
       return new NumericDocValues() {
         
         @Override
@@ -165,6 +165,11 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
         @Override
         public int advance(int target) throws IOException {
           return docsWithField.advance(target);
+        }
+        
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          return docsWithField.advanceExact(target);
         }
         
         @Override
@@ -214,12 +219,16 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
       }
     };
   }
-  
-  private DocIdSetIterator getNumericDocsWithField(FieldInfo fieldInfo) throws IOException {
+
+  private static abstract class DocValuesIterator extends DocIdSetIterator {
+    abstract boolean advanceExact(int target) throws IOException;
+  }
+
+  private DocValuesIterator getNumericDocsWithField(FieldInfo fieldInfo) throws IOException {
     final OneField field = fields.get(fieldInfo.name);
     final IndexInput in = data.clone();
     final BytesRefBuilder scratch = new BytesRefBuilder();
-    return new DocIdSetIterator() {
+    return new DocValuesIterator() {
       
       int doc = -1;
       
@@ -250,6 +259,15 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
         }
         return doc = NO_MORE_DOCS;
       }
+
+      @Override
+      boolean advanceExact(int target) throws IOException {
+        this.doc = target;
+        in.seek(field.dataStartFilePointer + (1+field.pattern.length()+2)*target);
+        SimpleTextUtil.readLine(in, scratch); // data
+        SimpleTextUtil.readLine(in, scratch); // 'T' or 'F'
+        return scratch.byteAt(0) == (byte) 'T';
+      }
     };
   }
   
@@ -265,7 +283,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
     final BytesRefBuilder scratch = new BytesRefBuilder();
     final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
 
-    DocIdSetIterator docsWithField = getBinaryDocsWithField(fieldInfo);
+    DocValuesIterator docsWithField = getBinaryDocsWithField(fieldInfo);
     
     IntFunction<BytesRef> values = new IntFunction<BytesRef>() {
       final BytesRefBuilder term = new BytesRefBuilder();
@@ -317,19 +335,24 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
       }
       
       @Override
+      public boolean advanceExact(int target) throws IOException {
+        return docsWithField.advanceExact(target);
+      }
+      
+      @Override
       public BytesRef binaryValue() throws IOException {
         return values.apply(docsWithField.docID());
       }
     };
   }
 
-  private DocIdSetIterator getBinaryDocsWithField(FieldInfo fieldInfo) throws IOException {
+  private DocValuesIterator getBinaryDocsWithField(FieldInfo fieldInfo) throws IOException {
     final OneField field = fields.get(fieldInfo.name);
     final IndexInput in = data.clone();
     final BytesRefBuilder scratch = new BytesRefBuilder();
     final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
 
-    return new DocIdSetIterator() {
+    return new DocValuesIterator() {
       
       int doc = -1;
       
@@ -370,6 +393,26 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
           }
         }
         return doc = NO_MORE_DOCS;
+      }
+
+      @Override
+      boolean advanceExact(int target) throws IOException {
+        this.doc = target;
+        in.seek(field.dataStartFilePointer + (9+field.pattern.length() + field.maxLength+2)*target);
+        SimpleTextUtil.readLine(in, scratch);
+        assert StringHelper.startsWith(scratch.get(), LENGTH);
+        int len;
+        try {
+          len = decoder.parse(new String(scratch.bytes(), LENGTH.length, scratch.length() - LENGTH.length, StandardCharsets.UTF_8)).intValue();
+        } catch (ParseException pe) {
+          throw new CorruptIndexException("failed to parse int length", in, pe);
+        }
+        // skip past bytes
+        byte bytes[] = new byte[len];
+        in.readBytes(bytes, 0, len);
+        SimpleTextUtil.readLine(in, scratch); // newline
+        SimpleTextUtil.readLine(in, scratch); // 'T' or 'F'
+        return scratch.byteAt(0) == (byte) 'T';
       }
     };
   }
@@ -424,7 +467,20 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
         }
         return doc = NO_MORE_DOCS;
       }
-      
+
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        this.doc = target;
+        in.seek(field.dataStartFilePointer + field.numValues * (9 + field.pattern.length() + field.maxLength) + target * (1 + field.ordPattern.length()));
+        SimpleTextUtil.readLine(in, scratch);
+        try {
+          ord = (int) ordDecoder.parse(scratch.get().utf8ToString()).longValue()-1;
+        } catch (ParseException pe) {
+          throw new CorruptIndexException("failed to parse ord", in, pe);
+        }
+        return ord >= 0;
+      }
+
       @Override
       public int ordValue() {
         return ord;
@@ -486,6 +542,15 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
         int doc = binary.advance(target);
         setCurrentDoc();
         return doc;
+      }
+      
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        if (binary.advanceExact(target)) {
+          setCurrentDoc();
+          return true;
+        }
+        return false;
       }
       
       long values[];
@@ -567,6 +632,20 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
           }
         }
         return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        in.seek(field.dataStartFilePointer + field.numValues * (9 + field.pattern.length() + field.maxLength) + target * (1 + field.ordPattern.length()));
+        SimpleTextUtil.readLine(in, scratch);
+        String ordList = scratch.get().utf8ToString().trim();
+        doc = target;
+        if (ordList.isEmpty() == false) {
+          currentOrds = ordList.split(",");
+          currentIndex = 0;
+          return true;
+        }
+        return false;
       }
       
       @Override

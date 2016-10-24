@@ -692,6 +692,12 @@ class FieldCacheImpl implements FieldCache {
         }
 
         @Override
+        public boolean advanceExact(int target) throws IOException {
+          docID = target;
+          return docsWithField.get(docID);
+        }
+
+        @Override
         public long cost() {
           return values.size();
         }
@@ -818,6 +824,12 @@ class FieldCacheImpl implements FieldCache {
             docID = NO_MORE_DOCS;
             return docID;
           }
+        }
+
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          docID = target;
+          return docToTermOrd.get(docID) != 0;
         }
 
         @Override
@@ -1019,6 +1031,12 @@ class FieldCacheImpl implements FieldCache {
             docID = NO_MORE_DOCS;
             return docID;
           }
+        }
+
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          docID = target;
+          return docsWithField.get(docID);
         }
 
         @Override

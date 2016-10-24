@@ -199,10 +199,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
           int doc;
           while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
             //System.out.println("    doc=" + doc);
-            if (doc > segValues.docID()) {
-              segValues.advance(doc);
-            }
-            if (doc == segValues.docID()) {
+            if (segValues.advanceExact(doc)) {
               int term = (int) segValues.nextOrd();
               while (term != SortedSetDocValues.NO_MORE_ORDS) {
                 //System.out.println("      segOrd=" + segOrd + " ord=" + term + " globalOrd=" + ordinalMap.getGlobalOrd(segOrd, term));
@@ -219,10 +216,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
           int doc;
           while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
             //System.out.println("    doc=" + doc);
-            if (doc > segValues.docID()) {
-              segValues.advance(doc);
-            }
-            if (doc == segValues.docID()) {
+            if (segValues.advanceExact(doc)) {
               int term = (int) segValues.nextOrd();
               while (term != SortedSetDocValues.NO_MORE_ORDS) {
                 //System.out.println("      ord=" + term);
@@ -246,10 +240,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
         // just aggregate directly into counts:
         int doc;
         while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-          if (doc > segValues.docID()) {
-            segValues.advance(doc);
-          }
-          if (doc == segValues.docID()) {
+          if (segValues.advanceExact(doc)) {
             int term = (int) segValues.nextOrd();
             while (term != SortedSetDocValues.NO_MORE_ORDS) {
               counts[term]++;
