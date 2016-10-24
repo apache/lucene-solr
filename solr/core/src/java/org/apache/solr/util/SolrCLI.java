@@ -281,10 +281,10 @@ public class SolrCLI {
         Class c = Class.forName(builderClassName);
         SolrHttpClientBuilder builder = (SolrHttpClientBuilder)c.newInstance();
         HttpClientUtil.setHttpClientBuilder(builder);
-        log.info("Set HttpClientConfigurer from: "+builderClassName);
+        log.info("Set SolrHttpClientBuilder from: "+builderClassName);
       } catch (Exception ex) {
         log.error(ex.getMessage());
-        throw new RuntimeException("Error during loading of configurer '"+builderClassName+"'.", ex);
+        throw new RuntimeException("Error during loading of builder '"+builderClassName+"'.", ex);
       }
     }
 

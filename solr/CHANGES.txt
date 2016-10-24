@@ -25,7 +25,8 @@ Upgrading from Solr 6.x
   SolrHttpClientBuilder rather than an HttpClientConfigurer.
   
 * HttpClientUtil now allows configuring HttpClient instances via SolrHttpClientBuilder
-  rather than an HttpClientConfigurer.
+  rather than an HttpClientConfigurer. Use of env variable SOLR_AUTHENTICATION_CLIENT_CONFIGURER
+  no longer works, please use SOLR_AUTHENTICATION_CLIENT_BUILDER 
 
 * SolrClient implementations now use their own internal configuration for socket timeouts,
   connect timeouts, and allowing redirects rather than what is set as the default when
@@ -55,6 +56,8 @@ Optimizations
 * SOLR-4509: Move to non deprecated HttpClient impl classes to remove stale connection 
   check on every request and move connection lifecycle management towards the client.
   (Ryan Zezeski, Mark Miller, Shawn Heisey, Steve Davids)
+
+* SOLR-9255: Rename SOLR_AUTHENTICATION_CLIENT_CONFIGURER -> SOLR_AUTHENTICATION_CLIENT_BUILDER (janhoy) 
 
 * SOLR-9579: Make Solr's SchemaField implement Lucene's IndexableFieldType, removing the 
   creation of a Lucene FieldType every time a field is indexed. (John Call, yonik) 
