@@ -98,7 +98,7 @@ Upgrade Notes
 
 * The create/deleteCollection methods on MiniSolrCloudCluster have been
   deprecated.  Clients should instead use the CollectionAdminRequest API.  In
-  addition, MiniSolrCloudCluster#uploadConfigSet(File, String) has been
+  addition, MiniSolrCloudCluster#uploadConfigDir(File, String) has been
   deprecated in favour of #uploadConfigSet(Path, String)
 
 * The bin/solr.in.sh (bin/solr.in.cmd on Windows) is now completely commented by default. Previously, this wasn't so,
