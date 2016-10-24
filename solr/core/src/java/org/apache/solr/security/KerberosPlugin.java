@@ -49,7 +49,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
@@ -95,7 +94,6 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientIn
       "solr.kerberos.delegation.token.zk.client";
 
   // allows test to specify an alternate auth handler
-  @VisibleForTesting
   public static final String AUTH_HANDLER_PARAM = "solr.kerberos.auth.handler";
 
   private final CoreContainer coreContainer;
