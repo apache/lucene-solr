@@ -79,23 +79,21 @@ public abstract class FieldOffsetStrategy {
     if (termsIndex != null) {
       TermsEnum termsEnum = termsIndex.iterator();//does not return null
       for (BytesRef term : sourceTerms) {
-        if (!termsEnum.seekExact(term)) {
-          continue; // term not found
-        }
-        PostingsEnum postingsEnum = termsEnum.postings(null, PostingsEnum.OFFSETS);
-        if (postingsEnum == null) {
-          // no offsets or positions available
-          throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
-        }
-        if (doc != postingsEnum.advance(doc)) { // now it's positioned, although may be exhausted
-          continue;
-        }
-        postingsEnum = phraseHelper.filterPostings(term, postingsEnum, strictPhrasesTermToSpans.get(term));
-        if (postingsEnum == null) {
-          continue;// completely filtered out
-        }
+        if (termsEnum.seekExact(term)) {
+          PostingsEnum postingsEnum = termsEnum.postings(null, PostingsEnum.OFFSETS);
 
-        offsetsEnums.add(new OffsetsEnum(term, postingsEnum));
+          if (postingsEnum == null) {
+            // no offsets or positions available
+            throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
+          }
+
+          if (doc == postingsEnum.advance(doc)) { // now it's positioned, although may be exhausted
+            postingsEnum = phraseHelper.filterPostings(term, postingsEnum, strictPhrasesTermToSpans.get(term));
+            if (postingsEnum != null) {
+              offsetsEnums.add(new OffsetsEnum(term, postingsEnum));
+            }
+          }
+        }
       }
     }
 
