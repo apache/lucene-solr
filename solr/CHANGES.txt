@@ -234,6 +234,7 @@ Optimizations
 
 * SOLR-9506: cache IndexFingerprint for each segment (Pushkar Raste, yonik, noble)
 
+* SOLR-7506: Roll over GC logs by default via bin/solr scripts (shalin, janhoy)
 
 Other Changes
 ----------------------

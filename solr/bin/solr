@@ -1411,13 +1411,14 @@ if [ -z ${GC_LOG_OPTS+x} ]; then
 else
   GC_LOG_OPTS=($GC_LOG_OPTS)
 fi
-# if verbose gc logging enabled, setup the location of the log file
+
+# if verbose gc logging enabled, setup the location of the log file and rotation
 if [ "$GC_LOG_OPTS" != "" ]; then
   gc_log_flag="-Xloggc"
   if [ "$JAVA_VENDOR" == "IBM J9" ]; then
     gc_log_flag="-Xverbosegclog"
   fi
-  GC_LOG_OPTS+=("$gc_log_flag:$SOLR_LOGS_DIR/solr_gc.log")
+  GC_LOG_OPTS+=("$gc_log_flag:$SOLR_LOGS_DIR/solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M)
 fi
 
 # If ZK_HOST is defined, the assume SolrCloud mode

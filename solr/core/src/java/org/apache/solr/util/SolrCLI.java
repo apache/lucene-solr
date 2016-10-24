@@ -3444,13 +3444,13 @@ public class SolrCLI {
         Files.createDirectories(archivePath);
       }
       List<Path> archived = Files.find(archivePath, 1, (f, a) 
-          -> a.isRegularFile() && String.valueOf(f.getFileName()).startsWith("solr_gc_"))
+          -> a.isRegularFile() && String.valueOf(f.getFileName()).matches("^solr_gc[_.].+"))
           .collect(Collectors.toList());
       for (Path p : archived) {
         Files.delete(p);
       }
       List<Path> files = Files.find(logsPath, 1, (f, a) 
-          -> a.isRegularFile() && String.valueOf(f.getFileName()).startsWith("solr_gc_"))
+          -> a.isRegularFile() && String.valueOf(f.getFileName()).matches("^solr_gc[_.].+"))
           .collect(Collectors.toList());
       if (files.size() > 0) {
         out("Archiving " + files.size() + " old GC log files to " + archivePath);
