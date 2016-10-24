@@ -229,6 +229,9 @@ Optimizations
 
 * SOLR-9546: Eliminate unnecessary boxing/unboxing going on in SolrParams (Pushkar Raste, noble)
 
+* SOLR-9506: cache IndexFingerprint for each segment (Pushkar Raste, yonik, noble)
+
+
 Other Changes
 ----------------------
 
