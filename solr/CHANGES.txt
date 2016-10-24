@@ -157,6 +157,9 @@ New Features
 
 * SOLR-9662: New parameter -u <user:pass> in bin/post to pass basicauth credentials (janhoy)
 
+* SOLR-9654: Add "overrequest" parameter to JSON Facet API to control amount of overrequest
+  on a distributed terms facet. (yonik)
+
 Bug Fixes
 ----------------------
 
