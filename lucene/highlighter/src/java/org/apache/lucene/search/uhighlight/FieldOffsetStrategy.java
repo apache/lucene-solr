@@ -97,6 +97,10 @@ public abstract class FieldOffsetStrategy {
       }
     }
 
+    if (automata.length > 0) {
+      offsetsEnums.addAll(createAutomataOffsetsEnumsFromReader(atomicReader, doc));
+    }
+
     return offsetsEnums;
   }
 

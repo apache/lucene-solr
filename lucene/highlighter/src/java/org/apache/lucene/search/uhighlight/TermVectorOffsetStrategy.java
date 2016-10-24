@@ -53,12 +53,7 @@ public class TermVectorOffsetStrategy extends FieldOffsetStrategy {
     LeafReader leafReader = new TermVectorLeafReader(field, tvTerms);
     docId = 0;
 
-    List<OffsetsEnum> offsets = createOffsetsEnumsFromReader(leafReader, docId);
-    if (automata.length > 0) {
-      offsets.addAll(createAutomataOffsetsEnumsFromReader(leafReader, docId));
-    }
-
-    return offsets;
+    return createOffsetsEnumsFromReader(leafReader, docId);
   }
 
 }

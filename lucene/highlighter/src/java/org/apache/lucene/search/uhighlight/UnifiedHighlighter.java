@@ -807,7 +807,12 @@ public class UnifiedHighlighter {
                                                   PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
     switch (offsetSource) {
       case ANALYSIS:
-        return new AnalysisOffsetStrategy(field, terms, phraseHelper, automata, getIndexAnalyzer());
+        if (terms.length > 0 && !phraseHelper.hasPositionSensitivity()) {
+          //skip using a memory index since it's pure term filtering
+          return new TokenStreamOffsetStrategy(field, terms, phraseHelper, automata, getIndexAnalyzer());
+        } else {
+          return new MemoryIndexOffsetStrategy(field, terms, phraseHelper, automata, getIndexAnalyzer());
+        }
       case NONE_NEEDED:
         return NoOpOffsetStrategy.INSTANCE;
       case TERM_VECTORS:

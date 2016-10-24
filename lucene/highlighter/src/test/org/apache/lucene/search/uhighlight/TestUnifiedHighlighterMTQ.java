@@ -61,6 +61,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 
 /**
  * Some tests that highlight wildcard, fuzzy, etc queries.
@@ -770,6 +771,7 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     ir.close();
   }
 
+  @Ignore
   public void testTokenStreamIsClosed() throws IOException {
     // note: test is a derivative of testWithMaxLen()
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
