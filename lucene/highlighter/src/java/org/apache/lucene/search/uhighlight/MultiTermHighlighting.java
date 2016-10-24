@@ -26,12 +26,8 @@ import java.util.List;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.index.FilterLeafReader;
-import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -48,7 +44,6 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanPositionCheckQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
@@ -312,59 +307,6 @@ class MultiTermHighlighting {
   }
 
   /**
-   * Return a TokenStream un-inverted from the provided Terms, but filtered based on the automata. The
-   * Terms must have exactly one doc count (e.g. term vector or MemoryIndex).
-   */
-  //TODO: Alternatively, produce a list of OffsetsEnums from the Terms that match the automata.
-  public static TokenStream uninvertAndFilterTerms(Terms termsIndex,
-                                                      int doc,
-                                                      final CharacterRunAutomaton[] automata,
-                                                      int offsetLength)
-      throws IOException {
-    assert automata.length > 0;
-    //Note: if automata were plain Automaton (not CharacterRunAutomaton), we might instead use
-    // TermsEnum.intersect(compiledAutomaton).  But probably won't help due to O(N) TV impl so whatever.
-    FilterLeafReader.FilterTerms filteredTermsIndex = new FilterLeafReader.FilterTerms(termsIndex) {
-      @Override
-      public TermsEnum iterator() throws IOException {
-        return new FilteredTermsEnum(super.iterator(), false) {//false == no seek
-          CharsRefBuilder tempCharsRefBuilder = new CharsRefBuilder();//reuse only for UTF8->UTF16 call
-
-          @Override
-          protected AcceptStatus accept(BytesRef termBytesRef) throws IOException {
-            //Grab the term (in same way as BytesRef.utf8ToString() but we don't want a String obj)
-            tempCharsRefBuilder.grow(termBytesRef.length);
-            final int charLen = UnicodeUtil.UTF8toUTF16(termBytesRef, tempCharsRefBuilder.chars());
-            for (CharacterRunAutomaton runAutomaton : automata) {
-              if (runAutomaton.run(tempCharsRefBuilder.chars(), 0, charLen)) {
-                return AcceptStatus.YES;
-              }
-            }
-            return AcceptStatus.NO;
-          }
-        };
-      }
-
-      @Override
-      public long size() throws IOException {
-        return -1; // unknown
-      }
-
-      @Override
-      public long getSumTotalTermFreq() throws IOException {
-        return -1; // unknown
-      }
-
-      @Override
-      public long getSumDocFreq() throws IOException {
-        return -1; // unknown
-      }
-    };
-    float loadFactor = 1f / 64f;
-    return new TokenStreamFromTermVector(filteredTermsIndex, doc, offsetLength, loadFactor);
-  }
-
-  /**
    * Returns a simple automata that matches the specified term.
    */
   public static CharacterRunAutomaton makeStringMatchAutomata(BytesRef term) {
@@ -376,4 +318,5 @@ class MultiTermHighlighting {
       }
     };
   }
+
 }

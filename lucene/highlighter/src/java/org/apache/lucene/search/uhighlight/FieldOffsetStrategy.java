@@ -17,15 +17,12 @@
 
 package org.apache.lucene.search.uhighlight;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.PostingsEnum;
@@ -67,34 +64,6 @@ public abstract class FieldOffsetStrategy {
    */
   public abstract List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException;
 
-  protected List<OffsetsEnum> createOffsetsEnums(LeafReader leafReader, int doc, TokenStream tokenStream) throws IOException {
-    List<OffsetsEnum> offsetsEnums = createOffsetsEnumsFromReader(leafReader, doc);
-    if (automata.length > 0) {
-      offsetsEnums.addAll(createOffsetsEnumsForAutomata(leafReader, doc, tokenStream));
-    }
-    return offsetsEnums;
-  }
-
-  protected List<OffsetsEnum> createOffsetsEnumsForAutomata(LeafReader leafReader, int doc, TokenStream tokenStream) throws IOException {
-    //Prefers to get automata offsets from the Postings unless a tokenstream is provided
-    return tokenStream == null ? createAutomataOffsetsEnumsFromReader(leafReader) :
-        createAutomataOffsetsEnumsFromTokenStream(doc, tokenStream);
-  }
-
-  private List<OffsetsEnum> createAutomataOffsetsEnumsFromReader(LeafReader leafReader) throws IOException {
-    List<OffsetsEnum> offsetsEnums = new LinkedList<>();
-    TermsEnum termsEnum = leafReader.terms(field).iterator();
-    BytesRef term;
-    while ((term = termsEnum.next()) != null) {
-      for (CharacterRunAutomaton automaton : automata) {
-        if (automaton.run(term.utf8ToString())) {
-          offsetsEnums.add(new OffsetsEnum(term, termsEnum.postings(null, PostingsEnum.OFFSETS)));
-        }
-      }
-    }
-    return offsetsEnums;
-  }
-
   protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader atomicReader, int doc) throws IOException {
     // For strict positions, get a Map of term to Spans:
     //    note: ScriptPhraseHelper.NONE does the right thing for these method calls
@@ -129,16 +98,25 @@ public abstract class FieldOffsetStrategy {
         offsetsEnums.add(new OffsetsEnum(term, postingsEnum));
       }
     }
+
     return offsetsEnums;
   }
 
-  private List<OffsetsEnum> createAutomataOffsetsEnumsFromTokenStream(int doc, TokenStream tokenStream) throws IOException {
-    // if there are automata (MTQ), we have to initialize the "fake" enum wrapping them.
-    assert tokenStream != null;
-    // TODO Opt: we sometimes evaluate the automata twice when this TS isn't the original; can we avoid?
-    PostingsEnum mtqPostingsEnum = MultiTermHighlighting.getDocsEnum(tokenStream, automata);
-    assert mtqPostingsEnum instanceof Closeable; // FYI we propagate close() later.
-    mtqPostingsEnum.advance(doc);
-    return Collections.singletonList(new OffsetsEnum(null, mtqPostingsEnum));
+  protected List<OffsetsEnum> createAutomataOffsetsEnumsFromReader(LeafReader leafReader, int doc) throws IOException {
+    List<OffsetsEnum> offsetsEnums = new LinkedList<>();
+    TermsEnum termsEnum = leafReader.terms(field).iterator();
+    BytesRef term;
+    while ((term = termsEnum.next()) != null) {
+      for (CharacterRunAutomaton automaton : automata) {
+        if (automaton.run(term.utf8ToString())) {
+          PostingsEnum postings = termsEnum.postings(null, PostingsEnum.OFFSETS);
+          if (doc == postings.advance(doc)) { // now it's positioned, although may be exhausted
+            offsetsEnums.add(new OffsetsEnum(new BytesRef(automaton.toString()), postings));
+          }
+        }
+      }
+    }
+    return offsetsEnums;
   }
+
 }

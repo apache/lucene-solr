@@ -27,7 +27,6 @@ import java.util.SortedSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
@@ -72,20 +71,12 @@ public class TestUnifiedHighlighterExtensibility {
         return Collections.emptyList();
       }
 
-      @Override
-      protected List<OffsetsEnum> createOffsetsEnums(LeafReader leafReader, int doc, TokenStream tokenStream) throws IOException {
-        return super.createOffsetsEnums(leafReader, doc, tokenStream);
-      }
 
       @Override
       protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader atomicReader, int doc) throws IOException {
         return super.createOffsetsEnumsFromReader(atomicReader, doc);
       }
 
-      @Override
-      protected List<OffsetsEnum> createOffsetsEnumsForAutomata(LeafReader leafReader, int doc, TokenStream tokenStream) throws IOException {
-        return super.createOffsetsEnumsForAutomata(leafReader, doc, tokenStream);
-      }
 
     };
     assertEquals(offsetSource, strategy.getOffsetSource());

@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.search.uhighlight;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +29,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -183,6 +185,30 @@ public class AnalysisOffsetStrategy extends FieldOffsetStrategy {
         return false;
       }
     };
+  }
+
+  protected List<OffsetsEnum> createOffsetsEnums(LeafReader leafReader, int doc, TokenStream tokenStream) throws IOException {
+    List<OffsetsEnum> offsetsEnums = createOffsetsEnumsFromReader(leafReader, doc);
+    if (automata.length > 0) {
+      offsetsEnums.addAll(createOffsetsEnumsForAutomata(leafReader, doc, tokenStream));
+    }
+    return offsetsEnums;
+  }
+
+  protected List<OffsetsEnum> createOffsetsEnumsForAutomata(LeafReader leafReader, int doc, TokenStream tokenStream) throws IOException {
+    //Prefers to get automata offsets from the Postings unless a tokenstream is provided
+    return tokenStream == null ? createAutomataOffsetsEnumsFromReader(leafReader, doc) :
+        createAutomataOffsetsEnumsFromTokenStream(doc, tokenStream);
+  }
+
+  private List<OffsetsEnum> createAutomataOffsetsEnumsFromTokenStream(int doc, TokenStream tokenStream) throws IOException {
+    // if there are automata (MTQ), we have to initialize the "fake" enum wrapping them.
+    assert tokenStream != null;
+    // TODO Opt: we sometimes evaluate the automata twice when this TS isn't the original; can we avoid?
+    PostingsEnum mtqPostingsEnum = MultiTermHighlighting.getDocsEnum(tokenStream, automata);
+    assert mtqPostingsEnum instanceof Closeable; // FYI we propagate close() later.
+    mtqPostingsEnum.advance(doc);
+    return Collections.singletonList(new OffsetsEnum(null, mtqPostingsEnum));
   }
 
 }

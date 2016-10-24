@@ -106,6 +106,7 @@ class CompositePostingsEnum extends PostingsEnum {
     int position = NO_MORE_POSITIONS;
     while (queue.size() >= 1) {
       position = queue.top().nextPosition();
+      queue.updateTop();
       if (position == NO_MORE_POSITIONS) {
         queue.pop();
       } else {
