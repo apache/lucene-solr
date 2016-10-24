@@ -235,7 +235,7 @@ public class LTRRescorer extends Rescorer {
     final LeafReaderContext atomicContext = leafContexts.get(n);
     final int deBasedDoc = docid - atomicContext.docBase;
     final ModelScorer r = modelWeight.scorer(atomicContext);
-    if ( (r == null) || (r.iterator().advance(deBasedDoc) != docid) ) {
+    if ( (r == null) || (r.iterator().advance(deBasedDoc) != deBasedDoc) ) {
       return new LTRScoringQuery.FeatureInfo[0];
     } else {
       if (originalDocScore != null) {
