@@ -111,6 +111,10 @@ Improvements
 
 * LUCENE-7496: Better toString for SweetSpotSimilarity (janhoy)
 
+* LUCENE-7520: Highlighter's WeightedSpanTermExtractor shouldn't attempt to expand a MultiTermQuery
+  when its field doesn't match the field the extraction is scoped to.
+  (Cao Manh Dat via David Smiley)
+
 Optimizations
 
 * LUCENE-7501: BKDReader should not store the split dimension explicitly in the
