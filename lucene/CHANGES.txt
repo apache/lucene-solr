@@ -45,6 +45,9 @@ Optimizations
   that have a facet value, so sparse faceting works as expected
   (Adrien Grand via Mike McCandless)
 
+* LUCENE-7519: Add optimized APIs to compute browse-only top level
+  facets (Mike McCandless)
+
 Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
