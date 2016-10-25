@@ -160,6 +160,10 @@ New Features
 * SOLR-9654: Add "overrequest" parameter to JSON Facet API to control amount of overrequest
   on a distributed terms facet. (yonik)
 
+* SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
+  SOLR_HOME on every node. Editing config through API is supported but affects only that one node. 
+  (janhoy)
+
 Bug Fixes
 ----------------------
 
