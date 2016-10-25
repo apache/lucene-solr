@@ -77,6 +77,7 @@ public final class LegacySortedNumericDocValuesWrapper extends SortedNumericDocV
   public boolean advanceExact(int target) throws IOException {
     docID = target;
     values.setDocument(docID);
+    upto = 0;
     return values.count() != 0;
   }
 

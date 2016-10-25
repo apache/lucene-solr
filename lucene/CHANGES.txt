@@ -45,6 +45,9 @@ Optimizations
   that have a facet value, so sparse faceting works as expected
   (Adrien Grand via Mike McCandless)
 
+* LUCENE-7519: Add optimized APIs to compute browse-only top level
+  facets (Mike McCandless)
+
 Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
@@ -110,6 +113,10 @@ Improvements
   edit distance, even if they are short terms (Mike McCandless)
 
 * LUCENE-7496: Better toString for SweetSpotSimilarity (janhoy)
+
+* LUCENE-7520: Highlighter's WeightedSpanTermExtractor shouldn't attempt to expand a MultiTermQuery
+  when its field doesn't match the field the extraction is scoped to.
+  (Cao Manh Dat via David Smiley)
 
 Optimizations
 

@@ -178,9 +178,13 @@ fi
 
 # Authentication options
 if [ "$SOLR_AUTHENTICATION_CLIENT_CONFIGURER" != "" ]; then
-  AUTHC_CLIENT_CONFIGURER_ARG="-Dsolr.authentication.httpclient.configurer=$SOLR_AUTHENTICATION_CLIENT_CONFIGURER"
+  echo "WARNING: Found unsupported configuration variable SOLR_AUTHENTICATION_CLIENT_CONFIGURER"
+  echo "         Please start using SOLR_AUTHENTICATION_CLIENT_BUILDER instead"
 fi
-AUTHC_OPTS="$AUTHC_CLIENT_CONFIGURER_ARG $SOLR_AUTHENTICATION_OPTS"
+if [ "$SOLR_AUTHENTICATION_CLIENT_BUILDER" != "" ]; then
+  AUTHC_CLIENT_BUILDER_ARG="-Dsolr.authentication.httpclient.builder=$SOLR_AUTHENTICATION_CLIENT_BUILDER"
+fi
+AUTHC_OPTS="$AUTHC_CLIENT_BUILDER_ARG $SOLR_AUTHENTICATION_OPTS"
 
 # Set the SOLR_TOOL_HOST variable for use when connecting to a running Solr instance
 if [ "$SOLR_HOST" != "" ]; then
@@ -1407,13 +1411,14 @@ if [ -z ${GC_LOG_OPTS+x} ]; then
 else
   GC_LOG_OPTS=($GC_LOG_OPTS)
 fi
-# if verbose gc logging enabled, setup the location of the log file
+
+# if verbose gc logging enabled, setup the location of the log file and rotation
 if [ "$GC_LOG_OPTS" != "" ]; then
   gc_log_flag="-Xloggc"
   if [ "$JAVA_VENDOR" == "IBM J9" ]; then
     gc_log_flag="-Xverbosegclog"
   fi
-  GC_LOG_OPTS+=("$gc_log_flag:$SOLR_LOGS_DIR/solr_gc.log")
+  GC_LOG_OPTS+=("$gc_log_flag:$SOLR_LOGS_DIR/solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M)
 fi
 
 # If ZK_HOST is defined, the assume SolrCloud mode

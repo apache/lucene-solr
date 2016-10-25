@@ -31,8 +31,14 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.ConcurrentLRUCache;
 
-//Adds new fields to documents based on a template pattern specified via Template.field
-// request parameters (multi-valued) or 'field' value specified in initArgs
+/**
+* Adds new fields to documents based on a template pattern specified via Template.field
+* request parameters (multi-valued) or 'field' value specified in initArgs.
+* <p>
+* The format of the parameter is &lt;field-name&gt;:&lt;the-template-string&gt;, for example: <br>
+* <b>Template.field=fname:${somefield}some_string${someotherfield}</b>
+*
+*/
 public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory {
   private Cache<String, Resolved> templateCache = new ConcurrentLRUCache<>(1000, 800, 900, 10, false, false, null);
   @Override

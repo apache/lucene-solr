@@ -76,7 +76,7 @@ public abstract class TaxonomyFacets extends Facets {
   protected FacetsConfig.DimConfig verifyDim(String dim) {
     FacetsConfig.DimConfig dimConfig = config.getDimConfig(dim);
     if (!dimConfig.indexFieldName.equals(indexFieldName)) {
-      throw new IllegalArgumentException("dimension \"" + dim + "\" was not indexed into field \"" + indexFieldName);
+      throw new IllegalArgumentException("dimension \"" + dim + "\" was not indexed into field \"" + indexFieldName + "\"");
     }
     return dimConfig;
   }

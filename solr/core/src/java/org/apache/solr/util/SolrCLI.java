@@ -281,10 +281,10 @@ public class SolrCLI {
         Class c = Class.forName(builderClassName);
         SolrHttpClientBuilder builder = (SolrHttpClientBuilder)c.newInstance();
         HttpClientUtil.setHttpClientBuilder(builder);
-        log.info("Set HttpClientConfigurer from: "+builderClassName);
+        log.info("Set SolrHttpClientBuilder from: "+builderClassName);
       } catch (Exception ex) {
         log.error(ex.getMessage());
-        throw new RuntimeException("Error during loading of configurer '"+builderClassName+"'.", ex);
+        throw new RuntimeException("Error during loading of builder '"+builderClassName+"'.", ex);
       }
     }
 
@@ -3444,13 +3444,13 @@ public class SolrCLI {
         Files.createDirectories(archivePath);
       }
       List<Path> archived = Files.find(archivePath, 1, (f, a) 
-          -> a.isRegularFile() && String.valueOf(f.getFileName()).startsWith("solr_gc_"))
+          -> a.isRegularFile() && String.valueOf(f.getFileName()).matches("^solr_gc[_.].+"))
           .collect(Collectors.toList());
       for (Path p : archived) {
         Files.delete(p);
       }
       List<Path> files = Files.find(logsPath, 1, (f, a) 
-          -> a.isRegularFile() && String.valueOf(f.getFileName()).startsWith("solr_gc_"))
+          -> a.isRegularFile() && String.valueOf(f.getFileName()).matches("^solr_gc[_.].+"))
           .collect(Collectors.toList());
       if (files.size() > 0) {
         out("Archiving " + files.size() + " old GC log files to " + archivePath);

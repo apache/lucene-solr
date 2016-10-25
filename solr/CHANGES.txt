@@ -25,7 +25,8 @@ Upgrading from Solr 6.x
   SolrHttpClientBuilder rather than an HttpClientConfigurer.
   
 * HttpClientUtil now allows configuring HttpClient instances via SolrHttpClientBuilder
-  rather than an HttpClientConfigurer.
+  rather than an HttpClientConfigurer. Use of env variable SOLR_AUTHENTICATION_CLIENT_CONFIGURER
+  no longer works, please use SOLR_AUTHENTICATION_CLIENT_BUILDER 
 
 * SolrClient implementations now use their own internal configuration for socket timeouts,
   connect timeouts, and allowing redirects rather than what is set as the default when
@@ -55,6 +56,8 @@ Optimizations
 * SOLR-4509: Move to non deprecated HttpClient impl classes to remove stale connection 
   check on every request and move connection lifecycle management towards the client.
   (Ryan Zezeski, Mark Miller, Shawn Heisey, Steve Davids)
+
+* SOLR-9255: Rename SOLR_AUTHENTICATION_CLIENT_CONFIGURER -> SOLR_AUTHENTICATION_CLIENT_BUILDER (janhoy) 
 
 * SOLR-9579: Make Solr's SchemaField implement Lucene's IndexableFieldType, removing the 
   creation of a Lucene FieldType every time a field is indexed. (John Call, yonik) 
@@ -95,7 +98,7 @@ Upgrade Notes
 
 * The create/deleteCollection methods on MiniSolrCloudCluster have been
   deprecated.  Clients should instead use the CollectionAdminRequest API.  In
-  addition, MiniSolrCloudCluster#uploadConfigSet(File, String) has been
+  addition, MiniSolrCloudCluster#uploadConfigDir(File, String) has been
   deprecated in favour of #uploadConfigSet(Path, String)
 
 * The bin/solr.in.sh (bin/solr.in.cmd on Windows) is now completely commented by default. Previously, this wasn't so,
@@ -154,6 +157,9 @@ New Features
 
 * SOLR-9662: New parameter -u <user:pass> in bin/post to pass basicauth credentials (janhoy)
 
+* SOLR-9654: Add "overrequest" parameter to JSON Facet API to control amount of overrequest
+  on a distributed terms facet. (yonik)
+
 Bug Fixes
 ----------------------
 
@@ -202,6 +208,15 @@ Bug Fixes
 
 * SOLR-9518: Kerberos Delegation Tokens don't work without a chrooted ZK (Ishan Chattopadhyaya,via noble)
 
+* SOLR-9687: Fixed Interval Facet count issue in cases of open/close intervals on the same values
+ (Andy Chillrud, Tomás Fernández Löbbe)  
+
+* SOLR-9441: Solr collection backup on HDFS can only be manipulated by the Solr process owner. 
+ (Hrishikesh Gadre via Mark Miller)
+
+* SOLR-9536: OldBackupDirectory timestamp field needs to be initialized to avoid NPE.
+ (Hrishikesh Gadre, hossman via Mark Miller)
+ 
 Optimizations
 ----------------------
 
@@ -231,6 +246,7 @@ Optimizations
 
 * SOLR-9506: cache IndexFingerprint for each segment (Pushkar Raste, yonik, noble)
 
+* SOLR-7506: Roll over GC logs by default via bin/solr scripts (shalin, janhoy)
 
 Other Changes
 ----------------------
@@ -329,7 +345,10 @@ Other Changes
   solr.log.X files are rotated, preserving solr.log from last run in solr.log.1, solr.log.1 => solr.log.2 etc
   solr-*-console.log files are moved into $SOLR_LOGS_DIR/archived/ instead of being overwritten
   Last JVM garbage collection log solr_gc.log is moved into $SOLR_LOGS_DIR/archived/
-  (janhoy)  
+  (janhoy)
+
+* SOLR-4531: Add tests to ensure that recovery does not fail on corrupted tlogs.
+  (Simon Scofield, Cao Manh Dat via shalin)
 
 ==================  6.2.1 ==================
 
@@ -3283,7 +3302,7 @@ Bug Fixes
   while accessing other collections. (Shai Erera)
 
 * SOLR-7412: Fixed range.facet.other parameter for distributed requests. 
-  (Will Miller, Tomás Fernándes Löbbe)
+  (Will Miller, Tomás Fernández Löbbe)
 
 * SOLR-6087: SolrIndexSearcher makes no DelegatingCollector.finish() call when IndexSearcher
   throws an expected exception. (Christine Poerschke via shalin)

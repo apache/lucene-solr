@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.facet.sortedset;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -72,12 +73,8 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     // Per-top-reader state:
     SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
-    
-    FacetsCollector c = new FacetsCollector();
 
-    searcher.search(new MatchAllDocsQuery(), c);
-
-    SortedSetDocValuesFacetCounts facets = new SortedSetDocValuesFacetCounts(state, c);
+    SortedSetDocValuesFacetCounts facets = getAllFacets(searcher, state);
 
     assertEquals("dim=a path=[] value=4 childCount=3\n  foo (2)\n  bar (1)\n  zoo (1)\n", facets.getTopChildren(10, "a").toString());
     assertEquals("dim=b path=[] value=1 childCount=1\n  baz (1)\n", facets.getTopChildren(10, "b").toString());
@@ -171,9 +168,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     // Per-top-reader state:
     SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
 
-    FacetsCollector c = new FacetsCollector();
-    searcher.search(new MatchAllDocsQuery(), c);    
-    SortedSetDocValuesFacetCounts facets = new SortedSetDocValuesFacetCounts(state, c);
+    SortedSetDocValuesFacetCounts facets = getAllFacets(searcher, state);
 
     // Ask for top 10 labels for any dims that have counts:
     List<FacetResult> results = facets.getAllDims(10);
@@ -215,9 +210,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     // Per-top-reader state:
     SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
 
-    FacetsCollector c = new FacetsCollector();
-    searcher.search(new MatchAllDocsQuery(), c);    
-    SortedSetDocValuesFacetCounts facets = new SortedSetDocValuesFacetCounts(state, c);
+    SortedSetDocValuesFacetCounts facets = getAllFacets(searcher, state);
 
     // Ask for top 10 labels for any dims that have counts:
     assertEquals("dim=a path=[] value=2 childCount=2\n  foo1 (1)\n  foo2 (1)\n", facets.getTopChildren(10, "a").toString());
@@ -311,5 +304,15 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     w.close();
     IOUtils.close(searcher.getIndexReader(), indexDir, taxoDir);
+  }
+
+  private static SortedSetDocValuesFacetCounts getAllFacets(IndexSearcher searcher, SortedSetDocValuesReaderState state) throws IOException {
+    if (random().nextBoolean()) {
+      FacetsCollector c = new FacetsCollector();
+      searcher.search(new MatchAllDocsQuery(), c);    
+      return new SortedSetDocValuesFacetCounts(state, c);
+    } else {
+      return new SortedSetDocValuesFacetCounts(state);
+    }
   }
 }
