@@ -32,34 +32,28 @@ public class ShufflingReplicaListTransformerTest extends LuceneTestCase {
   private final ShufflingReplicaListTransformer transformer = new ShufflingReplicaListTransformer(random());
 
   @Test
-  public void testTransform() throws Exception {
-
+  public void testTransformReplicas() throws Exception {
     final List<Replica> replicas = new ArrayList<>();
     for (final String url : createRandomUrls()) {
       replicas.add(new Replica(url, new HashMap<String,Object>()));
     }
-
-    final List<Replica> transformedReplicas = new ArrayList<>(replicas);
-    transformer.transform(transformedReplicas);
-
-    final Set<Replica> replicaSet = new HashSet<>(replicas);
-    final Set<Replica> transformedReplicaSet = new HashSet<>(transformedReplicas);
-
-    assertTrue(replicaSet.equals(transformedReplicaSet));
+    implTestTransform(replicas);
   }
 
   @Test
   public void testTransformUrls() throws Exception {
-
     final List<String> urls = createRandomUrls();
+    implTestTransform(urls);
+  }
 
-    final List<String> transformedUrls = new ArrayList<>(urls);
-    transformer.transformUrls(transformedUrls);
+  private <TYPE> void implTestTransform(List<TYPE> inputs) throws Exception {
+    final List<TYPE> transformedInputs = new ArrayList<>(inputs);
+    transformer.transform(transformedInputs);
 
-    final Set<String> urlSet = new HashSet<>(urls);
-    final Set<String> transformedUrlSet = new HashSet<>(transformedUrls);
+    final Set<TYPE> inputSet = new HashSet<>(inputs);
+    final Set<TYPE> transformedSet = new HashSet<>(transformedInputs);
 
-    assertTrue(urlSet.equals(transformedUrlSet));
+    assertTrue(inputSet.equals(transformedSet));
   }
 
   private final List<String> createRandomUrls() throws Exception {

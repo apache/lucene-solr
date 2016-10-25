@@ -19,11 +19,17 @@ package org.apache.solr.handler.component;
 import java.util.List;
 
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.params.ShardParams;
 
 interface ReplicaListTransformer {
 
-  public void transform(List<Replica> replicas);
-
-  public void transformUrls(List<String> shardUrls);
+  /**
+   * Transforms the passed in list of choices. Transformations can include (but are not limited to)
+   * reordering of elements (e.g. via shuffling) and removal of elements (i.e. filtering).
+   *
+   * @param choices - a list of choices to transform, typically the choices are {@link Replica} objects but choices
+   * can also be {@link String} objects such as URLs passed in via the {@link ShardParams#SHARDS} parameter.
+   */
+  public void transform(List<?> choices);
 
 }

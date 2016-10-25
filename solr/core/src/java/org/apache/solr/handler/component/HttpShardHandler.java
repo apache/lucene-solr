@@ -410,7 +410,7 @@ public class HttpShardHandler extends ShardHandler {
         final List<String> shardUrls;
         if (rb.shards[i] != null) {
           shardUrls = StrUtils.splitSmart(rb.shards[i], "|", true);
-          replicaListTransformer.transformUrls(shardUrls);
+          replicaListTransformer.transform(shardUrls);
         } else {
           if (clusterState == null) {
             clusterState =  zkController.getClusterState();

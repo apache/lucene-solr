@@ -20,8 +20,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.solr.common.cloud.Replica;
-
 class ShufflingReplicaListTransformer implements ReplicaListTransformer {
 
   private final Random r;
@@ -31,17 +29,10 @@ class ShufflingReplicaListTransformer implements ReplicaListTransformer {
     this.r = r;
   }
 
-  public void transform(List<Replica> replicas)
+  public void transform(List<?> choices)
   {
-    if (replicas.size() > 1) {
-      Collections.shuffle(replicas, r);
-    }
-  }
-
-  public void transformUrls(List<String> shardUrls)
-  {
-    if (shardUrls.size() > 1) {
-      Collections.shuffle(shardUrls, r);
+    if (choices.size() > 1) {
+      Collections.shuffle(choices, r);
     }
   }
 
