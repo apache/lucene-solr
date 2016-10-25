@@ -339,7 +339,10 @@ Other Changes
   solr.log.X files are rotated, preserving solr.log from last run in solr.log.1, solr.log.1 => solr.log.2 etc
   solr-*-console.log files are moved into $SOLR_LOGS_DIR/archived/ instead of being overwritten
   Last JVM garbage collection log solr_gc.log is moved into $SOLR_LOGS_DIR/archived/
-  (janhoy)  
+  (janhoy)
+
+* SOLR-4531: Add tests to ensure that recovery does not fail on corrupted tlogs.
+  (Simon Scofield, Cao Manh Dat via shalin)
 
 ==================  6.2.1 ==================
 
