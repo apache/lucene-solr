@@ -28,6 +28,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.DocCollection;
@@ -81,6 +83,14 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
           "requestHandler",
           "/blob",
           "class")));
+      map = TestSolrConfigHandlerConcurrent.getAsMap(baseUrl + "/.system/schema/fields/blob", cloudClient);
+      assertNotNull(map);
+      assertEquals("blob", getObjectByPath(map, true, Arrays.asList(
+          "field",
+          "name")));
+      assertEquals("bytes", getObjectByPath(map, true, Arrays.asList(
+          "field",
+          "type")));
 
       byte[] bytarr = new byte[1024];
       for (int i = 0; i < bytarr.length; i++) bytarr[i] = (byte) (i % 127);
