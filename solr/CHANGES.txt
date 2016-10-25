@@ -214,6 +214,9 @@ Bug Fixes
 * SOLR-9441: Solr collection backup on HDFS can only be manipulated by the Solr process owner. 
  (Hrishikesh Gadre via Mark Miller)
 
+* SOLR-9536: OldBackupDirectory timestamp field needs to be initialized to avoid NPE.
+ (Hrishikesh Gadre via Mark Miller)
+ 
 Optimizations
 ----------------------
 
