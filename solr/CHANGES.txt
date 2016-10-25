@@ -215,7 +215,7 @@ Bug Fixes
  (Hrishikesh Gadre via Mark Miller)
 
 * SOLR-9536: OldBackupDirectory timestamp field needs to be initialized to avoid NPE.
- (Hrishikesh Gadre via Mark Miller)
+ (Hrishikesh Gadre, hossman via Mark Miller)
  
 Optimizations
 ----------------------
