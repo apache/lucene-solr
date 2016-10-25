@@ -211,6 +211,9 @@ Bug Fixes
 * SOLR-9687: Fixed Interval Facet count issue in cases of open/close intervals on the same values
  (Andy Chillrud, Tomás Fernández Löbbe)  
 
+* SOLR-9441: Solr collection backup on HDFS can only be manipulated by the Solr process owner. 
+ (Hrishikesh Gadre via Mark Miller)
+
 Optimizations
 ----------------------
 
