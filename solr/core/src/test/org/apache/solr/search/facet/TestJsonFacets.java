@@ -1151,10 +1151,10 @@ public class TestJsonFacets extends SolrTestCaseHS {
     if (!client.local()) {
       client.testJQ(params(p, "q", "*:*"
           , "json.facet", "{" +
-              "cat0:{type:terms, field:${cat_s}, limit:1, overrequest:0}" +
-              ",cat1:{type:terms, field:${cat_s}, limit:1, overrequest:1}" +
-              ",catDef:{type:terms, field:${cat_s}, limit:1, overrequest:-1}" +  // -1 is default overrequest
-              ",catBig:{type:terms, field:${cat_s}, offset:1, limit:2147483647, overrequest:2147483647}" +  // make sure overflows don't mess us up
+              "cat0:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0}" +
+              ",cat1:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:1}" +
+              ",catDef:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:-1}" +  // -1 is default overrequest
+              ",catBig:{type:terms, field:${cat_s}, sort:'count desc', offset:1, limit:2147483647, overrequest:2147483647}" +  // make sure overflows don't mess us up
               "}"
           )
           , "facets=={ count:6" +
@@ -1168,10 +1168,10 @@ public class TestJsonFacets extends SolrTestCaseHS {
       // In non-distrib mode, should still be able to specify overrequest, but it shouldn't matter.
       client.testJQ(params(p, "q", "*:*"
           , "json.facet", "{" +
-              "cat0:{type:terms, field:${cat_s}, limit:1, overrequest:0}" +
-              ",cat1:{type:terms, field:${cat_s}, limit:1, overrequest:1}" +
-              ",catDef:{type:terms, field:${cat_s}, limit:1, overrequest:-1}" +  // -1 is default overrequest
-              ",catBig:{type:terms, field:${cat_s}, offset:1, limit:2147483647, overrequest:2147483647}" +  // make sure overflows don't mess us up
+              "cat0:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0}" +
+              ",cat1:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:1}" +
+              ",catDef:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:-1}" +  // -1 is default overrequest
+              ",catBig:{type:terms, field:${cat_s}, sort:'count desc', offset:1, limit:2147483647, overrequest:2147483647}" +  // make sure overflows don't mess us up
               "}"
           )
           , "facets=={ count:6" +
