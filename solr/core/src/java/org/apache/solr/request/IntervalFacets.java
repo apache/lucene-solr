@@ -157,7 +157,17 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         if (o2.start == null) {
           return 1;
         }
-        return o1.start.compareTo(o2.start);
+        int startComparison = o1.start.compareTo(o2.start);
+        if (startComparison == 0) {
+          if (o1.startOpen != o2.startOpen) {
+            if (!o1.startOpen) {
+              return -1;
+            } else {
+              return 1;
+            }
+          }
+        }
+        return startComparison;
       }
     });
     return sortedIntervals;

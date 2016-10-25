@@ -17,13 +17,9 @@
 
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -32,6 +28,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -71,17 +68,13 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
       MiniSolrCloudCluster source = new MiniSolrCloudCluster(1, createTempDir("cdcr-source"), buildJettyConfig("/solr"));
       try {
         source.waitForAllNodes(30);
-        final File configDir = getFile("solr").toPath().resolve("configsets/cdcr-source-disabled").toFile();
-        System.out.println("config dir absolute path = " + configDir.getAbsolutePath());
-        source.uploadConfigDir(configDir, "cdcr-source");
+        source.uploadConfigSet(configset("cdcr-source-disabled"), "cdcr-source");
 
         // create a collection with the cdcr-source-disabled configset
-        Map<String, String> collectionProperties = new HashMap<>();
-        // todo investigate why this is necessary??? because by default it selects a ram directory which deletes the tlogs on reloads?
-        collectionProperties.putIfAbsent("solr.directoryFactory", "solr.StandardDirectoryFactory");
-        source.createCollection("cdcr-source", 1, 1, "cdcr-source", collectionProperties);
-        source.getSolrClient().getZkStateReader().forceUpdateCollection("cdcr-source");
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish("cdcr-source", source.getSolrClient().getZkStateReader(), true, true, 330);
+        CollectionAdminRequest.createCollection("cdcr-source", "cdcr-source", 1, 1)
+            // todo investigate why this is necessary??? because by default it selects a ram directory which deletes the tlogs on reloads?
+            .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
+            .process(source.getSolrClient());
 
         // index 10000 docs with a hard commit every 1000 documents
         CloudSolrClient sourceSolrClient = source.getSolrClient();
@@ -115,8 +108,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         }
 
 //       upload the cdcr-enabled config and restart source cluster
-        final File cdcrEnabledSourceConfigDir = getFile("solr").toPath().resolve("configsets/cdcr-source").toFile();
-        source.uploadConfigDir(cdcrEnabledSourceConfigDir, "cdcr-source");
+        source.uploadConfigSet(configset("cdcr-source"), "cdcr-source");
         JettySolrRunner runner = source.stopJettySolrRunner(0);
         source.startJettySolrRunner(runner);
         assertTrue(runner.isRunning());
@@ -126,11 +118,9 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         assertEquals("Document mismatch on source after restart", numDocs, response.getResults().getNumFound());
 
         // setup the target cluster
-        final File targetConfigDir = getFile("solr").toPath().resolve("configsets/cdcr-target").toFile();
-        target.uploadConfigDir(targetConfigDir, "cdcr-target");
-        target.createCollection("cdcr-target", 1, 1, "cdcr-target", Collections.emptyMap());
-        target.getSolrClient().getZkStateReader().forceUpdateCollection("cdcr-target");
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish("cdcr-target", target.getSolrClient().getZkStateReader(), true, true, 330);
+        target.uploadConfigSet(configset("cdcr-target"), "cdcr-target");
+        CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 1)
+            .process(target.getSolrClient());
         CloudSolrClient targetSolrClient = target.getSolrClient();
         targetSolrClient.setDefaultCollection("cdcr-target");
         Thread.sleep(1000);
@@ -174,16 +164,11 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
       MiniSolrCloudCluster source = new MiniSolrCloudCluster(1, createTempDir("cdcr-source"), buildJettyConfig("/solr"));
       try {
         source.waitForAllNodes(30);
-        final File configDir = getFile("solr").toPath().resolve("configsets/cdcr-source").toFile();
-        System.out.println("config dir absolute path = " + configDir.getAbsolutePath());
-        source.uploadConfigDir(configDir, "cdcr-source");
+        source.uploadConfigSet(configset("cdcr-source"), "cdcr-source");
 
-        Map<String, String> collectionProperties = new HashMap<>();
-        // todo investigate why this is necessary???
-        collectionProperties.putIfAbsent("solr.directoryFactory", "solr.StandardDirectoryFactory");
-        source.createCollection("cdcr-source", 1, 1, "cdcr-source", collectionProperties);
-        source.getSolrClient().getZkStateReader().forceUpdateCollection("cdcr-source");
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish("cdcr-source", source.getSolrClient().getZkStateReader(), true, true, 330);
+        CollectionAdminRequest.createCollection("cdcr-source", "cdcr-source", 1, 1)
+            .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
+            .process(source.getSolrClient());
 
         // index 10000 docs with a hard commit every 1000 documents
         CloudSolrClient sourceSolrClient = source.getSolrClient();
@@ -206,11 +191,9 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         assertEquals("", numDocs, response.getResults().getNumFound());
 
         // setup the target cluster
-        final File targetConfigDir = getFile("solr").toPath().resolve("configsets/cdcr-target").toFile();
-        target.uploadConfigDir(targetConfigDir, "cdcr-target");
-        target.createCollection("cdcr-target", 1, 1, "cdcr-target", Collections.emptyMap());
-        target.getSolrClient().getZkStateReader().forceUpdateCollection("cdcr-target");
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish("cdcr-target", target.getSolrClient().getZkStateReader(), true, true, 330);
+        target.uploadConfigSet(configset("cdcr-target"), "cdcr-target");
+        CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 1)
+            .process(target.getSolrClient());
         CloudSolrClient targetSolrClient = target.getSolrClient();
         targetSolrClient.setDefaultCollection("cdcr-target");
 
@@ -267,16 +250,11 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
       MiniSolrCloudCluster source = new MiniSolrCloudCluster(1, createTempDir("cdcr-source"), buildJettyConfig("/solr"));
       try {
         source.waitForAllNodes(30);
-        final File configDir = getFile("solr").toPath().resolve("configsets/cdcr-source").toFile();
-        System.out.println("config dir absolute path = " + configDir.getAbsolutePath());
-        source.uploadConfigDir(configDir, "cdcr-source");
+        source.uploadConfigSet(configset("cdcr-source"), "cdcr-source");
 
-        Map<String, String> collectionProperties = new HashMap<>();
-        // todo investigate why this is necessary???
-        collectionProperties.putIfAbsent("solr.directoryFactory", "solr.StandardDirectoryFactory");
-        source.createCollection("cdcr-source", 1, 1, "cdcr-source", collectionProperties);
-        source.getSolrClient().getZkStateReader().forceUpdateCollection("cdcr-source");
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish("cdcr-source", source.getSolrClient().getZkStateReader(), true, true, 330);
+        CollectionAdminRequest.createCollection("cdcr-source", "cdcr-source", 1, 1)
+            .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
+            .process(source.getSolrClient());
 
         // index 10000 docs with a hard commit every 1000 documents
         CloudSolrClient sourceSolrClient = source.getSolrClient();
@@ -299,11 +277,9 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         assertEquals("", numDocs, response.getResults().getNumFound());
 
         // setup the target cluster
-        final File targetConfigDir = getFile("solr").toPath().resolve("configsets/cdcr-target").toFile();
-        target.uploadConfigDir(targetConfigDir, "cdcr-target");
-        target.createCollection("cdcr-target", 1, 1, "cdcr-target", Collections.emptyMap());
-        target.getSolrClient().getZkStateReader().forceUpdateCollection("cdcr-target");
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish("cdcr-target", target.getSolrClient().getZkStateReader(), true, true, 330);
+        target.uploadConfigSet(configset("cdcr-target"), "cdcr-target");
+        CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 1)
+            .process(target.getSolrClient());
         CloudSolrClient targetSolrClient = target.getSolrClient();
         targetSolrClient.setDefaultCollection("cdcr-target");
         Thread.sleep(1000);

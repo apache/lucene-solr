@@ -32,24 +32,24 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.packed.PackedInts;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 public class TestForUtil extends LuceneTestCase {
 
   public void testEncodeDecode() throws IOException {
-    final int iterations = RandomInts.randomIntBetween(random(), 1, 1000);
+    final int iterations = RandomNumbers.randomIntBetween(random(), 1, 1000);
     final float acceptableOverheadRatio = random().nextFloat();
     final int[] values = new int[(iterations - 1) * BLOCK_SIZE + ForUtil.MAX_DATA_SIZE];
     for (int i = 0; i < iterations; ++i) {
       final int bpv = random().nextInt(32);
       if (bpv == 0) {
-        final int value = RandomInts.randomIntBetween(random(), 0, Integer.MAX_VALUE);
+        final int value = RandomNumbers.randomIntBetween(random(), 0, Integer.MAX_VALUE);
         for (int j = 0; j < BLOCK_SIZE; ++j) {
           values[i * BLOCK_SIZE + j] = value;
         }
       } else {
         for (int j = 0; j < BLOCK_SIZE; ++j) {
-          values[i * BLOCK_SIZE + j] = RandomInts.randomIntBetween(random(),
+          values[i * BLOCK_SIZE + j] = RandomNumbers.randomIntBetween(random(),
               0, (int) PackedInts.maxValue(bpv));
         }
       }

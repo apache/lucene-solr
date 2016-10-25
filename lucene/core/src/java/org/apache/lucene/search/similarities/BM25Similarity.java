@@ -244,11 +244,7 @@ public class BM25Similarity extends Similarity {
       if (norms == null) {
         norm = k1;
       } else {
-        int normsDocID = norms.docID();
-        if (normsDocID < doc) {
-          normsDocID = norms.advance(doc);
-        }
-        if (normsDocID == doc) {
+        if (norms.advanceExact(doc)) {
           norm = cache[(byte)norms.longValue() & 0xFF];
         } else {
           norm = cache[0];
@@ -310,7 +306,7 @@ public class BM25Similarity extends Similarity {
           "tfNorm, computed from:", subs);
     } else {
       byte norm;
-      if (norms.advance(doc) == doc) {
+      if (norms.advanceExact(doc)) {
         norm = (byte) norms.longValue();
       } else {
         norm = 0;

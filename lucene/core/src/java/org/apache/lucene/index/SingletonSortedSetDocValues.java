@@ -29,7 +29,6 @@ import org.apache.lucene.util.BytesRef;
  */
 final class SingletonSortedSetDocValues extends SortedSetDocValues {
   private final SortedDocValues in;
-  private long currentOrd;
   private long ord;
   
   /** Creates a multi-valued view over the provided SortedDocValues */
@@ -55,8 +54,8 @@ final class SingletonSortedSetDocValues extends SortedSetDocValues {
 
   @Override
   public long nextOrd() {
-    long v = currentOrd;
-    currentOrd = NO_MORE_ORDS;
+    long v = ord;
+    ord = NO_MORE_ORDS;
     return v;
   }
 
@@ -64,7 +63,7 @@ final class SingletonSortedSetDocValues extends SortedSetDocValues {
   public int nextDoc() throws IOException {
     int docID = in.nextDoc();
     if (docID != NO_MORE_DOCS) {
-      currentOrd = ord = in.ordValue();
+      ord = in.ordValue();
     }
     return docID;
   }
@@ -73,9 +72,18 @@ final class SingletonSortedSetDocValues extends SortedSetDocValues {
   public int advance(int target) throws IOException {
     int docID = in.advance(target);
     if (docID != NO_MORE_DOCS) {
-      currentOrd = ord = in.ordValue();
+      ord = in.ordValue();
     }
     return docID;
+  }
+
+  @Override
+  public boolean advanceExact(int target) throws IOException {
+    if (in.advanceExact(target)) {
+      ord = in.ordValue();
+      return true;
+    }
+    return false;
   }
 
   @Override
@@ -95,7 +103,7 @@ final class SingletonSortedSetDocValues extends SortedSetDocValues {
   }
 
   @Override
-  public TermsEnum termsEnum() {
+  public TermsEnum termsEnum() throws IOException {
     return in.termsEnum();
   }
 

@@ -14,28 +14,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs;
 
-import org.apache.lucene.util.BytesRef;
+package org.apache.solr.common.util;
 
-/** {@link PointsReader} whose order of points can be changed.
- *  This class is useful for codecs to optimize flush.
- *  @lucene.internal */
-public abstract class MutablePointsReader extends PointsReader {
 
-  /** Sole constructor. */
-  protected MutablePointsReader() {}
+import java.util.Map;
+import java.util.function.Function;
 
-  /** Set {@code packedValue} with a reference to the packed bytes of the i-th value. */
-  public abstract void getValue(int i, BytesRef packedValue);
+// A cache backed by a map
+public class MapBackedCache<K, V> implements Cache<K, V> {
 
-  /** Get the k-th byte of the i-th value. */
-  public abstract byte getByteAt(int i, int k);
+  private final Map<K, V> map;
 
-  /** Return the doc ID of the i-th value. */
-  public abstract int getDocID(int i);
+  public MapBackedCache(Map<K, V> map) {
+    this.map = map;
+  }
 
-  /** Swap the i-th and j-th values. */
-  public abstract void swap(int i, int j);
+  @Override
+  public V put(K key, V val) {
+    return map.put(key, val);
+  }
 
+  @Override
+  public V get(K key) {
+    return map.get(key);
+  }
+
+  @Override
+  public V remove(K key) {
+    return map.remove(key);
+  }
+
+  @Override
+  public void clear() {
+    map.clear();
+  }
+
+  @Override
+  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+    return map.computeIfAbsent(key, mappingFunction);
+  }
 }

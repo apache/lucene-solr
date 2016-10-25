@@ -110,7 +110,7 @@ abstract class RangeFieldQuery extends Query {
       final RangeFieldComparator comparator = new RangeFieldComparator();
       private DocIdSet buildMatchingDocIdSet(LeafReader reader, PointValues values) throws IOException {
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
-        values.intersect(field,
+        values.intersect(
             new IntersectVisitor() {
               DocIdSetBuilder.BulkAdder adder;
               @Override
@@ -157,7 +157,7 @@ abstract class RangeFieldQuery extends Query {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
-        PointValues values = reader.getPointValues();
+        PointValues values = reader.getPointValues(field);
         if (values == null) {
           // no docs in this segment indexed any ranges
           return null;
@@ -168,9 +168,9 @@ abstract class RangeFieldQuery extends Query {
         }
         checkFieldInfo(fieldInfo);
         boolean allDocsMatch = true;
-        if (values.getDocCount(field) == reader.maxDoc()) {
+        if (values.getDocCount() == reader.maxDoc()) {
           // if query crosses, docs need to be further scrutinized
-          byte[] range = getInternalRange(values.getMinPackedValue(field), values.getMaxPackedValue(field));
+          byte[] range = getInternalRange(values.getMinPackedValue(), values.getMaxPackedValue());
           // if the internal node is not equal and not contained by the query, all docs do not match
           if ((!Arrays.equals(ranges, range)
               && (comparator.contains(range) && queryType != QueryType.CONTAINS)) == false) {

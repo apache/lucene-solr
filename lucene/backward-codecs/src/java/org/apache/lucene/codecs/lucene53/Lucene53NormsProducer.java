@@ -222,6 +222,12 @@ class Lucene53NormsProducer extends NormsProducer {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      return true;
+    }
+
+    @Override
     public long cost() {
       // TODO
       return 0;

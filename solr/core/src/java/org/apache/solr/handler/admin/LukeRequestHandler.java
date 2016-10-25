@@ -474,6 +474,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     finfo.add("uniqueKeyField",
         null == uniqueField ? null : uniqueField.getName());
     finfo.add("defaultSearchField", schema.getDefaultSearchFieldName());
+    finfo.add("similarity", getSimilarityInfo(schema.getSimilarity()));
     finfo.add("types", types);
     return finfo;
   }

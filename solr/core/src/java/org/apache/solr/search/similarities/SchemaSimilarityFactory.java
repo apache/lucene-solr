@@ -129,21 +129,32 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCo
                                   "' but that <fieldType> does not define a <similarity>");
         }
       }
-      assert null != defaultSim;
-      final Similarity defaultSimilarity = defaultSim;
-      similarity = new PerFieldSimilarityWrapper() {
-        @Override
-        public Similarity get(String name) {
-          FieldType fieldType = core.getLatestSchema().getFieldTypeNoEx(name);
-          if (fieldType == null) {
-            return defaultSimilarity;
-          } else {
-            Similarity similarity = fieldType.getSimilarity();
-            return similarity == null ? defaultSimilarity : similarity;
-          }
-        }
-      };
+      similarity = new SchemaSimilarity(defaultSim);
     }
     return similarity;
+  }
+  
+  private class SchemaSimilarity extends PerFieldSimilarityWrapper {
+    private Similarity defaultSimilarity;
+
+    public SchemaSimilarity(Similarity defaultSimilarity) {
+      this.defaultSimilarity = defaultSimilarity;
+    }
+
+    @Override
+    public Similarity get(String name) {
+      FieldType fieldType = core.getLatestSchema().getFieldTypeNoEx(name);
+      if (fieldType == null) {
+        return defaultSimilarity;
+      } else {
+        Similarity similarity = fieldType.getSimilarity();
+        return similarity == null ? defaultSimilarity : similarity;
+      }
+    }
+
+    @Override
+    public String toString() {
+      return "SchemaSimilarity. Default: " + ((get("") == null) ? "null" : get("").toString());
+    }
   }
 }

@@ -217,6 +217,7 @@ public class CreateCollectionCmd implements Cmd {
         params.set(CoreAdminParams.COLLECTION, collectionName);
         params.set(CoreAdminParams.SHARD, position.shard);
         params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
+        params.set(CoreAdminParams.NEW_COLLECTION, "true");
 
         if (async != null) {
           String coreAdminAsyncId = async + Math.abs(System.nanoTime());

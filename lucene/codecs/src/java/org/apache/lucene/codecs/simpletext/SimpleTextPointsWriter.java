@@ -26,6 +26,7 @@ import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.SegmentWriteState;
@@ -68,9 +69,10 @@ class SimpleTextPointsWriter extends PointsWriter {
   }
 
   @Override
-  public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
+  public void writeField(FieldInfo fieldInfo, PointsReader reader) throws IOException {
 
-    boolean singleValuePerDoc = values.size(fieldInfo.name) == values.getDocCount(fieldInfo.name);
+    PointValues values = reader.getValues(fieldInfo.name);
+    boolean singleValuePerDoc = values.size() == values.getDocCount();
 
     // We use the normal BKDWriter, but subclass to customize how it writes the index and blocks to disk:
     try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
@@ -80,7 +82,7 @@ class SimpleTextPointsWriter extends PointsWriter {
                                           fieldInfo.getPointNumBytes(),
                                           BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
                                           BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
-                                          values.size(fieldInfo.name),
+                                          values.size(),
                                           singleValuePerDoc) {
 
         @Override
@@ -173,7 +175,7 @@ class SimpleTextPointsWriter extends PointsWriter {
         }
       }) {
 
-      values.intersect(fieldInfo.name, new IntersectVisitor() {
+      values.intersect(new IntersectVisitor() {
           @Override
           public void visit(int docID) {
             throw new IllegalStateException();

@@ -702,3 +702,26 @@ limitations under the License.
   float:left;
   width:80%;
 }
+
+#content #schema dd.similarity.ng-binding::after {
+  content: attr(data-tip) ;
+
+  font-size: 12px;
+  position: relative;
+  white-space: nowrap;
+  bottom: 9999px;
+  left: 0;
+  background: lightyellow;
+  color: black;
+  padding: 4px 7px;
+  line-height: 24px;
+  height: 24px;
+  border: 1px solid darkgray;
+  opacity: 0;
+  transition:opacity 0.4s ease-out;
+}
+
+#content #schema dd.similarity.ng-binding:hover::after {
+  opacity: 90;
+  bottom: -20px;
+}

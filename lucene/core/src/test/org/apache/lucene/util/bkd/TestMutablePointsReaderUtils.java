@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.apache.lucene.codecs.MutablePointsReader;
+import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -184,22 +184,12 @@ public class TestMutablePointsReaderUtils extends LuceneTestCase {
     }
   }
 
-  private static class DummyPointsReader extends MutablePointsReader {
+  private static class DummyPointsReader extends MutablePointValues {
 
     private final Point[] points;
 
     DummyPointsReader(Point[] points) {
       this.points = points.clone();
-    }
-
-    @Override
-    public void close() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long ramBytesUsed() {
-      return 0;
     }
 
     @Override
@@ -226,42 +216,37 @@ public class TestMutablePointsReaderUtils extends LuceneTestCase {
     }
 
     @Override
-    public void checkIntegrity() throws IOException {
+    public void intersect(IntersectVisitor visitor) throws IOException {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
+    public byte[] getMinPackedValue() throws IOException {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public byte[] getMinPackedValue(String fieldName) throws IOException {
+    public byte[] getMaxPackedValue() throws IOException {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public byte[] getMaxPackedValue(String fieldName) throws IOException {
+    public int getNumDimensions() throws IOException {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public int getNumDimensions(String fieldName) throws IOException {
+    public int getBytesPerDimension() throws IOException {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public int getBytesPerDimension(String fieldName) throws IOException {
+    public long size() {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public long size(String fieldName) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getDocCount(String fieldName) {
+    public int getDocCount() {
       throw new UnsupportedOperationException();
     }
 

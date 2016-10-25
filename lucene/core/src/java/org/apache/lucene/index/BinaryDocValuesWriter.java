@@ -154,6 +154,11 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long cost() {
       return docsWithField.cost();
     }

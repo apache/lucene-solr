@@ -22,6 +22,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.PointValues;
 
 /** Abstract API to write points
  *
@@ -48,109 +49,121 @@ public abstract class PointsWriter implements Closeable {
       if (pointsReader != null) {
         FieldInfo readerFieldInfo = mergeState.fieldInfos[i].fieldInfo(fieldInfo.name);
         if (readerFieldInfo != null && readerFieldInfo.getPointDimensionCount() > 0) {
-          maxPointCount += pointsReader.size(fieldInfo.name);
-          docCount += pointsReader.getDocCount(fieldInfo.name);
+          PointValues values = pointsReader.getValues(fieldInfo.name);
+          if (values != null) {
+            maxPointCount += values.size();
+            docCount += values.getDocCount();
+          }
         }
       }
     }
     final long finalMaxPointCount = maxPointCount;
     final int finalDocCount = docCount;
     writeField(fieldInfo,
-               new PointsReader() {
-                 @Override
-                 public void intersect(String fieldName, IntersectVisitor mergedVisitor) throws IOException {
-                   if (fieldName.equals(fieldInfo.name) == false) {
-                     throw new IllegalArgumentException("field name must match the field being merged");
-                   }
-                   
-                   for (int i=0;i<mergeState.pointsReaders.length;i++) {
-                     PointsReader pointsReader = mergeState.pointsReaders[i];
-                     if (pointsReader == null) {
-                       // This segment has no points
-                       continue;
-                     }
-                     FieldInfo readerFieldInfo = mergeState.fieldInfos[i].fieldInfo(fieldName);
-                     if (readerFieldInfo == null) {
-                       // This segment never saw this field
-                       continue;
-                     }
+        new PointsReader() {
+          
+          @Override
+          public long ramBytesUsed() {
+            return 0;
+          }
+          
+          @Override
+          public void close() throws IOException {}
+          
+          @Override
+          public PointValues getValues(String fieldName) {
+            if (fieldName.equals(fieldInfo.name) == false) {
+              throw new IllegalArgumentException("field name must match the field being merged");
+            }
 
-                     if (readerFieldInfo.getPointDimensionCount() == 0) {
-                       // This segment saw this field, but the field did not index points in it:
-                       continue;
-                     }
+            return new PointValues() {
+              
+              @Override
+              public void intersect(IntersectVisitor mergedVisitor) throws IOException {
+                for (int i=0;i<mergeState.pointsReaders.length;i++) {
+                  PointsReader pointsReader = mergeState.pointsReaders[i];
+                  if (pointsReader == null) {
+                    // This segment has no points
+                    continue;
+                  }
+                  FieldInfo readerFieldInfo = mergeState.fieldInfos[i].fieldInfo(fieldName);
+                  if (readerFieldInfo == null) {
+                    // This segment never saw this field
+                    continue;
+                  }
 
-                     MergeState.DocMap docMap = mergeState.docMaps[i];
-                     pointsReader.intersect(fieldInfo.name,
-                                            new IntersectVisitor() {
-                                              @Override
-                                              public void visit(int docID) {
-                                                // Should never be called because our compare method never returns Relation.CELL_INSIDE_QUERY
-                                                throw new IllegalStateException();
-                                              }
+                  if (readerFieldInfo.getPointDimensionCount() == 0) {
+                    // This segment saw this field, but the field did not index points in it:
+                    continue;
+                  }
 
-                                              @Override
-                                              public void visit(int docID, byte[] packedValue) throws IOException {
-                                                int newDocID = docMap.get(docID);
-                                                if (newDocID != -1) {
-                                                  // Not deleted:
-                                                  mergedVisitor.visit(newDocID, packedValue);
-                                                }
-                                              }
+                  PointValues values = pointsReader.getValues(fieldName);
+                  if (values == null) {
+                    continue;
+                  }
+                  MergeState.DocMap docMap = mergeState.docMaps[i];
+                  values.intersect(new IntersectVisitor() {
+                    @Override
+                    public void visit(int docID) {
+                      // Should never be called because our compare method never returns Relation.CELL_INSIDE_QUERY
+                      throw new IllegalStateException();
+                    }
 
-                                              @Override
-                                              public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                                                // Forces this segment's PointsReader to always visit all docs + values:
-                                                return Relation.CELL_CROSSES_QUERY;
-                                              }
-                                            });
-                   }
-                 }
+                    @Override
+                    public void visit(int docID, byte[] packedValue) throws IOException {
+                      int newDocID = docMap.get(docID);
+                      if (newDocID != -1) {
+                        // Not deleted:
+                        mergedVisitor.visit(newDocID, packedValue);
+                      }
+                    }
 
-                 @Override
-                 public void checkIntegrity() {
-                   throw new UnsupportedOperationException();
-                 }
+                    @Override
+                    public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+                      // Forces this segment's PointsReader to always visit all docs + values:
+                      return Relation.CELL_CROSSES_QUERY;
+                    }
+                  });
+                }
+              }
 
-                 @Override
-                 public long ramBytesUsed() {
-                   return 0L;
-                 }
+              @Override
+              public byte[] getMinPackedValue() {
+                throw new UnsupportedOperationException();
+              }
 
-                 @Override
-                 public void close() {
-                 }
+              @Override
+              public byte[] getMaxPackedValue() {
+                throw new UnsupportedOperationException();
+              }
 
-                 @Override
-                 public byte[] getMinPackedValue(String fieldName) {
-                   throw new UnsupportedOperationException();
-                 }
+              @Override
+              public int getNumDimensions() {
+                throw new UnsupportedOperationException();
+              }
 
-                 @Override
-                 public byte[] getMaxPackedValue(String fieldName) {
-                   throw new UnsupportedOperationException();
-                 }
+              @Override
+              public int getBytesPerDimension() {
+                throw new UnsupportedOperationException();
+              }
 
-                 @Override
-                 public int getNumDimensions(String fieldName) {
-                   throw new UnsupportedOperationException();
-                 }
+              @Override
+              public long size() {
+                return finalMaxPointCount;
+              }
 
-                 @Override
-                 public int getBytesPerDimension(String fieldName) {
-                   throw new UnsupportedOperationException();
-                 }
-
-                 @Override
-                 public long size(String fieldName) {
-                   return finalMaxPointCount;
-                 }
-
-                 @Override
-                 public int getDocCount(String fieldName) {
-                   return finalDocCount;
-                 }
-               });
+              @Override
+              public int getDocCount() {
+                return finalDocCount;
+              }
+            };
+          }
+          
+          @Override
+          public void checkIntegrity() throws IOException {
+            throw new UnsupportedOperationException();
+          }
+        });
   }
 
   /** Default merge implementation to merge incoming points readers by visiting all their points and

@@ -46,7 +46,6 @@ public final class DirectMonotonicReader {
   public static class Meta implements Accountable {
     private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Meta.class);
 
-    final long numValues;
     final int blockShift;
     final int numBlocks;
     final long[] mins;
@@ -55,7 +54,6 @@ public final class DirectMonotonicReader {
     final long[] offsets;
 
     Meta(long numValues, int blockShift) {
-      this.numValues = numValues;
       this.blockShift = blockShift;
       long numBlocks = numValues >>> blockShift;
       if ((numBlocks << blockShift) < numValues) {

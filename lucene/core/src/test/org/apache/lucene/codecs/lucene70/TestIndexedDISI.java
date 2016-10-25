@@ -153,7 +153,7 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   public void testRandom() throws IOException {
     try (Directory dir = newDirectory()) {
-      for (int i = 0; i < 100; ++i) {
+      for (int i = 0; i < 10; ++i) {
         doTestRandom(dir);
       }
     }
@@ -213,6 +213,32 @@ public class TestIndexedDISI extends LuceneTestCase {
             break;
           }
           assertEquals(index, disi.index());
+        }
+      }
+    }
+
+    for (int step : new int[] {10, 100, 1000, 10000, 100000}) {
+      try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, cardinality);
+        BitSetIterator disi2 = new BitSetIterator(set, cardinality);
+        int index = -1;
+        for (int target = 0; target < set.length(); ) {
+          target += TestUtil.nextInt(random(), 0, step);
+          int doc = disi2.docID();
+          while (doc < target) {
+            doc = disi2.nextDoc();
+            index++;
+          }
+
+          boolean exists = disi.advanceExact(target);
+          assertEquals(doc == target, exists);
+          if (exists) {
+            assertEquals(index, disi.index());
+          } else if (random().nextBoolean()) {
+            assertEquals(doc, disi.nextDoc());
+            assertEquals(index, disi.index());
+            target = doc;
+          }
         }
       }
     }

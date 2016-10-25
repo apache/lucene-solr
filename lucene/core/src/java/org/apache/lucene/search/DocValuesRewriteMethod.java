@@ -81,7 +81,7 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
           TermsEnum termsEnum = query.getTermsEnum(new Terms() {
             
             @Override
-            public TermsEnum iterator() {
+            public TermsEnum iterator() throws IOException {
               return fcsi.termsEnum();
             }
 

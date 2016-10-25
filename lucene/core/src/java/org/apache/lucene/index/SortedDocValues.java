@@ -40,6 +40,8 @@ public abstract class SortedDocValues extends BinaryDocValues {
 
   /**
    * Returns the ordinal for the current docID.
+   * It is illegal to call this method after {@link #advanceExact(int)}
+   * returned {@code false}.
    * @return ordinal for the document: this is dense, starts at 0, then
    *         increments by 1 for the next value in sorted order.
    */
@@ -104,7 +106,8 @@ public abstract class SortedDocValues extends BinaryDocValues {
    * Returns a {@link TermsEnum} over the values.
    * The enum supports {@link TermsEnum#ord()} and {@link TermsEnum#seekExact(long)}.
    */
-  public TermsEnum termsEnum() {
+  public TermsEnum termsEnum() throws IOException {
     return new SortedDocValuesTermsEnum(this);
   }
+
 }

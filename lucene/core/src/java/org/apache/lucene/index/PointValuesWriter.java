@@ -18,7 +18,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.MutablePointsReader;
+import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.util.ArrayUtil;
@@ -70,7 +70,7 @@ class PointValuesWriter {
   }
 
   public void flush(SegmentWriteState state, PointsWriter writer) throws IOException {
-    PointsReader reader = new MutablePointsReader() {
+    PointValues values = new MutablePointValues() {
 
       final int[] ords = new int[numPoints];
       {
@@ -80,10 +80,7 @@ class PointValuesWriter {
       }
 
       @Override
-      public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
-        if (fieldName.equals(fieldInfo.name) == false) {
-          throw new IllegalArgumentException("fieldName must be the same");
-        }
+      public void intersect(IntersectVisitor visitor) throws IOException {
         final BytesRef scratch = new BytesRef();
         final byte[] packedValue = new byte[packedBytesLength];
         for(int i=0;i<numPoints;i++) {
@@ -95,52 +92,32 @@ class PointValuesWriter {
       }
 
       @Override
-      public void checkIntegrity() {
+      public byte[] getMinPackedValue() {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public long ramBytesUsed() {
-        return 0L;
-      }
-
-      @Override
-      public void close() {
-      }
-
-      @Override
-      public byte[] getMinPackedValue(String fieldName) {
+      public byte[] getMaxPackedValue() {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public byte[] getMaxPackedValue(String fieldName) {
+      public int getNumDimensions() {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public int getNumDimensions(String fieldName) {
+      public int getBytesPerDimension() {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public int getBytesPerDimension(String fieldName) {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public long size(String fieldName) {
-        if (fieldName.equals(fieldInfo.name) == false) {
-          throw new IllegalArgumentException("fieldName must be the same");
-        }
+      public long size() {
         return numPoints;
       }
 
       @Override
-      public int getDocCount(String fieldName) {
-        if (fieldName.equals(fieldInfo.name) == false) {
-          throw new IllegalArgumentException("fieldName must be the same");
-        }
+      public int getDocCount() {
         return numDocs;
       }
 
@@ -167,6 +144,31 @@ class PointValuesWriter {
       public byte getByteAt(int i, int k) {
         final long offset = (long) packedBytesLength * ords[i] + k;
         return bytes.readByte(offset);
+      }
+    };
+
+    PointsReader reader = new PointsReader() {
+      
+      @Override
+      public PointValues getValues(String fieldName) {
+        if (fieldName.equals(fieldInfo.name) == false) {
+          throw new IllegalArgumentException("fieldName must be the same");
+        }
+        return values;
+      }
+      
+      @Override
+      public void checkIntegrity() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return 0L;
+      }
+
+      @Override
+      public void close() {
       }
     };
 

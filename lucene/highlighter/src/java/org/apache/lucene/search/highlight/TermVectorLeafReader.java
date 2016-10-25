@@ -144,7 +144,7 @@ public class TermVectorLeafReader extends LeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
+  public PointValues getPointValues(String fieldName) {
     return null;
   }
 
