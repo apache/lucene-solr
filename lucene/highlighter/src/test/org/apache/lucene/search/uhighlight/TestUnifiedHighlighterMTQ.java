@@ -771,8 +771,7 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     ir.close();
   }
 
-  @Ignore
-  public void testTokenStreamIsClosed() throws IOException {
+  public void testTokenStreamIsClosed() throws Exception {
     // note: test is a derivative of testWithMaxLen()
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
 
@@ -827,8 +826,8 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
       if (fieldType == UHTestHelper.reanalysisType) {
         fail("Expecting EXPECTED IOException");
       }
-    } catch (IOException e) {
-      if (!e.getMessage().equals("EXPECTED")) {
+    } catch (Exception e) {
+      if (!e.getMessage().contains("EXPECTED")) {
         throw e;
       }
     }
