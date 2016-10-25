@@ -208,6 +208,9 @@ Bug Fixes
 
 * SOLR-9518: Kerberos Delegation Tokens don't work without a chrooted ZK (Ishan Chattopadhyaya,via noble)
 
+* SOLR-9687: Fixed Interval Facet count issue in cases of open/close intervals on the same values
+ (Andy Chillrud, Tomás Fernández Löbbe)  
+
 Optimizations
 ----------------------
 
@@ -3290,7 +3293,7 @@ Bug Fixes
   while accessing other collections. (Shai Erera)
 
 * SOLR-7412: Fixed range.facet.other parameter for distributed requests. 
-  (Will Miller, Tomás Fernándes Löbbe)
+  (Will Miller, Tomás Fernández Löbbe)
 
 * SOLR-6087: SolrIndexSearcher makes no DelegatingCollector.finish() call when IndexSearcher
   throws an expected exception. (Christine Poerschke via shalin)
