@@ -37,7 +37,7 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 
 /**
- * Uses an {@link Analyzer} on content to get offsets. It may use a {@link MemoryIndex} too.
+ * Uses an {@link Analyzer} on content to get offsets and then populates a {@link MemoryIndex}.
  *
  * @lucene.internal
  */
@@ -51,7 +51,7 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
     super(field, extractedTerms, phraseHelper, automata, analyzer);
     boolean storePayloads = phraseHelper.hasPositionSensitivity(); // might be needed
     memoryIndex = new MemoryIndex(true, storePayloads);//true==store offsets
-    leafReader = (LeafReader) memoryIndex.createSearcher().getIndexReader();
+    leafReader = (LeafReader) memoryIndex.createSearcher().getIndexReader(); // appears to be re-usable
     // preFilter for MemoryIndex
     preMemIndexFilterAutomaton = buildCombinedAutomaton(field, terms, this.automata, phraseHelper);
   }
@@ -61,32 +61,11 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
     // note: don't need LimitTokenOffsetFilter since content is already truncated to maxLength
     TokenStream tokenStream = tokenStream(content);
 
-    // We use a MemoryIndex and index the tokenStream so that later we have the PostingsEnum with offsets.
-
-    // note: An *alternative* strategy is to get PostingsEnums without offsets from the main index
-    //  and then marry this up with a fake PostingsEnum backed by a TokenStream (which has the offsets) and
-    //  can use that to filter applicable tokens?  It would have the advantage of being able to exit
-    //  early and save some re-analysis.  This would be an additional method/offset-source approach
-    //  since it's still useful to highlight without any index (so we build MemoryIndex).
-
-    // note: probably unwise to re-use TermsEnum on reset mem index so we don't. But we do re-use the
-    //   leaf reader, which is a bit more top level than in the guts.
-    memoryIndex.reset();
-
     // Filter the tokenStream to applicable terms
-    if (preMemIndexFilterAutomaton != null) {
-      tokenStream = newKeepWordFilter(tokenStream, preMemIndexFilterAutomaton);
-    }
+    tokenStream = newKeepWordFilter(tokenStream, preMemIndexFilterAutomaton);
+    memoryIndex.reset();
     memoryIndex.addField(field, tokenStream);//note: calls tokenStream.reset() & close()
     docId = 0;
-
-    if (automata.length > 0) {
-      Terms foundTerms = leafReader.terms(field);
-      if (foundTerms == null) {
-        return Collections.emptyList(); //No offsets for this field.
-      }
-    }
-
 
     return createOffsetsEnumsFromReader(leafReader, docId);
   }

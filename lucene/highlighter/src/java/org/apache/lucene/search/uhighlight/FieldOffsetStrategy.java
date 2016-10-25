@@ -19,6 +19,7 @@ package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,11 @@ public abstract class FieldOffsetStrategy {
   public abstract List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException;
 
   protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader atomicReader, int doc) throws IOException {
+    final Terms termsIndex = atomicReader.terms(field);
+    if (termsIndex == null) {
+      return Collections.emptyList();
+    }
+
     // For strict positions, get a Map of term to Spans:
     //    note: ScriptPhraseHelper.NONE does the right thing for these method calls
     final Map<BytesRef, Spans> strictPhrasesTermToSpans =
@@ -73,10 +79,10 @@ public abstract class FieldOffsetStrategy {
     final List<BytesRef> sourceTerms =
         phraseHelper.expandTermsIfRewrite(terms, strictPhrasesTermToSpans);
 
-    final List<OffsetsEnum> offsetsEnums = new ArrayList<>(sourceTerms.size() + 1);
+    final List<OffsetsEnum> offsetsEnums = new ArrayList<>(sourceTerms.size() + automata.length);
 
-    Terms termsIndex = atomicReader == null || sourceTerms.isEmpty() ? null : atomicReader.terms(field);
-    if (termsIndex != null) {
+    // Handle sourceTerms:
+    if (!sourceTerms.isEmpty()) {
       TermsEnum termsEnum = termsIndex.iterator();//does not return null
       for (BytesRef term : sourceTerms) {
         if (termsEnum.seekExact(term)) {
@@ -97,16 +103,17 @@ public abstract class FieldOffsetStrategy {
       }
     }
 
+    // Handle automata
     if (automata.length > 0) {
-      offsetsEnums.addAll(createAutomataOffsetsEnumsFromReader(atomicReader, doc));
+      offsetsEnums.addAll(createAutomataOffsetsEnumsFromReader(termsIndex, doc));
     }
 
     return offsetsEnums;
   }
 
-  protected List<OffsetsEnum> createAutomataOffsetsEnumsFromReader(LeafReader leafReader, int doc) throws IOException {
-    List<OffsetsEnum> offsetsEnums = new LinkedList<>();
-    TermsEnum termsEnum = leafReader.terms(field).iterator();
+  protected List<OffsetsEnum> createAutomataOffsetsEnumsFromReader(Terms termsIndex, int doc) throws IOException {
+    List<OffsetsEnum> offsetsEnums = new LinkedList<>();//nocommit why LinkedList?
+    TermsEnum termsEnum = termsIndex.iterator();
     BytesRef term;
     while ((term = termsEnum.next()) != null) {
       for (CharacterRunAutomaton automaton : automata) {
