@@ -139,7 +139,28 @@ public class MultiDocValues {
       }
 
       @Override
-      public long longValue() {
+      public boolean advanceExact(int targetDocID) throws IOException {
+        if (targetDocID <= docID) {
+          throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
+        }
+        int readerIndex = ReaderUtil.subIndex(targetDocID, leaves);
+        if (readerIndex >= nextLeaf) {
+          if (readerIndex == leaves.size()) {
+            throw new IllegalArgumentException("Out of range: " + targetDocID);
+          }
+          currentLeaf = leaves.get(readerIndex);
+          currentValues = currentLeaf.reader().getNormValues(field);
+          nextLeaf = readerIndex+1;
+        }
+        docID = targetDocID;
+        if (currentValues == null) {
+          return false;
+        }
+        return currentValues.advanceExact(targetDocID - currentLeaf.docBase);
+      }
+
+      @Override
+      public long longValue() throws IOException {
         return currentValues.longValue();
       }
 
@@ -244,7 +265,27 @@ public class MultiDocValues {
       }
 
       @Override
-      public long longValue() {
+      public boolean advanceExact(int targetDocID) throws IOException {
+        if (targetDocID <= docID) {
+          throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
+        }
+        int readerIndex = ReaderUtil.subIndex(targetDocID, leaves);
+        if (readerIndex >= nextLeaf) {
+          if (readerIndex == leaves.size()) {
+            throw new IllegalArgumentException("Out of range: " + targetDocID);
+          }
+          currentLeaf = leaves.get(readerIndex);
+          currentValues = currentLeaf.reader().getNumericDocValues(field);
+          nextLeaf = readerIndex+1;
+        }
+        docID = targetDocID;
+        if (currentValues == null) {
+          return false;
+        }
+        return currentValues.advanceExact(targetDocID - currentLeaf.docBase);
+      }
+      @Override
+      public long longValue() throws IOException {
         return currentValues.longValue();
       }
 
@@ -348,7 +389,28 @@ public class MultiDocValues {
       }
 
       @Override
-      public BytesRef binaryValue() {
+      public boolean advanceExact(int targetDocID) throws IOException {
+        if (targetDocID <= docID) {
+          throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
+        }
+        int readerIndex = ReaderUtil.subIndex(targetDocID, leaves);
+        if (readerIndex >= nextLeaf) {
+          if (readerIndex == leaves.size()) {
+            throw new IllegalArgumentException("Out of range: " + targetDocID);
+          }
+          currentLeaf = leaves.get(readerIndex);
+          currentValues = currentLeaf.reader().getBinaryDocValues(field);
+          nextLeaf = readerIndex+1;
+        }
+        docID = targetDocID;
+        if (currentValues == null) {
+          return false;
+        }
+        return currentValues.advanceExact(targetDocID - currentLeaf.docBase);
+      }
+
+      @Override
+      public BytesRef binaryValue() throws IOException {
         return currentValues.binaryValue();
       }
 
@@ -459,6 +521,27 @@ public class MultiDocValues {
           docID = currentLeaf.docBase + newDocID;
           return docID;
         }
+      }
+
+      @Override
+      public boolean advanceExact(int targetDocID) throws IOException {
+        if (targetDocID <= docID) {
+          throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
+        }
+        int readerIndex = ReaderUtil.subIndex(targetDocID, leaves);
+        if (readerIndex >= nextLeaf) {
+          if (readerIndex == leaves.size()) {
+            throw new IllegalArgumentException("Out of range: " + targetDocID);
+          }
+          currentLeaf = leaves.get(readerIndex);
+          currentValues = values[readerIndex];
+          nextLeaf = readerIndex+1;
+        }
+        docID = targetDocID;
+        if (currentValues == null) {
+          return false;
+        }
+        return currentValues.advanceExact(targetDocID - currentLeaf.docBase);
       }
 
       @Override
@@ -923,12 +1006,33 @@ public class MultiDocValues {
     }
     
     @Override
+    public boolean advanceExact(int targetDocID) throws IOException {
+      if (targetDocID <= docID) {
+        throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
+      }
+      int readerIndex = ReaderUtil.subIndex(targetDocID, docStarts);
+      if (readerIndex >= nextLeaf) {
+        if (readerIndex == values.length) {
+          throw new IllegalArgumentException("Out of range: " + targetDocID);
+        }
+        currentDocStart = docStarts[readerIndex];
+        currentValues = values[readerIndex];
+        nextLeaf = readerIndex+1;
+      }
+      docID = targetDocID;
+      if (currentValues == null) {
+        return false;
+      }
+      return currentValues.advanceExact(targetDocID - currentDocStart);
+    }
+    
+    @Override
     public int ordValue() {
       return (int) mapping.getGlobalOrds(nextLeaf-1).get(currentValues.ordValue());
     }
  
     @Override
-    public BytesRef lookupOrd(int ord) {
+    public BytesRef lookupOrd(int ord) throws IOException {
       int subIndex = mapping.getFirstSegmentNumber(ord);
       int segmentOrd = (int) mapping.getFirstSegmentOrd(ord);
       return values[subIndex].lookupOrd(segmentOrd);
@@ -1029,6 +1133,27 @@ public class MultiDocValues {
     }
 
     @Override
+    public boolean advanceExact(int targetDocID) throws IOException {
+      if (targetDocID < docID) {
+        throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
+      }
+      int readerIndex = ReaderUtil.subIndex(targetDocID, docStarts);
+      if (readerIndex >= nextLeaf) {
+        if (readerIndex == values.length) {
+          throw new IllegalArgumentException("Out of range: " + targetDocID);
+        }
+        currentDocStart = docStarts[readerIndex];
+        currentValues = values[readerIndex];
+        nextLeaf = readerIndex+1;
+      }
+      docID = targetDocID;
+      if (currentValues == null) {
+        return false;
+      }
+      return currentValues.advanceExact(targetDocID - currentDocStart);
+    }
+
+    @Override
     public long nextOrd() throws IOException {
       long segmentOrd = currentValues.nextOrd();
       if (segmentOrd == NO_MORE_ORDS) {
@@ -1039,7 +1164,7 @@ public class MultiDocValues {
     }
 
     @Override
-    public BytesRef lookupOrd(long ord) {
+    public BytesRef lookupOrd(long ord) throws IOException {
       int subIndex = mapping.getFirstSegmentNumber(ord);
       long segmentOrd = mapping.getFirstSegmentOrd(ord);
       return values[subIndex].lookupOrd(segmentOrd);

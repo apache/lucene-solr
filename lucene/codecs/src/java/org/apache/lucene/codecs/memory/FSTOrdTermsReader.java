@@ -705,7 +705,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
       /** Load frame for start arc(node) on fst */
       Frame loadFirstFrame(Frame frame) throws IOException {
         frame.arc = fst.getFirstArc(frame.arc);
-        frame.state = fsa.getInitialState();
+        frame.state = 0;
         return frame;
       }
 

@@ -74,7 +74,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
       String[] terms = params.get("terms").split(",");
       String ws = params.get("weights");
       String dfsStr = params.get("idfs");
-      int iteration = params.getInt("iteration");
+      int iteration = params.getInt("iteration", 0);
       String outcome = params.get("outcome");
       int positiveLabel = params.getInt("positiveLabel", 1);
       double threshold = params.getDouble("threshold", 0.5);

@@ -170,7 +170,7 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   private boolean accepts(CompiledAutomaton c, BytesRef b) {
-    int state = c.runAutomaton.getInitialState();
+    int state = 0;
     for(int idx=0;idx<b.length;idx++) {
       assertTrue(state != -1);
       state = c.runAutomaton.step(state, b.bytes[b.offset+idx] & 0xff);
@@ -291,7 +291,7 @@ public class TestTermsEnum extends LuceneTestCase {
           System.out.println("\nTEST: iter2=" + iter2 + " startTerm=" + (startTerm == null ? "<null>" : startTerm.utf8ToString()));
 
           if (startTerm != null) {
-            int state = c.runAutomaton.getInitialState();
+            int state = 0;
             for(int idx=0;idx<startTerm.length;idx++) {
               final int label = startTerm.bytes[startTerm.offset+idx] & 0xff;
               System.out.println("  state=" + state + " label=" + label);

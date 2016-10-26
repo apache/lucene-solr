@@ -35,7 +35,6 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.legacy.LegacyNumericType;
@@ -271,17 +270,16 @@ public abstract class FieldType extends FieldProperties {
     }
     if (val==null) return null;
 
-    org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();
-    newType.setTokenized(field.isTokenized());
-    newType.setStored(field.stored());
-    newType.setOmitNorms(field.omitNorms());
-    newType.setIndexOptions(field.indexed() ? getIndexOptions(field, val) : IndexOptions.NONE);
-    newType.setStoreTermVectors(field.storeTermVector());
-    newType.setStoreTermVectorOffsets(field.storeTermOffsets());
-    newType.setStoreTermVectorPositions(field.storeTermPositions());
-    newType.setStoreTermVectorPayloads(field.storeTermPayloads());
-
-    return createField(field.getName(), val, newType, boost);
+      /*org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();
+      newType.setTokenized(field.isTokenized());
+      newType.setStored(field.stored());
+      newType.setOmitNorms(field.omitNorms());
+      newType.setIndexOptions(field.indexed() ? getIndexOptions(field, val) : IndexOptions.NONE);
+      newType.setStoreTermVectors(field.storeTermVector());
+      newType.setStoreTermVectorOffsets(field.storeTermOffsets());
+      newType.setStoreTermVectorPositions(field.storeTermPositions());
+      newType.setStoreTermVectorPayloads(field.storeTermPayloads());*/
+    return createField(field.getName(), val, field, boost);
   }
 
   /**
@@ -293,7 +291,7 @@ public abstract class FieldType extends FieldProperties {
    * @param boost The boost value
    * @return the {@link org.apache.lucene.index.IndexableField}.
    */
-  protected IndexableField createField(String name, String val, org.apache.lucene.document.FieldType type, float boost){
+  protected IndexableField createField(String name, String val, org.apache.lucene.index.IndexableFieldType type, float boost){
     Field f = new Field(name, val, type);
     f.setBoost(boost);
     return f;
@@ -318,20 +316,6 @@ public abstract class FieldType extends FieldProperties {
       throw new UnsupportedOperationException("This field type does not support doc values: " + this);
     }
     return f==null ? Collections.<IndexableField>emptyList() : Collections.singletonList(f);
-  }
-
-  protected IndexOptions getIndexOptions(SchemaField field, String internalVal) {
-
-    IndexOptions options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-    if (field.omitTermFreqAndPositions()) {
-      options = IndexOptions.DOCS;
-    } else if (field.omitPositions()) {
-      options = IndexOptions.DOCS_AND_FREQS;
-    } else if (field.storeOffsetsWithPositions()) {
-      options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
-    }
-
-    return options;
   }
 
   /**

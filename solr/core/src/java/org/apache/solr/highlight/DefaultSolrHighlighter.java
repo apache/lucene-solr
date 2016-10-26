@@ -220,7 +220,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     try {
       // It'd be nice to know if payloads are on the tokenStream but the presence of the attribute isn't a good
       // indicator.
-      final Terms terms = request.getSearcher().getLeafReader().fields().terms(fieldName);
+      final Terms terms = request.getSearcher().getSlowAtomicReader().fields().terms(fieldName);
       if (terms != null) {
         defaultPayloads = terms.hasPayloads();
       }
@@ -391,7 +391,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     FvhContainer fvhContainer = new FvhContainer(null, null); // Lazy container for fvh and fieldQuery
 
-    IndexReader reader = new TermVectorReusingLeafReader(req.getSearcher().getLeafReader()); // SOLR-5855
+    IndexReader reader = new TermVectorReusingLeafReader(req.getSearcher().getSlowAtomicReader()); // SOLR-5855
 
     // Highlight each document
     NamedList fragments = new SimpleOrderedMap();
@@ -467,8 +467,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     if (!useFvhParam) return false;
     boolean termPosOff = schemaField.storeTermPositions() && schemaField.storeTermOffsets();
     if (!termPosOff) {
-      log.warn("Solr will not use FastVectorHighlighter because {} field does not store TermPositions and "
-          + "TermOffsets.", schemaField.getName());
+      log.warn("Solr will use the standard Highlighter instead of FastVectorHighlighter because the {} field " +
+          "does not store TermVectors with TermPositions and TermOffsets.", schemaField.getName());
     }
     return termPosOff;
   }

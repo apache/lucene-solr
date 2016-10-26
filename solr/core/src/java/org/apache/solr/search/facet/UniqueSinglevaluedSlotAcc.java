@@ -49,7 +49,7 @@ class UniqueSinglevaluedSlotAcc extends UniqueSlotAcc {
   }
 
   @Override
-  protected BytesRef lookupOrd(int ord) {
+  protected BytesRef lookupOrd(int ord) throws IOException {
     return topLevel.lookupOrd(ord);
   }
 

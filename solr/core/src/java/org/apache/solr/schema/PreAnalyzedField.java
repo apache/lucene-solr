@@ -263,8 +263,8 @@ public class PreAnalyzedField extends TextField {
         }
       } else {
         if (f != null) {
-          f.fieldType().setIndexOptions(IndexOptions.NONE);
-          f.fieldType().setTokenized(false);
+          type.setIndexOptions(IndexOptions.NONE);
+          type.setTokenized(false);
         }
       }
     }

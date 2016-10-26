@@ -184,7 +184,7 @@ public class QueryComponent extends SearchComponent
         }
       }
 
-      rb.setSortSpec( parser.getSort(true) );
+      rb.setSortSpec( parser.getSortSpec(true) );
       rb.setQparser(parser);
 
       final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
@@ -257,9 +257,9 @@ public class QueryComponent extends SearchComponent
     }
 
     // groupSort defaults to sort
-    String groupSortStr = params.get(GroupParams.GROUP_SORT);
+    String sortWithinGroupStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
-    Sort sortWithinGroup = groupSortStr == null ?  groupSort : searcher.weightSort(SortSpecParsing.parseSortSpec(groupSortStr, req).getSort());
+    Sort sortWithinGroup = sortWithinGroupStr == null ?  groupSort : searcher.weightSort(SortSpecParsing.parseSortSpec(sortWithinGroupStr, req).getSort());
     if (sortWithinGroup == null) {
       sortWithinGroup = Sort.RELEVANCE;
     }

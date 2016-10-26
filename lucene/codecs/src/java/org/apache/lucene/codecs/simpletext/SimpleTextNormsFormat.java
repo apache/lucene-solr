@@ -20,17 +20,15 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.apache.lucene.codecs.LegacyDocValuesIterables;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.index.EmptyDocValuesProducer;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.LegacyNumericDocValuesWrapper;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.Bits;
 
 /**
  * plain-text norms format.
@@ -70,7 +68,7 @@ public class SimpleTextNormsFormat extends NormsFormat {
     
     @Override
     public NumericDocValues getNorms(FieldInfo field) throws IOException {
-      return new LegacyNumericDocValuesWrapper(new Bits.MatchAllBits(impl.maxDoc), impl.getNumericNonIterator(field));
+      return impl.getNumeric(field);
     }
     
     @Override
@@ -117,7 +115,12 @@ public class SimpleTextNormsFormat extends NormsFormat {
     
     @Override
     public void addNormsField(FieldInfo field, NormsProducer normsProducer) throws IOException {
-      impl.addNumericField(field, LegacyDocValuesIterables.normsIterable(field, normsProducer, impl.numDocs));
+      impl.addNumericField(field, new EmptyDocValuesProducer() {
+        @Override
+        public NumericDocValues getNumeric(FieldInfo field) throws IOException {
+          return normsProducer.getNorms(field);
+        }
+      });
     }
 
     @Override

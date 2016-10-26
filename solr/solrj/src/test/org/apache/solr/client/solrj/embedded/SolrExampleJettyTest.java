@@ -16,6 +16,9 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import java.io.ByteArrayInputStream;
+import java.util.Map;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -31,9 +34,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
-
-import java.io.ByteArrayInputStream;
-import java.util.Map;
 
 /**
  * TODO? perhaps use:

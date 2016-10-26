@@ -93,13 +93,8 @@ public final class SlowCodecReaderWrapper {
         }
 
         @Override
-        public PointValues getPointValues() {
-          return reader.getPointValues();
-        }
-
-        @Override
         public PointsReader getPointsReader() {
-          return pointValuesToReader(reader.getPointValues());
+          return pointValuesToReader(reader);
         }
 
         @Override
@@ -140,14 +135,12 @@ public final class SlowCodecReaderWrapper {
     }
   }
 
-  private static PointsReader pointValuesToReader(PointValues values) {
-    if (values == null) {
-      return null;
-    }
+  private static PointsReader pointValuesToReader(LeafReader reader) {
     return new PointsReader() {
+
       @Override
-      public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
-        values.intersect(fieldName, visitor);
+      public PointValues getValues(String field) throws IOException {
+        return reader.getPointValues(field);
       }
 
       @Override
@@ -164,35 +157,6 @@ public final class SlowCodecReaderWrapper {
         return 0;
       }
 
-      @Override
-      public byte[] getMinPackedValue(String fieldName) throws IOException {
-        return values.getMinPackedValue(fieldName);
-      }
-
-      @Override
-      public byte[] getMaxPackedValue(String fieldName) throws IOException {
-        return values.getMaxPackedValue(fieldName);
-      }
-
-      @Override
-      public int getNumDimensions(String fieldName) throws IOException {
-        return values.getNumDimensions(fieldName);
-      }
-
-      @Override
-      public int getBytesPerDimension(String fieldName) throws IOException {
-        return values.getBytesPerDimension(fieldName);
-      }
-
-      @Override
-      public long size(String fieldName) {
-        return values.size(fieldName);
-      }
-
-      @Override
-      public int getDocCount(String fieldName) {
-        return values.getDocCount(fieldName);
-      }
     };
   }
   

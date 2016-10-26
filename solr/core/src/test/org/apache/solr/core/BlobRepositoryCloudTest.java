@@ -25,6 +25,7 @@ import java.util.HashMap;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
@@ -45,14 +46,17 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
         .configure();
 //    Thread.sleep(2000);
     HashMap<String, String> params = new HashMap<>();
-    cluster.createCollection(".system", 1, 1, null, params);
+    CollectionAdminRequest.createCollection(".system", null, 1, 1)
+        .process(cluster.getSolrClient());
     // test component will fail if it cant' find a blob with this data by this name
     TestBlobHandler.postData(cluster.getSolrClient(), findLiveNodeURI(), "testResource", ByteBuffer.wrap("foo,bar\nbaz,bam".getBytes(StandardCharsets.UTF_8)));
     //    Thread.sleep(2000);
     // if these don't load we probably failed to post the blob above
-    cluster.createCollection("col1", 1, 1, "configname", params);
-    cluster.createCollection("col2", 1, 1, "configname", params);
-//    Thread.sleep(2000);
+    CollectionAdminRequest.createCollection("col1", "configname", 1, 1)
+        .process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("col2", "configname", 1, 1)
+        .process(cluster.getSolrClient());
+
     SolrInputDocument document = new SolrInputDocument();
     document.addField("id", "1");
     document.addField("text", "col1");

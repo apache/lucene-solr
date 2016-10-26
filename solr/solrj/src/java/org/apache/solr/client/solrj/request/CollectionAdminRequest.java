@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
@@ -32,6 +33,7 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -319,6 +321,31 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     return new Create(collection, config, numShards, numReplicas);
   }
 
+  /**
+   * Returns a SolrRequest for creating a collection using a default configSet
+   *
+   * This requires that there is either a single configset configured in the cluster, or
+   * that there is a configset with the same name as the collection
+   *
+   * @param collection  the collection name
+   * @param numShards   the number of shards in the collection
+   * @param numReplicas the replication factor of the collection
+   */
+  public static Create createCollection(String collection, int numShards, int numReplicas) {
+    return new Create(collection, numShards, numReplicas);
+  }
+
+  /**
+   * Returns a SolrRequest for creating a collection with the implicit router
+   * @param collection  the collection name
+   * @param config      the collection config
+   * @param shards      a shard definition string
+   * @param numReplicas the replication factor of the collection
+   */
+  public static Create createCollectionWithImplicitRouter(String collection, String config, String shards, int numReplicas) {
+    return new Create(collection, config, shards, numReplicas);
+  }
+
   // CREATE request
   public static class Create extends AsyncCollectionSpecificAdminRequest {
 
@@ -349,6 +376,20 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.configName = config;
       this.numShards = numShards;
       this.replicationFactor = numReplicas;
+    }
+
+    private Create(String collection, int numShards, int numReplicas) {
+      super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
+      this.numShards = numShards;
+      this.replicationFactor = numReplicas;
+    }
+
+    private Create(String collection, String config, String shards, int numReplicas) {
+      super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
+      this.configName = config;
+      this.replicationFactor = numReplicas;
+      this.shards = shards;
+      this.routerName = ImplicitDocRouter.NAME;
     }
 
     @Deprecated
@@ -420,20 +461,37 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public Create setProperties(Map<String, String> properties) {
+      this.properties = new Properties();
+      this.properties.putAll(properties);
+      return this;
+    }
+
+    public Create withProperty(String key, String value) {
+      if (this.properties == null)
+        this.properties = new Properties();
+      this.properties.setProperty(key, value);
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
 
-      params.set("collection.configName", configName);
-      params.set("createNodeSet", createNodeSet);
+      if (configName != null)
+        params.set("collection.configName", configName);
+      if (createNodeSet != null)
+        params.set("createNodeSet", createNodeSet);
       if (numShards != null) {
         params.set( ZkStateReader.NUM_SHARDS_PROP, numShards);
       }
       if (maxShardsPerNode != null) {
         params.set( "maxShardsPerNode", maxShardsPerNode);
       }
-      params.set( "router.name", routerName);
-      params.set("shards", shards);
+      if (routerName != null)
+        params.set( "router.name", routerName);
+      if (shards != null)
+        params.set("shards", shards);
       if (routerField != null) {
         params.set("router.field", routerField);
       }
@@ -648,8 +706,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   // BACKUP request
   public static class Backup extends AsyncCollectionSpecificAdminRequest {
     protected final String name;
-    protected Optional<String> repositoryName;
+    protected Optional<String> repositoryName = Optional.empty();
     protected String location;
+    protected Optional<String> commitName = Optional.empty();
 
     public Backup(String collection, String name) {
       super(CollectionAction.BACKUP, collection);
@@ -688,6 +747,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public Optional<String> getCommitName() {
+      return commitName;
+    }
+
+    public Backup setCommitName(String commitName) {
+      this.commitName = Optional.ofNullable(commitName);
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -696,6 +764,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set(CoreAdminParams.BACKUP_LOCATION, location); //note: optional
       if (repositoryName.isPresent()) {
         params.set(CoreAdminParams.BACKUP_REPOSITORY, repositoryName.get());
+      }
+      if (commitName.isPresent()) {
+        params.set(CoreAdminParams.COMMIT_NAME, commitName.get());
       }
       return params;
     }
@@ -709,7 +780,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   // RESTORE request
   public static class Restore extends AsyncCollectionSpecificAdminRequest {
     protected final String backupName;
-    protected Optional<String> repositoryName;
+    protected Optional<String> repositoryName = Optional.empty();
     protected String location;
 
     // in common with collection creation:
@@ -800,6 +871,105 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+  }
+
+  //Note : This method is added since solrj module does not use Google
+  // guava library. Also changes committed for SOLR-8765 result in wrong
+  // error message when "collection" parameter is specified as Null.
+  // This is because the setCollectionName method is deprecated.
+  static <T> T checkNotNull(String param, T value) {
+    if (value == null) {
+      throw new NullPointerException("Please specify a value for parameter " + param);
+    }
+    return value;
+  }
+
+  @SuppressWarnings("serial")
+  public static class CreateSnapshot extends AsyncCollectionSpecificAdminRequest {
+    protected final String commitName;
+
+    public CreateSnapshot(String collection, String commitName) {
+      super(CollectionAction.CREATESNAPSHOT, checkNotNull(CoreAdminParams.COLLECTION ,collection));
+      this.commitName = checkNotNull(CoreAdminParams.COMMIT_NAME, commitName);
+    }
+
+    public String getCollectionName() {
+      return collection;
+    }
+
+    public String getCommitName() {
+      return commitName;
+    }
+
+    @Override
+    public AsyncCollectionSpecificAdminRequest setCollectionName (String collection) {
+      this.collection = checkNotNull(CoreAdminParams.COLLECTION ,collection);
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set(CoreAdminParams.COLLECTION, collection);
+      params.set(CoreAdminParams.COMMIT_NAME, commitName);
+      return params;
+    }
+  }
+
+  @SuppressWarnings("serial")
+  public static class DeleteSnapshot extends AsyncCollectionSpecificAdminRequest {
+    protected final String commitName;
+
+    public DeleteSnapshot (String collection, String commitName) {
+      super(CollectionAction.DELETESNAPSHOT, checkNotNull(CoreAdminParams.COLLECTION ,collection));
+      this.commitName = checkNotNull(CoreAdminParams.COMMIT_NAME, commitName);
+    }
+
+    public String getCollectionName() {
+      return collection;
+    }
+
+    public String getCommitName() {
+      return commitName;
+    }
+
+    @Override
+    public AsyncCollectionSpecificAdminRequest setCollectionName (String collection) {
+      this.collection = checkNotNull(CoreAdminParams.COLLECTION ,collection);
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set(CoreAdminParams.COLLECTION, collection);
+      params.set(CoreAdminParams.COMMIT_NAME, commitName);
+      return params;
+    }
+  }
+
+  @SuppressWarnings("serial")
+  public static class ListSnapshots extends AsyncCollectionSpecificAdminRequest {
+    public ListSnapshots (String collection) {
+      super(CollectionAction.LISTSNAPSHOTS, checkNotNull(CoreAdminParams.COLLECTION ,collection));
+    }
+
+    public String getCollectionName() {
+      return collection;
+    }
+
+    @Override
+    public AsyncCollectionSpecificAdminRequest setCollectionName (String collection) {
+      this.collection = checkNotNull(CoreAdminParams.COLLECTION ,collection);
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set(CoreAdminParams.COLLECTION, collection);
+      return params;
+    }
   }
 
   /**

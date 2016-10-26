@@ -198,7 +198,12 @@ public class HttpClientUtil {
    *          configuration (no additional configuration) is created. 
    */
   public static CloseableHttpClient createClient(SolrParams params) {
-    return createClient(params, new PoolingHttpClientConnectionManager(schemaRegistryProvider.getSchemaRegistry()));
+    return createClient(params, createPoolingConnectionManager());
+  }
+
+  /** test usage subject to change @lucene.experimental */ 
+  static PoolingHttpClientConnectionManager createPoolingConnectionManager() {
+    return new PoolingHttpClientConnectionManager(schemaRegistryProvider.getSchemaRegistry());
   }
   
   public static CloseableHttpClient createClient(SolrParams params, PoolingHttpClientConnectionManager cm) {
@@ -396,10 +401,14 @@ public class HttpClientUtil {
   }
 
   /**
-   * 
+   * Create a HttpClientContext object and {@link HttpClientContext#setUserToken(Object)}
+   * to an internal singleton. It allows to reuse underneath {@link HttpClient} 
+   * in connection pools if client authentication is enabled.
    */
   public static HttpClientContext createNewHttpClientRequestContext() {
-    return httpClientRequestContextBuilder.createContext();
+    HttpClientContext context = httpClientRequestContextBuilder.createContext(HttpSolrClient.cacheKey);
+
+    return context;
   }
   
   public static Builder createDefaultRequestConfigBuilder() {

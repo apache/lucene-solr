@@ -77,6 +77,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
+import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -732,7 +734,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
       }
 
-      Map<String, Object> params = req.getParams().getAll(null, NAME, COLLECTION_PROP);
+      Map<String, Object> params = req.getParams().getAll(null, NAME, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
       params.put(CoreAdminParams.BACKUP_LOCATION, location);
       return params;
     }),
@@ -778,7 +780,57 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       copyPropertiesWithPrefix(req.getParams(), params, COLL_PROP_PREFIX);
       return params;
     }),
+    CREATESNAPSHOT_OP(CREATESNAPSHOT, (req, rsp, h) -> {
+      req.getParams().required().check(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
 
+      String collectionName = req.getParams().get(COLLECTION_PROP);
+      String commitName = req.getParams().get(CoreAdminParams.COMMIT_NAME);
+      ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
+      if (!clusterState.hasCollection(collectionName)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
+      }
+
+      SolrZkClient client = h.coreContainer.getZkController().getZkClient();
+      if (SolrSnapshotManager.snapshotExists(client, collectionName, commitName)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            "Snapshot with name '" + commitName + "' already exists for collection '"
+                + collectionName + "', no action taken.");
+      }
+
+      Map<String, Object> params = req.getParams().getAll(null, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
+      return params;
+    }),
+    DELETESNAPSHOT_OP(DELETESNAPSHOT, (req, rsp, h) -> {
+      req.getParams().required().check(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
+
+      String collectionName = req.getParams().get(COLLECTION_PROP);
+      ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
+      if (!clusterState.hasCollection(collectionName)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
+      }
+
+      Map<String, Object> params = req.getParams().getAll(null, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
+      return params;
+    }),
+    LISTSNAPSHOTS_OP(LISTSNAPSHOTS, (req, rsp, h) -> {
+      req.getParams().required().check(COLLECTION_PROP);
+
+      String collectionName = req.getParams().get(COLLECTION_PROP);
+      ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
+      if (!clusterState.hasCollection(collectionName)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
+      }
+
+      NamedList<Object> snapshots = new NamedList<Object>();
+      SolrZkClient client = h.coreContainer.getZkController().getZkClient();
+      Collection<CollectionSnapshotMetaData> m = SolrSnapshotManager.listSnapshots(client, collectionName);
+      for (CollectionSnapshotMetaData meta : m) {
+        snapshots.add(meta.getName(), meta.toNamedList());
+      }
+
+      rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, snapshots);
+      return null;
+    }),
     REPLACENODE_OP(REPLACENODE, (req, rsp, h) -> req.getParams().required().getAll(req.getParams().getAll(null, "parallel"), "source", "target")),
     DELETENODE_OP(DELETENODE, (req, rsp, h) -> req.getParams().required().getAll(null, "node"));
     public final CollectionOp fun;

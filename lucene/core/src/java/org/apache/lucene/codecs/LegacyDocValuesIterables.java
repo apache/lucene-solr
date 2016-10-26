@@ -57,7 +57,11 @@ public class LegacyDocValuesIterables {
 
           @Override
           public BytesRef next() {
-            return values.lookupOrd(nextOrd++);
+            try {
+              return values.lookupOrd(nextOrd++);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
           }
         };
       }
@@ -82,7 +86,11 @@ public class LegacyDocValuesIterables {
 
           @Override
           public BytesRef next() {
-            return values.lookupOrd(nextOrd++);
+            try {
+              return values.lookupOrd(nextOrd++);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
           }
         };
       }
@@ -274,7 +282,6 @@ public class LegacyDocValuesIterables {
 
         return new Iterator<Number>() {
           private int nextDocID;
-          private int nextCount;
 
           @Override
           public boolean hasNext() {
@@ -372,7 +379,8 @@ public class LegacyDocValuesIterables {
    *
    * @deprecated Consume {@link NumericDocValues} instead. */
   @Deprecated
-  public static Iterable<Number> normsIterable(final FieldInfo field, final NormsProducer normsProducer, final int maxDoc) {
+  public static Iterable<Number> normsIterable(final FieldInfo field,
+      final NormsProducer normsProducer, final int maxDoc) {
 
     return new Iterable<Number>() {
 
@@ -406,9 +414,13 @@ public class LegacyDocValuesIterables {
             }
             Number result;
             if (docIDUpto == values.docID()) {
-              result = values.longValue();
+              try {
+                result = values.longValue();
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
+              }
             } else {
-              // Unlike NumericDocValues, norms should return for missing values:
+              // Unlike NumericDocValues, norms used to return 0 for missing values:
               result = 0;
             }
             return result;
@@ -454,7 +466,11 @@ public class LegacyDocValuesIterables {
             }
             BytesRef result;
             if (docIDUpto == values.docID()) {
-              result = values.binaryValue();
+              try {
+                result = values.binaryValue();
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
             } else {
               result = null;
             }
@@ -501,7 +517,11 @@ public class LegacyDocValuesIterables {
             }
             Number result;
             if (docIDUpto == values.docID()) {
-              result = values.longValue();
+              try {
+                result = values.longValue();
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
+              }
             } else {
               result = null;
             }

@@ -1147,6 +1147,43 @@ public class TestJsonFacets extends SolrTestCaseHS {
     );
 
 
+
+    if (!client.local()) {
+      client.testJQ(params(p, "q", "*:*"
+          , "json.facet", "{" +
+              "cat0:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0}" +
+              ",cat1:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:1}" +
+              ",catDef:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:-1}" +  // -1 is default overrequest
+              ",catBig:{type:terms, field:${cat_s}, sort:'count desc', offset:1, limit:2147483647, overrequest:2147483647}" +  // make sure overflows don't mess us up
+              "}"
+          )
+          , "facets=={ count:6" +
+              ", cat0:{ buckets:[ {val:A,count:2} ] }" +  // with no overrequest, we incorrectly conclude that A is the top bucket
+              ", cat1:{ buckets:[ {val:B,count:3} ] }" +
+              ", catDef:{ buckets:[ {val:B,count:3} ] }" +
+              ", catBig:{ buckets:[ {val:A,count:2} ] }" +
+              "}"
+      );
+    } else {
+      // In non-distrib mode, should still be able to specify overrequest, but it shouldn't matter.
+      client.testJQ(params(p, "q", "*:*"
+          , "json.facet", "{" +
+              "cat0:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0}" +
+              ",cat1:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:1}" +
+              ",catDef:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:-1}" +  // -1 is default overrequest
+              ",catBig:{type:terms, field:${cat_s}, sort:'count desc', offset:1, limit:2147483647, overrequest:2147483647}" +  // make sure overflows don't mess us up
+              "}"
+          )
+          , "facets=={ count:6" +
+              ", cat0:{ buckets:[ {val:B,count:3} ] }" +  // only change from distrib-mode test above
+              ", cat1:{ buckets:[ {val:B,count:3} ] }" +
+              ", catDef:{ buckets:[ {val:B,count:3} ] }" +
+              ", catBig:{ buckets:[ {val:A,count:2} ] }" +
+              "}"
+      );
+    }
+
+
   }
 
 

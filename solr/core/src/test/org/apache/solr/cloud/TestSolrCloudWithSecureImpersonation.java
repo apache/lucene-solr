@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
@@ -48,9 +47,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.security.HttpParamDelegationTokenPlugin.USER_PARAM;
-import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_HOST_PARAM;
 import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_ADDRESS_PARAM;
+import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_HOST_PARAM;
+import static org.apache.solr.security.HttpParamDelegationTokenPlugin.USER_PARAM;
 
 public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   private static final int NUM_SERVERS = 2;
@@ -343,8 +342,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   @Test
   public void testForwarding() throws Exception {
     String collectionName = "forwardingCollection";
-    File configDir = getFile("solr").toPath().resolve("collection1/conf").toFile();
-    miniCluster.uploadConfigDir(configDir, "conf1");
+    miniCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");
     create1ShardCollection(collectionName, "conf1", miniCluster);
 
     // try a command to each node, one of them must be forwarded

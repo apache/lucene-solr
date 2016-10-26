@@ -105,9 +105,10 @@ public class RandomCodec extends AssertingCodec {
 
         return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap) {
           @Override
-          public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
+          public void writeField(FieldInfo fieldInfo, PointsReader reader) throws IOException {
 
-            boolean singleValuePerDoc = values.size(fieldInfo.name) == values.getDocCount(fieldInfo.name);
+            PointValues values = reader.getValues(fieldInfo.name);
+            boolean singleValuePerDoc = values.size() == values.getDocCount();
 
             try (BKDWriter writer = new RandomlySplittingBKDWriter(writeState.segmentInfo.maxDoc(),
                                                                    writeState.directory,
@@ -116,10 +117,10 @@ public class RandomCodec extends AssertingCodec {
                                                                    fieldInfo.getPointNumBytes(),
                                                                    maxPointsInLeafNode,
                                                                    maxMBSortInHeap,
-                                                                   values.size(fieldInfo.name),
+                                                                   values.size(),
                                                                    singleValuePerDoc,
                                                                    bkdSplitRandomSeed ^ fieldInfo.name.hashCode())) {
-                values.intersect(fieldInfo.name, new IntersectVisitor() {
+                values.intersect(new IntersectVisitor() {
                     @Override
                     public void visit(int docID) {
                       throw new IllegalStateException();

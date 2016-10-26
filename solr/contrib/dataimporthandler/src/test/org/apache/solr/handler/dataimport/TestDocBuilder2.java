@@ -117,6 +117,20 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
 
   @Test
   @SuppressWarnings("unchecked")
+  public void testDynamicFieldNames() throws Exception {
+    List rows = new ArrayList();
+    rows.add(createMap("mypk", "101", "text", "ApacheSolr"));
+    MockDataSource.setIterator("select * from x", rows.iterator());
+
+    LocalSolrQueryRequest request = lrf.makeRequest("command", "full-import",
+        "debug", "on", "clean", "true", "commit", "true",
+        "dataConfig", dataConfigWithDynamicFieldNames);
+    h.query("/dataimport", request);
+    assertQ(req("id:101"), "//*[@numFound='1']", "//*[@name='101_s']");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
   public void testRequestParamsAsFieldName() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("mypk", "101", "text", "ApacheSolr"));
@@ -397,6 +411,15 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
           "        </entity>\n" +
           "    </document>\n" +
           "</dataConfig>";
+
+  private final String dataConfigWithDynamicFieldNames = "<dataConfig><dataSource  type=\"MockDataSource\"/>\n" +
+      "    <document>\n" +
+      "        <entity name=\"books\" query=\"select * from x\">\n" +
+      "            <field column=\"mypk\" name=\"id\" />\n" +
+      "            <field column=\"text\" name=\"${books.mypk}_s\" />\n" +
+      "        </entity>\n" +
+      "    </document>\n" +
+      "</dataConfig>";
 
   private final String dataConfigFileList = "<dataConfig>\n" +
           "\t<document>\n" +

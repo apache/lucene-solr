@@ -192,7 +192,7 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
 
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, "harry", "HarryIsUberCool");
-      verifySecurityStatus(cl, baseUrl + PKIAuthenticationPlugin.PATH + "?wt=json", "key", NOT_NULL_PREDICATE, 20);
+      verifySecurityStatus(cl, baseUrl + "/admin/info/key?wt=json", "key", NOT_NULL_PREDICATE, 20);
 
       String[] toolArgs = new String[]{
           "status", "-solr", baseUrl};
@@ -292,11 +292,11 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
     return l.isEmpty() ? null : l.get(0);
   }
 
-  static final Predicate NOT_NULL_PREDICATE = o -> o != null;
+  protected static final Predicate NOT_NULL_PREDICATE = o -> o != null;
 
   //the password is 'SolrRocks'
   //this could be generated everytime. But , then we will not know if there is any regression
-  private static final String STD_CONF = "{\n" +
+  protected static final String STD_CONF = "{\n" +
       "  'authentication':{\n" +
       "    'class':'solr.BasicAuthPlugin',\n" +
       "    'credentials':{'solr':'orwp2Ghgj39lmnrZOTm7Qtre1VqHFDfwAEzr0ApbN3Y= Ju5osoAqOX8iafhWpPP01E5P+sg8tK8tHON7rCYZRRw='}},\n" +

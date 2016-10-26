@@ -16,9 +16,8 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
-
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -33,36 +32,29 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.commons.io.FilenameUtils;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-
-import org.apache.solr.cloud.SolrCloudTestCase;
-
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.response.transform.DocTransformer; // jdoc
-import org.apache.solr.response.transform.RawValueTransformerFactory; // jdoc
+import org.apache.solr.response.transform.DocTransformer;
+import org.apache.solr.response.transform.RawValueTransformerFactory;
 import org.apache.solr.response.transform.TransformerFactory;
-
-
 import org.apache.solr.util.RandomizeSSL;
-import org.apache.lucene.util.TestUtil;
-
-import org.apache.commons.io.FilenameUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** @see TestCloudPseudoReturnFields */
 @RandomizeSSL(clientAuth=0.0,reason="client auth uses too much RAM")
@@ -125,7 +117,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       new NotIncludedValidator("score","score_alias:score")));
   
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
 
     // 50% runs use single node/shard a FL_VALIDATORS with all validators known to work on single node
     // 50% runs use multi node/shard with FL_VALIDATORS only containing stuff that works in cloud
@@ -142,16 +134,14 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
-    
-    Map<String, String> collectionProperties = new HashMap<>();
-    collectionProperties.put("config", "solrconfig-tlog.xml");
-    collectionProperties.put("schema", "schema-psuedo-fields.xml");
 
-    assertNotNull(cluster.createCollection(COLLECTION_NAME, numShards, repFactor,
-                                           configName, null, null, collectionProperties));
-    
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
+        .withProperty("config", "solrconfig-tlog.xml")
+        .withProperty("schema", "schema-psuedo-fields.xml")
+        .process(CLOUD_CLIENT);
 
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 

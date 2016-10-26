@@ -136,7 +136,7 @@ public class TermsComponent extends SearchComponent {
     boolean raw = params.getBool(TermsParams.TERMS_RAW, false);
 
 
-    final LeafReader indexReader = rb.req.getSearcher().getLeafReader();
+    final LeafReader indexReader = rb.req.getSearcher().getSlowAtomicReader();
     Fields lfields = indexReader.fields();
 
     for (String field : fields) {

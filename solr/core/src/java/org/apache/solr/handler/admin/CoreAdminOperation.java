@@ -37,6 +37,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
@@ -82,7 +83,9 @@ enum CoreAdminOperation implements CoreAdminOp {
       instancePath = coreContainer.getCoreRootDirectory().resolve(instanceDir).normalize();
     }
 
-    coreContainer.create(coreName, instancePath, coreParams);
+    boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
+
+    coreContainer.create(coreName, instancePath, coreParams, newCollection);
 
     it.rsp.add("core", coreName);
   }),
@@ -268,12 +271,12 @@ enum CoreAdminOperation implements CoreAdminOp {
         Optional<SnapshotMetaData> metadata = mgr.getSnapshotMetaData(name);
         if ( metadata.isPresent() ) {
           NamedList<String> props = new NamedList<>();
-          props.add("generation", String.valueOf(metadata.get().getGenerationNumber()));
-          props.add("indexDirPath", metadata.get().getIndexDirPath());
+          props.add(SolrSnapshotManager.GENERATION_NUM, String.valueOf(metadata.get().getGenerationNumber()));
+          props.add(SolrSnapshotManager.INDEX_DIR_PATH, metadata.get().getIndexDirPath());
           result.add(name, props);
         }
       }
-      it.rsp.add("snapshots", result);
+      it.rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, result);
     }
   });
 

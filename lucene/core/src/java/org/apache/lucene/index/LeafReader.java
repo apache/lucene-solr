@@ -295,8 +295,9 @@ public abstract class LeafReader extends IndexReader {
   public abstract Bits getLiveDocs();
 
   /** Returns the {@link PointValues} used for numeric or
-   *  spatial searches, or null if there are no point fields. */
-  public abstract PointValues getPointValues();
+   *  spatial searches for the given field, or null if there
+   *  are no point fields. */
+  public abstract PointValues getPointValues(String field) throws IOException;
 
   /**
    * Checks consistency of this reader.

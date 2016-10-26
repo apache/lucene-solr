@@ -599,11 +599,7 @@ public abstract class TFIDFSimilarity extends Similarity {
         return raw;
       } else {
         long normValue;
-        int normsDocID = norms.docID();
-        if (normsDocID < doc) {
-          normsDocID = norms.advance(doc);
-        }
-        if (normsDocID == doc) {
+        if (norms.advanceExact(doc)) {
           normValue = norms.longValue();
         } else {
           normValue = 0;
@@ -649,7 +645,7 @@ public abstract class TFIDFSimilarity extends Similarity {
   private Explanation explainField(int doc, Explanation freq, IDFStats stats, NumericDocValues norms) throws IOException {
     Explanation tfExplanation = Explanation.match(tf(freq.getValue()), "tf(freq="+freq.getValue()+"), with freq of:", freq);
     float norm;
-    if (norms != null && norms.advance(doc) == doc) {
+    if (norms != null && norms.advanceExact(doc)) {
       norm = decodeNormValue(norms.longValue());
     } else {
       norm = 1f;

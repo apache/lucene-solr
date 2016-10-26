@@ -217,13 +217,14 @@ public class WeightedSpanTermExtractor {
     } else if (isQueryUnsupported(query.getClass())) {
       // nothing
     } else {
+      if (query instanceof MultiTermQuery &&
+          (!expandMultiTermQuery || !fieldNameComparator(((MultiTermQuery)query).getField()))) {
+        return;
+      }
       Query origQuery = query;
       final IndexReader reader = getLeafContext().reader();
       Query rewritten;
       if (query instanceof MultiTermQuery) {
-        if (!expandMultiTermQuery) {
-          return;
-        }
         rewritten = MultiTermQuery.SCORING_BOOLEAN_REWRITE.rewrite(reader, (MultiTermQuery) query);
       } else {
         rewritten = origQuery.rewrite(reader);
@@ -508,11 +509,7 @@ public class WeightedSpanTermExtractor {
    */
   public Map<String,WeightedSpanTerm> getWeightedSpanTerms(Query query, float boost, TokenStream tokenStream,
       String fieldName) throws IOException {
-    if (fieldName != null) {
-      this.fieldName = fieldName;
-    } else {
-      this.fieldName = null;
-    }
+    this.fieldName = fieldName;
 
     Map<String,WeightedSpanTerm> terms = new PositionCheckingMap<>();
     this.tokenStream = tokenStream;

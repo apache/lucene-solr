@@ -28,6 +28,7 @@
     </orderEntry>
     <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
     <orderEntry type="module" scope="TEST" module-name="solr-test-framework" />
+    <orderEntry type="module" module-name="lucene-core" />
     <orderEntry type="module" module-name="solr-core" />
     <orderEntry type="module" module-name="solrj" />
   </component>

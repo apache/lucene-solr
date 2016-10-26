@@ -230,7 +230,7 @@ public final class SegmentReader extends CodecReader {
   }
   
   @Override
-  public PointValues getPointValues() {
+  public PointsReader getPointsReader() {
     ensureOpen();
     return core.pointsReader;
   }
@@ -251,12 +251,6 @@ public final class SegmentReader extends CodecReader {
   public FieldsProducer getPostingsReader() {
     ensureOpen();
     return core.fields;
-  }
-
-  @Override
-  public PointsReader getPointsReader() {
-    ensureOpen();
-    return core.pointsReader;
   }
 
   @Override

@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.ZkTestServer.LimitViolationAction;
 import org.apache.solr.common.SolrInputDocument;
@@ -37,10 +36,8 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.Slice.State;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.core.Diagnostics;
 import org.apache.solr.handler.ReplicationHandler;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -197,35 +194,6 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
   }
 
   
-  static void waitForNewLeader(CloudSolrClient cloudClient, String shardName, Replica oldLeader, int maxWaitInSecs)
-      throws Exception {
-    log.info("Will wait for a node to become leader for {} secs", maxWaitInSecs);
-    boolean waitForLeader = true;
-    int i = 0;
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
-    
-    while(waitForLeader) {
-      ClusterState clusterState = zkStateReader.getClusterState();
-      DocCollection coll = clusterState.getCollection("collection1");
-      Slice slice = coll.getSlice(shardName);
-      if(slice.getLeader() != oldLeader && slice.getState() == State.ACTIVE) {
-        log.info("New leader got elected in {} secs", i);
-        break;
-      }
-      
-      if(i == maxWaitInSecs) {
-        Diagnostics.logThreadDumps("Could not find new leader in specified timeout");
-        zkStateReader.getZkClient().printLayoutToStdOut();
-        fail("Could not find new leader even after waiting for " + maxWaitInSecs + "secs");
-      }
-      
-      i++;
-      Thread.sleep(1000);
-    }
-  }
-    
-
 
   private void waitTillNodesActive() throws Exception {
     for (int i = 0; i < 60; i++) {

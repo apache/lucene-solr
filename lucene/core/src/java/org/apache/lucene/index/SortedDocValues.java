@@ -17,6 +17,8 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
+
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -38,6 +40,8 @@ public abstract class SortedDocValues extends BinaryDocValues {
 
   /**
    * Returns the ordinal for the current docID.
+   * It is illegal to call this method after {@link #advanceExact(int)}
+   * returned {@code false}.
    * @return ordinal for the document: this is dense, starts at 0, then
    *         increments by 1 for the next value in sorted order.
    */
@@ -50,12 +54,12 @@ public abstract class SortedDocValues extends BinaryDocValues {
    * @param ord ordinal to lookup (must be &gt;= 0 and &lt; {@link #getValueCount()})
    * @see #ordValue() 
    */
-  public abstract BytesRef lookupOrd(int ord);
+  public abstract BytesRef lookupOrd(int ord) throws IOException;
 
   private final BytesRef empty = new BytesRef();
 
   @Override
-  public BytesRef binaryValue() {
+  public BytesRef binaryValue() throws IOException {
     int ord = ordValue();
     if (ord == -1) {
       return empty;
@@ -77,7 +81,7 @@ public abstract class SortedDocValues extends BinaryDocValues {
    *
    *  @param key Key to look up
    **/
-  public int lookupTerm(BytesRef key) {
+  public int lookupTerm(BytesRef key) throws IOException {
     int low = 0;
     int high = getValueCount()-1;
 
@@ -102,7 +106,8 @@ public abstract class SortedDocValues extends BinaryDocValues {
    * Returns a {@link TermsEnum} over the values.
    * The enum supports {@link TermsEnum#ord()} and {@link TermsEnum#seekExact(long)}.
    */
-  public TermsEnum termsEnum() {
+  public TermsEnum termsEnum() throws IOException {
     return new SortedDocValuesTermsEnum(this);
   }
+
 }

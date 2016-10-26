@@ -222,7 +222,11 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
               } catch (IOException ioe) {
                 throw new RuntimeException(ioe);
               }
-              docIDToIDArray[i] = (int) docIDToID.longValue();
+              try {
+                docIDToIDArray[i] = (int) docIDToID.longValue();
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
+              }
             }
             while(System.nanoTime() < END_TIME) {
               for(int iter=0;iter<100;iter++) {

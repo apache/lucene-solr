@@ -19,15 +19,15 @@ package org.apache.solr.common.cloud.rule;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.slf4j.Logger;
@@ -47,11 +47,8 @@ public class ImplicitSnitch extends Snitch {
   public static final String DISK = "freedisk";
   public static final String ROLE = "role";
   public static final String SYSPROP = "sysprop.";
-  public static final List<String> IP_SNITCHES = ImmutableList.of("ip_1", "ip_2", "ip_3", "ip_4");
-
-  public static final Set<String> tags = ImmutableSet.<String>builder().add(NODE, PORT, HOST, CORES, DISK, ROLE).addAll(IP_SNITCHES).build();
-
-
+  public static final List<String> IP_SNITCHES = Collections.unmodifiableList(Arrays.asList("ip_1", "ip_2", "ip_3", "ip_4"));
+  public static final Set<String> tags = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(NODE, PORT, HOST, CORES, DISK, ROLE, "ip_1", "ip_2", "ip_3", "ip_4")));
 
   @Override
   public void getTags(String solrNode, Set<String> requestedTags, SnitchContext ctx) {

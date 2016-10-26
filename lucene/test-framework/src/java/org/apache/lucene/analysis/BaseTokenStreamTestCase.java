@@ -34,6 +34,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Attribute;
@@ -628,7 +629,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
           if (iw != null) {
             if (random.nextInt(7) == 0) {
               // pile up a multivalued field
-              FieldType ft = field.fieldType();
+              IndexableFieldType ft = field.fieldType();
               currentField = new Field("dummy", bogus, ft);
               doc.add(currentField);
             } else {

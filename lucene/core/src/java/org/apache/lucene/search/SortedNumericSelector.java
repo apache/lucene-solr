@@ -83,14 +83,14 @@ public class SortedNumericSelector {
       case FLOAT:
         return new FilterNumericDocValues(view) {
           @Override
-          public long longValue() {
+          public long longValue() throws IOException {
             return NumericUtils.sortableFloatBits((int) in.longValue());
           }
         };
       case DOUBLE:
         return new FilterNumericDocValues(view) {
           @Override
-          public long longValue() {
+          public long longValue() throws IOException {
             return NumericUtils.sortableDoubleBits(in.longValue());
           }
         };
@@ -129,6 +129,15 @@ public class SortedNumericSelector {
         value = in.nextValue();
       }
       return docID;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (in.advanceExact(target)) {
+        value = in.nextValue();
+        return true;
+      }
+      return false;
     }
 
     @Override
@@ -179,6 +188,15 @@ public class SortedNumericSelector {
         setValue();
       }
       return docID;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (in.advanceExact(target)) {
+        setValue();
+        return true;
+      }
+      return false;
     }
 
     @Override

@@ -118,6 +118,15 @@ public class SortedSetSelector {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (in.advanceExact(target)) {
+        setOrd();
+        return true;
+      }
+      return false;
+    }
+
+    @Override
     public long cost() {
       return in.cost();
     }
@@ -128,7 +137,7 @@ public class SortedSetSelector {
     }
 
     @Override
-    public BytesRef lookupOrd(int ord) {
+    public BytesRef lookupOrd(int ord) throws IOException {
       return in.lookupOrd(ord);
     }
 
@@ -138,7 +147,7 @@ public class SortedSetSelector {
     }
 
     @Override
-    public int lookupTerm(BytesRef key) {
+    public int lookupTerm(BytesRef key) throws IOException {
       return (int) in.lookupTerm(key);
     }
 
@@ -180,6 +189,15 @@ public class SortedSetSelector {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (in.advanceExact(target)) {
+        setOrd();
+        return true;
+      }
+      return false;
+    }
+
+    @Override
     public long cost() {
       return in.cost();
     }
@@ -190,7 +208,7 @@ public class SortedSetSelector {
     }
 
     @Override
-    public BytesRef lookupOrd(int ord) {
+    public BytesRef lookupOrd(int ord) throws IOException {
       return in.lookupOrd(ord);
     }
 
@@ -200,7 +218,7 @@ public class SortedSetSelector {
     }
 
     @Override
-    public int lookupTerm(BytesRef key) {
+    public int lookupTerm(BytesRef key) throws IOException {
       return (int) in.lookupTerm(key);
     }
 
@@ -249,6 +267,15 @@ public class SortedSetSelector {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (in.advanceExact(target)) {
+        setOrd();
+        return true;
+      }
+      return false;
+    }
+
+    @Override
     public long cost() {
       return in.cost();
     }
@@ -259,7 +286,7 @@ public class SortedSetSelector {
     }
 
     @Override
-    public BytesRef lookupOrd(int ord) {
+    public BytesRef lookupOrd(int ord) throws IOException {
       return in.lookupOrd(ord);
     }
 
@@ -269,7 +296,7 @@ public class SortedSetSelector {
     }
 
     @Override
-    public int lookupTerm(BytesRef key) {
+    public int lookupTerm(BytesRef key) throws IOException {
       return (int) in.lookupTerm(key);
     }
 
@@ -330,6 +357,15 @@ public class SortedSetSelector {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (in.advanceExact(target)) {
+        setOrd();
+        return true;
+      }
+      return false;
+    }
+
+    @Override
     public long cost() {
       return in.cost();
     }
@@ -340,7 +376,7 @@ public class SortedSetSelector {
     }
 
     @Override
-    public BytesRef lookupOrd(int ord) {
+    public BytesRef lookupOrd(int ord) throws IOException {
       return in.lookupOrd(ord);
     }
 
@@ -350,7 +386,7 @@ public class SortedSetSelector {
     }
 
     @Override
-    public int lookupTerm(BytesRef key) {
+    public int lookupTerm(BytesRef key) throws IOException {
       return (int) in.lookupTerm(key);
     }
 

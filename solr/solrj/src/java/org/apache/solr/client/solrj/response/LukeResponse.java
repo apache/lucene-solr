@@ -16,11 +16,16 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.util.NamedList;
-
-import java.io.Serializable;
-import java.util.*;
 
 
 /**
@@ -176,6 +181,10 @@ public class LukeResponse extends SolrResponseBase {
 
     public String getSchema() {
       return schema;
+    }
+
+    public EnumSet<FieldFlag> getSchemaFlags() {
+      return flags;
     }
 
     public NamedList<Integer> getTopTerms() {

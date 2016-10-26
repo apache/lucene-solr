@@ -623,4 +623,11 @@ public class TestSimpleQueryParser extends LuceneTestCase {
       parseKeyword(sb.toString(), TestUtil.nextInt(random(), 0, 1024)); // no exception
     }
   }
+
+  public void testStarBecomesMatchAll() throws Exception {
+    Query q = parse("*");
+    assertEquals(q, new MatchAllDocsQuery());
+    q = parse(" *   ");
+    assertEquals(q, new MatchAllDocsQuery());
+  }
 }

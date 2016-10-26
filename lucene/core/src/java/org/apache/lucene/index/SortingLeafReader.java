@@ -186,6 +186,12 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      return dvs.docsWithField.get(target);
+    }
+
+    @Override
     public BytesRef binaryValue() {
       return dvs.values[docID];
     }
@@ -255,6 +261,12 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      return dvs.docsWithField.get(target);
+    }
+
+    @Override
     public long longValue() {
       return dvs.values[docID];
     }
@@ -297,9 +309,8 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
-      in.intersect(fieldName,
-                   new IntersectVisitor() {
+    public void intersect(IntersectVisitor visitor) throws IOException {
+      in.intersect(new IntersectVisitor() {
                      @Override
                      public void visit(int docID) throws IOException {
                        visitor.visit(docMap.oldToNew(docID));
@@ -318,33 +329,33 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public byte[] getMinPackedValue(String fieldName) throws IOException {
-      return in.getMinPackedValue(fieldName);
+    public byte[] getMinPackedValue() throws IOException {
+      return in.getMinPackedValue();
     }
 
     @Override
-    public byte[] getMaxPackedValue(String fieldName) throws IOException {
-      return in.getMaxPackedValue(fieldName);
+    public byte[] getMaxPackedValue() throws IOException {
+      return in.getMaxPackedValue();
     }
 
     @Override
-    public int getNumDimensions(String fieldName) throws IOException {
-      return in.getNumDimensions(fieldName);
+    public int getNumDimensions() throws IOException {
+      return in.getNumDimensions();
     }
 
     @Override
-    public int getBytesPerDimension(String fieldName) throws IOException {
-      return in.getBytesPerDimension(fieldName);
+    public int getBytesPerDimension() throws IOException {
+      return in.getBytesPerDimension();
     }
 
     @Override
-    public long size(String fieldName) {
-      return in.size(fieldName);
+    public long size() {
+      return in.size();
     }
 
     @Override
-    public int getDocCount(String fieldName) {
-      return in.getDocCount(fieldName);
+    public int getDocCount() {
+      return in.getDocCount();
     }
   }
 
@@ -396,6 +407,12 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      return ords[target] != -1;
+    }
+
+    @Override
     public int ordValue() {
       return ords[docID];
     }
@@ -406,7 +423,7 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public BytesRef lookupOrd(int ord) {
+    public BytesRef lookupOrd(int ord) throws IOException {
       return in.lookupOrd(ord);
     }
 
@@ -469,6 +486,13 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      ordUpto = 0;
+      return ords[docID] != null;
+    }
+
+    @Override
     public long nextOrd() {
       if (ordUpto == ords[docID].length) {
         return NO_MORE_ORDS;
@@ -483,7 +507,7 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public BytesRef lookupOrd(long ord) {
+    public BytesRef lookupOrd(long ord) throws IOException {
       return in.lookupOrd(ord);
     }
 
@@ -537,6 +561,13 @@ class SortingLeafReader extends FilterLeafReader {
         docID = target-1;
         return nextDoc();
       }
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      upto = 0;
+      return values[docID] != null;
     }
 
     @Override
@@ -1049,8 +1080,8 @@ class SortingLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
-    final PointValues inPointValues = in.getPointValues();
+  public PointValues getPointValues(String fieldName) throws IOException {
+    final PointValues inPointValues = in.getPointValues(fieldName);
     if (inPointValues == null) {
       return null;
     } else {

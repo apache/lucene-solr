@@ -665,8 +665,17 @@ final class DefaultIndexingChain extends DocConsumer {
     }
 
     public void finish() throws IOException {
-      if (fieldInfo.omitsNorms() == false && invertState.length != 0) {
-        norms.addValue(docState.docID, similarity.computeNorm(invertState));
+      if (fieldInfo.omitsNorms() == false) {
+        long normValue;
+        if (invertState.length == 0) {
+          // the field exists in this document, but it did not have
+          // any indexed tokens, so we assign a default value of zero
+          // to the norm
+          normValue = 0;
+        } else {
+          normValue = similarity.computeNorm(invertState);
+        }
+        norms.addValue(docState.docID, normValue);
       }
 
       termsHashPerField.finish();
@@ -723,8 +732,10 @@ final class DefaultIndexingChain extends DocConsumer {
           if (invertState.position < invertState.lastPosition) {
             if (posIncr == 0) {
               throw new IllegalArgumentException("first position increment must be > 0 (got 0) for field '" + field.name() + "'");
+            } else if (posIncr < 0) {
+              throw new IllegalArgumentException("position increment must be >= 0 (got " + posIncr + ") for field '" + field.name() + "'");
             } else {
-              throw new IllegalArgumentException("position increments (and gaps) must be >= 0 (got " + posIncr + ") for field '" + field.name() + "'");
+              throw new IllegalArgumentException("position overflowed Integer.MAX_VALUE (got posIncr=" + posIncr + " lastPosition=" + invertState.lastPosition + " position=" + invertState.position + ") for field '" + field.name() + "'");
             }
           } else if (invertState.position > IndexWriter.MAX_POSITION) {
             throw new IllegalArgumentException("position " + invertState.position + " is too large for field '" + field.name() + "': max allowed position is " + IndexWriter.MAX_POSITION);

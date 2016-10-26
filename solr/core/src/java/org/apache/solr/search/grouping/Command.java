@@ -45,7 +45,7 @@ public interface Command<T> {
    *
    * @return The results of the collectors
    */
-  T result();
+  T result() throws IOException;
 
   /**
    * @return The key of this command to uniquely identify itself

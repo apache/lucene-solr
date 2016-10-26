@@ -228,12 +228,17 @@ public abstract class DocValuesConsumer implements Closeable {
                           }
 
                           @Override
+                          public boolean advanceExact(int target) throws IOException {
+                            throw new UnsupportedOperationException();
+                          }
+
+                          @Override
                           public long cost() {
                             return finalCost;
                           }
 
                           @Override
-                          public long longValue() {
+                          public long longValue() throws IOException {
                             return current.values.longValue();
                           }
                         };
@@ -320,12 +325,17 @@ public abstract class DocValuesConsumer implements Closeable {
                          }
 
                          @Override
+                         public boolean advanceExact(int target) throws IOException {
+                           throw new UnsupportedOperationException();
+                         }
+
+                         @Override
                          public long cost() {
                            return finalCost;
                          }
 
                          @Override
-                         public BytesRef binaryValue() {
+                         public BytesRef binaryValue() throws IOException {
                            return current.values.binaryValue();
                          }
                        };
@@ -361,7 +371,7 @@ public abstract class DocValuesConsumer implements Closeable {
     addSortedNumericField(mergeFieldInfo,
                           new EmptyDocValuesProducer() {
                             @Override
-                            public SortedNumericDocValues getSortedNumeric(FieldInfo fieldInfo) {
+                            public SortedNumericDocValues getSortedNumeric(FieldInfo fieldInfo) throws IOException {
                               if (fieldInfo != mergeFieldInfo) {
                                 throw new IllegalArgumentException("wrong FieldInfo");
                               }
@@ -375,11 +385,7 @@ public abstract class DocValuesConsumer implements Closeable {
                                 if (docValuesProducer != null) {
                                   FieldInfo readerFieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
                                   if (readerFieldInfo != null && readerFieldInfo.getDocValuesType() == DocValuesType.SORTED_NUMERIC) {
-                                    try {
-                                      values = docValuesProducer.getSortedNumeric(readerFieldInfo);
-                                    } catch (IOException ioe) {
-                                      throw new RuntimeException(ioe);
-                                    }
+                                    values = docValuesProducer.getSortedNumeric(readerFieldInfo);
                                   }
                                 }
                                 if (values == null) {
@@ -391,12 +397,7 @@ public abstract class DocValuesConsumer implements Closeable {
 
                               final long finalCost = cost;
 
-                              final DocIDMerger<SortedNumericDocValuesSub> docIDMerger;
-                              try {
-                                docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
-                              } catch (IOException ioe) {
-                                throw new RuntimeException(ioe);
-                              }
+                              final DocIDMerger<SortedNumericDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
 
                               return new SortedNumericDocValues() {
 
@@ -422,6 +423,11 @@ public abstract class DocValuesConsumer implements Closeable {
 
                                 @Override
                                 public int advance(int target) throws IOException {
+                                  throw new UnsupportedOperationException();
+                                }
+
+                                @Override
+                                public boolean advanceExact(int target) throws IOException {
                                   throw new UnsupportedOperationException();
                                 }
 
@@ -495,7 +501,6 @@ public abstract class DocValuesConsumer implements Closeable {
     for (int sub=0;sub<numReaders;sub++) {
       SortedDocValues dv = dvs[sub];
       Bits liveDocs = mergeState.liveDocs[sub];
-      int maxDoc = mergeState.maxDocs[sub];
       if (liveDocs == null) {
         liveTerms[sub] = dv.termsEnum();
         weights[sub] = dv.getValueCount();
@@ -522,7 +527,7 @@ public abstract class DocValuesConsumer implements Closeable {
     addSortedField(fieldInfo,
                    new EmptyDocValuesProducer() {
                      @Override
-                     public SortedDocValues getSorted(FieldInfo fieldInfoIn) {
+                     public SortedDocValues getSorted(FieldInfo fieldInfoIn) throws IOException {
                        if (fieldInfoIn != fieldInfo) {
                          throw new IllegalArgumentException("wrong FieldInfo");
                        }
@@ -537,11 +542,7 @@ public abstract class DocValuesConsumer implements Closeable {
                          if (docValuesProducer != null) {
                            FieldInfo readerFieldInfo = mergeState.fieldInfos[i].fieldInfo(fieldInfo.name);
                            if (readerFieldInfo != null && readerFieldInfo.getDocValuesType() == DocValuesType.SORTED) {
-                             try {
-                               values = docValuesProducer.getSorted(readerFieldInfo);
-                             } catch (IOException ioe) {
-                               throw new RuntimeException(ioe);
-                             }
+                             values = docValuesProducer.getSorted(readerFieldInfo);
                            }
                          }
                          if (values == null) {
@@ -554,12 +555,7 @@ public abstract class DocValuesConsumer implements Closeable {
 
                        final long finalCost = cost;
 
-                       final DocIDMerger<SortedDocValuesSub> docIDMerger;
-                       try {
-                         docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
-                       } catch (IOException ioe) {
-                         throw new RuntimeException(ioe);
-                       }
+                       final DocIDMerger<SortedDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
                        
                        return new SortedDocValues() {
                          private int docID = -1;
@@ -574,7 +570,7 @@ public abstract class DocValuesConsumer implements Closeable {
                          public int nextDoc() throws IOException {
                            SortedDocValuesSub sub = docIDMerger.next();
                            if (sub == null) {
-                             return NO_MORE_DOCS;
+                             return docID = NO_MORE_DOCS;
                            }
                            int subOrd = sub.values.ordValue();
                            assert subOrd != -1;
@@ -594,6 +590,11 @@ public abstract class DocValuesConsumer implements Closeable {
                          }
 
                          @Override
+                         public boolean advanceExact(int target) throws IOException {
+                           throw new UnsupportedOperationException();
+                         }
+
+                         @Override
                          public long cost() {
                            return finalCost;
                          }
@@ -604,7 +605,7 @@ public abstract class DocValuesConsumer implements Closeable {
                          }
                          
                          @Override
-                         public BytesRef lookupOrd(int ord) {
+                         public BytesRef lookupOrd(int ord) throws IOException {
                            int segmentNumber = map.getFirstSegmentNumber(ord);
                            int segmentOrd = (int) map.getFirstSegmentOrd(ord);
                            return dvs[segmentNumber].lookupOrd(segmentOrd);
@@ -668,7 +669,6 @@ public abstract class DocValuesConsumer implements Closeable {
     for (int sub = 0; sub < liveTerms.length; sub++) {
       SortedSetDocValues dv = toMerge.get(sub);
       Bits liveDocs = mergeState.liveDocs[sub];
-      int maxDoc = mergeState.maxDocs[sub];
       if (liveDocs == null) {
         liveTerms[sub] = dv.termsEnum();
         weights[sub] = dv.getValueCount();
@@ -695,7 +695,7 @@ public abstract class DocValuesConsumer implements Closeable {
     addSortedSetField(mergeFieldInfo,
                       new EmptyDocValuesProducer() {
                         @Override
-                        public SortedSetDocValues getSortedSet(FieldInfo fieldInfo) {
+                        public SortedSetDocValues getSortedSet(FieldInfo fieldInfo) throws IOException {
                           if (fieldInfo != mergeFieldInfo) {
                             throw new IllegalArgumentException("wrong FieldInfo");
                           }
@@ -711,11 +711,7 @@ public abstract class DocValuesConsumer implements Closeable {
                             if (docValuesProducer != null) {
                               FieldInfo readerFieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
                               if (readerFieldInfo != null && readerFieldInfo.getDocValuesType() == DocValuesType.SORTED_SET) {
-                                try {
-                                  values = docValuesProducer.getSortedSet(readerFieldInfo);
-                                } catch (IOException ioe) {
-                                  throw new RuntimeException(ioe);
-                                }
+                                values = docValuesProducer.getSortedSet(readerFieldInfo);
                               }
                             }
                             if (values == null) {
@@ -725,12 +721,7 @@ public abstract class DocValuesConsumer implements Closeable {
                             subs.add(new SortedSetDocValuesSub(mergeState.docMaps[i], values, map.getGlobalOrds(i)));
                           }
             
-                          final DocIDMerger<SortedSetDocValuesSub> docIDMerger;
-                          try {
-                            docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
-                          } catch (IOException ioe) {
-                            throw new RuntimeException(ioe);
-                          }
+                          final DocIDMerger<SortedSetDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
                           
                           final long finalCost = cost;
 
@@ -761,6 +752,11 @@ public abstract class DocValuesConsumer implements Closeable {
                             }
 
                             @Override
+                            public boolean advanceExact(int target) throws IOException {
+                              throw new UnsupportedOperationException();
+                            }
+
+                            @Override
                             public long nextOrd() throws IOException {
                               long subOrd = currentSub.values.nextOrd();
                               if (subOrd == NO_MORE_ORDS) {
@@ -775,7 +771,7 @@ public abstract class DocValuesConsumer implements Closeable {
                             }
 
                             @Override
-                            public BytesRef lookupOrd(long ord) {
+                            public BytesRef lookupOrd(long ord) throws IOException {
                               int segmentNumber = map.getFirstSegmentNumber(ord);
                               long segmentOrd = map.getFirstSegmentOrd(ord);
                               return toMerge.get(segmentNumber).lookupOrd(segmentOrd);

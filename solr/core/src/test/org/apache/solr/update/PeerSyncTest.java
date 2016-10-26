@@ -122,7 +122,8 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     del(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_",Long.toString(-++v)), "1000");
 
     assertSync(client1, numVersions, true, shardsArr[0]);
-    client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
+    client0.commit(); client1.commit(); 
+    queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
 
     // test that delete by query is returned even if not requested, and that it doesn't delete newer stuff than it should
     v=2000;
@@ -144,7 +145,6 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     assertSync(client1, numVersions, true, shardsArr[0]);
     client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
-
 
     //
     // Test that handling reorders work when applying docs retrieved from peer

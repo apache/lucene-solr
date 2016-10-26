@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -969,6 +970,12 @@ public class MemoryIndex {
           }
 
           @Override
+          public boolean advanceExact(int target) throws IOException {
+            docID = target;
+            return docID == 0;
+          }
+
+          @Override
           public long cost() {
             return 1;
           }
@@ -1065,22 +1072,12 @@ public class MemoryIndex {
    */
   private final class MemoryIndexReader extends LeafReader {
 
-    private final PointValues pointValues;
     private Fields memoryFields = new MemoryFields(fields);
 
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
-      boolean hasPointValues = false;
       for (Info info : fields.values()) {
         info.prepareDocValuesAndPointValues();
-        if (info.pointValues != null) {
-          hasPointValues = true;
-        }
-      }
-      if (hasPointValues) {
-        pointValues = new MemoryIndexPointValues();
-      } else {
-        pointValues = null;
       }
     }
 
@@ -1198,8 +1195,12 @@ public class MemoryIndex {
     }
 
     @Override
-    public PointValues getPointValues() {
-      return pointValues;
+    public PointValues getPointValues(String fieldName) {
+      Info info = fields.get(fieldName);
+      if (info.pointValues == null) {
+        return null;
+      }
+      return new MemoryIndexPointValues(info);
     }
 
     @Override
@@ -1504,16 +1505,15 @@ public class MemoryIndex {
 
     private class MemoryIndexPointValues extends PointValues {
 
+      final Info info;
+
+      MemoryIndexPointValues(Info info) {
+        this.info = Objects.requireNonNull(info);
+      }
+
       @Override
-      public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
-        Info info = fields.get(fieldName);
-        if (info == null) {
-          return;
-        }
+      public void intersect(IntersectVisitor visitor) throws IOException {
         BytesRef[] values = info.pointValues;
-        if (values == null) {
-          return;
-        }
 
         visitor.grow(info.pointValuesCount);
         for (int i = 0; i < info.pointValuesCount; i++) {
@@ -1522,11 +1522,7 @@ public class MemoryIndex {
       }
 
       @Override
-      public byte[] getMinPackedValue(String fieldName) throws IOException {
-        Info info = fields.get(fieldName);
-        if (info == null) {
-          return null;
-        }
+      public byte[] getMinPackedValue() throws IOException {
         BytesRef[] values = info.pointValues;
         if (values != null) {
           return info.minPackedValue;
@@ -1536,63 +1532,28 @@ public class MemoryIndex {
       }
 
       @Override
-      public byte[] getMaxPackedValue(String fieldName) throws IOException {
-        Info info = fields.get(fieldName);
-        if (info == null) {
-          return null;
-        }
-        BytesRef[] values = info.pointValues;
-        if (values != null) {
-          return info.maxPackedValue;
-        } else {
-          return null;
-        }
+      public byte[] getMaxPackedValue() throws IOException {
+        return info.maxPackedValue;
       }
 
       @Override
-      public int getNumDimensions(String fieldName) throws IOException {
-        Info info = fields.get(fieldName);
-        if (info == null){
-          return 0;
-        }
+      public int getNumDimensions() throws IOException {
         return info.fieldInfo.getPointDimensionCount();
       }
 
       @Override
-      public int getBytesPerDimension(String fieldName) throws IOException {
-        Info info = fields.get(fieldName);
-        if (info == null){
-          return 0;
-        }
+      public int getBytesPerDimension() throws IOException {
         return info.fieldInfo.getPointNumBytes();
       }
 
       @Override
-      public long size(String fieldName) {
-        Info info = fields.get(fieldName);
-        if (info == null) {
-          return 0;
-        }
-        BytesRef[] values = info.pointValues;
-        if (values != null) {
-          return info.pointValuesCount;
-        } else {
-          return 0;
-        }
+      public long size() {
+        return info.pointValuesCount;
       }
 
       @Override
-      public int getDocCount(String fieldName) {
-        Info info = fields.get(fieldName);
-        if (info == null) {
-          return 0;
-        }
-        BytesRef[] values = info.pointValues;
-        if (values != null) {
-          return 1;
-        } else {
-          return 0;
-        }
+      public int getDocCount() {
+        return 1;
       }
 
     }

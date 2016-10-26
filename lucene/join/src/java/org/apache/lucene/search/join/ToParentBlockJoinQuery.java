@@ -203,7 +203,7 @@ public class ToParentBlockJoinQuery extends Query {
     public abstract int[] swapChildDocs(int[] other);
   }
   
-  static class BlockJoinScorer extends ChildrenMatchesScorer{
+  static class BlockJoinScorer extends ChildrenMatchesScorer {
     private final Scorer childScorer;
     private final BitSet parentBits;
     private final ScoreMode scoreMode;

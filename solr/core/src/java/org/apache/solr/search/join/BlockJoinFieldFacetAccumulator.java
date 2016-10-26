@@ -60,12 +60,12 @@ class BlockJoinFieldFacetAccumulator {
     fieldType = schemaField.getType();
     ordinalMap = null;
     if (schemaField.multiValued()) {
-      topSSDV = searcher.getLeafReader().getSortedSetDocValues(fieldName);
+      topSSDV = searcher.getSlowAtomicReader().getSortedSetDocValues(fieldName);
       if (topSSDV instanceof MultiDocValues.MultiSortedSetDocValues) {
         ordinalMap = ((MultiDocValues.MultiSortedSetDocValues) topSSDV).mapping;
       }
     } else {
-      SortedDocValues single = searcher.getLeafReader().getSortedDocValues(fieldName);
+      SortedDocValues single = searcher.getSlowAtomicReader().getSortedDocValues(fieldName);
       if (single instanceof MultiDocValues.MultiSortedDocValues) {
         ordinalMap = ((MultiDocValues.MultiSortedDocValues) single).mapping;
       }
@@ -171,7 +171,7 @@ class BlockJoinFieldFacetAccumulator {
   }
   
   /** copy paste from {@link DocValuesFacets} */
-  NamedList<Integer> getFacetValue() {
+  NamedList<Integer> getFacetValue() throws IOException {
     NamedList<Integer> facetValue = new NamedList<>();
     final CharsRefBuilder charsRef = new CharsRefBuilder(); // if there is no globs, take segment's ones
     for (int i = 1; i< (globalCounts!=null ? globalCounts.length: segmentAccums.length); i++) {

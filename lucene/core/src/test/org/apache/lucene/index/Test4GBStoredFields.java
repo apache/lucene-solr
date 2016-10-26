@@ -30,7 +30,7 @@ import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 /**
  * This test creates an index with one segment that is a little larger than 4GB.
@@ -69,7 +69,7 @@ public class Test4GBStoredFields extends LuceneTestCase {
     final FieldType ft = new FieldType();
     ft.setStored(true);
     ft.freeze();
-    final int valueLength = RandomInts.randomIntBetween(random(), 1 << 13, 1 << 20);
+    final int valueLength = RandomNumbers.randomIntBetween(random(), 1 << 13, 1 << 20);
     final byte[] value = new byte[valueLength];
     for (int i = 0; i < valueLength; ++i) {
       // random so that even compressing codecs can't compress it
