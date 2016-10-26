@@ -164,6 +164,8 @@ New Features
   SOLR_HOME on every node. Editing config through API is supported but affects only that one node. 
   (janhoy)
 
+* SOLR-2212: Add a factory class corresponding to Lucene's NoMergePolicy. (Lance Norskog, Cao Manh Dat via shalin)
+
 Bug Fixes
 ----------------------
 
