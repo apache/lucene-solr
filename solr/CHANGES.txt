@@ -160,6 +160,12 @@ New Features
 * SOLR-9654: Add "overrequest" parameter to JSON Facet API to control amount of overrequest
   on a distributed terms facet. (yonik)
 
+* SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
+  SOLR_HOME on every node. Editing config through API is supported but affects only that one node. 
+  (janhoy)
+
+* SOLR-2212: Add a factory class corresponding to Lucene's NoMergePolicy. (Lance Norskog, Cao Manh Dat via shalin)
+
 Bug Fixes
 ----------------------
 
@@ -216,6 +222,9 @@ Bug Fixes
 
 * SOLR-9536: OldBackupDirectory timestamp field needs to be initialized to avoid NPE.
  (Hrishikesh Gadre, hossman via Mark Miller)
+
+* SOLR-2039: Multivalued fields with dynamic names does not work properly with DIH.
+  (K A, ruslan.shv, Cao Manh Dat via shalin)
  
 Optimizations
 ----------------------
@@ -349,6 +358,10 @@ Other Changes
 
 * SOLR-4531: Add tests to ensure that recovery does not fail on corrupted tlogs.
   (Simon Scofield, Cao Manh Dat via shalin)
+
+* SOLR-5245: Add a test to ensure that election contexts are keyed off both collection name and coreNodeName
+  so that killing a shard in one collection does not result in leader election in a different collection.
+  See SOLR-5243 for the related bug. (Cao Manh Dat via shalin)
 
 ==================  6.2.1 ==================
 

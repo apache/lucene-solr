@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.ZkStateReader.ConfigData;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
@@ -34,6 +33,7 @@ import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.apache.solr.util.CommandOperation;
 
 import static org.apache.solr.common.util.Utils.makeMap;
+import static org.apache.solr.handler.admin.SecurityConfHandler.SecurityConfig;
 
 public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
 
@@ -51,8 +51,8 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(req,new SolrQueryResponse());
 
     BasicAuthPlugin basicAuth = new BasicAuthPlugin();
-    ConfigData securityCfg = (ConfigData) handler.m.get("/security.json");
-    basicAuth.init((Map<String, Object>) securityCfg.data.get("authentication"));
+    SecurityConfig securityCfg = handler.m.get("/security.json");
+    basicAuth.init((Map<String, Object>) securityCfg.getData().get("authentication"));
     assertTrue(basicAuth.authenticate("tom", "TomIsUberCool"));
 
     command = "{\n" +
@@ -62,9 +62,9 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     o = new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8),"");
     req.setContentStreams(Collections.singletonList(o));
     handler.handleRequestBody(req,new SolrQueryResponse());
-    securityCfg = (ConfigData) handler.m.get("/security.json");
-    assertEquals(3, securityCfg.version);
-    Map result = (Map) securityCfg.data.get("authentication");
+    securityCfg = handler.m.get("/security.json");
+    assertEquals(3, securityCfg.getVersion());
+    Map result = (Map) securityCfg.getData().get("authentication");
     result = (Map) result.get("credentials");
     assertTrue(result.isEmpty());
 
@@ -86,7 +86,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
     handler.handleRequestBody(req, rsp);
     assertNull(rsp.getValues().get(CommandOperation.ERR_MSGS));
-    Map authzconf = (Map) ((ConfigData) handler.m.get("/security.json")).data.get("authorization");
+    Map authzconf = (Map) handler.m.get("/security.json").getData().get("authorization");
     Map userRoles = (Map) authzconf.get("user-role");
     List tomRoles = (List) userRoles.get("tom");
     assertTrue(tomRoles.contains("admin"));
@@ -108,7 +108,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     req.setContentStreams(Collections.singletonList(o));
     rsp = new SolrQueryResponse();
     handler.handleRequestBody(req, rsp);
-    authzconf = (Map) ((ConfigData) handler.m.get("/security.json")).data.get("authorization");
+    authzconf = (Map) handler.m.get("/security.json").getData().get("authorization");
     permissions = (List<Map>) authzconf.get("permissions");
 
     Map p = permissions.get(1);
@@ -128,7 +128,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     req.setContentStreams(Collections.singletonList(o));
     rsp = new SolrQueryResponse();
     handler.handleRequestBody(req, rsp);
-    authzconf = (Map) ((ConfigData) handler.m.get("/security.json")).data.get("authorization");
+    authzconf = (Map) handler.m.get("/security.json").getData().get("authorization");
     permissions = (List<Map>) authzconf.get("permissions");
 
     p = permissions.get(0);
@@ -151,7 +151,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     rsp = new SolrQueryResponse();
     handler.handleRequestBody(req, rsp);
     assertNull(rsp.getValues().get(CommandOperation.ERR_MSGS));
-    authzconf = (Map) ((ConfigData) handler.m.get("/security.json")).data.get("authorization");
+    authzconf = (Map) handler.m.get("/security.json").getData().get("authorization");
     userRoles = (Map) authzconf.get("user-role");
     assertEquals(0, userRoles.size());
     permissions = (List<Map>) authzconf.get("permissions");
@@ -178,25 +178,26 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
 
 
   public static class MockSecurityHandler extends SecurityConfHandler {
-    private Map<String, Object> m;
+    private Map<String, SecurityConfig> m;
     final BasicAuthPlugin basicAuthPlugin = new BasicAuthPlugin();
     final RuleBasedAuthorizationPlugin rulesBasedAuthorizationPlugin = new RuleBasedAuthorizationPlugin();
 
 
-     public MockSecurityHandler() {
+    public MockSecurityHandler() {
       super(null);
       m = new HashMap<>();
-      ConfigData data = new ConfigData(makeMap("authentication", makeMap("class", "solr."+ BasicAuthPlugin.class.getSimpleName())), 1);
-      data.data.put("authorization", makeMap("class", "solr."+RuleBasedAuthorizationPlugin.class.getSimpleName()));
-      m.put("/security.json", data);
-
+      SecurityConfig sp = new SecurityConfig();
+      sp.setData(makeMap("authentication", makeMap("class", "solr."+ BasicAuthPlugin.class.getSimpleName())));
+      sp.setVersion(1);
+      sp.getData().put("authorization", makeMap("class", "solr."+RuleBasedAuthorizationPlugin.class.getSimpleName()));
+      m.put("/security.json", sp);
 
       basicAuthPlugin.init(new HashMap<>());
 
       rulesBasedAuthorizationPlugin.init(new HashMap<>());
     }
 
-    public Map<String, Object> getM() {
+    public Map<String, SecurityConfig> getM() {
       return m;
     }
 
@@ -212,24 +213,25 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    ConfigData getSecurityProps(boolean getFresh) {
-      return (ConfigData) m.get("/security.json");
+    protected void getConf(SolrQueryResponse rsp, String key) {
+      // NOP
     }
 
     @Override
-    boolean persistConf(String key, byte[] buf, int version) {
-      Object data = m.get(key);
-      if (data instanceof ConfigData) {
-        ConfigData configData = (ConfigData) data;
-        if (configData.version == version) {
-          ConfigData result = new ConfigData((Map<String, Object>) Utils.fromJSON(buf), version + 1);
-          m.put(key, result);
-          return true;
-        } else {
-          return false;
-        }
+    public SecurityConfig getSecurityConfig(boolean getFresh) {
+      return m.get("/security.json");
+    }
+
+    @Override
+    protected boolean persistConf(SecurityConfig props) {
+      SecurityConfig fromMap = m.get("/security.json");
+      if (fromMap.getVersion() == props.getVersion()) {
+        props.setVersion(props.getVersion()+1);
+        m.put("/security.json", props);
+        return true;
+      } else {
+        return false;
       }
-      throw new RuntimeException();
     }
 
 
@@ -254,7 +256,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
       req.setContentStreams(Collections.singletonList(o));
       SolrQueryResponse rsp = new SolrQueryResponse();
       handleRequestBody(req, rsp);
-      Map<String, Object> data = ((ConfigData) m.get("/security.json")).data;
+      Map<String, Object> data = m.get("/security.json").getData();
       ((Map)data.get("authentication")).remove("");
       ((Map)data.get("authorization")).remove("");
       return Utils.toJSONString (data);

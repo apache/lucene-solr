@@ -501,7 +501,9 @@ public class DocBuilder {
               doc.addChildDocument(childDoc);
             } else {
               handleSpecialCommands(arow, doc);
+              vr.addNamespace(epw.getEntity().getName(), arow);
               addFields(epw.getEntity(), doc, arow, vr);
+              vr.removeNamespace(epw.getEntity().getName());
             }
           }
           if (epw.getEntity().getChildren() != null) {
