@@ -354,6 +354,10 @@ Other Changes
 * SOLR-4531: Add tests to ensure that recovery does not fail on corrupted tlogs.
   (Simon Scofield, Cao Manh Dat via shalin)
 
+* SOLR-5245: Add a test to ensure that election contexts are keyed off both collection name and coreNodeName
+  so that killing a shard in one collection does not result in leader election in a different collection.
+  See SOLR-5243 for the related bug. (Cao Manh Dat via shalin)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
