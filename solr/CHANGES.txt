@@ -220,6 +220,9 @@ Bug Fixes
 
 * SOLR-9536: OldBackupDirectory timestamp field needs to be initialized to avoid NPE.
  (Hrishikesh Gadre, hossman via Mark Miller)
+
+* SOLR-2039: Multivalued fields with dynamic names does not work properly with DIH.
+  (K A, ruslan.shv, Cao Manh Dat via shalin)
  
 Optimizations
 ----------------------
