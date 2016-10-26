@@ -565,10 +565,8 @@ public class CoreContainer {
     }
   }
 
-  /*
-  Builds a node name to be used with PKIAuth. 
-  // TODO: A bit hacky that we in standalone mode need to get properties from cloudConfig :-(
-   */
+  // Builds a node name to be used with PKIAuth.
+  // Could use SysProps "host" and "jetty.port" directly, but we got those in cloudConfig already...
   private String getNodeNameLocal() {
     return getConfig().getCloudConfig().getHost()+":"+getConfig().getCloudConfig().getSolrHostPort()+"_solr";
   }

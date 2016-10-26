@@ -36,6 +36,8 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
 import org.easymock.EasyMock;
+import org.junit.Test;
+
 import static org.easymock.EasyMock.getCurrentArguments;
 
 public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
@@ -148,6 +150,15 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
   }
 
+  @Test
+  public void testGetBaseUrlForNodeNameLocal() {
+    final MockPKIAuthenticationPlugin mock = new MockPKIAuthenticationPlugin(null, "myName");
+    assertEquals("http://my.host:9876/solr2", mock.getBaseUrlForNodeNameLocal("my.host:9876_solr2"));
+    System.setProperty("solr.jetty.keystore", "foo");
+    assertEquals("https://my.host:9876/solr2", mock.getBaseUrlForNodeNameLocal("my.host:9876_solr2"));
+    System.clearProperty("solr.jetty.keystore");
+  }
+  
   private HttpServletRequest createMockRequest(final AtomicReference<Header> header) {
     HttpServletRequest mockReq = EasyMock.createMock(HttpServletRequest.class);
     EasyMock.reset(mockReq);

@@ -225,7 +225,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
   }
 
-  private String getBaseUrlForNodeNameLocal(String nodeName) {
+  protected String getBaseUrlForNodeNameLocal(String nodeName) {
     final int _offset = nodeName.indexOf("_");
     if (_offset < 0) {
       throw new IllegalArgumentException("nodeName does not contain expected '_' seperator: " + nodeName);
@@ -233,7 +233,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     final String hostAndPort = nodeName.substring(0,_offset);
     try {
       final String path = URLDecoder.decode(nodeName.substring(1+_offset), "UTF-8");
-      // TODO: Hacky way of getting urlScheme when not in SolrCloud mode
+      // TODO: Find a better way of resolving urlScheme when not using ZK?
       String urlScheme = System.getProperty("solr.jetty.keystore") == null ? "http" : "https";
       return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
     } catch (UnsupportedEncodingException e) {

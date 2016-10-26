@@ -168,8 +168,7 @@ New Features
 
 * SOLR-9670: Support SOLR_AUTHENTICATION_OPTS in solr.cmd (janhoy) 
 
-* SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
-  SOLR_HOME on every node. Editing config through API is supported but affects only that one node. (janhoy)
+* SOLR-9640: Support PKI authentication in standalone mode (janhoy)
 
 Bug Fixes
 ----------------------
