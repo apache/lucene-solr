@@ -27,6 +27,7 @@ import java.util.Random;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.tdunning.math.stats.AVLTreeDigest;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.hll.HLL;
 import org.apache.lucene.util.LuceneTestCase;
@@ -1146,47 +1147,68 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "} "
     );
 
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{" +
+            // "cat0:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0}" +  // overrequest=0 test needs predictable layout
+            "cat1:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:1}" +
+            ",catDef:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:-1}" +  // -1 is default overrequest
+            ",catBig:{type:terms, field:${cat_s}, sort:'count desc', offset:1, limit:2147483647, overrequest:2147483647}" +  // make sure overflows don't mess us up
+            "}"
+        )
+        , "facets=={ count:6" +
+            // ", cat0:{ buckets:[ {val:B,count:3} ] }"
+            ", cat1:{ buckets:[ {val:B,count:3} ] }" +
+            ", catDef:{ buckets:[ {val:B,count:3} ] }" +
+            ", catBig:{ buckets:[ {val:A,count:2} ] }" +
+            "}"
+    );
 
-/*
-    if (!client.local()) {
-      client.testJQ(params(p, "q", "*:*"
-          , "json.facet", "{" +
-              "cat0:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0}" +
-              ",cat1:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:1}" +
-              ",catDef:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:-1}" +  // -1 is default overrequest
-              ",catBig:{type:terms, field:${cat_s}, sort:'count desc', offset:1, limit:2147483647, overrequest:2147483647}" +  // make sure overflows don't mess us up
-              "}"
-          )
-          , "facets=={ count:6" +
-              ", cat0:{ buckets:[ {val:A,count:2} ] }" +  // with no overrequest, we incorrectly conclude that A is the top bucket
-              ", cat1:{ buckets:[ {val:B,count:3} ] }" +
-              ", catDef:{ buckets:[ {val:B,count:3} ] }" +
-              ", catBig:{ buckets:[ {val:A,count:2} ] }" +
-              "}"
-      );
-    } else {
-      // In non-distrib mode, should still be able to specify overrequest, but it shouldn't matter.
-      client.testJQ(params(p, "q", "*:*"
-          , "json.facet", "{" +
-              "cat0:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0}" +
-              ",cat1:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:1}" +
-              ",catDef:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:-1}" +  // -1 is default overrequest
-              ",catBig:{type:terms, field:${cat_s}, sort:'count desc', offset:1, limit:2147483647, overrequest:2147483647}" +  // make sure overflows don't mess us up
-              "}"
-          )
-          , "facets=={ count:6" +
-              ", cat0:{ buckets:[ {val:B,count:3} ] }" +  // only change from distrib-mode test above
-              ", cat1:{ buckets:[ {val:B,count:3} ] }" +
-              ", catDef:{ buckets:[ {val:B,count:3} ] }" +
-              ", catBig:{ buckets:[ {val:A,count:2} ] }" +
-              "}"
-      );
-    }
-*/
 
   }
 
+  @Test
+  public void testOverrequest() throws Exception {
+    initServers();
+    Client client = servers.getClient(random().nextInt());
+    client.queryDefaults().set( "shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()) );
 
+    List<SolrClient> clients = client.getClientProvider().all();
+    assertTrue(clients.size() >= 3);
+
+    client.deleteByQuery("*:*", null);
+
+    ModifiableSolrParams p = params("cat_s", "cat_s");
+    String cat_s = p.get("cat_s");
+
+    clients.get(0).add( sdoc("id", "1", cat_s, "A") ); // A will win tiebreak
+    clients.get(0).add( sdoc("id", "2", cat_s, "B") );
+
+    clients.get(1).add( sdoc("id", "3", cat_s, "B") );
+    clients.get(1).add( sdoc("id", "4", cat_s, "A") ); // A will win tiebreak
+
+    clients.get(2).add( sdoc("id", "5", cat_s, "B") );
+    clients.get(2).add( sdoc("id", "6", cat_s, "B") );
+
+    client.commit();
+
+    // Shard responses should be A=1, A=1, B=2, merged should be "A=2, B=2" hence A wins tiebreak
+
+    client.testJQ(params(p, "q", "*:*",
+        "json.facet", "{" +
+            "cat0:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:0}" +
+            ",cat1:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:1}" +
+            ",catDef:{type:terms, field:${cat_s}, sort:'count desc', limit:1, overrequest:-1}" +  // -1 is default overrequest
+            ",catBig:{type:terms, field:${cat_s}, sort:'count desc', offset:1, limit:2147483647, overrequest:2147483647}" +  // make sure overflows don't mess us up
+            "}"
+        )
+        , "facets=={ count:6" +
+            ", cat0:{ buckets:[ {val:A,count:2} ] }" +  // with no overrequest, we incorrectly conclude that A is the top bucket
+            ", cat1:{ buckets:[ {val:B,count:4} ] }" +
+            ", catDef:{ buckets:[ {val:B,count:4} ] }" +
+            ", catBig:{ buckets:[ {val:A,count:2} ] }" +
+            "}"
+    );
+  }
 
 
   @Test
