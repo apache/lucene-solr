@@ -467,8 +467,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     if (!useFvhParam) return false;
     boolean termPosOff = schemaField.storeTermPositions() && schemaField.storeTermOffsets();
     if (!termPosOff) {
-      log.warn("Solr will not use FastVectorHighlighter because {} field does not store TermPositions and "
-          + "TermOffsets.", schemaField.getName());
+      log.warn("Solr will use the standard Highlighter instead of FastVectorHighlighter because the {} field " +
+          "does not store TermVectors with TermPositions and TermOffsets.", schemaField.getName());
     }
     return termPosOff;
   }

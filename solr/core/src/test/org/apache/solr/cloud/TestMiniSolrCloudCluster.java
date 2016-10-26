@@ -37,8 +37,8 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettyConfig.Builder;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -93,8 +93,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
   private void createCollection(MiniSolrCloudCluster miniCluster, String collectionName, String createNodeSet, String asyncId,
       Boolean indexToPersist, Map<String,String> collectionProperties) throws Exception {
     String configName = "solrCloudCollectionConfig";
-    File configDir = new File(SolrTestCaseJ4.TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
-    miniCluster.uploadConfigDir(configDir, configName);
+    miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), configName);
 
     final boolean persistIndex = (indexToPersist != null ? indexToPersist.booleanValue() : random().nextBoolean());
     if (collectionProperties == null) {
@@ -115,8 +114,19 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
     }
     collectionProperties.putIfAbsent("solr.tests.mergeScheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
     collectionProperties.putIfAbsent("solr.directoryFactory", (persistIndex ? "solr.StandardDirectoryFactory" : "solr.RAMDirectoryFactory"));
-    
-    miniCluster.createCollection(collectionName, NUM_SHARDS, REPLICATION_FACTOR, configName, createNodeSet, asyncId, collectionProperties);
+
+    if (asyncId == null) {
+      CollectionAdminRequest.createCollection(collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR)
+          .setCreateNodeSet(createNodeSet)
+          .setProperties(collectionProperties)
+          .process(miniCluster.getSolrClient());
+    }
+    else {
+      CollectionAdminRequest.createCollection(collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR)
+          .setCreateNodeSet(createNodeSet)
+          .setProperties(collectionProperties)
+          .processAndWait(miniCluster.getSolrClient(), 30);
+    }
   }
 
   @Test
@@ -151,11 +161,6 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       log.info("#### Creating a collection");
       final String asyncId = (random().nextBoolean() ? null : "asyncId("+collectionName+".create)="+random().nextInt());
       createCollection(miniCluster, collectionName, null, asyncId, null, null);
-      if (asyncId != null) {
-        final RequestStatusState state = AbstractFullDistribZkTestBase.getRequestStateAfterCompletion(asyncId, 330,
-            cloudSolrClient);
-        assertSame("did not see async createCollection completion", RequestStatusState.COMPLETED, state);
-      }
 
       ZkStateReader zkStateReader = miniCluster.getSolrClient().getZkStateReader();
       AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
@@ -205,19 +210,11 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       assertTrue(startedServer.isRunning());
       assertEquals(NUM_SERVERS, miniCluster.getJettySolrRunners().size());
 
-
-      // delete the collection we created earlier
-      miniCluster.deleteCollection(collectionName);
-      AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName, zkStateReader, true, true, 330);
+      CollectionAdminRequest.deleteCollection(collectionName).process(miniCluster.getSolrClient());
 
       // create it again
       String asyncId2 = (random().nextBoolean() ? null : "asyncId("+collectionName+".create)="+random().nextInt());
       createCollection(miniCluster, collectionName, null, asyncId2, null, null);
-      if (asyncId2 != null) {
-        final RequestStatusState state = AbstractFullDistribZkTestBase.getRequestStateAfterCompletion(asyncId2, 330,
-            cloudSolrClient);
-        assertSame("did not see async createCollection completion", RequestStatusState.COMPLETED, state);
-      }
       AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
 
       // check that there's no left-over state
@@ -246,10 +243,6 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       // create collection
       final String asyncId = (random().nextBoolean() ? null : "asyncId("+collectionName+".create)="+random().nextInt());
       createCollection(miniCluster, collectionName, OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY, asyncId, null, null);
-      if (asyncId != null) {
-        final RequestStatusState state = AbstractFullDistribZkTestBase.getRequestStateAfterCompletion(asyncId, 330, cloudSolrClient);
-        assertSame("did not see async createCollection completion", RequestStatusState.COMPLETED, state);
-      }
 
       try (SolrZkClient zkClient = new SolrZkClient
           (miniCluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
@@ -267,10 +260,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
           }
           assertEquals(0, coreCount);
         }
-        
-        // delete the collection we created earlier
-        miniCluster.deleteCollection(collectionName);
-        AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName, zkStateReader, true, true, 330);    
+
       }
     }
     finally {
@@ -387,9 +377,6 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
           assertEquals(numDocs, rsp.getResults().getNumFound());
         }
 
-        // delete the collection we created earlier
-        miniCluster.deleteCollection(collectionName);
-        AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName, zkStateReader, true, true, 330);
       }
     }
     finally {
@@ -418,10 +405,6 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
         final Map<String, String> collectionProperties = new HashMap<>();
         collectionProperties.put(CoreDescriptor.CORE_CONFIG, "solrconfig-sortingmergepolicyfactory.xml");
         createCollection(miniCluster, collectionName, null, asyncId, Boolean.TRUE, collectionProperties);
-        if (asyncId != null) {
-          final RequestStatusState state = AbstractFullDistribZkTestBase.getRequestStateAfterCompletion(asyncId, 330, cloudSolrClient);
-          assertSame("did not see async createCollection completion", RequestStatusState.COMPLETED, state);
-        }
       }
 
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
@@ -444,9 +427,6 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(cloudSolrClient);
       tstes.queryTimestampAscendingSegmentTerminateEarlyYes(cloudSolrClient); // uses a sort order that is _not_ compatible with the merge sort order
 
-      // delete the collection we created earlier
-      miniCluster.deleteCollection(collectionName);
-      AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName, zkStateReader, true, true, 330);
     }
     finally {
       miniCluster.shutdown();

@@ -16,15 +16,14 @@
  */
 package org.apache.solr.security;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.util.ArrayList;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Properties;
-import java.util.Random;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -36,15 +35,12 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.SecurityConfHandler;
-import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTest;
+import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -60,10 +56,10 @@ import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecuritySt
 public class BasicAuthStandaloneTest extends AbstractSolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String CONF_DIR = "solr/configsets/configset-2/conf/";
-  private static final String ROOT_DIR = "solr/";
+  private Path ROOT_DIR = Paths.get(getSolrHome());
+  private Path CONF_DIR = ROOT_DIR.resolve("configsets").resolve("configset-2").resolve("conf");
 
-  SecurityConfHandlerLocalForTest securityConfHandler;
+  SecurityConfHandlerLocalForTesting securityConfHandler;
   SolrInstance instance = null;
   JettySolrRunner jetty;
       
@@ -74,10 +70,9 @@ public class BasicAuthStandaloneTest extends AbstractSolrTestCase {
     super.setUp();
     instance = new SolrInstance("inst", null);
     instance.setUp();
-    System.setProperty("solr.solr.home", instance.getHomeDir());    
     jetty = createJetty(instance);
-    initCore("solrconfig.xml", "schema.xml", instance.getHomeDir());
-    securityConfHandler = new SecurityConfHandlerLocalForTest(jetty.getCoreContainer());
+    initCore("solrconfig.xml", "schema.xml", instance.getHomeDir().toString());
+    securityConfHandler = new SecurityConfHandlerLocalForTesting(jetty.getCoreContainer());
   }
 
   @Override
@@ -137,7 +132,8 @@ public class BasicAuthStandaloneTest extends AbstractSolrTestCase {
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/credentials/harry", NOT_NULL_PREDICATE, 20);
 
       // Read file from SOLR_HOME and verify that it contains our new user
-      assertTrue(new String(Utils.toJSON(securityConfHandler.getSecurityConfig(false).getData())).contains("harry"));
+      assertTrue(new String(Utils.toJSON(securityConfHandler.getSecurityConfig(false).getData()), 
+          Charset.forName("UTF-8")).contains("harry"));
     } finally {
       if (cl != null) {
         HttpClientUtil.close(cl);
@@ -153,22 +149,10 @@ public class BasicAuthStandaloneTest extends AbstractSolrTestCase {
     log.info("Added Basic Auth security Header {}",encoded );
   }
 
-  public static Replica getRandomReplica(DocCollection coll, Random random) {
-    ArrayList<Replica> l = new ArrayList<>();
-
-    for (Slice slice : coll.getSlices()) {
-      for (Replica replica : slice.getReplicas()) {
-        l.add(replica);
-      }
-    }
-    Collections.shuffle(l, random);
-    return l.isEmpty() ? null : l.get(0);
-  }
-  
   private JettySolrRunner createJetty(SolrInstance instance) throws Exception {
     Properties nodeProperties = new Properties();
-    nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, buildJettyConfig("/solr"));
+    nodeProperties.setProperty("solr.data.dir", instance.getDataDir().toString());
+    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir().toString(), nodeProperties, buildJettyConfig("/solr"));
     jetty.start();
     return jetty;
   }
@@ -177,9 +161,9 @@ public class BasicAuthStandaloneTest extends AbstractSolrTestCase {
   private class SolrInstance {
     String name;
     Integer port;
-    File homeDir;
-    File confDir;
-    File dataDir;
+    Path homeDir;
+    Path confDir;
+    Path dataDir;
     
     /**
      * if masterPort is null, this instance is a master -- otherwise this instance is a slave, and assumes the master is
@@ -190,48 +174,45 @@ public class BasicAuthStandaloneTest extends AbstractSolrTestCase {
       this.port = port;
     }
 
-    public String getHomeDir() {
-      return homeDir.toString();
+    public Path getHomeDir() {
+      return homeDir;
     }
 
-    public String getSchemaFile() {
-      return CONF_DIR + "schema.xml";
+    public Path getSchemaFile() {
+      return CONF_DIR.resolve("schema.xml");
     }
 
-    public String getConfDir() {
-      return confDir.toString();
+    public Path getConfDir() {
+      return confDir;
     }
 
-    public String getDataDir() {
-      return dataDir.toString();
+    public Path getDataDir() {
+      return dataDir;
     }
 
-    public String getSolrConfigFile() {
-      return CONF_DIR + "solrconfig.xml";
+    public Path getSolrConfigFile() {
+      return CONF_DIR.resolve("solrconfig.xml");
     }
 
-    public String getSolrXmlFile() {
-      return ROOT_DIR + "solr.xml";
+    public Path getSolrXmlFile() {
+      return ROOT_DIR.resolve("solr.xml");
     }
 
 
     public void setUp() throws Exception {
-      homeDir = createTempDir("inst").toFile();
-      dataDir = new File(homeDir + "/collection1", "data");
-      confDir = new File(homeDir + "/collection1", "conf");
+      homeDir = createTempDir(name).toAbsolutePath();
+      dataDir = homeDir.resolve("collection1").resolve("data");
+      confDir = homeDir.resolve("collection1").resolve("conf");
 
-      homeDir.mkdirs();
-      dataDir.mkdirs();
-      confDir.mkdirs();
+      Files.createDirectories(homeDir);
+      Files.createDirectories(dataDir);
+      Files.createDirectories(confDir);
 
-      FileUtils.copyFile(getFile(getSolrXmlFile()), new File(homeDir, "solr.xml"));
-      File f = new File(confDir, "solrconfig.xml");
-      FileUtils.copyFile(getFile(getSolrConfigFile()), f);
-      f = new File(confDir, "schema.xml");
+      Files.copy(getSolrXmlFile(), homeDir.resolve("solr.xml"));
+      Files.copy(getSolrConfigFile(), confDir.resolve("solrconfig.xml"));
+      Files.copy(getSchemaFile(), confDir.resolve("schema.xml"));
 
-      FileUtils.copyFile(getFile(getSchemaFile()), f);
-
-      Files.createFile(homeDir.toPath().resolve("collection1/core.properties"));
+      Files.createFile(homeDir.resolve("collection1").resolve("core.properties"));
     }
 
   }

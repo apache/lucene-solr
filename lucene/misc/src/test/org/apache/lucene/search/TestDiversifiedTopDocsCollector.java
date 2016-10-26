@@ -144,6 +144,11 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
         }
 
         @Override
+        public boolean advanceExact(int target) throws IOException {
+          return sdv.advanceExact(target + context.docBase);
+        }
+
+        @Override
         public long cost() {
           return 0;
         }
@@ -185,6 +190,10 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
         @Override
         public int advance(int target) throws IOException {
           return vals.advance(target);
+        }
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          return vals.advanceExact(target);
         }
         @Override
         public long cost() {

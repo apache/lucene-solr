@@ -30,10 +30,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -64,13 +64,10 @@ public class BlockJoinFacetDistribTest extends SolrCloudTestCase{
     
     int shards = 3;
     int replicas = 2 ;
-    assertNotNull(cluster.createCollection(collection, shards, replicas,
-        configName,
-        collectionProperties));
-    
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, 
-        cluster.getSolrClient().getZkStateReader(), false, true, 30);
-   
+    CollectionAdminRequest.createCollection(collection, configName, shards, replicas)
+        .setProperties(collectionProperties)
+        .process(cluster.getSolrClient());
+
   }
 
   final static List<String> colors = Arrays.asList("red","blue","brown","white","black","yellow","cyan","magenta","blur",

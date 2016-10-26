@@ -27,7 +27,6 @@ import java.io.IOException;
  */
 final class SingletonSortedNumericDocValues extends SortedNumericDocValues {
   private final NumericDocValues in;
-  private long value;
   
   public SingletonSortedNumericDocValues(NumericDocValues in) {
     if (in.docID() != -1) {
@@ -51,30 +50,27 @@ final class SingletonSortedNumericDocValues extends SortedNumericDocValues {
 
   @Override
   public int nextDoc() throws IOException {
-    int docID = in.nextDoc();
-    if (docID != NO_MORE_DOCS) {
-      value = in.longValue();
-    }
-    return docID;
+    return in.nextDoc();
   }
   
   @Override
   public int advance(int target) throws IOException {
-    int docID = in.advance(target);
-    if (docID != NO_MORE_DOCS) {
-      value = in.longValue();
-    }
-    return docID;
+    return in.advance(target);
   }
-      
+
+  @Override
+  public boolean advanceExact(int target) throws IOException {
+    return in.advanceExact(target);
+  }
+
   @Override
   public long cost() {
     return in.cost();
   }
   
   @Override
-  public long nextValue() {
-    return value;
+  public long nextValue() throws IOException {
+    return in.longValue();
   }
 
   @Override

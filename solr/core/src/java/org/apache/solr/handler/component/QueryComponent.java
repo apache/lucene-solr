@@ -184,7 +184,7 @@ public class QueryComponent extends SearchComponent
         }
       }
 
-      rb.setSortSpec( parser.getSort(true) );
+      rb.setSortSpec( parser.getSortSpec(true) );
       rb.setQparser(parser);
 
       final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
@@ -257,9 +257,9 @@ public class QueryComponent extends SearchComponent
     }
 
     // groupSort defaults to sort
-    String groupSortStr = params.get(GroupParams.GROUP_SORT);
+    String sortWithinGroupStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
-    Sort sortWithinGroup = groupSortStr == null ?  groupSort : searcher.weightSort(SortSpecParsing.parseSortSpec(groupSortStr, req).getSort());
+    Sort sortWithinGroup = sortWithinGroupStr == null ?  groupSort : searcher.weightSort(SortSpecParsing.parseSortSpec(sortWithinGroupStr, req).getSort());
     if (sortWithinGroup == null) {
       sortWithinGroup = Sort.RELEVANCE;
     }
@@ -414,6 +414,9 @@ public class QueryComponent extends SearchComponent
               .setTruncateGroups(groupingSpec.isTruncateGroups() && groupingSpec.getFields().length > 0)
               .setSearcher(searcher);
 
+          int docsToCollect = Grouping.getMax(groupingSpec.getGroupOffset(), groupingSpec.getGroupLimit(), searcher.maxDoc());
+          docsToCollect = Math.max(docsToCollect, 1);
+
           for (String field : groupingSpec.getFields()) {
             SchemaField schemaField = schema.getField(field);
             String[] topGroupsParam = params.getParams(GroupParams.GROUP_DISTRIBUTED_TOPGROUPS_PREFIX + field);
@@ -436,7 +439,7 @@ public class QueryComponent extends SearchComponent
                     .setGroupSort(groupingSpec.getGroupSort())
                     .setSortWithinGroup(groupingSpec.getSortWithinGroup())
                     .setFirstPhaseGroups(topGroups)
-                    .setMaxDocPerGroup(groupingSpec.getGroupOffset() + groupingSpec.getGroupLimit())
+                    .setMaxDocPerGroup(docsToCollect)
                     .setNeedScores(needScores)
                     .setNeedMaxScore(needScores)
                     .build()
@@ -445,7 +448,7 @@ public class QueryComponent extends SearchComponent
 
           for (String query : groupingSpec.getQueries()) {
             secondPhaseBuilder.addCommandField(new Builder()
-                .setDocsToCollect(groupingSpec.getOffset() + groupingSpec.getLimit())
+                .setDocsToCollect(docsToCollect)
                 .setSort(groupingSpec.getGroupSort())
                 .setQuery(query, rb.req)
                 .setDocSet(searcher)

@@ -24,7 +24,7 @@ import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.compressing.dummy.DummyCompressingCodec;
 import org.apache.lucene.util.TestUtil;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 /**
  * A codec that uses {@link CompressingStoredFieldsFormat} for its stored
@@ -55,9 +55,9 @@ public abstract class CompressingCodec extends FilterCodec {
    * suffix
    */
   public static CompressingCodec randomInstance(Random random) {
-    final int chunkSize = random.nextBoolean() ? RandomInts.randomIntBetween(random, 1, 10) : RandomInts.randomIntBetween(random, 1, 1 << 15);
-    final int chunkDocs = random.nextBoolean() ? RandomInts.randomIntBetween(random, 1, 10) : RandomInts.randomIntBetween(random, 64, 1024);
-    final int blockSize = random.nextBoolean() ? RandomInts.randomIntBetween(random, 1, 10) : RandomInts.randomIntBetween(random, 1, 1024);
+    final int chunkSize = random.nextBoolean() ? RandomNumbers.randomIntBetween(random, 1, 10) : RandomNumbers.randomIntBetween(random, 1, 1 << 15);
+    final int chunkDocs = random.nextBoolean() ? RandomNumbers.randomIntBetween(random, 1, 10) : RandomNumbers.randomIntBetween(random, 64, 1024);
+    final int blockSize = random.nextBoolean() ? RandomNumbers.randomIntBetween(random, 1, 10) : RandomNumbers.randomIntBetween(random, 1, 1024);
     return randomInstance(random, chunkSize, chunkDocs, false, blockSize);
   }
 
@@ -79,10 +79,10 @@ public abstract class CompressingCodec extends FilterCodec {
    */
   public static CompressingCodec randomInstance(Random random, boolean withSegmentSuffix) {
     return randomInstance(random, 
-                          RandomInts.randomIntBetween(random, 1, 1 << 15), 
-                          RandomInts.randomIntBetween(random, 64, 1024), 
+                          RandomNumbers.randomIntBetween(random, 1, 1 << 15), 
+                          RandomNumbers.randomIntBetween(random, 64, 1024), 
                           withSegmentSuffix,
-                          RandomInts.randomIntBetween(random, 1, 1024));
+                          RandomNumbers.randomIntBetween(random, 1, 1024));
   }
 
   private final CompressingStoredFieldsFormat storedFieldsFormat;

@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 
 import org.apache.solr.common.SolrException;
@@ -39,10 +40,11 @@ import org.slf4j.LoggerFactory;
  */
 public class SecurityConfHandlerLocal extends SecurityConfHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final Path SECURITY_JSON_PATH = SolrResourceLoader.locateSolrHome().resolve("security.json");
+  protected Path securityJsonPath;
   
   public SecurityConfHandlerLocal(CoreContainer coreContainer) {
     super(coreContainer);
+    securityJsonPath = Paths.get(coreContainer.getSolrHome()).resolve("security.json");
   }
 
   /**
@@ -52,8 +54,8 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
    */
   @Override
   public SecurityConfig getSecurityConfig(boolean getFresh) {
-    if (Files.exists(SECURITY_JSON_PATH)) {
-      try (InputStream securityJsonIs = Files.newInputStream(SECURITY_JSON_PATH)) {
+    if (Files.exists(securityJsonPath)) {
+      try (InputStream securityJsonIs = Files.newInputStream(securityJsonPath)) {
         return new SecurityConfig().setData(securityJsonIs);
       } catch (IOException e) { /* Fall through */ }
     }
@@ -78,13 +80,13 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
           "Failed persisting security.json to SOLR_HOME. Object was empty.");
     }
-    try(OutputStream securityJsonOs = Files.newOutputStream(SECURITY_JSON_PATH)) {
+    try(OutputStream securityJsonOs = Files.newOutputStream(securityJsonPath)) {
       securityJsonOs.write(Utils.toJSON(securityConfig.getData()));
-      log.debug("Persisted security.json to {}", SECURITY_JSON_PATH);
+      log.debug("Persisted security.json to {}", securityJsonPath);
       return true;
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
-          "Failed persisting security.json to " + SECURITY_JSON_PATH, e);
+          "Failed persisting security.json to " + securityJsonPath, e);
     }
   }
 

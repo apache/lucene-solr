@@ -293,11 +293,8 @@ class PerSegmentSingleValuedFaceting {
         // specialized version when collecting counts for all terms
         int doc;
         while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-          if (doc > si.docID()) {
-            si.advance(doc);
-          }
           int t;
-          if (doc == si.docID()) {
+          if (si.advanceExact(doc)) {
             t = 1+si.ordValue();
           } else {
             t = 0;
@@ -309,11 +306,8 @@ class PerSegmentSingleValuedFaceting {
         // version that adjusts term numbers because we aren't collecting the full range
         int doc;
         while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-          if (doc > si.docID()) {
-            si.advance(doc);
-          }
           int term;
-          if (doc == si.docID()) {
+          if (si.advanceExact(doc)) {
             term = si.ordValue();
           } else {
             term = -1;
