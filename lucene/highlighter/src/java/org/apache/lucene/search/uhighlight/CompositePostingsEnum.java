@@ -23,11 +23,10 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
-import static org.apache.lucene.search.uhighlight.CompositePostingsEnum.BoundsCheckingPostingsEnum.NO_MORE_POSITIONS;
 
+final class CompositePostingsEnum extends PostingsEnum {
 
-class CompositePostingsEnum extends PostingsEnum {
-
+  private static final int NO_MORE_POSITIONS = -2;
   private final BytesRef term;
   private final int freq;
   private final PriorityQueue<BoundsCheckingPostingsEnum> queue;
@@ -41,21 +40,29 @@ class CompositePostingsEnum extends PostingsEnum {
    * but it would have to delegate most methods and it seemed easier
    * to just wrap the tweaked method.
    */
-  static final class BoundsCheckingPostingsEnum {
+  private static final class BoundsCheckingPostingsEnum {
 
-    static final int NO_MORE_POSITIONS = -2;
 
     private final PostingsEnum postingsEnum;
+    private final int freq;
     private int position;
+    private int nextPosition;
     private int positionInc = 1;
+
+    private int startOffset;
+    private int endOffset;
 
     BoundsCheckingPostingsEnum(PostingsEnum postingsEnum) throws IOException {
       this.postingsEnum = postingsEnum;
-      position = postingsEnum.nextPosition();
+      this.freq = postingsEnum.freq();
+      nextPosition = postingsEnum.nextPosition();
+      position = nextPosition;
+      startOffset = postingsEnum.startOffset();
+      endOffset = postingsEnum.endOffset();
     }
 
     private boolean hasMorePositions() throws IOException {
-      return positionInc < postingsEnum.freq();
+      return positionInc < freq;
     }
 
     /**
@@ -65,17 +72,17 @@ class CompositePostingsEnum extends PostingsEnum {
      * @throws IOException
      */
     private int nextPosition() throws IOException {
-      int lastPosition = position;
+      position = nextPosition;
+      startOffset = postingsEnum.startOffset();
+      endOffset = postingsEnum.endOffset();
       if (hasMorePositions()) {
         positionInc++;
-        position = postingsEnum.nextPosition();
-        return lastPosition;
+        nextPosition = postingsEnum.nextPosition();
       } else {
-        position = NO_MORE_POSITIONS;
-        return lastPosition;
+        nextPosition = NO_MORE_POSITIONS;
       }
+      return position;
     }
-
 
   }
 
@@ -90,8 +97,8 @@ class CompositePostingsEnum extends PostingsEnum {
 
     int freqAdd = 0;
     for (PostingsEnum postingsEnum : postingsEnums) {
-      freqAdd += postingsEnum.freq();
       queue.add(new BoundsCheckingPostingsEnum(postingsEnum));
+      freqAdd += postingsEnum.freq();
     }
     freq = freqAdd;
   }
@@ -105,25 +112,28 @@ class CompositePostingsEnum extends PostingsEnum {
   public int nextPosition() throws IOException {
     int position = NO_MORE_POSITIONS;
     while (queue.size() >= 1) {
-      position = queue.top().nextPosition();
-      queue.updateTop();
+      queue.top().nextPosition();
+      queue.updateTop(); //the new position may be behind another postingsEnum in the queue
+      position = queue.top().position;
+
       if (position == NO_MORE_POSITIONS) {
-        queue.pop();
+        queue.pop(); //this postingsEnum is consumed, let's get rid of it
       } else {
-        break;
+        break; //we got a new position
       }
+
     }
     return position;
   }
 
   @Override
   public int startOffset() throws IOException {
-    return queue.top().postingsEnum.startOffset();
+    return queue.top().startOffset;
   }
 
   @Override
   public int endOffset() throws IOException {
-    return queue.top().postingsEnum.endOffset();
+    return queue.top().endOffset;
   }
 
   @Override

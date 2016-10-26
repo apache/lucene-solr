@@ -73,8 +73,8 @@ public class TestUnifiedHighlighterExtensibility {
 
 
       @Override
-      protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader atomicReader, int doc) throws IOException {
-        return super.createOffsetsEnumsFromReader(atomicReader, doc);
+      protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader leafReader, int doc) throws IOException {
+        return super.createOffsetsEnumsFromReader(leafReader, doc);
       }
 
 

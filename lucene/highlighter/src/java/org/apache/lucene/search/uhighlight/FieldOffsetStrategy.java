@@ -20,6 +20,7 @@ package org.apache.lucene.search.uhighlight;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
@@ -65,8 +67,8 @@ public abstract class FieldOffsetStrategy {
    */
   public abstract List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException;
 
-  protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader atomicReader, int doc) throws IOException {
-    final Terms termsIndex = atomicReader.terms(field);
+  protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader leafReader, int doc) throws IOException {
+    final Terms termsIndex = leafReader.terms(field);
     if (termsIndex == null) {
       return Collections.emptyList();
     }
@@ -74,7 +76,7 @@ public abstract class FieldOffsetStrategy {
     // For strict positions, get a Map of term to Spans:
     //    note: ScriptPhraseHelper.NONE does the right thing for these method calls
     final Map<BytesRef, Spans> strictPhrasesTermToSpans =
-        phraseHelper.getTermToSpans(atomicReader, doc);
+        phraseHelper.getTermToSpans(leafReader, doc);
     // Usually simply wraps terms in a List; but if willRewrite() then can be expanded
     final List<BytesRef> sourceTerms =
         phraseHelper.expandTermsIfRewrite(terms, strictPhrasesTermToSpans);
@@ -112,19 +114,41 @@ public abstract class FieldOffsetStrategy {
   }
 
   protected List<OffsetsEnum> createAutomataOffsetsEnumsFromReader(Terms termsIndex, int doc) throws IOException {
-    List<OffsetsEnum> offsetsEnums = new LinkedList<>();//nocommit why LinkedList?
+    //debatable if a LinkedList is faster, but depends on the number of encountered terms
+    Map<CharacterRunAutomaton, List<PostingsEnum>> automataPostings = new HashMap<>(automata.length);
+    for (CharacterRunAutomaton automaton : automata) {
+      automataPostings.put(automaton, new LinkedList<>());
+    }
+
     TermsEnum termsEnum = termsIndex.iterator();
     BytesRef term;
+    CharsRefBuilder refBuilder = new CharsRefBuilder();
     while ((term = termsEnum.next()) != null) {
       for (CharacterRunAutomaton automaton : automata) {
-        if (automaton.run(term.utf8ToString())) {
+        refBuilder.copyUTF8Bytes(term);
+        if (automaton.run(refBuilder.chars(), 0, refBuilder.length())) {
           PostingsEnum postings = termsEnum.postings(null, PostingsEnum.OFFSETS);
-          if (doc == postings.advance(doc)) { // now it's positioned, although may be exhausted
-            offsetsEnums.add(new OffsetsEnum(new BytesRef(automaton.toString()), postings));
+          if (doc == postings.advance(doc)) {
+            automataPostings.get(automaton).add(postings);
           }
         }
       }
     }
+
+    List<OffsetsEnum> offsetsEnums = new LinkedList<>();
+    for (Map.Entry<CharacterRunAutomaton, List<PostingsEnum>> automatonPostings : automataPostings.entrySet()) {
+      List<PostingsEnum> postingsEnums = automatonPostings.getValue();
+      int size = postingsEnums.size();
+      if (size > 0) { //only add if we have offsets
+        BytesRef wildcardTerm = new BytesRef(automatonPostings.getKey().toString());
+        if (size == 1) { //don't wrap in a composite if there's only one OffsetsEnum
+          offsetsEnums.add(new OffsetsEnum(wildcardTerm, postingsEnums.get(0)));
+        } else {
+          offsetsEnums.add(new OffsetsEnum(wildcardTerm, new CompositePostingsEnum(wildcardTerm, postingsEnums)));
+        }
+      }
+    }
+
     return offsetsEnums;
   }
 
