@@ -585,9 +585,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     boolean success = false;
     SolrCore core = null;
     try {
+      CoreDescriptor cd = new CoreDescriptor(coreDescriptor.getName(), coreDescriptor);
+      cd.loadExtraProperties(); //Reload the extra properties
       core = new SolrCore(getName(), getDataDir(), coreConfig.getSolrConfig(),
           coreConfig.getIndexSchema(), coreConfig.getProperties(),
-          coreDescriptor, updateHandler, solrDelPolicy, currentCore);
+          cd, updateHandler, solrDelPolicy, currentCore);
       
       // we open a new IndexWriter to pick up the latest config
       core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
