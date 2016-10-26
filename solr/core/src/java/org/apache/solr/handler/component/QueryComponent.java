@@ -414,6 +414,9 @@ public class QueryComponent extends SearchComponent
               .setTruncateGroups(groupingSpec.isTruncateGroups() && groupingSpec.getFields().length > 0)
               .setSearcher(searcher);
 
+          int docsToCollect = Grouping.getMax(groupingSpec.getGroupOffset(), groupingSpec.getGroupLimit(), searcher.maxDoc());
+          docsToCollect = Math.max(docsToCollect, 1);
+
           for (String field : groupingSpec.getFields()) {
             SchemaField schemaField = schema.getField(field);
             String[] topGroupsParam = params.getParams(GroupParams.GROUP_DISTRIBUTED_TOPGROUPS_PREFIX + field);
@@ -436,7 +439,7 @@ public class QueryComponent extends SearchComponent
                     .setGroupSort(groupingSpec.getGroupSort())
                     .setSortWithinGroup(groupingSpec.getSortWithinGroup())
                     .setFirstPhaseGroups(topGroups)
-                    .setMaxDocPerGroup(groupingSpec.getGroupOffset() + groupingSpec.getGroupLimit())
+                    .setMaxDocPerGroup(docsToCollect)
                     .setNeedScores(needScores)
                     .setNeedMaxScore(needScores)
                     .build()
@@ -445,7 +448,7 @@ public class QueryComponent extends SearchComponent
 
           for (String query : groupingSpec.getQueries()) {
             secondPhaseBuilder.addCommandField(new Builder()
-                .setDocsToCollect(groupingSpec.getOffset() + groupingSpec.getLimit())
+                .setDocsToCollect(docsToCollect)
                 .setSort(groupingSpec.getGroupSort())
                 .setQuery(query, rb.req)
                 .setDocSet(searcher)

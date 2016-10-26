@@ -227,6 +227,9 @@ Bug Fixes
 
 * SOLR-2039: Multivalued fields with dynamic names does not work properly with DIH.
   (K A, ruslan.shv, Cao Manh Dat via shalin)
+
+* SOLR-4164: group.limit=-1 was not supported for grouping in distributed mode.
+  (Cao Manh Dat, Lance Norskog, Webster Homer, hossman, yonik)
  
 Optimizations
 ----------------------
