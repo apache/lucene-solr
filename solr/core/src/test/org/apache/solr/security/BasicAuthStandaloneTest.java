@@ -70,7 +70,6 @@ public class BasicAuthStandaloneTest extends AbstractSolrTestCase {
     super.setUp();
     instance = new SolrInstance("inst", null);
     instance.setUp();
-    System.setProperty("solr.solr.home", instance.getHomeDir().toString());    
     jetty = createJetty(instance);
     initCore("solrconfig.xml", "schema.xml", instance.getHomeDir().toString());
     securityConfHandler = new SecurityConfHandlerLocalForTesting(jetty.getCoreContainer());

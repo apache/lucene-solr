@@ -20,20 +20,16 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * Wrapper for use in tests
  */
 public class SecurityConfHandlerLocalForTesting extends SecurityConfHandlerLocal {
-  
   public SecurityConfHandlerLocalForTesting(CoreContainer coreContainer) {
     super(coreContainer);
   }
 
   public boolean persistConf(SecurityConfig securityConfig) throws IOException {
-    // Set JSON_PATH again since the test may have 
-    securityJsonPath = SolrResourceLoader.locateSolrHome().resolve("security.json");
     return super.persistConf(securityConfig);
   }
   
