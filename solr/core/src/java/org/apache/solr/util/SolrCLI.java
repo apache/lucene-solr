@@ -42,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
@@ -75,6 +76,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -112,6 +114,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
+import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
@@ -148,7 +152,7 @@ public class SolrCLI {
 
       int toolExitStatus = 0;
       try {
-        setBasicAuth(cli);
+        setBasicAuth();
         runImpl(cli);
       } catch (Exception exc) {
         // since this is a CLI, spare the user the stacktrace
@@ -161,21 +165,6 @@ public class SolrCLI {
         }
       }
       return toolExitStatus;
-    }
-
-    protected void setBasicAuth(CommandLine cli) throws Exception {
-      String basicauth = System.getProperty("basicauth", null);
-      if (basicauth != null) {
-        List<String> ss = StrUtils.splitSmart(basicauth, ':');
-        if (ss.size() != 2)
-          throw new Exception("Please provide 'basicauth' in the 'user:password' format");
-
-        HttpClientUtil.addRequestInterceptor((httpRequest, httpContext) -> {
-          String pair = ss.get(0) + ":" + ss.get(1);
-          byte[] encodedBytes = Base64.encodeBase64(pair.getBytes(UTF_8));
-          httpRequest.addHeader(new BasicHeader("Authorization", "Basic " + new String(encodedBytes, UTF_8)));
-        });
-      }
     }
 
     protected abstract void runImpl(CommandLine cli) throws Exception;
@@ -204,9 +193,6 @@ public class SolrCLI {
         
         cloudSolrClient.connect();
         runCloudTool(cloudSolrClient, cli);
-      } catch (Exception e) {
-        log.error("Could not complete mv operation for reason: " + e.getMessage());
-        throw (e);
       }
     }
     
@@ -541,6 +527,25 @@ public class SolrCLI {
     }
     return classes;
   }
+
+  /**
+   * Inspects system property basicauth and enables authentication for HttpClient
+   * @throws Exception if the basicauth SysProp has wrong format
+   */
+  protected static void setBasicAuth() throws Exception {
+    String basicauth = System.getProperty("basicauth", null);
+    if (basicauth != null) {
+      List<String> ss = StrUtils.splitSmart(basicauth, ':');
+      if (ss.size() != 2)
+        throw new Exception("Please provide 'basicauth' in the 'user:password' format");
+
+      HttpClientUtil.addRequestInterceptor((httpRequest, httpContext) -> {
+        String pair = ss.get(0) + ":" + ss.get(1);
+        byte[] encodedBytes = Base64.encodeBase64(pair.getBytes(UTF_8));
+        httpRequest.addHeader(new BasicHeader("Authorization", "Basic " + new String(encodedBytes, UTF_8)));
+      });
+    }
+  }
   
   /**
    * Determine if a request to Solr failed due to a communication error,
@@ -554,6 +559,29 @@ public class SolrCLI {
          rootCause instanceof NoHttpResponseException ||
          rootCause instanceof SocketException);
     return wasCommError;
+  }
+
+  /**
+   * Tries a simple HEAD request and throws SolrException in case of Authorization error
+   * @param url the url to do a HEAD request to
+   * @param httpClient the http client to use (make sure it has authentication optinos set)
+   * @return the HTTP response code
+   * @throws SolrException if auth/autz problems
+   * @throws IOException if connection failure
+   */
+  private static int attemptHttpHead(String url, HttpClient httpClient) throws SolrException, IOException {
+    HttpResponse response = httpClient.execute(new HttpHead(url), HttpClientUtil.createNewHttpClientRequestContext());
+    int code = response.getStatusLine().getStatusCode();
+    if (code == UNAUTHORIZED.code || code == FORBIDDEN.code) {
+      throw new SolrException(SolrException.ErrorCode.getErrorCode(code), 
+          "Solr requires authentication for " + url + ". Please supply valid credentials. HTTP code=" + code);
+    }
+    return code;
+  }
+
+  private static boolean exceptionIsAuthRelated(Exception exc) {
+    return (exc instanceof SolrException 
+        && Arrays.asList(UNAUTHORIZED.code, FORBIDDEN.code).contains(((SolrException) exc).code()));
   }
   
   public static CloseableHttpClient getHttpClient() {
@@ -608,6 +636,9 @@ public class SolrCLI {
       try {
         json = getJson(httpClient, getUrl);
       } catch (Exception exc) {
+        if (exceptionIsAuthRelated(exc)) {
+          throw exc;
+        }
         if (--attempts > 0 && checkCommunicationError(exc)) {
           if (!isFirstAttempt) // only show the log warning after the second attempt fails
             log.warn("Request to "+getUrl+" failed due to: "+exc.getMessage()+
@@ -660,33 +691,46 @@ public class SolrCLI {
    */
   @SuppressWarnings({"unchecked"})
   public static Map<String,Object> getJson(HttpClient httpClient, String getUrl) throws Exception {
-    // ensure we're requesting JSON back from Solr
-    HttpGet httpGet = new HttpGet(new URIBuilder(getUrl).setParameter(CommonParams.WT, CommonParams.JSON).build());
-    // make the request and get back a parsed JSON object
-    Map<String,Object> json = httpClient.execute(httpGet, new SolrResponseHandler(), HttpClientUtil.createNewHttpClientRequestContext());
-    // check the response JSON from Solr to see if it is an error
-    Long statusCode = asLong("/responseHeader/status", json);
-    if (statusCode == -1) {
-      throw new SolrServerException("Unable to determine outcome of GET request to: "+
-          getUrl+"! Response: "+json);
-    } else if (statusCode != 0) {
-      String errMsg = asString("/error/msg", json);
-      if (errMsg == null)
-        errMsg = String.valueOf(json);
-      throw new SolrServerException(errMsg);
-    } else {
-      // make sure no "failure" object in there either
-      Object failureObj = json.get("failure");
-      if (failureObj != null) {
-        if (failureObj instanceof Map) {
-          Object err = ((Map)failureObj).get("");
-          if (err != null)
-            throw new SolrServerException(err.toString());
+    try {
+      // ensure we're requesting JSON back from Solr
+      HttpGet httpGet = new HttpGet(new URIBuilder(getUrl).setParameter(CommonParams.WT, CommonParams.JSON).build());
+
+      // make the request and get back a parsed JSON object
+      Map<String, Object> json = httpClient.execute(httpGet, new SolrResponseHandler(), HttpClientUtil.createNewHttpClientRequestContext());
+      // check the response JSON from Solr to see if it is an error
+      Long statusCode = asLong("/responseHeader/status", json);
+      if (statusCode == -1) {
+        throw new SolrServerException("Unable to determine outcome of GET request to: "+
+            getUrl+"! Response: "+json);
+      } else if (statusCode != 0) {
+        String errMsg = asString("/error/msg", json);
+        if (errMsg == null)
+          errMsg = String.valueOf(json);
+        throw new SolrServerException(errMsg);
+      } else {
+        // make sure no "failure" object in there either
+        Object failureObj = json.get("failure");
+        if (failureObj != null) {
+          if (failureObj instanceof Map) {
+            Object err = ((Map)failureObj).get("");
+            if (err != null)
+              throw new SolrServerException(err.toString());
+          }
+          throw new SolrServerException(failureObj.toString());
         }
-        throw new SolrServerException(failureObj.toString());
+      }
+      return json;
+    } catch (ClientProtocolException cpe) {
+      // Currently detecting authentication by string-matching the HTTP response
+      // Perhaps SolrClient should have thrown an exception itself??
+      if (cpe.getMessage().contains("HTTP ERROR 401") || cpe.getMessage().contentEquals("HTTP ERROR 403")) {
+        int code = cpe.getMessage().contains("HTTP ERROR 401") ? 401 : 403; 
+        throw new SolrException(SolrException.ErrorCode.getErrorCode(code), 
+            "Solr requires authentication for " + getUrl + ". Please supply valid credentials. HTTP code=" + code);
+      } else {
+        throw cpe;
       }
     }
-    return json;
   }  
 
   /**
@@ -820,6 +864,9 @@ public class SolrCLI {
           new JSONWriter(arr, 2).write(getStatus(solrUrl));
           echo(arr.toString());
         } catch (Exception exc) {
+          if (exceptionIsAuthRelated(exc)) {
+            throw exc;
+          }
           if (checkCommunicationError(exc)) {
             // this is not actually an error from the tool as it's ok if Solr is not online.
             System.err.println("Solr at "+solrUrl+" not online.");
@@ -836,6 +883,9 @@ public class SolrCLI {
         try {
           return getStatus(solrUrl);
         } catch (Exception exc) {
+          if (exceptionIsAuthRelated(exc)) {
+            throw exc;
+          }
           try {
             Thread.sleep(2000L);
           } catch (InterruptedException interrupted) {
@@ -1130,6 +1180,10 @@ public class SolrCLI {
       if (slices == null)
         throw new IllegalArgumentException("Collection "+collection+" not found!");
       
+      // Test http code using a HEAD request first, fail fast if authentication failure
+      String urlForColl = zkStateReader.getLeaderUrl(collection, slices.stream().findFirst().get().getName(), 1000); 
+      attemptHttpHead(urlForColl, cloudSolrClient.getHttpClient());
+
       SolrQuery q = new SolrQuery("*:*");
       q.setRows(0);      
       QueryResponse qr = cloudSolrClient.query(q);
@@ -3150,7 +3204,8 @@ public class SolrCLI {
 
     private static String message = null;
     private static boolean useExitCode = false;
-    
+    private static Optional<Long> timeoutMs = Optional.empty();
+
     public AssertTool() { this(System.out); }
     public AssertTool(PrintStream stdout) { super(stdout); }
 
@@ -3170,13 +3225,13 @@ public class SolrCLI {
               .withLongOpt("root")
               .create("r"),
           OptionBuilder
-              .withDescription("Asserts that Solr is NOT started on a certain URL")
+              .withDescription("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms")
               .withLongOpt("not-started")
               .hasArg(true)
               .withArgName("url")
               .create("S"),
           OptionBuilder
-              .withDescription("Asserts that Solr is started on a certain URL")
+              .withDescription("Asserts that Solr is running on a certain URL. Default timeout is 1000ms")
               .withLongOpt("started")
               .hasArg(true)
               .withArgName("url")
@@ -3206,6 +3261,13 @@ public class SolrCLI {
               .withArgName("message")
               .create("m"),
           OptionBuilder
+              .withDescription("Timeout in ms for commands supporting a timeout")
+              .withLongOpt("ms")
+              .hasArg(true)
+              .withType(Long.class)
+              .withArgName("ms")
+              .create("t"),
+          OptionBuilder
               .withDescription("Return an exit code instead of printing error message on assert fail.")
               .withLongOpt("exitcode")
               .create("e")
@@ -3217,14 +3279,14 @@ public class SolrCLI {
 
       int toolExitStatus = 0;
       try {
-        setBasicAuth(cli);
+        setBasicAuth();
         toolExitStatus = runAssert(cli);
       } catch (Exception exc) {
         // since this is a CLI, spare the user the stacktrace
         String excMsg = exc.getMessage();
         if (excMsg != null) {
           System.err.println("\nERROR: " + excMsg + "\n");
-          toolExitStatus = 1;
+          toolExitStatus = 100; // Exit >= 100 means error, else means number of tests that failed
         } else {
           throw exc;
         }
@@ -3237,7 +3299,12 @@ public class SolrCLI {
       runAssert(cli);
     }
 
-    // Custom run method which may return exit code
+    /**
+     * Custom run method which may return exit code
+     * @param cli the command line object
+     * @return 0 on success, or a number corresponding to number of tests that failed
+     * @throws Exception if a tool failed, e.g. authentication failure
+     */
     protected int runAssert(CommandLine cli) throws Exception {
       if (cli.getOptions().length == 0 || cli.getArgs().length > 0 || cli.hasOption("h")) {
         new HelpFormatter().printHelp("bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-u <dir>] [-x <dir>] [-X <dir>]", getToolOptions(this));
@@ -3246,49 +3313,79 @@ public class SolrCLI {
       if (cli.hasOption("m")) {
         message = cli.getOptionValue("m");
       }
+      if (cli.hasOption("t")) {
+        timeoutMs = Optional.of(Long.parseLong(cli.getOptionValue("t")));
+      }
       if (cli.hasOption("e")) {
         useExitCode = true;
       }
+
+      int ret = 0;
       if (cli.hasOption("r")) {
-        if (assertRootUser() > 0) return 1;
+        ret += assertRootUser();
       }
       if (cli.hasOption("R")) {
-        if (assertNotRootUser() > 0) return 1;
+        ret += assertNotRootUser();
       }
       if (cli.hasOption("x")) {
-        if (assertFileExists(cli.getOptionValue("x")) > 0) return 1;
+        ret += assertFileExists(cli.getOptionValue("x"));
       }
       if (cli.hasOption("X")) {
-        if (assertFileNotExists(cli.getOptionValue("X")) > 0) return 1;
+        ret += assertFileNotExists(cli.getOptionValue("X"));
       }
       if (cli.hasOption("u")) {
-        if (sameUser(cli.getOptionValue("u")) > 0) return 1;
+        ret += sameUser(cli.getOptionValue("u"));
       }
       if (cli.hasOption("s")) {
-        if (assertSolrRunning(cli.getOptionValue("s")) > 0) return 1;
+        ret += assertSolrRunning(cli.getOptionValue("s"));
       }
       if (cli.hasOption("S")) {
-        if (assertSolrNotRunning(cli.getOptionValue("S")) > 0) return 1;
+        ret += assertSolrNotRunning(cli.getOptionValue("S"));
       }
-      return 0;
+      return ret;
     }
 
     public static int assertSolrRunning(String url) throws Exception {
       StatusTool status = new StatusTool();
       try {
-        status.waitToSeeSolrUp(url, 5);
-      } catch (Exception e) {
-        return exitOrException("Solr is not running on url " + url);
+        status.waitToSeeSolrUp(url, timeoutMs.orElse(1000L).intValue() / 1000);
+      } catch (Exception se) {
+        if (exceptionIsAuthRelated(se)) {
+          throw se;
+        }
+        return exitOrException("Solr is not running on url " + url + " after " + timeoutMs.orElse(1000L) / 1000 + "s");
       }
       return 0;
     }
 
     public static int assertSolrNotRunning(String url) throws Exception {
       StatusTool status = new StatusTool();
+      long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutMs.orElse(1000L), TimeUnit.MILLISECONDS);
       try {
-        status.waitToSeeSolrUp(url, 5);
-        return exitOrException("Solr is running on url " + url);
-      } catch (Exception e) { return 0; }
+        attemptHttpHead(url, getHttpClient());
+      } catch (SolrException se) {
+        throw se; // Auth error
+      } catch (IOException e) {
+        log.debug("Opening connection to " + url + " failed, Solr does not seem to be running", e);
+        return 0;
+      }
+      while (System.nanoTime() < timeout) {
+        try {
+          status.waitToSeeSolrUp(url, 1);
+          try {
+            log.debug("Solr still up. Waiting before trying again to see if it was stopped");
+            Thread.sleep(1000L);
+          } catch (InterruptedException interrupted) {
+            timeout = 0; // stop looping
+          }
+        } catch (Exception se) {
+          if (exceptionIsAuthRelated(se)) {
+            throw se;
+          }
+          return exitOrException(se.getMessage());
+        }
+      }
+      return exitOrException("Solr is still running at " + url + " after " + timeoutMs.orElse(1000L) / 1000 + "s");
     }
 
     public static int sameUser(String directory) throws Exception {
