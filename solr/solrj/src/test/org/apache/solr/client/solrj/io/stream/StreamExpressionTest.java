@@ -256,7 +256,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
 
     assertEquals(4, tuples.size());
-    assertOrder(tuples, 4,3,1,0);
+    assertOrder(tuples, 4, 3, 1, 0);
 
     // Basic w/ multi comp
     sParams.set("q2", "search(" + COLLECTION + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
@@ -522,14 +522,14 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     
     // Basic test
     expression = StreamExpressionParser.parse("top("
-                                              + "n=3,"
-                                              + "search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
-                                              + "sort=\"a_f asc, a_i asc\")");
+        + "n=3,"
+        + "search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
+        + "sort=\"a_f asc, a_i asc\")");
     stream = new RankStream(expression, factory);
     tuples = getTuples(stream);
     
     assert(tuples.size() == 3);
-    assertOrder(tuples, 0,2,1);
+    assertOrder(tuples, 0, 2, 1);
 
     // Basic test desc
     expression = StreamExpressionParser.parse("top("
@@ -3794,7 +3794,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt","/stream");
+    paramsLoc.set("qt", "/stream");
     SolrStream classifyStream = new SolrStream(url, paramsLoc);
     Map<String, Double> idToLabel = getIdToLabel(classifyStream, "probability_d");
     assertEquals(idToLabel.size(), 2);
@@ -3865,6 +3865,146 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteCollection("uknownCollection").process(cluster.getSolrClient());
     CollectionAdminRequest.deleteCollection("checkpointCollection").process(cluster.getSolrClient());
   }
+
+  @Test
+  public void testExecutorStream() throws Exception {
+    CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish("workQueue", cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
+    CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish("mainCorpus", cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
+    CollectionAdminRequest.createCollection("destination", "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish("destination", cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
+
+    UpdateRequest workRequest = new UpdateRequest();
+    UpdateRequest dataRequest = new UpdateRequest();
+
+
+    for (int i = 0; i < 500; i++) {
+      workRequest.add(id, String.valueOf(i), "expr_s", "update(destination, batchSize=50, search(mainCorpus, q=id:"+i+", rows=1, sort=\"id asc\", fl=\"id, body_t, field_i\"))");
+      dataRequest.add(id, String.valueOf(i), "body_t", "hello world "+i, "field_i", Integer.toString(i));
+    }
+
+    workRequest.commit(cluster.getSolrClient(), "workQueue");
+    dataRequest.commit(cluster.getSolrClient(), "mainCorpus");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/destination";
+    TupleStream executorStream;
+    ModifiableSolrParams paramsLoc;
+
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost("workQueue", cluster.getZkServer().getZkAddress())
+        .withCollectionZkHost("mainCorpus", cluster.getZkServer().getZkAddress())
+        .withCollectionZkHost("destination", cluster.getZkServer().getZkAddress())
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("executor", ExecutorStream.class)
+        .withFunctionName("update", UpdateStream.class);
+
+    String executorExpression = "executor(threads=3, search(workQueue, q=\"*:*\", fl=\"id, expr_s\", rows=1000, sort=\"id desc\"))";
+    executorStream = factory.constructStream(executorExpression);
+
+    StreamContext context = new StreamContext();
+    SolrClientCache clientCache = new SolrClientCache();
+    context.setSolrClientCache(clientCache);
+    executorStream.setStreamContext(context);
+    getTuples(executorStream);
+    //Destination collection should now contain all the records in the main corpus.
+    cluster.getSolrClient().commit("destination");
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", "search(destination, q=\"*:*\", fl=\"id, body_t, field_i\", rows=1000, sort=\"field_i asc\")");
+    paramsLoc.set("qt","/stream");
+
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 500);
+    for(int i=0; i<500; i++) {
+      Tuple tuple = tuples.get(i);
+      long ivalue = tuple.getLong("field_i");
+      String body = tuple.getString("body_t");
+      assertTrue(ivalue == i);
+      assertTrue(body.equals("hello world "+i));
+    }
+
+    solrStream.close();
+    clientCache.close();
+    CollectionAdminRequest.deleteCollection("workQueue").process(cluster.getSolrClient());
+    CollectionAdminRequest.deleteCollection("mainCorpus").process(cluster.getSolrClient());
+    CollectionAdminRequest.deleteCollection("destination").process(cluster.getSolrClient());
+  }
+
+
+  @Test
+  public void testParallelExecutorStream() throws Exception {
+    CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish("workQueue", cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
+    CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish("mainCorpus", cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
+    CollectionAdminRequest.createCollection("destination", "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish("destination", cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
+
+    UpdateRequest workRequest = new UpdateRequest();
+    UpdateRequest dataRequest = new UpdateRequest();
+
+
+    for (int i = 0; i < 500; i++) {
+      workRequest.add(id, String.valueOf(i), "expr_s", "update(destination, batchSize=50, search(mainCorpus, q=id:"+i+", rows=1, sort=\"id asc\", fl=\"id, body_t, field_i\"))");
+      dataRequest.add(id, String.valueOf(i), "body_t", "hello world "+i, "field_i", Integer.toString(i));
+    }
+
+    workRequest.commit(cluster.getSolrClient(), "workQueue");
+    dataRequest.commit(cluster.getSolrClient(), "mainCorpus");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/destination";
+    TupleStream executorStream;
+    ModifiableSolrParams paramsLoc;
+
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost("workQueue", cluster.getZkServer().getZkAddress())
+        .withCollectionZkHost("mainCorpus", cluster.getZkServer().getZkAddress())
+        .withCollectionZkHost("destination", cluster.getZkServer().getZkAddress())
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("executor", ExecutorStream.class)
+        .withFunctionName("parallel", ParallelStream.class)
+        .withFunctionName("update", UpdateStream.class);
+
+    String executorExpression = "parallel(workQueue, workers=2, sort=\"EOF asc\", executor(threads=3, queueSize=100, search(workQueue, q=\"*:*\", fl=\"id, expr_s\", rows=1000, partitionKeys=id, sort=\"id desc\")))";
+    executorStream = factory.constructStream(executorExpression);
+
+    StreamContext context = new StreamContext();
+    SolrClientCache clientCache = new SolrClientCache();
+    context.setSolrClientCache(clientCache);
+    executorStream.setStreamContext(context);
+    getTuples(executorStream);
+    //Destination collection should now contain all the records in the main corpus.
+    cluster.getSolrClient().commit("destination");
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", "search(destination, q=\"*:*\", fl=\"id, body_t, field_i\", rows=1000, sort=\"field_i asc\")");
+    paramsLoc.set("qt","/stream");
+
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 500);
+    for(int i=0; i<500; i++) {
+      Tuple tuple = tuples.get(i);
+      long ivalue = tuple.getLong("field_i");
+      String body = tuple.getString("body_t");
+      assertTrue(ivalue == i);
+      assertTrue(body.equals("hello world " + i));
+    }
+
+    solrStream.close();
+    clientCache.close();
+    CollectionAdminRequest.deleteCollection("workQueue").process(cluster.getSolrClient());
+    CollectionAdminRequest.deleteCollection("mainCorpus").process(cluster.getSolrClient());
+    CollectionAdminRequest.deleteCollection("destination").process(cluster.getSolrClient());
+  }
+
+
 
   private Map<String,Double> getIdToLabel(TupleStream stream, String outField) throws IOException {
     Map<String, Double> idToLabel = new HashMap<>();
