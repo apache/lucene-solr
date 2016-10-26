@@ -166,6 +166,8 @@ New Features
 
 * SOLR-2212: Add a factory class corresponding to Lucene's NoMergePolicy. (Lance Norskog, Cao Manh Dat via shalin)
 
+* SOLR-9670: Support SOLR_AUTHENTICATION_OPTS in solr.cmd (janhoy) 
+
 Bug Fixes
 ----------------------
 
