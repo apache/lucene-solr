@@ -1147,7 +1147,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     );
 
 
-
+/*
     if (!client.local()) {
       client.testJQ(params(p, "q", "*:*"
           , "json.facet", "{" +
@@ -1182,7 +1182,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
               "}"
       );
     }
-
+*/
 
   }
 
