@@ -45,7 +45,7 @@ public final class DocValues {
       @Override
       public boolean advanceExact(int target) throws IOException {
         doc = target;
-        return true;
+        return false;
       }
       
       @Override
