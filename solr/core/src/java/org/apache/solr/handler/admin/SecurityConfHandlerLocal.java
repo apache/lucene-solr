@@ -29,7 +29,6 @@ import java.util.Collections;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CommandOperation;
 import org.slf4j.Logger;
