@@ -159,6 +159,24 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     System.clearProperty("solr.jetty.keystore");
   }
   
+  @Test
+  public void testResolveUrlScheme() {
+    System.clearProperty("urlScheme");
+    System.clearProperty("solr.jetty.keystore");
+    assertEquals("http", MockPKIAuthenticationPlugin.resolveUrlScheme());
+    System.setProperty("urlScheme", "http");
+    assertEquals("http", MockPKIAuthenticationPlugin.resolveUrlScheme());
+    System.setProperty("urlScheme", "https");
+    assertEquals("https", MockPKIAuthenticationPlugin.resolveUrlScheme());
+    System.setProperty("urlScheme", "ftp");
+    System.clearProperty("solr.jetty.keystore");
+    assertEquals("http", MockPKIAuthenticationPlugin.resolveUrlScheme());
+    System.setProperty("solr.jetty.keystore", "foo");
+    assertEquals("https", MockPKIAuthenticationPlugin.resolveUrlScheme());
+    System.clearProperty("urlScheme");
+    System.clearProperty("solr.jetty.keystore");
+  }
+  
   private HttpServletRequest createMockRequest(final AtomicReference<Header> header) {
     HttpServletRequest mockReq = EasyMock.createMock(HttpServletRequest.class);
     EasyMock.reset(mockReq);

@@ -234,10 +234,23 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     try {
       final String path = URLDecoder.decode(nodeName.substring(1+_offset), "UTF-8");
       // TODO: Find a better way of resolving urlScheme when not using ZK?
-      String urlScheme = System.getProperty("solr.jetty.keystore") == null ? "http" : "https";
+      String urlScheme = resolveUrlScheme();
       return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
     } catch (UnsupportedEncodingException e) {
       throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
+    }
+  }
+
+  /**
+   * Resolve urlScheme first from sysProp "urlScheme", if not set or invalid value, peek at ssl sysProps
+   * @return "https" if SSL is enabled, else "http"
+   */
+  protected static String resolveUrlScheme() {
+    String urlScheme = System.getProperty("urlScheme");
+    if (urlScheme != null && urlScheme.matches("https?")) {
+      return urlScheme;
+    } else {
+      return System.getProperty("solr.jetty.keystore") == null ? "http" : "https";
     }
   }
 
