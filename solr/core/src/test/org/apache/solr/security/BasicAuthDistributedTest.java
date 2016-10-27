@@ -31,12 +31,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
-import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Test;
-
-import static org.apache.solr.security.BasicAuthIntegrationTest.STD_CONF;
-import static org.apache.solr.security.BasicAuthIntegrationTest.setBasicAuthHeader;
-import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecurityStatus;
 
 /**
  * Tests basicAuth in a multi shard env
