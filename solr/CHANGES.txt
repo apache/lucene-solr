@@ -170,6 +170,9 @@ New Features
 
 * SOLR-9559: Add ExecutorStream to execute stored Streaming Expressions (Joel Bernstein)
 
+* SOLR-1085: Add support for MoreLikeThis queries and responses in SolrJ client.
+  (Maurice Jumelet, Bill Mitchell, Cao Manh Dat via shalin)
+
 Bug Fixes
 ----------------------
 
