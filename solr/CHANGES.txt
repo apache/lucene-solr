@@ -234,6 +234,9 @@ Bug Fixes
   (Cao Manh Dat, Lance Norskog, Webster Homer, hossman, yonik)
 
 * SOLR-9692: blockUnknown property makes inter-node communication impossible (noble)
+
+* SOLR-2094: XPathEntityProcessor should reinitialize the XPathRecordReader instance if
+  the 'forEach' or 'xpath' attributes are templates & it is not a root entity (Cao Manh Dat, noble)
  
 Optimizations
 ----------------------
