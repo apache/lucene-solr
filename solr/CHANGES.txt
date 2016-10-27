@@ -166,7 +166,9 @@ New Features
 
 * SOLR-2212: Add a factory class corresponding to Lucene's NoMergePolicy. (Lance Norskog, Cao Manh Dat via shalin)
 
-* SOLR-9670: Support SOLR_AUTHENTICATION_OPTS in solr.cmd (janhoy) 
+* SOLR-9670: Support SOLR_AUTHENTICATION_OPTS in solr.cmd (janhoy)
+
+* SOLR-9559: Add ExecutorStream to execute stored Streaming Expressions (Joel Bernstein)
 
 Bug Fixes
 ----------------------
@@ -369,6 +371,8 @@ Other Changes
 * SOLR-5245: Add a test to ensure that election contexts are keyed off both collection name and coreNodeName
   so that killing a shard in one collection does not result in leader election in a different collection.
   See SOLR-5243 for the related bug. (Cao Manh Dat via shalin)
+
+* SOLR-9533: Reload core config when a core is reloaded (Gethin James, Joel Bernstein)
 
 ==================  6.2.1 ==================
 
