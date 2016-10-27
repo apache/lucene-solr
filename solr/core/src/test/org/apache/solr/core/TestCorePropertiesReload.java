@@ -17,12 +17,14 @@
 package org.apache.solr.core;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.BufferedWriter;
+import java.io.Writer;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestCorePropertiesReload extends SolrTestCaseJ4 {
@@ -59,11 +61,12 @@ public class TestCorePropertiesReload extends SolrTestCaseJ4 {
   }
 
   private void writeProperties(Properties props) throws Exception {
-    FileWriter out = null;
+    Writer out = null;
     try {
       File confDir = new File(new File(solrHomeDirectory, "collection1"), "conf");
-      out = new FileWriter(new File(confDir, "solrcore.properties"));
+      out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(confDir, "solrcore.properties")), "UTF8"));
       props.store(out, "Reload Test");
+
     } finally {
       out.close();
     }
