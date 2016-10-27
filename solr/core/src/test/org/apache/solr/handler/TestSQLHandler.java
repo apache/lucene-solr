@@ -679,7 +679,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
 
       sParams = mapParams(CommonParams.QT, "/sql",
-          "stmt", "select str_s as myString, 'count(*)', sum(field_i) as sum, min(field_i), max(field_i), cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s order by sum asc limit 2");
+          "stmt", "select str_s as myString, count(*), sum(field_i) as mySum, min(field_i), max(field_i), cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s order by mySum asc limit 2");
 
       solrStream = new SolrStream(jetty.url, sParams);
       tuples = getTuples(solrStream);
