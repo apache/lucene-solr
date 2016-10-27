@@ -16,6 +16,7 @@
  */
 package org.apache.solr.analytics.statistics;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -69,7 +70,7 @@ public class PercentileStatsCollector extends AbstractDelegatingStatsCollector{
     return PercentileCalculator.getPercentiles(values, percentiles);
   }
   
-  public void collect(int doc) {
+  public void collect(int doc) throws IOException {
     super.collect(doc);
     if (value.exists) {
       values.add((Comparable)value.toObject());

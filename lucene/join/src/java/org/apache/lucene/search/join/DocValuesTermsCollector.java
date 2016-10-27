@@ -29,7 +29,7 @@ abstract class DocValuesTermsCollector<DV> extends SimpleCollector {
   
   @FunctionalInterface
   static interface Function<R> {
-      R apply(LeafReader t) throws IOException  ;
+    R apply(LeafReader t) throws IOException;
   }
   
   protected DV docValues;
@@ -45,8 +45,9 @@ abstract class DocValuesTermsCollector<DV> extends SimpleCollector {
   }
   
   static Function<BinaryDocValues> binaryDocValues(String field) {
-      return (ctx) -> DocValues.getBinary(ctx, field);
+    return (ctx) -> DocValues.getBinary(ctx, field);
   }
+
   static Function<SortedSetDocValues> sortedSetDocValues(String field) {
     return (ctx) -> DocValues.getSortedSet(ctx, field);
   }

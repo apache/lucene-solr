@@ -1258,4 +1258,80 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
       a.close();
     }
   }
+
+  public void testContextNotAllTermsRequired() throws Exception {
+
+    Input keys[] = new Input[] {
+      new Input("lend me your ear", 8, new BytesRef("foobar"), asSet("foo", "bar")),
+      new Input("a penny saved is a penny earned", 10, new BytesRef("foobaz"), asSet("foo", "baz"))
+    };
+    Path tempDir = createTempDir("analyzingInfixContext");
+
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false);
+    suggester.build(new InputArrayIterator(keys));
+
+    // No context provided, all results returned
+    List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), 10, false, true);
+    assertEquals(2, results.size());
+    LookupResult result = results.get(0);
+    assertEquals("a penny saved is a penny earned", result.key);
+    assertEquals("a penny saved is a penny <b>ear</b>ned", result.highlightKey);
+    assertEquals(10, result.value);
+    assertEquals(new BytesRef("foobaz"), result.payload);
+    assertNotNull(result.contexts);
+    assertEquals(2, result.contexts.size());
+    assertTrue(result.contexts.contains(new BytesRef("foo")));
+    assertTrue(result.contexts.contains(new BytesRef("baz")));
+
+    result = results.get(1);
+    assertEquals("lend me your ear", result.key);
+    assertEquals("lend me your <b>ear</b>", result.highlightKey);
+    assertEquals(8, result.value);
+    assertEquals(new BytesRef("foobar"), result.payload);
+    assertNotNull(result.contexts);
+    assertEquals(2, result.contexts.size());
+    assertTrue(result.contexts.contains(new BytesRef("foo")));
+    assertTrue(result.contexts.contains(new BytesRef("bar")));
+
+    // Both have "foo" context:
+    results = suggester.lookup(TestUtil.stringToCharSequence("ear", random()), asSet("foo"), 10, false, true);
+    assertEquals(2, results.size());
+
+    result = results.get(0);
+    assertEquals("a penny saved is a penny earned", result.key);
+    assertEquals("a penny saved is a penny <b>ear</b>ned", result.highlightKey);
+    assertEquals(10, result.value);
+    assertEquals(new BytesRef("foobaz"), result.payload);
+    assertNotNull(result.contexts);
+    assertEquals(2, result.contexts.size());
+    assertTrue(result.contexts.contains(new BytesRef("foo")));
+    assertTrue(result.contexts.contains(new BytesRef("baz")));
+
+    result = results.get(1);
+    assertEquals("lend me your ear", result.key);
+    assertEquals("lend me your <b>ear</b>", result.highlightKey);
+    assertEquals(8, result.value);
+    assertEquals(new BytesRef("foobar"), result.payload);
+    assertNotNull(result.contexts);
+    assertEquals(2, result.contexts.size());
+    assertTrue(result.contexts.contains(new BytesRef("foo")));
+    assertTrue(result.contexts.contains(new BytesRef("bar")));
+
+    // Only one has "foo" context and len
+    results = suggester.lookup(TestUtil.stringToCharSequence("len", random()), asSet("foo"), 10, false, true);
+    assertEquals(1, results.size());
+
+    result = results.get(0);
+    assertEquals("lend me your ear", result.key);
+    assertEquals("<b>len</b>d me your ear", result.highlightKey);
+    assertEquals(8, result.value);
+    assertEquals(new BytesRef("foobar"), result.payload);
+    assertNotNull(result.contexts);
+    assertEquals(2, result.contexts.size());
+    assertTrue(result.contexts.contains(new BytesRef("foo")));
+    assertTrue(result.contexts.contains(new BytesRef("bar")));
+
+    suggester.close();
+  }
 }

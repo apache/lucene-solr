@@ -80,19 +80,19 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 public class TestGeo3DPoint extends LuceneTestCase {
 
   private static Codec getCodec() {
-    if (Codec.getDefault().getName().equals("Lucene62")) {
+    if (Codec.getDefault().getName().equals("Lucene70")) {
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 16, 2048);
       double maxMBSortInHeap = 3.0 + (3*random().nextDouble());
       if (VERBOSE) {
         System.out.println("TEST: using Lucene60PointsFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
       }
 
-      return new FilterCodec("Lucene62", Codec.getDefault()) {
+      return new FilterCodec("Lucene70", Codec.getDefault()) {
         @Override
         public PointsFormat pointsFormat() {
           return new PointsFormat() {
@@ -206,7 +206,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
     int iters = atLeast(10);
 
-    int recurseDepth = RandomInts.randomIntBetween(random(), 5, 15);
+    int recurseDepth = RandomNumbers.randomIntBetween(random(), 5, 15);
 
     iters = atLeast(50);
     
@@ -358,7 +358,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
           case 0:
             // Split on X:
             {
-              int splitValue = RandomInts.randomIntBetween(random(), cell.xMinEnc, cell.xMaxEnc);
+              int splitValue = RandomNumbers.randomIntBetween(random(), cell.xMinEnc, cell.xMaxEnc);
               if (VERBOSE) {
                 log.println("    now split on x=" + splitValue);
               }
@@ -384,7 +384,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
           case 1:
             // Split on Y:
             {
-              int splitValue = RandomInts.randomIntBetween(random(), cell.yMinEnc, cell.yMaxEnc);
+              int splitValue = RandomNumbers.randomIntBetween(random(), cell.yMinEnc, cell.yMaxEnc);
               if (VERBOSE) {
                 log.println("    now split on y=" + splitValue);
               }
@@ -410,7 +410,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
           case 2:
             // Split on Z:
             {
-              int splitValue = RandomInts.randomIntBetween(random(), cell.zMinEnc, cell.zMaxEnc);
+              int splitValue = RandomNumbers.randomIntBetween(random(), cell.zMinEnc, cell.zMaxEnc);
               if (VERBOSE) {
                 log.println("    now split on z=" + splitValue);
               }
@@ -791,8 +791,6 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
     final int iters = atLeast(100);
 
-    NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
-
     for (int iter=0;iter<iters;iter++) {
 
       /*
@@ -835,8 +833,11 @@ public class TestGeo3DPoint extends LuceneTestCase {
         System.err.println("  hitCount: " + hits.cardinality());
       }
       
+      NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
+
       for(int docID=0;docID<r.maxDoc();docID++) {
-        int id = (int) docIDToID.get(docID);
+        assertEquals(docID, docIDToID.nextDoc());
+        int id = (int) docIDToID.longValue();
         GeoPoint point = points[id];
         GeoPoint unquantizedPoint = unquantizedPoints[id];
         if (point != null && unquantizedPoint != null) {
@@ -1480,14 +1481,16 @@ public class TestGeo3DPoint extends LuceneTestCase {
     b.append("target is in leaf " + leafReader + " of full reader " + reader + "\n");
 
     DocIdSetBuilder hits = new DocIdSetBuilder(leafReader.maxDoc());
-    ExplainingVisitor visitor = new ExplainingVisitor(shape, targetDocPoint, scaledDocPoint, new PointInShapeIntersectVisitor(hits, shape, bounds), docID - reader.leaves().get(subIndex).docBase, 3, Integer.BYTES, b);
+    ExplainingVisitor visitor = new ExplainingVisitor(shape, targetDocPoint, scaledDocPoint,
+      new PointInShapeIntersectVisitor(hits, shape, bounds),
+      docID - reader.leaves().get(subIndex).docBase, 3, Integer.BYTES, b);
 
     // Do first phase, where we just figure out the "path" that leads to the target docID:
-    leafReader.getPointValues().intersect(fieldName, visitor);
+    leafReader.getPointValues(fieldName).intersect(visitor);
 
     // Do second phase, where we we see how the wrapped visitor responded along that path:
     visitor.startSecondPhase();
-    leafReader.getPointValues().intersect(fieldName, visitor);
+    leafReader.getPointValues(fieldName).intersect(visitor);
 
     return b.toString();
   }

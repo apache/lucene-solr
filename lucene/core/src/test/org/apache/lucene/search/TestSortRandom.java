@@ -239,10 +239,11 @@ public class TestSortRandom extends LuceneTestCase {
           assertNotNull(idSource);
           final FixedBitSet bits = new FixedBitSet(maxDoc);
           for(int docID=0;docID<maxDoc;docID++) {
+            assertEquals(docID, idSource.nextDoc());
             if (random.nextFloat() <= density) {
               bits.set(docID);
               //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
-              matchValues.add(docValues.get((int) idSource.get(docID)));
+              matchValues.add(docValues.get((int) idSource.longValue()));
             }
           }
 

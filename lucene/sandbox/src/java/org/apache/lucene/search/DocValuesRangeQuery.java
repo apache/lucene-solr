@@ -183,13 +183,21 @@ public final class DocValuesRangeQuery extends Query {
 
             @Override
             public boolean get(int doc) {
-              values.setDocument(doc);
-              final int count = values.count();
-              for (int i = 0; i < count; ++i) {
-                final long value = values.valueAt(i);
-                if (value >= min && value <= max) {
-                  return true;
+              try {
+                if (doc > values.docID()) {
+                  values.advance(doc);
                 }
+                if (doc == values.docID()) {
+                  final int count = values.docValueCount();
+                  for (int i = 0; i < count; ++i) {
+                    final long value = values.nextValue();
+                    if (value >= min && value <= max) {
+                      return true;
+                    }
+                  }
+                }
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
               }
               return false;
             }
@@ -241,11 +249,19 @@ public final class DocValuesRangeQuery extends Query {
 
             @Override
             public boolean get(int doc) {
-              values.setDocument(doc);
-              for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
-                if (ord >= minOrd && ord <= maxOrd) {
-                  return true;
+              try {
+                if (doc > values.docID()) {
+                  values.advance(doc);
                 }
+                if (doc == values.docID()) {
+                  for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
+                    if (ord >= minOrd && ord <= maxOrd) {
+                      return true;
+                    }
+                  }
+                }
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
               }
               return false;
             }

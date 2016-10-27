@@ -46,6 +46,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.util.TestInjection;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +81,7 @@ public class SplitShardCmd implements Cmd {
 
     log.info("Split shard invoked");
     ZkStateReader zkStateReader = ocmh.zkStateReader;
+    zkStateReader.forceUpdateCollection(collectionName);
 
     String splitKey = message.getStr("split.key");
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
@@ -122,6 +125,13 @@ public class SplitShardCmd implements Cmd {
       parentShardLeader = zkStateReader.getLeaderRetry(collectionName, slice, 10000);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+    }
+
+    // let's record the ephemeralOwner of the parent leader node
+    Stat leaderZnodeStat = zkStateReader.getZkClient().exists(ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(), null, true);
+    if (leaderZnodeStat == null)  {
+      // we just got to know the leader but its live node is gone already!
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The shard leader node: " + parentShardLeader.getNodeName() + " is not live anymore!");
     }
 
     DocRouter.Range range = parentSlice.getRange();
@@ -197,7 +207,10 @@ public class SplitShardCmd implements Cmd {
         subSlices.add(subSlice);
         String subShardName = collectionName + "_" + subSlice + "_replica1";
         subShardNames.add(subShardName);
+      }
 
+      boolean oldShardsDeleted = false;
+      for (String subSlice : subSlices) {
         Slice oSlice = collection.getSlice(subSlice);
         if (oSlice != null) {
           final Slice.State state = oSlice.getState();
@@ -206,22 +219,29 @@ public class SplitShardCmd implements Cmd {
                 "Sub-shard: " + subSlice + " exists in active state. Aborting split shard.");
           } else if (state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY) {
             // delete the shards
-            for (String sub : subSlices) {
-              log.info("Sub-shard: {} already exists therefore requesting its deletion", sub);
-              Map<String, Object> propMap = new HashMap<>();
-              propMap.put(Overseer.QUEUE_OPERATION, "deleteshard");
-              propMap.put(COLLECTION_PROP, collectionName);
-              propMap.put(SHARD_ID_PROP, sub);
-              ZkNodeProps m = new ZkNodeProps(propMap);
-              try {
-                ocmh.commandMap.get(DELETESHARD).call(clusterState, m, new NamedList());
-              } catch (Exception e) {
-                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to delete already existing sub shard: " + sub,
-                    e);
-              }
+            log.info("Sub-shard: {} already exists therefore requesting its deletion", subSlice);
+            Map<String, Object> propMap = new HashMap<>();
+            propMap.put(Overseer.QUEUE_OPERATION, "deleteshard");
+            propMap.put(COLLECTION_PROP, collectionName);
+            propMap.put(SHARD_ID_PROP, subSlice);
+            ZkNodeProps m = new ZkNodeProps(propMap);
+            try {
+              ocmh.commandMap.get(DELETESHARD).call(clusterState, m, new NamedList());
+            } catch (Exception e) {
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to delete already existing sub shard: " + subSlice,
+                  e);
             }
+
+            oldShardsDeleted = true;
           }
         }
+      }
+
+      if (oldShardsDeleted) {
+        // refresh the locally cached cluster state
+        // we know we have the latest because otherwise deleteshard would have failed
+        clusterState = zkStateReader.getClusterState();
+        collection = clusterState.getCollection(collectionName);
       }
 
       final String asyncId = message.getStr(ASYNC);
@@ -241,6 +261,8 @@ public class SplitShardCmd implements Cmd {
         propMap.put(ZkStateReader.SHARD_RANGE_PROP, subRange.toString());
         propMap.put(ZkStateReader.SHARD_STATE_PROP, Slice.State.CONSTRUCTION.toString());
         propMap.put(ZkStateReader.SHARD_PARENT_PROP, parentSlice.getName());
+        propMap.put("shard_parent_node", parentShardLeader.getNodeName());
+        propMap.put("shard_parent_zk_session", leaderZnodeStat.getEphemeralOwner());
         DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkStateReader.getZkClient());
         inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
 
@@ -404,6 +426,34 @@ public class SplitShardCmd implements Cmd {
         propMap.put(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, "true");
 
         replicas.add(propMap);
+      }
+
+      assert TestInjection.injectSplitFailureBeforeReplicaCreation();
+
+      long ephemeralOwner = leaderZnodeStat.getEphemeralOwner();
+      // compare against the ephemeralOwner of the parent leader node
+      leaderZnodeStat = zkStateReader.getZkClient().exists(ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(), null, true);
+      if (leaderZnodeStat == null || ephemeralOwner != leaderZnodeStat.getEphemeralOwner()) {
+        // put sub-shards in recovery_failed state
+        DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkStateReader.getZkClient());
+        Map<String, Object> propMap = new HashMap<>();
+        propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
+        for (String subSlice : subSlices) {
+          propMap.put(subSlice, Slice.State.RECOVERY_FAILED.toString());
+        }
+        propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
+        ZkNodeProps m = new ZkNodeProps(propMap);
+        inQueue.offer(Utils.toJSON(m));
+
+        if (leaderZnodeStat == null)  {
+          // the leader is not live anymore, fail the split!
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The shard leader node: " + parentShardLeader.getNodeName() + " is not live anymore!");
+        } else if (ephemeralOwner != leaderZnodeStat.getEphemeralOwner()) {
+          // there's a new leader, fail the split!
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "The zk session id for the shard leader node: " + parentShardLeader.getNodeName() + " has changed from "
+                  + ephemeralOwner + " to " + leaderZnodeStat.getEphemeralOwner() + ". This can cause data loss so we must abort the split");
+        }
       }
 
       // we must set the slice state into recovery before actually creating the replica cores

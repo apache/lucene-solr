@@ -226,13 +226,8 @@ public class SchemaManager {
         String type = op.getStr(TYPE);
         if (op.hasError())
           return false;
-        FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
-        if (ft == null) {
-          op.addError("No such field type '" + type + "'");
-          return false;
-        }
         try {
-          SchemaField field = SchemaField.create(name, ft, op.getValuesExcluding(NAME, TYPE));
+          SchemaField field = mgr.managedIndexSchema.newField(name, type, op.getValuesExcluding(NAME, TYPE));
           mgr.managedIndexSchema
               = mgr.managedIndexSchema.addFields(singletonList(field), Collections.emptyMap(), false);
           return true;
@@ -248,13 +243,8 @@ public class SchemaManager {
         String type = op.getStr(TYPE);
         if (op.hasError())
           return false;
-        FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
-        if (ft == null) {
-          op.addError("No such field type '" + type + "'");
-          return  false;
-        }
         try {
-          SchemaField field = SchemaField.create(name, ft, op.getValuesExcluding(NAME, TYPE));
+          SchemaField field = mgr.managedIndexSchema.newDynamicField(name, type, op.getValuesExcluding(NAME, TYPE));
           mgr.managedIndexSchema
               = mgr.managedIndexSchema.addDynamicFields(singletonList(field), Collections.emptyMap(), false);
           return true;

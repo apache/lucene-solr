@@ -331,4 +331,25 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     assertEquals(bq.build(), mfqp.parse("/[a-z][123]/"));
   }
 
+  /** whitespace+lowercase analyzer with synonyms (dogs,dog) and (guinea pig,cavy) */
+  private class MockSynonymAnalyzer extends Analyzer {
+    @Override
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+      return new TokenStreamComponents(tokenizer, new MockSynonymFilter(tokenizer));
+    }
+  }
+
+  public void testSynonyms() throws ParseException {
+    String[] fields = {"b", "t"};
+    MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, new MockSynonymAnalyzer());
+    Query q = parser.parse("dogs");
+    assertEquals("Synonym(b:dog b:dogs) Synonym(t:dog t:dogs)", q.toString());
+    q = parser.parse("guinea pig");
+    assertFalse(parser.getSplitOnWhitespace());
+    assertEquals("(Synonym(b:cavy b:guinea) Synonym(t:cavy t:guinea)) (b:pig t:pig)", q.toString());
+    parser.setSplitOnWhitespace(true);
+    q = parser.parse("guinea pig");
+    assertEquals("(b:guinea t:guinea) (b:pig t:pig)", q.toString());
+  }
 }

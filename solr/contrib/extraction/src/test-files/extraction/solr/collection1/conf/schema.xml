@@ -415,6 +415,7 @@
   -->
   <dynamicField name="*_i" type="int" indexed="true" stored="true"/>
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
+  <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_s1" type="string" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_l" type="long" indexed="true" stored="true"/>
   <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
@@ -422,6 +423,7 @@
   <dynamicField name="*_f" type="float" indexed="true" stored="true"/>
   <dynamicField name="*_d" type="double" indexed="true" stored="true"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
+  <dynamicField name="*_dt1" type="date" indexed="true" stored="true" multiValued="false"/>
 
   <dynamicField name="*_sI" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>

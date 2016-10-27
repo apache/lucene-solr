@@ -127,20 +127,6 @@ public class TestMiniSolrCloudClusterKerberos extends TestMiniSolrCloudCluster {
   public void testCollectionCreateSearchDelete() throws Exception {
     super.testCollectionCreateSearchDelete();
   }
-
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/HADOOP-9893")
-  @Test
-  @Override
-  public void testErrorsInShutdown() throws Exception {
-    super.testErrorsInShutdown();
-  }
-
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/HADOOP-9893")
-  @Test
-  @Override
-  public void testErrorsInStartup() throws Exception {
-    super.testErrorsInStartup();
-  }
   
   @Override
   public void tearDown() throws Exception {

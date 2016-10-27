@@ -1,21 +1,25 @@
 {
   "requestHandler": {
     "/update": {
+      "useParams":"_UPDATE",
       "class": "solr.UpdateRequestHandler"
     },
     "/update/json": {
+      "useParams":"_UPDATE_JSON",
       "class": "solr.UpdateRequestHandler",
       "invariants": {
         "update.contentType": "application/json"
       }
     },
     "/update/csv": {
+      "useParams":"_UPDATE_CSV",
       "class": "solr.UpdateRequestHandler",
       "invariants": {
         "update.contentType": "application/csv"
       }
     },
     "/update/json/docs": {
+      "useParams":"_UPDATE_JSON_DOCS",
       "class": "solr.UpdateRequestHandler",
       "invariants": {
         "update.contentType": "application/json",
@@ -23,16 +27,21 @@
       }
     },
     "/config": {
+      "useParams":"_CONFIG",
       "class": "solr.SolrConfigHandler"
     },
     "/schema": {
-      "class": "solr.SchemaHandler"
+      "class": "solr.SchemaHandler",
+      "useParams":"_SCHEMA"
+
     },
     "/replication": {
-      "class": "solr.ReplicationHandler"
+      "class": "solr.ReplicationHandler",
+      "useParams":"_REPLICATION"
     },
     "/get": {
       "class": "solr.RealTimeGetHandler",
+      "useParams":"_GET",
       "defaults": {
         "omitHeader": true,
         "wt": "json",
@@ -41,40 +50,50 @@
     },
     "/admin/ping": {
       "class": "solr.PingRequestHandler",
+      "useParams":"_ADMIN_PING",
       "invariants": {
         "echoParams": "all",
         "q": "{!lucene}*:*"
       }
     },
     "/admin/segments": {
-      "class": "solr.SegmentsInfoRequestHandler"
+      "class": "solr.SegmentsInfoRequestHandler",
+      "useParams":"_ADMIN_SEGMENTS"
     },
     "/admin/luke": {
-      "class": "solr.LukeRequestHandler"
+      "class": "solr.LukeRequestHandler",
+      "useParams":"_ADMIN_LUKE"
     },
     "/admin/system": {
-      "class": "solr.SystemInfoHandler"
+      "class": "solr.SystemInfoHandler",
+      "useParams":"_ADMIN_SYSTEM"
     },
     "/admin/mbeans": {
-      "class": "solr.SolrInfoMBeanHandler"
+      "class": "solr.SolrInfoMBeanHandler",
+      "useParams":"_ADMIN_MBEANS"
     },
     "/admin/plugins": {
       "class": "solr.PluginInfoHandler"
     },
     "/admin/threads": {
-      "class": "solr.ThreadDumpHandler"
+      "class": "solr.ThreadDumpHandler",
+      "useParams":"_ADMIN_THREADS"
     },
     "/admin/properties": {
-      "class": "solr.PropertiesRequestHandler"
+      "class": "solr.PropertiesRequestHandler",
+      "useParams":"_ADMIN_PROPERTIES"
     },
     "/admin/logging": {
-      "class": "solr.LoggingHandler"
+      "class": "solr.LoggingHandler",
+      "useParams":"_ADMIN_LOGGING"
     },
     "/admin/file": {
-      "class": "solr.ShowFileRequestHandler"
+      "class": "solr.ShowFileRequestHandler",
+      "useParams":"_ADMIN_FILE"
     },
     "/export": {
       "class": "solr.SearchHandler",
+      "useParams":"_EXPORT",
       "components": [
         "query"
       ],
@@ -86,6 +105,7 @@
     },
     "/graph": {
       "class": "solr.GraphHandler",
+      "useParams":"_ADMIN_GRAPH",
       "invariants": {
         "wt": "graphml",
         "distrib": false
@@ -93,6 +113,7 @@
     },
     "/stream": {
       "class": "solr.StreamHandler",
+      "useParams":"_STREAM",
       "invariants": {
         "wt": "json",
         "distrib": false
@@ -100,6 +121,7 @@
     },
     "/sql": {
       "class": "solr.SQLHandler",
+      "useParams":"_SQL",
       "invariants": {
         "wt": "json",
         "distrib": false
@@ -107,9 +129,28 @@
     },
     "/terms": {
       "class": "solr.SearchHandler",
+      "useParams":"_TERMS",
       "components": [
         "terms"
       ]
+    },
+    "/analysis/document": {
+      "class": "solr.DocumentAnalysisRequestHandler",
+      "startup": "lazy",
+      "useParams": "_ANALYSIS_DOCUMENT"
+    },
+    "/analysis/field": {
+      "class": "solr.FieldAnalysisRequestHandler",
+      "startup": "lazy",
+      "useParams": "_ANALYSIS_FIELD"
+    },
+    "/debug/dump": {
+      "class": "solr.DumpRequestHandler",
+      "useParams": "_DEBUG_DUMP",
+      "defaults": {
+        "echoParams": "explicit",
+        "echoHandler": true
+      }
     }
   }
 }

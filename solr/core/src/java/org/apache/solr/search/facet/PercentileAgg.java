@@ -109,7 +109,7 @@ public class PercentileAgg extends SimpleAggValueSource {
       digests = new AVLTreeDigest[numSlots];
     }
 
-    public void collect(int doc, int slotNum) {
+    public void collect(int doc, int slotNum) throws IOException {
       if (!values.exists(doc)) return;
       double val = values.doubleVal(doc);
 

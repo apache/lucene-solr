@@ -19,7 +19,6 @@ package org.apache.solr.handler;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.Callable;
@@ -33,9 +32,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
-import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,11 +40,11 @@ public class RestoreCore implements Callable<Boolean> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String backupName;
-  private final String backupLocation;
+  private final URI backupLocation;
   private final SolrCore core;
   private final BackupRepository backupRepo;
 
-  public RestoreCore(BackupRepository backupRepo, SolrCore core, String location, String name) {
+  public RestoreCore(BackupRepository backupRepo, SolrCore core, URI location, String name) {
     this.backupRepo = backupRepo;
     this.core = core;
     this.backupLocation = location;
@@ -62,7 +58,7 @@ public class RestoreCore implements Callable<Boolean> {
 
   public boolean doRestore() throws Exception {
 
-    URI backupPath = backupRepo.createURI(backupLocation, backupName);
+    URI backupPath = backupRepo.resolve(backupLocation, backupName);
     SimpleDateFormat dateFormat = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT);
     String restoreIndexName = "restore." + dateFormat.format(new Date());
     String restoreIndexPath = core.getDataDir() + restoreIndexName;
@@ -135,16 +131,8 @@ public class RestoreCore implements Callable<Boolean> {
       }
       if (success) {
         core.getDirectoryFactory().doneWithDirectory(indexDir);
-
-        SolrSnapshotMetaDataManager snapshotsMgr = core.getSnapshotMetaDataManager();
-        Collection<SnapshotMetaData> snapshots = snapshotsMgr.listSnapshotsInIndexDir(indexDirPath);
-
-        // Delete the old index directory only if no snapshot exists in that directory.
-        if (snapshots.isEmpty()) {
-          core.getDirectoryFactory().remove(indexDir);
-        } else {
-          SolrSnapshotManager.deleteNonSnapshotIndexFiles(indexDir, snapshots);
-        }
+        // Cleanup all index files not associated with any *named* snapshot.
+        core.deleteNonSnapshotIndexFiles(indexDirPath);
       }
 
       return true;

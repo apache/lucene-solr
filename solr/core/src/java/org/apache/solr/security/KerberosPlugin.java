@@ -142,12 +142,13 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
           String zkHost = controller.getZkServerAddress();
           putParam(params, "token.validity", DELEGATION_TOKEN_VALIDITY, "36000");
           params.put("zk-dt-secret-manager.enable", "true");
+
+          String chrootPath = zkHost.contains("/")? zkHost.substring(zkHost.indexOf("/")): "";
+          String znodeWorkingPath = chrootPath + SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH + "/zkdtsm";
           // Note - Curator complains if the znodeWorkingPath starts with /
-          String chrootPath = zkHost.substring(zkHost.indexOf("/"));
-          String relativePath = chrootPath.startsWith("/") ? chrootPath.substring(1) : chrootPath;
+          znodeWorkingPath = znodeWorkingPath.startsWith("/")? znodeWorkingPath.substring(1): znodeWorkingPath;
           putParam(params, "zk-dt-secret-manager.znodeWorkingPath",
-              DELEGATION_TOKEN_SECRET_MANAGER_ZNODE_WORKING_PATH,
-              relativePath + SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH + "/zkdtsm");
+              DELEGATION_TOKEN_SECRET_MANAGER_ZNODE_WORKING_PATH, znodeWorkingPath);
           putParam(params, "signer.secret.provider.zookeeper.path",
               DELEGATION_TOKEN_SECRET_PROVIDER_ZK_PATH, "/token");
           // ensure krb5 is setup properly before running curator

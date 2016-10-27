@@ -174,7 +174,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
               + " from "
               + leaderUrl
               + " gen:"
-              + core.getDeletionPolicy().getLatestCommit() != null ? "null" : core.getDeletionPolicy().getLatestCommit().getGeneration()
+              + (core.getDeletionPolicy().getLatestCommit() != null ? "null" : core.getDeletionPolicy().getLatestCommit().getGeneration())
               + " data:" + core.getDataDir()
               + " index:" + core.getIndexDir()
               + " newIndex:" + core.getNewIndexDir()
@@ -373,7 +373,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
           PeerSync peerSync = new PeerSync(core,
               Collections.singletonList(leaderUrl), ulog.getNumRecordsToKeep(), false, false);
           peerSync.setStartingVersions(recentVersions);
-          boolean syncSuccess = peerSync.sync();
+          boolean syncSuccess = peerSync.sync().isSuccess();
           if (syncSuccess) {
             SolrQueryRequest req = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());
@@ -582,7 +582,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
       prepCmd.setCheckLive(true);
       prepCmd.setOnlyIfLeader(true);
       final Slice.State state = slice.getState();
-      if (state != Slice.State.CONSTRUCTION && state != Slice.State.RECOVERY) {
+      if (state != Slice.State.CONSTRUCTION && state != Slice.State.RECOVERY && state != Slice.State.RECOVERY_FAILED) {
         prepCmd.setOnlyIfLeaderActive(true);
       }
       HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);

@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +24,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -47,9 +47,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.security.HttpParamDelegationTokenPlugin.USER_PARAM;
-import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_HOST_PARAM;
 import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_ADDRESS_PARAM;
+import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_HOST_PARAM;
+import static org.apache.solr.security.HttpParamDelegationTokenPlugin.USER_PARAM;
 
 public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   private static final int NUM_SERVERS = 2;
@@ -57,16 +57,18 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   private static SolrClient solrClient;
 
   private static String getUsersFirstGroup() throws Exception {
-    org.apache.hadoop.security.Groups hGroups =
-        new org.apache.hadoop.security.Groups(new Configuration());
     String group = "*"; // accept any group if a group can't be found
-    try {
-      List<String> g = hGroups.getGroups(System.getProperty("user.name"));
-      if (g != null && g.size() > 0) {
-        group = g.get(0);
+    if (!Constants.WINDOWS) { // does not work on Windows!
+      org.apache.hadoop.security.Groups hGroups =
+          new org.apache.hadoop.security.Groups(new Configuration());
+      try {
+        List<String> g = hGroups.getGroups(System.getProperty("user.name"));
+        if (g != null && g.size() > 0) {
+          group = g.get(0);
+        }
+      } catch (NullPointerException npe) {
+        // if user/group doesn't exist on test box
       }
-    } catch (NullPointerException npe) {
-      // if user/group doesn't exist on test box
     }
     return group;
   }
@@ -92,6 +94,8 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void startup() throws Exception {
+    assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
+    
     System.setProperty("authenticationPlugin", HttpParamDelegationTokenPlugin.class.getName());
     System.setProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED, "true");
 
@@ -151,7 +155,9 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
       miniCluster.shutdown();
     }
     miniCluster = null;
-    solrClient.close();
+    if (solrClient != null) {
+      solrClient.close();
+    }
     solrClient = null;
     System.clearProperty("authenticationPlugin");
     System.clearProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED);
@@ -336,8 +342,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   @Test
   public void testForwarding() throws Exception {
     String collectionName = "forwardingCollection";
-    File configDir = getFile("solr").toPath().resolve("collection1/conf").toFile();
-    miniCluster.uploadConfigDir(configDir, "conf1");
+    miniCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");
     create1ShardCollection(collectionName, "conf1", miniCluster);
 
     // try a command to each node, one of them must be forwarded

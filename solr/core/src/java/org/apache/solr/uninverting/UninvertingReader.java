@@ -37,7 +37,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.util.Bits;
 import org.apache.solr.uninverting.FieldCache.CacheEntry;
 
 /**
@@ -274,44 +273,60 @@ public class UninvertingReader extends FilterLeafReader {
 
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
+    NumericDocValues values = super.getNumericDocValues(field);
+    if (values != null) {
+      return values;
+    }
     Type v = getType(field);
     if (v != null) {
       switch (v) {
-        case INTEGER_POINT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.INT_POINT_PARSER, true);
-        case FLOAT_POINT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.FLOAT_POINT_PARSER, true);
-        case LONG_POINT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LONG_POINT_PARSER, true);
-        case DOUBLE_POINT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.DOUBLE_POINT_PARSER, true);
-        case LEGACY_INTEGER: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_INT_PARSER, true);
-        case LEGACY_FLOAT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_FLOAT_PARSER, true);
-        case LEGACY_LONG: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_LONG_PARSER, true);
-        case LEGACY_DOUBLE: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_DOUBLE_PARSER, true);
+        case INTEGER_POINT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.INT_POINT_PARSER);
+        case FLOAT_POINT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.FLOAT_POINT_PARSER);
+        case LONG_POINT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LONG_POINT_PARSER);
+        case DOUBLE_POINT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.DOUBLE_POINT_PARSER);
+        case LEGACY_INTEGER: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_INT_PARSER);
+        case LEGACY_FLOAT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_FLOAT_PARSER);
+        case LEGACY_LONG: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_LONG_PARSER);
+        case LEGACY_DOUBLE: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_DOUBLE_PARSER);
       }
     }
-    return super.getNumericDocValues(field);
+    return null;
   }
 
   @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
+    BinaryDocValues values = in.getBinaryDocValues(field);
+    if (values != null) {
+      return values;
+    }
     Type v = getType(field);
     if (v == Type.BINARY) {
-      return FieldCache.DEFAULT.getTerms(in, field, true);
+      return FieldCache.DEFAULT.getTerms(in, field);
     } else {
-      return in.getBinaryDocValues(field);
+      return null;
     }
   }
 
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {
+    SortedDocValues values = in.getSortedDocValues(field);
+    if (values != null) {
+      return values;
+    }
     Type v = getType(field);
     if (v == Type.SORTED) {
       return FieldCache.DEFAULT.getTermsIndex(in, field);
     } else {
-      return in.getSortedDocValues(field);
+      return null;
     }
   }
   
   @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
+    SortedSetDocValues values = in.getSortedSetDocValues(field);
+    if (values != null) {
+      return values;
+    }
     Type v = getType(field);
     if (v != null) {
       switch (v) {
@@ -325,30 +340,9 @@ public class UninvertingReader extends FilterLeafReader {
           return FieldCache.DEFAULT.getDocTermOrds(in, field, null);
       }
     }
-    return in.getSortedSetDocValues(field);
+    return null;
   }
 
-  @Override
-  public Bits getDocsWithField(String field) throws IOException {
-    Type v = getType(field);
-    if (v != null) {
-      switch (v) {
-        case INTEGER_POINT:  return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.INT_POINT_PARSER);
-        case FLOAT_POINT:    return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.FLOAT_POINT_PARSER);
-        case LONG_POINT:     return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.LONG_POINT_PARSER);
-        case DOUBLE_POINT:   return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.DOUBLE_POINT_PARSER);
-        case LEGACY_INTEGER: return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.LEGACY_INT_PARSER);
-        case LEGACY_FLOAT:   return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.LEGACY_FLOAT_PARSER);
-        case LEGACY_LONG:    return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.LEGACY_LONG_PARSER);
-        case LEGACY_DOUBLE:  return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.LEGACY_DOUBLE_PARSER);
-        default:
-          return FieldCache.DEFAULT.getDocsWithField(in, field, null);
-      }
-    } else {
-      return in.getDocsWithField(field);
-    }
-  }
-  
   /** 
    * Returns the field's uninversion type, or null 
    * if the field doesn't exist or doesn't have a mapping.
@@ -387,5 +381,9 @@ public class UninvertingReader extends FilterLeafReader {
       info[i] = entries[i].toString();
     }
     return info;
+  }
+
+  public static int getUninvertedStatsSize() {
+    return FieldCache.DEFAULT.getCacheEntries().length;
   }
 }

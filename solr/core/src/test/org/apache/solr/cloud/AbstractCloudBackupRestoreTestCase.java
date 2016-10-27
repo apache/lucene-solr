@@ -29,10 +29,10 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.ClusterProp;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -147,9 +147,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     try {
       backup.process(solrClient);
       fail("This request should have failed since the cluster property value for backup location property is invalid.");
-    } catch (SolrServerException ex) {
-      assertTrue(ex.getCause() instanceof RemoteSolrException);
-      assertEquals(ErrorCode.SERVER_ERROR.code, ((RemoteSolrException)ex.getCause()).code());
+    } catch (SolrException ex) {
+      assertEquals(ErrorCode.SERVER_ERROR.code, ex.code());
     }
 
     String restoreCollectionName = collectionName + "_invalidrequest";
@@ -158,9 +157,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     try {
       restore.process(solrClient);
       fail("This request should have failed since the cluster property value for backup location property is invalid.");
-    } catch (SolrServerException ex) {
-      assertTrue(ex.getCause() instanceof RemoteSolrException);
-      assertEquals(ErrorCode.SERVER_ERROR.code, ((RemoteSolrException)ex.getCause()).code());
+    } catch (SolrException ex) {
+      assertEquals(ErrorCode.SERVER_ERROR.code, ex.code());
     }
   }
 

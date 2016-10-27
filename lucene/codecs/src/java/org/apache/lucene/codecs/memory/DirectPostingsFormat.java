@@ -969,7 +969,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
         states = new State[1];
         states[0] = new State();
         states[0].changeOrd = terms.length;
-        states[0].state = runAutomaton.getInitialState();
+        states[0].state = 0;
         states[0].transitionCount = compiledAutomaton.automaton.getNumTransitions(states[0].state);
         compiledAutomaton.automaton.initTransition(states[0].state, states[0].transition);
         states[0].transitionUpto = -1;

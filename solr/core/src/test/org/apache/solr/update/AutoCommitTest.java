@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -49,6 +50,8 @@ class NewSearcherListener implements SolrEventListener {
   private volatile TriggerOn triggerOnType;
   private volatile SolrIndexSearcher newSearcher;
 
+  private CountDownLatch latch;
+
   public NewSearcherListener() {
     this(TriggerOn.Both);
   }
@@ -63,6 +66,7 @@ class NewSearcherListener implements SolrEventListener {
   @Override
   public void newSearcher(SolrIndexSearcher newSearcher,
       SolrIndexSearcher currentSearcher) {
+    waitForTrigger();
     if (triggerOnType == TriggerOn.Soft && lastType == TriggerOn.Soft) {
       triggered = true;
     } else if (triggerOnType == TriggerOn.Hard && lastType == TriggerOn.Hard) {
@@ -82,6 +86,29 @@ class NewSearcherListener implements SolrEventListener {
   @Override
   public void postSoftCommit() {
     lastType = TriggerOn.Soft;
+  }
+
+  private void waitForTrigger() {
+    if (latch != null) {
+      try {
+        if (latch.await(30, TimeUnit.SECONDS) == false) {
+          throw new AssertionError("Timed out waiting for search trigger to be released");
+        }
+      } catch (InterruptedException e) {
+        throw new AssertionError("Interrupted waiting for new searcher");
+      }
+    }
+  }
+
+  public void pause() {
+    latch = new CountDownLatch(1);
+  }
+
+  public void unpause() {
+    if (latch != null) {
+      latch.countDown();
+      latch = null;
+    }
   }
 
   public void reset() {
@@ -316,6 +343,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("shouldn't find any", req("id:530") ,"//result[@numFound=0]" );
     
     // Delete one document with commitWithin
+    trigger.pause();
     req.setContentStreams( toContentStreams(
       delI("529", "commitWithin", "2000"), null ) );
     trigger.reset();
@@ -323,6 +351,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
       
     // Now make sure we can find it
     assertQ("should find one", req("id:529") ,"//result[@numFound=1]" );
+    trigger.unpause();
     
     // Wait for the commit to happen
     assertTrue("commitWithin failed to commit", trigger.waitForNewSearcher(30000));

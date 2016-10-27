@@ -25,21 +25,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.CompositeIdRouter;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.HashBasedRouter;
 import org.apache.solr.common.cloud.Replica;
@@ -49,11 +58,13 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TestInjection;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
@@ -67,6 +78,12 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
   public ShardSplitTest() {
     schemaString = "schema15.xml";      // we need a string id
+  }
+
+  @Override
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
+    useFactory(null);
   }
 
   @Test
@@ -87,6 +104,410 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     // and the new sub-shards don't have any.
     waitForRecoveriesToFinish(true);
     //waitForThingsToLevelOut(15);
+  }
+
+  /*
+  Creates a collection with replicationFactor=1, splits a shard. Restarts the sub-shard leader node.
+  Add a replica. Ensure count matches in leader and replica.
+   */
+  public void testSplitStaticIndexReplication() throws Exception {
+    waitForThingsToLevelOut(15);
+
+    DocCollection defCol = cloudClient.getZkStateReader().getClusterState().getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+    Replica replica = defCol.getReplicas().get(0);
+    String nodeName = replica.getNodeName();
+
+    String collectionName = "testSplitStaticIndexReplication";
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
+    create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
+    create.setCreateNodeSet(nodeName); // we want to create the leader on a fixed node so that we know which one to restart later
+    create.process(cloudClient);
+    try (CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), true, cloudClient.getLbClient().getHttpClient())) {
+      client.setDefaultCollection(collectionName);
+      StoppableIndexingThread thread = new StoppableIndexingThread(controlClient, client, "i1", true);
+      try {
+        thread.start();
+        Thread.sleep(1000); // give the indexer sometime to do its work
+        thread.safeStop();
+        thread.join();
+        client.commit();
+        controlClient.commit();
+
+        CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName);
+        splitShard.setShardName(SHARD1);
+        String asyncId = splitShard.processAsync(client);
+        RequestStatusState state = CollectionAdminRequest.requestStatus(asyncId).waitFor(client, 120);
+        if (state == RequestStatusState.COMPLETED)  {
+          waitForRecoveriesToFinish(collectionName, true);
+          // let's wait to see parent shard become inactive
+          CountDownLatch latch = new CountDownLatch(1);
+          client.getZkStateReader().registerCollectionStateWatcher(collectionName, new CollectionStateWatcher() {
+            @Override
+            public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
+              Slice parent = collectionState.getSlice(SHARD1);
+              Slice slice10 = collectionState.getSlice(SHARD1_0);
+              Slice slice11 = collectionState.getSlice(SHARD1_1);
+              if (slice10 != null && slice11 != null &&
+                  parent.getState() == Slice.State.INACTIVE &&
+                  slice10.getState() == Slice.State.ACTIVE &&
+                  slice11.getState() == Slice.State.ACTIVE) {
+                latch.countDown();
+                return true; // removes the watch
+              }
+              return false;
+            }
+          });
+          latch.await(1, TimeUnit.MINUTES);
+          if (latch.getCount() != 0)  {
+            // sanity check
+            fail("Sub-shards did not become active even after waiting for 1 minute");
+          }
+
+          int liveNodeCount = client.getZkStateReader().getClusterState().getLiveNodes().size();
+
+          // restart the sub-shard leader node
+          boolean restarted = false;
+          for (JettySolrRunner jetty : jettys) {
+            int port = jetty.getBaseUrl().getPort();
+            if (replica.getStr(BASE_URL_PROP).contains(":" + port))  {
+              ChaosMonkey.kill(jetty);
+              ChaosMonkey.start(jetty);
+              restarted = true;
+              break;
+            }
+          }
+          if (!restarted) {
+            // sanity check
+            fail("We could not find a jetty to kill for replica: " + replica.getCoreUrl());
+          }
+
+          // add a new replica for the sub-shard
+          CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(collectionName, SHARD1_0);
+          // use control client because less chances of it being the node being restarted
+          // this is to avoid flakiness of test because of NoHttpResponseExceptions
+          String control_collection = client.getZkStateReader().getClusterState().getCollection("control_collection").getReplicas().get(0).getStr(BASE_URL_PROP);
+          try (HttpSolrClient control = new HttpSolrClient.Builder(control_collection).withHttpClient(client.getLbClient().getHttpClient()).build())  {
+            state = addReplica.processAndWait(control, 30);
+          }
+          if (state == RequestStatusState.COMPLETED)  {
+            CountDownLatch newReplicaLatch = new CountDownLatch(1);
+            client.getZkStateReader().registerCollectionStateWatcher(collectionName, new CollectionStateWatcher() {
+              @Override
+              public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
+                if (liveNodes.size() != liveNodeCount)  {
+                  return false;
+                }
+                Slice slice = collectionState.getSlice(SHARD1_0);
+                if (slice.getReplicas().size() == 2)  {
+                  if (!slice.getReplicas().stream().anyMatch(r -> r.getState() == Replica.State.RECOVERING)) {
+                    // we see replicas and none of them are recovering
+                    newReplicaLatch.countDown();
+                    return true;
+                  }
+                }
+                return false;
+              }
+            });
+            newReplicaLatch.await(30, TimeUnit.SECONDS);
+            // check consistency of sub-shard replica explicitly because checkShardConsistency methods doesn't
+            // handle new shards/replica so well.
+            ClusterState clusterState = client.getZkStateReader().getClusterState();
+            DocCollection collection = clusterState.getCollection(collectionName);
+            int numReplicasChecked = assertConsistentReplicas(collection.getSlice(SHARD1_0));
+            assertEquals("We should have checked consistency for exactly 2 replicas of shard1_0", 2, numReplicasChecked);
+          } else  {
+            fail("Adding a replica to sub-shard did not complete even after waiting for 30 seconds!. Saw state = " + state.getKey());
+          }
+        } else {
+          fail("We expected shard split to succeed on a static index but it didn't. Found state = " + state.getKey());
+        }
+      } finally {
+        thread.safeStop();
+        thread.join();
+      }
+    }
+  }
+
+  private int assertConsistentReplicas(Slice shard) throws SolrServerException, IOException {
+    long numFound = Long.MIN_VALUE;
+    int count = 0;
+    for (Replica replica : shard.getReplicas()) {
+      HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl())
+          .withHttpClient(cloudClient.getLbClient().getHttpClient()).build();
+      QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
+      log.info("Found numFound={} on replica: {}", response.getResults().getNumFound(), replica.getCoreUrl());
+      if (numFound == Long.MIN_VALUE)  {
+        numFound = response.getResults().getNumFound();
+      } else  {
+        assertEquals("Shard " + shard.getName() + " replicas do not have same number of documents", numFound, response.getResults().getNumFound());
+      }
+      count++;
+    }
+    return count;
+  }
+
+  /**
+   * Used to test that we can split a shard when a previous split event
+   * left sub-shards in construction or recovery state.
+   *
+   * See SOLR-9439
+   */
+  @Test
+  public void testSplitAfterFailedSplit() throws Exception {
+    waitForThingsToLevelOut(15);
+
+    TestInjection.splitFailureBeforeReplicaCreation = "true:100"; // we definitely want split to fail
+    try {
+      try {
+        CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+        splitShard.setShardName(SHARD1);
+        splitShard.process(cloudClient);
+        fail("Shard split was not supposed to succeed after failure injection!");
+      } catch (Exception e) {
+        // expected
+      }
+
+      // assert that sub-shards cores exist and sub-shard is in construction state
+      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+      zkStateReader.forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+      ClusterState state = zkStateReader.getClusterState();
+      DocCollection collection = state.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+
+      Slice shard10 = collection.getSlice(SHARD1_0);
+      assertEquals(Slice.State.CONSTRUCTION, shard10.getState());
+      assertEquals(1, shard10.getReplicas().size());
+
+      Slice shard11 = collection.getSlice(SHARD1_1);
+      assertEquals(Slice.State.CONSTRUCTION, shard11.getState());
+      assertEquals(1, shard11.getReplicas().size());
+
+      // lets retry the split
+      TestInjection.reset(); // let the split succeed
+      try {
+        CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+        splitShard.setShardName(SHARD1);
+        splitShard.process(cloudClient);
+        // Yay!
+      } catch (Exception e) {
+        log.error("Shard split failed", e);
+        fail("Shard split did not succeed after a previous failed split attempt left sub-shards in construction state");
+      }
+
+    } finally {
+      TestInjection.reset();
+    }
+  }
+
+  @Test
+  public void testSplitWithChaosMonkey() throws Exception {
+    waitForThingsToLevelOut(15);
+
+    List<StoppableIndexingThread> indexers = new ArrayList<>();
+    try {
+      for (int i = 0; i < 1; i++) {
+        StoppableIndexingThread thread = new StoppableIndexingThread(controlClient, cloudClient, String.valueOf(i), true);
+        indexers.add(thread);
+        thread.start();
+      }
+      Thread.sleep(1000); // give the indexers some time to do their work
+    } catch (Exception e) {
+      log.error("Error in test", e);
+    } finally {
+      for (StoppableIndexingThread indexer : indexers) {
+        indexer.safeStop();
+        indexer.join();
+      }
+    }
+
+    cloudClient.commit();
+    controlClient.commit();
+
+    AtomicBoolean stop = new AtomicBoolean();
+    AtomicBoolean killed = new AtomicBoolean(false);
+    Runnable monkey = new Runnable() {
+      @Override
+      public void run() {
+        ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+        zkStateReader.registerCollectionStateWatcher(AbstractDistribZkTestBase.DEFAULT_COLLECTION, new CollectionStateWatcher() {
+          @Override
+          public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
+            if (stop.get()) {
+              return true; // abort and remove the watch
+            }
+            Slice slice = collectionState.getSlice(SHARD1_0);
+            if (slice != null && slice.getReplicas().size() > 1) {
+              // ensure that only one watcher invocation thread can kill!
+              if (killed.compareAndSet(false, true))  {
+                log.info("Monkey thread found 2 replicas for {} {}", AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
+                CloudJettyRunner cjetty = shardToLeaderJetty.get(SHARD1);
+                try {
+                  Thread.sleep(1000 + random().nextInt(500));
+                  ChaosMonkey.kill(cjetty);
+                  stop.set(true);
+                  return true;
+                } catch (Exception e) {
+                  log.error("Monkey unable to kill jetty at port " + cjetty.jetty.getLocalPort(), e);
+                }
+              }
+            }
+            log.info("Monkey thread found only one replica for {} {}", AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
+            return false;
+          }
+        });
+      }
+    };
+
+    Thread monkeyThread = null;
+    /*
+     somehow the cluster state object inside this zk state reader has static copy of the collection which is never updated
+     so any call to waitForRecoveriesToFinish just keeps looping until timeout.
+     We workaround by explicitly registering the collection as an interesting one so that it is watched by ZkStateReader
+     see SOLR-9440. Todo remove this hack after SOLR-9440 is fixed.
+    */
+    cloudClient.getZkStateReader().registerCore(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+
+    monkeyThread = new Thread(monkey);
+    monkeyThread.start();
+    try {
+      CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+      splitShard.setShardName(SHARD1);
+      String asyncId = splitShard.processAsync(cloudClient);
+      RequestStatusState splitStatus = null;
+      try {
+        splitStatus = CollectionAdminRequest.requestStatus(asyncId).waitFor(cloudClient, 120);
+      } catch (Exception e) {
+        log.warn("Failed to get request status, maybe because the overseer node was shutdown by monkey", e);
+      }
+
+      // we don't care if the split failed because we are injecting faults and it is likely
+      // that the split has failed but in any case we want to assert that all docs that got
+      // indexed are available in SolrCloud and if the split succeeded then all replicas of the sub-shard
+      // must be consistent (i.e. have same numdocs)
+
+      log.info("Shard split request state is COMPLETED");
+      stop.set(true);
+      monkeyThread.join();
+      Set<String> addFails = new HashSet<>();
+      Set<String> deleteFails = new HashSet<>();
+      for (StoppableIndexingThread indexer : indexers) {
+        addFails.addAll(indexer.getAddFails());
+        deleteFails.addAll(indexer.getDeleteFails());
+      }
+
+      CloudJettyRunner cjetty = shardToLeaderJetty.get(SHARD1);
+      log.info("Starting shard1 leader jetty at port {}", cjetty.jetty.getLocalPort());
+      ChaosMonkey.start(cjetty.jetty);
+      cloudClient.getZkStateReader().forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+      log.info("Current collection state: {}", printClusterStateInfo(AbstractDistribZkTestBase.DEFAULT_COLLECTION));
+
+      boolean replicaCreationsFailed = false;
+      if (splitStatus == RequestStatusState.FAILED)  {
+        // either one or more replica creation failed (because it may have been created on the same parent shard leader node)
+        // or the split may have failed while trying to soft-commit *after* all replicas have been created
+        // the latter counts as a successful switch even if the API doesn't say so
+        // so we must find a way to distinguish between the two
+        // an easy way to do that is to look at the sub-shard replicas and check if the replica core actually exists
+        // instead of existing solely inside the cluster state
+        DocCollection collectionState = cloudClient.getZkStateReader().getClusterState().getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+        Slice slice10 = collectionState.getSlice(SHARD1_0);
+        Slice slice11 = collectionState.getSlice(SHARD1_1);
+        if (slice10 != null && slice11 != null) {
+          for (Replica replica : slice10) {
+            if (!doesReplicaCoreExist(replica)) {
+              replicaCreationsFailed = true;
+              break;
+            }
+          }
+          for (Replica replica : slice11) {
+            if (!doesReplicaCoreExist(replica)) {
+              replicaCreationsFailed = true;
+              break;
+            }
+          }
+        }
+      }
+
+      // true if sub-shard states switch to 'active' eventually
+      AtomicBoolean areSubShardsActive = new AtomicBoolean(false);
+
+      if (!replicaCreationsFailed)  {
+        // all sub-shard replicas were created successfully so all cores must recover eventually
+        waitForRecoveriesToFinish(AbstractDistribZkTestBase.DEFAULT_COLLECTION, true);
+        // let's wait for the overseer to switch shard states
+        CountDownLatch latch = new CountDownLatch(1);
+        cloudClient.getZkStateReader().registerCollectionStateWatcher(AbstractDistribZkTestBase.DEFAULT_COLLECTION, new CollectionStateWatcher() {
+          @Override
+          public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
+            Slice parent = collectionState.getSlice(SHARD1);
+            Slice slice10 = collectionState.getSlice(SHARD1_0);
+            Slice slice11 = collectionState.getSlice(SHARD1_1);
+            if (slice10 != null && slice11 != null &&
+                parent.getState() == Slice.State.INACTIVE &&
+                slice10.getState() == Slice.State.ACTIVE &&
+                slice11.getState() == Slice.State.ACTIVE) {
+              areSubShardsActive.set(true);
+              latch.countDown();
+              return true; // removes the watch
+            } else if (slice10 != null && slice11 != null &&
+                parent.getState() == Slice.State.ACTIVE &&
+                slice10.getState() == Slice.State.RECOVERY_FAILED &&
+                slice11.getState() == Slice.State.RECOVERY_FAILED) {
+              areSubShardsActive.set(false);
+              latch.countDown();
+              return true;
+            }
+            return false;
+          }
+        });
+
+        latch.await(2, TimeUnit.MINUTES);
+
+        if (latch.getCount() != 0)  {
+          // sanity check
+          fail("We think that split was successful but sub-shard states were not updated even after 2 minutes.");
+        }
+      }
+
+      cloudClient.commit(); // for visibility of results on sub-shards
+
+      checkShardConsistency(true, true, addFails, deleteFails);
+      long ctrlDocs = controlClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+      // ensure we have added more than 0 docs
+      long cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+      assertTrue("Found " + ctrlDocs + " control docs", cloudClientDocs > 0);
+      assertEquals("Found " + ctrlDocs + " control docs and " + cloudClientDocs + " cloud docs", ctrlDocs, cloudClientDocs);
+
+      // check consistency of sub-shard replica explicitly because checkShardConsistency methods doesn't
+      // handle new shards/replica so well.
+      if (areSubShardsActive.get()) {
+        ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+        DocCollection collection = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+        int numReplicasChecked = assertConsistentReplicas(collection.getSlice(SHARD1_0));
+        assertEquals("We should have checked consistency for exactly 2 replicas of shard1_0", 2, numReplicasChecked);
+        numReplicasChecked = assertConsistentReplicas(collection.getSlice(SHARD1_1));
+        assertEquals("We should have checked consistency for exactly 2 replicas of shard1_1", 2, numReplicasChecked);
+      }
+    } finally {
+      stop.set(true);
+      monkeyThread.join();
+    }
+  }
+
+  private boolean doesReplicaCoreExist(Replica replica) throws IOException {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getStr(BASE_URL_PROP))
+        .withHttpClient(cloudClient.getLbClient().getHttpClient()).build())  {
+      String coreName = replica.getCoreName();
+      try {
+        CoreAdminResponse status = CoreAdminRequest.getStatus(coreName, client);
+        if (status.getCoreStatus(coreName) == null || status.getCoreStatus(coreName).size() == 0) {
+          return false;
+        }
+      } catch (Exception e) {
+        log.warn("Error gettting core status of replica " + replica + ". Perhaps it does not exist!", e);
+        return false;
+      }
+    }
+    return true;
   }
 
   @Test

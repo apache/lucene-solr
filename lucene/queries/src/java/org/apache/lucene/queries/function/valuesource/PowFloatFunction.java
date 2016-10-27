@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
@@ -36,7 +38,7 @@ public class PowFloatFunction extends DualFloatFunction {
   }
 
   @Override
-  protected float func(int doc, FunctionValues aVals, FunctionValues bVals) {
+  protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
     return (float)Math.pow(aVals.floatVal(doc), bVals.floatVal(doc));
   }
 }

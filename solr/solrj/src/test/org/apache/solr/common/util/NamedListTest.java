@@ -18,6 +18,7 @@ package org.apache.solr.common.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
@@ -184,5 +185,22 @@ public class NamedListTest extends LuceneTestCase {
     assertNull(enltest3);
     Object enltest4 = enl.findRecursive("key2");
     assertNull(enltest4);
+  }
+
+  public void testShallowMap() {
+    NamedList nl = new NamedList();
+    nl.add("key1", "Val1");
+    Map m = nl.asShallowMap();
+    m.put("key1", "Val1_");
+    assertEquals("Val1_", nl.get("key1"));
+    assertEquals("Val1_", m.get("key1"));
+    assertEquals(0, nl.indexOf("key1", 0));
+    m.putAll(Utils.makeMap("key1", "Val1__", "key2", "Val2"));
+    assertEquals("Val1__", nl.get("key1"));
+    assertEquals("Val1__", m.get("key1"));
+    assertEquals(0, nl.indexOf("key1", 0));
+    assertEquals("Val2", nl.get("key2"));
+    assertEquals("Val2", m.get("key2"));
+
   }
 }

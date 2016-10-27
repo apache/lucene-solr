@@ -16,18 +16,18 @@
  */
 package org.apache.lucene.search;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
 
 /**
  * Like {@link DocValuesTermsQuery}, but this query only
@@ -105,14 +105,21 @@ public class DocValuesNumbersQuery extends Query {
 
            @Override
            public boolean get(int doc) {
-             values.setDocument(doc);
-             int count = values.count();
-             for(int i=0;i<count;i++) {
-               if (numbers.contains(values.valueAt(i))) {
-                 return true;
+             try {
+               if (doc > values.docID()) {
+                 values.advance(doc);
                }
+               if (doc == values.docID()) {
+                 int count = values.docValueCount();
+                 for(int i=0;i<count;i++) {
+                   if (numbers.contains(values.nextValue())) {
+                     return true;
+                   }
+                 }
+               }
+             } catch (IOException ioe) {
+               throw new RuntimeException(ioe);
              }
-
              return false;
           }
 

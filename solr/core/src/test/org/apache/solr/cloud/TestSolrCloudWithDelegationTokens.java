@@ -20,7 +20,10 @@ import junit.framework.Assert;
 import org.apache.hadoop.util.Time;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -171,30 +174,39 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
 
   private int getStatusCode(String token, final String user, final String op, HttpSolrClient client)
   throws Exception {
-    HttpSolrClient delegationTokenServer =
-        new HttpSolrClient.Builder(client.getBaseURL().toString())
-            .withDelegationToken(token)
+    SolrClient delegationTokenClient;
+    if (random().nextBoolean()) delegationTokenClient = new HttpSolrClient.Builder(client.getBaseURL().toString())
+        .withKerberosDelegationToken(token)
+        .withResponseParser(client.getParser())
+        .build();
+    else delegationTokenClient = new CloudSolrClient.Builder()
+        .withZkHost((miniCluster.getZkServer().getZkAddress()))
+        .withLBHttpSolrClientBuilder(new LBHttpSolrClient.Builder()
             .withResponseParser(client.getParser())
-            .build();
+            .withHttpSolrClientBuilder(
+                new HttpSolrClient.Builder()
+                    .withKerberosDelegationToken(token)
+            ))
+        .build();
     try {
       ModifiableSolrParams p = new ModifiableSolrParams();
       if (user != null) p.set(USER_PARAM, user);
       if (op != null) p.set("op", op);
       SolrRequest req = getAdminRequest(p);
       if (user != null || op != null) {
-        Set<String> queryParams = new HashSet<String>();
+        Set<String> queryParams = new HashSet<>();
         if (user != null) queryParams.add(USER_PARAM);
         if (op != null) queryParams.add("op");
         req.setQueryParams(queryParams);
       }
       try {
-        delegationTokenServer.request(req, null, null);
+        delegationTokenClient.request(req, null);
         return HttpStatus.SC_OK;
       } catch (HttpSolrClient.RemoteSolrException re) {
         return re.code();
       }
     } finally {
-      delegationTokenServer.close();
+      delegationTokenClient.close();
     }
   }
 

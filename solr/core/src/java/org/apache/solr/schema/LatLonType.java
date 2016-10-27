@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -82,9 +82,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     }
 
     if (field.stored()) {
-      FieldType customType = new FieldType();
-      customType.setStored(true);
-      f.add(createField(field.getName(), externalVal, customType, 1f));
+      f.add(createField(field.getName(), externalVal, StoredField.TYPE, 1f));
     }
     return f;
   }
@@ -378,7 +376,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
 
     }
 
-    boolean match() {
+    boolean match() throws IOException {
       // longitude should generally be more restrictive than latitude
       // (e.g. in the US, it immediately separates the coasts, and in world search separates
       // US from Europe from Asia, etc.

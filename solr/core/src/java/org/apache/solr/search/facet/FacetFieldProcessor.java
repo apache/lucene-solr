@@ -18,12 +18,18 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
@@ -57,7 +63,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     this.effectiveMincount = (int)(fcontext.isShard() ? Math.min(1 , freq.mincount) : freq.mincount);
   }
 
-  // This is used to create accs for second phase (or to create accs for all aggs)
+  /** This is used to create accs for second phase (or to create accs for all aggs) */
   @Override
   protected void createAccs(int docCount, int slotCount) throws IOException {
     if (accMap == null) {
@@ -195,7 +201,152 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
   }
 
-  void fillBucket(SimpleOrderedMap<Object> target, int count, int slotNum, DocSet subDomain, Query filter) throws IOException {
+  /** Processes the collected data to finds the top slots, and composes it in the response NamedList. */
+  SimpleOrderedMap<Object> findTopSlots(final int numSlots, final int slotCardinality,
+                                        IntFunction<Comparable> bucketValFromSlotNumFunc,
+                                        Function<Comparable, String> fieldQueryValFunc) throws IOException {
+    int numBuckets = 0;
+    List<Object> bucketVals = null;
+    if (freq.numBuckets && fcontext.isShard()) {
+      bucketVals = new ArrayList<>(100);
+    }
+
+    final int off = fcontext.isShard() ? 0 : (int) freq.offset;
+
+    long effectiveLimit = Integer.MAX_VALUE; // use max-int instead of max-long to avoid overflow
+    if (freq.limit >= 0) {
+      effectiveLimit = freq.limit;
+      if (fcontext.isShard()) {
+        // add over-request if this is a shard request
+        if (freq.overrequest == -1) {
+          effectiveLimit = (long) (effectiveLimit*1.1+4); // default: add 10% plus 4 (to overrequest for very small limits)
+        } else {
+          effectiveLimit += freq.overrequest;
+        }
+      }
+    }
+
+
+    final int sortMul = freq.sortDirection.getMultiplier();
+
+    int maxTopVals = (int) (effectiveLimit >= 0 ? Math.min(off + effectiveLimit, Integer.MAX_VALUE - 1) : Integer.MAX_VALUE - 1);
+    maxTopVals = Math.min(maxTopVals, slotCardinality);
+    final SlotAcc sortAcc = this.sortAcc, indexOrderAcc = this.indexOrderAcc;
+    final BiPredicate<Slot,Slot> orderPredicate;
+    if (indexOrderAcc != null && indexOrderAcc != sortAcc) {
+      orderPredicate = (a, b) -> {
+        int cmp = sortAcc.compare(a.slot, b.slot) * sortMul;
+        return cmp == 0 ? (indexOrderAcc.compare(a.slot, b.slot) > 0) : cmp < 0;
+      };
+    } else {
+      orderPredicate = (a, b) -> {
+        int cmp = sortAcc.compare(a.slot, b.slot) * sortMul;
+        return cmp == 0 ? b.slot < a.slot : cmp < 0;
+      };
+    }
+    final PriorityQueue<Slot> queue = new PriorityQueue<Slot>(maxTopVals) {
+      @Override
+      protected boolean lessThan(Slot a, Slot b) { return orderPredicate.test(a, b); }
+    };
+
+    // note: We avoid object allocation by having a Slot and re-using the 'bottom'.
+    Slot bottom = null;
+    Slot scratchSlot = new Slot();
+    for (int slotNum = 0; slotNum < numSlots; slotNum++) {
+      // screen out buckets not matching mincount immediately (i.e. don't even increment numBuckets)
+      if (effectiveMincount > 0 && countAcc.getCount(slotNum) < effectiveMincount) {
+        continue;
+      }
+
+      numBuckets++;
+      if (bucketVals != null && bucketVals.size()<100) {
+        Object val = bucketValFromSlotNumFunc.apply(slotNum);
+        bucketVals.add(val);
+      }
+
+      if (bottom != null) {
+        scratchSlot.slot = slotNum; // scratchSlot is only used to hold this slotNum for the following line
+        if (orderPredicate.test(bottom, scratchSlot)) {
+          bottom.slot = slotNum;
+          bottom = queue.updateTop();
+        }
+      } else if (effectiveLimit > 0) {
+        // queue not full
+        Slot s = new Slot();
+        s.slot = slotNum;
+        queue.add(s);
+        if (queue.size() >= maxTopVals) {
+          bottom = queue.top();
+        }
+      }
+    }
+
+    assert queue.size() <= numBuckets;
+
+    SimpleOrderedMap<Object> res = new SimpleOrderedMap<>();
+    if (freq.numBuckets) {
+      if (!fcontext.isShard()) {
+        res.add("numBuckets", numBuckets);
+      } else {
+        SimpleOrderedMap<Object> map = new SimpleOrderedMap<>(2);
+        map.add("numBuckets", numBuckets);
+        map.add("vals", bucketVals);
+        res.add("numBuckets", map);
+      }
+    }
+
+    FacetDebugInfo fdebug = fcontext.getDebugInfo();
+    if (fdebug != null) fdebug.putInfoItem("numBuckets", (long) numBuckets);
+
+    if (freq.allBuckets) {
+      SimpleOrderedMap<Object> allBuckets = new SimpleOrderedMap<>();
+      // countAcc.setValues(allBuckets, allBucketsSlot);
+      allBuckets.add("count", allBucketsAcc.getSpecialCount());
+      allBucketsAcc.setValues(allBuckets, -1); // -1 slotNum is unused for SpecialSlotAcc
+      // allBuckets currently doesn't execute sub-facets (because it doesn't change the domain?)
+      res.add("allBuckets", allBuckets);
+    }
+
+    if (freq.missing) {
+      // TODO: it would be more efficient to build up a missing DocSet if we need it here anyway.
+      SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
+      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null);
+      res.add("missing", missingBucket);
+    }
+
+    // if we are deep paging, we don't have to order the highest "offset" counts.
+    int collectCount = Math.max(0, queue.size() - off);
+    assert collectCount <= effectiveLimit;
+    int[] sortedSlots = new int[collectCount];
+    for (int i = collectCount - 1; i >= 0; i--) {
+      sortedSlots[i] = queue.pop().slot;
+    }
+
+    ArrayList<SimpleOrderedMap> bucketList = new ArrayList<>(collectCount);
+    res.add("buckets", bucketList);
+
+    boolean needFilter = deferredAggs != null || freq.getSubFacets().size() > 0;
+
+    for (int slotNum : sortedSlots) {
+      SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
+      Comparable val = bucketValFromSlotNumFunc.apply(slotNum);
+      bucket.add("val", val);
+
+      Query filter = needFilter ? sf.getType().getFieldQuery(null, sf, fieldQueryValFunc.apply(val)) : null;
+
+      fillBucket(bucket, countAcc.getCount(slotNum), slotNum, null, filter);
+
+      bucketList.add(bucket);
+    }
+
+    return res;
+  }
+
+  private static class Slot {
+    int slot;
+  }
+
+  private void fillBucket(SimpleOrderedMap<Object> target, int count, int slotNum, DocSet subDomain, Query filter) throws IOException {
     target.add("count", count);
     if (count <= 0 && !freq.processEmpty) return;
 
@@ -269,13 +420,6 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       for (SlotAcc acc : otherAccs) {
         acc.setNextReader(ctx);
       }
-    }
-  }
-
-  static class Slot {
-    int slot;
-    public int tiebreakCompare(int slotA, int slotB) {
-      return slotB - slotA;
     }
   }
 

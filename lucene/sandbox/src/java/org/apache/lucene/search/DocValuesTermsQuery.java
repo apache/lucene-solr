@@ -165,11 +165,19 @@ public class DocValuesTermsQuery extends Query {
 
           @Override
           public boolean get(int doc) {
-            values.setDocument(doc);
-            for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
-              if (bits.get(ord)) {
-                return true;
+            try {
+              if (doc > values.docID()) {
+                values.advance(doc);
               }
+              if (doc == values.docID()) {
+                for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
+                  if (bits.get(ord)) {
+                    return true;
+                  }
+                }
+              }
+            } catch (IOException ioe) {
+              throw new RuntimeException(ioe);
             }
             return false;
           }

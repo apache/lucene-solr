@@ -32,7 +32,12 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-
+/**
+ * Accumulates statistics separated by a slot number.
+ * There is a separate statistic per slot. The slot is usually an ordinal into a set of values, e.g. tracking a count
+ * frequency <em>per term</em>.
+ * Sometimes there doesn't need to be a slot distinction, in which case there is just one nominal slot.
+ */
 public abstract class SlotAcc implements Closeable {
   String key; // todo...
   protected final FacetContext fcontext;
@@ -210,9 +215,7 @@ abstract class DoubleFuncSlotAcc extends FuncSlotAcc {
 
   @Override
   public void reset() {
-    for (int i=0; i<result.length; i++) {
-      result[i] = initialValue;
-    }
+    Arrays.fill(result, initialValue);
   }
 
   @Override
@@ -246,9 +249,7 @@ abstract class IntSlotAcc extends SlotAcc {
 
   @Override
   public void reset() {
-    for (int i=0; i<result.length; i++) {
-      result[i] = initialValue;
-    }
+    Arrays.fill(result, initialValue);
   }
 
   @Override
@@ -264,7 +265,7 @@ class SumSlotAcc extends DoubleFuncSlotAcc {
     super(values, fcontext, numSlots);
   }
 
-  public void collect(int doc, int slotNum) {
+  public void collect(int doc, int slotNum) throws IOException {
     double val = values.doubleVal(doc);  // todo: worth trying to share this value across multiple stats that need it?
     result[slotNum] += val;
   }
@@ -276,7 +277,7 @@ class SumsqSlotAcc extends DoubleFuncSlotAcc {
   }
 
   @Override
-  public void collect(int doc, int slotNum) {
+  public void collect(int doc, int slotNum) throws IOException {
     double val = values.doubleVal(doc);
     val = val * val;
     result[slotNum] += val;
@@ -291,7 +292,7 @@ class MinSlotAcc extends DoubleFuncSlotAcc {
   }
 
   @Override
-  public void collect(int doc, int slotNum) {
+  public void collect(int doc, int slotNum) throws IOException {
     double val = values.doubleVal(doc);
     if (val == 0 && !values.exists(doc)) return;  // depend on fact that non existing values return 0 for func query
 
@@ -308,7 +309,7 @@ class MaxSlotAcc extends DoubleFuncSlotAcc {
   }
 
   @Override
-  public void collect(int doc, int slotNum) {
+  public void collect(int doc, int slotNum) throws IOException {
     double val = values.doubleVal(doc);
     if (val == 0 && !values.exists(doc)) return;  // depend on fact that non existing values return 0 for func query
 
@@ -338,7 +339,7 @@ class AvgSlotAcc extends DoubleFuncSlotAcc {
   }
 
   @Override
-  public void collect(int doc, int slotNum) {
+  public void collect(int doc, int slotNum) throws IOException {
     double val = values.doubleVal(doc);
     if (val != 0 || values.exists(doc)) {
       result[slotNum] += val;

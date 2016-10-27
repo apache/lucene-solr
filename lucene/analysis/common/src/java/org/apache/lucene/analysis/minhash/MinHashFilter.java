@@ -49,11 +49,11 @@ public class MinHashFilter extends TokenFilter {
 
   private static final LongPair[] cachedIntHashes = new LongPair[HASH_CACHE_SIZE];
 
-  static final int DEFAULT_HASH_COUNT = 1;
+  public static final int DEFAULT_HASH_COUNT = 1;
 
-  static final int DEFAULT_HASH_SET_SIZE = 1;
+  public static final int DEFAULT_HASH_SET_SIZE = 1;
 
-  static final int DEFAULT_BUCKET_COUNT = 512;
+  public static final int DEFAULT_BUCKET_COUNT = 512;
 
   static final String MIN_HASH_TYPE = "MIN_HASH";
 
@@ -112,8 +112,17 @@ public class MinHashFilter extends TokenFilter {
    * @param hashSetSize the no. of min hashes to keep
    * @param withRotation whether rotate or not hashes while incrementing tokens
    */
-  MinHashFilter(TokenStream input, int hashCount, int bucketCount, int hashSetSize, boolean withRotation) {
+  public MinHashFilter(TokenStream input, int hashCount, int bucketCount, int hashSetSize, boolean withRotation) {
     super(input);
+    if (hashCount <= 0) {
+      throw new IllegalArgumentException("hashCount must be greater than zero");
+    }
+    if (bucketCount <= 0) {
+      throw new IllegalArgumentException("bucketCount must be greater than zero");
+    }
+    if (hashSetSize <= 0) {
+      throw new IllegalArgumentException("hashSetSize must be greater than zero");
+    }
     this.hashCount = hashCount;
     this.bucketCount = bucketCount;
     this.hashSetSize = hashSetSize;

@@ -2555,7 +2555,9 @@ public class TestIndexWriter extends LuceneTestCase {
     w.commit();
     w.close();
     DirectoryReader r = DirectoryReader.open(d);
-    assertEquals(0, getOnlyLeafReader(r).getNormValues("foo").get(0));
+    NumericDocValues norms = getOnlyLeafReader(r).getNormValues("foo");
+    assertEquals(0, norms.nextDoc());
+    assertEquals(0, norms.longValue());
     r.close();
     d.close();
   }

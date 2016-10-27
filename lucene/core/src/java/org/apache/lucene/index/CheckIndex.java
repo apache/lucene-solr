@@ -66,6 +66,8 @@ import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 /**
  * Basic tool and API to check the health of an index and
  * write a new segments file that removes reference to
@@ -999,7 +1001,7 @@ public final class CheckIndex implements Closeable {
       }
       for (FieldInfo info : reader.getFieldInfos()) {
         if (info.hasNorms()) {
-          checkNumericDocValues(info.name, reader.maxDoc(), normsReader.getNorms(info), new Bits.MatchAllBits(reader.maxDoc()));
+          checkNumericDocValues(info.name, normsReader.getNorms(info));
           ++status.totFields;
         }
       }
@@ -1791,8 +1793,8 @@ public final class CheckIndex implements Closeable {
     try {
 
       if (fieldInfos.hasPointValues()) {
-        PointsReader values = reader.getPointsReader();
-        if (values == null) {
+        PointsReader pointsReader = reader.getPointsReader();
+        if (pointsReader == null) {
           throw new RuntimeException("there are fields with points, but reader.getPointsReader() is null");
         }
         for (FieldInfo fieldInfo : fieldInfos) {
@@ -1810,9 +1812,13 @@ public final class CheckIndex implements Closeable {
 
             long[] pointCountSeen = new long[1];
 
-            byte[] globalMinPackedValue = values.getMinPackedValue(fieldInfo.name);
-            long size = values.size(fieldInfo.name);
-            int docCount = values.getDocCount(fieldInfo.name);
+            PointValues values = pointsReader.getValues(fieldInfo.name);
+            if (values == null) {
+              continue;
+            }
+            byte[] globalMinPackedValue = values.getMinPackedValue();
+            long size = values.size();
+            int docCount = values.getDocCount();
 
             if (docCount > size) {
               throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have size=" + size + " points and inconsistent docCount=" + docCount);
@@ -1829,7 +1835,7 @@ public final class CheckIndex implements Closeable {
             } else if (globalMinPackedValue.length != packedBytesCount) {
               throw new RuntimeException("getMinPackedValue for field \"" + fieldInfo.name + "\" return length=" + globalMinPackedValue.length + " array, but should be " + packedBytesCount);
             }
-            byte[] globalMaxPackedValue = values.getMaxPackedValue(fieldInfo.name);
+            byte[] globalMaxPackedValue = values.getMaxPackedValue();
             if (globalMaxPackedValue == null) {
               if (size != 0) {
                 throw new RuntimeException("getMaxPackedValue is null points for field \"" + fieldInfo.name + "\" yet size=" + size);
@@ -1838,8 +1844,7 @@ public final class CheckIndex implements Closeable {
               throw new RuntimeException("getMaxPackedValue for field \"" + fieldInfo.name + "\" return length=" + globalMaxPackedValue.length + " array, but should be " + packedBytesCount);
             }
 
-            values.intersect(fieldInfo.name,
-                             new PointValues.IntersectVisitor() {
+            values.intersect(new PointValues.IntersectVisitor() {
 
                                private int lastDocID = -1;
 
@@ -2056,34 +2061,105 @@ public final class CheckIndex implements Closeable {
     }
     return status;
   }
-  
-  private static void checkBinaryDocValues(String fieldName, int maxDoc, BinaryDocValues dv, Bits docsWithField) {
-    for (int i = 0; i < maxDoc; i++) {
-      final BytesRef term = dv.get(i);
-      assert term.isValid();
-      if (docsWithField.get(i) == false && term.length > 0) {
-        throw new RuntimeException("dv for field: " + fieldName + " is missing but has value=" + term + " for doc: " + i);
+
+  @FunctionalInterface
+  private static interface DocValuesIteratorSupplier {
+    DocValuesIterator get(FieldInfo fi) throws IOException;
+  }
+
+  private static void checkDVIterator(FieldInfo fi, int maxDoc, DocValuesIteratorSupplier producer) throws IOException {
+    String field = fi.name;
+
+    // Check advance
+    DocValuesIterator it1 = producer.get(fi);
+    DocValuesIterator it2 = producer.get(fi);
+    int i = 0;
+    for (int doc = it1.nextDoc(); ; doc = it1.nextDoc()) {
+
+      if (i++ % 10 == 1) {
+        int doc2 = it2.advance(doc - 1);
+        if (doc2 < doc - 1) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + (doc-1) + " went backwords (got: " + doc2 + ")");
+        }
+        if (doc2 == doc - 1) {
+          doc2 = it2.nextDoc();
+        }
+        if (doc2 != doc) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + doc + " was not found through advance() (got: " + doc2 + ")");
+        }
+        if (it2.docID() != doc) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + doc + " reports wrong doc ID (got: " + it2.docID() + ")");
+        }
+      }
+
+      if (doc == NO_MORE_DOCS) {
+        break;
       }
     }
+
+    // Check advanceExact
+    it1 = producer.get(fi);
+    it2 = producer.get(fi);
+    i = 0;
+    int lastDoc = -1;
+    for (int doc = it1.nextDoc(); doc != NO_MORE_DOCS ; doc = it1.nextDoc()) {
+
+      if (i++ % 13 == 1) {
+        boolean found = it2.advanceExact(doc - 1);
+        if ((doc - 1 == lastDoc) != found) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + (doc-1) + " disagrees about whether document exists (got: " + found + ")");
+        }
+        if (it2.docID() != doc - 1) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + (doc-1) + " reports wrong doc ID (got: " + it2.docID() + ")");
+        }
+        
+        boolean found2 = it2.advanceExact(doc - 1);
+        if (found != found2) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + (doc-1) + " has unstable advanceExact");
+        }
+
+        if (i % 1 == 0) {
+          int doc2 = it2.nextDoc();
+          if (doc != doc2) {
+            throw new RuntimeException("dv iterator field=" + field + ": doc=" + doc + " was not found through advance() (got: " + doc2 + ")");
+          }
+          if (it2.docID() != doc) {
+            throw new RuntimeException("dv iterator field=" + field + ": doc=" + doc + " reports wrong doc ID (got: " + it2.docID() + ")");
+          }
+        }
+      }
+
+      lastDoc = doc;
+    }
   }
-  
-  private static void checkSortedDocValues(String fieldName, int maxDoc, SortedDocValues dv, Bits docsWithField) {
-    checkBinaryDocValues(fieldName, maxDoc, dv, docsWithField);
+
+  private static void checkBinaryDocValues(String fieldName, int maxDoc, BinaryDocValues bdv) throws IOException {
+    int doc;
+    if (bdv.docID() != -1) {
+      throw new RuntimeException("binary dv iterator for field: " + fieldName + " should start at docID=-1, but got " + bdv.docID());
+    }
+    // TODO: we could add stats to DVs, e.g. total doc count w/ a value for this field
+    while ((doc = bdv.nextDoc()) != NO_MORE_DOCS) {
+      BytesRef value = bdv.binaryValue();
+      value.isValid();
+    }
+  }
+
+  private static void checkSortedDocValues(String fieldName, int maxDoc, SortedDocValues dv) throws IOException {
+    if (dv.docID() != -1) {
+      throw new RuntimeException("sorted dv iterator for field: " + fieldName + " should start at docID=-1, but got " + dv.docID());
+    }
     final int maxOrd = dv.getValueCount()-1;
     FixedBitSet seenOrds = new FixedBitSet(dv.getValueCount());
     int maxOrd2 = -1;
-    for (int i = 0; i < maxDoc; i++) {
-      int ord = dv.getOrd(i);
+    int docID;
+    while ((docID = dv.nextDoc()) != NO_MORE_DOCS) {
+      int ord = dv.ordValue();
       if (ord == -1) {
-        if (docsWithField.get(i)) {
-          throw new RuntimeException("dv for field: " + fieldName + " has -1 ord but is not marked missing for doc: " + i);
-        }
+        throw new RuntimeException("dv for field: " + fieldName + " has -1 ord");
       } else if (ord < -1 || ord > maxOrd) {
         throw new RuntimeException("ord out of bounds: " + ord);
       } else {
-        if (!docsWithField.get(i)) {
-          throw new RuntimeException("dv for field: " + fieldName + " is missing but has ord=" + ord + " for doc: " + i);
-        }
         maxOrd2 = Math.max(maxOrd2, ord);
         seenOrds.set(ord);
       }
@@ -2097,7 +2173,7 @@ public final class CheckIndex implements Closeable {
     BytesRef lastValue = null;
     for (int i = 0; i <= maxOrd; i++) {
       final BytesRef term = dv.lookupOrd(i);
-      assert term.isValid();
+      term.isValid();
       if (lastValue != null) {
         if (term.compareTo(lastValue) <= 0) {
           throw new RuntimeException("dv for field: " + fieldName + " has ords out of order: " + lastValue + " >=" + term);
@@ -2107,54 +2183,29 @@ public final class CheckIndex implements Closeable {
     }
   }
   
-  private static void checkSortedSetDocValues(String fieldName, int maxDoc, SortedSetDocValues dv, Bits docsWithField) {
+  private static void checkSortedSetDocValues(String fieldName, int maxDoc, SortedSetDocValues dv) throws IOException {
     final long maxOrd = dv.getValueCount()-1;
     LongBitSet seenOrds = new LongBitSet(dv.getValueCount());
     long maxOrd2 = -1;
-    for (int i = 0; i < maxDoc; i++) {
-      dv.setDocument(i);
+    int docID;
+    while ((docID = dv.nextDoc()) != NO_MORE_DOCS) {
       long lastOrd = -1;
       long ord;
-      if (docsWithField.get(i)) {
-        int ordCount = 0;
-        while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-          if (ord <= lastOrd) {
-            throw new RuntimeException("ords out of order: " + ord + " <= " + lastOrd + " for doc: " + i);
-          }
-          if (ord < 0 || ord > maxOrd) {
-            throw new RuntimeException("ord out of bounds: " + ord);
-          }
-          if (dv instanceof RandomAccessOrds) {
-            long ord2 = ((RandomAccessOrds)dv).ordAt(ordCount);
-            if (ord != ord2) {
-              throw new RuntimeException("ordAt(" + ordCount + ") inconsistent, expected=" + ord + ",got=" + ord2 + " for doc: " + i);
-            }
-          }
-          lastOrd = ord;
-          maxOrd2 = Math.max(maxOrd2, ord);
-          seenOrds.set(ord);
-          ordCount++;
+      int ordCount = 0;
+      while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        if (ord <= lastOrd) {
+          throw new RuntimeException("ords out of order: " + ord + " <= " + lastOrd + " for doc: " + docID);
         }
-        if (ordCount == 0) {
-          throw new RuntimeException("dv for field: " + fieldName + " has no ordinals but is not marked missing for doc: " + i);
+        if (ord < 0 || ord > maxOrd) {
+          throw new RuntimeException("ord out of bounds: " + ord);
         }
-        if (dv instanceof RandomAccessOrds) {
-          long ordCount2 = ((RandomAccessOrds)dv).cardinality();
-          if (ordCount != ordCount2) {
-            throw new RuntimeException("cardinality inconsistent, expected=" + ordCount + ",got=" + ordCount2 + " for doc: " + i);
-          }
-        }
-      } else {
-        long o = dv.nextOrd();
-        if (o != SortedSetDocValues.NO_MORE_ORDS) {
-          throw new RuntimeException("dv for field: " + fieldName + " is marked missing but has ord=" + o + " for doc: " + i);
-        }
-        if (dv instanceof RandomAccessOrds) {
-          long ordCount2 = ((RandomAccessOrds)dv).cardinality();
-          if (ordCount2 != 0) {
-            throw new RuntimeException("dv for field: " + fieldName + " is marked missing but has cardinality " + ordCount2 + " for doc: " + i);
-          }
-        }
+        lastOrd = ord;
+        maxOrd2 = Math.max(maxOrd2, ord);
+        seenOrds.set(ord);
+        ordCount++;
+      }
+      if (ordCount == 0) {
+        throw new RuntimeException("dv for field: " + fieldName + " returned docID=" + docID + " yet has no ordinals");
       }
     }
     if (maxOrd != maxOrd2) {
@@ -2177,66 +2228,68 @@ public final class CheckIndex implements Closeable {
     }
   }
   
-  private static void checkSortedNumericDocValues(String fieldName, int maxDoc, SortedNumericDocValues ndv, Bits docsWithField) {
-    for (int i = 0; i < maxDoc; i++) {
-      ndv.setDocument(i);
-      int count = ndv.count();
-      if (docsWithField.get(i)) {
-        if (count == 0) {
-          throw new RuntimeException("dv for field: " + fieldName + " is not marked missing but has zero count for doc: " + i);
+  private static void checkSortedNumericDocValues(String fieldName, int maxDoc, SortedNumericDocValues ndv) throws IOException {
+    if (ndv.docID() != -1) {
+      throw new RuntimeException("dv iterator for field: " + fieldName + " should start at docID=-1, but got " + ndv.docID());
+    }
+    while (true) {
+      int docID = ndv.nextDoc();
+      if (docID == NO_MORE_DOCS) {
+        break;
+      }
+      int count = ndv.docValueCount();
+      if (count == 0) {
+        throw new RuntimeException("sorted numeric dv for field: " + fieldName + " returned docValueCount=0 for docID=" + docID);
+      }
+      long previous = Long.MIN_VALUE;
+      for (int j = 0; j < count; j++) {
+        long value = ndv.nextValue();
+        if (value < previous) {
+          throw new RuntimeException("values out of order: " + value + " < " + previous + " for doc: " + docID);
         }
-        long previous = Long.MIN_VALUE;
-        for (int j = 0; j < count; j++) {
-          long value = ndv.valueAt(j);
-          if (value < previous) {
-            throw new RuntimeException("values out of order: " + value + " < " + previous + " for doc: " + i);
-          }
-          previous = value;
-        }
-      } else {
-        if (count != 0) {
-          throw new RuntimeException("dv for field: " + fieldName + " is marked missing but has count=" + count + " for doc: " + i);
-        }
+        previous = value;
       }
     }
   }
 
-  private static void checkNumericDocValues(String fieldName, int maxDoc, NumericDocValues ndv, Bits docsWithField) {
-    for (int i = 0; i < maxDoc; i++) {
-      long value = ndv.get(i);
-      if (docsWithField.get(i) == false && value != 0) {
-        throw new RuntimeException("dv for field: " + fieldName + " is marked missing but has value=" + value + " for doc: " + i);
-      }
+  private static void checkNumericDocValues(String fieldName, NumericDocValues ndv) throws IOException {
+    int doc;
+    if (ndv.docID() != -1) {
+      throw new RuntimeException("dv iterator for field: " + fieldName + " should start at docID=-1, but got " + ndv.docID());
+    }
+    // TODO: we could add stats to DVs, e.g. total doc count w/ a value for this field
+    while ((doc = ndv.nextDoc()) != NO_MORE_DOCS) {
+      ndv.longValue();
     }
   }
   
   private static void checkDocValues(FieldInfo fi, DocValuesProducer dvReader, int maxDoc, PrintStream infoStream, DocValuesStatus status) throws Exception {
-    Bits docsWithField = dvReader.getDocsWithField(fi);
-    if (docsWithField == null) {
-      throw new RuntimeException(fi.name + " docsWithField does not exist");
-    } else if (docsWithField.length() != maxDoc) {
-      throw new RuntimeException(fi.name + " docsWithField has incorrect length: " + docsWithField.length() + ",expected: " + maxDoc);
-    }
     switch(fi.getDocValuesType()) {
       case SORTED:
         status.totalSortedFields++;
-        checkSortedDocValues(fi.name, maxDoc, dvReader.getSorted(fi), docsWithField);
+        checkDVIterator(fi, maxDoc, dvReader::getSorted);
+        checkBinaryDocValues(fi.name, maxDoc, dvReader.getSorted(fi));
+        checkSortedDocValues(fi.name, maxDoc, dvReader.getSorted(fi));
         break;
       case SORTED_NUMERIC:
         status.totalSortedNumericFields++;
-        checkSortedNumericDocValues(fi.name, maxDoc, dvReader.getSortedNumeric(fi), docsWithField);
+        checkDVIterator(fi, maxDoc, dvReader::getSortedNumeric);
+        checkSortedNumericDocValues(fi.name, maxDoc, dvReader.getSortedNumeric(fi));
         break;
       case SORTED_SET:
         status.totalSortedSetFields++;
-        checkSortedSetDocValues(fi.name, maxDoc, dvReader.getSortedSet(fi), docsWithField);
+        checkDVIterator(fi, maxDoc, dvReader::getSortedSet);
+        checkSortedSetDocValues(fi.name, maxDoc, dvReader.getSortedSet(fi));
         break;
       case BINARY:
         status.totalBinaryFields++;
-        checkBinaryDocValues(fi.name, maxDoc, dvReader.getBinary(fi), docsWithField);
+        checkDVIterator(fi, maxDoc, dvReader::getBinary);
+        checkBinaryDocValues(fi.name, maxDoc, dvReader.getBinary(fi));
         break;
       case NUMERIC:
         status.totalNumericFields++;
-        checkNumericDocValues(fi.name, maxDoc, dvReader.getNumeric(fi), docsWithField);
+        checkDVIterator(fi, maxDoc, dvReader::getNumeric);
+        checkNumericDocValues(fi.name, dvReader.getNumeric(fi));
         break;
       default:
         throw new AssertionError();
@@ -2464,8 +2517,9 @@ public final class CheckIndex implements Closeable {
    */
   public void exorciseIndex(Status result) throws IOException {
     ensureOpen();
-    if (result.partial)
+    if (result.partial) {
       throw new IllegalArgumentException("can only exorcise an index that was fully checked (this status checked a subset of segments)");
+    }
     result.newSegments.changed();
     result.newSegments.commit(result.dir);
   }

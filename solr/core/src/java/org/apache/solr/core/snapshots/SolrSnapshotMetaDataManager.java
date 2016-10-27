@@ -358,7 +358,7 @@ public class SolrSnapshotMetaDataManager {
    * Reads the snapshot meta-data information from the given {@link Directory}.
    */
   private synchronized void loadFromSnapshotMetadataFile() throws IOException {
-    log.info("Loading from snapshot metadata file...");
+    log.debug("Loading from snapshot metadata file...");
     long genLoaded = -1;
     IOException ioe = null;
     List<String> snapshotFiles = new ArrayList<>();

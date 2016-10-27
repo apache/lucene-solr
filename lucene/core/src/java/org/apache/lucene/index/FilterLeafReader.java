@@ -382,8 +382,8 @@ public abstract class FilterLeafReader extends LeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
-    return in.getPointValues();
+  public PointValues getPointValues(String field) throws IOException {
+    return in.getPointValues(field);
   }
 
   @Override
@@ -464,12 +464,6 @@ public abstract class FilterLeafReader extends LeafReader {
   public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
     return in.getNormValues(field);
-  }
-
-  @Override
-  public Bits getDocsWithField(String field) throws IOException {
-    ensureOpen();
-    return in.getDocsWithField(field);
   }
 
   @Override

@@ -74,7 +74,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
       String[] terms = params.get("terms").split(",");
       String ws = params.get("weights");
       String dfsStr = params.get("idfs");
-      int iteration = params.getInt("iteration");
+      int iteration = params.getInt("iteration", 0);
       String outcome = params.get("outcome");
       int positiveLabel = params.getInt("positiveLabel", 1);
       double threshold = params.getDouble("threshold", 0.5);
@@ -151,8 +151,17 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
     }
 
     public void collect(int doc) throws IOException{
+      int valuesDocID = leafOutcomeValue.docID();
+      if (valuesDocID < doc) {
+        valuesDocID = leafOutcomeValue.advance(doc);
+      }
+      int outcome;
+      if (valuesDocID == doc) {
+        outcome = (int) leafOutcomeValue.longValue();
+      } else {
+        outcome = 0;
+      }
 
-      int outcome = (int) leafOutcomeValue.get(doc);
       outcome = trainingParams.positiveLabel == outcome? 1 : 0;
       if (outcome == 1) {
         positiveDocsSet.set(context.docBase + doc);

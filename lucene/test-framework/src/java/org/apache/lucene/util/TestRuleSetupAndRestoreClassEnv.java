@@ -32,7 +32,7 @@ import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
 import org.apache.lucene.codecs.cheapbastard.CheapBastardCodec;
 import org.apache.lucene.codecs.compressing.CompressingCodec;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene62.Lucene62Codec;
+import org.apache.lucene.codecs.lucene70.Lucene70Codec;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.RandomCodec;
@@ -73,12 +73,16 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
   Codec codec;
 
   /**
+   * Indicates whether the rule has executed its {@link #before()} method fully.
+   */
+  private boolean initialized;
+
+  /**
    * @see SuppressCodecs
    */
   HashSet<String> avoidCodecs;
 
   static class ThreadNameFixingPrintStreamInfoStream extends PrintStreamInfoStream {
-
     public ThreadNameFixingPrintStreamInfoStream(PrintStream out) {
       super(out);
     }
@@ -99,6 +103,10 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       stream.println(component + " " + messageID + " [" + getTimestamp() + "; " + name + "]: " + message);    
     }
   }
+  
+  public boolean isInitialized() {
+    return initialized;
+  }
 
   @Override
   protected void before() throws Exception {
@@ -113,7 +121,6 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     if (VERBOSE) {
       System.out.println("Loaded codecs: " + Codec.availableCodecs());
       System.out.println("Loaded postingsFormats: " + PostingsFormat.availablePostingsFormats());
-
     }
 
     savedInfoStream = InfoStream.getDefault();
@@ -181,8 +188,8 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       codec = new AssertingCodec();
     } else if ("Compressing".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 6 && !shouldAvoidCodec("Compressing"))) {
       codec = CompressingCodec.randomInstance(random);
-    } else if ("Lucene62".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 5 && !shouldAvoidCodec("Lucene62"))) {
-      codec = new Lucene62Codec(RandomPicks.randomFrom(random, Lucene50StoredFieldsFormat.Mode.values()));
+    } else if ("Lucene70".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 5 && !shouldAvoidCodec("Lucene70"))) {
+      codec = new Lucene70Codec(RandomPicks.randomFrom(random, Lucene50StoredFieldsFormat.Mode.values()));
     } else if (!"random".equals(TEST_CODEC)) {
       codec = Codec.forName(TEST_CODEC);
     } else if ("random".equals(TEST_POSTINGSFORMAT)) {
@@ -235,6 +242,8 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     }
 
     LuceneTestCase.setLiveIWCFlushMode(flushMode);
+
+    initialized = true;
   }
 
   /**

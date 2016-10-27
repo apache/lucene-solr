@@ -602,7 +602,7 @@ public class FSTTermsReader extends FieldsProducer {
       /** Load frame for start arc(node) on fst */
       Frame loadFirstFrame(Frame frame) throws IOException {
         frame.fstArc = fst.getFirstArc(frame.fstArc);
-        frame.fsaState = fsa.getInitialState();
+        frame.fsaState = 0;
         return frame;
       }
 

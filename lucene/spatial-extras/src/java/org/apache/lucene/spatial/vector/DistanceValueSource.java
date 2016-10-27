@@ -16,15 +16,14 @@
  */
 package org.apache.lucene.spatial.vector;
 
+import org.apache.lucene.index.NumericDocValues;
 import org.locationtech.spatial4j.distance.DistanceCalculator;
 import org.locationtech.spatial4j.shape.Point;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.Map;
@@ -67,33 +66,47 @@ public class DistanceValueSource extends ValueSource {
 
     final NumericDocValues ptX = DocValues.getNumeric(reader, strategy.getFieldNameX());
     final NumericDocValues ptY = DocValues.getNumeric(reader, strategy.getFieldNameY());
-    final Bits validX =  DocValues.getDocsWithField(reader, strategy.getFieldNameX());
-    final Bits validY =  DocValues.getDocsWithField(reader, strategy.getFieldNameY());
 
     return new FunctionValues() {
+
+      private int lastDocID = -1;
 
       private final Point from = DistanceValueSource.this.from;
       private final DistanceCalculator calculator = strategy.getSpatialContext().getDistCalc();
       private final double nullValue =
           (strategy.getSpatialContext().isGeo() ? 180 * multiplier : Double.MAX_VALUE);
 
+      private double getDocValue(NumericDocValues values, int doc) throws IOException {
+        int curDocID = values.docID();
+        if (doc > curDocID) {
+          curDocID = values.advance(doc);
+        }
+        if (doc == curDocID) {
+          return Double.longBitsToDouble(values.longValue());
+        } else {
+          return 0.0;
+        }
+      }
+
       @Override
-      public float floatVal(int doc) {
+      public float floatVal(int doc) throws IOException {
         return (float) doubleVal(doc);
       }
 
       @Override
-      public double doubleVal(int doc) {
+      public double doubleVal(int doc) throws IOException {
         // make sure it has minX and area
-        if (validX.get(doc)) {
-          assert validY.get(doc);
-          return calculator.distance(from, Double.longBitsToDouble(ptX.get(doc)), Double.longBitsToDouble(ptY.get(doc))) * multiplier;
+        double x = getDocValue(ptX, doc);
+        if (ptX.docID() == doc) {
+          double y = getDocValue(ptY, doc);
+          assert ptY.docID() == doc;
+          return calculator.distance(from, x, y) * multiplier;
         }
         return nullValue;
       }
 
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return description() + "=" + floatVal(doc);
       }
     };

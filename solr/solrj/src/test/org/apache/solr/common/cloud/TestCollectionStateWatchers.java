@@ -18,7 +18,6 @@
 package org.apache.solr.common.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -269,7 +268,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
   @Test
   public void testDeletionsTriggerWatches() throws Exception {
-    cluster.createCollection("tobedeleted", 1, 1, "config", new HashMap<>());
+    CollectionAdminRequest.createCollection("tobedeleted", "config", 1, 1)
+        .process(cluster.getSolrClient());
     Future<Boolean> future = waitInBackground("tobedeleted", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, (l, c) -> c == null);
 
     CollectionAdminRequest.deleteCollection("tobedeleted").process(cluster.getSolrClient());

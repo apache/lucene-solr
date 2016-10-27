@@ -62,7 +62,7 @@ public abstract class ValueSourceScorer extends Scorer {
   }
 
   /** Override to decide if this document matches. It's called by {@link TwoPhaseIterator#matches()}. */
-  public abstract boolean matches(int doc);
+  public abstract boolean matches(int doc) throws IOException;
 
   @Override
   public DocIdSetIterator iterator() {

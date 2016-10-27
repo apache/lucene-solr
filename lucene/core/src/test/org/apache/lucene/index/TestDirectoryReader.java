@@ -46,6 +46,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Assume;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 public class TestDirectoryReader extends LuceneTestCase {
   
   public void testDocument() throws IOException {
@@ -573,8 +575,13 @@ public class TestDirectoryReader extends LuceneTestCase {
       NumericDocValues norms2 = MultiDocValues.getNormValues(index2, curField);
       if (norms1 != null && norms2 != null) {
         // todo: generalize this (like TestDuelingCodecs assert)
-        for (int i = 0; i < index1.maxDoc(); i++) {
-          assertEquals("Norm different for doc " + i + " and field '" + curField + "'.", norms1.get(i), norms2.get(i));
+        while (true) {
+          int docID = norms1.nextDoc();
+          assertEquals(docID, norms2.nextDoc());
+          if (docID == NO_MORE_DOCS) {
+            break;
+          }
+          assertEquals("Norm different for doc " + docID + " and field '" + curField + "'.", norms1.longValue(), norms2.longValue());
         }
       } else {
         assertNull(norms1);

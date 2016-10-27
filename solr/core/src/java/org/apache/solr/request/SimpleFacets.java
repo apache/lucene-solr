@@ -406,7 +406,8 @@ public class SimpleFacets {
     String prefix = params.getFieldParam(field, FacetParams.FACET_PREFIX);
     String contains = params.getFieldParam(field, FacetParams.FACET_CONTAINS);
     boolean ignoreCase = params.getFieldBool(field, FacetParams.FACET_CONTAINS_IGNORE_CASE, false);
-
+    boolean exists = params.getFieldBool(field, FacetParams.FACET_EXISTS, false);
+    
     NamedList<Integer> counts;
     SchemaField sf = searcher.getSchema().getField(field);
     FieldType ft = sf.getType();
@@ -422,13 +423,15 @@ public class SimpleFacets {
       requestedMethod = FacetMethod.FC;
     } else if(FacetParams.FACET_METHOD_uif.equals(methodStr)) {
       requestedMethod = FacetMethod.UIF;
-    }else{
+    } else {
       requestedMethod=null;
     }
 
     final boolean multiToken = sf.multiValued() || ft.multiValuedFieldCache();
 
-    FacetMethod appliedFacetMethod = selectFacetMethod(sf, requestedMethod, mincount);
+    FacetMethod appliedFacetMethod = selectFacetMethod(field,
+                                sf, requestedMethod, mincount,
+                                exists);
 
     RTimer timer = null;
     if (fdebug != null) {
@@ -446,7 +449,8 @@ public class SimpleFacets {
       switch (appliedFacetMethod) {
         case ENUM:
           assert TrieField.getMainValuePrefix(ft) == null;
-          counts = getFacetTermEnumCounts(searcher, docs, field, offset, limit, mincount,missing,sort,prefix, contains, ignoreCase, params);
+          counts = getFacetTermEnumCounts(searcher, docs, field, offset, limit, mincount,missing,sort,prefix, contains, ignoreCase, 
+                                          exists);
           break;
         case FCS:
           assert !multiToken;
@@ -538,6 +542,29 @@ public class SimpleFacets {
     return counts;
   }
 
+   /**
+    * @param existsRequested facet.exists=true is passed for the given field
+    * */
+  static FacetMethod selectFacetMethod(String fieldName, 
+                                       SchemaField field, FacetMethod method, Integer mincount,
+                                       boolean existsRequested) {
+    if (existsRequested) {
+      checkMincountOnExists(fieldName, mincount);
+      if (method == null) {
+        method = FacetMethod.ENUM;
+      }
+    }
+    final FacetMethod facetMethod = selectFacetMethod(field, method, mincount);
+    
+    if (existsRequested && facetMethod!=FacetMethod.ENUM) {
+      throw new SolrException (ErrorCode.BAD_REQUEST, 
+          FacetParams.FACET_EXISTS + "=true is requested, but "+
+          FacetParams.FACET_METHOD+"="+FacetParams.FACET_METHOD_enum+ " can't be used with "+fieldName
+      );
+    }
+    return facetMethod;
+  }
+    
   /**
    * This method will force the appropriate facet method even if the user provided a different one as a request parameter
    *
@@ -811,7 +838,8 @@ public class SimpleFacets {
    * @see FacetParams#FACET_ZEROS
    * @see FacetParams#FACET_MISSING
    */
-  public NamedList<Integer> getFacetTermEnumCounts(SolrIndexSearcher searcher, DocSet docs, String field, int offset, int limit, int mincount, boolean missing, String sort, String prefix, String contains, boolean ignoreCase, SolrParams params)
+  public NamedList<Integer> getFacetTermEnumCounts(SolrIndexSearcher searcher, DocSet docs, String field, int offset, int limit, int mincount, boolean missing, 
+                                      String sort, String prefix, String contains, boolean ignoreCase, boolean intersectsCheck)
     throws IOException {
 
     /* :TODO: potential optimization...
@@ -831,7 +859,7 @@ public class SimpleFacets {
 
 
     IndexSchema schema = searcher.getSchema();
-    LeafReader r = searcher.getLeafReader();
+    LeafReader r = searcher.getSlowAtomicReader();
     FieldType ft = schema.getFieldType(field);
 
     boolean sortByCount = sort.equals("count") || sort.equals("true");
@@ -901,7 +929,11 @@ public class SimpleFacets {
                 deState.postingsEnum = postingsEnum;
               }
 
-              c = searcher.numDocs(docs, deState);
+              if (intersectsCheck) {
+                c = searcher.intersects(docs, deState) ? 1 : 0;
+              } else {
+                c = searcher.numDocs(docs, deState);
+              }
 
               postingsEnum = deState.postingsEnum;
             } else {
@@ -916,19 +948,33 @@ public class SimpleFacets {
               if (postingsEnum instanceof MultiPostingsEnum) {
                 MultiPostingsEnum.EnumWithSlice[] subs = ((MultiPostingsEnum) postingsEnum).getSubs();
                 int numSubs = ((MultiPostingsEnum) postingsEnum).getNumSubs();
+                
+                SEGMENTS_LOOP:
                 for (int subindex = 0; subindex < numSubs; subindex++) {
                   MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
                   if (sub.postingsEnum == null) continue;
                   int base = sub.slice.start;
                   int docid;
                   while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                    if (fastForRandomSet.exists(docid + base)) c++;
+                    if (fastForRandomSet.exists(docid + base)) {
+                      c++;
+                      if (intersectsCheck) {
+                        assert c==1;
+                        break SEGMENTS_LOOP;
+                      }
+                    }
                   }
                 }
               } else {
                 int docid;
                 while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                  if (fastForRandomSet.exists(docid)) c++;
+                  if (fastForRandomSet.exists(docid)) {
+                    c++;
+                    if (intersectsCheck) {
+                      assert c==1;
+                      break;
+                    }
+                  }
                 }
               }
 
@@ -967,6 +1013,15 @@ public class SimpleFacets {
     }
 
     return res;
+  }
+
+  public static void checkMincountOnExists(String fieldName, int mincount) {
+    if (mincount > 1) {
+        throw new SolrException (ErrorCode.BAD_REQUEST,
+            FacetParams.FACET_MINCOUNT + "="+mincount+" exceed 1 that's not supported with " + 
+                FacetParams.FACET_EXISTS + "=true for " + fieldName
+        );
+      }
   }
 
   /**

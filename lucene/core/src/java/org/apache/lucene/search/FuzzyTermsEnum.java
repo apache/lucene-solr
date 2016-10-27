@@ -17,12 +17,7 @@
 package org.apache.lucene.search;
 
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
@@ -35,9 +30,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 /** Subclass of TermsEnum for enumerating all terms that are similar
  * to the specified filter term.
@@ -46,38 +43,46 @@ import org.apache.lucene.util.automaton.LevenshteinAutomata;
  * {@link BytesRef#compareTo}.  Each term in the enumeration is
  * greater than all that precede it.</p>
  */
-public class FuzzyTermsEnum extends TermsEnum {
+public final class FuzzyTermsEnum extends TermsEnum {
+
+  // NOTE: we can't subclass FilteredTermsEnum here because we need to sometimes change actualEnum:
   private TermsEnum actualEnum;
-  private BoostAttribute actualBoostAtt;
   
-  private final BoostAttribute boostAtt =
-    attributes().addAttribute(BoostAttribute.class);
-  
+  // We use this to communicate the score (boost) of the current matched term we are on back to
+  // MultiTermQuery.TopTermsBlendedFreqScoringRewrite that is collecting the best (default 50) matched terms:
+  private final BoostAttribute boostAtt;
+
+  // MultiTermQuery.TopTermsBlendedFreqScoringRewrite tells us the worst boost still in its queue using this att,
+  // which we use to know when we can reduce the automaton from ed=2 to ed=1, or ed=0 if only single top term is collected:
   private final MaxNonCompetitiveBoostAttribute maxBoostAtt;
+
+  // We use this to share the pre-built (once for the query) Levenshtein automata across segments:
   private final LevenshteinAutomataAttribute dfaAtt;
   
   private float bottom;
   private BytesRef bottomTerm;
-  
-  protected final float minSimilarity;
-  protected final float scale_factor;
-  
-  protected final int termLength;
-  
-  protected int maxEdits;
-  protected final boolean raw;
+  private final CompiledAutomaton automata[];
 
-  protected final Terms terms;
-  private final Term term;
-  protected final int termText[];
-  protected final int realPrefixLength;
-  
-  private final boolean transpositions;
+  private BytesRef queuedBottom;
+
+  final int termLength;
+
+  // Maximum number of edits we will accept.  This is either 2 or 1 (or, degenerately, 0) passed by the user originally,
+  // but as we collect terms, we can lower this (e.g. from 2 to 1) if we detect that the term queue is full, and all
+  // collected terms are ed=1:
+  private int maxEdits;
+
+  final Terms terms;
+  final Term term;
+  final int termText[];
+  final int realPrefixLength;
+
+  // True (the default, in FuzzyQuery) if a transposition should count as a single edit:
+  final boolean transpositions;
   
   /**
    * Constructor for enumeration of all terms from specified <code>reader</code> which share a prefix of
-   * length <code>prefixLength</code> with <code>term</code> and which have a fuzzy similarity &gt;
-   * <code>minSimilarity</code>.
+   * length <code>prefixLength</code> with <code>term</code> and which have at most {@code maxEdits} edits.
    * <p>
    * After calling the constructor the enumeration is already pointing to the first 
    * valid term if such a term exists. 
@@ -87,105 +92,88 @@ public class FuzzyTermsEnum extends TermsEnum {
    * thats contains information about competitive boosts during rewrite. It is also used
    * to cache DFAs between segment transitions.
    * @param term Pattern term.
-   * @param minSimilarity Minimum required similarity for terms from the reader. Pass an integer value
-   *        representing edit distance. Passing a fraction is deprecated.
+   * @param maxEdits Maximum edit distance.
    * @param prefixLength Length of required common prefix. Default value is 0.
    * @throws IOException if there is a low-level IO error
    */
   public FuzzyTermsEnum(Terms terms, AttributeSource atts, Term term, 
-      final float minSimilarity, final int prefixLength, boolean transpositions) throws IOException {
-    if (minSimilarity >= 1.0f && minSimilarity != (int)minSimilarity)
-      throw new IllegalArgumentException("fractional edit distances are not allowed");
-    if (minSimilarity < 0.0f)
-      throw new IllegalArgumentException("minimumSimilarity cannot be less than 0");
-    if(prefixLength < 0)
+      final int maxEdits, final int prefixLength, boolean transpositions) throws IOException {
+    if (maxEdits < 0 || maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
+      throw new IllegalArgumentException("max edits must be 0.." + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + ", inclusive; got: " + maxEdits);
+    }
+    if (prefixLength < 0) {
       throw new IllegalArgumentException("prefixLength cannot be less than 0");
+    }
+    this.maxEdits = maxEdits;
     this.terms = terms;
     this.term = term;
-
+    
     // convert the string into a utf32 int[] representation for fast comparisons
     final String utf16 = term.text();
     this.termText = new int[utf16.codePointCount(0, utf16.length())];
-    for (int cp, i = 0, j = 0; i < utf16.length(); i += Character.charCount(cp))
-           termText[j++] = cp = utf16.codePointAt(i);
+    for (int cp, i = 0, j = 0; i < utf16.length(); i += Character.charCount(cp)) {
+      termText[j++] = cp = utf16.codePointAt(i);
+    }
     this.termLength = termText.length;
+
     this.dfaAtt = atts.addAttribute(LevenshteinAutomataAttribute.class);
+    this.maxBoostAtt = atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
+
+    // NOTE: boostAtt must pulled from attributes() not from atts!  This is because TopTermsRewrite looks for boostAtt from this TermsEnum's
+    // private attributes() and not the global atts passed to us from MultiTermQuery:
+    this.boostAtt = attributes().addAttribute(BoostAttribute.class);
 
     //The prefix could be longer than the word.
     //It's kind of silly though.  It means we must match the entire word.
     this.realPrefixLength = prefixLength > termLength ? termLength : prefixLength;
-    // if minSimilarity >= 1, we treat it as number of edits
-    if (minSimilarity >= 1f) {
-      this.minSimilarity = 0; // just driven by number of edits
-      maxEdits = (int) minSimilarity;
-      raw = true;
-    } else {
-      this.minSimilarity = minSimilarity;
-      // calculate the maximum k edits for this similarity
-      maxEdits = initialMaxDistance(this.minSimilarity, termLength);
-      raw = false;
-    }
-    if (transpositions && maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
-      throw new UnsupportedOperationException("with transpositions enabled, distances > " 
-        + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + " are not supported ");
-    }
     this.transpositions = transpositions;
-    this.scale_factor = 1.0f / (1.0f - this.minSimilarity);
 
-    this.maxBoostAtt = atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
+    CompiledAutomaton[] prevAutomata = dfaAtt.automata();
+    if (prevAutomata == null) {
+      prevAutomata = new CompiledAutomaton[maxEdits+1];
+
+      LevenshteinAutomata builder = 
+        new LevenshteinAutomata(UnicodeUtil.newString(termText, realPrefixLength, termText.length - realPrefixLength), transpositions);
+
+      String prefix = UnicodeUtil.newString(termText, 0, realPrefixLength);
+      for (int i = 0; i <= maxEdits; i++) {
+        Automaton a = builder.toAutomaton(i, prefix);
+        prevAutomata[i] = new CompiledAutomaton(a, true, false);
+      }
+
+      // first segment computes the automata, and we share with subsequent segments via this Attribute:
+      dfaAtt.setAutomata(prevAutomata);
+    }
+
+    this.automata = prevAutomata;
     bottom = maxBoostAtt.getMaxNonCompetitiveBoost();
     bottomTerm = maxBoostAtt.getCompetitiveTerm();
-    bottomChanged(null, true);
+    bottomChanged(null);
   }
   
   /**
    * return an automata-based enum for matching up to editDistance from
    * lastTerm, if possible
    */
-  protected TermsEnum getAutomatonEnum(int editDistance, BytesRef lastTerm)
-      throws IOException {
-    final List<CompiledAutomaton> runAutomata = initAutomata(editDistance);
-    if (editDistance < runAutomata.size()) {
-      //System.out.println("FuzzyTE.getAEnum: ed=" + editDistance + " lastTerm=" + (lastTerm==null ? "null" : lastTerm.utf8ToString()));
-      final CompiledAutomaton compiled = runAutomata.get(editDistance);
-      return new AutomatonFuzzyTermsEnum(terms.intersect(compiled, lastTerm == null ? null : compiled.floor(lastTerm, new BytesRefBuilder())),
-                                         runAutomata.subList(0, editDistance + 1).toArray(new CompiledAutomaton[editDistance + 1]));
+  private TermsEnum getAutomatonEnum(int editDistance, BytesRef lastTerm) throws IOException {
+    assert editDistance < automata.length;
+    final CompiledAutomaton compiled = automata[editDistance];
+    BytesRef initialSeekTerm;
+    if (lastTerm == null) {
+      // This is the first enum we are pulling:
+      initialSeekTerm = null;
     } else {
-      return null;
+      // We are pulling this enum (e.g., ed=1) after iterating for a while already (e.g., ed=2):
+      initialSeekTerm = compiled.floor(lastTerm, new BytesRefBuilder());
     }
+    return terms.intersect(compiled, initialSeekTerm);
   }
 
-  /** initialize levenshtein DFAs up to maxDistance, if possible */
-  private List<CompiledAutomaton> initAutomata(int maxDistance) {
-    final List<CompiledAutomaton> runAutomata = dfaAtt.automata();
-    //System.out.println("cached automata size: " + runAutomata.size());
-    if (runAutomata.size() <= maxDistance &&
-        maxDistance <= LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
-      LevenshteinAutomata builder = 
-        new LevenshteinAutomata(UnicodeUtil.newString(termText, realPrefixLength, termText.length - realPrefixLength), transpositions);
-
-      String prefix = UnicodeUtil.newString(termText, 0, realPrefixLength);
-      for (int i = runAutomata.size(); i <= maxDistance; i++) {
-        Automaton a = builder.toAutomaton(i, prefix);
-        //System.out.println("compute automaton n=" + i);
-        runAutomata.add(new CompiledAutomaton(a, true, false));
-      }
-    }
-    return runAutomata;
-  }
-
-  /** swap in a new actual enum to proxy to */
-  protected void setEnum(TermsEnum actualEnum) {
-    this.actualEnum = actualEnum;
-    this.actualBoostAtt = actualEnum.attributes().addAttribute(BoostAttribute.class);
-  }
-  
   /**
    * fired when the max non-competitive boost has changed. this is the hook to
-   * swap in a smarter actualEnum
+   * swap in a smarter actualEnum.
    */
-  private void bottomChanged(BytesRef lastTerm, boolean init)
-      throws IOException {
+  private void bottomChanged(BytesRef lastTerm) throws IOException {
     int oldMaxEdits = maxEdits;
     
     // true if the last term encountered is lexicographically equal or after the bottom term in the PQ
@@ -193,49 +181,61 @@ public class FuzzyTermsEnum extends TermsEnum {
 
     // as long as the max non-competitive boost is >= the max boost
     // for some edit distance, keep dropping the max edit distance.
-    while (maxEdits > 0 && (termAfter ? bottom >= calculateMaxBoost(maxEdits) : bottom > calculateMaxBoost(maxEdits)))
+    while (maxEdits > 0) {
+      float maxBoost = 1.0f - ((float) maxEdits / (float) termLength);
+      if (bottom < maxBoost || (bottom == maxBoost && termAfter == false)) {
+        break;
+      }
       maxEdits--;
-    
-    if (oldMaxEdits != maxEdits || init) { // the maximum n has changed
-      maxEditDistanceChanged(lastTerm, maxEdits, init);
+    }
+
+    if (oldMaxEdits != maxEdits || lastTerm == null) {
+      // This is a very powerful optimization: the maximum edit distance has changed.  This happens because we collect only the top scoring
+      // N (= 50, by default) terms, and if e.g. maxEdits=2, and the queue is now full of matching terms, and we notice that the worst entry
+      // in that queue is ed=1, then we can switch the automata here to ed=1 which is a big speedup.
+      actualEnum = getAutomatonEnum(maxEdits, lastTerm);
     }
   }
-  
-  protected void maxEditDistanceChanged(BytesRef lastTerm, int maxEdits, boolean init)
-      throws IOException {
-    TermsEnum newEnum = getAutomatonEnum(maxEdits, lastTerm);
-    // instead of assert, we do a hard check in case someone uses our enum directly
-    // assert newEnum != null;
-    if (newEnum == null) {
-      assert maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
-      throw new IllegalArgumentException("maxEdits cannot be > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE");
-    }
-    setEnum(newEnum);
-  }
-
-  // for some raw min similarity and input term length, the maximum # of edits
-  private int initialMaxDistance(float minimumSimilarity, int termLen) {
-    return (int) ((1D-minimumSimilarity) * termLen);
-  }
-  
-  // for some number of edits, the maximum possible scaled boost
-  private float calculateMaxBoost(int nEdits) {
-    final float similarity = 1.0f - ((float) nEdits / (float) (termLength));
-    return (similarity - minSimilarity) * scale_factor;
-  }
-
-  private BytesRef queuedBottom = null;
   
   @Override
   public BytesRef next() throws IOException {
+
     if (queuedBottom != null) {
-      bottomChanged(queuedBottom, false);
+      bottomChanged(queuedBottom);
       queuedBottom = null;
     }
     
-    BytesRef term = actualEnum.next();
-    boostAtt.setBoost(actualBoostAtt.getBoost());
-    
+
+    BytesRef term;
+
+    term = actualEnum.next();
+    if (term == null) {
+      // end
+      return null;
+    }
+
+    int ed = maxEdits;
+      
+    // we know the outer DFA always matches.
+    // now compute exact edit distance
+    while (ed > 0) {
+      if (matches(term, ed - 1)) {
+        ed--;
+      } else {
+        break;
+      }
+    }
+      
+    if (ed == 0) { // exact match
+      boostAtt.setBoost(1.0F);
+    } else {
+      final int codePointCount = UnicodeUtil.codePointCount(term);
+      int minTermLength = Math.min(codePointCount, termLength);
+
+      float similarity = 1.0f - (float) ed / (float) minTermLength;
+      boostAtt.setBoost(similarity);
+    }
+      
     final float bottom = maxBoostAtt.getMaxNonCompetitiveBoost();
     final BytesRef bottomTerm = maxBoostAtt.getCompetitiveTerm();
     if (term != null && (bottom != this.bottom || bottomTerm != this.bottomTerm)) {
@@ -243,10 +243,17 @@ public class FuzzyTermsEnum extends TermsEnum {
       this.bottomTerm = bottomTerm;
       // clone the term before potentially doing something with it
       // this is a rare but wonderful occurrence anyway
+
+      // We must delay bottomChanged until the next next() call otherwise we mess up docFreq(), etc., for the current term:
       queuedBottom = BytesRef.deepCopyOf(term);
     }
     
     return term;
+  }
+
+  /** returns true if term is within k edits of the query term */
+  private boolean matches(BytesRef termIn, int k) {
+    return k == 0 ? termIn.equals(term.bytes()) : automata[k].runAutomaton.run(termIn.bytes, termIn.offset, termIn.length);
   }
   
   // proxy all other enum calls to the actual enum
@@ -301,108 +308,42 @@ public class FuzzyTermsEnum extends TermsEnum {
   }
 
   /**
-   * Implement fuzzy enumeration with Terms.intersect.
-   * <p>
-   * This is the fastest method as opposed to LinearFuzzyTermsEnum:
-   * as enumeration is logarithmic to the number of terms (instead of linear)
-   * and comparison is linear to length of the term (rather than quadratic)
-   */
-  private class AutomatonFuzzyTermsEnum extends FilteredTermsEnum {
-    private final ByteRunAutomaton matchers[];
-    
-    private final BytesRef termRef;
-    
-    private final BoostAttribute boostAtt =
-      attributes().addAttribute(BoostAttribute.class);
-    
-    public AutomatonFuzzyTermsEnum(TermsEnum tenum, CompiledAutomaton compiled[]) {
-      super(tenum, false);
-      this.matchers = new ByteRunAutomaton[compiled.length];
-      for (int i = 0; i < compiled.length; i++)
-        this.matchers[i] = compiled[i].runAutomaton;
-      termRef = new BytesRef(term.text());
-    }
-
-    /** finds the smallest Lev(n) DFA that accepts the term. */
-    @Override
-    protected AcceptStatus accept(BytesRef term) {    
-      //System.out.println("AFTE.accept term=" + term);
-      int ed = matchers.length - 1;
-      
-      // we are wrapping either an intersect() TermsEnum or an AutomatonTermsENum,
-      // so we know the outer DFA always matches.
-      // now compute exact edit distance
-      while (ed > 0) {
-        if (matches(term, ed - 1)) {
-          ed--;
-        } else {
-          break;
-        }
-      }
-      //System.out.println("CHECK term=" + term.utf8ToString() + " ed=" + ed);
-      
-      // scale to a boost and return (if similarity > minSimilarity)
-      if (ed == 0) { // exact match
-        boostAtt.setBoost(1.0F);
-        //System.out.println("  yes");
-        return AcceptStatus.YES;
-      } else {
-        final int codePointCount = UnicodeUtil.codePointCount(term);
-        final float similarity = 1.0f - ((float) ed / (float) 
-            (Math.min(codePointCount, termLength)));
-        if (similarity > minSimilarity) {
-          boostAtt.setBoost((similarity - minSimilarity) * scale_factor);
-          //System.out.println("  yes");
-          return AcceptStatus.YES;
-        } else {
-          return AcceptStatus.NO;
-        }
-      }
-    }
-    
-    /** returns true if term is within k edits of the query term */
-    final boolean matches(BytesRef term, int k) {
-      return k == 0 ? term.equals(termRef) : matchers[k].run(term.bytes, term.offset, term.length);
-    }
-  }
-
-  /** @lucene.internal */
-  public float getMinSimilarity() {
-    return minSimilarity;
-  }
-  
-  /** @lucene.internal */
-  public float getScaleFactor() {
-    return scale_factor;
-  }
-  
-  /**
    * reuses compiled automata across different segments,
    * because they are independent of the index
    * @lucene.internal */
   public static interface LevenshteinAutomataAttribute extends Attribute {
-    public List<CompiledAutomaton> automata();
+    public CompiledAutomaton[] automata();
+    public void setAutomata(CompiledAutomaton[] automata);
   }
     
   /** 
    * Stores compiled automata as a list (indexed by edit distance)
    * @lucene.internal */
   public static final class LevenshteinAutomataAttributeImpl extends AttributeImpl implements LevenshteinAutomataAttribute {
-    private final List<CompiledAutomaton> automata = new ArrayList<>();
+    private CompiledAutomaton[] automata;
       
     @Override
-    public List<CompiledAutomaton> automata() {
+    public CompiledAutomaton[] automata() {
       return automata;
     }
 
     @Override
+    public void setAutomata(CompiledAutomaton[] automata) {
+      this.automata = automata;
+    }
+
+    @Override
     public void clear() {
-      automata.clear();
+      automata = null;
     }
 
     @Override
     public int hashCode() {
-      return automata.hashCode();
+      if (automata == null) {
+        return 0;
+      } else {
+        return automata.hashCode();
+      }
     }
 
     @Override
@@ -411,15 +352,17 @@ public class FuzzyTermsEnum extends TermsEnum {
         return true;
       if (!(other instanceof LevenshteinAutomataAttributeImpl))
         return false;
-      return automata.equals(((LevenshteinAutomataAttributeImpl) other).automata);
+      return Arrays.equals(automata, ((LevenshteinAutomataAttributeImpl) other).automata);
     }
 
     @Override
-    public void copyTo(AttributeImpl target) {
-      final List<CompiledAutomaton> targetAutomata =
-        ((LevenshteinAutomataAttribute) target).automata();
-      targetAutomata.clear();
-      targetAutomata.addAll(automata);
+    public void copyTo(AttributeImpl _target) {
+      LevenshteinAutomataAttribute target = (LevenshteinAutomataAttribute) _target;
+      if (automata == null) {
+        target.setAutomata(null);
+      } else {
+        target.setAutomata(automata);
+      }
     }
 
     @Override

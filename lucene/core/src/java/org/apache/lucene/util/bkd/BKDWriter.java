@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.function.IntFunction;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.MutablePointsReader;
+import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
@@ -82,7 +82,8 @@ public class BKDWriter implements Closeable {
   public static final int VERSION_START = 0;
   public static final int VERSION_COMPRESSED_DOC_IDS = 1;
   public static final int VERSION_COMPRESSED_VALUES = 2;
-  public static final int VERSION_CURRENT = VERSION_COMPRESSED_VALUES;
+  public static final int VERSION_IMPLICIT_SPLIT_DIM_1D = 3;
+  public static final int VERSION_CURRENT = VERSION_IMPLICIT_SPLIT_DIM_1D;
 
   /** How many bytes each docs takes in the fixed-width offline format */
   private final int bytesPerDoc;
@@ -417,12 +418,12 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  /** Write a field from a {@link MutablePointsReader}. This way of writing
+  /** Write a field from a {@link MutablePointValues}. This way of writing
    *  points is faster than regular writes with {@link BKDWriter#add} since
    *  there is opportunity for reordering points before writing them to
    *  disk. This method does not use transient disk in order to reorder points.
    */
-  public long writeField(IndexOutput out, String fieldName, MutablePointsReader reader) throws IOException {
+  public long writeField(IndexOutput out, String fieldName, MutablePointValues reader) throws IOException {
     if (numDims == 1) {
       return writeField1Dim(out, fieldName, reader);
     } else {
@@ -433,7 +434,7 @@ public class BKDWriter implements Closeable {
 
   /* In the 2+D case, we recursively pick the split dimension, compute the
    * median value and partition other values around it. */
-  private long writeFieldNDims(IndexOutput out, String fieldName, MutablePointsReader reader) throws IOException {
+  private long writeFieldNDims(IndexOutput out, String fieldName, MutablePointValues values) throws IOException {
     if (pointCount != 0) {
       throw new IllegalStateException("cannot mix add and writeField");
     }
@@ -446,7 +447,7 @@ public class BKDWriter implements Closeable {
     // Mark that we already finished:
     heapPointWriter = null;
 
-    long countPerLeaf = pointCount = reader.size(fieldName);
+    long countPerLeaf = pointCount = values.size();
     long innerNodeCount = 1;
 
     while (countPerLeaf > maxPointsInLeafNode) {
@@ -465,7 +466,7 @@ public class BKDWriter implements Closeable {
     Arrays.fill(minPackedValue, (byte) 0xff);
     Arrays.fill(maxPackedValue, (byte) 0);
     for (int i = 0; i < Math.toIntExact(pointCount); ++i) {
-      reader.getValue(i, scratchBytesRef1);
+      values.getValue(i, scratchBytesRef1);
       for(int dim=0;dim<numDims;dim++) {
         int offset = dim*bytesPerDim;
         if (StringHelper.compare(bytesPerDim, scratchBytesRef1.bytes, scratchBytesRef1.offset + offset, minPackedValue, offset) < 0) {
@@ -476,10 +477,10 @@ public class BKDWriter implements Closeable {
         }
       }
 
-      docsSeen.set(reader.getDocID(i));
+      docsSeen.set(values.getDocID(i));
     }
 
-    build(1, numLeaves, reader, 0, Math.toIntExact(pointCount), out,
+    build(1, numLeaves, values, 0, Math.toIntExact(pointCount), out,
         minPackedValue, maxPackedValue, splitPackedValues, leafBlockFPs,
         new int[maxPointsInLeafNode]);
 
@@ -491,12 +492,12 @@ public class BKDWriter implements Closeable {
 
   /* In the 1D case, we can simply sort points in ascending order and use the
    * same writing logic as we use at merge time. */
-  private long writeField1Dim(IndexOutput out, String fieldName, MutablePointsReader reader) throws IOException {
-    MutablePointsReaderUtils.sort(maxDoc, packedBytesLength, reader, 0, Math.toIntExact(reader.size(fieldName)));
+  private long writeField1Dim(IndexOutput out, String fieldName, MutablePointValues reader) throws IOException {
+    MutablePointsReaderUtils.sort(maxDoc, packedBytesLength, reader, 0, Math.toIntExact(reader.size()));
 
     final OneDimensionBKDWriter oneDimWriter = new OneDimensionBKDWriter(out);
 
-    reader.intersect(fieldName, new IntersectVisitor() {
+    reader.intersect(new IntersectVisitor() {
 
       @Override
       public void visit(int docID, byte[] packedValue) throws IOException {
@@ -1033,10 +1034,15 @@ public class BKDWriter implements Closeable {
     out.writeVLong(pointCount);
     out.writeVInt(docsSeen.cardinality());
 
-    // TODO: for 1D case, don't waste the first byte of each split value (it's always 0)
-
     // NOTE: splitPackedValues[0] is unused, because nodeID is 1-based:
-    out.writeBytes(splitPackedValues, 0, splitPackedValues.length);
+    if (numDims == 1) {
+      // write the index, skipping the byte used to store the split dim since it is always 0
+      for (int i = 1; i < splitPackedValues.length; i += 1 + bytesPerDim) {
+        out.writeBytes(splitPackedValues, i, bytesPerDim);
+      }
+    } else {
+      out.writeBytes(splitPackedValues, 0, splitPackedValues.length);
+    }
 
     long lastFP = 0;
     for (int i=0;i<leafBlockFPs.length;i++) {
@@ -1238,7 +1244,7 @@ public class BKDWriter implements Closeable {
 
   /* Recursively reorders the provided reader and writes the bkd-tree on the fly. */
   private void build(int nodeID, int leafNodeOffset,
-      MutablePointsReader reader, int from, int to,
+      MutablePointValues reader, int from, int to,
       IndexOutput out,
       byte[] minPackedValue, byte[] maxPackedValue,
       byte[] splitPackedValues,

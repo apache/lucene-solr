@@ -309,7 +309,7 @@
  * <p>
  * Finally, you can extend the low level {@link org.apache.lucene.search.similarities.Similarity Similarity} directly
  * to implement a new retrieval model, or to use external scoring factors particular to your application. For example,
- * a custom Similarity can access per-document values via {@link org.apache.lucene.index.NumericDocValues} and 
+ * a custom Similarity can access per-document values via {@link org.apache.lucene.index.NumericDocValues} and
  * integrate them into the score.
  * <p>
  * See the {@link org.apache.lucene.search.similarities} package documentation for information

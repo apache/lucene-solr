@@ -111,7 +111,7 @@ public class XMLLoader extends ContentStreamLoader {
     xsltCacheLifetimeSeconds = XSLT_CACHE_DEFAULT;
     if(args != null) {
       xsltCacheLifetimeSeconds = args.getInt(XSLT_CACHE_PARAM,XSLT_CACHE_DEFAULT);
-      log.info("xsltCacheLifetimeSeconds=" + xsltCacheLifetimeSeconds);
+      log.debug("xsltCacheLifetimeSeconds=" + xsltCacheLifetimeSeconds);
     }
     return this;
   }

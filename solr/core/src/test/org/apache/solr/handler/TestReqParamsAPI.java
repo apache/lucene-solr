@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
@@ -57,7 +58,8 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
-    cluster.createCollection(COLL_NAME, 1, 2, "conf1", null);
+    CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2)
+        .process(cluster.getSolrClient());
   }
 
   @Test
@@ -192,6 +194,21 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     compareValues(result, "A val", asList("params", "a"));
     compareValues(result, Arrays.asList("val 1", "val 2"), asList("params", "d"));
     compareValues(result, "20", asList("params", "i"));
+
+    result = TestSolrConfigHandler.testForResponseElement(null,
+        urls.get(random().nextInt(urls.size())),
+        "/config/requestHandler?componentName=/dump1&expandParams=true&wt=json&useParams=y&c=CC",
+        cloudClient,
+        asList("config", "requestHandler","/dump1","_useParamsExpanded_","x", "a"),
+        "A val",
+        5);
+    compareValues(result, "B val", asList("config", "requestHandler","/dump1","_useParamsExpanded_","x", "b"));
+    compareValues(result, "CY val", asList("config", "requestHandler","/dump1","_useParamsExpanded_","y", "c"));
+    compareValues(result, "BY val", asList("config", "requestHandler","/dump1","_useParamsExpanded_","y", "b"));
+    compareValues(result, "A val", asList("config", "requestHandler","/dump1","_effectiveParams_", "a"));
+    compareValues(result, "BY val", asList("config", "requestHandler","/dump1","_effectiveParams_", "b"));
+    compareValues(result, "CC", asList("config", "requestHandler","/dump1","_effectiveParams_", "c"));
+
     payload = " {\n" +
         "  'update' : {'y': {\n" +
         "                'c':'CY val modified',\n" +

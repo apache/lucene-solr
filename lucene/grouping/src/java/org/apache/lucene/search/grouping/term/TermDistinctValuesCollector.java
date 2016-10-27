@@ -16,19 +16,19 @@
  */
 package org.apache.lucene.search.grouping.term;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.grouping.AbstractDistinctValuesCollector;
-import org.apache.lucene.search.grouping.SearchGroup;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.SentinelIntSet;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.search.grouping.AbstractDistinctValuesCollector;
+import org.apache.lucene.search.grouping.SearchGroup;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.SentinelIntSet;
 
 /**
  * A term based implementation of {@link org.apache.lucene.search.grouping.AbstractDistinctValuesCollector} that relies
@@ -67,13 +67,32 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
 
   @Override
   public void collect(int doc) throws IOException {
-    int slot = ordSet.find(groupFieldTermIndex.getOrd(doc));
+    if (doc > groupFieldTermIndex.docID()) {
+      groupFieldTermIndex.advance(doc);
+    }
+    int ord;
+    if (doc == groupFieldTermIndex.docID()) {
+      ord = groupFieldTermIndex.ordValue();
+    } else {
+      ord = -1;
+    }
+    int slot = ordSet.find(ord);
     if (slot < 0) {
       return;
     }
 
     GroupCount gc = groupCounts[slot];
-    int countOrd = countFieldTermIndex.getOrd(doc);
+    if (doc > countFieldTermIndex.docID()) {
+      countFieldTermIndex.advance(doc);
+    }
+
+    int countOrd;
+    if (doc == countFieldTermIndex.docID()) {
+      countOrd = countFieldTermIndex.ordValue();
+    } else {
+      countOrd = -1;
+    }
+    
     if (doesNotContainOrd(countOrd, gc.ords)) {
       if (countOrd == -1) {
         gc.uniqueValues.add(null);

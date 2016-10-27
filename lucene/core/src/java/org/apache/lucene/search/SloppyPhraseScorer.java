@@ -553,7 +553,7 @@ final class SloppyPhraseScorer extends Scorer {
   }
   
   @Override
-  public float score() {
+  public float score() throws IOException {
     return docScorer.score(docID(), sloppyFreq);
   }
 

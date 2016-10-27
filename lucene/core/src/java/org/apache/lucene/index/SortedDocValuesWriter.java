@@ -19,15 +19,16 @@ package org.apache.lucene.index;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
@@ -36,11 +37,11 @@ import org.apache.lucene.util.packed.PackedLongValues;
 class SortedDocValuesWriter extends DocValuesWriter {
   final BytesRefHash hash;
   private PackedLongValues.Builder pending;
+  private FixedBitSet docsWithField;
   private final Counter iwBytesUsed;
   private long bytesUsed; // this currently only tracks differences in 'pending'
   private final FieldInfo fieldInfo;
-
-  private static final int EMPTY_ORD = -1;
+  private int lastDocID = -1;
 
   public SortedDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
@@ -51,12 +52,13 @@ class SortedDocValuesWriter extends DocValuesWriter {
             BytesRefHash.DEFAULT_CAPACITY,
             new DirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, iwBytesUsed));
     pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
-    bytesUsed = pending.ramBytesUsed();
+    docsWithField = new FixedBitSet(64);
+    bytesUsed = pending.ramBytesUsed() + docsWithField.ramBytesUsed();
     iwBytesUsed.addAndGet(bytesUsed);
   }
 
   public void addValue(int docID, BytesRef value) {
-    if (docID < pending.size()) {
+    if (docID <= lastDocID) {
       throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
     }
     if (value == null) {
@@ -66,19 +68,15 @@ class SortedDocValuesWriter extends DocValuesWriter {
       throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" is too large, must be <= " + (BYTE_BLOCK_SIZE - 2));
     }
 
-    // Fill in any holes:
-    while(pending.size() < docID) {
-      pending.add(EMPTY_ORD);
-    }
-
     addOneValue(value);
+    docsWithField = FixedBitSet.ensureCapacity(docsWithField, docID);
+    docsWithField.set(docID);
+
+    lastDocID = docID;
   }
 
   @Override
   public void finish(int maxDoc) {
-    while(pending.size() < maxDoc) {
-      pending.add(EMPTY_ORD);
-    }
     updateBytesUsed();
   }
 
@@ -99,16 +97,13 @@ class SortedDocValuesWriter extends DocValuesWriter {
   }
   
   private void updateBytesUsed() {
-    final long newBytesUsed = pending.ramBytesUsed();
+    final long newBytesUsed = pending.ramBytesUsed() + docsWithField.ramBytesUsed();
     iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
     bytesUsed = newBytesUsed;
   }
 
   @Override
   public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
-    final int maxDoc = state.segmentInfo.maxDoc();
-
-    assert pending.size() == maxDoc;
     final int valueCount = hash.size();
     final PackedLongValues ords = pending.build();
 
@@ -120,91 +115,82 @@ class SortedDocValuesWriter extends DocValuesWriter {
     }
 
     dvConsumer.addSortedField(fieldInfo,
-
-                              // ord -> value
-                              new Iterable<BytesRef>() {
+                              new EmptyDocValuesProducer() {
                                 @Override
-                                public Iterator<BytesRef> iterator() {
-                                  return new ValuesIterator(sortedValues, valueCount, hash);
-                                }
-                              },
-
-                              // doc -> ord
-                              new Iterable<Number>() {
-                                @Override
-                                public Iterator<Number> iterator() {
-                                  return new OrdsIterator(ordMap, maxDoc, ords);
+                                public SortedDocValues getSorted(FieldInfo fieldInfoIn) {
+                                  if (fieldInfoIn != fieldInfo) {
+                                    throw new IllegalArgumentException("wrong fieldInfo");
+                                  }
+                                  return new BufferedSortedDocValues(hash, valueCount, ords, sortedValues, ordMap, docsWithField);
                                 }
                               });
   }
 
-  // iterates over the unique values we have in ram
-  private static class ValuesIterator implements Iterator<BytesRef> {
-    final int sortedValues[];
+  private static class BufferedSortedDocValues extends SortedDocValues {
     final BytesRefHash hash;
     final BytesRef scratch = new BytesRef();
+    final int[] sortedValues;
+    final int[] ordMap;
     final int valueCount;
-    int ordUpto;
-    
-    ValuesIterator(int sortedValues[], int valueCount, BytesRefHash hash) {
-      this.sortedValues = sortedValues;
-      this.valueCount = valueCount;
+    private int ord;
+    final PackedLongValues.Iterator iter;
+    final DocIdSetIterator docsWithField;
+
+    public BufferedSortedDocValues(BytesRefHash hash, int valueCount, PackedLongValues docToOrd, int[] sortedValues, int[] ordMap, FixedBitSet docsWithField) {
       this.hash = hash;
+      this.valueCount = valueCount;
+      this.sortedValues = sortedValues;
+      this.iter = docToOrd.iterator();
+      this.ordMap = ordMap;
+      this.docsWithField = new BitSetIterator(docsWithField, docToOrd.size());
     }
 
     @Override
-    public boolean hasNext() {
-      return ordUpto < valueCount;
+    public int docID() {
+      return docsWithField.docID();
     }
 
     @Override
-    public BytesRef next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
+    public int nextDoc() throws IOException {
+      int docID = docsWithField.nextDoc();
+      if (docID != NO_MORE_DOCS) {
+        ord = Math.toIntExact(iter.next());
+        ord = ordMap[ord];
       }
-      hash.get(sortedValues[ordUpto], scratch);
-      ordUpto++;
+      return docID;
+    }
+
+    @Override
+    public int advance(int target) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      return docsWithField.cost();
+    }
+
+    @Override
+    public int ordValue() {
+      return ord;
+    }
+
+    @Override
+    public BytesRef lookupOrd(int ord) {
+      assert ord >= 0 && ord < sortedValues.length;
+      assert sortedValues[ord] >= 0 && sortedValues[ord] < sortedValues.length;
+      hash.get(sortedValues[ord], scratch);
       return scratch;
     }
 
     @Override
-    public void remove() {
-      throw new UnsupportedOperationException();
-    }
-  }
-  
-  // iterates over the ords for each doc we have in ram
-  private static class OrdsIterator implements Iterator<Number> {
-    final PackedLongValues.Iterator iter;
-    final int ordMap[];
-    final int maxDoc;
-    int docUpto;
-    
-    OrdsIterator(int ordMap[], int maxDoc, PackedLongValues ords) {
-      this.ordMap = ordMap;
-      this.maxDoc = maxDoc;
-      assert ords.size() == maxDoc;
-      this.iter = ords.iterator();
-    }
-    
-    @Override
-    public boolean hasNext() {
-      return docUpto < maxDoc;
-    }
-
-    @Override
-    public Number next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
-      }
-      int ord = (int) iter.next();
-      docUpto++;
-      return ord == -1 ? ord : ordMap[ord];
-    }
-
-    @Override
-    public void remove() {
-      throw new UnsupportedOperationException();
+    public int getValueCount() {
+      return valueCount;
     }
   }
 }

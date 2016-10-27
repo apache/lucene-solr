@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -172,12 +173,42 @@ public class PeerSync  {
     return "PeerSync: core="+uhandler.core.getName()+ " url="+myURL +" ";
   }
 
+  public static class PeerSyncResult  {
+    private final boolean success;
+    private final Boolean otherHasVersions;
+
+    public PeerSyncResult(boolean success, Boolean otherHasVersions) {
+      this.success = success;
+      this.otherHasVersions = otherHasVersions;
+    }
+
+    public boolean isSuccess() {
+      return success;
+    }
+
+    public Optional<Boolean> getOtherHasVersions() {
+      return Optional.ofNullable(otherHasVersions);
+    }
+
+    public static PeerSyncResult success()  {
+      return new PeerSyncResult(true, null);
+    }
+
+    public static PeerSyncResult failure()  {
+      return new PeerSyncResult(false, null);
+    }
+
+    public static PeerSyncResult failure(boolean otherHasVersions)  {
+      return new PeerSyncResult(false, otherHasVersions);
+    }
+  }
+
   /** Returns true if peer sync was successful, meaning that this core may be considered to have the latest updates.
    * It does not mean that the remote replica is in sync with us.
    */
-  public boolean sync() {
+  public PeerSyncResult sync() {
     if (ulog == null) {
-      return false;
+      return PeerSyncResult.failure();
     }
     MDCLoggingContext.setCore(core);
     try {
@@ -188,6 +219,11 @@ public class PeerSync  {
           log.debug(msg() + "startingVersions=" + startingVersions.size() + " " + startingVersions);
         }
       }
+      // check if we already in sync to begin with 
+      if(doFingerprint && alreadyInSync()) {
+        return PeerSyncResult.success();
+      }
+      
       
       // Fire off the requests before getting our own recent updates (for better concurrency)
       // This also allows us to avoid getting updates we don't need... if we got our updates and then got their updates,
@@ -206,7 +242,7 @@ public class PeerSync  {
       if (startingVersions != null) {
         if (startingVersions.size() == 0) {
           log.warn("no frame of reference to tell if we've missed updates");
-          return false;
+          return PeerSyncResult.failure();
         }
         Collections.sort(startingVersions, absComparator);
         
@@ -221,7 +257,7 @@ public class PeerSync  {
         if (Math.abs(startingVersions.get(0)) < smallestNewUpdate) {
           log.warn(msg()
               + "too many updates received since start - startingUpdates no longer overlaps with our currentUpdates");
-          return false;
+          return PeerSyncResult.failure();
         }
         
         // let's merge the lists
@@ -243,7 +279,17 @@ public class PeerSync  {
           // we have no versions and hence no frame of reference to tell if we can use a peers
           // updates to bring us into sync
           log.info(msg() + "DONE.  We have no versions.  sync failed.");
-          return false;
+          for (;;)  {
+            ShardResponse srsp = shardHandler.takeCompletedOrError();
+            if (srsp == null) break;
+            if (srsp.getException() == null)  {
+              List<Long> otherVersions = (List<Long>)srsp.getSolrResponse().getResponse().get("versions");
+              if (otherVersions != null && !otherVersions.isEmpty())  {
+                return PeerSyncResult.failure(true);
+              }
+            }
+          }
+          return PeerSyncResult.failure(false);
         }
       }
 
@@ -258,7 +304,7 @@ public class PeerSync  {
         if (!success) {
           log.info(msg() + "DONE. sync failed");
           shardHandler.cancelAll();
-          return false;
+          return PeerSyncResult.failure();
         }
       }
 
@@ -272,11 +318,56 @@ public class PeerSync  {
       }
 
       log.info(msg() + "DONE. sync " + (success ? "succeeded" : "failed"));
-      return success;
+      return success ?  PeerSyncResult.success() : PeerSyncResult.failure();
     } finally {
       MDCLoggingContext.clear();
     }
   }
+
+  /**
+   * Check if we are already in sync. Simple fingerprint comparison should do
+   */
+  private boolean alreadyInSync() {
+    for (String replica : replicas) {
+      requestFingerprint(replica);
+    }
+    
+    for (;;) {
+      ShardResponse srsp = shardHandler.takeCompletedOrError();
+      if (srsp == null) break;
+      
+      try {
+        IndexFingerprint otherFingerprint = IndexFingerprint.fromObject(srsp.getSolrResponse().getResponse().get("fingerprint"));
+        IndexFingerprint ourFingerprint = IndexFingerprint.getFingerprint(core, Long.MAX_VALUE);
+        if(IndexFingerprint.compare(otherFingerprint, ourFingerprint) == 0) {
+          log.info("We are already in sync. No need to do a PeerSync ");
+          return true;
+        }
+      } catch(IOException e) {
+        log.warn("Could not cofirm if we are already in sync. Continue with PeerSync");
+      }
+    }
+    
+    return false;
+  }
+  
+  
+  private void requestFingerprint(String replica) {
+    SyncShardRequest sreq = new SyncShardRequest();
+    requests.add(sreq);
+
+    sreq.shards = new String[]{replica};
+    sreq.actualShards = sreq.shards;
+    sreq.params = new ModifiableSolrParams();
+    sreq.params = new ModifiableSolrParams();
+    sreq.params.set("qt","/get");
+    sreq.params.set("distrib",false);
+    sreq.params.set("getFingerprint", String.valueOf(Long.MAX_VALUE));
+    
+    shardHandler.submit(sreq, replica, sreq.params);
+  }
+  
+  
   
   private void requestVersions(String replica) {
     SyncShardRequest sreq = new SyncShardRequest();

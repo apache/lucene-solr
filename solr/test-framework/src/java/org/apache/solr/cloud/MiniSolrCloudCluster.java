@@ -17,8 +17,8 @@
 package org.apache.solr.cloud;
 
 import javax.servlet.Filter;
-import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.SortedMap;
@@ -39,30 +38,30 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.Charsets;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.CommonAdminParams;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * "Mini" SolrCloud cluster to be used for testing
  */
 public class MiniSolrCloudCluster {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final String DEFAULT_CLOUD_SOLR_XML = "<solr>\n" +
       "\n" +
@@ -185,6 +184,8 @@ public class MiniSolrCloudCluster {
 
     this.baseDir = Objects.requireNonNull(baseDir);
     this.jettyConfig = Objects.requireNonNull(jettyConfig);
+
+    log.info("Starting cluster of {} servers in {}", numServers, baseDir);
 
     Files.createDirectories(baseDir);
 
@@ -374,7 +375,7 @@ public class MiniSolrCloudCluster {
    * @throws Exception on error
    */
   public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty) throws Exception {
-    jetty.start();
+    jetty.start(false);
     jettys.add(jetty);
     return jetty;
   }
@@ -383,57 +384,27 @@ public class MiniSolrCloudCluster {
     jetty.stop();
     return jetty;
   }
-  
-  public void uploadConfigDir(File configDir, String configName) throws IOException, KeeperException, InterruptedException {
+
+  /**
+   * Upload a config set
+   * @param configDir a path to the config set to upload
+   * @param configName the name to give the configset
+   */
+  public void uploadConfigSet(Path configDir, String configName) throws IOException, KeeperException, InterruptedException {
     try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
         AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null)) {
       ZkConfigManager manager = new ZkConfigManager(zkClient);
-      manager.uploadConfigDir(configDir.toPath(), configName);
+      manager.uploadConfigDir(configDir, configName);
     }
-  }
-  
-  public NamedList<Object> createCollection(String name, int numShards, int replicationFactor, 
-      String configName, Map<String, String> collectionProperties) throws SolrServerException, IOException {
-    return createCollection(name, numShards, replicationFactor, configName, null, null, collectionProperties);
   }
 
-  public NamedList<Object> createCollection(String name, int numShards, int replicationFactor, 
-      String configName, String createNodeSet, String asyncId, Map<String, String> collectionProperties) throws SolrServerException, IOException {
-    final ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CoreAdminParams.ACTION, CollectionAction.CREATE.name());
-    params.set(CoreAdminParams.NAME, name);
-    params.set("numShards", numShards);
-    params.set("replicationFactor", replicationFactor);
-    params.set("collection.configName", configName);
-    if (null != createNodeSet) {
-      params.set(OverseerCollectionMessageHandler.CREATE_NODE_SET, createNodeSet);
-    }
-    if (null != asyncId) {
-      params.set(CommonAdminParams.ASYNC, asyncId);
-    }
-    if(collectionProperties != null) {
-      for(Map.Entry<String, String> property : collectionProperties.entrySet()){
-        params.set(CoreAdminParams.PROPERTY_PREFIX + property.getKey(), property.getValue());
+  public void deleteAllCollections() throws Exception {
+    try (ZkStateReader reader = new ZkStateReader(solrClient.getZkStateReader().getZkClient())) {
+      reader.createClusterStateWatchersAndUpdate();
+      for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
+        CollectionAdminRequest.deleteCollection(collection).process(solrClient);
       }
     }
-    
-    return makeCollectionsRequest(params);
-  }
-
-  public NamedList<Object> deleteCollection(String name) throws SolrServerException, IOException {
-    final ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CoreAdminParams.ACTION, CollectionAction.DELETE.name());
-    params.set(CoreAdminParams.NAME, name);
-
-    return makeCollectionsRequest(params);
-  }
-
-  private NamedList<Object> makeCollectionsRequest(final ModifiableSolrParams params) throws SolrServerException, IOException {
-    
-    final QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    
-    return solrClient.request(request);
   }
 
   /**
@@ -500,5 +471,30 @@ public class MiniSolrCloudCluster {
       }
     }
     return ok ? null : parsed;
+  }
+
+  /**
+   * Return the jetty that a particular replica resides on
+   */
+  public JettySolrRunner getReplicaJetty(Replica replica) {
+    for (JettySolrRunner jetty : jettys) {
+      if (replica.getCoreUrl().startsWith(jetty.getBaseUrl().toString()))
+        return jetty;
+    }
+    throw new IllegalArgumentException("Cannot find Jetty for a replica with core url " + replica.getCoreUrl());
+  }
+
+  /**
+   * Make the zookeeper session on a particular jetty expire
+   */
+  public void expireZkSession(JettySolrRunner jetty) {
+    CoreContainer cores = jetty.getCoreContainer();
+    if (cores != null) {
+      SolrZkClient zkClient = cores.getZkController().getZkClient();
+      zkClient.getSolrZooKeeper().closeCnxn();
+      long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+      zkServer.expire(sessionId);
+      log.info("Expired zookeeper session {} from node {}", sessionId, jetty.getBaseUrl());
+    }
   }
 }

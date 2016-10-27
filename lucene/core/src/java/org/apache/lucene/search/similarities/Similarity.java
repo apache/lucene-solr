@@ -161,7 +161,7 @@ public abstract class Similarity {
      * @param freq sloppy term frequency
      * @return document's score
      */
-    public abstract float score(int doc, float freq);
+    public abstract float score(int doc, float freq) throws IOException;
 
     /** Computes the amount of a sloppy phrase match, based on an edit distance. */
     public abstract float computeSlopFactor(int distance);
@@ -175,7 +175,7 @@ public abstract class Similarity {
      * @param freq Explanation of how the sloppy term frequency was computed
      * @return document's score
      */
-    public Explanation explain(int doc, Explanation freq) {
+    public Explanation explain(int doc, Explanation freq) throws IOException {
       return Explanation.match(
           score(doc, freq.getValue()),
           "score(doc=" + doc + ",freq=" + freq.getValue() +"), with freq of:",

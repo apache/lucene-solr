@@ -110,11 +110,11 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
 
     sortBuckets();
 
-    int first = (int)freq.offset;
-    int end = freq.limit >=0 ? first + (int) freq.limit : Integer.MAX_VALUE;
-    int last = Math.min(sortedBuckets.size(), end);
+    long first = freq.offset;
+    long end = freq.limit >=0 ? first + (int) freq.limit : Integer.MAX_VALUE;
+    long last = Math.min(sortedBuckets.size(), end);
 
-    List<SimpleOrderedMap> resultBuckets = new ArrayList<>(Math.max(0, (last - first)));
+    List<SimpleOrderedMap> resultBuckets = new ArrayList<>(Math.max(0, (int)(last - first)));
 
     /** this only works if there are no filters (like mincount)
     for (int i=first; i<last; i++) {

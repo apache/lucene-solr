@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import org.apache.solr.common.SolrException;
@@ -54,7 +55,7 @@ public class CorePropertiesLocator implements CoresLocator {
 
   public CorePropertiesLocator(Path coreDiscoveryRoot) {
     this.rootDirectory = coreDiscoveryRoot;
-    logger.info("Config-defined core root directory: {}", this.rootDirectory);
+    logger.debug("Config-defined core root directory: {}", this.rootDirectory);
   }
 
   @Override
@@ -122,7 +123,7 @@ public class CorePropertiesLocator implements CoresLocator {
 
   @Override
   public List<CoreDescriptor> discover(final CoreContainer cc) {
-    logger.info("Looking for core definitions underneath {}", rootDirectory);
+    logger.debug("Looking for core definitions underneath {}", rootDirectory);
     final List<CoreDescriptor> cds = Lists.newArrayList();
     try {
       Set<FileVisitOption> options = new HashSet<>();
@@ -133,7 +134,7 @@ public class CorePropertiesLocator implements CoresLocator {
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
           if (file.getFileName().toString().equals(PROPERTIES_FILENAME)) {
             CoreDescriptor cd = buildCoreDescriptor(file, cc);
-            logger.info("Found core {} in {}", cd.getName(), cd.getInstanceDir());
+            logger.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
             cds.add(cd);
             return FileVisitResult.SKIP_SIBLINGS;
           }
@@ -155,7 +156,10 @@ public class CorePropertiesLocator implements CoresLocator {
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Couldn't walk file tree under " + this.rootDirectory, e);
     }
-    logger.info("Found {} core definitions", cds.size());
+    logger.info("Found {} core definitions underneath {}", cds.size(), rootDirectory);
+    if (cds.size() > 0) {
+      logger.info("Cores are: {}", cds.stream().map(CoreDescriptor::getName).collect(Collectors.toList()));
+    }
     return cds;
   }
 

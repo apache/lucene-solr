@@ -49,7 +49,7 @@ public class StringDistanceFunction extends ValueSource {
     return new FloatDocValues(this) {
 
       @Override
-      public float floatVal(int doc) {
+      public float floatVal(int doc) throws IOException {
         String s1 = str1DV.strVal(doc);
         String s2 = str2DV.strVal(doc);
         if (null == s1 || null == s2) {
@@ -60,12 +60,12 @@ public class StringDistanceFunction extends ValueSource {
       }
 
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         return str1DV.exists(doc) && str2DV.exists(doc);
       }
 
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append("strdist").append('(');
         sb.append(str1DV.toString(doc)).append(',').append(str2DV.toString(doc))
