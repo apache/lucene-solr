@@ -344,8 +344,6 @@ if [ -f "$SOLR_VAR_DIR/log4j.properties" ]; then
   echo -e "\n$SOLR_VAR_DIR/log4j.properties already exists. Skipping install ...\n"
 else
   cp "$SOLR_INSTALL_DIR/server/resources/log4j.properties" "$SOLR_VAR_DIR/log4j.properties"
-  sed_expr="s#solr.log=.*#solr.log=\${solr.solr.home}/../logs#"
-  sed -i -e "$sed_expr" "$SOLR_VAR_DIR/log4j.properties"
 fi
 chown -R "$SOLR_USER:" "$SOLR_VAR_DIR"
 find "$SOLR_VAR_DIR" -type d -print0 | xargs -0 chmod 0750

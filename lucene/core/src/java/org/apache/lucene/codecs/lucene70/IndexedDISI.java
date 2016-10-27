@@ -112,6 +112,9 @@ final class IndexedDISI extends DocIdSetIterator {
   private int doc = -1;
   private int index = -1;
 
+  // SPARSE variables
+  boolean exists;
+
   // DENSE variables
   private long word;
   private int wordIndex = -1;
@@ -129,7 +132,7 @@ final class IndexedDISI extends DocIdSetIterator {
   @Override
   public int advance(int target) throws IOException {
     final int targetBlock = target & 0xFFFF0000;
-    if (block != targetBlock) {
+    if (block < targetBlock) {
       advanceBlock(targetBlock);
     }
     if (block == targetBlock) {
@@ -138,7 +141,19 @@ final class IndexedDISI extends DocIdSetIterator {
       }
       readBlockHeader();
     }
-    return doc = method.readFirstDoc(this);
+    boolean found = method.advanceWithinBlock(this, block);
+    assert found;
+    return doc;
+  }
+
+  public boolean advanceExact(int target) throws IOException {
+    final int targetBlock = target & 0xFFFF0000;
+    if (block < targetBlock) {
+      advanceBlock(targetBlock);
+    }
+    boolean found = block == targetBlock && method.advanceExactWithinBlock(this, target);
+    this.doc = target;
+    return found;
   }
 
   private void advanceBlock(int targetBlock) throws IOException {
@@ -186,11 +201,6 @@ final class IndexedDISI extends DocIdSetIterator {
   enum Method {
     SPARSE {
       @Override
-      int readFirstDoc(IndexedDISI disi) throws IOException {
-        disi.index++;
-        return disi.block | Short.toUnsignedInt(disi.slice.readShort());
-      }
-      @Override
       boolean advanceWithinBlock(IndexedDISI disi, int target) throws IOException {
         final int targetInBlock = target & 0xFFFF;
         // TODO: binary search
@@ -199,23 +209,37 @@ final class IndexedDISI extends DocIdSetIterator {
           disi.index++;
           if (doc >= targetInBlock) {
             disi.doc = disi.block | doc;
+            disi.exists = true;
             return true;
           }
         }
         return false;
       }
+      @Override
+      boolean advanceExactWithinBlock(IndexedDISI disi, int target) throws IOException {
+        final int targetInBlock = target & 0xFFFF;
+        // TODO: binary search
+        if (target == disi.doc) {
+          return disi.exists;
+        }
+        for (; disi.index < disi.nextBlockIndex;) {
+          int doc = Short.toUnsignedInt(disi.slice.readShort());
+          disi.index++;
+          if (doc >= targetInBlock) {
+            if (doc != targetInBlock) {
+              disi.index--;
+              disi.slice.seek(disi.slice.getFilePointer() - Short.BYTES);
+              break;
+            }
+            disi.exists = true;
+            return true;
+          }
+        }
+        disi.exists = false;
+        return false;
+      }
     },
     DENSE {
-      @Override
-      int readFirstDoc(IndexedDISI disi) throws IOException {
-        do {
-          disi.word = disi.slice.readLong();
-          disi.wordIndex++;
-        } while (disi.word == 0L);
-        disi.index = disi.numberOfOnes;
-        disi.numberOfOnes += Long.bitCount(disi.word);
-        return disi.block | (disi.wordIndex << 6) | Long.numberOfTrailingZeros(disi.word);
-      }
       @Override
       boolean advanceWithinBlock(IndexedDISI disi, int target) throws IOException {
         final int targetInBlock = target & 0xFFFF;
@@ -244,26 +268,42 @@ final class IndexedDISI extends DocIdSetIterator {
         }
         return false;
       }
+      @Override
+      boolean advanceExactWithinBlock(IndexedDISI disi, int target) throws IOException {
+        final int targetInBlock = target & 0xFFFF;
+        final int targetWordIndex = targetInBlock >>> 6;
+        for (int i = disi.wordIndex + 1; i <= targetWordIndex; ++i) {
+          disi.word = disi.slice.readLong();
+          disi.numberOfOnes += Long.bitCount(disi.word);
+        }
+        disi.wordIndex = targetWordIndex;
+
+        long leftBits = disi.word >>> target;
+        disi.index = disi.numberOfOnes - Long.bitCount(leftBits);
+        return (leftBits & 1L) != 0;
+      }
     },
     ALL {
-      @Override
-      int readFirstDoc(IndexedDISI disi) {
-        return disi.block;
-      }
       @Override
       boolean advanceWithinBlock(IndexedDISI disi, int target) throws IOException {
         disi.doc = target;
         disi.index = target - disi.gap;
         return true;
       }
+      @Override
+      boolean advanceExactWithinBlock(IndexedDISI disi, int target) throws IOException {
+        disi.index = target - disi.gap;
+        return true;
+      }
     };
-
-    /** Read the first document of the current block. */
-    abstract int readFirstDoc(IndexedDISI disi) throws IOException;
 
     /** Advance to the first doc from the block that is equal to or greater than {@code target}.
      *  Return true if there is such a doc and false otherwise. */
     abstract boolean advanceWithinBlock(IndexedDISI disi, int target) throws IOException;
+
+    /** Advance the iterator exactly to the position corresponding to the given {@code target}
+     * and return whether this document exists. */
+    abstract boolean advanceExactWithinBlock(IndexedDISI disi, int target) throws IOException;
   }
 
 }

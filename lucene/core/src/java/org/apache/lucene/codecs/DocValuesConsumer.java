@@ -228,6 +228,11 @@ public abstract class DocValuesConsumer implements Closeable {
                           }
 
                           @Override
+                          public boolean advanceExact(int target) throws IOException {
+                            throw new UnsupportedOperationException();
+                          }
+
+                          @Override
                           public long cost() {
                             return finalCost;
                           }
@@ -316,6 +321,11 @@ public abstract class DocValuesConsumer implements Closeable {
 
                          @Override
                          public int advance(int target) throws IOException {
+                           throw new UnsupportedOperationException();
+                         }
+
+                         @Override
+                         public boolean advanceExact(int target) throws IOException {
                            throw new UnsupportedOperationException();
                          }
 
@@ -413,6 +423,11 @@ public abstract class DocValuesConsumer implements Closeable {
 
                                 @Override
                                 public int advance(int target) throws IOException {
+                                  throw new UnsupportedOperationException();
+                                }
+
+                                @Override
+                                public boolean advanceExact(int target) throws IOException {
                                   throw new UnsupportedOperationException();
                                 }
 
@@ -575,6 +590,11 @@ public abstract class DocValuesConsumer implements Closeable {
                          }
 
                          @Override
+                         public boolean advanceExact(int target) throws IOException {
+                           throw new UnsupportedOperationException();
+                         }
+
+                         @Override
                          public long cost() {
                            return finalCost;
                          }
@@ -728,6 +748,11 @@ public abstract class DocValuesConsumer implements Closeable {
 
                             @Override
                             public int advance(int target) throws IOException {
+                              throw new UnsupportedOperationException();
+                            }
+
+                            @Override
+                            public boolean advanceExact(int target) throws IOException {
                               throw new UnsupportedOperationException();
                             }
 

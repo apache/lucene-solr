@@ -33,7 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,22 +42,50 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.LazyDocument;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.StoredFieldVisitor.Status;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.CollectionStatistics;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.EarlyTerminatingSortingCollector;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermStatistics;
+import org.apache.lucene.search.TimeLimitingCollector;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldDocs;
+import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrDocumentBase;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
@@ -151,8 +179,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private final String path;
   private boolean releaseDirectory;
-
-  private final Map<Long, IndexFingerprint> maxVersionFingerprintCache = new ConcurrentHashMap<>();
 
   private final NamedList<Object> readerStats;
 
@@ -795,7 +821,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               continue;
             }
             Long val;
-            if (ndv.advance(localId) == localId) {
+            if (ndv.advanceExact(localId)) {
               val = ndv.longValue();
             } else {
               continue;
@@ -820,7 +846,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               continue;
             }
             BytesRef value;
-            if (bdv.advance(localId) == localId) {
+            if (bdv.advanceExact(localId)) {
               value = BytesRef.deepCopyOf(bdv.binaryValue());
             } else {
               continue;
@@ -832,7 +858,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             if (sdv == null) {
               continue;
             }
-            if (sdv.advance(localId) == localId) {
+            if (sdv.advanceExact(localId)) {
               final BytesRef bRef = sdv.binaryValue();
               // Special handling for Boolean fields since they're stored as 'T' and 'F'.
               if (schemaField.getType() instanceof BoolField) {
@@ -2416,18 +2442,23 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     final SolrIndexSearcher searcher = this;
     final AtomicReference<IOException> exception = new AtomicReference<>();
     try {
-      return maxVersionFingerprintCache.computeIfAbsent(maxVersion, key -> {
-        try {
-          return IndexFingerprint.getFingerprint(searcher, key);
-        } catch (IOException e) {
-          exception.set(e);
-          return null;
-        }
-      });
+      return searcher.getTopReaderContext().leaves().stream()
+          .map(ctx -> {
+            try {
+              return searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion);
+            } catch (IOException e) {
+              exception.set(e);
+              return null;
+            }
+          })
+          .filter(java.util.Objects::nonNull)
+          .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
+
     } finally {
       if (exception.get() != null) throw exception.get();
     }
   }
+
 
   /////////////////////////////////////////////////////////////////////
   // SolrInfoMBean stuff: Statistics and Module Info

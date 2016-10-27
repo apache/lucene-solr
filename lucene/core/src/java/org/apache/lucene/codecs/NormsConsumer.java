@@ -158,6 +158,11 @@ public abstract class NormsConsumer implements Closeable {
                           }
 
                           @Override
+                          public boolean advanceExact(int target) throws IOException {
+                            throw new UnsupportedOperationException();
+                          }
+
+                          @Override
                           public long cost() {
                             return 0;
                           }

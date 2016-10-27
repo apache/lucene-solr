@@ -25,7 +25,8 @@ Upgrading from Solr 6.x
   SolrHttpClientBuilder rather than an HttpClientConfigurer.
   
 * HttpClientUtil now allows configuring HttpClient instances via SolrHttpClientBuilder
-  rather than an HttpClientConfigurer.
+  rather than an HttpClientConfigurer. Use of env variable SOLR_AUTHENTICATION_CLIENT_CONFIGURER
+  no longer works, please use SOLR_AUTHENTICATION_CLIENT_BUILDER 
 
 * SolrClient implementations now use their own internal configuration for socket timeouts,
   connect timeouts, and allowing redirects rather than what is set as the default when
@@ -55,6 +56,8 @@ Optimizations
 * SOLR-4509: Move to non deprecated HttpClient impl classes to remove stale connection 
   check on every request and move connection lifecycle management towards the client.
   (Ryan Zezeski, Mark Miller, Shawn Heisey, Steve Davids)
+
+* SOLR-9255: Rename SOLR_AUTHENTICATION_CLIENT_CONFIGURER -> SOLR_AUTHENTICATION_CLIENT_BUILDER (janhoy) 
 
 * SOLR-9579: Make Solr's SchemaField implement Lucene's IndexableFieldType, removing the 
   creation of a Lucene FieldType every time a field is indexed. (John Call, yonik) 
@@ -95,7 +98,7 @@ Upgrade Notes
 
 * The create/deleteCollection methods on MiniSolrCloudCluster have been
   deprecated.  Clients should instead use the CollectionAdminRequest API.  In
-  addition, MiniSolrCloudCluster#uploadConfigSet(File, String) has been
+  addition, MiniSolrCloudCluster#uploadConfigDir(File, String) has been
   deprecated in favour of #uploadConfigSet(Path, String)
 
 * The bin/solr.in.sh (bin/solr.in.cmd on Windows) is now completely commented by default. Previously, this wasn't so,
@@ -149,6 +152,27 @@ New Features
 * SOLR-8370: Display configured Similarity in Schema-Browser, both global/default and per-field/field-type 
   (janhoy, Alexandre Rafalovitch)
 
+* SOLR-9326: Ability to create/delete/list snapshots at collection level.
+  (Hrishikesh Gadre via yonik)
+
+* SOLR-9662: New parameter -u <user:pass> in bin/post to pass basicauth credentials (janhoy)
+
+* SOLR-9654: Add "overrequest" parameter to JSON Facet API to control amount of overrequest
+  on a distributed terms facet. (yonik)
+
+* SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
+  SOLR_HOME on every node. Editing config through API is supported but affects only that one node. 
+  (janhoy)
+
+* SOLR-2212: Add a factory class corresponding to Lucene's NoMergePolicy. (Lance Norskog, Cao Manh Dat via shalin)
+
+* SOLR-9670: Support SOLR_AUTHENTICATION_OPTS in solr.cmd (janhoy)
+
+* SOLR-9559: Add ExecutorStream to execute stored Streaming Expressions (Joel Bernstein)
+
+* SOLR-1085: Add support for MoreLikeThis queries and responses in SolrJ client.
+  (Maurice Jumelet, Bill Mitchell, Cao Manh Dat via shalin)
+
 Bug Fixes
 ----------------------
 
@@ -195,6 +219,28 @@ Bug Fixes
 
 * SOLR-9325: solr.log is now written to $SOLR_LOGS_DIR without changing log4j.properties (janhoy)
 
+* SOLR-9518: Kerberos Delegation Tokens don't work without a chrooted ZK (Ishan Chattopadhyaya,via noble)
+
+* SOLR-9687: Fixed Interval Facet count issue in cases of open/close intervals on the same values
+ (Andy Chillrud, Tomás Fernández Löbbe)  
+
+* SOLR-9441: Solr collection backup on HDFS can only be manipulated by the Solr process owner. 
+ (Hrishikesh Gadre via Mark Miller)
+
+* SOLR-9536: OldBackupDirectory timestamp field needs to be initialized to avoid NPE.
+ (Hrishikesh Gadre, hossman via Mark Miller)
+
+* SOLR-2039: Multivalued fields with dynamic names does not work properly with DIH.
+  (K A, ruslan.shv, Cao Manh Dat via shalin)
+
+* SOLR-4164: group.limit=-1 was not supported for grouping in distributed mode.
+  (Cao Manh Dat, Lance Norskog, Webster Homer, hossman, yonik)
+
+* SOLR-9692: blockUnknown property makes inter-node communication impossible (noble)
+
+* SOLR-2094: XPathEntityProcessor should reinitialize the XPathRecordReader instance if
+  the 'forEach' or 'xpath' attributes are templates & it is not a root entity (Cao Manh Dat, noble)
+ 
 Optimizations
 ----------------------
 
@@ -219,6 +265,12 @@ Optimizations
 
 * SOLR-9566: Don't put replicas into recovery when first creating a Collection
   (Alan Woodward)
+
+* SOLR-9546: Eliminate unnecessary boxing/unboxing going on in SolrParams (Pushkar Raste, noble)
+
+* SOLR-9506: cache IndexFingerprint for each segment (Pushkar Raste, yonik, noble)
+
+* SOLR-7506: Roll over GC logs by default via bin/solr scripts (shalin, janhoy)
 
 Other Changes
 ----------------------
@@ -297,6 +349,8 @@ Other Changes
 
 * SOLR-9610: New AssertTool in SolrCLI for easier cross platform assertions from command line (janhoy)
 
+* SOLR-9680: Better error messages in SolrCLI when authentication required (janhoy)
+
 * SOLR-9639: Test only fix. Prevent CDCR tests from removing collection during recovery that used to blow up jvm  (Mikhail Khludnev)
 
 * SOLR-9625: Add HelloWorldSolrCloudTestCase class (Christine Poerschke, Alan Woodward, Alexandre Rafalovitch)
@@ -317,7 +371,16 @@ Other Changes
   solr.log.X files are rotated, preserving solr.log from last run in solr.log.1, solr.log.1 => solr.log.2 etc
   solr-*-console.log files are moved into $SOLR_LOGS_DIR/archived/ instead of being overwritten
   Last JVM garbage collection log solr_gc.log is moved into $SOLR_LOGS_DIR/archived/
-  (janhoy)  
+  (janhoy)
+
+* SOLR-4531: Add tests to ensure that recovery does not fail on corrupted tlogs.
+  (Simon Scofield, Cao Manh Dat via shalin)
+
+* SOLR-5245: Add a test to ensure that election contexts are keyed off both collection name and coreNodeName
+  so that killing a shard in one collection does not result in leader election in a different collection.
+  See SOLR-5243 for the related bug. (Cao Manh Dat via shalin)
+
+* SOLR-9533: Reload core config when a core is reloaded (Gethin James, Joel Bernstein)
 
 ==================  6.2.1 ==================
 
@@ -3271,7 +3334,7 @@ Bug Fixes
   while accessing other collections. (Shai Erera)
 
 * SOLR-7412: Fixed range.facet.other parameter for distributed requests. 
-  (Will Miller, Tomás Fernándes Löbbe)
+  (Will Miller, Tomás Fernández Löbbe)
 
 * SOLR-6087: SolrIndexSearcher makes no DelegatingCollector.finish() call when IndexSearcher
   throws an expected exception. (Christine Poerschke via shalin)

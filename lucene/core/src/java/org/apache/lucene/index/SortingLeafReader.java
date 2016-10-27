@@ -186,6 +186,12 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      return dvs.docsWithField.get(target);
+    }
+
+    @Override
     public BytesRef binaryValue() {
       return dvs.values[docID];
     }
@@ -252,6 +258,12 @@ class SortingLeafReader extends FilterLeafReader {
     public int advance(int target) {
       docID = dvs.docsWithField.nextSetBit(target);
       return docID;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      return dvs.docsWithField.get(target);
     }
 
     @Override
@@ -395,6 +407,12 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      return ords[target] != -1;
+    }
+
+    @Override
     public int ordValue() {
       return ords[docID];
     }
@@ -468,6 +486,13 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      ordUpto = 0;
+      return ords[docID] != null;
+    }
+
+    @Override
     public long nextOrd() {
       if (ordUpto == ords[docID].length) {
         return NO_MORE_ORDS;
@@ -536,6 +561,13 @@ class SortingLeafReader extends FilterLeafReader {
         docID = target-1;
         return nextDoc();
       }
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      upto = 0;
+      return values[docID] != null;
     }
 
     @Override

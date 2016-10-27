@@ -106,7 +106,7 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
   public void testSortedVariableLengthBigVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedVsStoredFields(atLeast(300), 1, 32766);
+      doTestSortedVsStoredFields(atLeast(300), 1d, 1, 32766);
     }
   }
   
@@ -114,7 +114,7 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
   public void testSortedVariableLengthManyVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedVsStoredFields(TestUtil.nextInt(random(), 1024, 2049), 1, 500);
+      doTestSortedVsStoredFields(TestUtil.nextInt(random(), 1024, 2049), 1d, 1, 500);
     }
   }
   
@@ -201,6 +201,7 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
 
     final IndexReader indexReader = writer.getReader();
+    TestUtil.checkReader(indexReader);
     writer.close();
 
     for (LeafReaderContext context : indexReader.leaves()) {

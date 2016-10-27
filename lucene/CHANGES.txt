@@ -45,6 +45,9 @@ Optimizations
   that have a facet value, so sparse faceting works as expected
   (Adrien Grand via Mike McCandless)
 
+* LUCENE-7519: Add optimized APIs to compute browse-only top level
+  facets (Mike McCandless)
+
 Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
@@ -104,6 +107,9 @@ Bug Fixes
   allTermsRequired is false and context filters are specified (Mike
   McCandless)
 
+* LUCENE-7429: AnalyzerWrapper can now modify the normalization chain too and
+  DelegatingAnalyzerWrapper does the right thing automatically. (Adrien Grand)
+
 Improvements
 
 * LUCENE-7439: FuzzyQuery now matches all terms within the specified
@@ -111,12 +117,18 @@ Improvements
 
 * LUCENE-7496: Better toString for SweetSpotSimilarity (janhoy)
 
+* LUCENE-7520: Highlighter's WeightedSpanTermExtractor shouldn't attempt to expand a MultiTermQuery
+  when its field doesn't match the field the extraction is scoped to.
+  (Cao Manh Dat via David Smiley)
+
 Optimizations
 
 * LUCENE-7501: BKDReader should not store the split dimension explicitly in the
   1D case. (Adrien Grand)
 
 Other
+
+* LUCENE-7513: Upgrade randomizedtesting to 2.4.0. (Dawid Weiss)
 
 * LUCENE-7452: Block join query exception suggests how to find a doc, which 
  violates orthogonality requirement. (Mikhail Khludnev)

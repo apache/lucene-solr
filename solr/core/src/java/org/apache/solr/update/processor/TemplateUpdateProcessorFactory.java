@@ -20,18 +20,27 @@ package org.apache.solr.update.processor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.Cache;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
-//Adds new fields to documents based on a template pattern specified via Template.field
-// request parameters (multi-valued) or 'field' value specified in initArgs
+import org.apache.solr.util.ConcurrentLRUCache;
+
+/**
+* Adds new fields to documents based on a template pattern specified via Template.field
+* request parameters (multi-valued) or 'field' value specified in initArgs.
+* <p>
+* The format of the parameter is &lt;field-name&gt;:&lt;the-template-string&gt;, for example: <br>
+* <b>Template.field=fname:${somefield}some_string${someotherfield}</b>
+*
+*/
 public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory {
+  private Cache<String, Resolved> templateCache = new ConcurrentLRUCache<>(1000, 800, 900, 10, false, false, null);
   @Override
   protected void process(AddUpdateCommand cmd, SolrQueryRequest req, SolrQueryResponse rsp) {
     String[] vals = getParams("field");
@@ -45,7 +54,7 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
 
         String fName = val.substring(0, idx);
         String template = val.substring(idx + 1);
-        doc.addField(fName, replaceTokens(template, null, s -> {
+        doc.addField(fName, replaceTokens(template, templateCache, s -> {
           Object v = doc.getFieldValue(s);
           return v == null ? "" : v;
         }));
@@ -55,7 +64,7 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
   }
 
 
-  public static Resolved getResolved(String template, Map<String, Resolved> cache) {
+  public static Resolved getResolved(String template, Cache<String, Resolved> cache) {
     Resolved r = cache == null ? null : cache.get(template);
     if (r == null) {
       r = new Resolved();
@@ -74,7 +83,7 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
   /**
    * Get a list of variables embedded in the template string.
    */
-  public static List<String> getVariables(String template, Map<String, Resolved> cache) {
+  public static List<String> getVariables(String template, Cache<String, Resolved> cache) {
     Resolved r = getResolved(template, cache);
     if (r == null) {
       return Collections.emptyList();
@@ -82,7 +91,7 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
     return new ArrayList<>(r.variables);
   }
 
-  public static String replaceTokens(String template, Map<String, Resolved> cache, Function<String, Object> fun) {
+  public static String replaceTokens(String template, Cache<String, Resolved> cache, Function<String, Object> fun) {
     if (template == null) {
       return null;
     }

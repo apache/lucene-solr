@@ -28,20 +28,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.solr.util.SolrCLI.findTool;
 import static org.apache.solr.util.SolrCLI.parseCmdLine;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Unit test for SolrCLI's UtilsTool
  */
-public class UtilsToolTest {
+public class UtilsToolTest extends SolrTestCaseJ4 {
 
   private Path dir;
   private SolrCLI.UtilsTool tool;
@@ -57,22 +55,28 @@ public class UtilsToolTest {
       "solr_log_20160304", 
       "solr-8983-console.log",
       "solr_gc_log_20160102", 
+      "solr_gcnotremove", 
+      "solr_gc.log", 
+      "solr_gc.log.0", 
+      "solr_gc.log.0.current", 
       "solr_gc_log_2");
   
   @Before
-  public void setUp() throws IOException {
-    dir = Files.createTempDirectory("Utils Tool Test");
-    files.stream().forEach(f -> {
+  public void setUp() throws Exception {
+    super.setUp();
+    dir = createTempDir("Utils Tool Test").toAbsolutePath();
+    files.forEach(f -> {
       try {
-        dir.resolve(f).toFile().createNewFile();
+        Files.createFile(dir.resolve(f));
       } catch (IOException e) {
-        assertTrue(false);
+        fail("Error when creating temporary file " + dir.resolve(f));
       }
     });
   }
   
   @After
-  public void tearDown() throws IOException {
+  public void tearDown() throws Exception {
+    super.tearDown();
     org.apache.commons.io.FileUtils.deleteDirectory(dir.toFile());
   }
   
@@ -128,7 +132,7 @@ public class UtilsToolTest {
     } catch (Exception e) {
       return;
     }
-    assertTrue(false);
+    fail("Should have thrown exception if using relative path without -s");
   }
   
   @Test
@@ -136,7 +140,7 @@ public class UtilsToolTest {
     String[] args = {"utils", "-archive_gc_logs", "-l", dir.toString()};
     assertEquals(files.size(), fileCount());
     assertEquals(0, runTool(args));
-    assertEquals(files.size()-2, fileCount());
+    assertEquals(files.size()-5, fileCount());
     assertFalse(listFiles().contains("solr_gc_log_2"));
     assertTrue(Files.exists(dir.resolve("archived").resolve("solr_gc_log_2")));
     assertEquals(0, runTool(args));

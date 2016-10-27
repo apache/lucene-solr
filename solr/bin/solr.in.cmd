@@ -98,6 +98,10 @@ REM set SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
 REM set SOLR_SSL_CLIENT_TRUST_STORE=
 REM setSOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
 
+REM Settings for authentication
+REM set SOLR_AUTHENTICATION_CLIENT_BUILDER=
+REM set SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
+
 REM Settings for ZK ACL
 REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider ^
 REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider ^

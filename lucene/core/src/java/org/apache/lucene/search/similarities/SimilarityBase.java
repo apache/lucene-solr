@@ -279,11 +279,7 @@ public abstract class SimilarityBase extends Similarity {
       if (norms == null) {
         return 1F;
       }
-      int normsDocID = norms.docID();
-      if (normsDocID < doc) {
-        normsDocID = norms.advance(doc);
-      }
-      if (normsDocID == doc) {
+      if (norms.advanceExact(doc)) {
         return decodeNormValue((byte) norms.longValue());
       } else {
         return decodeNormValue((byte) 0);

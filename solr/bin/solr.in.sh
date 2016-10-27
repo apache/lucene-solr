@@ -105,8 +105,8 @@
 #SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
 
 # Settings for authentication
-#SOLR_AUTHENTICATION_CLIENT_CONFIGURER=
-#SOLR_AUTHENTICATION_OPTS=
+#SOLR_AUTHENTICATION_CLIENT_BUILDER=
+#SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
 
 # Settings for ZK ACL
 #SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider \

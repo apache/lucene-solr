@@ -285,6 +285,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     public boolean local() {
       return provider == null;
     }
+    public ClientProvider getClientProvider() { return provider; }
 
     public void testJQ(SolrParams args, String... tests) throws Exception {
       if (queryDefaults != null) {

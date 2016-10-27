@@ -186,10 +186,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (doc > singleDv.docID()) {
-        singleDv.advance(doc);
-      }
-      if (doc == singleDv.docID()) {
+      if (singleDv.advanceExact(doc)) {
         counts[ singleDv.ordValue() + 1 ]++;
       } else {
         counts[ 0 ]++;
@@ -211,10 +208,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (doc > multiDv.docID()) {
-        multiDv.advance(doc);
-      }
-      if (doc == multiDv.docID()) {
+      if (multiDv.advanceExact(doc)) {
         for(;;) {
           int segOrd = (int)multiDv.nextOrd();
           if (segOrd < 0) break;
@@ -247,10 +241,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
   private void collectDocs(SortedDocValues singleDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (doc > singleDv.docID()) {
-        singleDv.advance(doc);
-      }
-      if (doc == singleDv.docID()) {
+      if (singleDv.advanceExact(doc)) {
         int segOrd = singleDv.ordValue();
         collect(doc, segOrd, toGlobal);
       }
@@ -260,10 +251,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
   private void collectCounts(SortedDocValues singleDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (doc > singleDv.docID()) {
-        singleDv.advance(doc);
-      }
-      if (doc == singleDv.docID()) {
+      if (singleDv.advanceExact(doc)) {
         int segOrd = singleDv.ordValue();
         int ord = (int)toGlobal.get(segOrd);
         countAcc.incrementCount(ord, 1);
@@ -274,10 +262,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
   private void collectDocs(SortedSetDocValues multiDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (doc > multiDv.docID()) {
-        multiDv.advance(doc);
-      }
-      if (doc == multiDv.docID()) {
+      if (multiDv.advanceExact(doc)) {
         for(;;) {
           int segOrd = (int)multiDv.nextOrd();
           if (segOrd < 0) break;
@@ -290,10 +275,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
   private void collectCounts(SortedSetDocValues multiDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (doc > multiDv.docID()) {
-        multiDv.advance(doc);
-      }
-      if (doc == multiDv.docID()) {
+      if (multiDv.advanceExact(doc)) {
         for(;;) {
           int segOrd = (int)multiDv.nextOrd();
           if (segOrd < 0) break;

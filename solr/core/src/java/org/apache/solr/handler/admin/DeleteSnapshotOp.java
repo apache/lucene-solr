@@ -40,6 +40,10 @@ class DeleteSnapshotOp implements CoreAdminHandler.CoreAdminOp {
 
     try {
       core.deleteNamedSnapshot(commitName);
+      // Ideally we shouldn't need this. This is added since the RPC logic in
+      // OverseerCollectionMessageHandler can not provide the coreName as part of the result.
+      it.rsp.add(CoreAdminParams.CORE, core.getName());
+      it.rsp.add(CoreAdminParams.COMMIT_NAME, commitName);
     } finally {
       core.close();
     }

@@ -18,6 +18,7 @@ package org.apache.lucene.facet.sortedset;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -33,11 +34,15 @@ import org.apache.lucene.facet.TopOrdAndIntQueue;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState.OrdRange;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.search.ConjunctionDISI;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
 
@@ -75,6 +80,17 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     counts = new int[state.getSize()];
     //System.out.println("field=" + field);
     count(hits.getMatchingDocs());
+  }
+
+  /** Returns all facet counts, same result as searching on {@link MatchAllDocsQuery} but faster. */
+  public SortedSetDocValuesFacetCounts(SortedSetDocValuesReaderState state)
+      throws IOException {
+    this.state = state;
+    this.field = state.getField();
+    dv = state.getDocValues();    
+    counts = new int[state.getSize()];
+    //System.out.println("field=" + field);
+    countAll();
   }
 
   @Override
@@ -176,7 +192,8 @@ public class SortedSetDocValuesFacetCounts extends Facets {
         continue;
       }
 
-      DocIdSetIterator docs = hits.bits.iterator();
+      DocIdSetIterator it = ConjunctionDISI.intersectIterators(Arrays.asList(
+                                  hits.bits.iterator(), segValues));
 
       // TODO: yet another option is to count all segs
       // first, only in seg-ord space, and then do a
@@ -196,19 +213,12 @@ public class SortedSetDocValuesFacetCounts extends Facets {
         if (hits.totalHits < numSegOrds/10) {
           //System.out.println("    remap as-we-go");
           // Remap every ord to global ord as we iterate:
-          int doc;
-          while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            //System.out.println("    doc=" + doc);
-            if (doc > segValues.docID()) {
-              segValues.advance(doc);
-            }
-            if (doc == segValues.docID()) {
-              int term = (int) segValues.nextOrd();
-              while (term != SortedSetDocValues.NO_MORE_ORDS) {
-                //System.out.println("      segOrd=" + segOrd + " ord=" + term + " globalOrd=" + ordinalMap.getGlobalOrd(segOrd, term));
-                counts[(int) ordMap.get(term)]++;
-                term = (int) segValues.nextOrd();
-              }
+          for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+            int term = (int) segValues.nextOrd();
+            while (term != SortedSetDocValues.NO_MORE_ORDS) {
+              //System.out.println("      segOrd=" + segOrd + " ord=" + term + " globalOrd=" + ordinalMap.getGlobalOrd(segOrd, term));
+              counts[(int) ordMap.get(term)]++;
+              term = (int) segValues.nextOrd();
             }
           }
         } else {
@@ -216,19 +226,12 @@ public class SortedSetDocValuesFacetCounts extends Facets {
 
           // First count in seg-ord space:
           final int[] segCounts = new int[numSegOrds];
-          int doc;
-          while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            //System.out.println("    doc=" + doc);
-            if (doc > segValues.docID()) {
-              segValues.advance(doc);
-            }
-            if (doc == segValues.docID()) {
-              int term = (int) segValues.nextOrd();
-              while (term != SortedSetDocValues.NO_MORE_ORDS) {
-                //System.out.println("      ord=" + term);
-                segCounts[term]++;
-                term = (int) segValues.nextOrd();
-              }
+          for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+            int term = (int) segValues.nextOrd();
+            while (term != SortedSetDocValues.NO_MORE_ORDS) {
+              //System.out.println("      ord=" + term);
+              segCounts[term]++;
+              term = (int) segValues.nextOrd();
             }
           }
 
@@ -244,12 +247,76 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       } else {
         // No ord mapping (e.g., single segment index):
         // just aggregate directly into counts:
-        int doc;
-        while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-          if (doc > segValues.docID()) {
-            segValues.advance(doc);
+        for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+          int term = (int) segValues.nextOrd();
+          while (term != SortedSetDocValues.NO_MORE_ORDS) {
+            counts[term]++;
+            term = (int) segValues.nextOrd();
           }
-          if (doc == segValues.docID()) {
+        }
+      }
+    }
+  }
+
+  /** Does all the "real work" of tallying up the counts. */
+  private final void countAll() throws IOException {
+    //System.out.println("ssdv count");
+
+    MultiDocValues.OrdinalMap ordinalMap;
+
+    // TODO: is this right?  really, we need a way to
+    // verify that this ordinalMap "matches" the leaves in
+    // matchingDocs...
+    if (dv instanceof MultiDocValues.MultiSortedSetDocValues) {
+      ordinalMap = ((MultiSortedSetDocValues) dv).mapping;
+    } else {
+      ordinalMap = null;
+    }
+    
+    IndexReader origReader = state.getOrigReader();
+
+    for(LeafReaderContext context : origReader.leaves()) {
+
+      LeafReader reader = context.reader();
+      
+      SortedSetDocValues segValues = reader.getSortedSetDocValues(field);
+      if (segValues == null) {
+        continue;
+      }
+
+      Bits liveDocs = reader.getLiveDocs();
+
+      if (ordinalMap != null) {
+        final LongValues ordMap = ordinalMap.getGlobalOrds(context.ord);
+
+        int numSegOrds = (int) segValues.getValueCount();
+
+        // First count in seg-ord space:
+        final int[] segCounts = new int[numSegOrds];
+        int docID;
+        while ((docID = segValues.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          if (liveDocs == null || liveDocs.get(docID)) {
+            int term = (int) segValues.nextOrd();
+            while (term != SortedSetDocValues.NO_MORE_ORDS) {
+              segCounts[term]++;
+              term = (int) segValues.nextOrd();
+            }
+          }
+        }
+
+        // Then, migrate to global ords:
+        for(int ord=0;ord<numSegOrds;ord++) {
+          int count = segCounts[ord];
+          if (count != 0) {
+            counts[(int) ordMap.get(ord)] += count;
+          }
+        }
+      } else {
+        // No ord mapping (e.g., single segment index):
+        // just aggregate directly into counts:
+        int docID;
+        while ((docID = segValues.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          if (liveDocs == null || liveDocs.get(docID)) {
             int term = (int) segValues.nextOrd();
             while (term != SortedSetDocValues.NO_MORE_ORDS) {
               counts[term]++;
