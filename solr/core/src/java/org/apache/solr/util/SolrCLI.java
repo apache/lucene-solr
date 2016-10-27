@@ -3262,7 +3262,7 @@ public class SolrCLI {
               .create("m"),
           OptionBuilder
               .withDescription("Timeout in ms for commands supporting a timeout")
-              .withLongOpt("ms")
+              .withLongOpt("timeout")
               .hasArg(true)
               .withType(Long.class)
               .withArgName("ms")
