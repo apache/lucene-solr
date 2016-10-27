@@ -36,7 +36,7 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
 
@@ -52,7 +52,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
   public void testDeletePartiallyWrittenFilesIfAbort() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
-    iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
+    iwConf.setMaxBufferedDocs(RandomNumbers.randomIntBetween(random(), 2, 30));
     iwConf.setCodec(CompressingCodec.randomInstance(random()));
     // disable CFS because this test checks file names
     iwConf.setMergePolicy(newLogMergePolicy(false));

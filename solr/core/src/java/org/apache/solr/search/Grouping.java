@@ -459,10 +459,10 @@ public class Grouping {
    *
    * @param offset The offset
    * @param len    The number of documents to return
-   * @param max    The number of document to return if len < 0 or if offset + len < 0
+   * @param max    The number of document to return if len &lt; 0 or if offset + len &gt; 0
    * @return offset + len if len equals zero or higher. Otherwise returns max
    */
-  int getMax(int offset, int len, int max) {
+  public static int getMax(int offset, int len, int max) {
     int v = len < 0 ? max : offset + len;
     if (v < 0 || v > max) v = max;
     return v;

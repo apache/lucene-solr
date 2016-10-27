@@ -226,6 +226,11 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long getValueCount() {
       return ordMap.length;
     }

@@ -123,6 +123,11 @@ public abstract class CoreAdminParams
    */
   public static final String COMMIT_NAME = "commitName";
 
+  /**
+   * A boolean parameter specifying if a core is being created as part of a new collection
+   */
+  public static final String NEW_COLLECTION = "newCollection";
+
   public enum CoreAdminAction {
     STATUS(true),
     UNLOAD,

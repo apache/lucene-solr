@@ -92,10 +92,23 @@ public abstract class SolrParams implements Serializable, MapSerializable {
     return val!=null ? val : getParams(param);
   }
 
-  /** Returns the Boolean value of the param, or null if not set */
+  /** 
+   * Returns the Boolean value of the param, or null if not set. 
+   * Use this method only when you want to be explicit 
+   * about absence of a value (<code>null</code>) vs the default value <code>false</code>.  
+   * @see #getBool(String, boolean) 
+   * @see #getPrimitiveBool(String) 
+   *  
+   **/
+  
   public Boolean getBool(String param) {
     String val = get(param);
     return val==null ? null : StrUtils.parseBool(val);
+  }
+  
+  /** Returns the boolean value of the param, or <code>false</code> if not set */
+  public boolean getPrimitiveBool(String param) {
+    return getBool(param, false);
   }
 
   /** Returns the boolean value of the param, or def if not set */
@@ -104,21 +117,46 @@ public abstract class SolrParams implements Serializable, MapSerializable {
     return val==null ? def : StrUtils.parseBool(val);
   }
 
-  /** Returns the Boolean value of the field param,
-      or the value for param, or null if neither is set. */
+  /** 
+   * Returns the Boolean value of the field param,
+   * or the value for param, or null if neither is set. 
+   * Use this method only when you want to be explicit 
+   * about absence of a value (<code>null</code>) vs the default value <code>false</code>.  
+   * @see #getFieldBool(String, String, boolean) 
+   * @see #getPrimitiveFieldBool(String, String)    
+   **/
   public Boolean getFieldBool(String field, String param) {
     String val = getFieldParam(field, param);
     return val==null ? null : StrUtils.parseBool(val);
   }
+  
+  /**
+   * Returns the boolean value of the field param, or
+   * the value for param or 
+   * the default value of boolean - <code>false</code> 
+   */
+  public boolean getPrimitiveFieldBool(String field, String param) {
+    return getFieldBool(field, param, false);
+  }
 
-  /** Returns the boolean value of the field param,
-  or the value for param, or def if neither is set. */
+  /** 
+   * Returns the boolean value of the field param,
+   * or the value for param, or def if neither is set. 
+   * 
+   * */
   public boolean getFieldBool(String field, String param, boolean def) {
     String val = getFieldParam(field, param);
     return val==null ? def : StrUtils.parseBool(val);
   }
 
-  /** Returns the Integer value of the param, or null if not set */
+  /** 
+   * Returns the Integer value of the param, or null if not set 
+   * Use this method only when you want to be explicit 
+   * about absence of a value (<code>null</code>) vs the default value for int -
+   * zero (<code>0</code>).  
+   * @see #getInt(String, int) 
+   * @see #getPrimitiveInt(String) 
+   * */
   public Integer getInt(String param) {
     String val = get(param);
     try {
@@ -128,30 +166,33 @@ public abstract class SolrParams implements Serializable, MapSerializable {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
     }
   }
-
-  /** Returns the Long value of the param, or null if not set */
-  public Long getLong(String param, Long def) {
-    String val = get(param);
-    try {
-      return val== null ? def : Long.parseLong(val);
-    }
-    catch( Exception ex ) {
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
-    }
+  
+  /**
+   * Returns int value of the the param or 
+   * default value for int - zero (<code>0</code>) if not set. 
+   */
+  public int getPrimitiveInt(String param) {
+    return getInt(param, 0);
   }
 
   /** Returns the int value of the param, or def if not set */
   public int getInt(String param, int def) {
     String val = get(param);
     try {
-      return val==null ? def : Integer.parseInt(val);
+      return val == null ? def : Integer.parseInt(val);
     }
     catch( Exception ex ) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
     }
   }
 
-  /** Returns the Long value of the param, or null if not set */
+  /** 
+   * Returns the Long value of the param, or null if not set 
+   * Use this method only when you want to be explicit 
+   * about absence of a value (<code>null</code>) vs the default value zero (<code>0</code>).  
+   * @see #getLong(String, long) 
+   *
+   **/
   public Long getLong(String param) {
     String val = get(param);
     try {
@@ -173,8 +214,13 @@ public abstract class SolrParams implements Serializable, MapSerializable {
 
 
   /**
+   * Use this method only when you want to be explicit 
+   * about absence of a value (<code>null</code>) vs the default value zero (<code>0</code>).
+   * 
    * @return The int value of the field param, or the value for param
    * or <code>null</code> if neither is set.
+   *   
+   * @see #getFieldInt(String, String, int) 
    **/
   public Integer getFieldInt(String field, String param) {
     String val = getFieldParam(field, param);
@@ -199,7 +245,12 @@ public abstract class SolrParams implements Serializable, MapSerializable {
   }
 
 
-  /** Returns the Float value of the param, or null if not set */
+  /** 
+   * Returns the Float value of the param, or null if not set 
+   * Use this method only when you want to be explicit 
+   * about absence of a value (<code>null</code>) vs the default value zero (<code>0.0f</code>).
+   * @see #getFloat(String, float)
+   **/
   public Float getFloat(String param) {
     String val = get(param);
     try {
@@ -221,7 +272,13 @@ public abstract class SolrParams implements Serializable, MapSerializable {
     }
   }
 
-  /** Returns the Float value of the param, or null if not set */
+  /** 
+   * Returns the Float value of the param, or null if not set 
+   * Use this method only when you want to be explicit 
+   * about absence of a value (<code>null</code>) vs the default value zero (<code>0.0d</code>).
+   * @see #getDouble(String, double)
+   *
+   **/
   public Double getDouble(String param) {
     String val = get(param);
     try {
@@ -244,7 +301,15 @@ public abstract class SolrParams implements Serializable, MapSerializable {
   }
 
 
-  /** Returns the float value of the field param. */
+  /** 
+   * Returns the float value of the field param. 
+   * Use this method only when you want to be explicit 
+   * about absence of a value (<code>null</code>) vs the default value zero (<code>0.0f</code>).
+   * 
+   * @see #getFieldFloat(String, String, float)
+   * @see #getPrimitiveFieldFloat(String, String)
+   * 
+   **/
   public Float getFieldFloat(String field, String param) {
     String val = getFieldParam(field, param);
     try {
@@ -253,6 +318,15 @@ public abstract class SolrParams implements Serializable, MapSerializable {
     catch( Exception ex ) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
     }
+  }
+  
+  /**
+   * Returns the float value of the field param or
+   * the value for param or 
+   * the default value for float - zero (<code>0.0f</code>)   
+   */
+  public float getPrimitiveFieldFloat(String field, String param) {
+    return getFieldFloat(field, param, 0.0f);
   }
 
   /** Returns the float value of the field param,
@@ -267,7 +341,13 @@ public abstract class SolrParams implements Serializable, MapSerializable {
     }
   }
 
-  /** Returns the float value of the field param. */
+  /** 
+   * Returns the float value of the field param. 
+   * Use this method only when you want to be explicit 
+   * about absence of a value (<code>null</code>) vs the default value zero (<code>0.0d</code>).
+   * @see #getDouble(String, double)
+   *
+   **/
   public Double getFieldDouble(String field, String param) {
     String val = getFieldParam(field, param);
     try {

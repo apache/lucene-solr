@@ -18,7 +18,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Random;
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -185,7 +185,7 @@ public class RandomApproximationQuery extends Query {
       if (disi.docID() == NO_MORE_DOCS) {
         return doc = NO_MORE_DOCS;
       }
-      return doc = RandomInts.randomIntBetween(random, target, disi.docID());
+      return doc = RandomNumbers.randomIntBetween(random, target, disi.docID());
     }
 
     @Override

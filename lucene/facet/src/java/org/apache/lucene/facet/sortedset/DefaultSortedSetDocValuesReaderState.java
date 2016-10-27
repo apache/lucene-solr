@@ -36,7 +36,8 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Default implementation of {@link SortedSetDocValuesFacetCounts}
+ * Default implementation of {@link SortedSetDocValuesFacetCounts}. You must ensure the original
+ * {@link IndexReader} passed to the constructor is not closed whenever you use this class!
  */
 public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesReaderState {
 

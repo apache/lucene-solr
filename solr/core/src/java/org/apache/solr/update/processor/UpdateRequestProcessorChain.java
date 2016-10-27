@@ -101,7 +101,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
 
   /**
    * Initializes the chain using the factories specified by the <code>PluginInfo</code>.
-   * if the chain includes the <code>RunUpdateProcessorFactory</code>, but 
+   * if the chain includes the <code>RunUpdateProcessorFactory</code>, but
    * does not include an implementation of the 
    * <code>DistributingUpdateProcessorFactory</code> interface, then an 
    * instance of <code>DistributedUpdateProcessorFactory</code> will be 
@@ -269,8 +269,16 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       s = s.trim();
       if (s.isEmpty()) continue;
       UpdateRequestProcessorFactory p = core.getUpdateProcessors().get(s);
-      if (p == null)
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such processor " + s);
+      if (p == null) {
+        try {
+          p = core.createInstance(s + "UpdateProcessorFactory", UpdateRequestProcessorFactory.class,
+              "updateProcessor", null, core.getMemClassLoader());
+          core.getUpdateProcessors().put(s, p);
+        } catch (SolrException e) {
+        }
+        if (p == null)
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such processor " + s);
+      }
       result.add(p);
     }
     return result;

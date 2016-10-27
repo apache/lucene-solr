@@ -17,6 +17,8 @@
 
 package org.apache.lucene.index;
 
+import java.io.IOException;
+
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -68,6 +70,12 @@ public final class LegacyBinaryDocValuesWrapper extends BinaryDocValues {
       nextDoc();
     }
     return docID;
+  }
+
+  @Override
+  public boolean advanceExact(int target) throws IOException {
+    docID = target;
+    return docsWithField.get(target);
   }
 
   @Override

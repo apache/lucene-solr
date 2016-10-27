@@ -348,27 +348,23 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (authenticationPlugin == null) {
       return true;
     } else {
-      try {
-        if (PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getPathInfo())) return true;
-      } catch (Exception e) {
-        log.error("Unexpected error ", e);
-      }
-
-      //special case when solr is securing inter-node requests
+      // /admin/info/key must be always open. see SOLR-9188
+      // tests work only w/ getPathInfo
+      //otherwise it's just enough to have getServletPath()
+      if (PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getServletPath()) ||
+          PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getPathInfo())) return true;
       String header = ((HttpServletRequest) request).getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
         authenticationPlugin = cores.getPkiAuthenticationPlugin();
       try {
         log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
         // upon successful authentication, this should call the chain's next filter.
-        requestContinues = authenticationPlugin.doAuthenticate(request, response, new FilterChain() {
-          public void doFilter(ServletRequest req, ServletResponse rsp) throws IOException, ServletException {
-            isAuthenticated.set(true);
-            wrappedRequest.set(req);
-          }
+        requestContinues = authenticationPlugin.doAuthenticate(request, response, (req, rsp) -> {
+          isAuthenticated.set(true);
+          wrappedRequest.set(req);
         });
       } catch (Exception e) {
-        e.printStackTrace();
+        log.info("Error authenticating", e);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error during request authentication, ", e);
       }
     }

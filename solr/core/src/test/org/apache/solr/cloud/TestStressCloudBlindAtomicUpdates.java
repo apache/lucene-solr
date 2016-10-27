@@ -19,29 +19,30 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.FieldType;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldTypeResponse;
 import org.apache.solr.common.SolrDocument;
@@ -52,13 +53,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.TestInjection;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,16 +122,14 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
-    
-    Map<String, String> collectionProperties = new HashMap<>();
-    collectionProperties.put("config", "solrconfig-tlog.xml");
-    collectionProperties.put("schema", "schema-minimal-atomic-stress.xml");
 
-    assertNotNull(cluster.createCollection(COLLECTION_NAME, numShards, repFactor,
-                                           configName, null, null, collectionProperties));
-    
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
+        .withProperty("config", "solrconfig-tlog.xml")
+        .withProperty("schema", "schema-minimal-atomic-stress.xml")
+        .process(CLOUD_CLIENT);
 
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 

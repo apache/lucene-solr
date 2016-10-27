@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -30,7 +29,7 @@ import org.apache.lucene.util.BytesRef;
  * dictionary value (ordinal) can be retrieved for each document. Ordinals
  * are dense and in increasing sorted order.
  */
-public abstract class SortedSetDocValues extends DocIdSetIterator {
+public abstract class SortedSetDocValues extends DocValuesIterator {
   
   /** Sole constructor. (For invocation by subclass 
    * constructors, typically implicit.) */
@@ -43,6 +42,8 @@ public abstract class SortedSetDocValues extends DocIdSetIterator {
 
   /** 
    * Returns the next ordinal for the current document.
+   * It is illegal to call this method after {@link #advanceExact(int)}
+   * returned {@code false}.
    * @return next ordinal for the document, or {@link #NO_MORE_ORDS}. 
    *         ordinals are dense, start at 0, then increment by 1 for 
    *         the next value in sorted order. 
@@ -98,7 +99,7 @@ public abstract class SortedSetDocValues extends DocIdSetIterator {
    * Returns a {@link TermsEnum} over the values.
    * The enum supports {@link TermsEnum#ord()} and {@link TermsEnum#seekExact(long)}.
    */
-  public TermsEnum termsEnum() {
+  public TermsEnum termsEnum() throws IOException {
     return new SortedSetDocValuesTermsEnum(this);
   }
 }

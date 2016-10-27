@@ -136,7 +136,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
       FileUtils.write(new File(tmpConfigDir, ConfigSetProperties.DEFAULT_FILENAME),
           getConfigSetProps(oldProps), StandardCharsets.UTF_8);
     }
-    solrCluster.uploadConfigDir(tmpConfigDir, baseConfigSetName);
+    solrCluster.uploadConfigSet(tmpConfigDir.toPath(), baseConfigSetName);
   }
 
   private StringBuilder getConfigSetProps(Map<String, String> map) {

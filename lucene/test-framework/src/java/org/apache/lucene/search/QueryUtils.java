@@ -262,7 +262,7 @@ public class QueryUtils {
       }
 
       @Override
-      public PointValues getPointValues() {
+      public PointValues getPointValues(String fieldName) {
         return null;
       }
 
