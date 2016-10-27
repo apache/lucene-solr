@@ -173,7 +173,7 @@ public class MoreLikeThisComponent extends SearchComponent {
         && rb.req.getParams().getBool(COMPONENT_NAME, false)) {
       Map<Object,SolrDocumentList> tempResults = new LinkedHashMap<>();
       
-      int mltcount = rb.req.getParams().getInt(MoreLikeThisParams.DOC_COUNT, 5);
+      int mltcount = rb.req.getParams().getInt(MoreLikeThisParams.DOC_COUNT, MoreLikeThisParams.DEFAULT_DOC_COUNT);
       String keyName = rb.req.getSchema().getUniqueKeyField().getName();
       
       for (ShardRequest sreq : rb.finished) {

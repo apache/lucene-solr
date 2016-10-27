@@ -166,7 +166,12 @@ New Features
 
 * SOLR-2212: Add a factory class corresponding to Lucene's NoMergePolicy. (Lance Norskog, Cao Manh Dat via shalin)
 
-* SOLR-9670: Support SOLR_AUTHENTICATION_OPTS in solr.cmd (janhoy) 
+* SOLR-9670: Support SOLR_AUTHENTICATION_OPTS in solr.cmd (janhoy)
+
+* SOLR-9559: Add ExecutorStream to execute stored Streaming Expressions (Joel Bernstein)
+
+* SOLR-1085: Add support for MoreLikeThis queries and responses in SolrJ client.
+  (Maurice Jumelet, Bill Mitchell, Cao Manh Dat via shalin)
 
 * SOLR-9640: Support PKI authentication in standalone mode (janhoy)
 
@@ -232,6 +237,11 @@ Bug Fixes
 
 * SOLR-4164: group.limit=-1 was not supported for grouping in distributed mode.
   (Cao Manh Dat, Lance Norskog, Webster Homer, hossman, yonik)
+
+* SOLR-9692: blockUnknown property makes inter-node communication impossible (noble)
+
+* SOLR-2094: XPathEntityProcessor should reinitialize the XPathRecordReader instance if
+  the 'forEach' or 'xpath' attributes are templates & it is not a root entity (Cao Manh Dat, noble)
  
 Optimizations
 ----------------------
@@ -372,6 +382,8 @@ Other Changes
   so that killing a shard in one collection does not result in leader election in a different collection.
   See SOLR-5243 for the related bug. (Cao Manh Dat via shalin)
 
+* SOLR-9533: Reload core config when a core is reloaded (Gethin James, Joel Bernstein)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
@@ -394,7 +406,7 @@ Bug Fixes
 
 * SOLR-9389: HDFS Transaction logs stay open for writes which leaks Xceivers. (Tim Owen via Mark Miller)
 
-* SOLR-9692: blockUnknown property makes inter-node communication impossible (noble)
+* SOLR-9188: blockUnknown property makes inter-node communication impossible (noble)
 
 * SOLR-9455: Deleting a sub-shard in recovery state can mark parent shard as inactive. (shalin)
 
