@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +27,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -145,7 +145,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
     if (resolver == null) resolver = new VariableResolver();
     final Context delegate = new ContextImpl(parent, resolver,
             parentDataSource, currProcess,
-            new HashMap<String, Object>(), null, null);
+        new HashMap<>(), null, null);
     return new TestContext(entityAttrs, delegate, entityFields, parent == null);
   }
 
@@ -155,15 +155,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
    */
   @SuppressWarnings("unchecked")
   public static Map createMap(Object... args) {
-    Map result = new LinkedHashMap();
-
-    if (args == null || args.length == 0)
-      return result;
-
-    for (int i = 0; i < args.length - 1; i += 2)
-      result.put(args[i], args[i + 1]);
-
-    return result;
+   return Utils.makeMap(args);
   }
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to set modified time for a file")

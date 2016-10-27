@@ -323,13 +323,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
         rowIterator = getRowIterator(data, s);
       } else {
         try {
-          xpathReader.streamRecords(data, new XPathRecordReader.Handler() {
-            @Override
-            @SuppressWarnings("unchecked")
-            public void handle(Map<String, Object> record, String xpath) {
-              rows.add(readRow(record, xpath));
-            }
-          });
+          xpathReader.streamRecords(data, (record, xpath) -> rows.add(readRow(record, xpath)));
         } catch (Exception e) {
           String msg = "Parsing failed for xml, url:" + s + " rows processed:" + rows.size();
           if (rows.size() > 0) msg += " last row: " + rows.get(rows.size() - 1);
@@ -433,25 +427,21 @@ public class XPathEntityProcessor extends EntityProcessorBase {
       @Override
       public void run() {
         try {
-          xpathReader.streamRecords(data, new XPathRecordReader.Handler() {
-            @Override
-            @SuppressWarnings("unchecked")
-            public void handle(Map<String, Object> record, String xpath) {
-              if (isEnd.get()) {
-                throwExp.set(false);
-                //To end the streaming . otherwise the parsing will go on forever
-                //though consumer has gone away
-                throw new RuntimeException("BREAK");
-              }
-              Map<String, Object> row;
-              try {
-                row = readRow(record, xpath);
-              } catch (Exception e) {
-                isEnd.set(true);
-                return;
-              }
-              offer(row);
+          xpathReader.streamRecords(data, (record, xpath) -> {
+            if (isEnd.get()) {
+              throwExp.set(false);
+              //To end the streaming . otherwise the parsing will go on forever
+              //though consumer has gone away
+              throw new RuntimeException("BREAK");
             }
+            Map<String, Object> row;
+            try {
+              row = readRow(record, xpath);
+            } catch (Exception e) {
+              isEnd.set(true);
+              return;
+            }
+            offer(row);
           });
         } catch (Exception e) {
           if(throwExp.get()) exp.set(e);
