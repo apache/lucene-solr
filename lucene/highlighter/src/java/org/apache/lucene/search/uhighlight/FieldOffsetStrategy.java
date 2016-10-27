@@ -114,10 +114,9 @@ public abstract class FieldOffsetStrategy {
   }
 
   protected List<OffsetsEnum> createAutomataOffsetsFromTerms(Terms termsIndex, int doc) throws IOException {
-    //debatable if a LinkedList is faster, but depends on the number of encountered terms
     Map<CharacterRunAutomaton, List<PostingsEnum>> automataPostings = new HashMap<>(automata.length);
     for (CharacterRunAutomaton automaton : automata) {
-      automataPostings.put(automaton, new LinkedList<>());
+      automataPostings.put(automaton, new ArrayList<>());
     }
 
     TermsEnum termsEnum = termsIndex.iterator();
