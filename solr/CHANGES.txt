@@ -232,6 +232,8 @@ Bug Fixes
 
 * SOLR-4164: group.limit=-1 was not supported for grouping in distributed mode.
   (Cao Manh Dat, Lance Norskog, Webster Homer, hossman, yonik)
+
+* SOLR-9692: blockUnknown property makes inter-node communication impossible (noble)
  
 Optimizations
 ----------------------
@@ -396,7 +398,7 @@ Bug Fixes
 
 * SOLR-9389: HDFS Transaction logs stay open for writes which leaks Xceivers. (Tim Owen via Mark Miller)
 
-* SOLR-9692: blockUnknown property makes inter-node communication impossible (noble)
+* SOLR-9188: blockUnknown property makes inter-node communication impossible (noble)
 
 * SOLR-9455: Deleting a sub-shard in recovery state can mark parent shard as inactive. (shalin)
 
