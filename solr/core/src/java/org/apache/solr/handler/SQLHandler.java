@@ -130,7 +130,6 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
 
       tupleStream = new StreamHandler.TimerStream(new ExceptionStream(tupleStream));
 
-
       rsp.add("result-set", tupleStream);
     } catch(Exception e) {
       //Catch the SQL parsing and query transformation exceptions.
@@ -217,8 +216,8 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
           for(int i = 1; i <= numColumns; i++) {
             String columnName = resultSetMetaData.getColumnName(i);
             String columnLabel = resultSetMetaData.getColumnLabel(i);
-            metadataFields.add(columnName);
-            metadataAliases.put(columnName, columnLabel);
+            metadataFields.add(columnLabel);
+            metadataAliases.put(columnLabel, columnName);
           }
 
           fields.put("isMetadata", true);
