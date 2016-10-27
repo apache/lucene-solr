@@ -72,8 +72,6 @@ public class BasicAuthStandaloneTest extends BaseDistributedSearchTestCase {
     instance = new SolrInstance("inst", null);
     instance.setUp();
     jetty = createJetty(instance);
-    assertTrue(jetty.isRunning());
-    //initCore("solrconfig.xml", "schema.xml", instance.getHomeDir().toString());
     securityConfHandler = new SecurityConfHandlerLocalForTesting(jetty.getCoreContainer());
   }
 

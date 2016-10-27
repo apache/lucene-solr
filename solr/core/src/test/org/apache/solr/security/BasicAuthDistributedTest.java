@@ -79,7 +79,6 @@ public class BasicAuthDistributedTest extends BaseDistributedSearchTestCase {
     handle.put("timestamp", SKIPVAL);
     handle.put("maxScore", SKIPVAL);
     handle.put("_version_", SKIPVAL);
-    Thread.sleep(1000);
   }
   
   private void testAuth() throws Exception {
