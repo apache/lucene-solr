@@ -16,6 +16,7 @@
  */
 package org.apache.solr.security;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -23,13 +24,18 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Test;
 
 import static org.apache.solr.security.BasicAuthIntegrationTest.STD_CONF;
+import static org.apache.solr.security.BasicAuthIntegrationTest.setBasicAuthHeader;
 import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecurityStatus;
 
 /**
@@ -77,15 +83,12 @@ public class BasicAuthDistributedTest extends BaseDistributedSearchTestCase {
   }
   
   private void testAuth() throws Exception {
-    System.out.println("Got "+jettys.size()+" jettys and "+ clients.size() +" clients");
     QueryResponse rsp = query("q","text:doc", "fl", "id,text", "sort", "id asc");
     assertEquals(10, rsp.getResults().getNumFound());
 
+    // Enable authentication 
     for (JettySolrRunner j : jettys) {
-      securityConfHandler = new SecurityConfHandlerLocalForTesting(j.getCoreContainer());
-      securityConfHandler.persistConf(new SecurityConfHandler.SecurityConfig()
-          .setData(Utils.fromJSONString(ALL_CONF.replaceAll("'", "\""))));
-      j.getCoreContainer().securityNodeChanged();
+      writeSecurityJson(j.getCoreContainer());
     }
 
     HttpSolrClient.RemoteSolrException expected = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
@@ -93,17 +96,38 @@ public class BasicAuthDistributedTest extends BaseDistributedSearchTestCase {
     });
     assertEquals(401, expected.code());
     
-    // TODO: Query with auth
+    // Add auth
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "text:doc").add("fl", "id,text").add("sort", "id asc");
+    QueryRequest req = new QueryRequest(params);
+    req.setBasicAuthCredentials("solr", "SolrRocks");
+    rsp = req.process(clients.get(0), null);
+    if (jettys.size() > 1) {
+      assertTrue(rsp.getResults().getNumFound() < 10);
+      rsp = query(true, params, "solr", "SolrRocks");
+    }
+    assertEquals(10, rsp.getResults().getNumFound());
     
-    // Remove auth again
+    // Disable auth
     for (JettySolrRunner j : jettys) {
-      securityConfHandler = new SecurityConfHandlerLocalForTesting(j.getCoreContainer());
-      Files.delete(Paths.get(j.getSolrHome()).resolve("security.json"));
-      j.getCoreContainer().securityNodeChanged();
+      deleteSecurityJson(j.getCoreContainer());
     }
 
   }
-  
+
+  private void deleteSecurityJson(CoreContainer coreContainer) throws IOException {
+    securityConfHandler = new SecurityConfHandlerLocalForTesting(coreContainer);
+    Files.delete(Paths.get(coreContainer.getSolrHome()).resolve("security.json"));
+    coreContainer.securityNodeChanged();
+  }
+
+  private void writeSecurityJson(CoreContainer coreContainer) throws IOException {
+    securityConfHandler = new SecurityConfHandlerLocalForTesting(coreContainer);
+    securityConfHandler.persistConf(new SecurityConfHandler.SecurityConfig()
+        .setData(Utils.fromJSONString(ALL_CONF.replaceAll("'", "\""))));
+    coreContainer.securityNodeChanged();
+  }
+
   protected static final String ALL_CONF = "{\n" +
       "  'authentication':{\n" +
       "    'blockUnknown':true,\n" +
