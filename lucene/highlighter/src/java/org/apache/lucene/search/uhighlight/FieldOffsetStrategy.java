@@ -20,8 +20,7 @@ package org.apache.lucene.search.uhighlight;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -114,7 +113,7 @@ public abstract class FieldOffsetStrategy {
   }
 
   protected List<OffsetsEnum> createAutomataOffsetsFromTerms(Terms termsIndex, int doc) throws IOException {
-    Map<CharacterRunAutomaton, List<PostingsEnum>> automataPostings = new HashMap<>(automata.length);
+    Map<CharacterRunAutomaton, List<PostingsEnum>> automataPostings = new IdentityHashMap<>(automata.length);
     for (CharacterRunAutomaton automaton : automata) {
       automataPostings.put(automaton, new ArrayList<>());
     }
@@ -134,7 +133,7 @@ public abstract class FieldOffsetStrategy {
       }
     }
 
-    List<OffsetsEnum> offsetsEnums = new LinkedList<>();
+    List<OffsetsEnum> offsetsEnums = new ArrayList<>(automata.length); //will be at most this long
     for (Map.Entry<CharacterRunAutomaton, List<PostingsEnum>> automatonPostings : automataPostings.entrySet()) {
       List<PostingsEnum> postingsEnums = automatonPostings.getValue();
       int size = postingsEnums.size();
