@@ -216,8 +216,8 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
           for(int i = 1; i <= numColumns; i++) {
             String columnName = resultSetMetaData.getColumnName(i);
             String columnLabel = resultSetMetaData.getColumnLabel(i);
-            metadataFields.add(columnLabel);
-            metadataAliases.put(columnLabel, columnName);
+            metadataFields.add(columnName);
+            metadataAliases.put(columnName, columnLabel);
           }
 
           fields.put("isMetadata", true);
@@ -226,7 +226,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
         } else {
           if(this.resultSet.next()){
             for(int i = 1; i <= numColumns; i++) {
-              fields.put(resultSetMetaData.getColumnName(i), this.resultSet.getObject(i));
+              fields.put(resultSetMetaData.getColumnLabel(i), this.resultSet.getObject(i));
             }
           } else {
             fields.put("EOF", true);
