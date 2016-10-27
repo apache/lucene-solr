@@ -30,6 +30,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
+import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -53,7 +54,7 @@ import static org.apache.solr.security.BasicAuthIntegrationTest.NOT_NULL_PREDICA
 import static org.apache.solr.security.BasicAuthIntegrationTest.STD_CONF;
 import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecurityStatus;
 
-public class BasicAuthStandaloneTest extends AbstractSolrTestCase {
+public class BasicAuthStandaloneTest extends BaseDistributedSearchTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private Path ROOT_DIR = Paths.get(getSolrHome());
@@ -71,7 +72,8 @@ public class BasicAuthStandaloneTest extends AbstractSolrTestCase {
     instance = new SolrInstance("inst", null);
     instance.setUp();
     jetty = createJetty(instance);
-    initCore("solrconfig.xml", "schema.xml", instance.getHomeDir().toString());
+    assertTrue(jetty.isRunning());
+    //initCore("solrconfig.xml", "schema.xml", instance.getHomeDir().toString());
     securityConfHandler = new SecurityConfHandlerLocalForTesting(jetty.getCoreContainer());
   }
 
