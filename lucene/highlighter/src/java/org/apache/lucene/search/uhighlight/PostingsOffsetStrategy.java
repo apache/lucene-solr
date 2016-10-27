@@ -54,6 +54,7 @@ public class PostingsOffsetStrategy extends FieldOffsetStrategy {
     return createOffsetsEnumsFromReader(leafReader, docId);
   }
 
+
   @Override
   public UnifiedHighlighter.OffsetSource getOffsetSource() {
     return UnifiedHighlighter.OffsetSource.POSTINGS;

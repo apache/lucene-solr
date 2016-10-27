@@ -20,6 +20,7 @@ package org.apache.lucene.search.uhighlight.visibility;
 import java.io.IOException;
 import java.text.BreakIterator;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -152,8 +153,8 @@ public class TestUnifiedHighlighterExtensibility {
       }
 
       @Override
-      protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, String field, BytesRef[] terms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
-        return super.getOffsetStrategy(offsetSource, field, terms, phraseHelper, automata);
+      protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, String field, BytesRef[] terms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, EnumSet<HighlightFlag> highlightFlags) {
+        return super.getOffsetStrategy(offsetSource, field, terms, phraseHelper, automata, highlightFlags);
       }
 
       @Override

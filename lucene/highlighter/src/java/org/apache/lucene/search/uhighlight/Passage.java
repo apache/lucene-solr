@@ -40,7 +40,7 @@ public final class Passage {
     BytesRef matchTerms[] = new BytesRef[8];
     int numMatches = 0;
 
-    void addMatch(int startOffset, int endOffset, BytesRef term) {
+    public void addMatch(int startOffset, int endOffset, BytesRef term) {
         assert startOffset >= this.startOffset && startOffset <= this.endOffset;
         if (numMatches == matchStarts.length) {
             int newLength = ArrayUtil.oversize(numMatches+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);

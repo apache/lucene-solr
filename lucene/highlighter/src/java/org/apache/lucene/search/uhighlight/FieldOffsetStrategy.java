@@ -107,13 +107,13 @@ public abstract class FieldOffsetStrategy {
 
     // Handle automata
     if (automata.length > 0) {
-      offsetsEnums.addAll(createAutomataOffsetsEnumsFromReader(termsIndex, doc));
+      offsetsEnums.addAll(createAutomataOffsetsFromTerms(termsIndex, doc));
     }
 
     return offsetsEnums;
   }
 
-  protected List<OffsetsEnum> createAutomataOffsetsEnumsFromReader(Terms termsIndex, int doc) throws IOException {
+  protected List<OffsetsEnum> createAutomataOffsetsFromTerms(Terms termsIndex, int doc) throws IOException {
     //debatable if a LinkedList is faster, but depends on the number of encountered terms
     Map<CharacterRunAutomaton, List<PostingsEnum>> automataPostings = new HashMap<>(automata.length);
     for (CharacterRunAutomaton automaton : automata) {

@@ -116,6 +116,8 @@ public class UnifiedHighlighter {
 
   private boolean defaultHighlightPhrasesStrictly = true; // AKA "accuracy" or "query debugging"
 
+  private boolean defaultPassageRelevancyOverSpeed = true; //Prefer using a memory index
+
   // private boolean defaultRequireFieldMatch = true; TODO
 
   private int maxLength = DEFAULT_MAX_LENGTH;
@@ -211,6 +213,12 @@ public class UnifiedHighlighter {
   protected boolean shouldHighlightPhrasesStrictly(String field) {
     return defaultHighlightPhrasesStrictly;
   }
+
+
+  protected boolean shouldPreferPassageRelevancyOverSpeed(String field) {
+    return defaultPassageRelevancyOverSpeed;
+  }
+
 
   /**
    * The maximum content size to process.  Content will be truncated to this size before highlighting. Typically
@@ -721,7 +729,7 @@ public class UnifiedHighlighter {
     CharacterRunAutomaton[] automata = getAutomata(field, query, highlightFlags);
     OffsetSource offsetSource = getOptimizedOffsetSource(field, terms, phraseHelper, automata);
     return new FieldHighlighter(field,
-        getOffsetStrategy(offsetSource, field, terms, phraseHelper, automata),
+        getOffsetStrategy(offsetSource, field, terms, phraseHelper, automata, highlightFlags),
         new SplittingBreakIterator(getBreakIterator(field), UnifiedHighlighter.MULTIVAL_SEP_CHAR),
         getScorer(field),
         maxPassages,
@@ -751,6 +759,9 @@ public class UnifiedHighlighter {
     }
     if (shouldHighlightPhrasesStrictly(field)) {
       highlightFlags.add(HighlightFlag.PHRASES);
+    }
+    if (shouldPreferPassageRelevancyOverSpeed(field)) {
+      highlightFlags.add(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED);
     }
     return highlightFlags;
   }
@@ -804,10 +815,12 @@ public class UnifiedHighlighter {
   }
 
   protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, String field, BytesRef[] terms,
-                                                  PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
+                                                  PhraseHelper phraseHelper, CharacterRunAutomaton[] automata,
+                                                  EnumSet<HighlightFlag> highlightFlags) {
     switch (offsetSource) {
       case ANALYSIS:
-        if (terms.length > 0 && !phraseHelper.hasPositionSensitivity()) {
+        if (!phraseHelper.hasPositionSensitivity() &&
+            !highlightFlags.contains(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED)) {
           //skip using a memory index since it's pure term filtering
           return new TokenStreamOffsetStrategy(field, terms, phraseHelper, automata, getIndexAnalyzer());
         } else {
@@ -1019,10 +1032,9 @@ public class UnifiedHighlighter {
    */
   public enum HighlightFlag {
     PHRASES,
-    MULTI_TERM_QUERY
+    MULTI_TERM_QUERY,
+    PASSAGE_RELEVANCY_OVER_SPEED
     // TODO: ignoreQueryFields
     // TODO: useQueryBoosts
-    // TODO: avoidMemoryIndexIfPossible
-    // TODO: preferMemoryIndexForStats
   }
 }
