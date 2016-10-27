@@ -261,7 +261,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   }
 
   public static class MostlyPassthroughHtmlMapper implements HtmlMapper {
-    public static final HtmlMapper INSTANCE = new MostlyPassthroughHtmlMapper();
+    public static final HtmlMapper INSTANCE =  new MostlyPassthroughHtmlMapper();
 
     /** 
      * Keep all elements and their content.

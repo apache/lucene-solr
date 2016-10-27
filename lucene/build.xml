@@ -182,6 +182,7 @@
     <check-missing-javadocs dir="build/docs/spatial" level="method"/>
     <!-- spatial-extras: problems -->
     <check-missing-javadocs dir="build/docs/suggest" level="method"/>
+    <check-missing-javadocs dir="build/docs/concordance" level="method"/>
     <!-- test-framework: problems -->
 
     <!-- too much to fix core/ for now, but enforce full javadocs for key packages -->
