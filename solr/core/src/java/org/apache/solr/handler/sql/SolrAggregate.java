@@ -65,27 +65,21 @@ class SolrAggregate extends Aggregate implements SolrRel {
     implementor.visitChild(0, getInput());
 
     final List<String> inNames = SolrRules.solrFieldNames(getInput().getRowType());
-    final List<String> outNames = SolrRules.solrFieldNames(getRowType());
 
-    Map<String, String> fieldMappings = new HashMap<>();
-    for(AggregateCall aggCall : aggCalls) {
+    for(Pair<AggregateCall, String> namedAggCall : getNamedAggCalls()) {
+      AggregateCall aggCall = namedAggCall.getKey();
       Pair<String, String> metric = toSolrMetric(implementor, aggCall, inNames);
-      implementor.addMetric(metric);
-      fieldMappings.put(aggCall.getName(), metric.getKey().toLowerCase(Locale.ROOT) + "(" + metric.getValue() + ")");
-    }
-
-    List<String> buckets = new ArrayList<>();
-    for(int group : groupSet) {
-      String inName = inNames.get(group);
-      String name = implementor.fieldMappings.getOrDefault(inName, inName);
-      buckets.add(name);
-      if(!fieldMappings.containsKey(name)) {
-        fieldMappings.put(name, name);
+      implementor.addMetricPair(namedAggCall.getValue(), metric.getKey(), metric.getValue());
+      if(aggCall.getName() == null) {
+        implementor.addFieldMapping(namedAggCall.getValue(),
+            aggCall.getAggregation().getName() + "(" + inNames.get(aggCall.getArgList().get(0)) + ")");
       }
     }
 
-    implementor.addBuckets(buckets);
-    implementor.addFieldMappings(fieldMappings);
+    for(int group : getGroupSet()) {
+      String inName = inNames.get(group);
+      implementor.addBucket(inName);
+    }
   }
 
   private Pair<String, String> toSolrMetric(Implementor implementor, AggregateCall aggCall, List<String> inNames) {

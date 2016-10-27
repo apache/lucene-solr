@@ -21,10 +21,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.Pair;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Relational expression that uses Solr calling convention.
@@ -40,36 +37,41 @@ interface SolrRel extends RelNode {
     final Map<String, String> fieldMappings = new HashMap<>();
     String query = null;
     String limitValue = null;
-    final List<String> order = new ArrayList<>();
+    final List<Pair<String, String>> orders = new ArrayList<>();
     final List<String> buckets = new ArrayList<>();
     final List<Pair<String, String>> metricPairs = new ArrayList<>();
 
     RelOptTable table;
     SolrTable solrTable;
 
-    void addFieldMappings(Map<String, String> fieldMappings) {
-      this.fieldMappings.putAll(fieldMappings);
+    void addFieldMapping(String key, String val) {
+      if(key != null && !fieldMappings.containsKey(key)) {
+        this.fieldMappings.put(key, val);
+      }
     }
 
     void addQuery(String query) {
       this.query = query;
     }
 
-    void addOrder(List<String> order) {
-      for(String orderItem : order) {
-        String[] orderParts = orderItem.split(" ", 2);
-        String fieldName = orderParts[0];
-        String direction = orderParts[1];
-       this.order.add(this.fieldMappings.getOrDefault(fieldName, fieldName) + " " + direction);
+    void addOrder(String column, String direction) {
+      column = this.fieldMappings.getOrDefault(column, column);
+      this.orders.add(new Pair<>(column, direction));
+    }
+
+    void addBucket(String bucket) {
+      bucket = this.fieldMappings.getOrDefault(bucket, bucket);
+      this.buckets.add(bucket);
+    }
+
+    void addMetricPair(String outName, String metric, String column) {
+      column = this.fieldMappings.getOrDefault(column, column);
+      this.metricPairs.add(new Pair<>(metric, column));
+
+      String metricIdentifier = metric + "(" + column + ")";
+      if(outName != null) {
+        this.addFieldMapping(outName, metricIdentifier.toLowerCase(Locale.ROOT));
       }
-    }
-
-    void addBuckets(List<String> buckets) {
-      this.buckets.addAll(buckets);
-    }
-
-    void addMetric(Pair<String, String> metricPair) {
-      this.metricPairs.add(metricPair);
     }
 
     void setLimit(String limit) {

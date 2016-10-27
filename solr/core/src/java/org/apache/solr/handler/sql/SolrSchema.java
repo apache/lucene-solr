@@ -46,7 +46,7 @@ class SolrSchema extends AbstractSchema {
     String zk = this.properties.getProperty("zk");
     try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zk).build()) {
       cloudSolrClient.connect();
-      Set<String> collections = cloudSolrClient.getZkStateReader().getClusterState().getCollections();
+      Set<String> collections = cloudSolrClient.getZkStateReader().getClusterState().getCollectionsMap().keySet();
 
       final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
       for (String collection : collections) {

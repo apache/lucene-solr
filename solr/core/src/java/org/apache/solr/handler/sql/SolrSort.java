@@ -29,7 +29,6 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -58,7 +57,6 @@ class SolrSort extends Sort implements SolrRel {
     implementor.visitChild(0, getInput());
 
     List<RelFieldCollation> sortCollations = collation.getFieldCollations();
-    List<String> fieldOrder = new ArrayList<>();
     if (!sortCollations.isEmpty()) {
       // Construct a series of order clauses from the desired collation
       final List<RelDataTypeField> fields = getRowType().getFieldList();
@@ -68,10 +66,8 @@ class SolrSort extends Sort implements SolrRel {
         if (fieldCollation.getDirection().equals(RelFieldCollation.Direction.DESCENDING)) {
           direction = "desc";
         }
-        fieldOrder.add(name + " " + direction);
+        implementor.addOrder(name, direction);
       }
-
-      implementor.addOrder(fieldOrder);
     }
 
     if(fetch != null) {

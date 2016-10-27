@@ -28,9 +28,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Implementation of {@link org.apache.calcite.rel.core.Project} relational expression in Solr.
@@ -57,12 +55,10 @@ class SolrProject extends Project implements SolrRel {
     implementor.visitChild(0, getInput());
     final SolrRules.RexToSolrTranslator translator = new SolrRules.RexToSolrTranslator(
         (JavaTypeFactory) getCluster().getTypeFactory(), SolrRules.solrFieldNames(getInput().getRowType()));
-    final Map<String, String> fieldMappings = new HashMap<>();
     for (Pair<RexNode, String> pair : getNamedProjects()) {
       final String name = pair.right;
       final String expr = pair.left.accept(translator);
-      fieldMappings.put(name, expr);
+      implementor.addFieldMapping(name, expr);
     }
-    implementor.addFieldMappings(fieldMappings);
   }
 }

@@ -19,14 +19,19 @@ package org.apache.solr.handler.sql;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /** Enumerator that reads from a Solr collection. */
 class SolrEnumerator implements Enumerator<Object> {
+  private static final Logger logger = LoggerFactory.getLogger(SolrEnumerator.class);
+
   private final TupleStream tupleStream;
-  private final List<String> fields;
+  private final List<Map.Entry<String, Class>> fields;
   private Tuple current;
 
   /** Creates a SolrEnumerator.
@@ -34,7 +39,7 @@ class SolrEnumerator implements Enumerator<Object> {
    * @param tupleStream Solr TupleStream
    * @param fields Fields to get from each Tuple
    */
-  SolrEnumerator(TupleStream tupleStream, List<String> fields) {
+  SolrEnumerator(TupleStream tupleStream, List<Map.Entry<String, Class>> fields) {
     this.tupleStream = tupleStream;
     try {
       this.tupleStream.open();
@@ -51,16 +56,52 @@ class SolrEnumerator implements Enumerator<Object> {
    */
   public Object current() {
     if (fields.size() == 1) {
-      return current.get(fields.get(0));
+      return this.getter(current, fields.get(0));
     } else {
       // Build an array with all fields in this row
       Object[] row = new Object[fields.size()];
       for (int i = 0; i < fields.size(); i++) {
-        row[i] = current.get(fields.get(i));
+        row[i] = this.getter(current, fields.get(i));
       }
 
       return row;
     }
+  }
+
+  private Object getter(Tuple tuple, Map.Entry<String, Class> field) {
+    Object val = tuple.get(field.getKey());
+    Class clazz = field.getValue();
+
+    if(clazz.equals(Double.class)) {
+      return val == null ? 0D : val;
+    }
+
+    if(clazz.equals(Long.class)) {
+      if(val == null) {
+        return 0L;
+      }
+      if(val instanceof Double) {
+        return this.getRealVal(val);
+      }
+      return val;
+    }
+
+    return val;
+  }
+
+  private Object getRealVal(Object val) {
+    // Check if Double is really a Long
+    if(val instanceof Double) {
+      Double doubleVal = (double) val;
+      //make sure that double has no decimals and fits within Long
+      if(doubleVal % 1 == 0 && doubleVal >= Long.MIN_VALUE && doubleVal <= Long.MAX_VALUE) {
+        return doubleVal.longValue();
+      }
+      return doubleVal;
+    }
+
+    // Wasn't a double so just return original Object
+    return val;
   }
 
   public boolean moveNext() {
@@ -73,7 +114,7 @@ class SolrEnumerator implements Enumerator<Object> {
         return true;
       }
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.error("IOException", e);
       return false;
     }
   }

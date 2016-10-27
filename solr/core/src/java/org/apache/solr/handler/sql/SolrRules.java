@@ -65,7 +65,7 @@ class SolrRules {
           public int size() {
             return rowType.getFieldCount();
           }
-        });
+        }, true);
   }
 
   /** Translator from {@link RexNode} to strings in Solr's expression language. */
@@ -127,9 +127,11 @@ class SolrRules {
 
     abstract public RelNode convert(RelNode rel);
 
+    /**
+     * @see ConverterRule
+     */
     @Override
     public void onMatch(RelOptRuleCall call) {
-      /** @see ConverterRule */
       RelNode rel = call.rel(0);
       if (rel.getTraitSet().contains(Convention.NONE)) {
         final RelNode converted = convert(rel);
@@ -218,10 +220,14 @@ class SolrRules {
    * Rule to convert an {@link LogicalAggregate} to an {@link SolrAggregate}.
    */
   private static class SolrAggregateRule extends SolrConverterRule {
+    private static final Predicate<RelNode> AGGREGATE_PREDICTE = relNode ->
+        Aggregate.IS_SIMPLE.apply(((LogicalAggregate)relNode));// &&
+//        !((LogicalAggregate)relNode).containsDistinctCall();
+
     private static final RelOptRule AGGREGATE_RULE = new SolrAggregateRule();
 
     private SolrAggregateRule() {
-      super(LogicalAggregate.class, relNode -> Aggregate.IS_SIMPLE.apply(((LogicalAggregate)relNode)), "SolrAggregateRule");
+      super(LogicalAggregate.class, AGGREGATE_PREDICTE, "SolrAggregateRule");
     }
 
      public RelNode convert(RelNode rel) {
