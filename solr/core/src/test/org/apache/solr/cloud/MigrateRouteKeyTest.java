@@ -51,6 +51,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
     if (usually()) {
       CollectionAdminRequest.setClusterProperty("legacyCloud", "false").process(cluster.getSolrClient());
+      log.info("Using legacyCloud=false for cluster");
     }
   }
 
