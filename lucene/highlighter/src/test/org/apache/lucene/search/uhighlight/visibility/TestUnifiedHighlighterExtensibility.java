@@ -20,13 +20,16 @@ package org.apache.lucene.search.uhighlight.visibility;
 import java.io.IOException;
 import java.text.BreakIterator;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.SortedSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -41,11 +44,12 @@ import org.apache.lucene.search.uhighlight.PassageScorer;
 import org.apache.lucene.search.uhighlight.PhraseHelper;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.junit.Test;
 
-public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
+import static org.junit.Assert.assertEquals;
+
+public class TestUnifiedHighlighterExtensibility {
 
   /**
    * This test is for maintaining the extensibility of the FieldOffsetStrategy
@@ -68,6 +72,13 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
         return Collections.emptyList();
       }
 
+
+      @Override
+      protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader leafReader, int doc) throws IOException {
+        return super.createOffsetsEnumsFromReader(leafReader, doc);
+      }
+
+
     };
     assertEquals(offsetSource, strategy.getOffsetSource());
   }
@@ -79,7 +90,7 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
   @Test
   public void testUnifiedHighlighterExtensibility() {
     final int maxLength = 1000;
-    UnifiedHighlighter uh = new UnifiedHighlighter(null, new MockAnalyzer(random())){
+    UnifiedHighlighter uh = new UnifiedHighlighter(null, new MockAnalyzer(new Random())){
 
       @Override
       protected Map<String, Object[]> highlightFieldsAsObjects(String[] fieldsIn, Query query, int[] docIdsIn, int[] maxPassagesIn) throws IOException {
@@ -142,8 +153,8 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
       }
 
       @Override
-      protected FieldOffsetStrategy getOffsetStrategy(String field, Query query, SortedSet<Term> allTerms) {
-        return super.getOffsetStrategy(field, query, allTerms);
+      protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, String field, BytesRef[] terms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, EnumSet<HighlightFlag> highlightFlags) {
+        return super.getOffsetStrategy(offsetSource, field, terms, phraseHelper, automata, highlightFlags);
       }
 
       @Override

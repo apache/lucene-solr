@@ -770,7 +770,40 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     ir.close();
   }
 
-  public void testTokenStreamIsClosed() throws IOException {
+  public void testWithMaxLenAndMultipleWildcardMatches() throws IOException {
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
+
+    Field body = new Field("body", "", fieldType);
+    Document doc = new Document();
+    doc.add(body);
+
+    //tests interleaving of multiple wildcard matches with the CompositePostingsEnum
+    //In this case the CompositePostingsEnum will have an underlying PostingsEnum that jumps form pos 1 to 9 for bravo
+    //and a second with position 2 for Bravado
+    body.setStringValue("Alpha Bravo Bravado foo foo foo. Foo foo Alpha Bravo");
+    iw.addDocument(doc);
+
+    IndexReader ir = iw.getReader();
+    iw.close();
+
+    IndexSearcher searcher = newSearcher(ir);
+    UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer);
+    highlighter.setMaxLength(32);//a little past first sentence
+
+    BooleanQuery query = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("body", "alpha")), BooleanClause.Occur.MUST)
+        .add(new PrefixQuery(new Term("body", "bra")), BooleanClause.Occur.MUST)
+        .build();
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+    String snippets[] = highlighter.highlight("body", query, topDocs, 2);//ask for 2 but we'll only get 1
+    assertArrayEquals(
+        new String[]{"<b>Alpha</b> <b>Bravo</b> <b>Bravado</b> foo foo foo."}, snippets
+    );
+
+    ir.close();
+  }
+
+  public void testTokenStreamIsClosed() throws Exception {
     // note: test is a derivative of testWithMaxLen()
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
 
@@ -825,8 +858,8 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
       if (fieldType == UHTestHelper.reanalysisType) {
         fail("Expecting EXPECTED IOException");
       }
-    } catch (IOException e) {
-      if (!e.getMessage().equals("EXPECTED")) {
+    } catch (Exception e) {
+      if (!e.getMessage().contains("EXPECTED")) {
         throw e;
       }
     }
