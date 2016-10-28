@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.AfterClass;
 import org.junit.Before;
 
@@ -174,7 +175,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   /** The cluster */
   protected static MiniSolrCloudCluster cluster;
 
-  protected SolrZkClient zkClient() {
+  protected static SolrZkClient zkClient() {
+    ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
+    if (reader == null)
+      cluster.getSolrClient().connect();
     return cluster.getSolrClient().getZkStateReader().getZkClient();
   }
 

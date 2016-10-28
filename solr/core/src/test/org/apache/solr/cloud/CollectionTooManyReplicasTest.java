@@ -16,186 +16,153 @@
  */
 package org.apache.solr.cloud;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 @Slow
-public class CollectionTooManyReplicasTest extends AbstractFullDistribZkTestBase {
+public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
 
-  public CollectionTooManyReplicasTest() {
-    sliceCount = 1;
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(3)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
+  }
+
+  @Before
+  public void deleteCollections() throws Exception {
+    cluster.deleteAllCollections();
   }
 
   @Test
-  @ShardsFixed(num = 1)
   public void testAddTooManyReplicas() throws Exception {
-    String collectionName = "TooManyReplicasInSeveralFlavors";
-    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create()
-        .setCollectionName(collectionName)
-        .setNumShards(2)
-        .setReplicationFactor(1)
-        .setMaxShardsPerNode(2)
-        .setStateFormat(2);
+    final String collectionName = "TooManyReplicasInSeveralFlavors";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
+        .setMaxShardsPerNode(1)
+        .process(cluster.getSolrClient());
 
-    CollectionAdminResponse response = create.process(cloudClient);
-    assertEquals(0, response.getStatus());
-    assertTrue(response.isSuccess());
-    // Now I have the fixed Jetty plus the control instnace, I have two replicas, one for each shard
+    // I have two replicas, one for each shard
 
     // Curiously, I should be able to add a bunch of replicas if I specify the node, even more than maxShardsPerNode
     // Just get the first node any way we can.
     // Get a node to use for the "node" parameter.
-
     String nodeName = getAllNodeNames(collectionName).get(0);
+
     // Add a replica using the "node" parameter (no "too many replicas check")
     // this node should have 2 replicas on it
-    CollectionAdminRequest.AddReplica addReplicaNode = new CollectionAdminRequest.AddReplica()
-        .setCollectionName(collectionName)
-        .setShardName("shard1")
-        .setNode(nodeName);
-    response = addReplicaNode.process(cloudClient);
-    assertEquals(0, response.getStatus());
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+        .setNode(nodeName)
+        .process(cluster.getSolrClient());
 
     // Three replicas so far, should be able to create another one "normally"
-    CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica()
-        .setCollectionName(collectionName)
-        .setShardName("shard1");
-
-    response = addReplica.process(cloudClient);
-    assertEquals(0, response.getStatus());
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+        .process(cluster.getSolrClient());
 
     // This one should fail though, no "node" parameter specified
-    try {
-      addReplica.process(cloudClient);
-      fail("Should have thrown an error because the nodes are full");
-    } catch (HttpSolrClient.RemoteSolrException se) {
-      assertTrue("Should have gotten the right error message back",
-          se.getMessage().contains("given the current number of live nodes and a maxShardsPerNode of"));
-    }
+    Exception e = expectThrows(Exception.class, () -> {
+      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+          .process(cluster.getSolrClient());
+    });
+
+    assertTrue("Should have gotten the right error message back",
+          e.getMessage().contains("given the current number of live nodes and a maxShardsPerNode of"));
+
 
     // Oddly, we should succeed next just because setting property.name will not check for nodes being "full up"
-    Properties props = new Properties();
-    props.setProperty("name", "bogus2");
-    addReplicaNode.setProperties(props);
-    response = addReplicaNode.process(cloudClient);
-    assertEquals(0, response.getStatus());
+    // TODO: Isn't this a bug?
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+        .withProperty("name", "bogus2")
+        .setNode(nodeName)
+        .process(cluster.getSolrClient());
 
-    ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
-    zkStateReader.forceUpdateCollection(collectionName);
-    Slice slice = zkStateReader.getClusterState().getSlicesMap(collectionName).get("shard1");
-
-    Replica rep = null;
-    for (Replica rep1 : slice.getReplicas()) { // Silly compiler
-      if (rep1.get("core").equals("bogus2")) {
-        rep = rep1;
-        break;
-      }
-    }
-    assertNotNull("Should have found a replica named 'bogus2'", rep);
-    assertEquals("Replica should have been put on correct core", nodeName, rep.getNodeName());
+    DocCollection collectionState = getCollectionState(collectionName);
+    Slice slice = collectionState.getSlice("shard1");
+    Replica replica = getRandomReplica(slice, r -> r.getCoreName().equals("bogus2"));
+    assertNotNull("Should have found a replica named 'bogus2'", replica);
+    assertEquals("Replica should have been put on correct core", nodeName, replica.getNodeName());
 
     // Shard1 should have 4 replicas
     assertEquals("There should be 4 replicas for shard 1", 4, slice.getReplicas().size());
 
-    // And let's fail one more time because to insure that the math doesn't do weird stuff it we have more replicas
+    // And let's fail one more time because to ensure that the math doesn't do weird stuff it we have more replicas
     // than simple calcs would indicate.
-    try {
-      addReplica.process(cloudClient);
-      fail("Should have thrown an error because the nodes are full");
-    } catch (HttpSolrClient.RemoteSolrException se) {
-      assertTrue("Should have gotten the right error message back",
-          se.getMessage().contains("given the current number of live nodes and a maxShardsPerNode of"));
-    }
+    Exception e2 = expectThrows(Exception.class, () -> {
+      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+          .process(cluster.getSolrClient());
+    });
+
+    assertTrue("Should have gotten the right error message back",
+        e2.getMessage().contains("given the current number of live nodes and a maxShardsPerNode of"));
+
+    // wait for recoveries to finish, for a clean shutdown - see SOLR-9645
+    waitForState("Expected to see all replicas active", collectionName, (n, c) -> {
+      for (Replica r : c.getReplicas()) {
+        if (r.getState() != Replica.State.ACTIVE)
+          return false;
+      }
+      return true;
+    });
   }
 
   @Test
-  @ShardsFixed(num = 2)
   public void testAddShard() throws Exception {
+
     String collectionName = "TooManyReplicasWhenAddingShards";
-    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create()
-        .setCollectionName(collectionName)
-        .setReplicationFactor(2)
+    CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardstart", 2)
         .setMaxShardsPerNode(2)
-        .setStateFormat(2)
-        .setRouterName("implicit")
-        .setShards("shardstart");
+        .process(cluster.getSolrClient());
 
-    NamedList<Object> request = create.process(cloudClient).getResponse();
-
-    assertTrue("Could not create the collection", request.get("success") != null);
     // We have two nodes, maxShardsPerNode is set to 2. Therefore, we should be able to add 2 shards each with
     // two replicas, but fail on the third.
-
-    CollectionAdminRequest.CreateShard createShard = new CollectionAdminRequest.CreateShard()
-        .setCollectionName(collectionName)
-        .setShardName("shard1");
-    CollectionAdminResponse resp = createShard.process(cloudClient);
-    assertEquals(0, resp.getStatus());
+    CollectionAdminRequest.createShard(collectionName, "shard1")
+        .process(cluster.getSolrClient());
 
     // Now we should have one replica on each Jetty, add another to reach maxShardsPerNode
-
-    createShard = new CollectionAdminRequest.CreateShard()
-        .setCollectionName(collectionName)
-        .setShardName("shard2");
-    resp = createShard.process(cloudClient);
-    assertEquals(0, resp.getStatus());
-
+    CollectionAdminRequest.createShard(collectionName, "shard2")
+        .process(cluster.getSolrClient());
 
     // Now fail to add the third as it should exceed maxShardsPerNode
-    createShard = new CollectionAdminRequest.CreateShard()
-        .setCollectionName(collectionName)
-        .setShardName("shard3");
-    try {
-      createShard.process(cloudClient);
-      fail("Should have exceeded the max number of replicas allowed");
-    } catch (HttpSolrClient.RemoteSolrException se) {
-      assertTrue("Should have gotten the right error message back",
-          se.getMessage().contains("given the current number of live nodes and a maxShardsPerNode of"));
-    }
+    Exception e = expectThrows(Exception.class, () -> {
+      CollectionAdminRequest.createShard(collectionName, "shard3")
+          .process(cluster.getSolrClient());
+    });
+    assertTrue("Should have gotten the right error message back",
+        e.getMessage().contains("given the current number of live nodes and a maxShardsPerNode of"));
 
     // Hmmm, providing a nodeset also overrides the checks for max replicas, so prove it.
     List<String> nodes = getAllNodeNames(collectionName);
 
-    createShard = new CollectionAdminRequest.CreateShard()
-        .setCollectionName(collectionName)
-        .setShardName("shard4")
-        .setNodeSet(StringUtils.join(nodes, ","));
-    resp = createShard.process(cloudClient);
-    assertEquals(0, resp.getStatus());
+    CollectionAdminRequest.createShard(collectionName, "shard4")
+        .setNodeSet(StringUtils.join(nodes, ","))
+        .process(cluster.getSolrClient());
 
     // And just for yucks, insure we fail the "regular" one again.
-    createShard = new CollectionAdminRequest.CreateShard()
-        .setCollectionName(collectionName)
-        .setShardName("shard5");
-    try {
-      createShard.process(cloudClient);
-      fail("Should have exceeded the max number of replicas allowed");
-    } catch (HttpSolrClient.RemoteSolrException se) {
-      assertTrue("Should have gotten the right error message back",
-          se.getMessage().contains("given the current number of live nodes and a maxShardsPerNode of"));
-    }
+    Exception e2 = expectThrows(Exception.class, () -> {
+      CollectionAdminRequest.createShard(collectionName, "shard5")
+          .process(cluster.getSolrClient());
+    });
+    assertTrue("Should have gotten the right error message back",
+        e2.getMessage().contains("given the current number of live nodes and a maxShardsPerNode of"));
 
     // And finally, insure that there are all the replcias we expect. We should have shards 1, 2 and 4 and each
     // should have exactly two replicas
-    ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
-    zkStateReader.forceUpdateCollection(collectionName);
-    Map<String, Slice> slices = zkStateReader.getClusterState().getSlicesMap(collectionName);
+    waitForState("Expected shards shardstart, 1, 2 and 4, each with two active replicas", collectionName, (n, c) -> {
+      return DocCollection.isFullyActive(n, c, 4, 2);
+    });
+    Map<String, Slice> slices = getCollectionState(collectionName).getSlicesMap();
     assertEquals("There should be exaclty four slices", slices.size(), 4);
     assertNotNull("shardstart should exist", slices.get("shardstart"));
     assertNotNull("shard1 should exist", slices.get("shard1"));
@@ -209,82 +176,46 @@ public class CollectionTooManyReplicasTest extends AbstractFullDistribZkTestBase
   }
 
   @Test
-  @ShardsFixed(num = 2)
   public void testDownedShards() throws Exception {
     String collectionName = "TooManyReplicasWhenAddingDownedNode";
-    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create()
-        .setCollectionName(collectionName)
-        .setReplicationFactor(1)
+    CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardstart", 1)
         .setMaxShardsPerNode(2)
-        .setStateFormat(2)
-        .setRouterName("implicit")
-        .setShards("shardstart");
+        .process(cluster.getSolrClient());
 
-    NamedList<Object> request = create.process(cloudClient).getResponse();
+    // Shut down a Jetty, I really don't care which
+    JettySolrRunner jetty = cluster.getRandomJetty(random());
+    String deadNode = jetty.getBaseUrl().toString();
+    cluster.stopJettySolrRunner(jetty);
 
-    assertTrue("Could not create the collection", request.get("success") != null);
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
-        AbstractZkTestCase.TIMEOUT)) {
+    try {
 
-      List<String> liveNodes = zkClient.getChildren("/live_nodes", null, true);
-
-      // Shut down a Jetty, I really don't care which
-      JettySolrRunner downJetty = jettys.get(r.nextInt(2));
-
-      downJetty.stop();
-      List<String> liveNodesNow = null;
-      for (int idx = 0; idx < 150; ++idx) {
-        liveNodesNow = zkClient.getChildren("/live_nodes", null, true);
-        if (liveNodesNow.size() != liveNodes.size()) break;
-        Thread.sleep(100);
-      }
-      List<String> deadNodes = new ArrayList<>(liveNodes);
-      assertTrue("Should be a downed node", deadNodes.removeAll(liveNodesNow));
-      liveNodes.removeAll(deadNodes);
-
-      //OK, we've killed a node. Insure we get errors when we ask to create a replica or shard that involves it.
-      // First try adding a  replica to the downed node.
-      CollectionAdminRequest.AddReplica addReplicaNode = new CollectionAdminRequest.AddReplica()
-          .setCollectionName(collectionName)
-          .setShardName("shardstart")
-          .setNode(deadNodes.get(0));
-
-      try {
-        addReplicaNode.process(cloudClient);
-        fail("Should have gotten an exception");
-      } catch (HttpSolrClient.RemoteSolrException se) {
-        assertTrue("Should have gotten a message about shard not ",
-            se.getMessage().contains("At least one of the node(s) specified are not currently active, no action taken."));
-      }
+      // Adding a replica on a dead node should fail
+      Exception e1 = expectThrows(Exception.class, () -> {
+        CollectionAdminRequest.addReplicaToShard(collectionName, "shardstart")
+            .setNode(deadNode)
+            .process(cluster.getSolrClient());
+      });
+      assertTrue("Should have gotten a message about shard not ",
+          e1.getMessage().contains("At least one of the node(s) specified are not currently active, no action taken."));
 
       // Should also die if we just add a shard
-      CollectionAdminRequest.CreateShard createShard = new CollectionAdminRequest.CreateShard()
-          .setCollectionName(collectionName)
-          .setShardName("shard1")
-          .setNodeSet(deadNodes.get(0));
-      try {
-        createShard.process(cloudClient);
-        fail("Should have gotten an exception");
-      } catch (HttpSolrClient.RemoteSolrException se) {
-        assertTrue("Should have gotten a message about shard not ",
-            se.getMessage().contains("At least one of the node(s) specified are not currently active, no action taken."));
-      }
-      //downJetty.start();
+      Exception e2 = expectThrows(Exception.class, () -> {
+        CollectionAdminRequest.createShard(collectionName, "shard1")
+            .setNodeSet(deadNode)
+            .process(cluster.getSolrClient());
+      });
+
+      assertTrue("Should have gotten a message about shard not ",
+          e2.getMessage().contains("At least one of the node(s) specified are not currently active, no action taken."));
+    }
+    finally {
+      cluster.startJettySolrRunner(jetty);
     }
   }
 
   private List<String> getAllNodeNames(String collectionName) throws KeeperException, InterruptedException {
-    ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
-    zkStateReader.forceUpdateCollection(collectionName);
-    Slice slice = zkStateReader.getClusterState().getSlicesMap(collectionName).get("shard1");
-
-    List<String> nodes = new ArrayList<>();
-    for (Replica rep : slice.getReplicas()) {
-      nodes.add(rep.getNodeName());
-    }
-
-    assertTrue("Should have some nodes!", nodes.size() > 0);
-    return nodes;
+    DocCollection state = getCollectionState(collectionName);
+    return state.getReplicas().stream().map(Replica::getNodeName).distinct().collect(Collectors.toList());
   }
 
 }
