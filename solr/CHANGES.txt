@@ -63,6 +63,28 @@ Optimizations
   creation of a Lucene FieldType every time a field is indexed. (John Call, yonik) 
 
 
+==================  6.4.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.12.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.8.v20160314
+
+Detailed Change List
+----------------------
+
+Other Changes
+----------------------
+
+* SOLR-9621: Remove several Guava & Apache Commons calls in favor of java 8 alternatives.
+  (Michael Braun via David Smiley)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
