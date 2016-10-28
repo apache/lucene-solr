@@ -382,6 +382,10 @@ Other Changes
 
 * SOLR-9533: Reload core config when a core is reloaded (Gethin James, Joel Bernstein)
 
+* SOLR-9371: Fix bin/solr calculations for start/stop wait time and RMI_PORT.
+  (Shawn Heisey via Erick Erickson)
+
+
 ==================  6.2.1 ==================
 
 Bug Fixes
