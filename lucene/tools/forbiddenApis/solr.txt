@@ -34,3 +34,23 @@ java.util.logging.**
 
 @defaultMessage Use RTimer/TimeOut/System.nanoTime for time comparisons, and `new Date()` output/debugging/stats of timestamps. If for some miscellaneous reason, you absolutely need to use this, use a SuppressForbidden.
 java.lang.System#currentTimeMillis()
+
+@defaultMessage Use corresponding Java 8 functional/streaming interfaces
+com.google.common.base.Function
+com.google.common.base.Joiner
+com.google.common.base.Predicate
+com.google.common.base.Supplier
+
+@defaultMessage Use java.nio.charset.StandardCharsets instead
+com.google.common.base.Charsets
+org.apache.commons.codec.Charsets
+
+@defaultMessage Use methods in java.util.Objects instead
+com.google.common.base.Objects#equal(java.lang.Object,java.lang.Object)
+com.google.common.base.Objects#hashCode(java.lang.Object[])
+com.google.common.base.Preconditions#checkNotNull(java.lang.Object)
+com.google.common.base.Preconditions#checkNotNull(java.lang.Object,java.lang.Object)
+
+@defaultMessage Use methods in java.util.Comparator instead
+com.google.common.collect.Ordering
+

@@ -21,11 +21,10 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.google.common.base.Preconditions;
 
 class OldBackupDirectory implements Comparable<OldBackupDirectory> {
   private static final Pattern dirNamePattern = Pattern.compile("^snapshot[.](.*)$");
@@ -35,8 +34,8 @@ class OldBackupDirectory implements Comparable<OldBackupDirectory> {
   private Optional<Date> timestamp = Optional.empty();
 
   public OldBackupDirectory(URI basePath, String dirName) {
-    this.dirName = Preconditions.checkNotNull(dirName);
-    this.basePath = Preconditions.checkNotNull(basePath);
+    this.dirName = Objects.requireNonNull(dirName);
+    this.basePath = Objects.requireNonNull(basePath);
     Matcher m = dirNamePattern.matcher(dirName);
     if (m.find()) {
       try {

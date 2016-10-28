@@ -25,6 +25,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -52,7 +53,6 @@ import org.kitesdk.morphline.base.Notifications;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.Beta;
-import com.google.common.base.Joiner;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
@@ -109,7 +109,8 @@ public final class MorphlineMapRunner {
       for (Map.Entry<String,String> entry : configuration) {
         map.put(entry.getKey(), entry.getValue());
       }
-      LOG.trace("Configuration:\n{}", Joiner.on("\n").join(map.entrySet()));
+      LOG.trace("Configuration:\n" +
+          map.entrySet().stream().map(Object::toString).collect(Collectors.joining("\n")));
     }
     
     FaultTolerance faultTolerance = new FaultTolerance(

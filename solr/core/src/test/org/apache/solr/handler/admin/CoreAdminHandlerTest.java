@@ -17,12 +17,12 @@
 package org.apache.solr.handler.admin;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -250,7 +250,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     solrHomeDirectory.mkdirs();
     copySolrHomeToTemp(solrHomeDirectory, "corex");
     File corex = new File(solrHomeDirectory, "corex");
-    FileUtils.write(new File(corex, "core.properties"), "", Charsets.UTF_8.toString());
+    FileUtils.write(new File(corex, "core.properties"), "", StandardCharsets.UTF_8);
     JettySolrRunner runner = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), buildJettyConfig("/solr"));
     runner.start();
 
