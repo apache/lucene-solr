@@ -119,6 +119,9 @@ else
   JAVA=java
 fi
 
+if [ -z "$SOLR_STOP_WAIT" ]; then
+  SOLR_STOP_WAIT=180
+fi
 # test that Java exists, is executable and correct version
 JAVA_VER=$("$JAVA" -version 2>&1)
 if [[ $? -ne 0 ]] ; then
@@ -231,7 +234,7 @@ function print_usage() {
     echo ""
     echo "  -p <port>     Specify the port to start the Solr HTTP listener on; default is 8983"
     echo "                  The specified port (SOLR_PORT) will also be used to determine the stop port"
-    echo "                  STOP_PORT=(\$SOLR_PORT-1000) and JMX RMI listen port RMI_PORT=(1\$SOLR_PORT). "
+    echo "                  STOP_PORT=(\$SOLR_PORT-1000) and JMX RMI listen port RMI_PORT=(\$SOLR_PORT+10000). "
     echo "                  For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985"
     echo ""
     echo "  -d <dir>      Specify the Solr server directory; defaults to server"
@@ -575,9 +578,24 @@ function stop_solr() {
   SOLR_PID="$4"
 
   if [ "$SOLR_PID" != "" ]; then
-    echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting 5 seconds to allow Jetty process $SOLR_PID to stop gracefully."
+    echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting up to $SOLR_STOP_WAIT seconds to allow Jetty process $SOLR_PID to stop gracefully."
     "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS -jar "$DIR/start.jar" "STOP.PORT=$STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
-    (sleep 5) &
+      (loops=0
+      while true
+      do
+        CHECK_PID=`ps auxww | awk '{print $2}' | grep -w $SOLR_PID | sort -r | tr -d ' '`
+        if [ "$CHECK_PID" != "" ]; then
+          slept=$((loops * 2))
+          if [ $slept -lt $SOLR_STOP_WAIT ]; then
+            sleep 2
+            loops=$[$loops+1]
+          else
+            exit # subshell!
+          fi
+        else
+          exit # subshell!
+        fi
+      done) &
     spinner $!
     rm -f "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
   else
@@ -1459,7 +1477,11 @@ fi
 if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then
 
   if [ -z "$RMI_PORT" ]; then
-    RMI_PORT="1$SOLR_PORT"
+    RMI_PORT=`expr $SOLR_PORT + 10000`
+    if [ $RMI_PORT -gt 65535 ]; then
+      echo -e "\nRMI_PORT is $RMI_PORT, which is invalid!\n"
+      exit 1
+    fi
   fi
 
   REMOTE_JMX_OPTS=('-Dcom.sun.management.jmxremote' \
@@ -1620,18 +1642,19 @@ function launch_solr() {
 
     # no lsof on cygwin though
     if hash lsof 2>/dev/null ; then  # hash returns true if lsof is on the path
-      echo -n "Waiting up to 30 seconds to see Solr running on port $SOLR_PORT"
+      echo -n "Waiting up to $SOLR_STOP_WAIT seconds to see Solr running on port $SOLR_PORT"
       # Launch in a subshell to show the spinner
       (loops=0
       while true
       do
         running=`lsof -PniTCP:$SOLR_PORT -sTCP:LISTEN`
         if [ -z "$running" ]; then
-          if [ $loops -lt 6 ]; then
-            sleep 5
+	  slept=$((loops * 2))
+          if [ $slept -lt $SOLR_STOP_WAIT ]; then
+            sleep 2
             loops=$[$loops+1]
           else
-            echo -e "Still not seeing Solr listening on $SOLR_PORT after 30 seconds!"
+            echo -e "Still not seeing Solr listening on $SOLR_PORT after $SOLR_STOP_WAIT seconds!"
             tail -30 "$SOLR_LOGS_DIR/solr.log"
             exit # subshell!
           fi

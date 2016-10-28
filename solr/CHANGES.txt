@@ -170,6 +170,9 @@ New Features
 
 * SOLR-9559: Add ExecutorStream to execute stored Streaming Expressions (Joel Bernstein)
 
+* SOLR-1085: Add support for MoreLikeThis queries and responses in SolrJ client.
+  (Maurice Jumelet, Bill Mitchell, Cao Manh Dat via shalin)
+
 Bug Fixes
 ----------------------
 
@@ -378,6 +381,10 @@ Other Changes
   See SOLR-5243 for the related bug. (Cao Manh Dat via shalin)
 
 * SOLR-9533: Reload core config when a core is reloaded (Gethin James, Joel Bernstein)
+
+* SOLR-9371: Fix bin/solr calculations for start/stop wait time and RMI_PORT.
+  (Shawn Heisey via Erick Erickson)
+
 
 ==================  6.2.1 ==================
 
