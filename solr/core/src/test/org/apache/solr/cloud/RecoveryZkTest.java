@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 @Slow
 public class RecoveryZkTest extends SolrCloudTestCase {
 
-  private static Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -140,7 +140,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     }
     for (int j = 1; j < replicas.size(); j++) {
       if (numCounts[j] != numCounts[j - 1])
-        fail("Mismatch in counts between replicas");  // nocommit improve this!
+        fail("Mismatch in counts between replicas");  // TODO improve this!
       if (numCounts[j] == 0 && expectDocs)
         fail("Expected docs on shard " + shard.getName() + " but found none");
     }

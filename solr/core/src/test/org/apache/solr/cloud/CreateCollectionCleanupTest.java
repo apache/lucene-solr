@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import java.util.ArrayList;
 import java.util.Properties;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
