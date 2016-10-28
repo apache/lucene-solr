@@ -21,6 +21,12 @@
 # affecting other Java applications on your server/workstation.
 #SOLR_JAVA_HOME=""
 
+# This controls the number of seconds that the solr script will wait for
+# Solr to stop gracefully or Solr to start.  If the graceful stop fails,
+# the script will forcibly stop Solr.  If the start fails, the script will
+# give up waiting and display the last few lines of the logfile.
+#SOLR_STOP_WAIT="180"
+
 # Increase Java Heap as needed to support your indexing / query needs
 #SOLR_HEAP="512m"
 
