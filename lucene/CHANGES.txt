@@ -107,6 +107,9 @@ Bug Fixes
   allTermsRequired is false and context filters are specified (Mike
   McCandless)
 
+* LUCENE-7429: AnalyzerWrapper can now modify the normalization chain too and
+  DelegatingAnalyzerWrapper does the right thing automatically. (Adrien Grand)
+
 Improvements
 
 * LUCENE-7439: FuzzyQuery now matches all terms within the specified

@@ -223,6 +223,8 @@
   <!-- points to the root document of a block of nested documents -->
   <field name="_root_" type="string" indexed="true" stored="true"/>
 
+  <field name="_route_" type="string" indexed="true" stored="true" multiValued="false"/>
+
   <field name="multi_int_with_docvals" type="tint" multiValued="true" docValues="true" indexed="false"/>
 
   <dynamicField name="*_coordinate" type="tdouble" indexed="true" stored="false"/>

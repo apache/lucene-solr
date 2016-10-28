@@ -27,6 +27,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 
 import com.google.common.base.Preconditions;
@@ -68,8 +69,8 @@ public class BackupManager {
   protected final BackupRepository repository;
 
   public BackupManager(BackupRepository repository, ZkStateReader zkStateReader, String collectionName) {
-    this.repository = Preconditions.checkNotNull(repository);
-    this.zkStateReader = Preconditions.checkNotNull(zkStateReader);
+    this.repository = Objects.requireNonNull(repository);
+    this.zkStateReader = Objects.requireNonNull(zkStateReader);
   }
 
   /**
@@ -88,8 +89,8 @@ public class BackupManager {
    * @throws IOException In case of errors.
    */
   public Properties readBackupProperties(URI backupLoc, String backupId) throws IOException {
-    Preconditions.checkNotNull(backupLoc);
-    Preconditions.checkNotNull(backupId);
+    Objects.requireNonNull(backupLoc);
+    Objects.requireNonNull(backupId);
 
     // Backup location
     URI backupPath = repository.resolve(backupLoc, backupId);
@@ -129,7 +130,7 @@ public class BackupManager {
    * @throws IOException in case of errors.
    */
   public DocCollection readCollectionState(URI backupLoc, String backupId, String collectionName) throws IOException {
-    Preconditions.checkNotNull(collectionName);
+    Objects.requireNonNull(collectionName);
 
     URI zkStateDir = repository.resolve(backupLoc, backupId, ZK_STATE_DIR);
     try (IndexInput is = repository.openInput(zkStateDir, COLLECTION_PROPS_FILE, IOContext.DEFAULT)) {

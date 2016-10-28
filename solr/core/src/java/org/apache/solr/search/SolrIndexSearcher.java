@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import java.util.concurrent.TimeUnit;
@@ -110,8 +111,6 @@ import org.apache.solr.update.SolrIndexConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
-import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 
 /**
@@ -525,12 +524,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Returns a collection of all field names the index reader knows about.
    */
   public Iterable<String> getFieldNames() {
-    return Iterables.transform(fieldInfos, new Function<FieldInfo,String>() {
-      @Override
-      public String apply(FieldInfo fieldInfo) {
-        return fieldInfo.name;
-      }
-    });
+    return Iterables.transform(fieldInfos, fieldInfo -> fieldInfo.name);
   }
 
   public SolrCache<Query,DocSet> getFilterCache() {
@@ -2674,8 +2668,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     private boolean equalsTo(FilterImpl other) {
-      return Objects.equal(this.topFilter, other.topFilter) &&
-             Objects.equal(this.weights, other.weights);
+      return Objects.equals(this.topFilter, other.topFilter) &&
+             Objects.equals(this.weights, other.weights);
     }
 
     @Override

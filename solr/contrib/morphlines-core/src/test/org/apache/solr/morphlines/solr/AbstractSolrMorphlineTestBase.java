@@ -17,7 +17,6 @@
 package org.apache.solr.morphlines.solr;
 
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import com.typesafe.config.Config;
 import org.apache.commons.io.FileUtils;
@@ -108,11 +107,10 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
   }
 
   protected static void myInitCore(String baseDirName) throws Exception {
-    Joiner joiner = Joiner.on(File.separator);
+    String solrHome = RESOURCES_DIR + File.separator + baseDirName;
     initCore(
-        "solrconfig.xml", "schema.xml",
-        joiner.join(RESOURCES_DIR, baseDirName)
-    );    
+        "solrconfig.xml", "schema.xml", solrHome
+    );
   }
   
   @Before

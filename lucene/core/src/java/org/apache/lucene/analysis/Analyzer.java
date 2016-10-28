@@ -238,7 +238,7 @@ public abstract class Analyzer implements Closeable {
         throw new IllegalStateException("Normalization threw an unexpected exeption", e);
       }
 
-      final AttributeFactory attributeFactory = attributeFactory();
+      final AttributeFactory attributeFactory = attributeFactory(fieldName);
       try (TokenStream ts = normalize(fieldName,
           new StringTokenStream(attributeFactory, filteredText, text.length()))) {
         final TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
@@ -286,9 +286,10 @@ public abstract class Analyzer implements Closeable {
 
   /** Return the {@link AttributeFactory} to be used for
    *  {@link #tokenStream analysis} and
-   *  {@link #normalize(String, String) normalization}. The default
-   *  implementation returns {@link TokenStream#DEFAULT_TOKEN_ATTRIBUTE_FACTORY}. */
-  protected AttributeFactory attributeFactory() {
+   *  {@link #normalize(String, String) normalization} on the given
+   *  {@code FieldName}. The default implementation returns
+   *  {@link TokenStream#DEFAULT_TOKEN_ATTRIBUTE_FACTORY}. */
+  protected AttributeFactory attributeFactory(String fieldName) {
     return TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY;
   }
 
