@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
+import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -590,11 +591,11 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
       for (Slice shard : collectionState) {
         for (Replica replica : shard) {
           ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
-          CoreAdminResponse mcr;
+          CoreStatus coreStatus;
           try (HttpSolrClient server = getHttpSolrClient(coreProps.getBaseUrl())) {
-            mcr = CoreAdminRequest.getStatus(coreProps.getCoreName(), server);
+            coreStatus = CoreAdminRequest.getCoreStatus(coreProps.getCoreName(), false, server);
           }
-          long before = mcr.getStartTime(coreProps.getCoreName()).getTime();
+          long before = coreStatus.getCoreStartTime().getTime();
           urlToTime.put(coreProps.getCoreUrl(), before);
         }
       }
