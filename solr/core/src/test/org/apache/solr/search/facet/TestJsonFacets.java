@@ -1416,6 +1416,22 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "}"
     );
 
+    // test filter after block join
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{ " +
+            "pages1:{type:terms, field:v_t, domain:{blockChildren:'type_s:book'}, filter:'*:*' }" +
+            ",pages2:{type:terms, field:v_t, domain:{blockChildren:'type_s:book'}, filter:'-id:3.1' }" +
+            ",books:{type:terms, field:v_t, domain:{blockParent:'type_s:book'}, filter:'*:*' }" +
+            ",books2:{type:terms, field:v_t, domain:{blockParent:'type_s:book'}, filter:'id:1' }" +
+            "}"
+        )
+        , "facets=={ count:10" +
+            ", pages1:{ buckets:[ {val:y,count:4},{val:x,count:3},{val:z,count:3} ] }" +
+            ", pages2:{ buckets:[ {val:y,count:4},{val:z,count:3},{val:x,count:2} ] }" +
+            ", books:{ buckets:[ {val:q,count:3},{val:e,count:2},{val:w,count:2} ] }" +
+            ", books2:{ buckets:[ {val:q,count:1} ] }" +
+            "}"
+    );
 
   }
 
