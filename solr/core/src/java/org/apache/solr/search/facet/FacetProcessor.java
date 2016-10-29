@@ -50,11 +50,13 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   FacetContext fcontext;
   FacetRequestT freq;
 
+  DocSet filter;  // additional filters specified by "filter"  // TODO: do these need to be on the context to support recomputing during multi-select?
   LinkedHashMap<String,SlotAcc> accMap;
   SlotAcc[] accs;
   CountSlotAcc countAcc;
 
-  /** factory method for invoking json facet framework as whole */
+  /** factory method for invoking json facet framework as whole.
+   * Note: this is currently only used from SimpleFacets, not from JSON Facet API itself. */
   public static FacetProcessor<?> createProcessor(SolrQueryRequest req,
                                                   Map<String, Object> params, DocSet docs){
     FacetParser parser = new FacetTopParser(req);
@@ -84,7 +86,38 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   }
 
   public void process() throws IOException {
+    // Check filters... if we do have filters they apply after domain changes.
+    // We still calculate them first because we can use it in a parent->child domain change.
+    handleFilters();
     handleDomainChanges();
+    if (filter != null) {
+      fcontext.base = fcontext.base.intersection( filter );
+    }
+  }
+
+  private void handleFilters() throws IOException {
+    if (freq.filters == null || freq.filters.isEmpty()) return;
+
+    List<Query> qlist = new ArrayList<>(freq.filters.size());
+    // TODO: prevent parsing filters each time!
+    for (Object rawFilter : freq.filters) {
+      Query symbolicFilter;
+      if (rawFilter instanceof String) {
+        QParser parser = null;
+        try {
+          parser = QParser.getParser((String)rawFilter, fcontext.req);
+          symbolicFilter = parser.getQuery();
+        } catch (SyntaxError syntaxError) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
+        }
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Bad query (expected a string):" + rawFilter);
+      }
+
+      qlist.add(symbolicFilter);
+    }
+
+    this.filter = fcontext.searcher.getDocSet(qlist);
   }
 
   private void handleDomainChanges() throws IOException {
