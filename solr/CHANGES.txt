@@ -79,6 +79,13 @@ Jetty 9.3.8.v20160314
 Detailed Change List
 ----------------------
 
+New Features
+----------------------
+* SOLR-9681: FacetModule / JSON Facet API added the ability to add filters directly to
+  any facet command.  The filters are applied after any domain change operations.
+  Example:  { type:terms, field:category, filter:"user:yonik" } 
+  (yonik)
+
 Other Changes
 ----------------------
 

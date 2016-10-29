@@ -1164,6 +1164,27 @@ public class TestJsonFacets extends SolrTestCaseHS {
     );
 
 
+    // test filter
+    client.testJQ(params(p, "q", "*:*", "myfilt","${cat_s}:A"
+        , "json.facet", "{" +
+            "t:{${terms} type:terms, field:${cat_s}, filter:[]}" + // empty filter list
+            ",t_filt:{${terms} type:terms, field:${cat_s}, filter:'${cat_s}:B'}" +
+            ",t_filt2:{${terms} type:terms, field:${cat_s}, filter:'{!query v=$myfilt}'}" +  // test access to qparser and other query parameters
+            ",t_filt3:{${terms} type:terms, field:${cat_s}, filter:['-id:1','-id:2']}" +
+            ",q:{type:query, q:'${cat_s}:B', filter:['-id:5']}" + // also tests a top-level negative filter
+            ",r:{type:range, field:${num_d}, start:-5, end:10, gap:5, filter:'-id:4'}" +
+            "}"
+        )
+        , "facets=={ count:6, " +
+            "t       :{ buckets:[ {val:B, count:3}, {val:A, count:2} ] }" +
+            ",t_filt :{ buckets:[ {val:B, count:3}] } " +
+            ",t_filt2:{ buckets:[ {val:A, count:2}] } " +
+            ",t_filt3:{ buckets:[ {val:B, count:2}, {val:A, count:1}] } " +
+            ",q:{count:2}" +
+            ",r:{buckets:[ {val:-5.0,count:1}, {val:0.0,count:1}, {val:5.0,count:0} ] }" +
+            "}"
+    );
+    
   }
 
   @Test

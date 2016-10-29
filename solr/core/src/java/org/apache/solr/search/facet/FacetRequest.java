@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.facet;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -77,7 +78,7 @@ public abstract class FacetRequest {
 
   protected Map<String,AggValueSource> facetStats;  // per-bucket statistics
   protected Map<String,FacetRequest> subFacets;     // per-bucket sub-facets
-  protected List<String> filters;
+  protected List<Object> filters;
   protected boolean processEmpty;
   protected Domain domain;
 
@@ -374,6 +375,16 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
           getDomain().parents = blockChildren;
         }
 
+      }
+
+      Object filterOrList = m.get("filter");
+      if (filterOrList != null) {
+        if (filterOrList instanceof List) {
+          facet.filters = (List<Object>)filterOrList;
+        } else {
+          facet.filters = new ArrayList<>(1);
+          facet.filters.add(filterOrList);
+        }
       }
 
     }
