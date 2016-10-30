@@ -28,7 +28,6 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -88,14 +87,14 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   public void process() throws IOException {
     // Check filters... if we do have filters they apply after domain changes.
     // We still calculate them first because we can use it in a parent->child domain change.
-    handleFilters();
-    handleDomainChanges();
-    if (filter != null) {
+    evalFilters();
+    boolean appliedFilters = handleDomainChanges();
+    if (filter != null && !appliedFilters) {
       fcontext.base = fcontext.base.intersection( filter );
     }
   }
 
-  private void handleFilters() throws IOException {
+  private void evalFilters() throws IOException {
     if (freq.filters == null || freq.filters.isEmpty()) return;
 
     List<Query> qlist = new ArrayList<>(freq.filters.size());
@@ -120,10 +119,11 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     this.filter = fcontext.searcher.getDocSet(qlist);
   }
 
-  private void handleDomainChanges() throws IOException {
-    if (freq.domain == null) return;
+  private boolean handleDomainChanges() throws IOException {
+    if (freq.domain == null) return false;
     handleFilterExclusions();
-    handleBlockJoin();
+    boolean appliedFilters = handleBlockJoin();
+    return appliedFilters;
   }
 
   private void handleFilterExclusions() throws IOException {
@@ -187,8 +187,10 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     fcontext.base = fcontext.searcher.getDocSet(qlist);
   }
 
-  private void handleBlockJoin() throws IOException {
-    if (!(freq.domain.toChildren || freq.domain.toParent)) return;
+  // returns "true" if filters have already been applied.
+  private boolean handleBlockJoin() throws IOException {
+    boolean appliedFilters = false;
+    if (!(freq.domain.toChildren || freq.domain.toParent)) return appliedFilters;
 
     // TODO: avoid query parsing per-bucket somehow...
     String parentStr = freq.domain.parents;
@@ -205,13 +207,21 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     DocSet result;
 
     if (freq.domain.toChildren) {
-      DocSet filt = fcontext.searcher.getDocSetBits( new MatchAllDocsQuery() );
-      result = BlockJoin.toChildren(input, parents, filt, fcontext.qcontext);
+      // If there are filters on this facet, then use them as acceptDocs when executing toChildren.
+      // We need to remember to not redundantly re-apply these filters after.
+      DocSet acceptDocs = this.filter;
+      if (acceptDocs == null) {
+        acceptDocs = fcontext.searcher.getLiveDocs();
+      } else {
+        appliedFilters = true;
+      }
+      result = BlockJoin.toChildren(input, parents, acceptDocs, fcontext.qcontext);
     } else {
       result = BlockJoin.toParents(input, parents, fcontext.qcontext);
     }
 
     fcontext.base = result;
+    return appliedFilters;
   }
 
   protected void processStats(SimpleOrderedMap<Object> bucket, DocSet docs, int docCount) throws IOException {
