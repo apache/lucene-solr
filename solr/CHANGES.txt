@@ -91,6 +91,11 @@ Optimizations
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
   filters specified by using those filters as acceptDocs. (yonik)
 
+Bug Fixes
+----------------------
+* SOLR-9701: NPE in export handler when "fl" parameter is omitted.
+  (Erick Erickson)
+
 Other Changes
 ----------------------
 
