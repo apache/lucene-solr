@@ -86,6 +86,11 @@ New Features
   Example:  { type:terms, field:category, filter:"user:yonik" } 
   (yonik)
 
+Optimizations
+----------------------
+* SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
+  filters specified by using those filters as acceptDocs. (yonik)
+
 Other Changes
 ----------------------
 
