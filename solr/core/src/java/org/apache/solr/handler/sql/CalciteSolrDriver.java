@@ -47,6 +47,10 @@ public class CalciteSolrDriver extends Driver {
 
   @Override
   public Connection connect(String url, Properties info) throws SQLException {
+    if(!this.acceptsURL(url)) {
+      return null;
+    }
+
     Connection connection = super.connect(url, info);
     CalciteConnection calciteConnection = (CalciteConnection) connection;
     final SchemaPlus rootSchema = calciteConnection.getRootSchema();

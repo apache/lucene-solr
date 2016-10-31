@@ -101,7 +101,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
         throw new Exception("stmt parameter cannot be null");
       }
 
-      String url = "jdbc:calcitesolr:";
+      String url = CalciteSolrDriver.CONNECT_STRING_PREFIX;
 
       Properties properties = new Properties();
       // Add all query parameters
