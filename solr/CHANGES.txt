@@ -279,6 +279,8 @@ Bug Fixes
 
 * SOLR-2094: XPathEntityProcessor should reinitialize the XPathRecordReader instance if
   the 'forEach' or 'xpath' attributes are templates & it is not a root entity (Cao Manh Dat, noble)
+
+* SOLR-9697: zk upconfig broken on windows (Xavier Jmlucjav via janhoy)
  
 Optimizations
 ----------------------

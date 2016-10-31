@@ -1361,7 +1361,6 @@ IF "%1"=="-upconfig" (
   if not "%~1"=="" (
     goto set_zk_src
   )
-  goto zk_usage
 ) ELSE IF "!ZK_DST!"=="" (
   IF "%ZK_OP%"=="cp" (
     goto set_zk_dst
