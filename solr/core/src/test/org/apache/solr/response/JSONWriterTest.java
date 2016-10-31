@@ -18,7 +18,11 @@ package org.apache.solr.response;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -72,7 +76,8 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testJSON() throws IOException {
-    SolrQueryRequest req = req("wt","json","json.nl","arrarr");
+    final String namedListStyle = (random().nextBoolean() ? JSONWriter.JSON_NL_ARROFARR : JSONWriter.JSON_NL_ARROFNVP);
+    SolrQueryRequest req = req("wt","json","json.nl",namedListStyle);
     SolrQueryResponse rsp = new SolrQueryResponse();
     JSONResponseWriter w = new JSONResponseWriter();
 
@@ -87,7 +92,18 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     rsp.add("bytes", "abc".getBytes(StandardCharsets.UTF_8));
 
     w.write(buf, req, rsp);
-    jsonEq("{\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42]],\"byte\":-3,\"short\":-4,\"bytes\":\"YWJj\"}", buf.toString());
+
+    final String expectedNLjson;
+    if (namedListStyle == JSONWriter.JSON_NL_ARROFARR) {
+      expectedNLjson = "\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42]]";
+    } else if (namedListStyle == JSONWriter.JSON_NL_ARROFNVP) {
+      expectedNLjson = "\"nl\":[{\"name\":\"data1\",\"str\":\"he\\u2028llo\\u2029!\"},{\"int\":42}]";
+    } else {
+      expectedNLjson = null;
+      fail("unexpected namedListStyle="+namedListStyle);
+    }
+
+    jsonEq("{"+expectedNLjson+",\"byte\":-3,\"short\":-4,\"bytes\":\"YWJj\"}", buf.toString());
     req.close();
   }
 
@@ -130,6 +146,87 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
     req.close();
   }
+
+  @Test
+  public void testArrnvpWriterOverridesAllWrites() {
+    // List rather than Set because two not-overridden methods could share name but not signature
+    final List<String> methodsExpectedNotOverriden = new ArrayList<>(14);
+    methodsExpectedNotOverriden.add("writeResponse");
+    methodsExpectedNotOverriden.add("writeKey");
+    methodsExpectedNotOverriden.add("writeNamedListAsMapMangled");
+    methodsExpectedNotOverriden.add("writeNamedListAsMapWithDups");
+    methodsExpectedNotOverriden.add("writeNamedListAsArrMap");
+    methodsExpectedNotOverriden.add("writeNamedListAsArrArr");
+    methodsExpectedNotOverriden.add("writeNamedListAsFlat");
+    methodsExpectedNotOverriden.add("writeEndDocumentList");
+    methodsExpectedNotOverriden.add("writeMapOpener");
+    methodsExpectedNotOverriden.add("writeMapSeparator");
+    methodsExpectedNotOverriden.add("writeMapCloser");
+    methodsExpectedNotOverriden.add("writeArrayOpener");
+    methodsExpectedNotOverriden.add("writeArraySeparator");
+    methodsExpectedNotOverriden.add("writeArrayCloser");
+
+    final Class<?> subClass = ArrayOfNamedValuePairJSONWriter.class;
+    final Class<?> superClass = subClass.getSuperclass();
+
+    for (final Method superClassMethod : superClass.getDeclaredMethods()) {
+      final String methodName = superClassMethod.getName();
+      if (!methodName.startsWith("write")) continue;
+
+      final int modifiers = superClassMethod.getModifiers();
+      if (Modifier.isFinal(modifiers)) continue;
+      if (Modifier.isStatic(modifiers)) continue;
+      if (Modifier.isPrivate(modifiers)) continue;
+
+      final boolean expectOverriden = !methodsExpectedNotOverriden.contains(methodName);
+
+      try {
+        final Method subClassMethod = subClass.getDeclaredMethod(
+            superClassMethod.getName(),
+            superClassMethod.getParameterTypes());
+
+        if (expectOverriden) {
+          assertEquals("getReturnType() difference",
+              superClassMethod.getReturnType(),
+              subClassMethod.getReturnType());
+        } else {
+          fail(subClass + " must not override '" + superClassMethod + "'");
+        }
+      } catch (NoSuchMethodException e) {
+        if (expectOverriden) {
+          fail(subClass + " needs to override '" + superClassMethod + "'");
+        } else {
+          assertTrue(methodName+" not found in remaining "+methodsExpectedNotOverriden, methodsExpectedNotOverriden.remove(methodName));
+        }
+      }
+    }
+
+    assertTrue("methodsExpected NotOverriden but NotFound instead: "+methodsExpectedNotOverriden,
+        methodsExpectedNotOverriden.isEmpty());
+  }
+
+  @Test
+  public void testArrnvpWriterLacksMethodsOfItsOwn() {
+    final Class<?> subClass = ArrayOfNamedValuePairJSONWriter.class;
+    final Class<?> superClass = subClass.getSuperclass();
+    // ArrayOfNamedValuePairJSONWriter is a simple sub-class
+    // which should have (almost) no methods of its own
+    for (final Method subClassMethod : subClass.getDeclaredMethods()) {
+      // only own private method of its own
+      if (subClassMethod.getName().equals("ifNeededWriteTypeAsKey")) continue;
+      try {
+        final Method superClassMethod = superClass.getDeclaredMethod(
+            subClassMethod.getName(),
+            subClassMethod.getParameterTypes());
+
+          assertEquals("getReturnType() difference",
+              subClassMethod.getReturnType(),
+              superClassMethod.getReturnType());
+      } catch (NoSuchMethodException e) {
+          fail(subClass + " should not have '" + subClassMethod + "' method of its own");
+      }
+    }
+  }
   
   @Test
   public void testConstantsUnchanged() {
@@ -138,6 +235,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     assertEquals("flat", JSONWriter.JSON_NL_FLAT);
     assertEquals("arrarr", JSONWriter.JSON_NL_ARROFARR);
     assertEquals("arrmap", JSONWriter.JSON_NL_ARROFMAP);
+    assertEquals("arrnvp", JSONWriter.JSON_NL_ARROFNVP);
     assertEquals("json.wrf", JSONWriter.JSON_WRAPPER_FUNCTION);
   }
 
