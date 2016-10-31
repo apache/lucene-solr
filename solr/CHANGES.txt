@@ -86,6 +86,9 @@ New Features
   Example:  { type:terms, field:category, filter:"user:yonik" } 
   (yonik)
 
+* SOLR-9442: Adds Array of NamedValuePair (json.nl=arrnvp) style to JSONResponseWriter.
+  (Jonny Marks, Christine Poerschke)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
