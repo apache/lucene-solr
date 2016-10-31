@@ -208,7 +208,7 @@ goto done
 @echo.
 @echo   -p port       Specify the port to start the Solr HTTP listener on; default is 8983
 @echo.
-@echo   -d dir        Specify the Solr server directory; defaults to example
+@echo   -d dir        Specify the Solr server directory; defaults to server
 @echo.
 @echo   -z zkHost     Zookeeper connection string; only used when running in SolrCloud mode using -c
 @echo                   To launch an embedded Zookeeper instance, don't pass this parameter.
@@ -1361,7 +1361,6 @@ IF "%1"=="-upconfig" (
   if not "%~1"=="" (
     goto set_zk_src
   )
-  goto zk_usage
 ) ELSE IF "!ZK_DST!"=="" (
   IF "%ZK_OP%"=="cp" (
     goto set_zk_dst

@@ -488,6 +488,33 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
         }
       }
 
+      // advanceExact
+      for (int i = 0; i < 2000; ++i) {
+        sparseValues.reset();
+        if (random().nextBoolean() && docIds.length > 0) {
+          sparseValues.advance(docIds[TestUtil.nextInt(random(), 0, docIds.length - 1)]);
+        }
+
+        final int target = TestUtil.nextInt(random(), Math.max(0, sparseValues.docID()), maxDoc - 1);
+        final boolean exists = sparseValues.advanceExact(target);
+        
+        final int index = Arrays.binarySearch(docIds, target);
+        assertEquals(index >= 0, exists);
+        assertEquals(target, sparseValues.docID());
+
+        final boolean exists2 = sparseValues.advanceExact(target);
+        assertEquals(index >= 0, exists2);
+        assertEquals(target, sparseValues.docID());
+
+        final int nextIndex = index >= 0 ? index + 1 : -1 - index;
+        if (nextIndex >= docIds.length) {
+          assertEquals(DocIdSetIterator.NO_MORE_DOCS, sparseValues.nextDoc());
+        } else {
+          assertEquals(docIds[nextIndex], sparseValues.nextDoc());
+        }
+      }
+      
+
       final SparseNumericDocValuesRandomAccessWrapper raWrapper = new SparseNumericDocValuesRandomAccessWrapper(sparseValues, missingValue);
 
       // random-access

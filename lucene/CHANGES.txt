@@ -54,6 +54,9 @@ Other
 
 * LUCENE-7360: Remove Explanation.toHtml() (Alan Woodward)
 
+======================= Lucene 6.4.0 =======================
+(No Changes)
+
 ======================= Lucene 6.3.0 =======================
 
 API Changes
@@ -109,6 +112,10 @@ Bug Fixes
 
 * LUCENE-7429: AnalyzerWrapper can now modify the normalization chain too and
   DelegatingAnalyzerWrapper does the right thing automatically. (Adrien Grand)
+
+* Lucene's check for 32 or 64 bit JVM now works around security
+  manager blocking access to some properties (Aaron Madlon-Kay via
+  Mike McCandless)
 
 Improvements
 

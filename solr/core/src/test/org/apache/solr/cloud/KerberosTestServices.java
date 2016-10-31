@@ -24,9 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
-import com.google.common.base.Preconditions;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 
@@ -193,10 +193,8 @@ public class KerberosTestServices {
 
     public Builder withJaasConfiguration(String clientPrincipal, File clientKeytab,
                                          String serverPrincipal, File serverKeytab) {
-      Preconditions.checkNotNull(clientPrincipal);
-      Preconditions.checkNotNull(clientKeytab);
-      this.clientPrincipal = clientPrincipal;
-      this.clientKeytab = clientKeytab;
+      this.clientPrincipal = Objects.requireNonNull(clientPrincipal);
+      this.clientKeytab = Objects.requireNonNull(clientKeytab);
       this.serverPrincipal = serverPrincipal;
       this.serverKeytab = serverKeytab;
       this.appName = null;
@@ -204,10 +202,8 @@ public class KerberosTestServices {
     }
 
     public Builder withJaasConfiguration(String principal, File keytab, String appName) {
-      Preconditions.checkNotNull(principal);
-      Preconditions.checkNotNull(keytab);
-      this.clientPrincipal = principal;
-      this.clientKeytab = keytab;
+      this.clientPrincipal = Objects.requireNonNull(principal);
+      this.clientKeytab = Objects.requireNonNull(keytab);
       this.serverPrincipal = null;
       this.serverKeytab = null;
       this.appName = appName;

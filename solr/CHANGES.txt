@@ -63,6 +63,48 @@ Optimizations
   creation of a Lucene FieldType every time a field is indexed. (John Call, yonik) 
 
 
+==================  6.4.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.12.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.8.v20160314
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+* SOLR-9681: FacetModule / JSON Facet API added the ability to add filters directly to
+  any facet command.  The filters are applied after any domain change operations.
+  Example:  { type:terms, field:category, filter:"user:yonik" } 
+  (yonik)
+
+* SOLR-9442: Adds Array of NamedValuePair (json.nl=arrnvp) style to JSONResponseWriter.
+  (Jonny Marks, Christine Poerschke)
+
+Optimizations
+----------------------
+* SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
+  filters specified by using those filters as acceptDocs. (yonik)
+
+Bug Fixes
+----------------------
+* SOLR-9701: NPE in export handler when "fl" parameter is omitted.
+  (Erick Erickson)
+
+Other Changes
+----------------------
+
+* SOLR-9621: Remove several Guava & Apache Commons calls in favor of java 8 alternatives.
+  (Michael Braun via David Smiley)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -240,6 +282,8 @@ Bug Fixes
 
 * SOLR-2094: XPathEntityProcessor should reinitialize the XPathRecordReader instance if
   the 'forEach' or 'xpath' attributes are templates & it is not a root entity (Cao Manh Dat, noble)
+
+* SOLR-9697: zk upconfig broken on windows (Xavier Jmlucjav via janhoy)
  
 Optimizations
 ----------------------

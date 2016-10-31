@@ -68,15 +68,17 @@ public final class Constants {
       JVM_MINOR_VERSION = 0;
     }
     boolean is64Bit = false;
-    final String x = System.getProperty("sun.arch.data.model");
-    if (x != null) {
-      is64Bit = x.contains("64");
-    } else {
-      if (OS_ARCH != null && OS_ARCH.contains("64")) {
-        is64Bit = true;
-      } else {
-        is64Bit = false;
+    String datamodel = null;
+    try {
+      datamodel = System.getProperty("sun.arch.data.model");
+      if (datamodel != null) {
+        is64Bit = datamodel.contains("64");
       }
+    } catch (SecurityException ex) {}
+    if (datamodel == null && OS_ARCH != null && OS_ARCH.contains("64")) {
+      is64Bit = true;
+    } else {
+      is64Bit = false;
     }
     JRE_IS_64BIT = is64Bit;
   }

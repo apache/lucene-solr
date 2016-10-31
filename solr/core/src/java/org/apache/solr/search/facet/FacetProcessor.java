@@ -28,7 +28,6 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -50,11 +49,13 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   FacetContext fcontext;
   FacetRequestT freq;
 
+  DocSet filter;  // additional filters specified by "filter"  // TODO: do these need to be on the context to support recomputing during multi-select?
   LinkedHashMap<String,SlotAcc> accMap;
   SlotAcc[] accs;
   CountSlotAcc countAcc;
 
-  /** factory method for invoking json facet framework as whole */
+  /** factory method for invoking json facet framework as whole.
+   * Note: this is currently only used from SimpleFacets, not from JSON Facet API itself. */
   public static FacetProcessor<?> createProcessor(SolrQueryRequest req,
                                                   Map<String, Object> params, DocSet docs){
     FacetParser parser = new FacetTopParser(req);
@@ -84,13 +85,45 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   }
 
   public void process() throws IOException {
-    handleDomainChanges();
+    // Check filters... if we do have filters they apply after domain changes.
+    // We still calculate them first because we can use it in a parent->child domain change.
+    evalFilters();
+    boolean appliedFilters = handleDomainChanges();
+    if (filter != null && !appliedFilters) {
+      fcontext.base = fcontext.base.intersection( filter );
+    }
   }
 
-  private void handleDomainChanges() throws IOException {
-    if (freq.domain == null) return;
+  private void evalFilters() throws IOException {
+    if (freq.filters == null || freq.filters.isEmpty()) return;
+
+    List<Query> qlist = new ArrayList<>(freq.filters.size());
+    // TODO: prevent parsing filters each time!
+    for (Object rawFilter : freq.filters) {
+      Query symbolicFilter;
+      if (rawFilter instanceof String) {
+        QParser parser = null;
+        try {
+          parser = QParser.getParser((String)rawFilter, fcontext.req);
+          symbolicFilter = parser.getQuery();
+        } catch (SyntaxError syntaxError) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
+        }
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Bad query (expected a string):" + rawFilter);
+      }
+
+      qlist.add(symbolicFilter);
+    }
+
+    this.filter = fcontext.searcher.getDocSet(qlist);
+  }
+
+  private boolean handleDomainChanges() throws IOException {
+    if (freq.domain == null) return false;
     handleFilterExclusions();
-    handleBlockJoin();
+    boolean appliedFilters = handleBlockJoin();
+    return appliedFilters;
   }
 
   private void handleFilterExclusions() throws IOException {
@@ -154,8 +187,10 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     fcontext.base = fcontext.searcher.getDocSet(qlist);
   }
 
-  private void handleBlockJoin() throws IOException {
-    if (!(freq.domain.toChildren || freq.domain.toParent)) return;
+  // returns "true" if filters have already been applied.
+  private boolean handleBlockJoin() throws IOException {
+    boolean appliedFilters = false;
+    if (!(freq.domain.toChildren || freq.domain.toParent)) return appliedFilters;
 
     // TODO: avoid query parsing per-bucket somehow...
     String parentStr = freq.domain.parents;
@@ -172,13 +207,21 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     DocSet result;
 
     if (freq.domain.toChildren) {
-      DocSet filt = fcontext.searcher.getDocSetBits( new MatchAllDocsQuery() );
-      result = BlockJoin.toChildren(input, parents, filt, fcontext.qcontext);
+      // If there are filters on this facet, then use them as acceptDocs when executing toChildren.
+      // We need to remember to not redundantly re-apply these filters after.
+      DocSet acceptDocs = this.filter;
+      if (acceptDocs == null) {
+        acceptDocs = fcontext.searcher.getLiveDocs();
+      } else {
+        appliedFilters = true;
+      }
+      result = BlockJoin.toChildren(input, parents, acceptDocs, fcontext.qcontext);
     } else {
       result = BlockJoin.toParents(input, parents, fcontext.qcontext);
     }
 
     fcontext.base = result;
+    return appliedFilters;
   }
 
   protected void processStats(SimpleOrderedMap<Object> bucket, DocSet docs, int docCount) throws IOException {

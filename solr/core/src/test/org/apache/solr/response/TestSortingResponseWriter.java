@@ -170,7 +170,21 @@ public class TestSortingResponseWriter extends SolrTestCaseJ4 {
 
     s =  h.query(req("q", "id:8", "qt", "/export", "fl", "stringdv", "sort", "intdv asc"));
     assertEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"stringdv\":\"chello \\\"world\\\"\"}]}}");
+  }
 
+  @Test
+  public void testExportRequiredParams() throws Exception {
 
+    //Test whether missing required parameters returns expected errors.
+
+    //String s =  h.query(req("q", "id:1", "qt", "/export", "fl", "floatdv,intdv,stringdv,longdv,doubledv", "sort", "intdv asc"));
+    String s;
+    s = h.query(req("qt", "/export"));
+    assertTrue("Should have had a sort error", s.contains("No sort criteria"));
+    s = h.query(req("sort", "intdv asc", "qt", "/export"));
+    assertTrue("Should have had fl error", s.contains("export field list (fl) must be specified"));
+    s = h.query(req("sort", "intdv asc", "qt", "/export", "fl", "stringdv"));
+    // Interesting you don't even need to specify a "q" parameter.
+    
   }
 }
