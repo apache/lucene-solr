@@ -353,7 +353,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
         @Override
         protected boolean shouldHandleMultiTermQuery(String field) {
-            return params.getFieldBool(field, HighlightParams.HIGHLIGHT_MULTI_TERM, false);
+            return params.getFieldBool(field, HighlightParams.HIGHLIGHT_MULTI_TERM, true);
         }
 
         @Override
