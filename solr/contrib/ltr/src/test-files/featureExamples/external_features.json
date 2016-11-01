@@ -1,0 +1,51 @@
+[ {
+    "name" : "matchedTitle",
+    "class" : "org.apache.solr.ltr.feature.SolrFeature",
+    "params" : {
+        "q" : "{!terms f=title}${user_query}"
+    }
+}, {
+    "name" : "confidence",
+    "class" : "org.apache.solr.ltr.feature.ValueFeature",
+    "store": "fstore2",
+    "params" : {
+        "value" : "${myconf}"
+    }
+}, {
+    "name":"originalScore",
+    "class":"org.apache.solr.ltr.feature.OriginalScoreFeature",
+    "store": "fstore2",
+    "params":{}
+}, {
+    "name" : "occurrences",
+    "class" : "org.apache.solr.ltr.feature.ValueFeature",
+    "store": "fstore3",
+    "params" : {
+        "value" : "${myOcc}",
+        "required" : false
+    }
+}, {
+    "name":"originalScore",
+    "class":"org.apache.solr.ltr.feature.OriginalScoreFeature",
+    "store": "fstore3",
+    "params":{}
+}, {
+    "name" : "popularity",
+    "class" : "org.apache.solr.ltr.feature.ValueFeature",
+    "store": "fstore4",
+    "params" : {
+        "value" : "${myPop}",
+        "required" : true
+    }
+}, {
+    "name":"originalScore",
+    "class":"org.apache.solr.ltr.feature.OriginalScoreFeature",
+    "store": "fstore4",
+    "params":{}
+}, {
+    "name" : "titlePhraseMatch",
+    "class" : "org.apache.solr.ltr.feature.SolrFeature",
+    "params" : {
+        "q" : "{!field f=title}${user_query}"
+    }
+} ]

@@ -93,6 +93,9 @@ New Features
   SOLR_HOME on every node. Editing config through API is supported but affects only that one node. 
   (janhoy)
 
+* SOLR-8542: Adds Solr Learning to Rank (LTR) plugin for reranking results with machine learning models.
+  (Michael Nilsson, Diego Ceccarelli, Joshua Pantony, Jon Dorando, Naveen Santhapuri, Alessandro Benedetti, David Grohmann, Christine Poerschke)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have

@@ -1,0 +1,20 @@
+{
+	"class":"org.apache.solr.ltr.model.LinearModel",
+	"name":"fqmodel",
+	"features":[
+        {
+            "name":"matchedTitle",
+            "norm": {
+                "class":"org.apache.solr.ltr.norm.MinMaxNormalizer",
+                "params":{ "min":"0.0f", "max":"10.0f" }
+            }
+        },
+        { "name":"popularity"}
+	],
+	"params":{
+	  "weights": {
+	    "matchedTitle": 0.5,
+	    "popularity": 0.5
+	  }
+	}
+}

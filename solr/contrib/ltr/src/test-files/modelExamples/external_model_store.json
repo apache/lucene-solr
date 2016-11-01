@@ -1,0 +1,13 @@
+{
+    "class":"org.apache.solr.ltr.model.LinearModel",
+    "name":"externalmodelstore",
+    "store": "fstore2",
+    "features":[
+        { "name": "confidence"}
+    ],
+    "params":{
+        "weights": {
+            "confidence": 0.999
+        }
+    }
+}
