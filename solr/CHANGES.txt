@@ -99,6 +99,9 @@ Bug Fixes
 * SOLR-9701: NPE in export handler when "fl" parameter is omitted.
   (Erick Erickson)
 
+* SOLR-9433: SolrCore clean-up logic uses incorrect path to delete dataDir on failure to create a core.
+  (Evan Sayer, shalin)
+
 Other Changes
 ----------------------
 

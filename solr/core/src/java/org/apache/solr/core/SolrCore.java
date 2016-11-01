@@ -2631,7 +2631,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   public static void deleteUnloadedCore(CoreDescriptor cd, boolean deleteDataDir, boolean deleteInstanceDir) {
     if (deleteDataDir) {
-      File dataDir = new File(cd.getDataDir());
+      File dataDir = new File(cd.getInstanceDir().resolve(cd.getDataDir()).toAbsolutePath().toString());
       try {
         FileUtils.deleteDirectory(dataDir);
       } catch (IOException e) {
