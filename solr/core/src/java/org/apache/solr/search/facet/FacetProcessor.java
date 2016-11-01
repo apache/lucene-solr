@@ -85,21 +85,15 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   }
 
   public void process() throws IOException {
-    // Check filters... if we do have filters they apply after domain changes.
-    // We still calculate them first because we can use it in a parent->child domain change.
-    evalFilters();
-    boolean appliedFilters = handleDomainChanges();
-    if (filter != null && !appliedFilters) {
-      fcontext.base = fcontext.base.intersection( filter );
-    }
+    handleDomainChanges();
   }
 
   private void evalFilters() throws IOException {
-    if (freq.filters == null || freq.filters.isEmpty()) return;
+    if (freq.domain.filters == null || freq.domain.filters.isEmpty()) return;
 
-    List<Query> qlist = new ArrayList<>(freq.filters.size());
+    List<Query> qlist = new ArrayList<>(freq.domain.filters.size());
     // TODO: prevent parsing filters each time!
-    for (Object rawFilter : freq.filters) {
+    for (Object rawFilter : freq.domain.filters) {
       Query symbolicFilter;
       if (rawFilter instanceof String) {
         QParser parser = null;
@@ -119,11 +113,19 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     this.filter = fcontext.searcher.getDocSet(qlist);
   }
 
-  private boolean handleDomainChanges() throws IOException {
-    if (freq.domain == null) return false;
+  private void handleDomainChanges() throws IOException {
+    if (freq.domain == null) return;
     handleFilterExclusions();
+
+    // Check filters... if we do have filters they apply after domain changes.
+    // We still calculate them first because we can use it in a parent->child domain change.
+    evalFilters();
+
     boolean appliedFilters = handleBlockJoin();
-    return appliedFilters;
+
+    if (this.filter != null && !appliedFilters) {
+      fcontext.base = fcontext.base.intersection( filter );
+    }
   }
 
   private void handleFilterExclusions() throws IOException {
@@ -187,7 +189,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     fcontext.base = fcontext.searcher.getDocSet(qlist);
   }
 
-  // returns "true" if filters have already been applied.
+  // returns "true" if filters were applied to fcontext.base already
   private boolean handleBlockJoin() throws IOException {
     boolean appliedFilters = false;
     if (!(freq.domain.toChildren || freq.domain.toParent)) return appliedFilters;
