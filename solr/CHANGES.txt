@@ -89,6 +89,10 @@ New Features
 * SOLR-9442: Adds Array of NamedValuePair (json.nl=arrnvp) style to JSONResponseWriter.
   (Jonny Marks, Christine Poerschke)
 
+* SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
+  SOLR_HOME on every node. Editing config through API is supported but affects only that one node. 
+  (janhoy)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
@@ -98,6 +102,9 @@ Bug Fixes
 ----------------------
 * SOLR-9701: NPE in export handler when "fl" parameter is omitted.
   (Erick Erickson)
+
+* SOLR-9433: SolrCore clean-up logic uses incorrect path to delete dataDir on failure to create a core.
+  (Evan Sayer, shalin)
 
 Other Changes
 ----------------------
@@ -201,10 +208,6 @@ New Features
 
 * SOLR-9654: Add "overrequest" parameter to JSON Facet API to control amount of overrequest
   on a distributed terms facet. (yonik)
-
-* SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
-  SOLR_HOME on every node. Editing config through API is supported but affects only that one node. 
-  (janhoy)
 
 * SOLR-2212: Add a factory class corresponding to Lucene's NoMergePolicy. (Lance Norskog, Cao Manh Dat via shalin)
 

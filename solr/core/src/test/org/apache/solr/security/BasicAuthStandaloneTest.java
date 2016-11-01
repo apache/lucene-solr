@@ -73,6 +73,7 @@ public class BasicAuthStandaloneTest extends AbstractSolrTestCase {
     instance.setUp();
     jetty = createJetty(instance);
     securityConfHandler = new SecurityConfHandlerLocalForTesting(jetty.getCoreContainer());
+    HttpClientUtil.clearRequestInterceptors(); // Clear out any old Authorization headers
   }
 
   @Override
@@ -101,8 +102,6 @@ public class BasicAuthStandaloneTest extends AbstractSolrTestCase {
       securityConfHandler.persistConf(new SecurityConfHandler.SecurityConfig()
           .setData(Utils.fromJSONString(STD_CONF.replaceAll("'", "\""))));
       securityConfHandler.securityConfEdited();
-      log.debug("Newly written security.json is " + securityConfHandler.getSecurityConfig(false) +
-        " and baseUrl is " + baseUrl);
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
       String command = "{\n" +
