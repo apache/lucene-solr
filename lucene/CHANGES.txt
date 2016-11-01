@@ -6,6 +6,12 @@ http://s.apache.org/luceneversions
 ======================= Lucene 6.4.0 =======================
 (No Changes)
 
+Improvements
+
+* LUCENE-7532: Add back lost codec file format documentation
+  (Shinichiro Abe via Mike McCandless)
+
+
 ======================= Lucene 6.3.0 =======================
 
 API Changes
