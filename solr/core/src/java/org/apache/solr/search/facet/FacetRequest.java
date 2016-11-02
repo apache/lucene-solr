@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.facet;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -77,7 +78,6 @@ public abstract class FacetRequest {
 
   protected Map<String,AggValueSource> facetStats;  // per-bucket statistics
   protected Map<String,FacetRequest> subFacets;     // per-bucket sub-facets
-  protected List<String> filters;
   protected boolean processEmpty;
   protected Domain domain;
 
@@ -86,7 +86,8 @@ public abstract class FacetRequest {
     public List<String> excludeTags;
     public boolean toParent;
     public boolean toChildren;
-    public String parents;
+    public String parents; // identifies the parent filter... the full set of parent documents for any block join operation
+    public List<Object> filters; // list of symbolic filters (JSON query format)
   }
 
   public FacetRequest() {
@@ -358,23 +359,38 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
 
       Map<String,Object> domainMap = (Map<String,Object>) m.get("domain");
       if (domainMap != null) {
+        FacetRequest.Domain domain = getDomain();
+
         excludeTags = getStringList(domainMap, "excludeTags");
         if (excludeTags != null) {
-          getDomain().excludeTags = excludeTags;
+          domain.excludeTags = excludeTags;
         }
 
         String blockParent = (String)domainMap.get("blockParent");
         String blockChildren = (String)domainMap.get("blockChildren");
 
         if (blockParent != null) {
-          getDomain().toParent = true;
-          getDomain().parents = blockParent;
+          domain.toParent = true;
+          domain.parents = blockParent;
         } else if (blockChildren != null) {
-          getDomain().toChildren = true;
-          getDomain().parents = blockChildren;
+          domain.toChildren = true;
+          domain.parents = blockChildren;
         }
 
-      }
+        Object filterOrList = domainMap.get("filter");
+        if (filterOrList != null) {
+          assert domain.filters == null;
+          if (filterOrList instanceof List) {
+            domain.filters = (List<Object>)filterOrList;
+          } else {
+            domain.filters = new ArrayList<>(1);
+            domain.filters.add(filterOrList);
+          }
+        }
+
+
+      } // end "domain"
+
 
     }
   }

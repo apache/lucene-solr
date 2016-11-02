@@ -1164,6 +1164,27 @@ public class TestJsonFacets extends SolrTestCaseHS {
     );
 
 
+    // test filter
+    client.testJQ(params(p, "q", "*:*", "myfilt","${cat_s}:A"
+        , "json.facet", "{" +
+            "t:{${terms} type:terms, field:${cat_s}, domain:{filter:[]} }" + // empty filter list
+            ",t_filt:{${terms} type:terms, field:${cat_s}, domain:{filter:'${cat_s}:B'} }" +
+            ",t_filt2:{${terms} type:terms, field:${cat_s}, domain:{filter:'{!query v=$myfilt}'} }" +  // test access to qparser and other query parameters
+            ",t_filt3:{${terms} type:terms, field:${cat_s}, domain:{filter:['-id:1','-id:2']} }" +
+            ",q:{type:query, q:'${cat_s}:B', domain:{filter:['-id:5']} }" + // also tests a top-level negative filter
+            ",r:{type:range, field:${num_d}, start:-5, end:10, gap:5, domain:{filter:'-id:4'} }" +
+            "}"
+        )
+        , "facets=={ count:6, " +
+            "t       :{ buckets:[ {val:B, count:3}, {val:A, count:2} ] }" +
+            ",t_filt :{ buckets:[ {val:B, count:3}] } " +
+            ",t_filt2:{ buckets:[ {val:A, count:2}] } " +
+            ",t_filt3:{ buckets:[ {val:B, count:2}, {val:A, count:1}] } " +
+            ",q:{count:2}" +
+            ",r:{buckets:[ {val:-5.0,count:1}, {val:0.0,count:1}, {val:5.0,count:0} ] }" +
+            "}"
+    );
+    
   }
 
   @Test
@@ -1395,6 +1416,22 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "}"
     );
 
+    // test filter after block join
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{ " +
+            "pages1:{type:terms, field:v_t, domain:{blockChildren:'type_s:book', filter:'*:*'} }" +
+            ",pages2:{type:terms, field:v_t, domain:{blockChildren:'type_s:book', filter:'-id:3.1'} }" +
+            ",books:{type:terms, field:v_t, domain:{blockParent:'type_s:book', filter:'*:*'} }" +
+            ",books2:{type:terms, field:v_t, domain:{blockParent:'type_s:book', filter:'id:1'} }" +
+            "}"
+        )
+        , "facets=={ count:10" +
+            ", pages1:{ buckets:[ {val:y,count:4},{val:x,count:3},{val:z,count:3} ] }" +
+            ", pages2:{ buckets:[ {val:y,count:4},{val:z,count:3},{val:x,count:2} ] }" +
+            ", books:{ buckets:[ {val:q,count:3},{val:e,count:2},{val:w,count:2} ] }" +
+            ", books2:{ buckets:[ {val:q,count:1} ] }" +
+            "}"
+    );
 
   }
 

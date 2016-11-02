@@ -715,7 +715,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
       }
       --index;
       doc = target;
-      return false;
+      return index >= 0 && docIds.get(index) == target;
     }
 
     @Override

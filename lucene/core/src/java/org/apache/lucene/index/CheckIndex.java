@@ -771,8 +771,10 @@ public final class CheckIndex implements Closeable {
             throw new RuntimeException("Stored Field test failed");
           } else if (segInfoStat.termVectorStatus.error != null) {
             throw new RuntimeException("Term Vector test failed");
-          }  else if (segInfoStat.docValuesStatus.error != null) {
+          } else if (segInfoStat.docValuesStatus.error != null) {
             throw new RuntimeException("DocValues test failed");
+          } else if (segInfoStat.pointsStatus.error != null) {
+            throw new RuntimeException("Points test failed");
           }
         }
 
@@ -1865,12 +1867,12 @@ public final class CheckIndex implements Closeable {
                                    // Compare to last cell:
                                    if (StringHelper.compare(bytesPerDim, packedValue, offset, lastMinPackedValue, offset) < 0) {
                                      // This doc's point, in this dimension, is lower than the minimum value of the last cell checked:
-                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
+                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldInfo.name + "\", docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
                                    }
 
                                    if (StringHelper.compare(bytesPerDim, packedValue, offset, lastMaxPackedValue, offset) > 0) {
                                      // This doc's point, in this dimension, is greater than the maximum value of the last cell checked:
-                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
+                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldInfo.name + "\", docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
                                    }
                                  }
 
@@ -1879,10 +1881,10 @@ public final class CheckIndex implements Closeable {
                                  if (dimCount == 1) {
                                    int cmp = StringHelper.compare(bytesPerDim, lastPackedValue, 0, packedValue, 0);
                                    if (cmp > 0) {
-                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for docID=" + docID + " is out-of-order vs the previous document's value " + Arrays.toString(lastPackedValue));
+                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldInfo.name + "\", for docID=" + docID + " is out-of-order vs the previous document's value " + Arrays.toString(lastPackedValue));
                                    } else if (cmp == 0) {
                                      if (docID < lastDocID) {
-                                       throw new RuntimeException("packed points value is the same, but docID=" + docID + " is out of order vs previous docID=" + lastDocID);
+                                       throw new RuntimeException("packed points value is the same, but docID=" + docID + " is out of order vs previous docID=" + lastDocID + ", field=\"" + fieldInfo.name + "\"");
                                      }
                                    }
                                    System.arraycopy(packedValue, 0, lastPackedValue, 0, bytesPerDim);
@@ -1902,24 +1904,29 @@ public final class CheckIndex implements Closeable {
                                  for(int dim=0;dim<dimCount;dim++) {
                                    int offset = bytesPerDim * dim;
 
+                                   if (StringHelper.compare(bytesPerDim, minPackedValue, offset, maxPackedValue, offset) > 0) {
+                                     throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
+                                                                " is out-of-bounds of the cell's maxPackedValue " + Arrays.toString(maxPackedValue) + " dim=" + dim + " field=\"" + fieldInfo.name + "\"");
+                                   }
+
                                    // Make sure this cell is not outside of the global min/max:
                                    if (StringHelper.compare(bytesPerDim, minPackedValue, offset, globalMinPackedValue, offset) < 0) {
                                      throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
-                                                                " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim);
+                                                                " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim + " field=\"" + fieldInfo.name + "\"");
                                    }
 
                                    if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, globalMinPackedValue, offset) < 0) {
-                                     throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(minPackedValue) +
-                                                                " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim);
+                                     throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(maxPackedValue) +
+                                                                " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim + " field=\"" + fieldInfo.name + "\"");
                                    }
 
                                    if (StringHelper.compare(bytesPerDim, minPackedValue, offset, globalMaxPackedValue, offset) > 0) {
                                      throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
-                                                                " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim);
+                                                                " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim + " field=\"" + fieldInfo.name + "\"");
                                    }
                                    if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, globalMaxPackedValue, offset) > 0) {
                                      throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(maxPackedValue) +
-                                                                " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim);
+                                                                " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim + " field=\"" + fieldInfo.name + "\"");
                                    }
                                  }                                   
 
@@ -1930,11 +1937,11 @@ public final class CheckIndex implements Closeable {
 
                                private void checkPackedValue(String desc, byte[] packedValue, int docID) {
                                  if (packedValue == null) {
-                                   throw new RuntimeException(desc + " is null for docID=" + docID);
+                                   throw new RuntimeException(desc + " is null for docID=" + docID + " field=\"" + fieldInfo.name + "\"");
                                  }
 
                                  if (packedValue.length != packedBytesCount) {
-                                   throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedBytesCount + " for docID=" + docID);
+                                   throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedBytesCount + " for docID=" + docID + " field=\"" + fieldInfo.name + "\"");
                                  }
                                }
                              });

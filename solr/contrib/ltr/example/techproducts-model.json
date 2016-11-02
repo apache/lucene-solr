@@ -1,0 +1,18 @@
+{
+    "class":"org.apache.solr.ltr.model.LinearModel",
+    "name":"linear",
+    "features":[
+    {"name":"isInStock"},
+    {"name":"price"},
+    {"name":"originalScore"},
+    {"name":"productNameMatchQuery"}
+    ],
+    "params":{
+        "weights":{
+            "isInStock":15.0,
+            "price":1.0,
+            "originalScore":5.0,
+            "productNameMatchQuery":1.0
+        }
+    }
+}

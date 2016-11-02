@@ -79,6 +79,36 @@ Jetty 9.3.8.v20160314
 Detailed Change List
 ----------------------
 
+New Features
+----------------------
+* SOLR-9681: FacetModule / JSON Facet API added the ability to add filters directly to
+  any facet command.  The filters are applied after any domain change operations.
+  Example:  { type:terms, field:category, filter:"user:yonik" } 
+  (yonik)
+
+* SOLR-9442: Adds Array of NamedValuePair (json.nl=arrnvp) style to JSONResponseWriter.
+  (Jonny Marks, Christine Poerschke)
+
+* SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
+  SOLR_HOME on every node. Editing config through API is supported but affects only that one node. 
+  (janhoy)
+
+* SOLR-8542: Adds Solr Learning to Rank (LTR) plugin for reranking results with machine learning models.
+  (Michael Nilsson, Diego Ceccarelli, Joshua Pantony, Jon Dorando, Naveen Santhapuri, Alessandro Benedetti, David Grohmann, Christine Poerschke)
+
+Optimizations
+----------------------
+* SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
+  filters specified by using those filters as acceptDocs. (yonik)
+
+Bug Fixes
+----------------------
+* SOLR-9701: NPE in export handler when "fl" parameter is omitted.
+  (Erick Erickson)
+
+* SOLR-9433: SolrCore clean-up logic uses incorrect path to delete dataDir on failure to create a core.
+  (Evan Sayer, shalin)
+
 Other Changes
 ----------------------
 
@@ -182,10 +212,6 @@ New Features
 * SOLR-9654: Add "overrequest" parameter to JSON Facet API to control amount of overrequest
   on a distributed terms facet. (yonik)
 
-* SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
-  SOLR_HOME on every node. Editing config through API is supported but affects only that one node. 
-  (janhoy)
-
 * SOLR-2212: Add a factory class corresponding to Lucene's NoMergePolicy. (Lance Norskog, Cao Manh Dat via shalin)
 
 * SOLR-9670: Support SOLR_AUTHENTICATION_OPTS in solr.cmd (janhoy)
@@ -264,6 +290,8 @@ Bug Fixes
 
 * SOLR-2094: XPathEntityProcessor should reinitialize the XPathRecordReader instance if
   the 'forEach' or 'xpath' attributes are templates & it is not a root entity (Cao Manh Dat, noble)
+
+* SOLR-9697: zk upconfig broken on windows (Xavier Jmlucjav via janhoy)
  
 Optimizations
 ----------------------

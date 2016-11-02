@@ -56,7 +56,9 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
     if (Files.exists(securityJsonPath)) {
       try (InputStream securityJsonIs = Files.newInputStream(securityJsonPath)) {
         return new SecurityConfig().setData(securityJsonIs);
-      } catch (IOException e) { /* Fall through */ }
+      } catch (Exception e) { 
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed opening existing security.json file: " + securityJsonPath, e);
+      }
     }
     return new SecurityConfig();
   }
