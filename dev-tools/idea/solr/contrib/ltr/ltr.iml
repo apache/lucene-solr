@@ -15,14 +15,14 @@
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
     <orderEntry type="library" name="Solr core library" level="project" />
     <orderEntry type="library" name="Solrj library" level="project" />
-    <orderEntry type="module-library">
+    <orderEntry type="module-library" scope="TEST">
       <library>
         <CLASSES>
-          <root url="file://$MODULE_DIR$/lib" />
+          <root url="file://$MODULE_DIR$/test-lib" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
-        <jarDirectory url="file://$MODULE_DIR$/lib" recursive="false" />
+        <jarDirectory url="file://$MODULE_DIR$/test-lib" recursive="false" />
       </library>
     </orderEntry>
     <orderEntry type="library" scope="TEST" name="Solr example library" level="project" />
