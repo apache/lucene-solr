@@ -30,7 +30,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
-import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -55,7 +54,7 @@ import static org.apache.solr.security.BasicAuthIntegrationTest.NOT_NULL_PREDICA
 import static org.apache.solr.security.BasicAuthIntegrationTest.STD_CONF;
 import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecurityStatus;
 
-public class BasicAuthStandaloneTest extends BaseDistributedSearchTestCase {
+public class BasicAuthStandaloneTest extends AbstractSolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private Path ROOT_DIR = Paths.get(getSolrHome());
