@@ -195,14 +195,15 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   PublicKey getRemotePublicKey(String nodename) {
-    String url;
+    String url, uri = null;
+    log.info("getRemotePublicKey for nodename {}", nodename);
     if (cores.isZooKeeperAware()) {
       url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
     } else {
       url = getBaseUrlForNodeNameLocal(nodename);
     }
     try {
-      String uri = url + PATH + "?wt=json&omitHeader=true";
+      uri = url + PATH + "?wt=json&omitHeader=true";
       log.debug("Fetching fresh public key from : {}",uri);
       HttpResponse rsp = cores.getUpdateShardHandler().getHttpClient()
           .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
@@ -219,7 +220,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       keyCache.put(nodename, pubKey);
       return pubKey;
     } catch (Exception e) {
-      log.error("Exception trying to get public key from : " + url, e);
+      log.error("Exception trying to get public key from : " + uri, e);
       return null;
     }
 

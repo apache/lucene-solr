@@ -348,11 +348,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (authenticationPlugin == null) {
       return true;
     } else {
-      // /admin/info/key must be always open. see SOLR-9188
-      // tests work only w/ getPathInfo
-      //otherwise it's just enough to have getServletPath()
-      if (PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getServletPath()) ||
-          PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getPathInfo())) return true;
+      String requestUri = ((HttpServletRequest) request).getRequestURI();
+      log.info("authenticateRequest uri={}", requestUri);
+      if (requestUri != null && requestUri.endsWith(PKIAuthenticationPlugin.PATH)) {
+        log.info("/info/key passthrogh");
+        return true; // Let /admin/info/key through
+      } else {
+        log.info("/info/key FAILED requestUri.endsWith(PKIAuthenticationPlugin.PATH)={}", requestUri.endsWith(PKIAuthenticationPlugin.PATH));
+      }
       String header = ((HttpServletRequest) request).getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
         authenticationPlugin = cores.getPkiAuthenticationPlugin();

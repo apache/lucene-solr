@@ -31,6 +31,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
+import org.apache.solr.util.LogLevel;
 import org.junit.Test;
 
 /**
@@ -46,6 +47,7 @@ public class BasicAuthDistributedTest extends BaseDistributedSearchTestCase {
   private SecurityConfHandlerLocalForTesting securityConfHandler;
 
   @Test
+  @LogLevel("org.apache.solr=DEBUG")
   public void test() throws Exception {
     index();
     testAuth();
@@ -86,7 +88,7 @@ public class BasicAuthDistributedTest extends BaseDistributedSearchTestCase {
     }
 
     HttpSolrClient.RemoteSolrException expected = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
-      query("q","text:doc", "fl", "id,text", "sort", "id asc");
+      query("q","text:doc-fail", "fl", "id,text", "sort", "id asc");
     });
     assertEquals(401, expected.code());
     
