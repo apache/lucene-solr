@@ -82,11 +82,14 @@ class JSONWriter extends TextResponseWriter {
   final protected String namedListStyle;
 
   static final String JSON_NL_STYLE="json.nl";
+  static final int    JSON_NL_STYLE_COUNT = 5; // for use by JSONWriterTest
+
   static final String JSON_NL_MAP="map";
   static final String JSON_NL_FLAT="flat";
   static final String JSON_NL_ARROFARR="arrarr";
   static final String JSON_NL_ARROFMAP="arrmap";
   static final String JSON_NL_ARROFNVP="arrnvp";
+
   static final String JSON_WRAPPER_FUNCTION="json.wrf";
 
   public JSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
@@ -181,6 +184,7 @@ class JSONWriter extends TextResponseWriter {
    * repeating any keys if they are repeated in the NamedList.  null is mapped
    * to "".
    */ 
+  // NamedList("a"=1,"bar"="foo",null=3) => {"a":1,"bar":"foo","":3}
   protected void writeNamedListAsMapWithDups(String name, NamedList val) throws IOException {
     int sz = val.size();
     writeMapOpener(sz);
