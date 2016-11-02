@@ -157,6 +157,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for(int i=0;i<50;i++) {
       writer.addDocument(docs.nextDoc());
     }
+    docs.close();
     writer.close();
     dir.close();
 

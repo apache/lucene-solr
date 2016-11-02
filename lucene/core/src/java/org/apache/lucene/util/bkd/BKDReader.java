@@ -70,6 +70,12 @@ public class BKDReader implements Accountable {
     in.readBytes(minPackedValue, 0, packedBytesLength);
     in.readBytes(maxPackedValue, 0, packedBytesLength);
 
+    for(int dim=0;dim<numDims;dim++) {
+      if (StringHelper.compare(bytesPerDim, minPackedValue, dim*bytesPerDim, maxPackedValue, dim*bytesPerDim) > 0) {
+        throw new CorruptIndexException("minPackedValue " + new BytesRef(minPackedValue) + " is > maxPackedValue " + new BytesRef(maxPackedValue) + " for dim=" + dim, in);
+      }
+    }
+    
     pointCount = in.readVLong();
     docCount = in.readVInt();
 
@@ -138,6 +144,7 @@ public class BKDReader implements Accountable {
     this.numDims = numDims;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.bytesPerDim = bytesPerDim;
+    // no version check here because callers of this API (SimpleText) have no back compat:
     bytesPerIndexEntry = numDims == 1 ? bytesPerDim : bytesPerDim + 1;
     packedBytesLength = numDims * bytesPerDim;
     this.leafNodeOffset = leafBlockFPs.length;
@@ -239,7 +246,18 @@ public class BKDReader implements Accountable {
       // Non-leaf node:
 
       int address = nodeID * bytesPerIndexEntry;
-      int splitDim = numDims == 1 ? 0 : splitPackedValues[address++] & 0xff;
+      int splitDim;
+      if (numDims == 1) {
+        splitDim = 0;
+        if (version < BKDWriter.VERSION_IMPLICIT_SPLIT_DIM_1D) {
+          // skip over wastefully encoded 0 splitDim:
+          assert splitPackedValues[address] == 0;
+          address++;
+        }
+      } else {
+        splitDim = splitPackedValues[address++] & 0xff;
+      }
+      
       assert splitDim < numDims;
 
       byte[] splitPackedValue = new byte[packedBytesLength];
@@ -460,14 +478,23 @@ public class BKDReader implements Accountable {
       
       // Non-leaf node: recurse on the split left and right nodes
 
-      // TODO: save the unused 1 byte prefix (it's always 0) in the 1d case here:
       int address = nodeID * bytesPerIndexEntry;
-      int splitDim = numDims == 1 ? 0 : splitPackedValues[address++] & 0xff;
+      int splitDim;
+      if (numDims == 1) {
+        splitDim = 0;
+        if (version < BKDWriter.VERSION_IMPLICIT_SPLIT_DIM_1D) {
+          // skip over wastefully encoded 0 splitDim:
+          assert splitPackedValues[address] == 0;
+          address++;
+        }
+      } else {
+        splitDim = splitPackedValues[address++] & 0xff;
+      }
+      
       assert splitDim < numDims;
 
       // TODO: can we alloc & reuse this up front?
 
-      // TODO: can we alloc & reuse this up front?
       byte[] splitPackedValue = new byte[packedBytesLength];
 
       // Recurse on left sub-tree:
@@ -489,7 +516,18 @@ public class BKDReader implements Accountable {
   /** Copies the split value for this node into the provided byte array */
   public void copySplitValue(int nodeID, byte[] splitPackedValue) {
     int address = nodeID * bytesPerIndexEntry;
-    int splitDim = numDims == 1 ? 0 : splitPackedValues[address++] & 0xff;
+    int splitDim;
+    if (numDims == 1) {
+      splitDim = 0;
+      if (version < BKDWriter.VERSION_IMPLICIT_SPLIT_DIM_1D) {
+        // skip over wastefully encoded 0 splitDim:
+        assert splitPackedValues[address] == 0;
+        address++;
+      }
+    } else {
+      splitDim = splitPackedValues[address++] & 0xff;
+    }
+    
     assert splitDim < numDims;
     System.arraycopy(splitPackedValues, address, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
   }
