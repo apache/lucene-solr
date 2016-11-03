@@ -65,7 +65,7 @@ public class CorePropertiesLocator implements CoresLocator {
       if (Files.exists(propertiesFile))
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                                 "Could not create a new core in " + cd.getInstanceDir()
-                              + "as another core is already defined there");
+                              + " as another core is already defined there");
       writePropertiesFile(cd, propertiesFile);
     }
   }
