@@ -553,7 +553,7 @@ class JSONWriter extends TextResponseWriter {
     writeJsonIter(val);
   }
 
-  protected void writeJsonIter(Iterator val) throws IOException {
+  private void writeJsonIter(Iterator val) throws IOException {
     incLevel();
     boolean first=true;
     while( val.hasNext() ) {
@@ -633,6 +633,11 @@ class ArrayOfNamedValuePairJSONWriter extends JSONWriter {
       throw new UnsupportedOperationException(ArrayOfNamedValuePairJSONWriter.class.getSimpleName()+" must only be used with "
           + JSON_NL_ARROFNVP + " style");
     }
+  }
+
+  @Override
+  public void writeArray(String name, List l) throws IOException {
+    writeArray(name, l.iterator());
   }
 
   @Override
