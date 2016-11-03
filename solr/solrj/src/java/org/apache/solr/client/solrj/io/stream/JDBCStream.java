@@ -85,8 +85,8 @@ public class JDBCStream extends TupleStream implements Expressible {
   private Connection connection;
   private Properties connectionProperties;
   private Statement statement;
-  private ResultSet resultSet;
   private ResultSetValueSelector[] valueSelectors;
+  protected ResultSet resultSet;
   protected transient StreamContext streamContext;
 
   public JDBCStream(String connectionUrl, String sqlQuery, StreamComparator definedSort) throws IOException {
