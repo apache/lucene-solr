@@ -228,6 +228,14 @@
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
       <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
     </configuration>
+    <configuration default="false" name="solrcloud" type="Application" factoryName="Application" singleton="true">
+      <option name="MAIN_CLASS_NAME" value="org.eclipse.jetty.start.Main" />
+      <option name="VM_PARAMETERS" value="-DzkRun -Dhost=127.0.0.1 -Duser.timezone=UTC -Djetty.home=$PROJECT_DIR$/solr/server -Dsolr.solr.home=$PROJECT_DIR$/solr/server/solr -Dsolr.install.dir=$PROJECT_DIR$/solr -Dsolr.log=$PROJECT_DIR$/solr/server/logs/solr.log" />
+      <option name="PROGRAM_PARAMETERS" value="--module=http" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/server" />
+      <option name="PARENT_ENVS" value="true" />
+      <module name="server" />
+    </configuration>
     <configuration default="false" name="Solr core" type="JUnit" factoryName="JUnit">
       <module name="solr-core-tests" />
       <option name="TEST_OBJECT" value="pattern" />
@@ -249,6 +257,14 @@
       <option name="TEST_OBJECT" value="pattern" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/solr-analysis-extras" />
       <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=@version.base@ -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+      <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
+    </configuration>
+    <configuration default="false" name="Solr analytics contrib" type="JUnit" factoryName="JUnit">
+      <module name="analytics" />
+      <option name="TEST_OBJECT" value="pattern" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/solr-analytics" />
+      <option name="VM_PARAMETERS" value="-ea" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
       <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
     </configuration>
@@ -292,6 +308,14 @@
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
       <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
     </configuration>
+    <configuration default="false" name="Solr ltr contrib" type="JUnit" factoryName="JUnit">
+      <module name="ltr" />
+      <option name="TEST_OBJECT" value="pattern" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/ltr" />
+      <option name="VM_PARAMETERS" value="-ea" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+      <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
+    </configuration>
     <configuration default="false" name="Solr map-reduce contrib" type="JUnit" factoryName="JUnit">
       <module name="map-reduce" />
       <option name="TEST_OBJECT" value="pattern" />
@@ -332,24 +356,8 @@
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
       <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
     </configuration>
-    <configuration default="false" name="Solr analytics contrib" type="JUnit" factoryName="JUnit">
-      <module name="analytics" />
-      <option name="TEST_OBJECT" value="pattern" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/solr/contrib/solr-analytics" />
-      <option name="VM_PARAMETERS" value="-ea" />
-      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
-      <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
-    </configuration>
-    <configuration default="false" name="solrcloud" type="Application" factoryName="Application" singleton="true">
-      <option name="MAIN_CLASS_NAME" value="org.eclipse.jetty.start.Main" />
-      <option name="VM_PARAMETERS" value="-DzkRun -Dhost=127.0.0.1 -Duser.timezone=UTC -Djetty.home=$PROJECT_DIR$/solr/server -Dsolr.solr.home=$PROJECT_DIR$/solr/server/solr -Dsolr.install.dir=$PROJECT_DIR$/solr -Dsolr.log=$PROJECT_DIR$/solr/server/logs/solr.log" />
-      <option name="PROGRAM_PARAMETERS" value="--module=http" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/server" />
-      <option name="PARENT_ENVS" value="true" />
-      <module name="server" />
-    </configuration>
 
-    <list size="42">
+    <list size="44">
       <item index="0" class="java.lang.String" itemvalue="JUnit.Lucene core" />
       <item index="1" class="java.lang.String" itemvalue="JUnit.Module analyzers-common" />
       <item index="2" class="java.lang.String" itemvalue="JUnit.Module analyzers-icu" />
@@ -378,20 +386,22 @@
       <item index="25" class="java.lang.String" itemvalue="JUnit.Module spatial-extras" />
       <item index="26" class="java.lang.String" itemvalue="JUnit.Module spatial3d" />
       <item index="27" class="java.lang.String" itemvalue="JUnit.Module suggest" />
-      <item index="28" class="java.lang.String" itemvalue="JUnit.Solr core" />
-      <item index="29" class="java.lang.String" itemvalue="JUnit.Solr analysis-extras contrib" />
-      <item index="30" class="java.lang.String" itemvalue="JUnit.Solr clustering contrib" />
-      <item index="31" class="java.lang.String" itemvalue="JUnit.Solr dataimporthandler contrib" />
-      <item index="32" class="java.lang.String" itemvalue="JUnit.Solr dataimporthandler-extras contrib" />
-      <item index="33" class="java.lang.String" itemvalue="JUnit.Solr extraction contrib" />
-      <item index="34" class="java.lang.String" itemvalue="JUnit.Solr map-reduce contrib" />
-      <item index="35" class="java.lang.String" itemvalue="JUnit.Solr morphlines-cell contrib" />
-      <item index="36" class="java.lang.String" itemvalue="JUnit.Solr morphlines-core contrib" />
-      <item index="37" class="java.lang.String" itemvalue="JUnit.Solr langid contrib" />
-      <item index="38" class="java.lang.String" itemvalue="JUnit.Solr uima contrib" />
-      <item index="39" class="java.lang.String" itemvalue="JUnit.Solr velocity contrib" />
-      <item index="40" class="java.lang.String" itemvalue="JUnit.Solrj" />
-      <item index="41" class="java.lang.String" itemvalue="Application.solrcloud" />
+      <item index="28" class="java.lang.String" itemvalue="Application.solrcloud" />
+      <item index="29" class="java.lang.String" itemvalue="JUnit.Solr core" />
+      <item index="30" class="java.lang.String" itemvalue="JUnit.Solrj" />
+      <item index="31" class="java.lang.String" itemvalue="JUnit.Solr analysis-extras contrib" />
+      <item index="32" class="java.lang.String" itemvalue="JUnit.Solr analytics contrib" />
+      <item index="33" class="java.lang.String" itemvalue="JUnit.Solr clustering contrib" />
+      <item index="34" class="java.lang.String" itemvalue="JUnit.Solr dataimporthandler contrib" />
+      <item index="35" class="java.lang.String" itemvalue="JUnit.Solr dataimporthandler-extras contrib" />
+      <item index="36" class="java.lang.String" itemvalue="JUnit.Solr extraction contrib" />
+      <item index="37" class="java.lang.String" itemvalue="JUnit.Solr map-reduce contrib" />
+      <item index="38" class="java.lang.String" itemvalue="JUnit.Solr morphlines-cell contrib" />
+      <item index="39" class="java.lang.String" itemvalue="JUnit.Solr morphlines-core contrib" />
+      <item index="40" class="java.lang.String" itemvalue="JUnit.Solr langid contrib" />
+      <item index="41" class="java.lang.String" itemvalue="JUnit.Solr ltr contrib" />
+      <item index="42" class="java.lang.String" itemvalue="JUnit.Solr uima contrib" />
+      <item index="43" class="java.lang.String" itemvalue="JUnit.Solr velocity contrib" />
     </list>
   </component>
 </project>

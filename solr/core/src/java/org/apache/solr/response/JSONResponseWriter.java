@@ -82,11 +82,14 @@ class JSONWriter extends TextResponseWriter {
   final protected String namedListStyle;
 
   static final String JSON_NL_STYLE="json.nl";
+  static final int    JSON_NL_STYLE_COUNT = 5; // for use by JSONWriterTest
+
   static final String JSON_NL_MAP="map";
   static final String JSON_NL_FLAT="flat";
   static final String JSON_NL_ARROFARR="arrarr";
   static final String JSON_NL_ARROFMAP="arrmap";
   static final String JSON_NL_ARROFNVP="arrnvp";
+
   static final String JSON_WRAPPER_FUNCTION="json.wrf";
 
   public JSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
@@ -106,7 +109,6 @@ class JSONWriter extends TextResponseWriter {
     if(wrapperFunction!=null) {
         writer.write(wrapperFunction + "(");
     }
-    if(req.getParams().getBool(CommonParams.OMIT_HEADER, false)) rsp.removeResponseHeader();
     writeNamedList(null, rsp.getValues());
     if(wrapperFunction!=null) {
         writer.write(')');
@@ -181,6 +183,7 @@ class JSONWriter extends TextResponseWriter {
    * repeating any keys if they are repeated in the NamedList.  null is mapped
    * to "".
    */ 
+  // NamedList("a"=1,"bar"="foo",null=3) => {"a":1,"bar":"foo","":3}
   protected void writeNamedListAsMapWithDups(String name, NamedList val) throws IOException {
     int sz = val.size();
     writeMapOpener(sz);
@@ -285,7 +288,7 @@ class JSONWriter extends TextResponseWriter {
   // NamedList("a"=1,"b"=2,null=3) => ["a",1,"b",2,null,3]
   protected void writeNamedListAsFlat(String name, NamedList val) throws IOException {
     int sz = val.size();
-    writeArrayOpener(sz);
+    writeArrayOpener(sz*2);
     incLevel();
 
     for (int i=0; i<sz; i++) {
@@ -539,8 +542,18 @@ class JSONWriter extends TextResponseWriter {
   }
 
   @Override
+  public void writeArray(String name, List l) throws IOException {
+    writeArrayOpener(l.size());
+    writeJsonIter(l.iterator());
+  }
+
+  @Override
   public void writeArray(String name, Iterator val) throws IOException {
     writeArrayOpener(-1); // no trivial way to determine array size
+    writeJsonIter(val);
+  }
+
+  protected void writeJsonIter(Iterator val) throws IOException {
     incLevel();
     boolean first=true;
     while( val.hasNext() ) {

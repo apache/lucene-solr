@@ -76,7 +76,20 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testJSON() throws IOException {
-    final String namedListStyle = (random().nextBoolean() ? JSONWriter.JSON_NL_ARROFARR : JSONWriter.JSON_NL_ARROFNVP);
+    final String[] namedListStyles = new String[] {
+        JSONWriter.JSON_NL_FLAT,
+        JSONWriter.JSON_NL_MAP,
+        JSONWriter.JSON_NL_ARROFARR,
+        JSONWriter.JSON_NL_ARROFMAP,
+        JSONWriter.JSON_NL_ARROFNVP,
+    };
+    for (final String namedListStyle : namedListStyles) {
+      implTestJSON(namedListStyle);
+    }
+    assertEquals(JSONWriter.JSON_NL_STYLE_COUNT, namedListStyles.length);
+  }
+
+  private void implTestJSON(final String namedListStyle) throws IOException {
     SolrQueryRequest req = req("wt","json","json.nl",namedListStyle);
     SolrQueryResponse rsp = new SolrQueryResponse();
     JSONResponseWriter w = new JSONResponseWriter();
@@ -94,8 +107,14 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     w.write(buf, req, rsp);
 
     final String expectedNLjson;
-    if (namedListStyle == JSONWriter.JSON_NL_ARROFARR) {
+    if (namedListStyle == JSONWriter.JSON_NL_FLAT) {
+      expectedNLjson = "\"nl\":[\"data1\",\"he\\u2028llo\\u2029!\",null,42]";
+    } else if (namedListStyle == JSONWriter.JSON_NL_MAP) {
+      expectedNLjson = "\"nl\":{\"data1\":\"he\\u2028llo\\u2029!\",\"\":42}";
+    } else if (namedListStyle == JSONWriter.JSON_NL_ARROFARR) {
       expectedNLjson = "\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42]]";
+    } else if (namedListStyle == JSONWriter.JSON_NL_ARROFMAP) {
+      expectedNLjson = "\"nl\":[{\"data1\":\"he\\u2028llo\\u2029!\"},42]";
     } else if (namedListStyle == JSONWriter.JSON_NL_ARROFNVP) {
       expectedNLjson = "\"nl\":[{\"name\":\"data1\",\"str\":\"he\\u2028llo\\u2029!\"},{\"int\":42}]";
     } else {

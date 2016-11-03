@@ -22,7 +22,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.function.BiConsumer;
 
+import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.SolrDocument;
 
 /**
  *  A simple abstraction of a record containing key/value pairs.
@@ -31,7 +34,7 @@ import java.util.List;
  *
 **/
 
-public class Tuple implements Cloneable {
+public class Tuple implements Cloneable, MapSerializable {
 
   /**
    *  When EOF field is true the Tuple marks the end of the stream.
@@ -192,5 +195,10 @@ public class Tuple implements Cloneable {
   
   public void merge(Tuple other){
     fields.putAll(other.getMap());
+  }
+
+  @Override
+  public Map toMap(Map<String, Object> map) {
+    return fields;
   }
 }

@@ -1167,12 +1167,12 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // test filter
     client.testJQ(params(p, "q", "*:*", "myfilt","${cat_s}:A"
         , "json.facet", "{" +
-            "t:{${terms} type:terms, field:${cat_s}, filter:[]}" + // empty filter list
-            ",t_filt:{${terms} type:terms, field:${cat_s}, filter:'${cat_s}:B'}" +
-            ",t_filt2:{${terms} type:terms, field:${cat_s}, filter:'{!query v=$myfilt}'}" +  // test access to qparser and other query parameters
-            ",t_filt3:{${terms} type:terms, field:${cat_s}, filter:['-id:1','-id:2']}" +
-            ",q:{type:query, q:'${cat_s}:B', filter:['-id:5']}" + // also tests a top-level negative filter
-            ",r:{type:range, field:${num_d}, start:-5, end:10, gap:5, filter:'-id:4'}" +
+            "t:{${terms} type:terms, field:${cat_s}, domain:{filter:[]} }" + // empty filter list
+            ",t_filt:{${terms} type:terms, field:${cat_s}, domain:{filter:'${cat_s}:B'} }" +
+            ",t_filt2:{${terms} type:terms, field:${cat_s}, domain:{filter:'{!query v=$myfilt}'} }" +  // test access to qparser and other query parameters
+            ",t_filt3:{${terms} type:terms, field:${cat_s}, domain:{filter:['-id:1','-id:2']} }" +
+            ",q:{type:query, q:'${cat_s}:B', domain:{filter:['-id:5']} }" + // also tests a top-level negative filter
+            ",r:{type:range, field:${num_d}, start:-5, end:10, gap:5, domain:{filter:'-id:4'} }" +
             "}"
         )
         , "facets=={ count:6, " +
@@ -1419,10 +1419,10 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // test filter after block join
     client.testJQ(params(p, "q", "*:*"
         , "json.facet", "{ " +
-            "pages1:{type:terms, field:v_t, domain:{blockChildren:'type_s:book'}, filter:'*:*' }" +
-            ",pages2:{type:terms, field:v_t, domain:{blockChildren:'type_s:book'}, filter:'-id:3.1' }" +
-            ",books:{type:terms, field:v_t, domain:{blockParent:'type_s:book'}, filter:'*:*' }" +
-            ",books2:{type:terms, field:v_t, domain:{blockParent:'type_s:book'}, filter:'id:1' }" +
+            "pages1:{type:terms, field:v_t, domain:{blockChildren:'type_s:book', filter:'*:*'} }" +
+            ",pages2:{type:terms, field:v_t, domain:{blockChildren:'type_s:book', filter:'-id:3.1'} }" +
+            ",books:{type:terms, field:v_t, domain:{blockParent:'type_s:book', filter:'*:*'} }" +
+            ",books2:{type:terms, field:v_t, domain:{blockParent:'type_s:book', filter:'id:1'} }" +
             "}"
         )
         , "facets=={ count:10" +
