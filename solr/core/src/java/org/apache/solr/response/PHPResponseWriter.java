@@ -18,8 +18,6 @@ package org.apache.solr.response;
 
 import java.io.Writer;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.solr.common.util.NamedList;
