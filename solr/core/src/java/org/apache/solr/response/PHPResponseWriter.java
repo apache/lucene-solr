@@ -18,6 +18,9 @@ package org.apache.solr.response;
 
 import java.io.Writer;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -74,6 +77,11 @@ class PHPWriter extends JSONWriter {
   @Override
   public void writeArrayOpener(int size) throws IOException {
     writer.write("array(");
+  }
+
+  @Override
+  public void writeArray(String name, List l) throws IOException {
+    writeArray(name,l.iterator());
   }
 
   @Override

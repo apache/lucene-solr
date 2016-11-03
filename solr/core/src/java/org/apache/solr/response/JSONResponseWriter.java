@@ -109,7 +109,6 @@ class JSONWriter extends TextResponseWriter {
     if(wrapperFunction!=null) {
         writer.write(wrapperFunction + "(");
     }
-    if(req.getParams().getBool(CommonParams.OMIT_HEADER, false)) rsp.removeResponseHeader();
     writeNamedList(null, rsp.getValues());
     if(wrapperFunction!=null) {
         writer.write(')');
@@ -289,7 +288,7 @@ class JSONWriter extends TextResponseWriter {
   // NamedList("a"=1,"b"=2,null=3) => ["a",1,"b",2,null,3]
   protected void writeNamedListAsFlat(String name, NamedList val) throws IOException {
     int sz = val.size();
-    writeArrayOpener(sz);
+    writeArrayOpener(sz*2);
     incLevel();
 
     for (int i=0; i<sz; i++) {
@@ -543,8 +542,18 @@ class JSONWriter extends TextResponseWriter {
   }
 
   @Override
+  public void writeArray(String name, List l) throws IOException {
+    writeArrayOpener(l.size());
+    writeJsonIter(l.iterator());
+  }
+
+  @Override
   public void writeArray(String name, Iterator val) throws IOException {
     writeArrayOpener(-1); // no trivial way to determine array size
+    writeJsonIter(val);
+  }
+
+  protected void writeJsonIter(Iterator val) throws IOException {
     incLevel();
     boolean first=true;
     while( val.hasNext() ) {
