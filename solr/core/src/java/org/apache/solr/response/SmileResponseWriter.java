@@ -193,5 +193,10 @@ public class SmileResponseWriter extends BinaryResponseWriter {
     public int decLevel() {
       return 0;
     }
+
+    @Override
+    public void close() throws IOException {
+      gen.close();
+    }
   }
 }
