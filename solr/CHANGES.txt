@@ -115,6 +115,9 @@ Other Changes
 * SOLR-9621: Remove several Guava & Apache Commons calls in favor of java 8 alternatives.
   (Michael Braun via David Smiley)
 
+* SOLR-9720: Refactor Responsewriters to remove dependencies on TupleStream,
+  Tuple, Explanation (noble)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
