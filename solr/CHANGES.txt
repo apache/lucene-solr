@@ -111,6 +111,9 @@ Bug Fixes
 * SOLR-9433: SolrCore clean-up logic uses incorrect path to delete dataDir on failure to create a core.
   (Evan Sayer, shalin)
 
+* SOLR-9360: Solr script not properly checking SOLR_PID
+  (Alessandro Benedetti via Erick Erickson)
+
 Other Changes
 ----------------------
 
