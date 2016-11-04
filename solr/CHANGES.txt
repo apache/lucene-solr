@@ -70,7 +70,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.13
-Carrot2 3.12.0
+Carrot2 3.15.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
@@ -113,6 +113,8 @@ Bug Fixes
 
 Other Changes
 ----------------------
+
+* SOLR-7539: Upgrade the clustering plugin to Carrot2 3.15.0. (Dawid Weiss)
 
 * SOLR-9621: Remove several Guava & Apache Commons calls in favor of java 8 alternatives.
   (Michael Braun via David Smiley)
