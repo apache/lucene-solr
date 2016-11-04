@@ -162,6 +162,8 @@ Bug Fixes
 
 * SOLR-9284: The HDFS BlockDirectoryCache should not let it's keysToRelease or names maps grow indefinitely.
   (Mark Miller, Michael Sun)
+
+* SOLR-9729: JDBCStream improvements (Kevin Risden)
   
 Other Changes
 ----------------------

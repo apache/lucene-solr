@@ -351,11 +351,8 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     TupleStream stream;
     List<Tuple> tuples;
     
-    // Basic test
-    // the test here is the setting of the property get_column_name=true. In hsqldb if this value is set to true then the use of an 
-    // as clause in a select will have no effect. As such even though we have PEOPLE.ID as PERSONID we will still expect the column
-    // name to come out as ID and not PERSONID
-    expression =   
+    // Basic test for no alias
+    expression =
               "innerJoin("
             + "  select("
             + "    search(" + COLLECTIONORALIAS + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
@@ -363,7 +360,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
             + "    rating_f as rating"
             + "  ),"
             + "  select("
-            + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID as PERSONID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\", get_column_name=true),"
+            + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\"),"
             + "    ID as personId,"
             + "    NAME as personName,"
             + "    COUNTRY_NAME as country"
@@ -380,10 +377,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     assertOrderOf(tuples, "personName", "Emma","Grace","Hailey","Isabella","Lily","Madison","Mia","Natalie","Olivia","Samantha");
     assertOrderOf(tuples, "country", "Netherlands","United States","Netherlands","Netherlands","Netherlands","United States","United States","Netherlands","Netherlands","United States");
     
-    // Basic test
-    // the test here is the setting of the property get_column_name=false. In hsqldb if this value is set to false then the use of an 
-    // as clause in a select will have effect. As such we have PEOPLE.ID as PERSONID we will still expect the column name to come out 
-    // PERSONID and not ID
+    // Basic test for alias
     expression =   
               "innerJoin("
             + "  select("
@@ -392,7 +386,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
             + "    rating_f as rating"
             + "  ),"
             + "  select("
-            + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID as PERSONID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"PERSONID asc\", get_column_name=false),"
+            + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID as PERSONID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"PERSONID asc\"),"
             + "    PERSONID as personId,"
             + "    NAME as personName,"
             + "    COUNTRY_NAME as country"
