@@ -42,6 +42,8 @@ New Features
 * SOLR-9442: Adds Array of NamedValuePair (json.nl=arrnvp) style to JSONResponseWriter.
   (Jonny Marks, Christine Poerschke)
 
+* SOLR-9055: Make collection backup/restore extensible. (Hrishikesh Gadre, Varun Thacker, Mark Miller)
+  
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
