@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.clustering.carrot2;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.carrot2.core.Cluster;
@@ -35,8 +36,6 @@ import org.carrot2.util.attribute.Attribute;
 import org.carrot2.util.attribute.Bindable;
 import org.carrot2.util.attribute.Input;
 import org.carrot2.util.attribute.Output;
-
-import com.google.common.collect.Lists;
 
 /**
  * A mock Carrot2 clustering algorithm that outputs stem of each token of each
@@ -64,7 +63,7 @@ public class EchoStemsClusteringAlgorithm extends ProcessingComponentBase
     final AllTokens allTokens = preprocessingContext.allTokens;
     final AllWords allWords = preprocessingContext.allWords;
     final AllStems allStems = preprocessingContext.allStems;
-    clusters = Lists.newArrayListWithCapacity(allTokens.image.length);
+    clusters = new ArrayList<>();
     for (int i = 0; i < allTokens.image.length; i++) {
       if (allTokens.wordIndex[i] >= 0) {
         clusters.add(new Cluster(new String(
