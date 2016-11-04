@@ -22,10 +22,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
-import java.util.function.BiConsumer;
 
 import org.apache.solr.common.MapSerializable;
-import org.apache.solr.common.SolrDocument;
 
 /**
  *  A simple abstraction of a record containing key/value pairs.
