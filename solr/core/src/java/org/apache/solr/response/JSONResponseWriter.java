@@ -544,12 +544,14 @@ class JSONWriter extends TextResponseWriter {
   public void writeArray(String name, List l) throws IOException {
     writeArrayOpener(l.size());
     writeJsonIter(l.iterator());
+    writeArrayCloser();
   }
 
   @Override
   public void writeArray(String name, Iterator val) throws IOException {
     writeArrayOpener(-1); // no trivial way to determine array size
     writeJsonIter(val);
+    writeArrayCloser();
   }
 
   private void writeJsonIter(Iterator val) throws IOException {
@@ -564,7 +566,6 @@ class JSONWriter extends TextResponseWriter {
       first=false;
     }
     decLevel();
-    writeArrayCloser();
   }
 
   //
@@ -636,7 +637,7 @@ class ArrayOfNamedValuePairJSONWriter extends JSONWriter {
 
   @Override
   public void writeArray(String name, List l) throws IOException {
-    writeArray(name, l.iterator());
+    super.writeArray(name, l);
   }
 
   @Override
