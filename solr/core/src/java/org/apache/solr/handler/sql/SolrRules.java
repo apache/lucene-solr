@@ -26,6 +26,7 @@ import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
@@ -47,9 +48,8 @@ import java.util.function.Predicate;
 class SolrRules {
   static final RelOptRule[] RULES = {
       SolrFilterRule.FILTER_RULE,
-      SolrFilterRule.FILTER_PROJECT_RULE,
       SolrProjectRule.PROJECT_RULE,
-//      SolrSortRule.SORT_RULE,
+      SolrSortRule.SORT_RULE,
 //      SolrAggregateRule.AGGREGATE_RULE,
   };
 
@@ -117,45 +117,23 @@ class SolrRules {
     }
   }
 
-  abstract static class SolrRule extends RelOptRule {
-    final Convention out;
-
-    <R extends RelNode> SolrRule(RelOptRuleOperand rule, String description) {
-      super(rule, description);
-      this.out = SolrRel.CONVENTION;
-    }
-
-    abstract public RelNode convert(RelNode rel);
-
-    /**
-     * @see ConverterRule
-     */
-    @Override
-    public void onMatch(RelOptRuleCall call) {
-      RelNode rel = call.rel(0);
-      if (rel.getTraitSet().contains(Convention.NONE)) {
-        final RelNode converted = convert(rel);
-        if (converted != null) {
-          call.transformTo(converted);
-        }
-      }
-    }
-  }
-
   /**
    * Rule to convert a {@link LogicalFilter} to a {@link SolrFilter}.
    */
-  private static class SolrFilterRule extends SolrRule {
+  private static class SolrFilterRule extends SolrConverterRule {
+    private static final Predicate<RelNode> FILTER_PREDICATE = relNode -> {
+      List<RexNode> filterOperands = ((RexCall) ((LogicalFilter) relNode).getCondition()).getOperands();
+      return filterOperands.size() == 2 &&
+          ((!filterOperands.get(0).getKind().equals(SqlKind.LITERAL)
+              && filterOperands.get(1).getKind().equals(SqlKind.LITERAL))
+            || (filterOperands.get(0).getKind().equals(SqlKind.LITERAL)
+              && !filterOperands.get(1).getKind().equals(SqlKind.LITERAL)));
+    };
 
-    private static final SolrFilterRule FILTER_RULE =
-        new SolrFilterRule(operand(LogicalFilter.class, operand(SolrTableScan.class, none())), "SolrFilterRule");
+    private static final SolrFilterRule FILTER_RULE = new SolrFilterRule();
 
-    private static final SolrFilterRule FILTER_PROJECT_RULE =
-        new SolrFilterRule(operand(LogicalFilter.class, operand(
-            LogicalProject.class, operand(SolrTableScan.class, none()))), "SolrFilterProjectRule");
-
-    <R extends RelNode> SolrFilterRule(RelOptRuleOperand rule, String description) {
-      super(rule, description);
+    private SolrFilterRule() {
+      super(LogicalFilter.class, FILTER_PREDICATE, "SolrFilterRule");
     }
 
     public RelNode convert(RelNode rel) {
@@ -194,14 +172,12 @@ class SolrRules {
   /**
    * Rule to convert a {@link Sort} to a {@link SolrSort}.
    */
-  private static class SolrSortRule extends SolrRule {
-//    static final SolrSortRule SORT_RULE = new SolrSortRule(operand(Sort.class, any()), "SolrSortRule");
+  private static class SolrSortRule extends SolrConverterRule {
 
-    static final SolrSortRule SORT_RULE = new SolrSortRule(
-        operand(Sort.class, operand(SolrTableScan.class, none())), "SolrSortRule");
+    static final SolrSortRule SORT_RULE = new SolrSortRule();
 
-    <R extends RelNode> SolrSortRule(RelOptRuleOperand rule, String description) {
-      super(rule, description);
+    private SolrSortRule() {
+      super(LogicalSort.class, relNode -> true, "SolrSortRule");
     }
 
     public RelNode convert(RelNode rel) {
