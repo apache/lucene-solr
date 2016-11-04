@@ -175,7 +175,10 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       SolrQueryRequestContextUtils.setScoringQuery(req, scoringQuery);
 
       int reRankDocs = localParams.getInt(RERANK_DOCS, DEFAULT_RERANK_DOCS);
-      reRankDocs = Math.max(1, reRankDocs);
+      if (reRankDocs <= 0) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Must rerank at least 1 document");
+      }
 
       // External features
       scoringQuery.setRequest(req);
