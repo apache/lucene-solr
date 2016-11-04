@@ -96,6 +96,8 @@ New Features
 * SOLR-8542: Adds Solr Learning to Rank (LTR) plugin for reranking results with machine learning models.
   (Michael Nilsson, Diego Ceccarelli, Joshua Pantony, Jon Dorando, Naveen Santhapuri, Alessandro Benedetti, David Grohmann, Christine Poerschke)
 
+* SOLR-9055: Make collection backup/restore extensible. (Hrishikesh Gadre, Varun Thacker, Mark Miller)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
