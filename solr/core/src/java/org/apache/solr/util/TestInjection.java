@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -110,6 +111,8 @@ public class TestInjection {
   
   public static String updateRandomPause = null;
 
+  public static String prepRecoveryOpPauseForever = null;
+
   public static String randomDelayInCoreCreation = null;
   
   public static int randomDelayMaxInCoreCreationInSec = 10;
@@ -117,6 +120,8 @@ public class TestInjection {
   public static String splitFailureBeforeReplicaCreation = null;
   
   private static Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
+
+  private static AtomicInteger countPrepRecoveryOpPauseForever = new AtomicInteger(0);
 
   public static void reset() {
     nonGracefullClose = null;
@@ -127,6 +132,8 @@ public class TestInjection {
     updateRandomPause = null;
     randomDelayInCoreCreation = null;
     splitFailureBeforeReplicaCreation = null;
+    prepRecoveryOpPauseForever = null;
+    countPrepRecoveryOpPauseForever = new AtomicInteger(0);
 
     for (Timer timer : timers) {
       timer.cancel();
@@ -283,6 +290,31 @@ public class TestInjection {
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
+      }
+    }
+
+    return true;
+  }
+
+  public static boolean injectPrepRecoveryOpPauseForever() {
+    if (prepRecoveryOpPauseForever != null)  {
+      Random rand = random();
+      if (null == rand) return true;
+
+      Pair<Boolean,Integer> pair = parseValue(prepRecoveryOpPauseForever);
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
+      // Prevent for continuous pause forever
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100) && countPrepRecoveryOpPauseForever.get() < 2) {
+        countPrepRecoveryOpPauseForever.incrementAndGet();
+        log.info("inject pause forever for prep recovery op");
+        try {
+          Thread.sleep(Integer.MAX_VALUE);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      } else {
+        countPrepRecoveryOpPauseForever.set(0);
       }
     }
 

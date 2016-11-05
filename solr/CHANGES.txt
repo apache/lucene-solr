@@ -114,6 +114,9 @@ Bug Fixes
 * SOLR-9360: Solr script not properly checking SOLR_PID
   (Alessandro Benedetti via Erick Erickson)
 
+* SOLR-9716: RecoveryStrategy sends prep recovery command without setting read time out which can cause
+  replica recovery to hang indefinitely on network partitions. (Cao Manh Dat, shalin)
+
 Other Changes
 ----------------------
 
