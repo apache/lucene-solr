@@ -94,20 +94,58 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     List<Query> qlist = new ArrayList<>(freq.domain.filters.size());
     // TODO: prevent parsing filters each time!
     for (Object rawFilter : freq.domain.filters) {
-      Query symbolicFilter;
       if (rawFilter instanceof String) {
         QParser parser = null;
         try {
           parser = QParser.getParser((String)rawFilter, fcontext.req);
-          symbolicFilter = parser.getQuery();
+          Query symbolicFilter = parser.getQuery();
+          qlist.add(symbolicFilter);
         } catch (SyntaxError syntaxError) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
         }
+      } else if (rawFilter instanceof Map) {
+
+        Map<String,Object> m = (Map<String, Object>) rawFilter;
+        String type;
+        Object args;
+
+        if (m.size() == 1) {
+          Map.Entry<String, Object> entry = m.entrySet().iterator().next();
+          type = entry.getKey();
+          args = entry.getValue();
+        } else {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't convert map to query:" + rawFilter);
+        }
+
+        if (!"param".equals(type)) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown type. Can't convert map to query:" + rawFilter);
+        }
+
+        String tag;
+        if (!(args instanceof String)) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't retrieve non-string param:" + args);
+        }
+        tag = (String)args;
+
+        String[] qstrings = fcontext.req.getParams().getParams(tag);
+
+        if (qstrings != null) {
+          for (String qstring : qstrings) {
+            QParser parser = null;
+            try {
+              parser = QParser.getParser((String) qstring, fcontext.req);
+              Query symbolicFilter = parser.getQuery();
+              qlist.add(symbolicFilter);
+            } catch (SyntaxError syntaxError) {
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
+            }
+          }
+        }
+
       } else {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Bad query (expected a string):" + rawFilter);
       }
 
-      qlist.add(symbolicFilter);
     }
 
     this.filter = fcontext.searcher.getDocSet(qlist);

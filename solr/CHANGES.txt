@@ -98,6 +98,9 @@ New Features
 
 * SOLR-9055: Make collection backup/restore extensible. (Hrishikesh Gadre, Varun Thacker, Mark Miller)
 
+* SOLR-9682: JSON Facet API: added "param" query type to facet domain filter specification to obtain
+  filters via query parameters. (yonik)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
