@@ -122,6 +122,8 @@ Bug Fixes
 
 * SOLR-9624: In Admin UI, do not attempt to highlight CSV output (Alexandre Rafalovitch)
 
+* SOLR-9005: In files example, add a guard condition to javascript URP script (Alexandre Rafalovitch)
+
 Other Changes
 ----------------------
 
