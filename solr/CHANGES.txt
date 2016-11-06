@@ -120,6 +120,8 @@ Bug Fixes
 * SOLR-9716: RecoveryStrategy sends prep recovery command without setting read time out which can cause
   replica recovery to hang indefinitely on network partitions. (Cao Manh Dat, shalin)
 
+* SOLR-9624: In Admin UI, do not attempt to highlight CSV output (Alexandre Rafalovitch)
+
 Other Changes
 ----------------------
 
