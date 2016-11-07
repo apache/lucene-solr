@@ -57,6 +57,12 @@ Other
 ======================= Lucene 6.4.0 =======================
 (No Changes)
 
+Improvements
+
+* LUCENE-6824: TermAutomatonQuery now rewrites to TermQuery,
+  PhraseQuery or MultiPhraseQuery when the word automaton is simple
+  (Mike McCandless)
+
 ======================= Lucene 6.3.0 =======================
 
 API Changes
