@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -732,7 +733,8 @@ public class UnifiedHighlighter {
     OffsetSource offsetSource = getOptimizedOffsetSource(field, terms, phraseHelper, automata);
     switch (offsetSource) {
       case ANALYSIS:
-        return new AnalysisOffsetStrategy(field, terms, phraseHelper, automata, getIndexAnalyzer());
+        return new AnalysisOffsetStrategy(field, terms, phraseHelper, automata, getIndexAnalyzer(),
+            this::preMultiTermQueryRewrite);
       case NONE_NEEDED:
         return NoOpOffsetStrategy.INSTANCE;
       case TERM_VECTORS:
@@ -776,13 +778,14 @@ public class UnifiedHighlighter {
     boolean highlightPhrasesStrictly = highlightFlags.contains(HighlightFlag.PHRASES);
     boolean handleMultiTermQuery = highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY);
     return highlightPhrasesStrictly ?
-        new PhraseHelper(query, field, this::requiresRewrite, !handleMultiTermQuery) :
+        new PhraseHelper(query, field, this::requiresRewrite, this::preSpanQueryRewrite, !handleMultiTermQuery) :
         PhraseHelper.NONE;
   }
 
   protected CharacterRunAutomaton[] getAutomata(String field, Query query, EnumSet<HighlightFlag> highlightFlags) {
     return highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)
-        ? MultiTermHighlighting.extractAutomata(query, field, !highlightFlags.contains(HighlightFlag.PHRASES))
+        ? MultiTermHighlighting.extractAutomata(query, field, !highlightFlags.contains(HighlightFlag.PHRASES),
+          this::preMultiTermQueryRewrite)
         : ZERO_LEN_AUTOMATA_ARRAY;
   }
 
@@ -827,6 +830,32 @@ public class UnifiedHighlighter {
    * return null to have the default rules apply, which govern the ones included in Lucene.
    */
   protected Boolean requiresRewrite(SpanQuery spanQuery) {
+    return null;
+  }
+
+  /**
+   * When highlighting phrases accurately, we may need to handle custom queries that aren't supported in the
+   * {@link org.apache.lucene.search.highlight.WeightedSpanTermExtractor} as called by the {@link PhraseHelper}.
+   * Should custom query types be needed, this method should be overriden to return a collection of queries if appropriate,
+   * or null if nothing to do. If the query is not custom, simply returning null will allow the default rules to apply.
+   *
+   * @param query Query to be highlighted
+   * @return A Collection of Query object(s) if needs to be rewritten, otherwise null.
+   */
+  protected Collection<Query> preSpanQueryRewrite(Query query) {
+    return null;
+  }
+
+  /**
+   * When dealing with multi term queries / span queries, we may need to handle custom queries that aren't supported
+   * by the default automata extraction in {@link MultiTermHighlighting}. This can be overriden to return a collection
+   * of queries if appropriate, or null if nothing to do. If query is not custom, simply returning null will allow the
+   * default rules to apply.
+   *
+   * @param query Query to be highlighted
+   * @return A Collection of Query object(s) if needst o be rewritten, otherwise null.
+   */
+  protected Collection<Query> preMultiTermQueryRewrite(Query query) {
     return null;
   }
 
