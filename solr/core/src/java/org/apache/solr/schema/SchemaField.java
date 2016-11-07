@@ -21,9 +21,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+<<<<<<< HEAD
 
+=======
+import java.util.Comparator;
+;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
+>>>>>>> d04e9e9... Make DocValues sortable by Comparator
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.response.TextResponseWriter;
@@ -353,4 +361,9 @@ public final class SchemaField extends FieldProperties {
     }
     return properties;
   }
+
+  @Override
+  public Comparator<BytesRef> docValuesComparator() {return null;}
+
+
 }

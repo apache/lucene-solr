@@ -21,6 +21,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Comparator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -89,6 +90,12 @@ public class TestIndexableField extends LuceneTestCase {
       public DocValuesType docValuesType() {
         return DocValuesType.NONE;
       }
+
+      @Override
+      public Comparator<BytesRef> docValuesComparator() {
+        return null;
+      }
+
     };
 
     public MyField(int counter) {

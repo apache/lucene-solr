@@ -18,6 +18,8 @@ package org.apache.lucene.index;
 
 
 import org.apache.lucene.analysis.Analyzer; // javadocs
+import java.util.Comparator;
+import org.apache.lucene.util.BytesRef;
 
 /** 
  * Describes the properties of a field.
@@ -95,5 +97,9 @@ public interface IndexableFieldType {
    * DocValues {@link DocValuesType}: how the field's value will be indexed
    * into docValues.
    */
+
   public DocValuesType docValuesType();  
+
+  //TODO
+  public Comparator<BytesRef> docValuesComparator();
 }

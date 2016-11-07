@@ -613,6 +613,8 @@ final class DefaultIndexingChain extends DocConsumer {
         fieldInfo.setOmitsNorms();
       }
 
+      fieldInfo.setDocValuesComparator(fieldType.docValuesComparator());
+
       final boolean analyzed = fieldType.tokenized() && docState.analyzer != null;
         
       // only bother checking offsets if something will consume them.

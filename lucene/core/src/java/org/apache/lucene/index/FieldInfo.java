@@ -18,7 +18,9 @@ package org.apache.lucene.index;
 
 
 import java.util.Map;
+import java.util.Comparator;
 import java.util.Objects;
+import org.apache.lucene.util.BytesRef;
 
 /**
  *  Access to the Field Info file that describes document fields and whether or
@@ -47,6 +49,9 @@ public final class FieldInfo {
   private final Map<String,String> attributes;
 
   private long dvGen;
+
+  private Comparator<BytesRef> docValuesComparator=null;
+
   /**
    * Sole constructor.
    *
@@ -263,4 +268,16 @@ public final class FieldInfo {
   public Map<String,String> attributes() {
     return attributes;
   }
+
+  //TODO coment
+  public Comparator<BytesRef> docValuesComparator() {
+    return docValuesComparator;
+  }
+
+  //TODO coment
+  public void setDocValuesComparator(Comparator<BytesRef> comparator) {
+    docValuesComparator = comparator;
+  }
+
+
 }
