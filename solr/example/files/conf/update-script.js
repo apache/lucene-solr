@@ -74,7 +74,7 @@ function processAdd(cmd) {
 
   var content = doc.getFieldValue("content");
   if (!content) {
-	  return; //No content found, so we are done here
+    return; //No content found, so we are done here
   }
 
     var analyzer =
