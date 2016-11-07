@@ -11,9 +11,6 @@ Improvements
 * LUCENE-7532: Add back lost codec file format documentation
   (Shinichiro Abe via Mike McCandless)
 
-
-Improvements
-
 * LUCENE-6824: TermAutomatonQuery now rewrites to TermQuery,
   PhraseQuery or MultiPhraseQuery when the word automaton is simple
   (Mike McCandless)
