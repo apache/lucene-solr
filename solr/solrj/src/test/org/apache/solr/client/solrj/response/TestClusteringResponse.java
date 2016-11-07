@@ -19,7 +19,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.solr.SolrJettyTestBase;
@@ -49,51 +49,21 @@ public class TestClusteringResponse extends SolrJettyTestBase {
     List<Cluster> clusters = clusteringResponse.getClusters();
     Assert.assertEquals(4, clusters.size());
 
-    //First Cluster
-    Cluster cluster1 = clusters.get(0);
-    List<String> expectedLabel1 = new LinkedList<String>();
-    expectedLabel1.add("label1");
-    List<String> expectedDocs1 = new LinkedList<String>();
-    expectedDocs1.add("id1");
-    expectedDocs1.add("id2");
-    expectedDocs1.add("id3");
-    Assert.assertEquals(expectedLabel1, cluster1.getLabels());
-    Assert.assertEquals(expectedDocs1, cluster1.getDocs());
-    Assert.assertEquals(expectedLabel1, cluster1.getLabels());
-    Assert.assertEquals(0.6, cluster1.getScore(), 0);
-    //Second Cluster
-    Cluster cluster2 = clusters.get(1);
-    List<String> expectedLabel2 = new LinkedList<String>();
-    expectedLabel2.add("label2");
-    List<String> expectedDocs2 = new LinkedList<String>();
-    expectedDocs2.add("id5");
-    expectedDocs2.add("id6");
-    Assert.assertEquals(expectedLabel2, cluster2.getLabels());
-    Assert.assertEquals(expectedDocs2, cluster2.getDocs());
-    Assert.assertEquals(expectedLabel2, cluster2.getLabels());
-    Assert.assertEquals(0.93, cluster2.getScore(), 0);
-    //Third Cluster
-    Cluster cluster3 = clusters.get(2);
-    List<String> expectedLabel3 = new LinkedList<String>();
-    expectedLabel3.add("label3");
-    List<String> expectedDocs3 = new LinkedList<String>();
-    expectedDocs3.add("id7");
-    expectedDocs3.add("id8");
-    Assert.assertEquals(expectedLabel3, cluster3.getLabels());
-    Assert.assertEquals(expectedDocs3, cluster3.getDocs());
-    Assert.assertEquals(expectedLabel3, cluster3.getLabels());
-    Assert.assertEquals(1.26, cluster3.getScore(), 0);
-    //Fourth Cluster
-    Cluster cluster4 = clusters.get(3);
-    List<String> expectedLabel4 = new LinkedList<String>();
-    expectedLabel4.add("label4");
-    List<String> expectedDocs4 = new LinkedList<String>();
-    expectedDocs4.add("id9");
-    Assert.assertEquals(expectedLabel4, cluster4.getLabels());
-    Assert.assertEquals(expectedDocs4, cluster4.getDocs());
-    Assert.assertEquals(expectedLabel4, cluster4.getLabels());
-    Assert.assertEquals(0.0, cluster4.getScore(), 0);
-
+    checkCluster(clusters.get(0), Arrays.asList("label1"), Arrays.asList("id1", "id2", "id3"), 0.6d, false);
+    checkCluster(clusters.get(1), Arrays.asList("label2"), Arrays.asList("id5", "id6"), 0.93d, false);
+    checkCluster(clusters.get(2), Arrays.asList("label3"), Arrays.asList("id7", "id8"), 1.26d, false);
+    checkCluster(clusters.get(3), Arrays.asList("label4"), Arrays.asList("id9"), 0d, true);
+    
+    List<Cluster> sub = clusters.get(0).getSubclusters();
+    checkCluster(sub.get(0), Arrays.asList("label1.sub1"), Arrays.asList("id1", "id2"), 0.0d, false);
+    checkCluster(sub.get(1), Arrays.asList("label1.sub2"), Arrays.asList("id2"), 0.0d, false);
+    assertEquals(sub.size(), 2);
   }
 
+  private void checkCluster(Cluster cluster, List<String> labels, List<String> docRefs, double score, boolean otherTopics) {
+    Assert.assertEquals(cluster.getLabels(), labels);
+    Assert.assertEquals(cluster.getDocs(), docRefs);
+    Assert.assertTrue(Double.compare(cluster.getScore(), score) == 0);
+    Assert.assertEquals(otherTopics, cluster.isOtherTopics());
+  }
 }
