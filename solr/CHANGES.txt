@@ -136,6 +136,11 @@ Bug Fixes
   of matching something due to filter exclusions (which can widen the domain again).
   (Michael Sun, yonik)
 
+* SOLR-9740: A bug in macro expansion of multi-valued parameters caused non-expanded values
+  after the first expanded value in the same multi-valued parameter to be dropped.
+  (Erik Hatcher, yonik)
+
+
 Other Changes
 ----------------------
 
