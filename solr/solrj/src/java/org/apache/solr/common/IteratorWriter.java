@@ -25,12 +25,14 @@ import java.io.IOException;
  */
 public interface IteratorWriter {
   /**
-   * @param w after this method returns , the EntryWriter Object is invalid
+   * @param iw after this method returns , the EntryWriter Object is invalid
    *          Do not hold a reference to this object
    */
-  void writeIter(ItemWriter w) throws IOException;
+  void writeIter(ItemWriter iw) throws IOException;
 
   interface ItemWriter {
+    /**The item could be any supported type
+     */
     ItemWriter add(Object o) throws IOException;
 
     default ItemWriter add(int v) throws IOException {
