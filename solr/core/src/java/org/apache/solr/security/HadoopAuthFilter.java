@@ -17,8 +17,6 @@
 package org.apache.solr.security;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -37,7 +35,6 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationFilter;
@@ -47,16 +44,16 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkACLProvider;
 import org.apache.solr.common.cloud.ZkCredentialsProvider;
 import org.apache.zookeeper.data.ACL;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This is an authentication filter based on Hadoop's {@link DelegationTokenAuthenticationFilter}.
- * The Kerberos plugin can be configured to use delegation tokens, which allow an
- * application to reuse the authentication of an end-user or another application.
  */
-public class DelegationTokenKerberosFilter extends DelegationTokenAuthenticationFilter {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
+  /**
+   * This property defines the configuration parameter storing the Solr zookeeper client ref
+   * in the servlet filter config.
+   */
+  static final String DELEGATION_TOKEN_ZK_CLIENT = "solr.kerberos.delegation.token.zk.client";
 
   private CuratorFramework curatorFramework;
 
@@ -64,32 +61,11 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
   public void init(FilterConfig conf) throws ServletException {
     if (conf != null && "zookeeper".equals(conf.getInitParameter("signer.secret.provider"))) {
       SolrZkClient zkClient =
-          (SolrZkClient)conf.getServletContext().getAttribute(KerberosPlugin.DELEGATION_TOKEN_ZK_CLIENT);
+          (SolrZkClient)conf.getServletContext().getAttribute(DELEGATION_TOKEN_ZK_CLIENT);
       conf.getServletContext().setAttribute("signer.secret.provider.zookeeper.curator.client",
           getCuratorClient(zkClient));
     }
     super.init(conf);
-  }
-
-  /**
-   * Return the ProxyUser Configuration.  FilterConfig properties beginning with
-   * "solr.impersonator.user.name" will be added to the configuration.
-   */
-  @Override
-  protected Configuration getProxyuserConfiguration(FilterConfig filterConf)
-      throws ServletException {
-    Configuration conf = new Configuration(false);
-
-    Enumeration<?> names = filterConf.getInitParameterNames();
-    while (names.hasMoreElements()) {
-      String name = (String) names.nextElement();
-      if (name.startsWith(KerberosPlugin.IMPERSONATOR_PREFIX)) {
-        String value = filterConf.getInitParameter(name);
-        conf.set(PROXYUSER_PREFIX + "." + name.substring(KerberosPlugin.IMPERSONATOR_PREFIX.length()), value);
-        conf.set(name, value);
-      }
-    }
-    return conf;
   }
 
   @Override
@@ -131,7 +107,9 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
   @Override
   public void destroy() {
     super.destroy();
-    if (curatorFramework != null) curatorFramework.close();
+    if (curatorFramework != null) {
+      curatorFramework.close();
+    }
     curatorFramework = null;
   }
 
