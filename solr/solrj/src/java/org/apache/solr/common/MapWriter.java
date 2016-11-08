@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * Use this class if the Map size is not known
+ * Use this class to push all entries of a Map into an output.
+ * This avoids creating map instances and is supposed to be memory efficient.
+ * If the entries are primitives, unnecessary boxing is also avoided
  */
 public interface MapWriter extends MapSerializable {
 
@@ -45,8 +47,14 @@ public interface MapWriter extends MapSerializable {
 
   void writeMap(EntryWriter ew) throws IOException;
 
+  /**
+   * An interface to push one entry at a time to the output
+   */
   interface EntryWriter {
-    /**Writes a key value into the map
+
+    /**
+     * Writes a key value into the map
+     *
      * @param k The key
      * @param v The value can be any supported object
      */
@@ -69,11 +77,12 @@ public interface MapWriter extends MapSerializable {
       return this;
     }
 
-    default EntryWriter put(String k, double v) throws IOException{
+    default EntryWriter put(String k, double v) throws IOException {
       put(k, (Double) v);
       return this;
     }
-    default EntryWriter put(String k, boolean v) throws IOException{
+
+    default EntryWriter put(String k, boolean v) throws IOException {
       put(k, (Boolean) v);
       return this;
     }

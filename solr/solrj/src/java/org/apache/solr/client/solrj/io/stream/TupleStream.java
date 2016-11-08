@@ -19,21 +19,19 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 
 
-public abstract class TupleStream implements Closeable, Serializable, MapSerializable {
+public abstract class TupleStream implements Closeable, Serializable, MapWriter {
 
   private static final long serialVersionUID = 1;
   
@@ -42,15 +40,6 @@ public abstract class TupleStream implements Closeable, Serializable, MapSeriali
   public TupleStream() {
 
   }
-/*
-  public static void writeStreamOpen(Writer out) throws IOException {
-    out.write("{\"docs\":[");
-  }
-
-  public static void writeStreamClose(Writer out) throws IOException {
-    out.write("]}");
-  }*/
-
   public abstract void setStreamContext(StreamContext context);
 
   public abstract List<TupleStream> children();
@@ -69,41 +58,25 @@ public abstract class TupleStream implements Closeable, Serializable, MapSeriali
     return 0;
   }
 
-  private boolean isOpen = false;
-
   @Override
-  public Map toMap(Map<String, Object> map) {
-    try {
-      if (!isOpen) {
-        open();
-        isOpen = true;
-      }
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-    return Collections.singletonMap("docs", new Iterator<Tuple>() {
-      Tuple tuple;
-      boolean isEOF = false;
-
-      @Override
-      public boolean hasNext() {
-        if (isEOF) return false;
-        if (tuple != null) return true;
-        try {
-          tuple = read();
-          if(tuple != null && tuple.EOF) close();
-          return tuple != null;
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+  public void writeMap(EntryWriter ew) throws IOException {
+    open();
+    ew.put("docs", (IteratorWriter) iw -> {
+      try {
+        for (; ; ) {
+          Tuple tuple = read();
+          if (tuple != null) {
+            iw.add(tuple);
+            if (tuple.EOF) {
+              close();
+              break;
+            }
+          } else {
+            break;
+          }
         }
-      }
-
-      @Override
-      public Tuple next() {
-        Tuple tmp = tuple;
-        tuple = null;
-        isEOF = tmp == null || tmp.EOF;
-        return tmp;
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     });
   }
