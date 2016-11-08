@@ -90,6 +90,8 @@ Other
 * LUCENE-7546: Fixed references to benchmark wikipedia data and the Jenkins line-docs file
   (David Smiley)
 
+* LUCENE-7534: fix smokeTestRelease.py to run on Cygwin (Mikhail Khludnev)
+
 ======================= Lucene 6.3.0 =======================
 
 API Changes
