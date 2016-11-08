@@ -104,6 +104,8 @@ New Features
 * SOLR-9682: JSON Facet API: added "param" query type to facet domain filter specification to obtain
   filters via query parameters. (yonik)
 
+* SOLR-9038: Add a command-line tool to manage the snapshots functionality (Hrishikesh Gadre via yonik)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
