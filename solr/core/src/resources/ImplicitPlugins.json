@@ -92,14 +92,16 @@
       "useParams":"_ADMIN_FILE"
     },
     "/export": {
-      "class": "solr.SearchHandler",
+      "class": "solr.ExportHandler",
       "useParams":"_EXPORT",
       "components": [
         "query"
       ],
+      "defaults": {
+        "wt": "json"
+      },
       "invariants": {
         "rq": "{!xport}",
-        "wt": "xsort",
         "distrib": false
       }
     },
