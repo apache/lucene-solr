@@ -181,6 +181,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     methodsExpectedNotOverriden.add("writeMapOpener");
     methodsExpectedNotOverriden.add("writeMapSeparator");
     methodsExpectedNotOverriden.add("writeMapCloser");
+    methodsExpectedNotOverriden.add("public void org.apache.solr.response.JSONWriter.writeArray(java.lang.String,java.util.List) throws java.io.IOException");
     methodsExpectedNotOverriden.add("writeArrayOpener");
     methodsExpectedNotOverriden.add("writeArraySeparator");
     methodsExpectedNotOverriden.add("writeArrayCloser");

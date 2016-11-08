@@ -692,11 +692,6 @@ class ArrayOfNamedValuePairJSONWriter extends JSONWriter {
   }
 
   @Override
-  public void writeArray(String name, List l) throws IOException {
-    super.writeArray(name, l);
-  }
-
-  @Override
   public void writeNamedList(String name, NamedList val) throws IOException {
 
     if (val instanceof SimpleOrderedMap) {
