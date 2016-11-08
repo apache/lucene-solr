@@ -401,24 +401,29 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
 
   void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain) throws IOException {
 
-    // TODO: what if a zero bucket has a sub-facet with an exclusion that would yield results?
-    // should we check for domain-altering exclusions, or even ask the sub-facet for
-    // it's domain and then only skip it if it's 0?
-
-    if (domain == null || domain.size() == 0 && !freq.processEmpty) {
-      return;
-    }
+    boolean emptyDomain = domain == null || domain.size() == 0;
 
     for (Map.Entry<String,FacetRequest> sub : freq.getSubFacets().entrySet()) {
+      FacetRequest subRequest = sub.getValue();
+
+      // This includes a static check if a sub-facet can possibly produce something from
+      // an empty domain.  Should this be changed to a dynamic check as well?  That would
+      // probably require actually executing the facet anyway, and dropping it at the
+      // end if it was unproductive.
+      if (emptyDomain && !freq.processEmpty && !subRequest.canProduceFromEmpty()) {
+        continue;
+      }
+
       // make a new context for each sub-facet since they can change the domain
       FacetContext subContext = fcontext.sub(filter, domain);
-      FacetProcessor subProcessor = sub.getValue().createFacetProcessor(subContext);
+      FacetProcessor subProcessor = subRequest.createFacetProcessor(subContext);
+
       if (fcontext.getDebugInfo() != null) {   // if fcontext.debugInfo != null, it means rb.debug() == true
         FacetDebugInfo fdebug = new FacetDebugInfo();
         subContext.setDebugInfo(fdebug);
         fcontext.getDebugInfo().addChild(fdebug);
 
-        fdebug.setReqDescription(sub.getValue().getFacetDescription());
+        fdebug.setReqDescription(subRequest.getFacetDescription());
         fdebug.setProcessor(subProcessor.getClass().getSimpleName());
         if (subContext.filter != null) fdebug.setFilter(subContext.filter.toString());
 

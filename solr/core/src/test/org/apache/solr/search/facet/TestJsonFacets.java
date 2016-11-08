@@ -998,6 +998,25 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "}"
     );
 
+    // test sub-facets of  empty buckets with domain filter exclusions (canProduceFromEmpty) (see SOLR-9519)
+    client.testJQ(params(p, "q", "*:*", "fq","{!tag=doc3}id:non-exist", "fq","{!tag=CATA}${cat_s}:A"
+
+        , "json.facet", "{" +
+            "f1:{${terms} type:terms, field:${cat_s}, domain:{excludeTags:doc3} }  " +
+            ",q1 :{type:query, q:'*:*', facet:{ f1:{${terms} type:terms, field:${cat_s}, domain:{excludeTags:doc3} } }  }  " +  // nested under query
+            ",q1a:{type:query, q:'id:4', facet:{ f1:{${terms} type:terms, field:${cat_s}, domain:{excludeTags:doc3} } }  }  " +  // nested under query, make sure id:4 filter still applies
+            ",r1 :{type:range, field:${num_d}, start:0, gap:3, end:5,  facet:{ f1:{${terms} type:terms, field:${cat_s}, domain:{excludeTags:doc3} } }  }  " +  // nested under range, make sure range constraints still apply
+            ",f2:{${terms} type:terms, field:${cat_s}, domain:{filter:'*:*'} }  " + // domain filter doesn't widen, so f2 should not appear.
+            "}"
+    )
+    , "facets=={ count:0, " +
+        " f1:{ buckets:[ {val:A, count:2} ]  }" +
+        ",q1:{ count:0, f1:{buckets:[{val:A, count:2}]} }" +
+        ",q1a:{ count:0, f1:{buckets:[{val:A, count:1}]} }" +
+        ",r1:{ buckets:[ {val:0.0,count:0,f1:{buckets:[{val:A, count:1}]}}, {val:3.0,count:0,f1:{buckets:[{val:A, count:1}]}} ]  }" +
+        "}"
+    );
+
     // nested query facets on subset (with excludeTags)
     client.testJQ(params(p, "q", "*:*", "fq","{!tag=abc}id:(2 3)"
             , "json.facet", "{ processEmpty:true," +
