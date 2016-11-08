@@ -18,6 +18,7 @@
 package org.apache.solr.response;
 
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -29,6 +30,7 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.slf4j.Logger;
@@ -49,8 +51,11 @@ public class TestPushWriter extends SolrTestCaseJ4 {
     writeData(pw);
     osw.flush();
     log.info(new String(baos.toByteArray(), "UTF-8"));
-    Object m = Utils.fromJSON(baos.toByteArray());
-    checkValues((Map) m);
+    Map m = (Map) Utils.fromJSON(baos.toByteArray());
+    checkValues(m);
+    writeData(new JavaBinCodec(baos= new ByteArrayOutputStream(), null));
+    m = (Map) new JavaBinCodec().unmarshal(new ByteArrayInputStream(baos.toByteArray()));
+    checkValues(m);
   }
 
   protected void checkValues(Map m) {

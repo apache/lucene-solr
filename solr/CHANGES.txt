@@ -143,6 +143,8 @@ Other Changes
 
 * SOLR-9717: Refactor '/export' to not hardcode the JSON output and to use an API (noble)
 
+* SOLR-9739: JavabinCodec implements PushWriter interface (noble)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
