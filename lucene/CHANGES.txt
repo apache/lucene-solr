@@ -63,6 +63,10 @@ Improvements
   PhraseQuery or MultiPhraseQuery when the word automaton is simple
   (Mike McCandless)
 
+* LUCENE-7431: Allow a certain amount of overlap to be specified between the include
+  and exclude arguments of SpanNotQuery via negative pre and/or post arguments.
+  (Marc Morissette via David Smiley)
+
 ======================= Lucene 6.3.0 =======================
 
 API Changes
