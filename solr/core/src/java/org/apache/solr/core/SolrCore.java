@@ -110,7 +110,6 @@ import org.apache.solr.response.RubyResponseWriter;
 import org.apache.solr.response.SchemaXmlResponseWriter;
 import org.apache.solr.response.SmileResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.SortingResponseWriter;
 import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.ManagedResourceStorage;
@@ -2314,7 +2313,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     m.put("raw", new RawResponseWriter());
     m.put(CommonParams.JAVABIN, new BinaryResponseWriter());
     m.put("csv", new CSVResponseWriter());
-    m.put("xsort", new SortingResponseWriter());
     m.put("schema.xml", new SchemaXmlResponseWriter());
     m.put("smile", new SmileResponseWriter());
     m.put(ReplicationHandler.FILE_STREAM, getFileStreamWriter());
@@ -2332,12 +2330,21 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       @Override
       public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
         RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
-        if(rawWriter!=null) rawWriter.write(out);
+        if (rawWriter != null) {
+          rawWriter.write(out);
+          if (rawWriter instanceof Closeable) ((Closeable) rawWriter).close();
+        }
+
       }
 
       @Override
       public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-        return BinaryResponseParser.BINARY_CONTENT_TYPE;
+        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
+        if (rawWriter != null) {
+          return rawWriter.getContentType();
+        } else {
+          return BinaryResponseParser.BINARY_CONTENT_TYPE;
+        }
       }
     };
   }
@@ -2347,6 +2354,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   }
 
   public interface RawWriter {
+    default String getContentType() {
+      return BinaryResponseParser.BINARY_CONTENT_TYPE;
+    }
     void write(OutputStream os) throws IOException ;
   }
 

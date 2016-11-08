@@ -24,7 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.MapWriter.EntryWriter;
+import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -74,6 +78,11 @@ public class JSONResponseWriter implements QueryResponseWriter {
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return contentType;
   }
+
+  public static PushWriter getPushWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
+    return new JSONWriter(writer, req, rsp);
+  }
+
 }
 
 class JSONWriter extends TextResponseWriter {
@@ -507,6 +516,53 @@ class JSONWriter extends TextResponseWriter {
     }
   }
 
+  @Override
+  public void writeIterator(IteratorWriter val) throws IOException {
+    writeArrayOpener(-1);
+    incLevel();
+    val.writeIter(new IteratorWriter.ItemWriter() {
+      boolean first = true;
+
+      @Override
+      public IteratorWriter.ItemWriter add(Object o) throws IOException {
+        if (!first) {
+          JSONWriter.this.indent();
+          JSONWriter.this.writeArraySeparator();
+        }
+        JSONWriter.this.writeVal(null, o);
+        first = false;
+        return this;
+      }
+    });
+    decLevel();
+    writeArrayCloser();
+  }
+
+  @Override
+  public void writeMap(MapWriter val)
+      throws IOException {
+    writeMapOpener(-1);
+    incLevel();
+
+    val.writeMap(new EntryWriter() {
+      boolean isFirst = true;
+
+      @Override
+      public EntryWriter put(String k, Object v) throws IOException {
+        if (isFirst) {
+          isFirst = false;
+        } else {
+          JSONWriter.this.writeMapSeparator();
+        }
+        if (doIndent) JSONWriter.this.indent();
+        JSONWriter.this.writeKey(k, true);
+        JSONWriter.this.writeVal(k, v);
+        return this;
+      }
+    });
+    decLevel();
+    writeMapCloser();
+  }
 
   @Override
   public void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
