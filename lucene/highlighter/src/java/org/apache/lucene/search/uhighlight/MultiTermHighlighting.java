@@ -20,8 +20,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -69,34 +71,44 @@ class MultiTermHighlighting {
    * Extracts all MultiTermQueries for {@code field}, and returns equivalent
    * automata that will match terms.
    */
-  public static CharacterRunAutomaton[] extractAutomata(Query query, String field, boolean lookInSpan) {
+  public static CharacterRunAutomaton[] extractAutomata(Query query, String field, boolean lookInSpan,
+                                                        Function<Query, Collection<Query>> preRewriteFunc) {
     List<CharacterRunAutomaton> list = new ArrayList<>();
-    if (query instanceof BooleanQuery) {
+    Collection<Query> customSubQueries = preRewriteFunc.apply(query);
+    if (customSubQueries != null) {
+      for (Query sub : customSubQueries) {
+        list.addAll(Arrays.asList(extractAutomata(sub, field, lookInSpan, preRewriteFunc)));
+      }
+    } else if (query instanceof BooleanQuery) {
       for (BooleanClause clause : (BooleanQuery) query) {
         if (!clause.isProhibited()) {
-          list.addAll(Arrays.asList(extractAutomata(clause.getQuery(), field, lookInSpan)));
+          list.addAll(Arrays.asList(extractAutomata(clause.getQuery(), field, lookInSpan, preRewriteFunc)));
         }
       }
     } else if (query instanceof ConstantScoreQuery) {
-      list.addAll(Arrays.asList(extractAutomata(((ConstantScoreQuery) query).getQuery(), field, lookInSpan)));
+      list.addAll(Arrays.asList(extractAutomata(((ConstantScoreQuery) query).getQuery(), field, lookInSpan,
+          preRewriteFunc)));
     } else if (query instanceof DisjunctionMaxQuery) {
       for (Query sub : ((DisjunctionMaxQuery) query).getDisjuncts()) {
-        list.addAll(Arrays.asList(extractAutomata(sub, field, lookInSpan)));
+        list.addAll(Arrays.asList(extractAutomata(sub, field, lookInSpan, preRewriteFunc)));
       }
     } else if (lookInSpan && query instanceof SpanOrQuery) {
       for (Query sub : ((SpanOrQuery) query).getClauses()) {
-        list.addAll(Arrays.asList(extractAutomata(sub, field, lookInSpan)));
+        list.addAll(Arrays.asList(extractAutomata(sub, field, lookInSpan, preRewriteFunc)));
       }
     } else if (lookInSpan && query instanceof SpanNearQuery) {
       for (Query sub : ((SpanNearQuery) query).getClauses()) {
-        list.addAll(Arrays.asList(extractAutomata(sub, field, lookInSpan)));
+        list.addAll(Arrays.asList(extractAutomata(sub, field, lookInSpan, preRewriteFunc)));
       }
     } else if (lookInSpan && query instanceof SpanNotQuery) {
-      list.addAll(Arrays.asList(extractAutomata(((SpanNotQuery) query).getInclude(), field, lookInSpan)));
+      list.addAll(Arrays.asList(extractAutomata(((SpanNotQuery) query).getInclude(), field, lookInSpan,
+          preRewriteFunc)));
     } else if (lookInSpan && query instanceof SpanPositionCheckQuery) {
-      list.addAll(Arrays.asList(extractAutomata(((SpanPositionCheckQuery) query).getMatch(), field, lookInSpan)));
+      list.addAll(Arrays.asList(extractAutomata(((SpanPositionCheckQuery) query).getMatch(), field, lookInSpan,
+          preRewriteFunc)));
     } else if (lookInSpan && query instanceof SpanMultiTermQueryWrapper) {
-      list.addAll(Arrays.asList(extractAutomata(((SpanMultiTermQueryWrapper<?>) query).getWrappedQuery(), field, lookInSpan)));
+      list.addAll(Arrays.asList(extractAutomata(((SpanMultiTermQueryWrapper<?>) query).getWrappedQuery(), field,
+          lookInSpan, preRewriteFunc)));
     } else if (query instanceof AutomatonQuery) {
       final AutomatonQuery aq = (AutomatonQuery) query;
       if (aq.getField().equals(field)) {
