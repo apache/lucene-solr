@@ -20,6 +20,8 @@ package org.apache.lucene.search.uhighlight;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.analysis.Analyzer;
@@ -56,6 +58,7 @@ import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -931,6 +934,91 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     assertEquals(1, snippets.length);
     assertEquals("iterate insect ipswitch illinois indirect", snippets[0]);
     ir.close();
+  }
+
+  public void testCustomSpanQueryHighlighting() throws Exception {
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
+    Document doc = new Document();
+    doc.add(new Field("body", "alpha bravo charlie delta echo foxtrot golf hotel india juliet", fieldType));
+    doc.add(newTextField("id", "id", Field.Store.YES));
+
+    iw.addDocument(doc);
+    IndexReader ir = iw.getReader();
+    iw.close();
+
+    IndexSearcher searcher = newSearcher(ir);
+    UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer) {
+      @Override
+      protected List<Query> preMultiTermQueryRewrite(Query query) {
+        if (query instanceof MyWrapperSpanQuery) {
+          return Collections.singletonList(((MyWrapperSpanQuery) query).originalQuery);
+        }
+        return null;
+      }
+    };
+
+    int docId = searcher.search(new TermQuery(new Term("id", "id")), 1).scoreDocs[0].doc;
+
+    WildcardQuery wildcardQuery = new WildcardQuery(new Term("body", "foxtr*"));
+    SpanMultiTermQueryWrapper wildcardQueryWrapper = new SpanMultiTermQueryWrapper<>(wildcardQuery);
+
+    SpanQuery wrappedQuery = new MyWrapperSpanQuery(wildcardQueryWrapper);
+
+    BooleanQuery query = new BooleanQuery.Builder()
+        .add(wrappedQuery, BooleanClause.Occur.SHOULD)
+        .build();
+
+    int[] docIds = new int[]{docId};
+
+    String snippets[] = highlighter.highlightFields(new String[]{"body"}, query, docIds, new int[]{2}).get("body");
+    assertEquals(1, snippets.length);
+    assertEquals("alpha bravo charlie delta echo <b>foxtrot</b> golf hotel india juliet", snippets[0]);
+    ir.close();
+  }
+
+  private static class MyWrapperSpanQuery extends SpanQuery {
+
+    private final SpanQuery originalQuery;
+
+    private MyWrapperSpanQuery(SpanQuery originalQuery) {
+      this.originalQuery = Objects.requireNonNull(originalQuery);
+    }
+
+    @Override
+    public String getField() {
+      return originalQuery.getField();
+    }
+
+    @Override
+    public String toString(String field) {
+      return "(Wrapper[" + originalQuery.toString(field)+"])";
+    }
+
+    @Override
+    public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      return originalQuery.createWeight(searcher, needsScores, boost);
+    }
+
+    @Override
+    public Query rewrite(IndexReader reader) throws IOException {
+      Query newOriginalQuery = originalQuery.rewrite(reader);
+      if (newOriginalQuery != originalQuery) {
+        return new MyWrapperSpanQuery((SpanQuery)newOriginalQuery);
+      }
+      return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      return originalQuery.equals(((MyWrapperSpanQuery)o).originalQuery);
+    }
+
+    @Override
+    public int hashCode() {
+      return originalQuery.hashCode();
+    }
   }
 
 }

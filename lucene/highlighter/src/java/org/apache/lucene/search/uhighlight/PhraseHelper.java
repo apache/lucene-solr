@@ -40,7 +40,7 @@ import java.util.function.Function;
 public class PhraseHelper {
 
   public static final PhraseHelper NONE = new PhraseHelper(new MatchAllDocsQuery(), "_ignored_",
-      spanQuery -> null, true);
+      spanQuery -> null, query -> null, true);
 
   //TODO it seems this ought to be a general thing on Spans?
   private static final Comparator<? super Spans> SPANS_COMPARATOR = (o1, o2) -> {
@@ -69,11 +69,14 @@ public class PhraseHelper {
    * {@code rewriteQueryPred} is an extension hook to override the default choice of
    * {@link WeightedSpanTermExtractor#mustRewriteQuery(SpanQuery)}. By default unknown query types are rewritten,
    * so use this to return {@link Boolean#FALSE} if you know the query doesn't need to be rewritten.
+   * Similarly, {@code preExtractRewriteFunction} is also an extension hook for extract to allow different queries
+   * to be set before the {@link WeightedSpanTermExtractor}'s extraction is invoked.
    * {@code ignoreQueriesNeedingRewrite} effectively ignores any query clause that needs to be "rewritten", which is
    * usually limited to just a {@link SpanMultiTermQueryWrapper} but could be other custom ones.
    */
   public PhraseHelper(Query query, String field, Function<SpanQuery, Boolean> rewriteQueryPred,
-               boolean ignoreQueriesNeedingRewrite) {
+                      Function<Query, Collection<Query>> preExtractRewriteFunction,
+                      boolean ignoreQueriesNeedingRewrite) {
     this.fieldName = field; // if null then don't require field match
     // filter terms to those we want
     positionInsensitiveTerms = field != null ? new FieldFilteringTermHashSet(field) : new HashSet<>();
@@ -95,6 +98,18 @@ public class PhraseHelper {
           extract(query, 1f, null); // null because we won't actually extract right now; we're not collecting
         } catch (Exception e) {
           throw new RuntimeException(e);
+        }
+      }
+
+      @Override
+      protected void extract(Query query, float boost, Map<String, WeightedSpanTerm> terms) throws IOException {
+        Collection<Query> newQueriesToExtract = preExtractRewriteFunction.apply(query);
+        if (newQueriesToExtract != null) {
+          for (Query newQuery : newQueriesToExtract) {
+            extract(newQuery, boost, terms);
+          }
+        } else {
+          super.extract(query, boost, terms);
         }
       }
 
