@@ -995,8 +995,8 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     }
 
     @Override
-    public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-      return originalQuery.createWeight(searcher, needsScores, boost);
+    public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      return originalQuery.createWeight(searcher, needsScores);
     }
 
     @Override

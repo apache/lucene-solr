@@ -450,8 +450,8 @@ public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-      return wrapped.createWeight(searcher, needsScores, boost);
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+      return wrapped.createWeight(searcher, needsScores);
     }
 
     @Override
