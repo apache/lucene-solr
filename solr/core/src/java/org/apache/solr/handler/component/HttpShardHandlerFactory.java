@@ -31,13 +31,13 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -83,6 +83,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   private String scheme = null;
 
   private final Random r = new Random();
+
+  private final ReplicaListTransformer shufflingReplicaListTransformer = new ShufflingReplicaListTransformer(r);
 
   // URL scheme to be used in distributed search.
   static final String INIT_URL_SCHEME = "urlScheme";
@@ -227,12 +229,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   /**
-   * Creates a randomized list of urls for the given shard.
+   * Creates a list of urls for the given shard.
    *
    * @param shard the urls for the shard, separated by '|'
    * @return A list of valid urls (including protocol) that are replicas for the shard
    */
-  public List<String> makeURLList(String shard) {
+  public List<String> buildURLList(String shard) {
     List<String> urls = StrUtils.splitSmart(shard, "|", true);
 
     // convert shard to URL
@@ -240,15 +242,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       urls.set(i, buildUrl(urls.get(i)));
     }
 
-    //
-    // Shuffle the list instead of use round-robin by default.
-    // This prevents accidental synchronization where multiple shards could get in sync
-    // and query the same replica at the same time.
-    //
-    if (urls.size() > 1)
-      Collections.shuffle(urls, r);
-
     return urls;
+  }
+
+  ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req)
+  {
+    return shufflingReplicaListTransformer;
   }
 
   /**

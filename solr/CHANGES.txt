@@ -156,6 +156,9 @@ Other Changes
 
 * SOLR-9739: JavabinCodec implements PushWriter interface (noble)
 
+* SOLR-8332: Factor HttpShardHandler[Factory]'s url shuffling out into a ReplicaListTransformer class.
+  (Christine Poerschke, Noble Paul)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
