@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.sql.Connection;
@@ -134,33 +135,37 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  public void testRetrieveFromJndiWithCredentialsWithEncryptedPwd() throws Exception {
+  public void testRetrieveFromJndiWithCredentialsEncryptedAndResolved() throws Exception {
     MockInitialContextFactory.bind("java:comp/env/jdbc/JndiDB", dataSource);
-    File tmpdir = File.createTempFile("test", "tmp", createTempDir().toFile());
-    Files.delete(tmpdir.toPath());
-    tmpdir.mkdir();
-    byte[] content = "secret".getBytes(StandardCharsets.UTF_8);
-    createFile(tmpdir, "enckeyfile.txt", content, false);
+    
+    String user = "Fred";
+    String plainPassword = "MyPassword";
+    String encryptedPassword = "U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o=";
+    String propsNamespace = "exampleNamespace";
 
     props.put(JdbcDataSource.JNDI_NAME, "java:comp/env/jdbc/JndiDB");
-    props.put("user", "Fred");
-    props.put("encryptKeyFile", new File(tmpdir, "enckeyfile.txt").getAbsolutePath());
-    props.put("password", "U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o=");
-    props.put("holdability", "HOLD_CURSORS_OVER_COMMIT");
-    EasyMock.expect(dataSource.getConnection("Fred", "MyPassword")).andReturn(
+    props.put("user", "${" +propsNamespace +".user}");
+    props.put("encryptKeyFile", "${" +propsNamespace +".encryptKeyFile}");
+    props.put("password", "${" +propsNamespace +".password}");
+    
+    EasyMock.expect(dataSource.getConnection(user, plainPassword)).andReturn(
         connection);
+    
+    Map<String,Object> values = new HashMap<>();
+    values.put("user", user);
+    values.put("encryptKeyFile", createEncryptionKeyFile());
+    values.put("password", encryptedPassword);
+    context.getVariableResolver().addNamespace(propsNamespace, values);
+    
     jdbcDataSource.init(context, props);
-
+    
     connection.setAutoCommit(false);
-    connection.setHoldability(1);
 
     mockControl.replay();
 
-    Connection conn = jdbcDataSource.getConnection();
+    jdbcDataSource.getConnection();
 
     mockControl.verify();
-
-    assertSame("connection", conn, connection);
   }
 
   @Test
@@ -442,4 +447,13 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     assertEquals(Float.class, msrp.getClass());
     assertEquals(Long.class, trim_id.getClass());
   }
+  
+  private String createEncryptionKeyFile() throws IOException {
+    File tmpdir = File.createTempFile("test", "tmp", createTempDir().toFile());
+    Files.delete(tmpdir.toPath());
+    tmpdir.mkdir();
+    byte[] content = "secret".getBytes(StandardCharsets.UTF_8);
+    createFile(tmpdir, "enckeyfile.txt", content, false);
+    return new File(tmpdir, "enckeyfile.txt").getAbsolutePath();
+  }  
 }
