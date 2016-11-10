@@ -4,7 +4,10 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 6.4.0 =======================
-(No Changes)
+
+New features
+
+* LUCENE-5867: Added BooleanSimilarity. (Robert Muir, Adrien Grand)
 
 Improvements
 
