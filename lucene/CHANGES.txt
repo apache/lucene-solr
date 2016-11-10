@@ -77,6 +77,9 @@ Improvements
   now throws IllegalArgumentException instead of a cryptic exception
   that closes your IndexWriter (Steve Chen via Mike McCandless)
 
+* LUCENE-7524: Added more detailed explanation of how IDF is computed in
+  ClassicSimilarity and BM25Similarity. (Adrien Grand)
+
 ======================= Lucene 6.3.0 =======================
 
 API Changes
