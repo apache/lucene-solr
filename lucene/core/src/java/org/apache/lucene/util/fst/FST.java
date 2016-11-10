@@ -24,13 +24,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -38,13 +34,9 @@ import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.packed.GrowableWriter;
-import org.apache.lucene.util.packed.PackedInts;
 
 // TODO: break this into WritableFST and ReadOnlyFST.. then
 // we can have subclasses of ReadOnlyFST to handle the
@@ -90,14 +82,6 @@ public final class FST<T> implements Accountable {
 
   static final int BIT_ARC_HAS_FINAL_OUTPUT = 1 << 5;
 
-  // Arcs are stored as fixed-size (per entry) array, so
-  // that we can find an arc using binary search.  We do
-  // this when number of arcs is > NUM_ARCS_ARRAY:
-
-  // If set, the target node is delta coded vs current
-  // position:
-  private static final int BIT_TARGET_DELTA = 1 << 6;
-
   // We use this as a marker (because this one flag is
   // illegal by itself ...):
   private static final byte ARCS_AS_FIXED_ARRAY = BIT_ARC_HAS_FINAL_OUTPUT;
@@ -137,7 +121,9 @@ public final class FST<T> implements Accountable {
   /** Don't store arcWithOutputCount anymore */
   private static final int VERSION_NO_NODE_ARC_COUNTS = 5;
 
-  private static final int VERSION_CURRENT = VERSION_NO_NODE_ARC_COUNTS;
+  private static final int VERSION_PACKED_REMOVED = 6;
+
+  private static final int VERSION_CURRENT = VERSION_PACKED_REMOVED;
 
   // Never serialized; just used to represent the virtual
   // final node w/ no arcs:
@@ -167,9 +153,6 @@ public final class FST<T> implements Accountable {
   private long startNode = -1;
 
   public final Outputs<T> outputs;
-
-  private final boolean packed;
-  private PackedInts.Reader nodeRefToAddress;
 
   private Arc<T> cachedRootArcs[];
 
@@ -273,18 +256,11 @@ public final class FST<T> implements Accountable {
     return (flags & bit) != 0;
   }
 
-  private GrowableWriter nodeAddress;
-
-  // TODO: we could be smarter here, and prune periodically
-  // as we go; high in-count nodes will "usually" become
-  // clear early on:
-  private GrowableWriter inCounts;
-
   private final int version;
 
   // make a new empty FST, for building; Builder invokes
   // this ctor
-  FST(INPUT_TYPE inputType, Outputs<T> outputs, boolean willPackFST, float acceptableOverheadRatio, int bytesPageBits) {
+  FST(INPUT_TYPE inputType, Outputs<T> outputs, int bytesPageBits) {
     this.inputType = inputType;
     this.outputs = outputs;
     version = VERSION_CURRENT;
@@ -293,17 +269,8 @@ public final class FST<T> implements Accountable {
     // pad: ensure no node gets address 0 which is reserved to mean
     // the stop state w/ no arcs
     bytes.writeByte((byte) 0);
-    if (willPackFST) {
-      nodeAddress = new GrowableWriter(15, 8, acceptableOverheadRatio);
-      inCounts = new GrowableWriter(1, 8, acceptableOverheadRatio);
-    } else {
-      nodeAddress = null;
-      inCounts = null;
-    }
 
     emptyOutput = null;
-    packed = false;
-    nodeRefToAddress = null;
   }
 
   public static final int DEFAULT_MAX_BLOCK_BITS = Constants.JRE_IS_64BIT ? 30 : 28;
@@ -324,8 +291,12 @@ public final class FST<T> implements Accountable {
 
     // NOTE: only reads most recent format; we don't have
     // back-compat promise for FSTs (they are experimental):
-    version = CodecUtil.checkHeader(in, FILE_FORMAT_NAME, VERSION_PACKED, VERSION_NO_NODE_ARC_COUNTS);
-    packed = in.readByte() == 1;
+    version = CodecUtil.checkHeader(in, FILE_FORMAT_NAME, VERSION_PACKED, VERSION_CURRENT);
+    if (version < VERSION_PACKED_REMOVED) {
+      if (in.readByte() == 1) {
+        throw new CorruptIndexException("Cannot read packed FSTs anymore", in);
+      }
+    }
     if (in.readByte() == 1) {
       // accepts empty string
       // 1 KB blocks:
@@ -334,17 +305,12 @@ public final class FST<T> implements Accountable {
       emptyBytes.copyBytes(in, numBytes);
 
       // De-serialize empty-string output:
-      BytesReader reader;
-      if (packed) {
-        reader = emptyBytes.getForwardReader();
-      } else {
-        reader = emptyBytes.getReverseReader();
-        // NoOutputs uses 0 bytes when writing its output,
-        // so we have to check here else BytesStore gets
-        // angry:
-        if (numBytes > 0) {
-          reader.setPosition(numBytes-1);
-        }
+      BytesReader reader = emptyBytes.getReverseReader();
+      // NoOutputs uses 0 bytes when writing its output,
+      // so we have to check here else BytesStore gets
+      // angry:
+      if (numBytes > 0) {
+        reader.setPosition(numBytes-1);
       }
       emptyOutput = outputs.readFinalOutput(reader);
     } else {
@@ -363,11 +329,6 @@ public final class FST<T> implements Accountable {
         break;
     default:
       throw new IllegalStateException("invalid input type " + t);
-    }
-    if (packed) {
-      nodeRefToAddress = PackedInts.getReader(in);
-    } else {
-      nodeRefToAddress = null;
     }
     startNode = in.readVLong();
     if (version < VERSION_NO_NODE_ARC_COUNTS) {
@@ -424,31 +385,13 @@ public final class FST<T> implements Accountable {
     } else {
       size += bytes.ramBytesUsed();
     }
-    if (packed) {
-      size += nodeRefToAddress.ramBytesUsed();
-    } else if (nodeAddress != null) {
-      size += nodeAddress.ramBytesUsed();
-      size += inCounts.ramBytesUsed();
-    }
     size += cachedArcsBytesUsed;
     return size;
   }
 
   @Override
-  public Collection<Accountable> getChildResources() {
-    List<Accountable> resources = new ArrayList<>();
-    if (packed) {
-      resources.add(Accountables.namedAccountable("node ref to address", nodeRefToAddress));
-    } else if (nodeAddress != null) {
-      resources.add(Accountables.namedAccountable("node addresses", nodeAddress));
-      resources.add(Accountables.namedAccountable("in counts", inCounts));
-    }
-    return resources;
-  }
-
-  @Override
   public String toString() {
-    return getClass().getSimpleName() + "(input=" + inputType + ",output=" + outputs + ",packed=" + packed;
+    return getClass().getSimpleName() + "(input=" + inputType + ",output=" + outputs;
   }
 
   void finish(long newStartNode) throws IOException {
@@ -462,16 +405,6 @@ public final class FST<T> implements Accountable {
     startNode = newStartNode;
     bytes.finish();
     cacheRootArcs();
-  }
-
-  private long getNodeAddress(long node) {
-    if (nodeAddress != null) {
-      // Deref
-      return nodeAddress.get((int) node);
-    } else {
-      // Straight
-      return node;
-    }
   }
   
   // Optionally caches first 128 labels
@@ -527,18 +460,7 @@ public final class FST<T> implements Accountable {
     if (startNode == -1) {
       throw new IllegalStateException("call finish first");
     }
-    if (nodeAddress != null) {
-      throw new IllegalStateException("cannot save an FST pre-packed FST; it must first be packed");
-    }
-    if (packed && !(nodeRefToAddress instanceof PackedInts.Mutable)) {
-      throw new IllegalStateException("cannot save a FST which has been loaded from disk ");
-    }
     CodecUtil.writeHeader(out, FILE_FORMAT_NAME, VERSION_CURRENT);
-    if (packed) {
-      out.writeByte((byte) 1);
-    } else {
-      out.writeByte((byte) 0);
-    }
     // TODO: really we should encode this as an arc, arriving
     // to the root node, instead of special casing here:
     if (emptyOutput != null) {
@@ -552,16 +474,14 @@ public final class FST<T> implements Accountable {
       byte[] emptyOutputBytes = new byte[(int) ros.getFilePointer()];
       ros.writeTo(emptyOutputBytes, 0);
 
-      if (!packed) {
-        // reverse
-        final int stopAt = emptyOutputBytes.length/2;
-        int upto = 0;
-        while(upto < stopAt) {
-          final byte b = emptyOutputBytes[upto];
-          emptyOutputBytes[upto] = emptyOutputBytes[emptyOutputBytes.length-upto-1];
-          emptyOutputBytes[emptyOutputBytes.length-upto-1] = b;
-          upto++;
-        }
+      // reverse
+      final int stopAt = emptyOutputBytes.length/2;
+      int upto = 0;
+      while(upto < stopAt) {
+        final byte b = emptyOutputBytes[upto];
+        emptyOutputBytes[upto] = emptyOutputBytes[emptyOutputBytes.length-upto-1];
+        emptyOutputBytes[emptyOutputBytes.length-upto-1] = b;
+        upto++;
       }
       out.writeVInt(emptyOutputBytes.length);
       out.writeBytes(emptyOutputBytes, 0, emptyOutputBytes.length);
@@ -577,9 +497,6 @@ public final class FST<T> implements Accountable {
       t = 2;
     }
     out.writeByte(t);
-    if (packed) {
-      ((PackedInts.Mutable) nodeRefToAddress).save(out);
-    }
     out.writeVLong(startNode);
     if (bytes != null) {
       long numBytes = bytes.getPosition();
@@ -705,8 +622,6 @@ public final class FST<T> implements Accountable {
 
       if (!targetHasArcs) {
         flags += BIT_STOP_NODE;
-      } else if (inCounts != null) {
-        inCounts.set((int) target.node, inCounts.get((int) target.node) + 1);
       }
 
       if (arc.output != NO_OUTPUT) {
@@ -810,30 +725,8 @@ public final class FST<T> implements Accountable {
 
     builder.bytes.reverse(startAddress, thisNodeAddress);
 
-    // PackedInts uses int as the index, so we cannot handle
-    // > 2.1B nodes when packing:
-    if (nodeAddress != null && builder.nodeCount == Integer.MAX_VALUE) {
-      throw new IllegalStateException("cannot create a packed FST with more than 2.1 billion nodes");
-    }
-
     builder.nodeCount++;
-    final long node;
-    if (nodeAddress != null) {
-
-      // Nodes are addressed by 1+ord:
-      if ((int) builder.nodeCount == nodeAddress.size()) {
-        nodeAddress = nodeAddress.resize(ArrayUtil.oversize(nodeAddress.size() + 1, nodeAddress.getBitsPerValue()));
-        inCounts = inCounts.resize(ArrayUtil.oversize(inCounts.size() + 1, inCounts.getBitsPerValue()));
-      }
-      nodeAddress.set((int) builder.nodeCount, thisNodeAddress);
-      // System.out.println("  write nodeAddress[" + nodeCount + "] = " + endAddress);
-      node = builder.nodeCount;
-    } else {
-      node = thisNodeAddress;
-    }
-
-    //System.out.println("  ret node=" + node + " address=" + thisNodeAddress + " nodeAddress=" + nodeAddress);
-    return node;
+    return thisNodeAddress;
   }
 
   /** Fills virtual 'start' arc, ie, an empty incoming arc to
@@ -876,13 +769,13 @@ public final class FST<T> implements Accountable {
       arc.flags = BIT_LAST_ARC;
       return arc;
     } else {
-      in.setPosition(getNodeAddress(follow.target));
+      in.setPosition(follow.target);
       arc.node = follow.target;
       final byte b = in.readByte();
       if (b == ARCS_AS_FIXED_ARRAY) {
         // array: jump straight to end
         arc.numArcs = in.readVInt();
-        if (packed || version >= VERSION_VINT_TARGET) {
+        if (version >= VERSION_VINT_TARGET) {
           arc.bytesPerArc = in.readVInt();
         } else {
           arc.bytesPerArc = in.readInt();
@@ -906,8 +799,6 @@ public final class FST<T> implements Accountable {
           }
           if (arc.flag(BIT_STOP_NODE)) {
           } else if (arc.flag(BIT_TARGET_NEXT)) {
-          } else if (packed) {
-            in.readVLong();
           } else {
             readUnpackedNodeTarget(in);
           }
@@ -964,7 +855,7 @@ public final class FST<T> implements Accountable {
   }
 
   public Arc<T> readFirstRealTargetArc(long node, Arc<T> arc, final BytesReader in) throws IOException {
-    final long address = getNodeAddress(node);
+    final long address = node;
     in.setPosition(address);
     //System.out.println("  readFirstRealTargtArc address="
     //+ address);
@@ -975,7 +866,7 @@ public final class FST<T> implements Accountable {
       //System.out.println("  fixedArray");
       // this is first arc in a fixed-array
       arc.numArcs = in.readVInt();
-      if (packed || version >= VERSION_VINT_TARGET) {
+      if (version >= VERSION_VINT_TARGET) {
         arc.bytesPerArc = in.readVInt();
       } else {
         arc.bytesPerArc = in.readInt();
@@ -1002,7 +893,7 @@ public final class FST<T> implements Accountable {
     if (!targetHasArcs(follow)) {
       return false;
     } else {
-      in.setPosition(getNodeAddress(follow.target));
+      in.setPosition(follow.target);
       return in.readByte() == ARCS_AS_FIXED_ARRAY;
     }
   }
@@ -1029,7 +920,7 @@ public final class FST<T> implements Accountable {
       //System.out.println("    nextArc fake " +
       //arc.nextArc);
       
-      long pos = getNodeAddress(arc.nextArc);
+      long pos = arc.nextArc;
       in.setPosition(pos);
 
       final byte b = in.readByte();
@@ -1038,7 +929,7 @@ public final class FST<T> implements Accountable {
         in.readVInt();
 
         // Skip bytesPerArc:
-        if (packed || version >= VERSION_VINT_TARGET) {
+        if (version >= VERSION_VINT_TARGET) {
           in.readVInt();
         } else {
           in.readInt();
@@ -1107,41 +998,18 @@ public final class FST<T> implements Accountable {
       arc.nextArc = in.getPosition();
       // TODO: would be nice to make this lazy -- maybe
       // caller doesn't need the target and is scanning arcs...
-      if (nodeAddress == null) {
-        if (!arc.flag(BIT_LAST_ARC)) {
-          if (arc.bytesPerArc == 0) {
-            // must scan
-            seekToNextNode(in);
-          } else {
-            in.setPosition(arc.posArcsStart);
-            in.skipBytes(arc.bytesPerArc * arc.numArcs);
-          }
-        }
-        arc.target = in.getPosition();
-      } else {
-        arc.target = arc.node - 1;
-        assert arc.target > 0;
-      }
-    } else {
-      if (packed) {
-        final long pos = in.getPosition();
-        final long code = in.readVLong();
-        if (arc.flag(BIT_TARGET_DELTA)) {
-          // Address is delta-coded from current address:
-          arc.target = pos + code;
-          //System.out.println("    delta pos=" + pos + " delta=" + code + " target=" + arc.target);
-        } else if (code < nodeRefToAddress.size()) {
-          // Deref
-          arc.target = nodeRefToAddress.get((int) code);
-          //System.out.println("    deref code=" + code + " target=" + arc.target);
+      if (!arc.flag(BIT_LAST_ARC)) {
+        if (arc.bytesPerArc == 0) {
+          // must scan
+          seekToNextNode(in);
         } else {
-          // Absolute
-          arc.target = code;
-          //System.out.println("    abs code=" + code);
+          in.setPosition(arc.posArcsStart);
+          in.skipBytes(arc.bytesPerArc * arc.numArcs);
         }
-      } else {
-        arc.target = readUnpackedNodeTarget(in);
       }
+      arc.target = in.getPosition();
+    } else {
+      arc.target = readUnpackedNodeTarget(in);
       arc.nextArc = in.getPosition();
     }
     return arc;
@@ -1228,7 +1096,7 @@ public final class FST<T> implements Accountable {
       return null;
     }
 
-    in.setPosition(getNodeAddress(follow.target));
+    in.setPosition(follow.target);
 
     arc.node = follow.target;
 
@@ -1237,7 +1105,7 @@ public final class FST<T> implements Accountable {
     if (in.readByte() == ARCS_AS_FIXED_ARRAY) {
       // Arcs are full array; do binary search:
       arc.numArcs = in.readVInt();
-      if (packed || version >= VERSION_VINT_TARGET) {
+      if (version >= VERSION_VINT_TARGET) {
         arc.bytesPerArc = in.readVInt();
       } else {
         arc.bytesPerArc = in.readInt();
@@ -1303,11 +1171,7 @@ public final class FST<T> implements Accountable {
       }
 
       if (!flag(flags, BIT_STOP_NODE) && !flag(flags, BIT_TARGET_NEXT)) {
-        if (packed) {
-          in.readVLong();
-        } else {
-          readUnpackedNodeTarget(in);
-        }
+        readUnpackedNodeTarget(in);
       }
 
       if (flag(flags, BIT_LAST_ARC)) {
@@ -1340,18 +1204,10 @@ public final class FST<T> implements Accountable {
   /** Returns a {@link BytesReader} for this FST, positioned at
    *  position 0. */
   public BytesReader getBytesReader() {
-    if (packed) {
-      if (bytesArray != null) {
-        return new ForwardBytesReader(bytesArray);
-      } else {
-        return bytes.getForwardReader();
-      }
+    if (bytesArray != null) {
+      return new ReverseBytesReader(bytesArray);
     } else {
-      if (bytesArray != null) {
-        return new ReverseBytesReader(bytesArray);
-      } else {
-        return bytes.getReverseReader();
-      }
+      return bytes.getReverseReader();
     }
   }
 
@@ -1476,395 +1332,4 @@ public final class FST<T> implements Accountable {
   }
  */
 
-  // Creates a packed FST
-  private FST(INPUT_TYPE inputType, Outputs<T> outputs, int bytesPageBits) {
-    version = VERSION_CURRENT;
-    packed = true;
-    this.inputType = inputType;
-    bytesArray = null;
-    bytes = new BytesStore(bytesPageBits);
-    this.outputs = outputs;
-  }
-
-  /** Expert: creates an FST by packing this one.  This
-   *  process requires substantial additional RAM (currently
-   *  up to ~8 bytes per node depending on
-   *  <code>acceptableOverheadRatio</code>), but then should
-   *  produce a smaller FST.
-   *
-   *  <p>The implementation of this method uses ideas from
-   *  <a target="_blank" href="http://www.cs.put.poznan.pl/dweiss/site/publications/download/fsacomp.pdf">Smaller Representation of Finite State Automata</a>,
-   *  which describes techniques to reduce the size of a FST.
-   *  However, this is not a strict implementation of the
-   *  algorithms described in this paper.
-   */
-  FST<T> pack(Builder<T> builder, int minInCountDeref, int maxDerefNodes, float acceptableOverheadRatio) throws IOException {
-
-    // NOTE: maxDerefNodes is intentionally int: we cannot
-    // support > 2.1B deref nodes
-
-    // TODO: other things to try
-    //   - renumber the nodes to get more next / better locality?
-    //   - allow multiple input labels on an arc, so
-    //     singular chain of inputs can take one arc (on
-    //     wikipedia terms this could save another ~6%)
-    //   - in the ord case, the output '1' is presumably
-    //     very common (after NO_OUTPUT)... maybe use a bit
-    //     for it..?
-    //   - use spare bits in flags.... for top few labels /
-    //     outputs / targets
-
-    if (nodeAddress == null) {
-      throw new IllegalArgumentException("this FST was not built with willPackFST=true");
-    }
-
-    T NO_OUTPUT = outputs.getNoOutput();
-
-    Arc<T> arc = new Arc<>();
-
-    final BytesReader r = getBytesReader();
-
-    final int topN = Math.min(maxDerefNodes, inCounts.size());
-
-    // Find top nodes with highest number of incoming arcs:
-    NodeQueue q = new NodeQueue(topN);
-
-    // TODO: we could use more RAM efficient selection algo here...
-    NodeAndInCount bottom = null;
-    for(int node=0; node<inCounts.size(); node++) {
-      if (inCounts.get(node) >= minInCountDeref) {
-        if (bottom == null) {
-          q.add(new NodeAndInCount(node, (int) inCounts.get(node)));
-          if (q.size() == topN) {
-            bottom = q.top();
-          }
-        } else if (inCounts.get(node) > bottom.count) {
-          q.insertWithOverflow(new NodeAndInCount(node, (int) inCounts.get(node)));
-        }
-      }
-    }
-
-    // Free up RAM:
-    inCounts = null;
-
-    final Map<Integer,Integer> topNodeMap = new HashMap<>();
-    for(int downTo=q.size()-1;downTo>=0;downTo--) {
-      NodeAndInCount n = q.pop();
-      topNodeMap.put(n.node, downTo);
-      //System.out.println("map node=" + n.node + " inCount=" + n.count + " to newID=" + downTo);
-    }
-
-    // +1 because node ords start at 1 (0 is reserved as stop node):
-    final GrowableWriter newNodeAddress = new GrowableWriter(
-                                                             PackedInts.bitsRequired(builder.bytes.getPosition()), (int) (1 + builder.nodeCount), acceptableOverheadRatio);
-
-    // Fill initial coarse guess:
-    for(int node=1;node<=builder.nodeCount;node++) {
-      newNodeAddress.set(node, 1 + builder.bytes.getPosition() - nodeAddress.get(node));
-    }
-
-    int absCount;
-    int deltaCount;
-    int topCount;
-    int nextCount;
-
-    FST<T> fst;
-
-    // Iterate until we converge:
-    while(true) {
-
-      //System.out.println("\nITER");
-      boolean changed = false;
-
-      // for assert:
-      boolean negDelta = false;
-
-      fst = new FST<>(inputType, outputs, builder.bytes.getBlockBits());
-      
-      final BytesStore writer = fst.bytes;
-
-      // Skip 0 byte since 0 is reserved target:
-      writer.writeByte((byte) 0);
-
-      absCount = deltaCount = topCount = nextCount = 0;
-
-      int changedCount = 0;
-
-      long addressError = 0;
-
-      //int totWasted = 0;
-
-      // Since we re-reverse the bytes, we now write the
-      // nodes backwards, so that BIT_TARGET_NEXT is
-      // unchanged:
-      for(int node=(int) builder.nodeCount;node>=1;node--) {
-        final long address = writer.getPosition();
-
-        //System.out.println("  node: " + node + " address=" + address);
-        if (address != newNodeAddress.get(node)) {
-          addressError = address - newNodeAddress.get(node);
-          //System.out.println("    change: " + (address - newNodeAddress[node]));
-          changed = true;
-          newNodeAddress.set(node, address);
-          changedCount++;
-        }
-
-        int nodeArcCount = 0;
-        int bytesPerArc = 0;
-
-        boolean retry = false;
-
-        // for assert:
-        boolean anyNegDelta = false;
-
-        // Retry loop: possibly iterate more than once, if
-        // this is an array'd node and bytesPerArc changes:
-        writeNode:
-        while(true) { // retry writing this node
-
-          //System.out.println("  cycle: retry");
-          readFirstRealTargetArc(node, arc, r);
-
-          final boolean useArcArray = arc.bytesPerArc != 0;
-          if (useArcArray) {
-            // Write false first arc:
-            if (bytesPerArc == 0) {
-              bytesPerArc = arc.bytesPerArc;
-            }
-            writer.writeByte(ARCS_AS_FIXED_ARRAY);
-            writer.writeVInt(arc.numArcs);
-            writer.writeVInt(bytesPerArc);
-            //System.out.println("node " + node + ": " + arc.numArcs + " arcs");
-          }
-
-          int maxBytesPerArc = 0;
-          //int wasted = 0;
-          while(true) {  // iterate over all arcs for this node
-            //System.out.println("    cycle next arc");
-
-            final long arcStartPos = writer.getPosition();
-            nodeArcCount++;
-
-            byte flags = 0;
-
-            if (arc.isLast()) {
-              flags += BIT_LAST_ARC;
-            }
-            /*
-            if (!useArcArray && nodeUpto < nodes.length-1 && arc.target == nodes[nodeUpto+1]) {
-              flags += BIT_TARGET_NEXT;
-            }
-            */
-            if (!useArcArray && node != 1 && arc.target == node-1) {
-              flags += BIT_TARGET_NEXT;
-              if (!retry) {
-                nextCount++;
-              }
-            }
-            if (arc.isFinal()) {
-              flags += BIT_FINAL_ARC;
-              if (arc.nextFinalOutput != NO_OUTPUT) {
-                flags += BIT_ARC_HAS_FINAL_OUTPUT;
-              }
-            } else {
-              assert arc.nextFinalOutput == NO_OUTPUT;
-            }
-            if (!targetHasArcs(arc)) {
-              flags += BIT_STOP_NODE;
-            }
-
-            if (arc.output != NO_OUTPUT) {
-              flags += BIT_ARC_HAS_OUTPUT;
-            }
-
-            final long absPtr;
-            final boolean doWriteTarget = targetHasArcs(arc) && (flags & BIT_TARGET_NEXT) == 0;
-            if (doWriteTarget) {
-
-              final Integer ptr = topNodeMap.get(arc.target);
-              if (ptr != null) {
-                absPtr = ptr;
-              } else {
-                absPtr = topNodeMap.size() + newNodeAddress.get((int) arc.target) + addressError;
-              }
-
-              long delta = newNodeAddress.get((int) arc.target) + addressError - writer.getPosition() - 2;
-              if (delta < 0) {
-                //System.out.println("neg: " + delta);
-                anyNegDelta = true;
-                delta = 0;
-              }
-
-              if (delta < absPtr) {
-                flags |= BIT_TARGET_DELTA;
-              }
-            } else {
-              absPtr = 0;
-            }
-
-            assert flags != ARCS_AS_FIXED_ARRAY;
-            writer.writeByte(flags);
-
-            fst.writeLabel(writer, arc.label);
-
-            if (arc.output != NO_OUTPUT) {
-              outputs.write(arc.output, writer);
-            }
-            if (arc.nextFinalOutput != NO_OUTPUT) {
-              outputs.writeFinalOutput(arc.nextFinalOutput, writer);
-            }
-
-            if (doWriteTarget) {
-
-              long delta = newNodeAddress.get((int) arc.target) + addressError - writer.getPosition();
-              if (delta < 0) {
-                anyNegDelta = true;
-                //System.out.println("neg: " + delta);
-                delta = 0;
-              }
-
-              if (flag(flags, BIT_TARGET_DELTA)) {
-                //System.out.println("        delta");
-                writer.writeVLong(delta);
-                if (!retry) {
-                  deltaCount++;
-                }
-              } else {
-                /*
-                if (ptr != null) {
-                  System.out.println("        deref");
-                } else {
-                  System.out.println("        abs");
-                }
-                */
-                writer.writeVLong(absPtr);
-                if (!retry) {
-                  if (absPtr >= topNodeMap.size()) {
-                    absCount++;
-                  } else {
-                    topCount++;
-                  }
-                }
-              }
-            }
-
-            if (useArcArray) {
-              final int arcBytes = (int) (writer.getPosition() - arcStartPos);
-              //System.out.println("  " + arcBytes + " bytes");
-              maxBytesPerArc = Math.max(maxBytesPerArc, arcBytes);
-              // NOTE: this may in fact go "backwards", if
-              // somehow (rarely, possibly never) we use
-              // more bytesPerArc in this rewrite than the
-              // incoming FST did... but in this case we
-              // will retry (below) so it's OK to ovewrite
-              // bytes:
-              //wasted += bytesPerArc - arcBytes;
-              writer.skipBytes((int) (arcStartPos + bytesPerArc - writer.getPosition()));
-            }
-
-            if (arc.isLast()) {
-              break;
-            }
-
-            readNextRealArc(arc, r);
-          }
-
-          if (useArcArray) {
-            if (maxBytesPerArc == bytesPerArc || (retry && maxBytesPerArc <= bytesPerArc)) {
-              // converged
-              //System.out.println("  bba=" + bytesPerArc + " wasted=" + wasted);
-              //totWasted += wasted;
-              break;
-            }
-          } else {
-            break;
-          }
-
-          //System.out.println("  retry this node maxBytesPerArc=" + maxBytesPerArc + " vs " + bytesPerArc);
-
-          // Retry:
-          bytesPerArc = maxBytesPerArc;
-          writer.truncate(address);
-          nodeArcCount = 0;
-          retry = true;
-          anyNegDelta = false;
-        }
-
-        negDelta |= anyNegDelta;
-      }
-
-      if (!changed) {
-        // We don't renumber the nodes (just reverse their
-        // order) so nodes should only point forward to
-        // other nodes because we only produce acyclic FSTs
-        // w/ nodes only pointing "forwards":
-        assert !negDelta;
-        //System.out.println("TOT wasted=" + totWasted);
-        // Converged!
-        break;
-      }
-    }
-
-    long maxAddress = 0;
-    for (long key : topNodeMap.keySet()) {
-      maxAddress = Math.max(maxAddress, newNodeAddress.get((int) key));
-    }
-
-    PackedInts.Mutable nodeRefToAddressIn = PackedInts.getMutable(topNodeMap.size(),
-        PackedInts.bitsRequired(maxAddress), acceptableOverheadRatio);
-    for(Map.Entry<Integer,Integer> ent : topNodeMap.entrySet()) {
-      nodeRefToAddressIn.set(ent.getValue(), newNodeAddress.get(ent.getKey()));
-    }
-    fst.nodeRefToAddress = nodeRefToAddressIn;
-    
-    fst.startNode = newNodeAddress.get((int) startNode);
-    //System.out.println("new startNode=" + fst.startNode + " old startNode=" + startNode);
-
-    if (emptyOutput != null) {
-      fst.setEmptyOutput(emptyOutput);
-    }
-
-    fst.bytes.finish();
-    fst.cacheRootArcs();
-
-    //final int size = fst.sizeInBytes();
-    //System.out.println("nextCount=" + nextCount + " topCount=" + topCount + " deltaCount=" + deltaCount + " absCount=" + absCount);
-
-    return fst;
-  }
-
-  private static class NodeAndInCount implements Comparable<NodeAndInCount> {
-    final int node;
-    final int count;
-
-    public NodeAndInCount(int node, int count) {
-      this.node = node;
-      this.count = count;
-    }
-    
-    @Override
-    public int compareTo(NodeAndInCount other) {
-      if (count > other.count) {
-        return 1;
-      } else if (count < other.count) {
-        return -1;
-      } else {
-        // Tie-break: smaller node compares as greater than
-        return other.node - node;
-      }
-    }
-  }
-
-  private static class NodeQueue extends PriorityQueue<NodeAndInCount> {
-    public NodeQueue(int topN) {
-      super(topN, false);
-    }
-
-    @Override
-    public boolean lessThan(NodeAndInCount a, NodeAndInCount b) {
-      final int cmp = a.compareTo(b);
-      assert cmp != 0;
-      return cmp < 0;
-    }
-  }
 }
