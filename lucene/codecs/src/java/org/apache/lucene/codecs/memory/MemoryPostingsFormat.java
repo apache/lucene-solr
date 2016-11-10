@@ -81,9 +81,6 @@ import org.apache.lucene.util.packed.PackedInts;
 // loads itself in ram?
 public final class MemoryPostingsFormat extends PostingsFormat {
 
-  private final boolean doPackFST;
-  private final float acceptableOverheadRatio;
-
   public MemoryPostingsFormat() {
     this(false, PackedInts.DEFAULT);
   }
@@ -97,13 +94,11 @@ public final class MemoryPostingsFormat extends PostingsFormat {
    */
   public MemoryPostingsFormat(boolean doPackFST, float acceptableOverheadRatio) {
     super("Memory");
-    this.doPackFST = doPackFST;
-    this.acceptableOverheadRatio = acceptableOverheadRatio;
   }
   
   @Override
   public String toString() {
-    return "PostingsFormat(name=" + getName() + " doPackFST= " + doPackFST + ")";
+    return "PostingsFormat(name=" + getName() + ")";
   }
 
   private final static class TermsWriter {
@@ -111,16 +106,12 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     private final FieldInfo field;
     private final Builder<BytesRef> builder;
     private final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
-    private final boolean doPackFST;
-    private final float acceptableOverheadRatio;
     private int termCount;
 
-    public TermsWriter(IndexOutput out, FieldInfo field, boolean doPackFST, float acceptableOverheadRatio) {
+    public TermsWriter(IndexOutput out, FieldInfo field) {
       this.out = out;
       this.field = field;
-      this.doPackFST = doPackFST;
-      this.acceptableOverheadRatio = acceptableOverheadRatio;
-      builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, doPackFST, acceptableOverheadRatio, true, 15);
+      builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
     }
 
     private class PostingsWriter {
@@ -307,8 +298,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
         TermsEnum termsEnum = terms.iterator();
 
         FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
-        TermsWriter termsWriter = new TermsWriter(out, fieldInfo,
-                                                  doPackFST, acceptableOverheadRatio);
+        TermsWriter termsWriter = new TermsWriter(out, fieldInfo);
 
         FixedBitSet docsSeen = new FixedBitSet(state.segmentInfo.maxDoc());
         long sumTotalTermFreq = 0;

@@ -55,7 +55,30 @@ Other
 * LUCENE-7360: Remove Explanation.toHtml() (Alan Woodward)
 
 ======================= Lucene 6.4.0 =======================
-(No Changes)
+
+New features
+
+* LUCENE-5867: Added BooleanSimilarity. (Robert Muir, Adrien Grand)
+
+Improvements
+
+* LUCENE-6824: TermAutomatonQuery now rewrites to TermQuery,
+  PhraseQuery or MultiPhraseQuery when the word automaton is simple
+  (Mike McCandless)
+
+* LUCENE-7431: Allow a certain amount of overlap to be specified between the include
+  and exclude arguments of SpanNotQuery via negative pre and/or post arguments.
+  (Marc Morissette via David Smiley)
+
+* LUCENE-7544: UnifiedHighlighter: add extension points for handling custom queries.
+  (Michael Braun, David Smiley)
+
+* LUCENE-7538: Asking IndexWriter to store a too-massive text field
+  now throws IllegalArgumentException instead of a cryptic exception
+  that closes your IndexWriter (Steve Chen via Mike McCandless)
+
+* LUCENE-7524: Added more detailed explanation of how IDF is computed in
+  ClassicSimilarity and BM25Similarity. (Adrien Grand)
 
 ======================= Lucene 6.3.0 =======================
 

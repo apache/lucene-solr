@@ -231,7 +231,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "6.2.0-cfs",
     "6.2.0-nocfs",
     "6.2.1-cfs",
-    "6.2.1-nocfs"
+    "6.2.1-nocfs",
+    "6.3.0-cfs",
+    "6.3.0-nocfs"
   };
   
   final String[] unsupportedNames = {

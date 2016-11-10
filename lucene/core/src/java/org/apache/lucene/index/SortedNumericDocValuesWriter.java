@@ -23,9 +23,7 @@ import java.util.Arrays;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
@@ -34,7 +32,7 @@ import org.apache.lucene.util.packed.PackedLongValues;
 class SortedNumericDocValuesWriter extends DocValuesWriter {
   private PackedLongValues.Builder pending; // stream of all values
   private PackedLongValues.Builder pendingCounts; // count of values per doc
-  private FixedBitSet docsWithField;
+  private DocsWithFieldSet docsWithField;
   private final Counter iwBytesUsed;
   private long bytesUsed; // this only tracks differences in 'pending' and 'pendingCounts'
   private final FieldInfo fieldInfo;
@@ -47,7 +45,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
     this.iwBytesUsed = iwBytesUsed;
     pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
     pendingCounts = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
-    docsWithField = new FixedBitSet(64);
+    docsWithField = new DocsWithFieldSet();
     bytesUsed = pending.ramBytesUsed() + pendingCounts.ramBytesUsed() + docsWithField.ramBytesUsed() + RamUsageEstimator.sizeOf(currentValues);
     iwBytesUsed.addAndGet(bytesUsed);
   }
@@ -76,8 +74,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
     pendingCounts.add(currentUpto);
     currentUpto = 0;
 
-    docsWithField = FixedBitSet.ensureCapacity(docsWithField, currentDoc);
-    docsWithField.set(currentDoc);
+    docsWithField.add(currentDoc);
   }
 
   @Override
@@ -112,7 +109,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
                                          if (fieldInfoIn != fieldInfo) {
                                            throw new IllegalArgumentException("wrong fieldInfo");
                                          }
-                                         return new BufferedSortedNumericDocValues(values, valueCounts, docsWithField);
+                                         return new BufferedSortedNumericDocValues(values, valueCounts, docsWithField.iterator());
                                        }
                                      });
   }
@@ -124,10 +121,10 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
     private int valueCount;
     private int valueUpto;
 
-    public BufferedSortedNumericDocValues(PackedLongValues values, PackedLongValues valueCounts, FixedBitSet docsWithField) {
+    public BufferedSortedNumericDocValues(PackedLongValues values, PackedLongValues valueCounts, DocIdSetIterator docsWithField) {
       valuesIter = values.iterator();
       valueCountsIter = valueCounts.iterator();
-      this.docsWithField = new BitSetIterator(docsWithField, values.size());
+      this.docsWithField = docsWithField;
     }
 
     @Override

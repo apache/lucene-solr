@@ -70,7 +70,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.13
-Carrot2 3.12.0
+Carrot2 3.15.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
@@ -81,6 +81,9 @@ Detailed Change List
 
 New Features
 ----------------------
+* SOLR-9293: Solrj client support for hierarchical clusters and other topics 
+  marker. (Dawid Weiss)
+
 * SOLR-9681: FacetModule / JSON Facet API added the ability to add filters directly to
   any facet command.  The filters are applied after any domain change operations.
   Example:  { type:terms, field:category, filter:"user:yonik" } 
@@ -96,10 +99,20 @@ New Features
 * SOLR-8542: Adds Solr Learning to Rank (LTR) plugin for reranking results with machine learning models.
   (Michael Nilsson, Diego Ceccarelli, Joshua Pantony, Jon Dorando, Naveen Santhapuri, Alessandro Benedetti, David Grohmann, Christine Poerschke)
 
+* SOLR-9055: Make collection backup/restore extensible. (Hrishikesh Gadre, Varun Thacker, Mark Miller)
+
+* SOLR-9682: JSON Facet API: added "param" query type to facet domain filter specification to obtain
+  filters via query parameters. (yonik)
+
+* SOLR-9038: Add a command-line tool to manage the snapshots functionality (Hrishikesh Gadre via yonik)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
   filters specified by using those filters as acceptDocs. (yonik)
+
+* SOLR-9726: Reduce number of lookupOrd calls made by the DocValuesFacets.getCounts method.
+  (Jonny Marks via Christine Poerschke)
 
 Bug Fixes
 ----------------------
@@ -109,14 +122,42 @@ Bug Fixes
 * SOLR-9433: SolrCore clean-up logic uses incorrect path to delete dataDir on failure to create a core.
   (Evan Sayer, shalin)
 
+* SOLR-9360: Solr script not properly checking SOLR_PID
+  (Alessandro Benedetti via Erick Erickson)
+
+* SOLR-9716: RecoveryStrategy sends prep recovery command without setting read time out which can cause
+  replica recovery to hang indefinitely on network partitions. (Cao Manh Dat, shalin)
+
+* SOLR-9624: In Admin UI, do not attempt to highlight CSV output (Alexandre Rafalovitch)
+
+* SOLR-9005: In files example, add a guard condition to javascript URP script (Alexandre Rafalovitch)
+
+* SOLR-9519: JSON Facet API: don't stop at an empty facet bucket if any sub-facets still have a chance
+  of matching something due to filter exclusions (which can widen the domain again).
+  (Michael Sun, yonik)
+
+* SOLR-9740: A bug in macro expansion of multi-valued parameters caused non-expanded values
+  after the first expanded value in the same multi-valued parameter to be dropped.
+  (Erik Hatcher, yonik)
+
+
 Other Changes
 ----------------------
+
+* SOLR-7539: Upgrade the clustering plugin to Carrot2 3.15.0. (Dawid Weiss)
 
 * SOLR-9621: Remove several Guava & Apache Commons calls in favor of java 8 alternatives.
   (Michael Braun via David Smiley)
 
 * SOLR-9720: Refactor Responsewriters to remove dependencies on TupleStream,
   Tuple, Explanation (noble)
+
+* SOLR-9717: Refactor '/export' to not hardcode the JSON output and to use an API (noble)
+
+* SOLR-9739: JavabinCodec implements PushWriter interface (noble)
+
+* SOLR-8332: Factor HttpShardHandler[Factory]'s url shuffling out into a ReplicaListTransformer class.
+  (Christine Poerschke, Noble Paul)
 
 ==================  6.3.0 ==================
 

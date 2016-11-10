@@ -24,11 +24,9 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
@@ -48,7 +46,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
 
   private final Counter iwBytesUsed;
   private final PackedLongValues.Builder lengths;
-  private FixedBitSet docsWithField;
+  private DocsWithFieldSet docsWithField;
   private final FieldInfo fieldInfo;
   private long bytesUsed;
   private int lastDocID = -1;
@@ -60,7 +58,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     this.bytesOut = bytes.getDataOutput();
     this.lengths = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
     this.iwBytesUsed = iwBytesUsed;
-    this.docsWithField = new FixedBitSet(64);
+    this.docsWithField = new DocsWithFieldSet();
     this.bytesUsed = lengths.ramBytesUsed() + docsWithField.ramBytesUsed();
     iwBytesUsed.addAndGet(bytesUsed);
   }
@@ -84,8 +82,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
       // Should never happen!
       throw new RuntimeException(ioe);
     }
-    docsWithField = FixedBitSet.ensureCapacity(docsWithField, docID);
-    docsWithField.set(docID);
+    docsWithField.add(docID);
     updateBytesUsed();
 
     lastDocID = docID;
@@ -112,7 +109,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
                                   if (fieldInfoIn != fieldInfo) {
                                     throw new IllegalArgumentException("wrong fieldInfo");
                                   }
-                                  return new BufferedBinaryDocValues(lengths, maxLength, bytes.getDataInput(), docsWithField);
+                                  return new BufferedBinaryDocValues(lengths, maxLength, bytes.getDataInput(), docsWithField.iterator());
                                 }
                               });
   }
@@ -124,12 +121,12 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     final DocIdSetIterator docsWithField;
     final DataInput bytesIterator;
     
-    BufferedBinaryDocValues(PackedLongValues lengths, int maxLength, DataInput bytesIterator, FixedBitSet docsWithFields) {
+    BufferedBinaryDocValues(PackedLongValues lengths, int maxLength, DataInput bytesIterator, DocIdSetIterator docsWithFields) {
       this.value = new BytesRefBuilder();
       this.value.grow(maxLength);
       this.lengthsIterator = lengths.iterator();
       this.bytesIterator = bytesIterator;
-      this.docsWithField = new BitSetIterator(docsWithFields, lengths.size());
+      this.docsWithField = docsWithFields;
     }
 
     @Override

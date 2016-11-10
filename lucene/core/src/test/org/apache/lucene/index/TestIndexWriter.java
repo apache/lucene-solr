@@ -97,6 +97,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestIndexWriter extends LuceneTestCase {
@@ -2764,6 +2765,35 @@ public class TestIndexWriter extends LuceneTestCase {
     } catch (FileNotFoundException | NoSuchFileException e) {
       // expected
     }
+    w.close();
+    dir.close();
+  }
+
+  @Ignore("requires running tests with biggish heap")
+  public void testMassiveField() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    final IndexWriter w = new IndexWriter(dir, iwc);
+
+    StringBuilder b = new StringBuilder();
+    while (b.length() <= IndexWriter.MAX_STORED_STRING_LENGTH) {
+      b.append("x ");
+    }
+
+    final Document doc = new Document();
+    //doc.add(new TextField("big", b.toString(), Field.Store.YES));
+    doc.add(new StoredField("big", b.toString()));
+    Exception e = expectThrows(IllegalArgumentException.class, () -> {w.addDocument(doc);});
+    assertEquals("stored field \"big\" is too large (" + b.length() + " characters) to store", e.getMessage());
+
+    // make sure writer is still usable:
+    Document doc2 = new Document();
+    doc2.add(new StringField("id", "foo", Field.Store.YES));
+    w.addDocument(doc2);
+
+    DirectoryReader r = DirectoryReader.open(w);
+    assertEquals(1, r.numDocs());
+    r.close();
     w.close();
     dir.close();
   }

@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -116,7 +117,7 @@ public class HttpShardHandler extends ShardHandler {
   private List<String> getURLs(String shard, String preferredHostAddress) {
     List<String> urls = shardToURLs.get(shard);
     if (urls == null) {
-      urls = httpShardHandlerFactory.makeURLList(shard);
+      urls = httpShardHandlerFactory.buildURLList(shard);
       if (preferredHostAddress != null && urls.size() > 1) {
         preferCurrentHostForDistributedReq(preferredHostAddress, urls);
       }
@@ -320,6 +321,8 @@ public class HttpShardHandler extends ShardHandler {
       }
     }
 
+    final ReplicaListTransformer replicaListTransformer = httpShardHandlerFactory.getReplicaListTransformer(req);
+
     if (shards != null) {
       List<String> lst = StrUtils.splitSmart(shards, ",", true);
       rb.shards = lst.toArray(new String[lst.size()]);
@@ -404,7 +407,11 @@ public class HttpShardHandler extends ShardHandler {
 
 
       for (int i=0; i<rb.shards.length; i++) {
-        if (rb.shards[i] == null) {
+        final List<String> shardUrls;
+        if (rb.shards[i] != null) {
+          shardUrls = StrUtils.splitSmart(rb.shards[i], "|", true);
+          replicaListTransformer.transform(shardUrls);
+        } else {
           if (clusterState == null) {
             clusterState =  zkController.getClusterState();
             slices = clusterState.getSlicesMap(cloudDescriptor.getCollectionName());
@@ -421,26 +428,25 @@ public class HttpShardHandler extends ShardHandler {
             // throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such shard: " + sliceName);
           }
 
-          Map<String, Replica> sliceShards = slice.getReplicasMap();
-
-          // For now, recreate the | delimited list of equivalent servers
-          StringBuilder sliceShardsStr = new StringBuilder();
-          boolean first = true;
-          for (Replica replica : sliceShards.values()) {
+          final Collection<Replica> allSliceReplicas = slice.getReplicasMap().values();
+          final List<Replica> eligibleSliceReplicas = new ArrayList<>(allSliceReplicas.size());
+          for (Replica replica : allSliceReplicas) {
             if (!clusterState.liveNodesContain(replica.getNodeName())
                 || replica.getState() != Replica.State.ACTIVE) {
               continue;
             }
-            if (first) {
-              first = false;
-            } else {
-              sliceShardsStr.append('|');
-            }
-            String url = ZkCoreNodeProps.getCoreUrl(replica);
-            sliceShardsStr.append(url);
+            eligibleSliceReplicas.add(replica);
           }
 
-          if (sliceShardsStr.length() == 0) {
+          replicaListTransformer.transform(eligibleSliceReplicas);
+
+          shardUrls = new ArrayList<>(eligibleSliceReplicas.size());
+          for (Replica replica : eligibleSliceReplicas) {
+            String url = ZkCoreNodeProps.getCoreUrl(replica);
+            shardUrls.add(url);
+          }
+
+          if (shardUrls.isEmpty()) {
             boolean tolerant = rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false);
             if (!tolerant) {
               // stop the check when there are no replicas available for a shard
@@ -448,9 +454,19 @@ public class HttpShardHandler extends ShardHandler {
                   "no servers hosting shard: " + rb.slices[i]);
             }
           }
-
-          rb.shards[i] = sliceShardsStr.toString();
         }
+        // And now recreate the | delimited list of equivalent servers
+        final StringBuilder sliceShardsStr = new StringBuilder();
+        boolean first = true;
+        for (String shardUrl : shardUrls) {
+          if (first) {
+            first = false;
+          } else {
+            sliceShardsStr.append('|');
+          }
+          sliceShardsStr.append(shardUrl);
+        }
+        rb.shards[i] = sliceShardsStr.toString();
       }
     }
     String shards_rows = params.get(ShardParams.SHARDS_ROWS);

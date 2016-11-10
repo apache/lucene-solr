@@ -296,7 +296,6 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
           while (scorer instanceof AssertingScorer) {
             scorer = ((AssertingScorer) scorer).getIn();
           }
-          assert scorer instanceof TermAutomatonScorer;
         }
 
         @Override
@@ -683,7 +682,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     w.addDocument(doc);
 
     doc = new Document();
-    doc.add(newTextField("field", "comes here", Field.Store.NO));
+    doc.add(newTextField("field", "comes foo", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r);
@@ -691,9 +690,11 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     TermAutomatonQuery q = new TermAutomatonQuery("field");
     int init = q.createState();
     int s1 = q.createState();
+    int s2 = q.createState();
     q.addTransition(init, s1, "here");
-    q.addTransition(s1, init, "comes");
-    q.setAccept(init, true);
+    q.addTransition(s1, s2, "comes");
+    q.addTransition(s2, s1, "here");
+    q.setAccept(s1, true);
     q.finish();
 
     assertEquals(1, s.search(q, 1).totalHits);
@@ -779,8 +780,186 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     // System.out.println("DOT: " + q.toDot());
     assertEquals(0, s.search(q, 1).totalHits);
 
-    w.close();
-    r.close();
-    dir.close();
+    IOUtils.close(w, r, dir);
+  }
+
+  public void testEmptyString() throws Exception {
+    TermAutomatonQuery q = new TermAutomatonQuery("field");
+    int initState = q.createState();
+    q.setAccept(initState, true);
+    try {
+      q.finish();
+      fail("did not hit exc");
+    } catch (IllegalStateException ise) {
+      // expected
+    }
+  }
+
+  public void testRewriteNoMatch() throws Exception {
+    TermAutomatonQuery q = new TermAutomatonQuery("field");
+    int initState = q.createState();
+    q.finish();
+    
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "x y z", Field.Store.NO));
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    assertTrue(q.rewrite(r) instanceof MatchNoDocsQuery);
+    IOUtils.close(w, r, dir);
+  }
+
+  public void testRewriteTerm() throws Exception {
+    TermAutomatonQuery q = new TermAutomatonQuery("field");
+    int initState = q.createState();
+    int s1 = q.createState();
+    q.addTransition(initState, s1, "foo");
+    q.setAccept(s1, true);
+    q.finish();
+    
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "x y z", Field.Store.NO));
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    Query rewrite = q.rewrite(r);
+    assertTrue(rewrite instanceof TermQuery);
+    assertEquals(new Term("field", "foo"), ((TermQuery) rewrite).getTerm());
+    IOUtils.close(w, r, dir);
+  }
+
+  public void testRewriteSimplePhrase() throws Exception {
+    TermAutomatonQuery q = new TermAutomatonQuery("field");
+    int initState = q.createState();
+    int s1 = q.createState();
+    int s2 = q.createState();
+    q.addTransition(initState, s1, "foo");
+    q.addTransition(s1, s2, "bar");
+    q.setAccept(s2, true);
+    q.finish();
+    
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "x y z", Field.Store.NO));
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    Query rewrite = q.rewrite(r);
+    assertTrue(rewrite instanceof PhraseQuery);
+    Term[] terms = ((PhraseQuery) rewrite).getTerms();
+    assertEquals(new Term("field", "foo"), terms[0]);
+    assertEquals(new Term("field", "bar"), terms[1]);
+
+    int[] positions = ((PhraseQuery) rewrite).getPositions();
+    assertEquals(0, positions[0]);
+    assertEquals(1, positions[1]);
+    
+    IOUtils.close(w, r, dir);
+  }
+
+  public void testRewritePhraseWithAny() throws Exception {
+    TermAutomatonQuery q = new TermAutomatonQuery("field");
+    int initState = q.createState();
+    int s1 = q.createState();
+    int s2 = q.createState();
+    int s3 = q.createState();
+    q.addTransition(initState, s1, "foo");
+    q.addAnyTransition(s1, s2);
+    q.addTransition(s2, s3, "bar");
+    q.setAccept(s3, true);
+    q.finish();
+    
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "x y z", Field.Store.NO));
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    Query rewrite = q.rewrite(r);
+    assertTrue(rewrite instanceof PhraseQuery);
+    Term[] terms = ((PhraseQuery) rewrite).getTerms();
+    assertEquals(new Term("field", "foo"), terms[0]);
+    assertEquals(new Term("field", "bar"), terms[1]);
+
+    int[] positions = ((PhraseQuery) rewrite).getPositions();
+    assertEquals(0, positions[0]);
+    assertEquals(2, positions[1]);
+    
+    IOUtils.close(w, r, dir);
+  }
+
+  public void testRewriteSimpleMultiPhrase() throws Exception {
+    TermAutomatonQuery q = new TermAutomatonQuery("field");
+    int initState = q.createState();
+    int s1 = q.createState();
+    q.addTransition(initState, s1, "foo");
+    q.addTransition(initState, s1, "bar");
+    q.setAccept(s1, true);
+    q.finish();
+    
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "x y z", Field.Store.NO));
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    Query rewrite = q.rewrite(r);
+    assertTrue(rewrite instanceof MultiPhraseQuery);
+    Term[][] terms = ((MultiPhraseQuery) rewrite).getTermArrays();
+    assertEquals(1, terms.length);
+    assertEquals(2, terms[0].length);
+    assertEquals(new Term("field", "foo"), terms[0][0]);
+    assertEquals(new Term("field", "bar"), terms[0][1]);
+
+    int[] positions = ((MultiPhraseQuery) rewrite).getPositions();
+    assertEquals(1, positions.length);
+    assertEquals(0, positions[0]);
+    
+    IOUtils.close(w, r, dir);
+  }
+
+  public void testRewriteMultiPhraseWithAny() throws Exception {
+    TermAutomatonQuery q = new TermAutomatonQuery("field");
+    int initState = q.createState();
+    int s1 = q.createState();
+    int s2 = q.createState();
+    int s3 = q.createState();
+    q.addTransition(initState, s1, "foo");
+    q.addTransition(initState, s1, "bar");
+    q.addAnyTransition(s1, s2);
+    q.addTransition(s2, s3, "baz");
+    q.setAccept(s3, true);
+    q.finish();
+    
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "x y z", Field.Store.NO));
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    Query rewrite = q.rewrite(r);
+    assertTrue(rewrite instanceof MultiPhraseQuery);
+    Term[][] terms = ((MultiPhraseQuery) rewrite).getTermArrays();
+    assertEquals(2, terms.length);
+    assertEquals(2, terms[0].length);
+    assertEquals(new Term("field", "foo"), terms[0][0]);
+    assertEquals(new Term("field", "bar"), terms[0][1]);
+    assertEquals(1, terms[1].length);
+    assertEquals(new Term("field", "baz"), terms[1][0]);
+
+    int[] positions = ((MultiPhraseQuery) rewrite).getPositions();
+    assertEquals(2, positions.length);
+    assertEquals(0, positions[0]);
+    assertEquals(2, positions[1]);
+    
+    IOUtils.close(w, r, dir);
   }
 }
