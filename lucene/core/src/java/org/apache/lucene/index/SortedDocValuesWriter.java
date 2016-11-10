@@ -22,13 +22,11 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
@@ -37,7 +35,7 @@ import org.apache.lucene.util.packed.PackedLongValues;
 class SortedDocValuesWriter extends DocValuesWriter {
   final BytesRefHash hash;
   private PackedLongValues.Builder pending;
-  private FixedBitSet docsWithField;
+  private DocsWithFieldSet docsWithField;
   private final Counter iwBytesUsed;
   private long bytesUsed; // this currently only tracks differences in 'pending'
   private final FieldInfo fieldInfo;
@@ -52,7 +50,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
             BytesRefHash.DEFAULT_CAPACITY,
             new DirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, iwBytesUsed));
     pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
-    docsWithField = new FixedBitSet(64);
+    docsWithField = new DocsWithFieldSet();
     bytesUsed = pending.ramBytesUsed() + docsWithField.ramBytesUsed();
     iwBytesUsed.addAndGet(bytesUsed);
   }
@@ -69,8 +67,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
     }
 
     addOneValue(value);
-    docsWithField = FixedBitSet.ensureCapacity(docsWithField, docID);
-    docsWithField.set(docID);
+    docsWithField.add(docID);
 
     lastDocID = docID;
   }
@@ -121,7 +118,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
                                   if (fieldInfoIn != fieldInfo) {
                                     throw new IllegalArgumentException("wrong fieldInfo");
                                   }
-                                  return new BufferedSortedDocValues(hash, valueCount, ords, sortedValues, ordMap, docsWithField);
+                                  return new BufferedSortedDocValues(hash, valueCount, ords, sortedValues, ordMap, docsWithField.iterator());
                                 }
                               });
   }
@@ -136,13 +133,13 @@ class SortedDocValuesWriter extends DocValuesWriter {
     final PackedLongValues.Iterator iter;
     final DocIdSetIterator docsWithField;
 
-    public BufferedSortedDocValues(BytesRefHash hash, int valueCount, PackedLongValues docToOrd, int[] sortedValues, int[] ordMap, FixedBitSet docsWithField) {
+    public BufferedSortedDocValues(BytesRefHash hash, int valueCount, PackedLongValues docToOrd, int[] sortedValues, int[] ordMap, DocIdSetIterator docsWithField) {
       this.hash = hash;
       this.valueCount = valueCount;
       this.sortedValues = sortedValues;
       this.iter = docToOrd.iterator();
       this.ordMap = ordMap;
-      this.docsWithField = new BitSetIterator(docsWithField, docToOrd.size());
+      this.docsWithField = docsWithField;
     }
 
     @Override

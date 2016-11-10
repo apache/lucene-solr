@@ -21,9 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
@@ -34,13 +32,13 @@ class NumericDocValuesWriter extends DocValuesWriter {
   private PackedLongValues.Builder pending;
   private final Counter iwBytesUsed;
   private long bytesUsed;
-  private FixedBitSet docsWithField;
+  private DocsWithFieldSet docsWithField;
   private final FieldInfo fieldInfo;
   private int lastDocID = -1;
 
   public NumericDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
-    docsWithField = new FixedBitSet(64);
+    docsWithField = new DocsWithFieldSet();
     bytesUsed = pending.ramBytesUsed() + docsWithField.ramBytesUsed();
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
@@ -53,8 +51,7 @@ class NumericDocValuesWriter extends DocValuesWriter {
     }
 
     pending.add(value);
-    docsWithField = FixedBitSet.ensureCapacity(docsWithField, docID);
-    docsWithField.set(docID);
+    docsWithField.add(docID);
 
     updateBytesUsed();
 
@@ -83,7 +80,7 @@ class NumericDocValuesWriter extends DocValuesWriter {
                                    if (fieldInfo != NumericDocValuesWriter.this.fieldInfo) {
                                      throw new IllegalArgumentException("wrong fieldInfo");
                                    }
-                                   return new BufferedNumericDocValues(values, docsWithField);
+                                   return new BufferedNumericDocValues(values, docsWithField.iterator());
                                  }
                                });
   }
@@ -94,9 +91,9 @@ class NumericDocValuesWriter extends DocValuesWriter {
     final DocIdSetIterator docsWithField;
     private long value;
 
-    BufferedNumericDocValues(PackedLongValues values, FixedBitSet docsWithFields) {
+    BufferedNumericDocValues(PackedLongValues values, DocIdSetIterator docsWithFields) {
       this.iter = values.iterator();
-      this.docsWithField = new BitSetIterator(docsWithFields, values.size());
+      this.docsWithField = docsWithFields;
     }
 
     @Override
