@@ -62,6 +62,7 @@ import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CloseableThreadLocal;
@@ -70,6 +71,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.Version;
 
 /**
@@ -258,6 +260,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * IndexWriterConfig#setInfoStream(InfoStream)}).
    */
   public final static int MAX_TERM_LENGTH = DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8;
+
+  /**
+   * Maximum length string for a stored field.
+   */
+  public final static int MAX_STORED_STRING_LENGTH = ArrayUtil.MAX_ARRAY_LENGTH / UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR;
+    
   // when unrecoverable disaster strikes, we populate this with the reason that we had to close IndexWriter
   volatile Throwable tragedy;
 
