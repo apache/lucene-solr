@@ -55,7 +55,10 @@ Other
 * LUCENE-7360: Remove Explanation.toHtml() (Alan Woodward)
 
 ======================= Lucene 6.4.0 =======================
-(No Changes)
+
+New features
+
+* LUCENE-5867: Added BooleanSimilarity. (Robert Muir, Adrien Grand)
 
 Improvements
 
