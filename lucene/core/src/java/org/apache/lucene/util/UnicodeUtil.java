@@ -612,6 +612,11 @@ public final class UnicodeUtil {
     }
     return out_offset;
   }
+
+  /** Returns the maximum number of utf8 bytes required to encode a utf16 (e.g., java char[], String) */
+  public static int maxUTF8Length(int utf16Length) {
+    return Math.multiplyExact(utf16Length, MAX_UTF8_BYTES_PER_CHAR);
+  }
   
   /**
    * Utility method for {@link #UTF8toUTF16(byte[], int, int, char[])}

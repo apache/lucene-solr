@@ -70,6 +70,10 @@ Improvements
 * LUCENE-7544: UnifiedHighlighter: add extension points for handling custom queries.
   (Michael Braun, David Smiley)
 
+* LUCENE-7538: Asking IndexWriter to store a too-massive text field
+  now throws IllegalArgumentException instead of a cryptic exception
+  that closes your IndexWriter (Steve Chen via Mike McCandless)
+
 ======================= Lucene 6.3.0 =======================
 
 API Changes

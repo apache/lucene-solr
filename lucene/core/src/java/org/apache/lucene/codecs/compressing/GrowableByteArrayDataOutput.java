@@ -64,7 +64,7 @@ public final class GrowableByteArrayDataOutput extends DataOutput {
 
   @Override
   public void writeString(String string) throws IOException {
-    int maxLen = string.length() * UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR;
+    int maxLen = UnicodeUtil.maxUTF8Length(string.length());
     if (maxLen <= MIN_UTF8_SIZE_TO_ENABLE_DOUBLE_PASS_ENCODING)  {
       // string is small enough that we don't need to save memory by falling back to double-pass approach
       // this is just an optimized writeString() that re-uses scratchBytes.
