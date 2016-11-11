@@ -1333,7 +1333,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       if (vals.advance(docId) == docId) {
         val = (int) vals.longValue();
       } else {
-        val = 0;
+        return false;
       }
       ew.put(this.field, val);
       return true;
@@ -1385,7 +1385,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       if (vals.advance(docId) == docId) {
         val = vals.longValue();
       } else {
-        val = 0;
+        return false;
       }
       ew.put(field, val);
       return true;
@@ -1405,7 +1405,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       if (vals.advance(docId) == docId) {
         val = vals.longValue();
       } else {
-        val = 0;
+        return false;
       }
       ew.put(this.field, new Date(val));
       return true;
@@ -1449,7 +1449,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       if (vals.advance(docId) == docId) {
         val = (int)vals.longValue();
       } else {
-        val = 0;
+        return false;
       }
       ew.put(this.field, Float.intBitsToFloat(val));
       return true;
@@ -1469,7 +1469,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       if (vals.advance(docId) == docId) {
         val = vals.longValue();
       } else {
-        val = 0;
+        return false;
       }
       ew.put(this.field, Double.longBitsToDouble(val));
       return true;
