@@ -21,7 +21,7 @@
 
  <!-- Query parser used to rerank top docs with a provided model -->
  <queryParser name="ltr"
-  class="org.apache.solr.search.LTRQParserPlugin" />
+  class="org.apache.solr.ltr.search.LTRQParserPlugin" />
 
  <query>
   <filterCache class="solr.FastLRUCache" size="4096"
@@ -36,7 +36,7 @@
   enclosed between brackets (in this case [fv]). In order to get the feature
   vector you will have to specify that you want the field (e.g., fl="*,[fv]) -->
  <transformer name="fv"
-  class="org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory" />
+  class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory" />
 
  <updateHandler class="solr.DirectUpdateHandler2">
   <autoCommit>

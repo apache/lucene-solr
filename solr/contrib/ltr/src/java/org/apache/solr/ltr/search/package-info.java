@@ -18,6 +18,6 @@
 /**
  * APIs and classes for {@linkplain org.apache.solr.search.QParserPlugin parsing} and {@linkplain org.apache.solr.search.SolrIndexSearcher processing} search requests
  */
-package org.apache.solr.search;
+package org.apache.solr.ltr.search;
 
 

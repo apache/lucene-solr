@@ -839,7 +839,7 @@
     </requestHandler>
 
  <!-- Query parser used to rerank top docs with a provided model -->
-  <queryParser name="ltr" class="org.apache.solr.search.LTRQParserPlugin" >
+  <queryParser name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin" >
     <int name="threadModule.totalPoolThreads">10</int> <!-- Maximum threads to use for all queries -->
     <int name="threadModule.numThreadsPerRequest">10</int> <!-- Maximum threads to use for a single query-->
   </queryParser>
@@ -848,7 +848,7 @@
   will add the features as an extra field in the response. The name of the field we will be the the name of the
   transformer enclosed between brackets (in this case [features]). In order to get the feature vector you will have to
   specify that you want the field (e.g., fl="*,[features])  -->
-  <transformer name="features" class="org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory" />
+  <transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory" />
 
 
   <!-- A request handler that returns indented JSON by default -->
