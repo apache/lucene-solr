@@ -40,6 +40,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitSetIterator;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
@@ -1257,6 +1258,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   protected abstract class FieldWriter {
     public abstract boolean write(int docId, LeafReader reader, EntryWriter out, int fieldIndex) throws IOException;
+    
+    protected boolean checkExists(int docId, long val, String field, LeafReader reader) throws IOException {
+      if (val != 0) return true;
+      Bits bits = reader.getDocsWithField(field);
+      if (bits == null) return false;
+      return bits.get(docId);
+    }
   }
 
   class IntFieldWriter extends FieldWriter {
@@ -1269,6 +1277,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     public boolean write(int docId, LeafReader reader, EntryWriter ew, int fieldIndex) throws IOException {
       NumericDocValues vals = DocValues.getNumeric(reader, this.field);
       int val = (int) vals.get(docId);
+      if (checkExists(docId, val, field, reader) == false) return false;
+
       ew.put(this.field, val);
       return true;
     }
@@ -1326,6 +1336,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     public boolean write(int docId, LeafReader reader, EntryWriter ew, int fieldIndex) throws IOException {
       NumericDocValues vals = DocValues.getNumeric(reader, this.field);
       long val = vals.get(docId);
+      if (checkExists(docId, val, field, reader) == false) return false;
       ew.put(field, val);
 
       return true;
@@ -1342,6 +1353,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     public boolean write(int docId, LeafReader reader, EntryWriter ew, int fieldIndex) throws IOException {
       NumericDocValues vals = DocValues.getNumeric(reader, this.field);
       long val = vals.get(docId);
+      if (checkExists(docId, val, field, reader) == false) return false;
       ew.put(this.field, new Date(val));
       return true;
     }
@@ -1381,6 +1393,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     public boolean write(int docId, LeafReader reader, EntryWriter ew, int fieldIndex) throws IOException {
       NumericDocValues vals = DocValues.getNumeric(reader, this.field);
       int val = (int) vals.get(docId);
+      if (checkExists(docId, val, field, reader) == false) return false;
       ew.put(this.field, Float.intBitsToFloat(val));
       return true;
     }
@@ -1396,6 +1409,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     public boolean write(int docId, LeafReader reader, EntryWriter ew, int fieldIndex) throws IOException {
       NumericDocValues vals = DocValues.getNumeric(reader, this.field);
       long val = vals.get(docId);
+      if (checkExists(docId, val, field, reader) == false) return false;
       ew.put(this.field, Double.longBitsToDouble(val));
       return true;
     }

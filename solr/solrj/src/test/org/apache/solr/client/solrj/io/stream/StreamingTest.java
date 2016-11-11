@@ -19,11 +19,16 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -1969,6 +1974,239 @@ public class StreamingTest extends SolrCloudTestCase {
   private ParallelStream parallelStream(TupleStream stream, FieldComparator comparator) throws IOException {
     ParallelStream pstream = new ParallelStream(zkHost, COLLECTION, stream, numWorkers, comparator);
     return pstream;
-  }  
+  }
 
+  String[] docPairs(int base, String sSeq) {
+    List<String> pairs = new ArrayList<>();
+    final int iSeq = base * 100;
+    pairs.add(id);
+    pairs.add(sSeq + base); // aaa1
+    pairs.add("s_sing");
+    pairs.add(Integer.toString(iSeq + 1)); // 101
+    pairs.add("i_sing");
+    pairs.add(Integer.toString(iSeq + 2)); // 102
+    pairs.add("f_sing");
+    pairs.add(Float.toString(iSeq + 3)); // 103.0
+    pairs.add("l_sing");
+    pairs.add(Long.toString(iSeq + 4)); // 104
+    pairs.add("d_sing");
+    pairs.add(Double.toString(iSeq + 5)); // 105
+    pairs.add("dt_sing");
+    pairs.add(String.format(Locale.ROOT, "2000-01-01T%02d:00:00Z", base)); // Works as long as we add fewer than 60 docs
+    pairs.add("b_sing");
+    pairs.add((base % 2) == 0 ? "T" : "F"); // Tricky
+
+    String[] ret = new String[pairs.size()];
+    return pairs.toArray(ret);
+  }
+
+  // Select and export should be identical sort orders I think.
+  private void checkSort(JettySolrRunner jetty, String field, String sortDir, String[] fields) throws IOException, SolrServerException {
+
+//    // Comes back after after LUCENE-7548
+//    SolrQuery query = new SolrQuery("*:*");
+//    query.addSort(field, ("asc".equals(sortDir) ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc));
+//    query.addSort("id", SolrQuery.ORDER.asc);
+//    query.addField("id");
+//    query.addField(field);
+//    query.setRequestHandler("standard");
+//    query.setRows(100);
+//
+//    List<String> selectOrder = new ArrayList<>();
+//
+//    String url = jetty.getBaseUrl() + "/" + COLLECTION;
+//
+//    try (HttpSolrClient client = getHttpSolrClient(url)) {
+//      client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
+//      QueryResponse rsp = client.query(query);
+//      for (SolrDocument doc : rsp.getResults()) {
+//        selectOrder.add((String) doc.getFieldValue("id"));
+//      }
+//    }
+//    SolrParams exportParams = mapParams("q", "*:*", "qt", "/export", "fl", "id," + field, "sort", field + " " + sortDir + ",id asc");
+//    try (CloudSolrStream solrStream = new CloudSolrStream(zkHost, COLLECTION, exportParams)) {
+//      List<Tuple> tuples = getTuples(solrStream);
+//      assertEquals("There should be exactly 32 responses returned", 32, tuples.size());
+//      // Since the getTuples method doesn't return the EOF tuple, these two entries should be the same size.
+//      assertEquals("Tuple count should exactly match sort array size for field " + field + " sort order " + sortDir, selectOrder.size(), tuples.size());
+//
+//      for (int idx = 0; idx < selectOrder.size(); ++idx) { // Tuples should be in lock step with the orders from select.
+//        assertEquals("Order for missing docValues fields wrong for field '" + field + "' sort direction '" + sortDir,
+//            tuples.get(idx).getString("id"), selectOrder.get(idx));
+//      }
+//    }
+
+    // Remove below and uncomment above after LUCENE-7548
+    List<String> selectOrder = ("asc".equals(sortDir)) ? Arrays.asList(ascOrder) : Arrays.asList(descOrder);
+    List<String> selectOrderBool = ("asc".equals(sortDir)) ? Arrays.asList(ascOrderBool) : Arrays.asList(descOrderBool);
+    SolrParams exportParams = mapParams("q", "*:*", "qt", "/export", "fl", "id," + field, "sort", field + " " + sortDir + ",id asc");
+    try (CloudSolrStream solrStream = new CloudSolrStream(zkHost, COLLECTION, exportParams)) {
+      List<Tuple> tuples = getTuples(solrStream);
+      assertEquals("There should be exactly 32 responses returned", 32, tuples.size());
+      // Since the getTuples method doesn't return the EOF tuple, these two entries should be the same size.
+      assertEquals("Tuple count should exactly match sort array size for field " + field + " sort order " + sortDir, selectOrder.size(), tuples.size());
+
+      for (int idx = 0; idx < selectOrder.size(); ++idx) { // Tuples should be in lock step with the orders passed in.
+        assertEquals("Order for missing docValues fields wrong for field '" + field + "' sort direction '" + sortDir +
+                "' RESTORE GETTING selectOrder from select statement after LUCENE-7548",
+            tuples.get(idx).getString("id"), (field.startsWith("b_") ? selectOrderBool.get(idx) : selectOrder.get(idx)));
+      }
+    }
+  }
+
+  static final String[] voidIds = new String[]{
+      "iii1",
+      "eee1",
+      "aaa1",
+      "ooo1",
+      "iii2",
+      "eee2",
+      "aaa2",
+      "ooo2",
+      "iii3",
+      "eee3",
+      "aaa3",
+      "ooo3"
+  };
+
+  private void checkReturnValsForEmpty(String[] fields) throws IOException {
+
+    Set<String> voids = new HashSet<>(Arrays.asList(voidIds));
+
+    StringBuilder fl = new StringBuilder("id");
+    for (String f : fields) {
+      fl.append(",").append(f);
+    }
+    SolrParams sParams = mapParams("q", "*:*", "qt", "/export", "fl", fl.toString(), "sort", "id asc");
+
+    try (CloudSolrStream solrStream = new CloudSolrStream(zkHost, COLLECTION, sParams)) {
+      List<Tuple> tuples = getTuples(solrStream);
+      assertEquals("There should be exactly 32 responses returned", 32, tuples.size());
+
+      for (Tuple tuple : tuples) {
+        String id = tuple.getString("id");
+        if (voids.contains(id)) {
+          for (String f : fields) {
+            assertNull("Should have returned a void for field " + f + " doc " + id, tuple.get(f));
+          }
+        } else {
+          for (String f : fields) {
+            assertNotNull("Should have returned a value for field " + f + " doc " + id, tuple.get(f));
+          }
+        }
+      }
+    }
+  }
+
+  // Goes away after after LUCENE-7548
+  final static String[] ascOrder = new String[]{
+      "aaa1", "aaa2", "aaa3", "eee1",
+      "eee2", "eee3", "iii1", "iii2",
+      "iii3", "ooo1", "ooo2", "ooo3",
+      "aaa4", "eee4", "iii4", "ooo4",
+      "aaa5", "eee5", "iii5", "ooo5",
+      "aaa6", "eee6", "iii6", "ooo6",
+      "aaa7", "eee7", "iii7", "ooo7",
+      "aaa8", "eee8", "iii8", "ooo8",
+  };
+
+  // Goes away after after LUCENE-7548
+  final static String[] descOrder = new String[]{
+      "aaa8", "eee8", "iii8", "ooo8",
+      "aaa7", "eee7", "iii7", "ooo7",
+      "aaa6", "eee6", "iii6", "ooo6",
+      "aaa5", "eee5", "iii5", "ooo5",
+      "aaa4", "eee4", "iii4", "ooo4",
+      "aaa1", "aaa2", "aaa3", "eee1",
+      "eee2", "eee3", "iii1", "iii2",
+      "iii3", "ooo1", "ooo2", "ooo3"
+  };
+
+
+  // Goes away after after LUCENE-7548
+  final static String[] ascOrderBool = new String[]{
+      "aaa1", "aaa2", "aaa3", "eee1",
+      "eee2", "eee3", "iii1", "iii2",
+      "iii3", "ooo1", "ooo2", "ooo3",
+      "aaa5", "aaa7", "eee5", "eee7",
+      "iii5", "iii7", "ooo5", "ooo7",
+      "aaa4", "aaa6", "aaa8", "eee4",
+      "eee6", "eee8", "iii4", "iii6",
+      "iii8", "ooo4", "ooo6", "ooo8"
+  };
+
+  // Goes away after after LUCENE-7548
+  final static String[] descOrderBool = new String[]{
+      "aaa4", "aaa6", "aaa8", "eee4",
+      "eee6", "eee8", "iii4", "iii6",
+      "iii8", "ooo4", "ooo6", "ooo8",
+      "aaa5", "aaa7", "eee5", "eee7",
+      "iii5", "iii7", "ooo5", "ooo7",
+      "aaa1", "aaa2", "aaa3", "eee1",
+      "eee2", "eee3", "iii1", "iii2",
+      "iii3", "ooo1", "ooo2", "ooo3",
+  };
+
+  @Test
+  public void testMissingFields() throws Exception {
+
+    new UpdateRequest()
+        // Some docs with nothing at all for any of the "interesting" fields.
+        .add(id, "iii1")
+        .add(id, "eee1")
+        .add(id, "aaa1")
+        .add(id, "ooo1")
+
+        .add(id, "iii2")
+        .add(id, "eee2")
+        .add(id, "aaa2")
+        .add(id, "ooo2")
+
+        .add(id, "iii3")
+        .add(id, "eee3")
+        .add(id, "aaa3")
+        .add(id, "ooo3")
+
+        // Docs with values in for all of the types we want to sort on.
+
+        .add(docPairs(4, "iii"))
+        .add(docPairs(4, "eee"))
+        .add(docPairs(4, "aaa"))
+        .add(docPairs(4, "ooo"))
+
+        .add(docPairs(5, "iii"))
+        .add(docPairs(5, "eee"))
+        .add(docPairs(5, "aaa"))
+        .add(docPairs(5, "ooo"))
+
+        .add(docPairs(6, "iii"))
+        .add(docPairs(6, "eee"))
+        .add(docPairs(6, "aaa"))
+        .add(docPairs(6, "ooo"))
+
+        .add(docPairs(7, "iii"))
+        .add(docPairs(7, "eee"))
+        .add(docPairs(7, "aaa"))
+        .add(docPairs(7, "ooo"))
+
+        .add(docPairs(8, "iii"))
+        .add(docPairs(8, "eee"))
+        .add(docPairs(8, "aaa"))
+        .add(docPairs(8, "ooo"))
+
+        .commit(cluster.getSolrClient(), COLLECTION);
+
+    JettySolrRunner jetty = cluster.getJettySolrRunners().get(0);
+
+
+    String[] fields = new String[]{"s_sing", "i_sing", "f_sing", "l_sing", "d_sing", "dt_sing", "b_sing"};
+
+    for (String f : fields) {
+      checkSort(jetty, f, "asc", fields);
+      checkSort(jetty, f, "desc", fields);
+    }
+
+    checkReturnValsForEmpty(fields);
+
+  }
 }
