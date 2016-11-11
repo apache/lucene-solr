@@ -80,6 +80,11 @@ Improvements
 * LUCENE-7524: Added more detailed explanation of how IDF is computed in
   ClassicSimilarity and BM25Similarity. (Adrien Grand)
 
+Other
+
+* LUCENE-7546: Fixed references to benchmark wikipedia data and the Jenkins line-docs file
+  (David Smiley)
+
 ======================= Lucene 6.3.0 =======================
 
 API Changes
