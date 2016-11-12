@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search;
+package org.apache.solr.ltr.search;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -40,6 +40,11 @@ import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;
+import org.apache.solr.search.AbstractReRankQuery;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.RankQuery;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -175,7 +180,10 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       SolrQueryRequestContextUtils.setScoringQuery(req, scoringQuery);
 
       int reRankDocs = localParams.getInt(RERANK_DOCS, DEFAULT_RERANK_DOCS);
-      reRankDocs = Math.max(1, reRankDocs);
+      if (reRankDocs <= 0) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Must rerank at least 1 document");
+      }
 
       // External features
       scoringQuery.setRequest(req);

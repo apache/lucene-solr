@@ -90,7 +90,7 @@ BONUS: Train an actual machine learning model
   ...
 
   <!-- Query parser used to rerank top docs with a provided model -->
-  <queryParser name="ltr" class="org.apache.solr.search.LTRQParserPlugin" />
+  <queryParser name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin" />
 
   <!--  Transformer that will encode the document features in the response.
   For each document the transformer will add the features as an extra field
@@ -99,7 +99,7 @@ BONUS: Train an actual machine learning model
   In order to get the feature vector you will have to
   specify that you want the field (e.g., fl="*,[features])  -->
 
-  <transformer name="features" class="org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory" />
+  <transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory" />
 
   <query>
     ...
@@ -373,7 +373,7 @@ At this point you'll need to collect feature vectors for each query document pai
 from the Extract features section above to do this. An example script has been included in example/train_and_upload_demo_model.py.
 
 # Explanation of the core reranking logic
-An LTR model is plugged into the ranking through the [LTRQParserPlugin](/solr/contrib/ltr/src/java/org/apache/solr/search/LTRQParserPlugin.java). The plugin will
+An LTR model is plugged into the ranking through the [LTRQParserPlugin](/solr/contrib/ltr/src/java/org/apache/solr/ltr/search/LTRQParserPlugin.java). The plugin will
 read from the request the model, an instance of [LTRScoringModel](/solr/contrib/ltr/src/java/org/apache/solr/ltr/model/LTRScoringModel.java),
 plus other parameters. The plugin will generate an LTRQuery, a particular [ReRankQuery](/solr/core/src/java/org/apache/solr/search/AbstractReRankQuery.java).
 It wraps the original solr query for the first pass ranking, and uses the provided model in an
@@ -388,13 +388,13 @@ About half the time for ranking is spent in the creation of weights for each fea
 
 <config>
   <!-- Query parser used to rerank top docs with a provided model -->
-  <queryParser name="ltr" class="org.apache.solr.search.LTRQParserPlugin">
+  <queryParser name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin">
      <int name="threadModule.totalPoolThreads">10</int> <!-- Maximum threads to share for all requests -->
      <int name="threadModule.numThreadsPerRequest">5</int> <!-- Maximum threads to use for a single requests-->
   </queryParser>
   
   <!-- Transformer for extracting features -->
-  <transformer name="features" class="org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory">
+  <transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
      <int name="threadModule.totalPoolThreads">10</int> <!-- Maximum threads to share for all requests -->
      <int name="threadModule.numThreadsPerRequest">5</int> <!-- Maximum threads to use for a single requests-->
   </transformer>

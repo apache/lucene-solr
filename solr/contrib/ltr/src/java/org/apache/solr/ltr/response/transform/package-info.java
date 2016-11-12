@@ -18,6 +18,6 @@
 /**
  * APIs and implementations of {@link org.apache.solr.response.transform.DocTransformer} for modifying documents in Solr request responses
  */
-package org.apache.solr.response.transform;
+package org.apache.solr.ltr.response.transform;
 
 
