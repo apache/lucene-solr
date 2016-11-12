@@ -21,10 +21,11 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -57,6 +58,7 @@ public class TestDocBoost extends LuceneTestCase {
     final float[] scores = new float[4];
 
     IndexSearcher searcher = newSearcher(reader);
+    searcher.setSimilarity(new BM25Similarity());
     searcher.search
       (new TermQuery(new Term("field", "word")),
        new SimpleCollector() {
