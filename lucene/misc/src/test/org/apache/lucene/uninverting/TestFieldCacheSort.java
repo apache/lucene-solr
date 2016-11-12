@@ -24,10 +24,10 @@ import java.util.Map;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.LegacyFloatField;
 import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.LegacyLongField;
@@ -50,6 +50,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.LuceneTestCase;
@@ -434,6 +435,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
+    searcher.setSimilarity(new BM25Similarity());
     Sort sort = new Sort(new SortField(null, SortField.Type.SCORE, true));
 
     TopDocs actual = searcher.search(new TermQuery(new Term("value", "foo")), 10, sort);
