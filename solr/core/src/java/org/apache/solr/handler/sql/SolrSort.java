@@ -36,8 +36,9 @@ import java.util.List;
  */
 class SolrSort extends Sort implements SolrRel {
 
-  SolrSort(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation, RexNode fetch) {
-    super(cluster, traitSet, child, collation, null, fetch);
+  SolrSort(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation, RexNode offset,
+           RexNode fetch) {
+    super(cluster, traitSet, child, collation, offset, fetch);
 
     assert getConvention() == SolrRel.CONVENTION;
     assert getConvention() == child.getConvention();
@@ -50,7 +51,7 @@ class SolrSort extends Sort implements SolrRel {
 
   @Override
   public Sort copy(RelTraitSet traitSet, RelNode input, RelCollation newCollation, RexNode offset, RexNode fetch) {
-    return new SolrSort(getCluster(), traitSet, input, collation, fetch);
+    return new SolrSort(getCluster(), traitSet, input, collation, offset, fetch);
   }
 
   public void implement(Implementor implementor) {

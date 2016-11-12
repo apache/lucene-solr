@@ -70,16 +70,13 @@ class SolrEnumerator implements Enumerator<Object> {
 
   private Object getter(Tuple tuple, Map.Entry<String, Class> field) {
     Object val = tuple.get(field.getKey());
-    Class clazz = field.getValue();
 
-    if(clazz.equals(Double.class)) {
-      return val == null ? 0D : val;
+    if(val == null) {
+      return null;
     }
 
+    Class clazz = field.getValue();
     if(clazz.equals(Long.class)) {
-      if(val == null) {
-        return 0L;
-      }
       if(val instanceof Double) {
         return this.getRealVal(val);
       }

@@ -68,9 +68,9 @@ interface SolrRel extends RelNode {
       column = this.fieldMappings.getOrDefault(column, column);
       this.metricPairs.add(new Pair<>(metric, column));
 
-      String metricIdentifier = metric + "(" + column + ")";
+      String metricIdentifier = metric.toLowerCase(Locale.ROOT) + "(" + column + ")";
       if(outName != null) {
-        this.addFieldMapping(outName, metricIdentifier.toLowerCase(Locale.ROOT));
+        this.addFieldMapping(outName, metricIdentifier);
       }
     }
 

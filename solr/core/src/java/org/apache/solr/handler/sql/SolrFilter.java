@@ -88,11 +88,14 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     private String translateMatch2(RexNode node) {
-      Pair<String, RexLiteral> binaryTranslated = translateBinary((RexCall) node);
+      Pair<String, RexLiteral> binaryTranslated = null;
+      if (((RexCall) node).getOperands().size() == 2) {
+        binaryTranslated = translateBinary((RexCall) node);
+      }
 
       switch (node.getKind()) {
-//        case NOT:
-//          return translateBinary("-", "-", (RexCall) node);
+        case NOT:
+          return "-"+translateMatch2(((RexCall) node).getOperands().get(0));
         case EQUALS:
           return binaryTranslated.getKey() + ":" + binaryTranslated.getValue().getValue2();
         case NOT_EQUALS:

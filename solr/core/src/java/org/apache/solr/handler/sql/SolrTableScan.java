@@ -19,6 +19,7 @@ package org.apache.solr.handler.sql;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 
 import java.util.List;
@@ -47,6 +48,11 @@ class SolrTableScan extends TableScan implements SolrRel {
 
     assert solrTable != null;
     assert getConvention() == SolrRel.CONVENTION;
+  }
+
+  @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+    final float f = projectRowType == null ? 1f : (float) projectRowType.getFieldCount() / 100f;
+    return super.computeSelfCost(planner, mq).multiplyBy(.1 * f);
   }
 
   @Override
