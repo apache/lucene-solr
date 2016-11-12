@@ -27,10 +27,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.Closeables;
@@ -114,9 +113,12 @@ public final class SolrCellBuilder implements CommandBuilder {
       Config solrLocatorConfig = getConfigs().getConfig(config, "solrLocator");
       SolrLocator locator = new SolrLocator(solrLocatorConfig, context);
       LOG.debug("solrLocator: {}", locator);
-      this.schema = locator.getIndexSchema();
-      Preconditions.checkNotNull(schema);
-      LOG.trace("Solr schema: \n{}", Joiner.on("\n").join(new TreeMap<>(schema.getFields()).values()));
+      this.schema = Objects.requireNonNull(locator.getIndexSchema());
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("Solr schema: \n" + schema.getFields().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey()).map(Map.Entry::getValue).map(Object::toString)
+                .collect(Collectors.joining("\n")));
+      }
 
       ListMultimap<String, String> cellParams = ArrayListMultimap.create();
       String uprefix = getConfigs().getString(config, ExtractingParams.UNKNOWN_FIELD_PREFIX, null);

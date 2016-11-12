@@ -140,7 +140,7 @@ public class MultiDocValues {
 
       @Override
       public boolean advanceExact(int targetDocID) throws IOException {
-        if (targetDocID <= docID) {
+        if (targetDocID < docID) {
           throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
         }
         int readerIndex = ReaderUtil.subIndex(targetDocID, leaves);
@@ -266,7 +266,7 @@ public class MultiDocValues {
 
       @Override
       public boolean advanceExact(int targetDocID) throws IOException {
-        if (targetDocID <= docID) {
+        if (targetDocID < docID) {
           throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
         }
         int readerIndex = ReaderUtil.subIndex(targetDocID, leaves);
@@ -390,7 +390,7 @@ public class MultiDocValues {
 
       @Override
       public boolean advanceExact(int targetDocID) throws IOException {
-        if (targetDocID <= docID) {
+        if (targetDocID < docID) {
           throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
         }
         int readerIndex = ReaderUtil.subIndex(targetDocID, leaves);
@@ -525,7 +525,7 @@ public class MultiDocValues {
 
       @Override
       public boolean advanceExact(int targetDocID) throws IOException {
-        if (targetDocID <= docID) {
+        if (targetDocID < docID) {
           throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
         }
         int readerIndex = ReaderUtil.subIndex(targetDocID, leaves);
@@ -1007,7 +1007,7 @@ public class MultiDocValues {
     
     @Override
     public boolean advanceExact(int targetDocID) throws IOException {
-      if (targetDocID <= docID) {
+      if (targetDocID < docID) {
         throw new IllegalArgumentException("can only advance beyond current document: on docID=" + docID + " but targetDocID=" + targetDocID);
       }
       int readerIndex = ReaderUtil.subIndex(targetDocID, docStarts);

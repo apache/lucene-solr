@@ -25,10 +25,10 @@ import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -330,7 +330,7 @@ public class DistributedQueue {
       updateLock.lockInterruptibly();
       try {
         for (String child : knownChildren) {
-          if (acceptFilter.apply(child)) {
+          if (acceptFilter.test(child)) {
             foundChildren.add(child);
           }
         }

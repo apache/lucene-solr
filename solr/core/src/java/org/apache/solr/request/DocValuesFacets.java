@@ -173,16 +173,17 @@ public class DocValuesFacets {
         int min=mincount-1;  // the smallest value in the top 'N' values
         for (int i=(startTermIndex==-1)?1:0; i<nTerms; i++) {
           int c = counts[i];
-          if (contains != null) {
-            final BytesRef term = si.lookupOrd(startTermIndex+i);
-            if (!SimpleFacets.contains(term.utf8ToString(), contains, ignoreCase)) {
-              continue;
-            }
-          }
           if (c>min) {
             // NOTE: we use c>min rather than c>=min as an optimization because we are going in
             // index order, so we already know that the keys are ordered.  This can be very
             // important if a lot of the counts are repeated (like zero counts would be).
+
+            if (contains != null) {
+              final BytesRef term = si.lookupOrd(startTermIndex+i);
+              if (!SimpleFacets.contains(term.utf8ToString(), contains, ignoreCase)) {
+                continue;
+              }
+            }
 
             // smaller term numbers sort higher, so subtract the term number instead
             long pair = (((long)c)<<32) + (Integer.MAX_VALUE - i);

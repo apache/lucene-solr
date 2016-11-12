@@ -22,9 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
@@ -32,7 +30,7 @@ import org.apache.lucene.util.packed.PackedLongValues;
  *  segment flushes. */
 class NormValuesWriter {
 
-  private FixedBitSet docsWithField;
+  private DocsWithFieldSet docsWithField;
   private PackedLongValues.Builder pending;
   private final Counter iwBytesUsed;
   private long bytesUsed;
@@ -40,7 +38,7 @@ class NormValuesWriter {
   private int lastDocID = -1;
 
   public NormValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
-    docsWithField = new FixedBitSet(64);
+    docsWithField = new DocsWithFieldSet();
     pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
     bytesUsed = pending.ramBytesUsed() + docsWithField.ramBytesUsed();
     this.fieldInfo = fieldInfo;
@@ -54,8 +52,7 @@ class NormValuesWriter {
     }
 
     pending.add(value);
-    docsWithField = FixedBitSet.ensureCapacity(docsWithField, docID);
-    docsWithField.set(docID);
+    docsWithField.add(docID);
 
     updateBytesUsed();
 
@@ -82,7 +79,7 @@ class NormValuesWriter {
                                    if (fieldInfo != NormValuesWriter.this.fieldInfo) {
                                      throw new IllegalArgumentException("wrong fieldInfo");
                                    }
-                                   return new BufferedNorms(values, docsWithField);
+                                   return new BufferedNorms(values, docsWithField.iterator());
                                   }
 
                                   @Override
@@ -108,9 +105,9 @@ class NormValuesWriter {
     final DocIdSetIterator docsWithField;
     private long value;
 
-    BufferedNorms(PackedLongValues values, FixedBitSet docsWithFields) {
+    BufferedNorms(PackedLongValues values, DocIdSetIterator docsWithFields) {
       this.iter = values.iterator();
-      this.docsWithField = new BitSetIterator(docsWithFields, values.size());
+      this.docsWithField = docsWithFields;
     }
 
     @Override

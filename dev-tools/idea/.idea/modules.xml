@@ -49,17 +49,18 @@
       <module group="Solr" filepath="$PROJECT_DIR$/solr/test-framework/solr-test-framework.iml" />
 
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/analysis-extras/analysis-extras.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/analytics/analytics.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/clustering/clustering.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/dataimporthandler-extras/dataimporthandler-extras.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/dataimporthandler/dataimporthandler.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/extraction/extraction.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/langid/langid.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/ltr/ltr.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/map-reduce/map-reduce.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/morphlines-cell/morphlines-cell.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/morphlines-core/morphlines-core.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/uima/uima.iml" />
       <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/velocity/velocity.iml" />
-      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/analytics/analytics.iml" />
     </modules>
   </component>
 </project>

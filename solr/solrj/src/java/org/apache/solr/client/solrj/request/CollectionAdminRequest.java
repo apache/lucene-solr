@@ -713,10 +713,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Optional<String> repositoryName = Optional.empty();
     protected String location;
     protected Optional<String> commitName = Optional.empty();
+    protected Optional<String> indexBackupStrategy = Optional.empty();
 
     public Backup(String collection, String name) {
       super(CollectionAction.BACKUP, collection);
       this.name = name;
+      this.repositoryName = Optional.empty();
     }
 
     @Override
@@ -760,6 +762,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public Optional<String> getIndexBackupStrategy() {
+      return indexBackupStrategy;
+    }
+
+    public Backup setIndexBackupStrategy(String indexBackupStrategy) {
+      this.indexBackupStrategy = Optional.ofNullable(indexBackupStrategy);
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -771,6 +782,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (commitName.isPresent()) {
         params.set(CoreAdminParams.COMMIT_NAME, commitName.get());
+      }
+      if (indexBackupStrategy.isPresent()) {
+        params.set(CollectionAdminParams.INDEX_BACKUP_STRATEGY, indexBackupStrategy.get());
       }
       return params;
     }

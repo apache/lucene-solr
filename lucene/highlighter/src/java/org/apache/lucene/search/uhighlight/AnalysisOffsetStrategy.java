@@ -19,8 +19,10 @@ package org.apache.lucene.search.uhighlight;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.FilteringTokenFilter;
@@ -30,6 +32,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.memory.MemoryIndex;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automata;
@@ -50,7 +53,9 @@ public class AnalysisOffsetStrategy extends FieldOffsetStrategy {
   private final LeafReader leafReader;
   private final CharacterRunAutomaton preMemIndexFilterAutomaton;
 
-  public AnalysisOffsetStrategy(String field, BytesRef[] extractedTerms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, Analyzer analyzer) {
+  public AnalysisOffsetStrategy(String field, BytesRef[] extractedTerms, PhraseHelper phraseHelper,
+                                CharacterRunAutomaton[] automata, Analyzer analyzer,
+                                Function<Query, Collection<Query>> multiTermQueryRewrite) {
     super(field, extractedTerms, phraseHelper, automata);
     this.analyzer = analyzer;
     // Automata (Wildcards / MultiTermQuery):
@@ -68,7 +73,8 @@ public class AnalysisOffsetStrategy extends FieldOffsetStrategy {
       memoryIndex = new MemoryIndex(true, storePayloads);//true==store offsets
       leafReader = (LeafReader) memoryIndex.createSearcher().getIndexReader();
       // preFilter for MemoryIndex
-      preMemIndexFilterAutomaton = buildCombinedAutomaton(field, terms, this.automata, strictPhrases);
+      preMemIndexFilterAutomaton = buildCombinedAutomaton(field, terms, this.automata, strictPhrases,
+          multiTermQueryRewrite);
     } else {
       memoryIndex = null;
       leafReader = null;
@@ -155,7 +161,8 @@ public class AnalysisOffsetStrategy extends FieldOffsetStrategy {
    */
   private static CharacterRunAutomaton buildCombinedAutomaton(String field, BytesRef[] terms,
                                                               CharacterRunAutomaton[] automata,
-                                                              PhraseHelper strictPhrases) {
+                                                              PhraseHelper strictPhrases,
+                                                              Function<Query, Collection<Query>> multiTermQueryRewrite) {
     List<CharacterRunAutomaton> allAutomata = new ArrayList<>();
     if (terms.length > 0) {
       allAutomata.add(new CharacterRunAutomaton(Automata.makeStringUnion(Arrays.asList(terms))));
@@ -163,7 +170,7 @@ public class AnalysisOffsetStrategy extends FieldOffsetStrategy {
     Collections.addAll(allAutomata, automata);
     for (SpanQuery spanQuery : strictPhrases.getSpanQueries()) {
       Collections.addAll(allAutomata,
-          MultiTermHighlighting.extractAutomata(spanQuery, field, true));//true==lookInSpan
+          MultiTermHighlighting.extractAutomata(spanQuery, field, true, multiTermQueryRewrite));//true==lookInSpan
     }
 
     if (allAutomata.size() == 1) {

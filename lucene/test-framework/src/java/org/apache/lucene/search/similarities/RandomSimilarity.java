@@ -91,6 +91,7 @@ public class RandomSimilarity extends PerFieldSimilarityWrapper {
     allSims = new ArrayList<>();
     allSims.add(new ClassicSimilarity());
     allSims.add(new BM25Similarity());
+    allSims.add(new BooleanSimilarity());
     for (BasicModel basicModel : BASIC_MODELS) {
       for (AfterEffect afterEffect : AFTER_EFFECTS) {
         for (Normalization normalization : NORMALIZATIONS) {

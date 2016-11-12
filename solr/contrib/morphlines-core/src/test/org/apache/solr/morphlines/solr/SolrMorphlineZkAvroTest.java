@@ -24,9 +24,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.google.common.base.Preconditions;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.file.FileReader;
 import org.apache.avro.generic.GenericData;
@@ -103,8 +103,7 @@ public class SolrMorphlineZkAvroTest extends AbstractSolrMorphlineZkTestBase {
     for (int i = 0; i < records.size(); i++) {  
       // verify morphline spat out expected data
       Record actual = collector.getRecords().get(i);
-      GenericData.Record expected = records.get(i);
-      Preconditions.checkNotNull(expected);
+      GenericData.Record expected = Objects.requireNonNull(records.get(i));
       assertTweetEquals(expected, actual, i);
       
       // verify Solr result set contains expected data
@@ -119,8 +118,8 @@ public class SolrMorphlineZkAvroTest extends AbstractSolrMorphlineZkTestBase {
   }
   
   private void assertTweetEquals(GenericData.Record expected, Record actual, int i) {
-    Preconditions.checkNotNull(expected);
-    Preconditions.checkNotNull(actual);
+    Objects.requireNonNull(expected);
+    Objects.requireNonNull(actual);
 //    System.out.println("\n\nexpected: " + toString(expected));
 //    System.out.println("actual:   " + actual);
     String[] fieldNames = new String[] { 

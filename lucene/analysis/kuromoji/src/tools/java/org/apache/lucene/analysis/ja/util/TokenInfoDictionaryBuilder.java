@@ -33,12 +33,10 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.analysis.ja.util.DictionaryBuilder.DictionaryFormat;
-import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
-import org.apache.lucene.util.packed.PackedInts;
 
 import com.ibm.icu.text.Normalizer2;
 
@@ -133,7 +131,7 @@ public class TokenInfoDictionaryBuilder {
     System.out.println("  encode...");
 
     PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
-    Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, true, PackedInts.DEFAULT, true, 15);
+    Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, true, 15);
     IntsRefBuilder scratch = new IntsRefBuilder();
     long ord = -1; // first ord will be 0
     String lastValue = null;

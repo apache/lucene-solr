@@ -2305,12 +2305,12 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <macrodef name="copy-to-stage-macro">
     <attribute name="artifacts.dir"/>
     <sequential>
-      <sshexec host="people.apache.org"
+      <sshexec host="home.apache.org"
                username="${scp.user}"
                keyfile="${keyfile}"
                command="mkdir -p ${remote.staging.dir}"/>
-      <echo>Uploading artifacts to ${scp.user}@people.apache.org:${remote.staging.dir}</echo>
-      <scp todir="${scp.user}@people.apache.org:${remote.staging.dir}"
+      <echo>Uploading artifacts to ${scp.user}@home.apache.org:${remote.staging.dir}</echo>
+      <scp todir="${scp.user}@home.apache.org:${remote.staging.dir}"
            username="${scp.user}"
            keyfile="${keyfile}"
            verbose="true">

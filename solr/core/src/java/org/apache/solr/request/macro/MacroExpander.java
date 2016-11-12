@@ -71,6 +71,8 @@ public class MacroExpander {
               newValues.add(vv);
             }
           }
+        }
+        if (newValues != null) {
           newValues.add(newV);
         }
       }

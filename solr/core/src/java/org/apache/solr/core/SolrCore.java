@@ -39,6 +39,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -109,7 +110,6 @@ import org.apache.solr.response.RubyResponseWriter;
 import org.apache.solr.response.SchemaXmlResponseWriter;
 import org.apache.solr.response.SmileResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.SortingResponseWriter;
 import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.ManagedResourceStorage;
@@ -152,7 +152,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
@@ -816,9 +815,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     
     assert ObjectReleaseTracker.track(searcherExecutor); // ensure that in unclean shutdown tests we still close this
     
-    checkNotNull(coreDescriptor, "coreDescriptor cannot be null");
-    
-    this.coreDescriptor = coreDescriptor;
+    this.coreDescriptor = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
     setName(name);
     MDCLoggingContext.setCore(this);
     
@@ -2334,7 +2331,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     m.put("raw", new RawResponseWriter());
     m.put(CommonParams.JAVABIN, new BinaryResponseWriter());
     m.put("csv", new CSVResponseWriter());
-    m.put("xsort", new SortingResponseWriter());
     m.put("schema.xml", new SchemaXmlResponseWriter());
     m.put("smile", new SmileResponseWriter());
     m.put(ReplicationHandler.FILE_STREAM, getFileStreamWriter());
@@ -2352,12 +2348,21 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       @Override
       public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
         RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
-        if(rawWriter!=null) rawWriter.write(out);
+        if (rawWriter != null) {
+          rawWriter.write(out);
+          if (rawWriter instanceof Closeable) ((Closeable) rawWriter).close();
+        }
+
       }
 
       @Override
       public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-        return BinaryResponseParser.BINARY_CONTENT_TYPE;
+        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
+        if (rawWriter != null) {
+          return rawWriter.getContentType();
+        } else {
+          return BinaryResponseParser.BINARY_CONTENT_TYPE;
+        }
       }
     };
   }
@@ -2367,6 +2372,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   }
 
   public interface RawWriter {
+    default String getContentType() {
+      return BinaryResponseParser.BINARY_CONTENT_TYPE;
+    }
     void write(OutputStream os) throws IOException ;
   }
 
@@ -2633,7 +2641,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   public static void deleteUnloadedCore(CoreDescriptor cd, boolean deleteDataDir, boolean deleteInstanceDir) {
     if (deleteDataDir) {
-      File dataDir = new File(cd.getDataDir());
+      File dataDir = new File(cd.getInstanceDir().resolve(cd.getDataDir()).toAbsolutePath().toString());
       try {
         FileUtils.deleteDirectory(dataDir);
       } catch (IOException e) {

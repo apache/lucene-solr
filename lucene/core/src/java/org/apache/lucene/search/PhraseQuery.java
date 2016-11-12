@@ -265,7 +265,7 @@ public class PhraseQuery extends Query {
    * Returns the relative positions of terms in this phrase.
    */
   public int[] getPositions() {
-      return positions;
+    return positions;
   }
 
   @Override

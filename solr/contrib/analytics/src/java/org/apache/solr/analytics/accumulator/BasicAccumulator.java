@@ -23,8 +23,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
-import com.google.common.base.Supplier;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.solr.analytics.expression.Expression;
 import org.apache.solr.analytics.expression.ExpressionFactory;
