@@ -64,6 +64,7 @@ import org.apache.lucene.search.grouping.function.FunctionSecondPassGroupingColl
 import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
 import org.apache.lucene.search.grouping.term.TermFirstPassGroupingCollector;
 import org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -140,6 +141,7 @@ public class TestGrouping extends LuceneTestCase {
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = newSearcher(w.getReader());
+    indexSearcher.setSimilarity(new BM25Similarity());
     w.close();
 
     final Sort groupSort = Sort.RELEVANCE;
