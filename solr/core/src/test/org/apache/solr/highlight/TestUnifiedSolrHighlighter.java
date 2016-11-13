@@ -71,6 +71,49 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='101']/arr/str[2]='<em>Document</em> snippet two.'");
   }
 
+  public void testStrictPhrasesEnabledByDefault() {
+    clearIndex();
+    assertU(adoc("text", "Strict phrases should be enabled for phrases",
+        "text2", "document one", "text3", "crappy document", "id", "101"));
+    assertU(commit());
+    assertQ("strict phrase handling",
+        req("q", "text:\"strict phrases\"", "sort", "id asc", "hl", "true"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=1",
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Strict</em> <em>phrases</em> should be enabled for phrases'");
+  }
+
+  public void testStrictPhrasesCanBeDisabled() {
+    clearIndex();
+    assertU(adoc("text", "Strict phrases should be disabled for phrases",
+        "text2", "document one", "text3", "crappy document", "id", "101"));
+    assertU(commit());
+    assertQ("strict phrase handling",
+        req("q", "text:\"strict phrases\"", "sort", "id asc", "hl", "true", "hl.usePhraseHighlighter", "false"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=1",
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Strict</em> <em>phrases</em> should be disabled for <em>phrases</em>'");
+  }
+
+  public void testMultiTermQueryEnabledByDefault() {
+    clearIndex();
+    assertU(adoc("text", "Aviary Avenue document",
+        "text2", "document one", "text3", "crappy document", "id", "101"));
+    assertU(commit());
+    assertQ("multi term query handling",
+        req("q", "text:av*", "sort", "id asc", "hl", "true"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=1",
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Aviary</em> <em>Avenue</em> document'");
+  }
+
+  public void testMultiTermQueryCanBeDisabled() {
+    clearIndex();
+    assertU(adoc("text", "Aviary Avenue document",
+        "text2", "document one", "text3", "crappy document", "id", "101"));
+    assertU(commit());
+    assertQ("multi term query handling",
+        req("q", "text:av*", "sort", "id asc", "hl", "true", "hl.highlightMultiTerm", "false"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=0");
+  }
+
   public void testPagination() {
     assertQ("pagination test", 
         req("q", "text:document", "sort", "id asc", "hl", "true", "rows", "1", "start", "1"),
