@@ -373,6 +373,11 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     if (!isHighlightingEnabled(params)) // also returns early if no unique key field
       return null;
 
+    boolean rewrite = query != null && !(Boolean.valueOf(params.get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true")) &&
+        Boolean.valueOf(params.get(HighlightParams.HIGHLIGHT_MULTI_TERM, "true")));
+
+    query = rewrite ? query.rewrite(req.getSearcher().getIndexReader()) : query;
+
     SolrIndexSearcher searcher = req.getSearcher();
     IndexSchema schema = searcher.getSchema();
 

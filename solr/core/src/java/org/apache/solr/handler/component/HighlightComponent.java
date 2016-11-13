@@ -130,12 +130,6 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
           rb.setHighlightQuery( highlightQuery );
         }
       }
-      
-      if(highlightQuery != null) {
-        boolean rewrite = (highlighter instanceof PostingsSolrHighlighter == false) && !(Boolean.valueOf(params.get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true")) &&
-            Boolean.valueOf(params.get(HighlightParams.HIGHLIGHT_MULTI_TERM, "true")));
-        highlightQuery = rewrite ?  highlightQuery.rewrite(req.getSearcher().getIndexReader()) : highlightQuery;
-      }
 
       // No highlighting if there is no query -- consider q.alt="*:*
       if( highlightQuery != null ) {
