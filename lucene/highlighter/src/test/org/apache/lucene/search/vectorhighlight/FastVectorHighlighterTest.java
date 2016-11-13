@@ -51,7 +51,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.highlight.DefaultEncoder;
 import org.apache.lucene.search.highlight.Encoder;
-import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -350,7 +349,6 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     FastVectorHighlighter highlighter = new FastVectorHighlighter();
     IndexReader reader = DirectoryReader.open(writer);
     IndexSearcher searcher = newSearcher(reader);
-    searcher.setSimilarity(new BM25Similarity());
     TopDocs hits = searcher.search(query, 10);
     assertEquals(2, hits.totalHits);
     FieldQuery fieldQuery  = highlighter.getFieldQuery(query, reader);
