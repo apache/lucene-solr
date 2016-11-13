@@ -58,7 +58,19 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");
   }
-  
+
+  public void testMultipleSnippetsReturned() {
+    clearIndex();
+    assertU(adoc("text", "Document snippet one. Intermediate sentence. Document snippet two.",
+        "text2", "document one", "text3", "crappy document", "id", "101"));
+    assertU(commit());
+    assertQ("multiple snippets test",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.snippets", "2", "hl.bs.type", "SENTENCE"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Document</em> snippet one. '",
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[2]='<em>Document</em> snippet two.'");
+  }
+
   public void testPagination() {
     assertQ("pagination test", 
         req("q", "text:document", "sort", "id asc", "hl", "true", "rows", "1", "start", "1"),
