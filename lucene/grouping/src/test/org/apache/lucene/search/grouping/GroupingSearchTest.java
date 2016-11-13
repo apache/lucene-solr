@@ -16,10 +16,6 @@
  */
 package org.apache.lucene.search.grouping;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -35,11 +31,14 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.mutable.MutableValueStr;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 public class GroupingSearchTest extends LuceneTestCase {
 
@@ -116,7 +115,6 @@ public class GroupingSearchTest extends LuceneTestCase {
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = newSearcher(w.getReader());
-    indexSearcher.setSimilarity(new BM25Similarity());
     w.close();
 
     Sort groupSort = Sort.RELEVANCE;
