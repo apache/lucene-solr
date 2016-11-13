@@ -50,11 +50,10 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /*
  * Tests sorting (but with fieldcache instead of docvalues)
@@ -435,7 +434,6 @@ public class TestFieldCacheSort extends LuceneTestCase {
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    searcher.setSimilarity(new BM25Similarity());
     Sort sort = new Sort(new SortField(null, SortField.Type.SCORE, true));
 
     TopDocs actual = searcher.search(new TermQuery(new Term("value", "foo")), 10, sort);
