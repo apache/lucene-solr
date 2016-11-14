@@ -17,7 +17,6 @@
  limitations under the License.
 -->
 
-<!-- a basic solrconfig for postings highlighter -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <dataDir>${solr.data.dir:}</dataDir>

@@ -376,7 +376,9 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     boolean rewrite = query != null && !(Boolean.valueOf(params.get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true")) &&
         Boolean.valueOf(params.get(HighlightParams.HIGHLIGHT_MULTI_TERM, "true")));
 
-    query = rewrite ? query.rewrite(req.getSearcher().getIndexReader()) : query;
+    if (rewrite) {
+      query = query.rewrite(req.getSearcher().getIndexReader());
+    }
 
     SolrIndexSearcher searcher = req.getSearcher();
     IndexSchema schema = searcher.getSchema();

@@ -22,7 +22,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
-/** simple tests for PostingsSolrHighlighter */
+/** Tests for the UnifiedHighlighter Solr plugin **/
 public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
   
   @BeforeClass
@@ -30,8 +30,8 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     initCore("solrconfig-unifiedhighlight.xml", "schema-unifiedhighlight.xml");
     
     // test our config is sane, just to be sure:
-    
-    // postingshighlighter should be used
+
+    //Unified highlighter should be used
     SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
     assertTrue("wrong highlighter: " + highlighter.getClass(), highlighter instanceof UnifiedSolrHighlighter);
     
@@ -155,21 +155,6 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='crappier <em>document</em>'");
   }
 
-  //todo: need to configure field that is not at least stored, hence no analysis
-  //otherwise, this highlighter is resilient
-  @Ignore
-  public void testMisconfiguredField() {
-    ignoreException("was indexed without offsets");
-    try {
-      assertQ("should fail, has no offsets",
-        req("q", "text2:document", "sort", "id asc", "hl", "true", "hl.fl", "text2"));
-      fail();
-    } catch (Exception expected) {
-      // expected
-    }
-    resetExceptionIgnores();
-  }
-  
   public void testTags() {
     assertQ("different pre/post tags", 
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.tag.pre", "[", "hl.tag.post", "]"),
@@ -212,11 +197,4 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em>&#32;one&#32;has&#32;a&#32;first&#32;&lt;i&gt;sentence&lt;&#x2F;i&gt;&#46;'");
   }
   
-  public void testWildcard() {
-    assertQ("simplest test", 
-        req("q", "text:doc*ment", "sort", "id asc", "hl", "true", "hl.highlightMultiTerm", "true"),
-        "count(//lst[@name='highlighting']/*)=2",
-        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
-        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");
-  }
 }

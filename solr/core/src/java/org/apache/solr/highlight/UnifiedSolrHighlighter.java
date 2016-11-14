@@ -103,8 +103,8 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * <li>hl.bs.country (string) specifies country code for BreakIterator. default is empty string (root locale)
  * <li>hl.bs.variant (string) specifies country code for BreakIterator. default is empty string (root locale)
  * <li>hl.maxAnalyzedChars specifies how many characters at most will be processed in a document for any one field.
- * <li>hl.highlightMultiTerm enables highlighting for range/wildcard/fuzzy/prefix queries at some cost.
- * <li>hl.usePhraseHighlighter (bool) enables highlighting phrases and some other queries strictly at some cost.</li>
+ * <li>hl.highlightMultiTerm enables highlighting for range/wildcard/fuzzy/prefix queries at some cost. default is true
+ * <li>hl.usePhraseHighlighter (bool) enables phrase highlighting. default is true
  * </ul>
  * TODO add hl.method, hl.cacheFieldValCharsThreshold
  *
