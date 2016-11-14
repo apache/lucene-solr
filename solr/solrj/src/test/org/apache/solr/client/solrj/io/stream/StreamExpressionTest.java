@@ -392,7 +392,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue("hello4".equals(tuple.getString("a_s")));
     assertNull(tuple.get("s_multi"));
     assertNull(tuple.get("i_multi"));
-    assertEquals(0L, (long)tuple.getLong("a_i"));
+    assertNull(tuple.getLong("a_i"));
 
 
     tuple = tuples.get(1);
