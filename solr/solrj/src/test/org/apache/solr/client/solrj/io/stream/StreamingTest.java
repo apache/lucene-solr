@@ -1718,7 +1718,7 @@ public class StreamingTest extends SolrCloudTestCase {
     CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
     List<Tuple> tuples = getTuples(stream);
 
-    assert(tuples.size() == 5);
+    assertEquals(5,tuples.size());
     assertOrder(tuples, 4, 3, 2, 1, 0);
 
     //With Ascending Sort
@@ -1726,7 +1726,7 @@ public class StreamingTest extends SolrCloudTestCase {
     stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
     tuples = getTuples(stream);
 
-    assert(tuples.size() == 5);
+    assertEquals(5, tuples.size());
     assertOrder(tuples, 0,1,2,3,4);
 
 
@@ -1735,7 +1735,7 @@ public class StreamingTest extends SolrCloudTestCase {
     stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
     tuples = getTuples(stream);
 
-    assert(tuples.size() == 5);
+    assertEquals(5, tuples.size());
     assertOrder(tuples, 2,0,1,3,4);
 
 
@@ -1743,7 +1743,7 @@ public class StreamingTest extends SolrCloudTestCase {
     stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
     tuples = getTuples(stream);
 
-    assert (tuples.size() == 5);
+    assertEquals(5, tuples.size());
     assertOrder(tuples, 0, 2, 1, 3, 4);
 
   }
@@ -1771,7 +1771,7 @@ public class StreamingTest extends SolrCloudTestCase {
     try  {
       List<Tuple> tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
+      assertEquals(5, tuples.size());
       assertOrder(tuples, 0, 2, 1, 3, 4);
 
       //Basic CloudSolrStream Test bools desc
@@ -1779,7 +1779,7 @@ public class StreamingTest extends SolrCloudTestCase {
       stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
+      assertEquals (5,tuples.size());
       assertOrder(tuples, 4, 3, 1, 2, 0);
 
       //Basic CloudSolrStream Test dates desc
@@ -1787,7 +1787,7 @@ public class StreamingTest extends SolrCloudTestCase {
       stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
+      assertEquals (5,tuples.size());
       assertOrder(tuples, 2, 0, 1, 4, 3);
 
       //Basic CloudSolrStream Test ates desc
@@ -1795,7 +1795,7 @@ public class StreamingTest extends SolrCloudTestCase {
       stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
       tuples = getTuples(stream);
 
-      assert (tuples.size() == 5);
+      assertEquals (5,tuples.size());
       assertOrder(tuples, 3, 4, 1, 0, 2);
     } finally {
       if (stream != null) {
@@ -1840,8 +1840,8 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals("MV should be returned for i_multi", 12, tuple.getLongs("i_multi").get(0).longValue());
       assertEquals("MV should be returned for i_multi", 13, tuple.getLongs("i_multi").get(1).longValue());
 
-      assertEquals("longs should be returned", 14,tuple.getLong("l_sing").longValue());
-      assertEquals("MV should be returned for l_multi",15, tuple.getLongs("l_multi").get(0).longValue());
+      assertEquals("longs should be returned", 14, tuple.getLong("l_sing").longValue());
+      assertEquals("MV should be returned for l_multi", 15, tuple.getLongs("l_multi").get(0).longValue());
       assertEquals("MV should be returned for l_multi", 16, tuple.getLongs("l_multi").get(1).longValue());
 
       assertEquals("floats should be returned", 1.7, tuple.getDouble("f_sing").doubleValue(), 0.001);
