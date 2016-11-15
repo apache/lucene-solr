@@ -152,6 +152,10 @@ Bug Fixes
   
 * SOLR-9751: PreAnalyzedField can cause managed schema corruption. (Steve Rowe)
 
+* SOLR-9736: Solr resolves the collection name against the first available leader or first replica
+  of the first slice. This puts undue pressure on leader cores and likely on the wrong ones. This is
+  fixed to randomly pick a leader on updates or a replica core otherwise. (Cao Manh Dat via shalin)
+
 
 Other Changes
 ----------------------
