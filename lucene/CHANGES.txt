@@ -85,6 +85,11 @@ Improvements
 * LUCENE-7524: Added more detailed explanation of how IDF is computed in
   ClassicSimilarity and BM25Similarity. (Adrien Grand)
 
+* LUCENE-7526: Enhanced UnifiedHighlighter's passage relevancy for queries with
+  wildcards and sometimes just terms. Added shouldPreferPassageRelevancyOverSpeed()
+  which can be overridden to return false to eek out more speed in some cases.
+  (Timothy M. Rodriguez, David Smiley)
+
 Other
 
 * LUCENE-7546: Fixed references to benchmark wikipedia data and the Jenkins line-docs file

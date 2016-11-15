@@ -76,6 +76,7 @@ public class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable {
   }
 
   void nextPosition() throws IOException {
+    assert hasMorePositions();
     pos++;
     postingsEnum.nextPosition();
   }
