@@ -30,17 +30,19 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.RandomAccessWeight;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.DistanceToShapeValueSource;
 import org.apache.lucene.spatial.util.ShapePredicateValueSource;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.locationtech.spatial4j.context.SpatialContext;
@@ -136,25 +138,25 @@ public class SerializedDVStrategy extends SpatialStrategy {
 
     @Override
     public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-      return new RandomAccessWeight(this, boost) {
+      return new ConstantScoreWeight(this, boost) {
         @Override
-        protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
           final FunctionValues predFuncValues = predicateValueSource.getValues(null, context);
-          return new Bits() {
+          return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(approximation) {
+
             @Override
-            public boolean get(int index) {
-              try {
-                return predFuncValues.boolVal(index);
-              } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
-              }
+            public boolean matches() throws IOException {
+              final int docID = approximation.docID();
+              return predFuncValues.boolVal(docID);
             }
 
             @Override
-            public int length() {
-              return context.reader().maxDoc();
+            public float matchCost() {
+              // TODO: what is the cost of the predicateValueSource
+              return 100f;
             }
-          };
+          });
         }
       };
     }

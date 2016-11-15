@@ -27,7 +27,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongBitSet;
@@ -149,45 +148,41 @@ public class DocValuesTermsQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new RandomAccessWeight(this, boost) {
+    return new ConstantScoreWeight(this, boost) {
 
       @Override
-      protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
         final SortedSetDocValues values = DocValues.getSortedSet(context.reader(), field);
         final LongBitSet bits = new LongBitSet(values.getValueCount());
+        boolean matchesAtLeastOneTerm = false;
         for (BytesRef term : terms) {
           final long ord = values.lookupTerm(term);
           if (ord >= 0) {
+            matchesAtLeastOneTerm = true;
             bits.set(ord);
           }
         }
-        return new Bits() {
+        if (matchesAtLeastOneTerm == false) {
+          return null;
+        }
+        return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(values) {
 
           @Override
-          public boolean get(int doc) {
-            try {
-              if (doc > values.docID()) {
-                values.advance(doc);
+          public boolean matches() throws IOException {
+            for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
+              if (bits.get(ord)) {
+                return true;
               }
-              if (doc == values.docID()) {
-                for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
-                  if (bits.get(ord)) {
-                    return true;
-                  }
-                }
-              }
-            } catch (IOException ioe) {
-              throw new RuntimeException(ioe);
             }
             return false;
           }
 
           @Override
-          public int length() {
-            return context.reader().maxDoc();
+          public float matchCost() {
+            return 3; // lookup in a bitset
           }
 
-        };
+        });
       }
     };
   }

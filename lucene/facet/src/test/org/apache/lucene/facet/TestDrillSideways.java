@@ -46,19 +46,22 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.RandomAccessWeight;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InPlaceMergeSorter;
@@ -651,27 +654,26 @@ public class TestDrillSideways extends FacetTestCase {
 
           @Override
           public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-            return new RandomAccessWeight(this, boost) {
+            return new ConstantScoreWeight(this, boost) {
+
               @Override
-              protected Bits getMatchingDocs(final LeafReaderContext context) throws IOException {
-                return new Bits() {
+              public Scorer scorer(LeafReaderContext context) throws IOException {
+                DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
+                return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(approximation) {
 
                   @Override
-                  public boolean get(int docID) {
-                    try {
-                      return (Integer.parseInt(context.reader().document(docID).get("id")) & 1) == 0;
-                    } catch (NumberFormatException | IOException e) {
-                      throw new RuntimeException(e);
-                    }
+                  public boolean matches() throws IOException {
+                    int docID = approximation.docID();
+                    return (Integer.parseInt(context.reader().document(docID).get("id")) & 1) == 0;
                   }
 
                   @Override
-                  public int length() {
-                    return context.reader().maxDoc();
+                  public float matchCost() {
+                    return 1000f;
                   }
-
-                };
+                });
               }
+
             };
           }
 

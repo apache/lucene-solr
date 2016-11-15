@@ -23,14 +23,13 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -48,10 +47,8 @@ import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Before;
@@ -986,7 +983,7 @@ public class StreamingTest extends SolrCloudTestCase {
     pairs.add("d_sing");
     pairs.add(Double.toString(iSeq + 5)); // 105
     pairs.add("dt_sing");
-    pairs.add(String.format("2000-01-01T%02d:00:00Z", base)); // Works as long as we add fewer than 60 docs
+    pairs.add(String.format(Locale.ROOT, "2000-01-01T%02d:00:00Z", base)); // Works as long as we add fewer than 60 docs
     pairs.add("b_sing");
     pairs.add((base % 2) == 0 ? "T" : "F"); // Tricky
 

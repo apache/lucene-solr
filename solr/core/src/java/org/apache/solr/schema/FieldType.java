@@ -864,13 +864,19 @@ public abstract class FieldType extends FieldProperties {
       namedPropertyValues.add(SIMILARITY, getSimilarityFactory().getNamedPropertyValues());
     }
     
-    if (isExplicitAnalyzer()) {
-      String analyzerProperty = isExplicitQueryAnalyzer() ? INDEX_ANALYZER : ANALYZER;
-      namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getIndexAnalyzer()));
-    } 
-    if (isExplicitQueryAnalyzer()) {
-      String analyzerProperty = isExplicitAnalyzer() ? QUERY_ANALYZER : ANALYZER;
-      namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getQueryAnalyzer()));
+    if (this instanceof HasImplicitIndexAnalyzer) {
+      if (isExplicitQueryAnalyzer()) {
+        namedPropertyValues.add(QUERY_ANALYZER, getAnalyzerProperties(getQueryAnalyzer()));
+      }
+    } else {
+      if (isExplicitAnalyzer()) {
+        String analyzerProperty = isExplicitQueryAnalyzer() ? INDEX_ANALYZER : ANALYZER;
+        namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getIndexAnalyzer()));
+      }
+      if (isExplicitQueryAnalyzer()) {
+        String analyzerProperty = isExplicitAnalyzer() ? QUERY_ANALYZER : ANALYZER;
+        namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getQueryAnalyzer()));
+      }
     }
     if (this instanceof TextField) {
       if (((TextField)this).isExplicitMultiTermAnalyzer()) {

@@ -113,6 +113,9 @@ New Features
 
 * SOLR-9038: Add a command-line tool to manage the snapshots functionality (Hrishikesh Gadre via yonik)
 
+* SOLR-9633: Limit memory consumed by FastLRUCache with a new 'maxRamMB' config parameter.
+  (yonik, Michael Sun, shalin)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
@@ -146,8 +149,16 @@ Bug Fixes
 * SOLR-9740: A bug in macro expansion of multi-valued parameters caused non-expanded values
   after the first expanded value in the same multi-valued parameter to be dropped.
   (Erik Hatcher, yonik)
+  
+* SOLR-9751: PreAnalyzedField can cause managed schema corruption. (Steve Rowe)
 
+* SOLR-9736: Solr resolves the collection name against the first available leader or first replica
+  of the first slice. This puts undue pressure on leader cores and likely on the wrong ones. This is
+  fixed to randomly pick a leader on updates or a replica core otherwise. (Cao Manh Dat via shalin)
 
+* SOLR-9284: The HDFS BlockDirectoryCache should not let it's keysToRelease or names maps grow indefinitely.
+  (Mark Miller, Michael Sun)
+  
 Other Changes
 ----------------------
 
