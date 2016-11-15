@@ -92,6 +92,11 @@ Other
 
 * LUCENE-7534: fix smokeTestRelease.py to run on Cygwin (Mikhail Khludnev)
 
+Build
+
+* LUCENE-7387: fix defaultCodec in build.xml to account for the line ending (hossman)
+
+
 ======================= Lucene 6.3.0 =======================
 
 API Changes

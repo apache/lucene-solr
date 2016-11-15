@@ -213,6 +213,8 @@
       <filterchain>
         <!--  private static Codec defaultCodec   =   LOADER    .   lookup    (   "LuceneXXX"                 )   ; -->
         <containsregex pattern="^.*defaultCodec\s*=\s*LOADER\s*\.\s*lookup\s*\(\s*&quot;([^&quot;]+)&quot;\s*\)\s*;.*$" replace="\1"/>
+        <fixcrlf eol="unix" eof="remove" />
+        <deletecharacters chars="\n"/>
       </filterchain>
     </loadfile>
 
