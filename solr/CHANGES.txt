@@ -156,7 +156,9 @@ Bug Fixes
   of the first slice. This puts undue pressure on leader cores and likely on the wrong ones. This is
   fixed to randomly pick a leader on updates or a replica core otherwise. (Cao Manh Dat via shalin)
 
-
+* SOLR-9284: The HDFS BlockDirectoryCache should not let it's keysToRelease or names maps grow indefinitely.
+  (Mark Miller, Michael Sun)
+  
 Other Changes
 ----------------------
 
