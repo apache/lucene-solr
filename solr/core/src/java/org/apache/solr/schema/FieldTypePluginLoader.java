@@ -110,31 +110,46 @@ public final class FieldTypePluginLoader
     if (null != simFactory) {
       ft.setSimilarity(simFactory);
     }
-    
-    if (null == queryAnalyzer) {
-      queryAnalyzer = analyzer;
-      ft.setIsExplicitQueryAnalyzer(false);
-    } else {
-      ft.setIsExplicitQueryAnalyzer(true);
-    }
-    if (null == analyzer) {
-      analyzer = queryAnalyzer;
-      ft.setIsExplicitAnalyzer(false);
-    } else {
-      ft.setIsExplicitAnalyzer(true);
-    }
 
-    if (null != analyzer) {
-      ft.setIndexAnalyzer(analyzer);
-      ft.setQueryAnalyzer(queryAnalyzer);
-      if (ft instanceof TextField) {
-        if (null == multiAnalyzer) {
-          multiAnalyzer = constructMultiTermAnalyzer(queryAnalyzer);
-          ((TextField)ft).setIsExplicitMultiTermAnalyzer(false);
-        } else {
-          ((TextField)ft).setIsExplicitMultiTermAnalyzer(true);
+    if (ft instanceof HasImplicitIndexAnalyzer) {
+      ft.setIsExplicitAnalyzer(false);
+      if (null != queryAnalyzer && null != analyzer) {
+        if (log.isWarnEnabled()) {
+          log.warn("Ignoring index-time analyzer for field: " + name);
         }
-        ((TextField)ft).setMultiTermAnalyzer(multiAnalyzer);
+      } else if (null == queryAnalyzer) { // Accept non-query-time analyzer as a query-time analyzer 
+        queryAnalyzer = analyzer;
+      }
+      if (null != queryAnalyzer) {
+        ft.setIsExplicitQueryAnalyzer(true);
+        ft.setQueryAnalyzer(queryAnalyzer);
+      }
+    } else {
+      if (null == queryAnalyzer) {
+        queryAnalyzer = analyzer;
+        ft.setIsExplicitQueryAnalyzer(false);
+      } else {
+        ft.setIsExplicitQueryAnalyzer(true);
+      }
+      if (null == analyzer) {
+        analyzer = queryAnalyzer;
+        ft.setIsExplicitAnalyzer(false);
+      } else {
+        ft.setIsExplicitAnalyzer(true);
+      }
+  
+      if (null != analyzer) {
+        ft.setIndexAnalyzer(analyzer);
+        ft.setQueryAnalyzer(queryAnalyzer);
+        if (ft instanceof TextField) {
+          if (null == multiAnalyzer) {
+            multiAnalyzer = constructMultiTermAnalyzer(queryAnalyzer);
+            ((TextField)ft).setIsExplicitMultiTermAnalyzer(false);
+          } else {
+            ((TextField)ft).setIsExplicitMultiTermAnalyzer(true);
+          }
+          ((TextField)ft).setMultiTermAnalyzer(multiAnalyzer);
+        }
       }
     }
     if (ft instanceof SchemaAware){
