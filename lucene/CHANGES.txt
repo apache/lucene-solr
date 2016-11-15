@@ -50,6 +50,9 @@ Improvements
   control how text is analyzed and converted into a query (Matt Weber
   via Mike McCandless)
 
+* LUCENE-7537: Index time sorting now supports multi-valued sorts
+  using selectors (MIN, MAX, etc.) (Jim Ferenczi via Mike McCandless)
+
 Other
 
 * LUCENE-7546: Fixed references to benchmark wikipedia data and the Jenkins line-docs file

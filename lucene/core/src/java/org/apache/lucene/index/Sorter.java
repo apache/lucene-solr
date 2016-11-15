@@ -24,6 +24,10 @@ import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSelector;
+import org.apache.lucene.search.SortedNumericSortField;
+import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.util.TimSorter;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
@@ -198,6 +202,40 @@ final class Sorter {
     };
   }
 
+  /** Returns the native sort type for {@link SortedSetSortField} and {@link SortedNumericSortField},
+   * {@link SortField#getType()} otherwise */
+  static SortField.Type getSortFieldType(SortField sortField) {
+    if (sortField instanceof SortedSetSortField) {
+      return SortField.Type.STRING;
+    } else if (sortField instanceof SortedNumericSortField) {
+      return ((SortedNumericSortField) sortField).getNumericType();
+    } else {
+      return sortField.getType();
+    }
+  }
+
+  /** Wraps a {@link SortedNumericDocValues} as a single-valued view if the field is an instance of {@link SortedNumericSortField},
+   * returns {@link NumericDocValues} for the field otherwise. */
+  static NumericDocValues getOrWrapNumeric(LeafReader reader, SortField sortField) throws IOException {
+    if (sortField instanceof SortedNumericSortField) {
+      SortedNumericSortField sf = (SortedNumericSortField) sortField;
+      return SortedNumericSelector.wrap(DocValues.getSortedNumeric(reader, sf.getField()), sf.getSelector(), sf.getNumericType());
+    } else {
+      return DocValues.getNumeric(reader, sortField.getField());
+    }
+  }
+
+  /** Wraps a {@link SortedSetDocValues} as a single-valued view if the field is an instance of {@link SortedSetSortField},
+   * returns {@link SortedDocValues} for the field otherwise. */
+  static SortedDocValues getOrWrapSorted(LeafReader reader, SortField sortField) throws IOException {
+    if (sortField instanceof SortedSetSortField) {
+      SortedSetSortField sf = (SortedSetSortField) sortField;
+      return SortedSetSelector.wrap(DocValues.getSortedSet(reader, sf.getField()), sf.getSelector());
+    } else {
+      return DocValues.getSorted(reader, sortField.getField());
+    }
+  }
+
   /**
    * Returns a mapping from the old document ID to its new location in the
    * sorted index. Implementations can use the auxiliary
@@ -258,7 +296,7 @@ final class Sorter {
   public String toString() {
     return getID();
   }
-  
+
   static final Scorer FAKESCORER = new Scorer(null) {
 
     float score;

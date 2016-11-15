@@ -123,7 +123,11 @@ final class MultiSorter {
     public int compare(int readerIndexA, int docIDA, int readerIndexB, int docIDB);
   }
 
+  /** Returns {@code CrossReaderComparator} for the provided readers to represent the requested {@link SortField} sort order. */
   private static CrossReaderComparator getComparator(List<CodecReader> readers, SortField sortField) throws IOException {
+    final int reverseMul = sortField.getReverse() ? -1 : 1;
+    final SortField.Type sortType = Sorter.getSortFieldType(sortField);
+
     switch(sortField.getType()) {
 
     case STRING:
@@ -138,16 +142,9 @@ final class MultiSorter {
         }
         final int missingOrd;
         if (sortField.getMissingValue() == SortField.STRING_LAST) {
-          missingOrd = Integer.MAX_VALUE;
+          missingOrd = sortField.getReverse() ? Integer.MIN_VALUE : Integer.MAX_VALUE;
         } else {
-          missingOrd = Integer.MIN_VALUE;
-        }
-
-        final int reverseMul;
-        if (sortField.getReverse()) {
-          reverseMul = -1;
-        } else {
-          reverseMul = 1;
+          missingOrd = sortField.getReverse() ? Integer.MAX_VALUE : Integer.MIN_VALUE;
         }
 
         return new CrossReaderComparator() {
@@ -171,19 +168,11 @@ final class MultiSorter {
         List<NumericDocValues> values = new ArrayList<>();
         List<Bits> docsWithFields = new ArrayList<>();
         for(CodecReader reader : readers) {
-          values.add(DocValues.getNumeric(reader, sortField.getField()));
+          values.add(Sorter.getOrWrapNumeric(reader, sortField));
           docsWithFields.add(DocValues.getDocsWithField(reader, sortField.getField()));
         }
 
-        final int reverseMul;
-        if (sortField.getReverse()) {
-          reverseMul = -1;
-        } else {
-          reverseMul = 1;
-        }
-
-        final long missingValue;
-
+        final Long missingValue;
         if (sortField.getMissingValue() != null) {
           missingValue = (Long) sortField.getMissingValue();
         } else {
@@ -216,19 +205,11 @@ final class MultiSorter {
         List<NumericDocValues> values = new ArrayList<>();
         List<Bits> docsWithFields = new ArrayList<>();
         for(CodecReader reader : readers) {
-          values.add(DocValues.getNumeric(reader, sortField.getField()));
+          values.add(Sorter.getOrWrapNumeric(reader, sortField));
           docsWithFields.add(DocValues.getDocsWithField(reader, sortField.getField()));
         }
 
-        final int reverseMul;
-        if (sortField.getReverse()) {
-          reverseMul = -1;
-        } else {
-          reverseMul = 1;
-        }
-
-        final int missingValue;
-
+        final Integer missingValue;
         if (sortField.getMissingValue() != null) {
           missingValue = (Integer) sortField.getMissingValue();
         } else {
@@ -261,19 +242,11 @@ final class MultiSorter {
         List<NumericDocValues> values = new ArrayList<>();
         List<Bits> docsWithFields = new ArrayList<>();
         for(CodecReader reader : readers) {
-          values.add(DocValues.getNumeric(reader, sortField.getField()));
+          values.add(Sorter.getOrWrapNumeric(reader, sortField));
           docsWithFields.add(DocValues.getDocsWithField(reader, sortField.getField()));
         }
 
-        final int reverseMul;
-        if (sortField.getReverse()) {
-          reverseMul = -1;
-        } else {
-          reverseMul = 1;
-        }
-
-        final double missingValue;
-
+        final Double missingValue;
         if (sortField.getMissingValue() != null) {
           missingValue = (Double) sortField.getMissingValue();
         } else {
@@ -306,19 +279,11 @@ final class MultiSorter {
         List<NumericDocValues> values = new ArrayList<>();
         List<Bits> docsWithFields = new ArrayList<>();
         for(CodecReader reader : readers) {
-          values.add(DocValues.getNumeric(reader, sortField.getField()));
+          values.add(Sorter.getOrWrapNumeric(reader, sortField));
           docsWithFields.add(DocValues.getDocsWithField(reader, sortField.getField()));
         }
 
-        final int reverseMul;
-        if (sortField.getReverse()) {
-          reverseMul = -1;
-        } else {
-          reverseMul = 1;
-        }
-
-        final float missingValue;
-
+        final Float missingValue;
         if (sortField.getMissingValue() != null) {
           missingValue = (Float) sortField.getMissingValue();
         } else {
