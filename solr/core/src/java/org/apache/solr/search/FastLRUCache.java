@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
  * @see org.apache.solr.search.SolrCache
  * @since solr 1.4
  */
-public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
+public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // contains the statistics objects for all open caches of the same type
@@ -54,6 +54,8 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   private String description = "Concurrent LRU Cache";
   private ConcurrentLRUCache<K,V> cache;
   private int showItems = 0;
+
+  private long maxRamBytes;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -87,8 +89,18 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
 
     str = (String) args.get("showItems");
     showItems = str == null ? 0 : Integer.parseInt(str);
-    description = generateDescription(limit, initialSize, minLimit, acceptableLimit, newThread);
-    cache = new ConcurrentLRUCache<>(limit, minLimit, acceptableLimit, initialSize, newThread, false, null);
+
+    str = (String) args.get("maxRamMB");
+    this.maxRamBytes = str == null ? Long.MAX_VALUE : (long) (Double.parseDouble(str) * 1024L * 1024L);
+    if (maxRamBytes != Long.MAX_VALUE)  {
+      int ramLowerWatermark = (int) (maxRamBytes * 0.8);
+      description = generateDescription(maxRamBytes, ramLowerWatermark, newThread);
+      cache = new ConcurrentLRUCache<K, V>(ramLowerWatermark, maxRamBytes, newThread, null);
+    } else  {
+      description = generateDescription(limit, initialSize, minLimit, acceptableLimit, newThread);
+      cache = new ConcurrentLRUCache<>(limit, minLimit, acceptableLimit, initialSize, newThread, false, null);
+    }
+
     cache.setAlive(false);
 
     statsList = (List<ConcurrentLRUCache.Stats>) persistence;
@@ -111,6 +123,16 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   protected String generateDescription(int limit, int initialSize, int minLimit, int acceptableLimit, boolean newThread) {
     String description = "Concurrent LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize +
         ", minSize="+minLimit + ", acceptableSize="+acceptableLimit+", cleanupThread="+newThread;
+    if (isAutowarmingOn()) {
+      description += ", " + getAutowarmDescription();
+    }
+    description += ')';
+    return description;
+  }
+
+  protected String generateDescription(long maxRamBytes, long ramLowerWatermark, boolean newThread) {
+    String description = "Concurrent LRU Cache(ramMinSize=" + ramLowerWatermark + ", ramMaxSize" + maxRamBytes
+        + ", cleanupThread=" + newThread;
     if (isAutowarmingOn()) {
       description += ", " + getAutowarmDescription();
     }
