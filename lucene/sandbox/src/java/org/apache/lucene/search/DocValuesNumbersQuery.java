@@ -27,7 +27,6 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.util.Bits;
 
 /**
  * Like {@link DocValuesTermsQuery}, but this query only
@@ -96,38 +95,29 @@ public class DocValuesNumbersQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new RandomAccessWeight(this, boost) {
+    return new ConstantScoreWeight(this, boost) {
 
       @Override
-      protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
-         final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
-         return new Bits() {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
+        return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(values) {
 
-           @Override
-           public boolean get(int doc) {
-             try {
-               if (doc > values.docID()) {
-                 values.advance(doc);
-               }
-               if (doc == values.docID()) {
-                 int count = values.docValueCount();
-                 for(int i=0;i<count;i++) {
-                   if (numbers.contains(values.nextValue())) {
-                     return true;
-                   }
-                 }
-               }
-             } catch (IOException ioe) {
-               throw new RuntimeException(ioe);
-             }
-             return false;
+          @Override
+          public boolean matches() throws IOException {
+            int count = values.docValueCount();
+            for(int i=0;i<count;i++) {
+              if (numbers.contains(values.nextValue())) {
+                return true;
+              }
+            }
+            return false;
           }
 
           @Override
-          public int length() {
-            return context.reader().maxDoc();
+          public float matchCost() {
+            return 5; // lookup in the set
           }
-        };
+        });
       }
     };
   }
