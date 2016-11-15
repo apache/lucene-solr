@@ -49,12 +49,14 @@ public final class QueryResultKey {
       for (Query filt : filters)
         // NOTE: simple summation used here so keys with the same filters but in
         // different orders get the same hashCode
-        h += filt.hashCode();
+        if (filt != null)
+          h += filt.hashCode();
     }
 
     sfields = (this.sort !=null) ? this.sort.getSort() : defaultSort;
     for (SortField sf : sfields) {
-      h = h*29 + sf.hashCode();
+      if (sf != null)
+        h = h*29 + sf.hashCode();
     }
 
     hc = h;
