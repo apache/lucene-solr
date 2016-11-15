@@ -110,7 +110,18 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     file = createTempDir().toFile();
     FSDirectory dir = FSDirectory.open(new File(file, "base").toPath());
     mapperCache = new MapperCache();
-    directory = new BlockDirectory("test", dir, mapperCache, null, true, true);
+
+    if (random().nextBoolean()) {
+      Metrics metrics = new Metrics();
+      int blockSize = 8192;
+      int slabSize = blockSize * 32768;
+      long totalMemory = 2 * slabSize;
+      BlockCache blockCache = new BlockCache(metrics, true, totalMemory, slabSize, blockSize);
+      BlockDirectoryCache cache = new BlockDirectoryCache(blockCache, "/collection1", metrics, true);
+      directory = new BlockDirectory("test", dir, cache, null, true, false);
+    } else {
+      directory = new BlockDirectory("test", dir, mapperCache, null, true, true);
+    }
     random = random();
   }
   
