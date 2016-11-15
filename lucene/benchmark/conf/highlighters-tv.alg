@@ -54,7 +54,7 @@ highlighter=HlImpl:NONE:SH_V:FVH_V:UH_V
 
         { "Warm" SearchTravRetHighlight > : 1000
 
-        { "HL" SearchTravRetHighlight > : 500
+        { "HL" SearchTravRetHighlight > : 2000
 
         CloseReader
 

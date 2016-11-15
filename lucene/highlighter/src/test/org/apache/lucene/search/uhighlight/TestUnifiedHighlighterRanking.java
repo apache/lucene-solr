@@ -50,9 +50,8 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
 
   Analyzer indexAnalyzer;
 
-  // note: don't choose reanalysis because it doesn't always know the term frequency, which is a statistic used
-  //   in passage ranking.  Sometimes it does (e.g. when it builds a MemoryIndex) but not necessarily.
-  final FieldType fieldType = UHTestHelper.randomFieldType(random(), UHTestHelper.postingsType, UHTestHelper.tvType);
+  // note: all offset sources, by default, use term freq, so it shouldn't matter which we choose.
+  final FieldType fieldType = UHTestHelper.randomFieldType(random());
 
   /**
    * indexes a bunch of gibberish, and then highlights top(n).
