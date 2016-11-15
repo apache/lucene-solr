@@ -90,6 +90,9 @@ Improvements
   which can be overridden to return false to eek out more speed in some cases.
   (Timothy M. Rodriguez, David Smiley)
 
+* LUCENE-7537: Index time sorting now supports multi-valued sorts
+  using selectors (MIN, MAX, etc.) (Jim Ferenczi via Mike McCandless)
+
 Other
 
 * LUCENE-7546: Fixed references to benchmark wikipedia data and the Jenkins line-docs file

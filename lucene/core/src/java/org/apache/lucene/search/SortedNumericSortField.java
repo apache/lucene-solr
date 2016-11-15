@@ -82,6 +82,11 @@ public class SortedNumericSortField extends SortField {
     this.selector = selector;
     this.type = type;
   }
+
+  /** Returns the numeric type in use for this sort */
+  public SortField.Type getNumericType() {
+    return type;
+  }
   
   /** Returns the selector in use for this sort */
   public SortedNumericSelector.Type getSelector() {
