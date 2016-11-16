@@ -18,6 +18,9 @@ Bug Fixes
   configured with BEST_COMPRESSION. This could otherwise result in out-of-memory
   issues. (Adrien Grand)
 
+* LUCENE-7562: CompletionFieldsConsumer sometimes throws
+  NullPointerException on ghost fields (Oliver Eilhard via Mike McCandless)
+
 Build
 
 * LUCENE-7543: Make changes-to-html target an offline operation, by moving the
