@@ -87,6 +87,9 @@ Improvements
 
 * LUCENE-7524: Added more detailed explanation of how IDF is computed in
   ClassicSimilarity and BM25Similarity. (Adrien Grand)
+  
+* LUCENE-7564: AnalyzingInfixSuggester should close its IndexWriter by default
+  at the end of build(). (Steve Rowe)
 
 * LUCENE-7526: Enhanced UnifiedHighlighter's passage relevancy for queries with
   wildcards and sometimes just terms. Added shouldPreferPassageRelevancyOverSpeed()

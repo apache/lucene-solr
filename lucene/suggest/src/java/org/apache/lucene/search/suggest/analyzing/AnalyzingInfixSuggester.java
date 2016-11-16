@@ -129,9 +129,10 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   private final boolean highlight;
   
   private final boolean commitOnBuild;
+  private final boolean closeIndexWriterOnBuild;
 
   /** Used for ongoing NRT additions/updates. */
-  private IndexWriter writer;
+  protected IndexWriter writer;
 
   /** {@link IndexSearcher} used for lookups. */
   protected SearcherManager searcherMgr;
@@ -145,6 +146,9 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
  
   /** Default higlighting option. */
   public static final boolean DEFAULT_HIGHLIGHT = true;
+
+  /** Default option to close the IndexWriter once the index has been built. */
+  protected final static boolean DEFAULT_CLOSE_INDEXWRITER_ON_BUILD = true;
 
   /** How we sort the postings and search results. */
   private static final Sort SORT = new Sort(new SortField("weight", SortField.Type.LONG, true));
@@ -198,8 +202,34 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *
    */
   public AnalyzingInfixSuggester(Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer, int minPrefixChars,
-                                 boolean commitOnBuild, 
+                                 boolean commitOnBuild,
                                  boolean allTermsRequired, boolean highlight) throws IOException {
+    this(dir, indexAnalyzer, queryAnalyzer, minPrefixChars, commitOnBuild, allTermsRequired, highlight, 
+         DEFAULT_CLOSE_INDEXWRITER_ON_BUILD);
+  }
+
+    /** Create a new instance, loading from a previously built
+     *  AnalyzingInfixSuggester directory, if it exists.  This directory must be
+     *  private to the infix suggester (i.e., not an external
+     *  Lucene index).  Note that {@link #close}
+     *  will also close the provided directory.
+     *
+     *  @param minPrefixChars Minimum number of leading characters
+     *     before PrefixQuery is used (default 4).
+     *     Prefixes shorter than this are indexed as character
+     *     ngrams (increasing index size but making lookups
+     *     faster).
+     *
+     *  @param commitOnBuild Call commit after the index has finished building. This would persist the
+     *                       suggester index to disk and future instances of this suggester can use this pre-built dictionary.
+     *
+     *  @param allTermsRequired All terms in the suggest query must be matched.
+     *  @param highlight Highlight suggest query in suggestions.
+     *  @param closeIndexWriterOnBuild If true, the IndexWriter will be closed after the index has finished building.
+     */
+  public AnalyzingInfixSuggester(Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer, int minPrefixChars,
+                                 boolean commitOnBuild, boolean allTermsRequired, 
+                                 boolean highlight, boolean closeIndexWriterOnBuild) throws IOException {
                                     
     if (minPrefixChars < 0) {
       throw new IllegalArgumentException("minPrefixChars must be >= 0; got: " + minPrefixChars);
@@ -212,6 +242,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     this.commitOnBuild = commitOnBuild;
     this.allTermsRequired = allTermsRequired;
     this.highlight = highlight;
+    this.closeIndexWriterOnBuild = closeIndexWriterOnBuild;
 
     if (DirectoryReader.indexExists(dir)) {
       // Already built; open it:
@@ -276,15 +307,22 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       }
 
       //System.out.println("initial indexing time: " + ((System.nanoTime()-t0)/1000000) + " msec");
-      if (commitOnBuild) {
+      if (commitOnBuild || closeIndexWriterOnBuild) {
         commit();
       }
       searcherMgr = new SearcherManager(writer, null);
       success = true;
     } finally {
-      if (success == false && writer != null) {
-        writer.rollback();
-        writer = null;
+      if (success) {
+        if (closeIndexWriterOnBuild) {
+          writer.close();
+          writer = null;
+        }
+      } else {  // failure
+        if (writer != null) {
+          writer.rollback();
+          writer = null;
+        }
       }
     }
   }
@@ -294,9 +332,13 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  @see IndexWriter#commit */
   public void commit() throws IOException {
     if (writer == null) {
-      throw new IllegalStateException("Cannot commit on an closed writer. Add documents first");
+      if (searcherMgr == null || closeIndexWriterOnBuild == false) {
+        throw new IllegalStateException("Cannot commit on an closed writer. Add documents first");
+      }
+      // else no-op: writer was committed and closed after the index was built, so commit is unnecessary
+    } else {
+      writer.commit();
     }
-    writer.commit();
   }
 
   private Analyzer getGramAnalyzer() {
@@ -321,13 +363,17 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
   private synchronized void ensureOpen() throws IOException {
     if (writer == null) {
-      if (searcherMgr != null) {
-        searcherMgr.close();
-        searcherMgr = null;
+      if (DirectoryReader.indexExists(dir)) {
+        // Already built; open it:
+        writer = new IndexWriter(dir, getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.APPEND));
+      } else {
+        writer = new IndexWriter(dir, getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
       }
-      writer = new IndexWriter(dir,
-          getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
+      SearcherManager oldSearcherMgr = searcherMgr;
       searcherMgr = new SearcherManager(writer, null);
+      if (oldSearcherMgr != null) {
+        oldSearcherMgr.close();
+      }
     }
   }
 
@@ -382,7 +428,11 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     if (searcherMgr == null) {
       throw new IllegalStateException("suggester was not built");
     }
-    searcherMgr.maybeRefreshBlocking();
+    if (writer != null) {
+      searcherMgr.maybeRefreshBlocking();
+    }
+    // else no-op: writer was committed and closed after the index was built
+    //             and before searchMgr was constructed, so refresh is unnecessary
   }
 
   /**
@@ -791,8 +841,10 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
     if (writer != null) {
       writer.close();
-      dir.close();
       writer = null;
+    }
+    if (dir != null) {
+      dir.close();
     }
   }
 
