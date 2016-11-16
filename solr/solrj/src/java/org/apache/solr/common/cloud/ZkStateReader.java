@@ -368,7 +368,7 @@ public class ZkStateReader implements Closeable {
       InterruptedException {
     // We need to fetch the current cluster state and the set of live nodes
 
-    LOG.info("Updating cluster state from ZooKeeper... ");
+    LOG.debug("Updating cluster state from ZooKeeper... ");
 
     // Sanity check ZK structure.
     if (!zkClient.exists(CLUSTER_STATE, true)) {
@@ -397,7 +397,7 @@ public class ZkStateReader implements Closeable {
               }
               try {
                 synchronized (ZkStateReader.this.getUpdateLock()) {
-                  LOG.info("Updating aliases... ");
+                  LOG.debug("Updating aliases... ");
 
                   // remake watch
                   final Watcher thisWatch = this;
@@ -447,7 +447,7 @@ public class ZkStateReader implements Closeable {
             }
             try {
               synchronized (ZkStateReader.this.getUpdateLock()) {
-                LOG.info("Updating [{}] ... ", SOLR_SECURITY_CONF_PATH);
+                LOG.debug("Updating [{}] ... ", SOLR_SECURITY_CONF_PATH);
 
                 // remake watch
                 final Watcher thisWatch = this;
@@ -683,7 +683,9 @@ public class ZkStateReader implements Closeable {
         clusterState.setLiveNodes(newLiveNodes);
       }
     }
-    LOG.info("Updated live nodes from ZooKeeper... ({}) -> ({})", oldLiveNodes.size(), newLiveNodes.size());
+    if (oldLiveNodes.size() != newLiveNodes.size()) {
+      LOG.info("Updated live nodes from ZooKeeper... ({}) -> ({})", oldLiveNodes.size(), newLiveNodes.size());
+    }
     if (LOG.isDebugEnabled()) {
       LOG.debug("Updated live nodes from ZooKeeper... {} -> {}", new TreeSet<>(oldLiveNodes), new TreeSet<>(newLiveNodes));
     }

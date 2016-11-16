@@ -16,65 +16,56 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+@LuceneTestCase.Slow
+public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(2)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
 
-public class MigrateRouteKeyTest extends BasicDistributedZkTest {
-
-  public MigrateRouteKeyTest() {
-    schemaString = "schema15.xml";      // we need a string id
+    if (usually()) {
+      CollectionAdminRequest.setClusterProperty("legacyCloud", "false").process(cluster.getSolrClient());
+      log.info("Using legacyCloud=false for cluster");
+    }
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @Test
-  public void test() throws Exception {
-    waitForThingsToLevelOut(15);
-
-    if (usually()) {
-      log.info("Using legacyCloud=false for cluster");
-      CollectionsAPIDistributedZkTest.setClusterProp(cloudClient, "legacyCloud", "false");
-    }
-    multipleShardMigrateTest();
-    printLayout();
-  }
-
-  private boolean waitForRuleToExpire(String splitKey, long finishTime) throws KeeperException, InterruptedException, SolrServerException, IOException {
-    ClusterState state;Slice slice;
+  private boolean waitForRuleToExpire(String collection, String shard, String splitKey, long finishTime) throws KeeperException, InterruptedException, SolrServerException, IOException {
+    DocCollection state;
+    Slice slice;
     boolean ruleRemoved = false;
     long expiryTime = finishTime + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
     while (System.nanoTime() < expiryTime) {
-      getCommonCloudSolrClient().getZkStateReader().forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-      state = getCommonCloudSolrClient().getZkStateReader().getClusterState();
-      slice = state.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD2);
+      cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collection);
+      state = getCollectionState(collection);
+      slice = state.getSlice(shard);
       Map<String,RoutingRule> routingRules = slice.getRoutingRules();
       if (routingRules == null || routingRules.isEmpty() || !routingRules.containsKey(splitKey)) {
         ruleRemoved = true;
@@ -82,59 +73,28 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
       }
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", splitKey + random().nextInt());
-      cloudClient.add(doc);
+      cluster.getSolrClient().add(collection, doc);
       Thread.sleep(1000);
     }
     return ruleRemoved;
   }
 
-  protected void invokeMigrateApi(String sourceCollection, String splitKey, String targetCollection) throws SolrServerException, IOException {
-    cloudClient.setDefaultCollection(sourceCollection);
-    CollectionAdminRequest.Migrate migrateRequest = new CollectionAdminRequest.Migrate();
-    migrateRequest.setCollectionName(sourceCollection);
-    migrateRequest.setTargetCollection(targetCollection);
-    migrateRequest.setSplitKey(splitKey);
-    migrateRequest.setForwardTimeout(45);
-    migrateRequest.process(cloudClient);
-  }
-
-  protected void invoke(ModifiableSolrParams params) throws SolrServerException, IOException {
-    SolrRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-
-    String baseUrl = ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.solrClient)
-        .getBaseURL();
-    baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
-
-    try (HttpSolrClient baseClient = getHttpSolrClient(baseUrl)) {
-      baseClient.setConnectionTimeout(15000);
-      baseClient.setSoTimeout(60000 * 5);
-      baseClient.request(request);
+  protected void invokeCollectionMigration(CollectionAdminRequest.AsyncCollectionAdminRequest request) throws IOException, SolrServerException, InterruptedException {
+    if (random().nextBoolean()) {
+      cluster.getSolrClient().setSoTimeout(60000);  // can take a while
+      request.process(cluster.getSolrClient());
+    }
+    else {
+      request.processAndWait(cluster.getSolrClient(), 60000);
     }
   }
 
-  private void createCollection(String targetCollection) throws Exception {
-    HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
+  @Test
+  public void multipleShardMigrateTest() throws Exception  {
 
-    try (CloudSolrClient client = createCloudClient(null)) {
-      Map<String, Object> props = Utils.makeMap(
-          REPLICATION_FACTOR, 1,
-          MAX_SHARDS_PER_NODE, 5,
-          NUM_SLICES, 1);
+    CollectionAdminRequest.createCollection("sourceCollection", "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.getSolrClient().setDefaultCollection("sourceCollection");
 
-      createCollection(collectionInfos, targetCollection, props, client);
-    }
-
-    List<Integer> list = collectionInfos.get(targetCollection);
-    checkForCollection(targetCollection, list, null);
-
-    waitForRecoveriesToFinish(targetCollection, false);
-  }
-
-  protected void multipleShardMigrateTest() throws Exception  {
-    del("*:*");
-    commit();
-    assertTrue(cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound() == 0);
     final String splitKey = "a";
     final int BIT_SEP = 1;
     final int[] splitKeyCount = new int[1];
@@ -147,38 +107,41 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", key + "!" + id);
       doc.addField("n_ti", id);
-      cloudClient.add(doc);
+      cluster.getSolrClient().add("sourceCollection", doc);
       if (splitKey.equals(shardKey))
         splitKeyCount[0]++;
     }
     assertTrue(splitKeyCount[0] > 0);
 
     String targetCollection = "migrate_multipleshardtest_targetCollection";
-    createCollection(targetCollection);
+    CollectionAdminRequest.createCollection(targetCollection, "conf", 1, 1).process(cluster.getSolrClient());
 
-    Indexer indexer = new Indexer(cloudClient, splitKey, 1, 30);
+    Indexer indexer = new Indexer(cluster.getSolrClient(), splitKey, 1, 30);
     indexer.start();
 
-    String url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), targetCollection);
-
-    try (HttpSolrClient collectionClient = getHttpSolrClient(url)) {
+    DocCollection state = getCollectionState(targetCollection);
+    Replica replica = state.getReplicas().get(0);
+    try (HttpSolrClient collectionClient = getHttpSolrClient(replica.getCoreUrl())) {
 
       SolrQuery solrQuery = new SolrQuery("*:*");
       assertEquals("DocCount on target collection does not match", 0, collectionClient.query(solrQuery).getResults().getNumFound());
 
-      invokeMigrateApi(AbstractDistribZkTestBase.DEFAULT_COLLECTION, splitKey + "/" + BIT_SEP + "!", targetCollection);
+      invokeCollectionMigration(
+          CollectionAdminRequest.migrateData("sourceCollection", targetCollection, splitKey + "/" + BIT_SEP + "!")
+          .setForwardTimeout(45));
+
       long finishTime = System.nanoTime();
 
       indexer.join();
       splitKeyCount[0] += indexer.getSplitKeyCount();
 
       try {
-        cloudClient.deleteById("a/" + BIT_SEP + "!104");
+        cluster.getSolrClient().deleteById("a/" + BIT_SEP + "!104");
         splitKeyCount[0]--;
       } catch (Exception e) {
         log.warn("Error deleting document a/" + BIT_SEP + "!104", e);
       }
-      cloudClient.commit();
+      cluster.getSolrClient().commit();
       collectionClient.commit();
 
       solrQuery = new SolrQuery("*:*").setRows(1000);
@@ -186,14 +149,20 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
       log.info("Response from target collection: " + response);
       assertEquals("DocCount on target collection does not match", splitKeyCount[0], response.getResults().getNumFound());
 
-      getCommonCloudSolrClient().getZkStateReader().forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-      ClusterState state = getCommonCloudSolrClient().getZkStateReader().getClusterState();
-      Slice slice = state.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD2);
-      assertNotNull("Routing rule map is null", slice.getRoutingRules());
-      assertFalse("Routing rule map is empty", slice.getRoutingRules().isEmpty());
-      assertNotNull("No routing rule exists for route key: " + splitKey, slice.getRoutingRules().get(splitKey + "!"));
+      waitForState("Expected to find routing rule for split key " + splitKey, "sourceCollection", (n, c) -> {
+        if (c == null)
+          return false;
+        Slice shard = c.getSlice("shard2");
+        if (shard == null)
+          return false;
+        if (shard.getRoutingRules() == null || shard.getRoutingRules().isEmpty())
+          return false;
+        if (shard.getRoutingRules().get(splitKey + "!") == null)
+          return false;
+        return true;
+      });
 
-      boolean ruleRemoved = waitForRuleToExpire(splitKey, finishTime);
+      boolean ruleRemoved = waitForRuleToExpire("sourceCollection", "shard2", splitKey, finishTime);
       assertTrue("Routing rule was not expired", ruleRemoved);
     }
   }
@@ -230,7 +199,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
         try {
           Thread.sleep(50);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          return;
         }
       }
     }

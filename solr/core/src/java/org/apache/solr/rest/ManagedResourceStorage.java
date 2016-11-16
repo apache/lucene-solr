@@ -109,7 +109,7 @@ public abstract class ManagedResourceStorage {
     } else {
       if (zkClient != null) {
         String znodeBase = "/configs/"+zkConfigName;
-        log.info("Setting up ZooKeeper-based storage for the RestManager with znodeBase: "+znodeBase);      
+        log.debug("Setting up ZooKeeper-based storage for the RestManager with znodeBase: "+znodeBase);
         storageIO = new ManagedResourceStorage.ZooKeeperStorageIO(zkClient, znodeBase);
       } else {
         storageIO = new FileStorageIO();        
@@ -271,10 +271,10 @@ public abstract class ManagedResourceStorage {
       }
       
       if (znodeData != null) {
-        log.info("Read {} bytes from znode {}", znodeData.length, znodePath);
+        log.debug("Read {} bytes from znode {}", znodeData.length, znodePath);
       } else {
         znodeData = new byte[0];
-        log.info("No data found for znode {}", znodePath);
+        log.debug("No data found for znode {}", znodePath);
       }
       
       return new ByteArrayInputStream(znodeData);
@@ -327,7 +327,7 @@ public abstract class ManagedResourceStorage {
       // this might be overkill for a delete operation
       try {
         if (zkClient.exists(znodePath, retryOnConnLoss)) {
-          log.info("Attempting to delete znode {}", znodePath);
+          log.debug("Attempting to delete znode {}", znodePath);
           zkClient.delete(znodePath, -1, retryOnConnLoss);
           wasDeleted = zkClient.exists(znodePath, retryOnConnLoss);
           
@@ -489,7 +489,7 @@ public abstract class ManagedResourceStorage {
   public Object load(String resourceId) throws IOException {
     String storedResourceId = getStoredResourceId(resourceId);
     
-    log.info("Reading {} using {}", storedResourceId, storageIO.getInfo());
+    log.debug("Reading {} using {}", storedResourceId, storageIO.getInfo());
     
     InputStream inputStream = storageIO.openInputStream(storedResourceId);
     if (inputStream == null) {

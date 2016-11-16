@@ -157,7 +157,7 @@ public class DrillSideways {
     
     DrillSidewaysQuery dsq = new DrillSidewaysQuery(baseQuery, drillDownCollector, drillSidewaysCollectors, drillDownQueries, scoreSubDocsAtOnce());
     if (hitCollector.needsScores() == false) {
-      // this is a borrible hack in order to make sure IndexSearcher will not
+      // this is a horrible hack in order to make sure IndexSearcher will not
       // attempt to cache the DrillSidewaysQuery
       hitCollector = new FilterCollector(hitCollector) {
         @Override

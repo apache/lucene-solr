@@ -17,6 +17,8 @@
 
 package org.apache.lucene.index;
 
+import java.io.IOException;
+
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -69,6 +71,14 @@ public final class LegacySortedSetDocValuesWrapper extends SortedSetDocValues {
       nextDoc();
     }
     return docID;
+  }
+
+  @Override
+  public boolean advanceExact(int target) throws IOException {
+    docID = target;
+    values.setDocument(docID);
+    ord = values.nextOrd();
+    return ord != NO_MORE_ORDS;
   }
 
   @Override

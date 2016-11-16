@@ -17,10 +17,19 @@
 package org.apache.solr.client.solrj;
 
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+
 import com.google.common.collect.Maps;
-
 import junit.framework.Assert;
-
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -41,12 +50,13 @@ import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RangeFacet;
-import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.response.RangeFacet.Count;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
@@ -56,17 +66,6 @@ import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
 
 import static org.junit.internal.matchers.StringContains.containsString;
 
@@ -695,10 +694,14 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     luke.setShowSchema( false );
     LukeResponse rsp = luke.process( client );
     assertNull( rsp.getFieldTypeInfo() ); // if you don't ask for it, the schema is null
+    assertNull( rsp.getDynamicFieldInfo() );
     
     luke.setShowSchema( true );
     rsp = luke.process( client );
-    assertNotNull( rsp.getFieldTypeInfo() ); 
+    assertNotNull( rsp.getFieldTypeInfo() );
+    assertNotNull(rsp.getFieldInfo().get("id").getSchemaFlags());
+    assertTrue(rsp.getFieldInfo().get("id").getSchemaFlags().contains(FieldFlag.INDEXED));
+    assertNotNull( rsp.getDynamicFieldInfo() );
   }
 
  @Test
@@ -1994,37 +1997,38 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     // test with mlt.fl having comma separated values
     SolrQuery q = new SolrQuery("*:*");
     q.setRows(20);
-    q.setParam("mlt", "true");
-    q.setParam("mlt.mintf", "0");
-    q.setParam("mlt.count", "2");
-    q.setParam("mlt.fl", "x_s,y_s,z_s");
+    q.setMoreLikeThisFields("x_s", "y_s", "z_s");
+    q.setMoreLikeThisMinTermFreq(0);
+    q.setMoreLikeThisCount(2);
     QueryResponse response = client.query(q);
     assertEquals(20, response.getResults().getNumFound());
-    NamedList<Object> moreLikeThis = (NamedList<Object>) response.getResponse().get("moreLikeThis");
+    NamedList<SolrDocumentList> moreLikeThis = response.getMoreLikeThis();
     assertNotNull("MoreLikeThis response should not have been null", moreLikeThis);
     for (int i=0; i<20; i++)  {
       String id = "testMoreLikeThis" + i;
-      SolrDocumentList mltResp = (SolrDocumentList) moreLikeThis.get(id);
+      SolrDocumentList mltResp = moreLikeThis.get(id);
       assertNotNull("MoreLikeThis response for id=" + id + " should not be null", mltResp);
       assertTrue("MoreLikeThis response for id=" + id + " had numFound=0", mltResp.getNumFound() > 0);
+      assertTrue("MoreLikeThis response for id=" + id + " had not returned exactly 2 documents", mltResp.size() == 2);
     }
 
     // now test with multiple mlt.fl parameters
     q = new SolrQuery("*:*");
     q.setRows(20);
     q.setParam("mlt", "true");
-    q.setParam("mlt.mintf", "0");
-    q.setParam("mlt.count", "2");
     q.setParam("mlt.fl", "x_s", "y_s", "z_s");
+    q.setMoreLikeThisMinTermFreq(0);
+    q.setMoreLikeThisCount(2);
     response = client.query(q);
     assertEquals(20, response.getResults().getNumFound());
-    moreLikeThis = (NamedList<Object>) response.getResponse().get("moreLikeThis");
+    moreLikeThis = response.getMoreLikeThis();
     assertNotNull("MoreLikeThis response should not have been null", moreLikeThis);
     for (int i=0; i<20; i++)  {
       String id = "testMoreLikeThis" + i;
-      SolrDocumentList mltResp = (SolrDocumentList) moreLikeThis.get(id);
+      SolrDocumentList mltResp = moreLikeThis.get(id);
       assertNotNull("MoreLikeThis response for id=" + id + " should not be null", mltResp);
       assertTrue("MoreLikeThis response for id=" + id + " had numFound=0", mltResp.getNumFound() > 0);
+      assertTrue("MoreLikeThis response for id=" + id + " had not returned exactly 2 documents", mltResp.size() == 2);
     }
   }
 

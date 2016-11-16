@@ -23,18 +23,21 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.common.EnumFieldValue;
+import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -48,7 +51,7 @@ import org.apache.solr.util.FastWriter;
  *
  *
  */
-public abstract class TextResponseWriter {
+public abstract class TextResponseWriter implements PushWriter {
 
   // indent up to 40 spaces
   static final char[] indentChars = new char[81];
@@ -82,6 +85,7 @@ public abstract class TextResponseWriter {
       doIndent=true;
     }
     returnFields = rsp.getReturnFields();
+    if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) rsp.removeResponseHeader();
   }
 
   /** done with this ResponseWriter... make sure any buffers are flushed to writer */
@@ -137,19 +141,19 @@ public abstract class TextResponseWriter {
         writeStr(name, f.stringValue(), true);
       }
     } else if (val instanceof Number) {
-      writeNumber(name, (Number)val);
+      writeNumber(name, (Number) val);
     } else if (val instanceof Boolean) {
-      writeBool(name, (Boolean)val);
+      writeBool(name, (Boolean) val);
     } else if (val instanceof Date) {
-      writeDate(name,(Date)val);
+      writeDate(name, (Date) val);
     } else if (val instanceof Document) {
       SolrDocument doc = DocsStreamer.getDoc((Document) val, schema);
-      writeSolrDocument(name, doc,returnFields, 0 );
+      writeSolrDocument(name, doc, returnFields, 0);
     } else if (val instanceof SolrDocument) {
-      writeSolrDocument(name, (SolrDocument)val,returnFields, 0);
+      writeSolrDocument(name, (SolrDocument) val, returnFields, 0);
     } else if (val instanceof ResultContext) {
       // requires access to IndexReader
-      writeDocuments(name, (ResultContext)val);
+      writeDocuments(name, (ResultContext) val);
     } else if (val instanceof DocList) {
       // Should not happen normally
       ResultContext ctx = new BasicResultContext((DocList)val, returnFields, null, null, req);
@@ -165,12 +169,10 @@ public abstract class TextResponseWriter {
       writeMap(name, (Map)val, false, true);
     } else if (val instanceof NamedList) {
       writeNamedList(name, (NamedList)val);
-    } else if (val instanceof TupleStream) {
-      writeTupleStream((TupleStream) val);
-    } else if (val instanceof Explanation){
-      writeExplanation((Explanation) val);
     } else if (val instanceof Path) {
       writeStr(name, ((Path) val).toAbsolutePath().toString(), true);
+    } else if (val instanceof IteratorWriter) {
+      writeIterator((IteratorWriter) val);
     } else if (val instanceof Iterable) {
       writeArray(name,((Iterable)val).iterator());
     } else if (val instanceof Object[]) {
@@ -187,13 +189,24 @@ public abstract class TextResponseWriter {
       writeStr(name, val.toString(), true);
     } else if (val instanceof WriteableValue) {
       ((WriteableValue)val).write(name, this);
+    } else if (val instanceof MapWriter) {
+      writeMap((MapWriter) val);
     } else if (val instanceof MapSerializable) {
       //todo find a better way to reuse the map more efficiently
-      writeMap(name, ((MapSerializable) val).toMap(new NamedList().asShallowMap()), false, true);
+      writeMap(name, ((MapSerializable) val).toMap(new LinkedHashMap<>()), false, true);
     } else {
       // default... for debugging only
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
     }
+  }
+  @Override
+  public void writeMap(MapWriter mw) throws IOException {
+    //todo
+  }
+
+  @Override
+  public void writeIterator(IteratorWriter iw) throws IOException {
+    /*todo*/
   }
 
   protected void writeBool(String name , Boolean val) throws IOException {
@@ -262,7 +275,11 @@ public abstract class TextResponseWriter {
   public abstract void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException;
 
   public void writeArray(String name, Object[] val) throws IOException {
-    writeArray(name, Arrays.asList(val).iterator());
+    writeArray(name, Arrays.asList(val));
+  }
+
+  public void writeArray(String name, List l) throws IOException {
+    writeArray(name, l.iterator());
   }
   
   public abstract void writeArray(String name, Iterator val) throws IOException;
@@ -302,30 +319,6 @@ public abstract class TextResponseWriter {
     } else {
       writeStr(name,s,false);
     }
-  }
-
-  public void writeTupleStream(TupleStream tupleStream) throws IOException {
-    tupleStream.open();
-    tupleStream.writeStreamOpen(writer);
-    boolean isFirst = true;
-    while(true) {
-      Tuple tuple = tupleStream.read();
-      if(!isFirst) {
-        writer.write(",");
-      }
-      writer.write("\n");
-      writeMap(null, tuple.fields, false, true);
-      isFirst = false;
-      if(tuple.EOF) {
-        break;
-      }
-    }
-    tupleStream.writeStreamClose(writer);
-    tupleStream.close();
-  }
-  
-  public void writeExplanation(Explanation explanation) throws IOException {
-    writeMap(null, explanation.toMap(), false, true);
   }
 
 

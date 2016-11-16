@@ -11,7 +11,6 @@
       <openSearcher>true</openSearcher>
     </autoCommit></updateHandler>
   <requestHandler name="standard" class="solr.StandardRequestHandler" default="true" />
-  <requestHandler name="/analysis/field" startup="lazy" class="solr.FieldAnalysisRequestHandler" />
   <requestHandler name="/blob" class="solr.BlobHandler">
     <lst name="invariants">
       <str name="maxSize">${blob.max.size.mb:5}</str>

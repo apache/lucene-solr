@@ -479,9 +479,9 @@ public class TestMemoryIndex extends LuceneTestCase {
     MemoryIndex mi = MemoryIndex.fromDocument(doc, analyzer);
     LeafReader leafReader = mi.createSearcher().getIndexReader().leaves().get(0).reader();
 
-    assertEquals(1, leafReader.getPointValues().size("field"));
-    assertArrayEquals(packedPoint, leafReader.getPointValues().getMinPackedValue("field"));
-    assertArrayEquals(packedPoint, leafReader.getPointValues().getMaxPackedValue("field"));
+    assertEquals(1, leafReader.getPointValues("field").size());
+    assertArrayEquals(packedPoint, leafReader.getPointValues("field").getMinPackedValue());
+    assertArrayEquals(packedPoint, leafReader.getPointValues("field").getMaxPackedValue());
 
     BinaryDocValues dvs = leafReader.getBinaryDocValues("field");
     assertEquals(0, dvs.nextDoc());

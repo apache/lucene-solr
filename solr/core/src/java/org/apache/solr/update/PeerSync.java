@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -172,12 +173,42 @@ public class PeerSync  {
     return "PeerSync: core="+uhandler.core.getName()+ " url="+myURL +" ";
   }
 
+  public static class PeerSyncResult  {
+    private final boolean success;
+    private final Boolean otherHasVersions;
+
+    public PeerSyncResult(boolean success, Boolean otherHasVersions) {
+      this.success = success;
+      this.otherHasVersions = otherHasVersions;
+    }
+
+    public boolean isSuccess() {
+      return success;
+    }
+
+    public Optional<Boolean> getOtherHasVersions() {
+      return Optional.ofNullable(otherHasVersions);
+    }
+
+    public static PeerSyncResult success()  {
+      return new PeerSyncResult(true, null);
+    }
+
+    public static PeerSyncResult failure()  {
+      return new PeerSyncResult(false, null);
+    }
+
+    public static PeerSyncResult failure(boolean otherHasVersions)  {
+      return new PeerSyncResult(false, otherHasVersions);
+    }
+  }
+
   /** Returns true if peer sync was successful, meaning that this core may be considered to have the latest updates.
    * It does not mean that the remote replica is in sync with us.
    */
-  public boolean sync() {
+  public PeerSyncResult sync() {
     if (ulog == null) {
-      return false;
+      return PeerSyncResult.failure();
     }
     MDCLoggingContext.setCore(core);
     try {
@@ -190,7 +221,7 @@ public class PeerSync  {
       }
       // check if we already in sync to begin with 
       if(doFingerprint && alreadyInSync()) {
-        return true;
+        return PeerSyncResult.success();
       }
       
       
@@ -211,7 +242,7 @@ public class PeerSync  {
       if (startingVersions != null) {
         if (startingVersions.size() == 0) {
           log.warn("no frame of reference to tell if we've missed updates");
-          return false;
+          return PeerSyncResult.failure();
         }
         Collections.sort(startingVersions, absComparator);
         
@@ -226,7 +257,7 @@ public class PeerSync  {
         if (Math.abs(startingVersions.get(0)) < smallestNewUpdate) {
           log.warn(msg()
               + "too many updates received since start - startingUpdates no longer overlaps with our currentUpdates");
-          return false;
+          return PeerSyncResult.failure();
         }
         
         // let's merge the lists
@@ -248,7 +279,17 @@ public class PeerSync  {
           // we have no versions and hence no frame of reference to tell if we can use a peers
           // updates to bring us into sync
           log.info(msg() + "DONE.  We have no versions.  sync failed.");
-          return false;
+          for (;;)  {
+            ShardResponse srsp = shardHandler.takeCompletedOrError();
+            if (srsp == null) break;
+            if (srsp.getException() == null)  {
+              List<Long> otherVersions = (List<Long>)srsp.getSolrResponse().getResponse().get("versions");
+              if (otherVersions != null && !otherVersions.isEmpty())  {
+                return PeerSyncResult.failure(true);
+              }
+            }
+          }
+          return PeerSyncResult.failure(false);
         }
       }
 
@@ -263,7 +304,7 @@ public class PeerSync  {
         if (!success) {
           log.info(msg() + "DONE. sync failed");
           shardHandler.cancelAll();
-          return false;
+          return PeerSyncResult.failure();
         }
       }
 
@@ -277,7 +318,7 @@ public class PeerSync  {
       }
 
       log.info(msg() + "DONE. sync " + (success ? "succeeded" : "failed"));
-      return success;
+      return success ?  PeerSyncResult.success() : PeerSyncResult.failure();
     } finally {
       MDCLoggingContext.clear();
     }

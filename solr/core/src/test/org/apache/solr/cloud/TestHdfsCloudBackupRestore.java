@@ -16,10 +16,18 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
+import static org.apache.solr.core.backup.BackupManager.*;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.commons.io.IOUtils;
@@ -28,7 +36,14 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.backup.BackupManager;
+import org.apache.solr.core.backup.repository.HdfsBackupRepository;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -144,4 +159,45 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
   public String getBackupLocation() {
     return null;
   }
+
+  protected void testConfigBackupOnly(String configName, String collectionName) throws Exception {
+    String backupName = "configonlybackup";
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(collectionName, backupName)
+        .setRepositoryName(getBackupRepoName())
+        .setIndexBackupStrategy(CollectionAdminParams.NO_INDEX_BACKUP_STRATEGY);
+    backup.process(solrClient);
+
+    Map<String,String> params = new HashMap<>();
+    params.put("location", "/backup");
+    params.put("solr.hdfs.home", hdfsUri + "/solr");
+
+    HdfsBackupRepository repo = new HdfsBackupRepository();
+    repo.init(new NamedList<>(params));
+    BackupManager mgr = new BackupManager(repo, solrClient.getZkStateReader());
+
+    URI baseLoc = repo.createURI("/backup");
+
+    Properties props = mgr.readBackupProperties(baseLoc, backupName);
+    assertNotNull(props);
+    assertEquals(collectionName, props.getProperty(COLLECTION_NAME_PROP));
+    assertEquals(backupName, props.getProperty(BACKUP_NAME_PROP));
+    assertEquals(configName, props.getProperty(COLL_CONF));
+
+    DocCollection collectionState = mgr.readCollectionState(baseLoc, backupName, collectionName);
+    assertNotNull(collectionState);
+    assertEquals(collectionName, collectionState.getName());
+
+    URI configDirLoc = repo.resolve(baseLoc, backupName, ZK_STATE_DIR, CONFIG_STATE_DIR, configName);
+    assertTrue(repo.exists(configDirLoc));
+
+    Collection<String> expected = Arrays.asList(BACKUP_PROPS_FILE, ZK_STATE_DIR);
+    URI backupLoc = repo.resolve(baseLoc, backupName);
+    String[] dirs = repo.listAll(backupLoc);
+    for (String d : dirs) {
+      assertTrue(expected.contains(d));
+    }
+  }
+
 }

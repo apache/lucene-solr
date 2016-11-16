@@ -16,46 +16,59 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Slow
-public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
+public class RecoveryZkTest extends SolrCloudTestCase {
 
-  //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(2)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
+  }
+
   private StoppableIndexingThread indexThread;
   private StoppableIndexingThread indexThread2;
 
-  public RecoveryZkTest() {
-    super();
-    sliceCount = 1;
-    fixShardCount(2);
-    schemaString = "schema15.xml";      // we need a string id
-  }
-  
-  public static String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
-  public static RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
-  
-  protected String[] getFieldNames() {
-    return fieldNames;
-  }
-
-  protected RandVal[] getRandValues() {
-    return randVals;
+  @After
+  public void stopThreads() throws InterruptedException {
+    indexThread.safeStop();
+    indexThread2.safeStop();
+    indexThread.join();
+    indexThread2.join();
   }
 
   @Test
   public void test() throws Exception {
-    handle.clear();
-    handle.put("timestamp", SKIPVAL);
-    
+
+    final String collection = "recoverytest";
+
+    CollectionAdminRequest.createCollection(collection, "conf", 1, 2)
+        .setMaxShardsPerNode(1)
+        .process(cluster.getSolrClient());
+    waitForState("Expected a collection with one shard and two replicas", collection, clusterShape(1, 2));
+    cluster.getSolrClient().setDefaultCollection(collection);
+
     // start a couple indexing threads
     
     int[] maxDocList = new int[] {300, 700, 1200, 1350, 3000};
@@ -67,12 +80,12 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     } else {
       maxDoc = maxDocNightlyList[random().nextInt(maxDocList.length - 1)];
     }
+    log.info("Indexing {} documents", maxDoc);
     
-    indexThread = new StoppableIndexingThread(controlClient, cloudClient, "1", true, maxDoc, 1, true);
+    indexThread = new StoppableIndexingThread(null, cluster.getSolrClient(), "1", true, maxDoc, 1, true);
     indexThread.start();
     
-    indexThread2 = new StoppableIndexingThread(controlClient, cloudClient, "2", true, maxDoc, 1, true);
-
+    indexThread2 = new StoppableIndexingThread(null, cluster.getSolrClient(), "2", true, maxDoc, 1, true);
     indexThread2.start();
 
     // give some time to index...
@@ -80,88 +93,57 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
      
     // bring shard replica down
-    JettySolrRunner replica = chaosMonkey.stopShard("shard1", 1).jetty;
+    DocCollection state = getCollectionState(collection);
+    Replica leader = state.getLeader("shard1");
+    Replica replica = getRandomReplica(state.getSlice("shard1"), (r) -> leader != r);
 
+    JettySolrRunner jetty = cluster.getReplicaJetty(replica);
+    jetty.stop();
     
     // wait a moment - lets allow some docs to be indexed so replication time is non 0
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
     
     // bring shard replica up
-    replica.start();
+    jetty.start();
     
     // make sure replication can start
     Thread.sleep(3000);
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    
+
     // stop indexing threads
     indexThread.safeStop();
     indexThread2.safeStop();
     
     indexThread.join();
     indexThread2.join();
-    
-    Thread.sleep(1000);
-  
-    waitForThingsToLevelOut(120);
-    
-    Thread.sleep(2000);
-    
-    waitForThingsToLevelOut(30);
-    
-    Thread.sleep(5000);
-    
-    waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, false, true);
+
+    new UpdateRequest()
+        .commit(cluster.getSolrClient(), collection);
+
+    cluster.getSolrClient().waitForState(collection, 120, TimeUnit.SECONDS, clusterShape(1, 2));
 
     // test that leader and replica have same doc count
-    
-    String fail = checkShardConsistency("shard1", false, false);
-    if (fail != null) {
-      fail(fail);
-    }
-    
-    SolrQuery query = new SolrQuery("*:*");
-    query.setParam("distrib", "false");
-    long client1Docs = shardToJetty.get("shard1").get(0).client.solrClient.query(query).getResults().getNumFound();
-    long client2Docs = shardToJetty.get("shard1").get(1).client.solrClient.query(query).getResults().getNumFound();
-    
-    assertTrue(client1Docs > 0);
-    assertEquals(client1Docs, client2Docs);
- 
-    // won't always pass yet...
-    //query("q", "*:*", "sort", "id desc");
-  }
-  
-  @Override
-  protected void indexDoc(SolrInputDocument doc) throws IOException,
-      SolrServerException {
-    controlClient.add(doc);
-    
-    // UpdateRequest ureq = new UpdateRequest();
-    // ureq.add(doc);
-    // ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
-    // ureq.process(cloudClient);
-    cloudClient.add(doc);
+    state = getCollectionState(collection);
+    assertShardConsistency(state.getSlice("shard1"), true);
+
   }
 
-  
-  @Override
-  public void distribTearDown() throws Exception {
-    // make sure threads have been stopped...
-    indexThread.safeStop();
-    indexThread2.safeStop();
-    
-    indexThread.join();
-    indexThread2.join();
-    
-    super.distribTearDown();
+  private void assertShardConsistency(Slice shard, boolean expectDocs) throws Exception {
+    List<Replica> replicas = shard.getReplicas(r -> r.getState() == Replica.State.ACTIVE);
+    long[] numCounts = new long[replicas.size()];
+    int i = 0;
+    for (Replica replica : replicas) {
+      try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl())
+          .withHttpClient(cluster.getSolrClient().getHttpClient()).build()) {
+        numCounts[i] = client.query(new SolrQuery("*:*").add("distrib", "false")).getResults().getNumFound();
+        i++;
+      }
+    }
+    for (int j = 1; j < replicas.size(); j++) {
+      if (numCounts[j] != numCounts[j - 1])
+        fail("Mismatch in counts between replicas");  // TODO improve this!
+      if (numCounts[j] == 0 && expectDocs)
+        fail("Expected docs on shard " + shard.getName() + " but found none");
+    }
   }
-  
-  // skip the randoms - they can deadlock...
-  @Override
-  protected void indexr(Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    addFields(doc, fields);
-    addFields(doc, "rnd_b", true);
-    indexDoc(doc);
-  }
+
 }

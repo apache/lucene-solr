@@ -62,6 +62,7 @@ import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CloseableThreadLocal;
@@ -70,6 +71,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.Version;
 
 /**
@@ -258,6 +260,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * IndexWriterConfig#setInfoStream(InfoStream)}).
    */
   public final static int MAX_TERM_LENGTH = DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8;
+
+  /**
+   * Maximum length string for a stored field.
+   */
+  public final static int MAX_STORED_STRING_LENGTH = ArrayUtil.MAX_ARRAY_LENGTH / UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR;
+    
   // when unrecoverable disaster strikes, we populate this with the reason that we had to close IndexWriter
   volatile Throwable tragedy;
 
@@ -1898,7 +1906,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             final int size = mergeExceptions.size();
             for(int i=0;i<size;i++) {
               final MergePolicy.OneMerge merge = mergeExceptions.get(i);
-              if (merge.maxNumSegments != -1) {
+              if (merge.maxNumSegments != UNBOUNDED_MAX_MERGE_SEGMENTS) {
                 throw new IOException("background merge hit exception: " + merge.segString(), merge.getException());
               }
             }
@@ -1926,12 +1934,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  runningMerges are maxNumSegments merges. */
   private synchronized boolean maxNumSegmentsMergesPending() {
     for (final MergePolicy.OneMerge merge : pendingMerges) {
-      if (merge.maxNumSegments != -1)
+      if (merge.maxNumSegments != UNBOUNDED_MAX_MERGE_SEGMENTS)
         return true;
     }
 
     for (final MergePolicy.OneMerge merge : runningMerges) {
-      if (merge.maxNumSegments != -1)
+      if (merge.maxNumSegments != UNBOUNDED_MAX_MERGE_SEGMENTS)
         return true;
     }
 
@@ -2059,7 +2067,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     // point, try again to log the config here:
     messageState();
 
-    assert maxNumSegments == -1 || maxNumSegments > 0;
+    assert maxNumSegments == UNBOUNDED_MAX_MERGE_SEGMENTS || maxNumSegments > 0;
     assert trigger != null;
     if (stopMerges) {
       return false;
@@ -2771,7 +2779,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // Best-effort up front check:
       testReserveDocs(numDocs);
 
-      final IOContext context = new IOContext(new MergeInfo(Math.toIntExact(numDocs), -1, false, -1));
+      final IOContext context = new IOContext(new MergeInfo(Math.toIntExact(numDocs), -1, false, UNBOUNDED_MAX_MERGE_SEGMENTS));
 
       // TODO: somehow we should fix this merge so it's
       // abortable so that IW.close(false) is able to stop it
@@ -3797,7 +3805,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       infoStream.message("IW", "after commitMerge: " + segString());
     }
 
-    if (merge.maxNumSegments != -1 && !dropSegment) {
+    if (merge.maxNumSegments != UNBOUNDED_MAX_MERGE_SEGMENTS && !dropSegment) {
       // cascade the forceMerge:
       if (!segmentsToMerge.containsKey(merge.info)) {
         segmentsToMerge.put(merge.info, Boolean.FALSE);
@@ -3876,7 +3884,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "hit exception during merge");
             }
-          } else if (merge.rateLimiter.getAbort() == false && (merge.maxNumSegments != -1 || (!closed && !closing))) {
+          } else if (merge.rateLimiter.getAbort() == false && (merge.maxNumSegments != UNBOUNDED_MAX_MERGE_SEGMENTS || (!closed && !closing))) {
             // This merge (and, generally, any change to the
             // segments) may now enable new merges, so we call
             // merge policy & update pending merges.
@@ -4015,7 +4023,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     testPoint("startMergeInit");
 
     assert merge.registerDone;
-    assert merge.maxNumSegments == -1 || merge.maxNumSegments > 0;
+    assert merge.maxNumSegments == UNBOUNDED_MAX_MERGE_SEGMENTS || merge.maxNumSegments > 0;
 
     if (tragedy != null) {
       throw new IllegalStateException("this writer hit an unrecoverable error; cannot merge", tragedy);

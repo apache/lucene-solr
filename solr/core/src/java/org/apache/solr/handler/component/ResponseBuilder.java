@@ -383,8 +383,8 @@ public class ResponseBuilder
     return sortSpec;
   }
 
-  public void setSortSpec(SortSpec sort) {
-    this.sortSpec = sort;
+  public void setSortSpec(SortSpec sortSpec) {
+    this.sortSpec = sortSpec;
   }
 
   public GroupingSpecification getGroupingSpec() {

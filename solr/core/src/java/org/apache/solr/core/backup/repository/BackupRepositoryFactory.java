@@ -20,6 +20,7 @@ package org.apache.solr.core.backup.repository;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -28,8 +29,6 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Preconditions;
 
 public class BackupRepositoryFactory {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -67,9 +66,9 @@ public class BackupRepositoryFactory {
   }
 
   public BackupRepository newInstance(SolrResourceLoader loader, String name) {
-    Preconditions.checkNotNull(loader);
-    Preconditions.checkNotNull(name);
-    PluginInfo repo = Preconditions.checkNotNull(backupRepoPluginByName.get(name),
+    Objects.requireNonNull(loader);
+    Objects.requireNonNull(name);
+    PluginInfo repo = Objects.requireNonNull(backupRepoPluginByName.get(name),
         "Could not find a backup repository with name " + name);
 
     BackupRepository result = loader.newInstance(repo.className, BackupRepository.class);

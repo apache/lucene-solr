@@ -13,10 +13,13 @@ writing, there is a page file in
 http://download.wikimedia.org/enwiki/20070402/. You can download this
 file manually and put it in temp. Note that the file you download will
 probably have the date in the name, e.g.,
-http://download.wikimedia.org/enwiki/20070402/enwiki-20070402-pages-articles.xml.bz2. When
-you put it in temp, rename it to enwiki-latest-pages-articles.xml.bz2.
+http://download.wikimedia.org/enwiki/20070402/enwiki-20070402-pages-articles.xml.bz2.
+
+If you use the EnwikiContentSource then the data will be decompressed on the fly
+during the benchmark.  If you want to benchmark indexing, you should probably decompress
+it beforehand using the "enwiki" Ant target which will produce a work/enwiki.txt, after
+which you can use LineDocSource in your benchmark.
 
 After that, ant enwiki should process the data set and run a load
-test. Ant targets get-enwiki, expand-enwiki, and extract-enwiki can
-also be used to download, decompress, and extract (to individual files
+test. Ant target enwiki will download, decompress, and extract (to individual files
 in work/enwiki) the dataset, respectively.

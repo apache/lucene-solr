@@ -40,7 +40,7 @@ public class FieldUtil {
 
 
   public static SortedDocValues getSortedDocValues(QueryContext context, SchemaField field, QParser qparser) throws IOException {
-    SortedDocValues si = context.searcher().getLeafReader().getSortedDocValues( field.getName() );
+    SortedDocValues si = context.searcher().getSlowAtomicReader().getSortedDocValues( field.getName() );
     // if (!field.hasDocValues() && (field.getType() instanceof StrField || field.getType() instanceof TextField)) {
     // }
 
@@ -48,7 +48,7 @@ public class FieldUtil {
   }
 
   public static SortedSetDocValues getSortedSetDocValues(QueryContext context, SchemaField field, QParser qparser) throws IOException {
-    SortedSetDocValues si = context.searcher().getLeafReader().getSortedSetDocValues(field.getName());
+    SortedSetDocValues si = context.searcher().getSlowAtomicReader().getSortedSetDocValues(field.getName());
     return si == null ? DocValues.emptySortedSet() : si;
   }
 

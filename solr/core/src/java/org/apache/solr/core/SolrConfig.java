@@ -17,8 +17,17 @@
 package org.apache.solr.core;
 
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathConstants;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.util.Utils.makeMap;
+import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
+import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
+import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
+import static org.apache.solr.core.SolrConfig.PluginOpts.NOOP;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -42,10 +51,13 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.common.collect.ImmutableList;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPathConstants;
+
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.util.Version;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
@@ -79,16 +91,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.util.Utils.makeMap;
-import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
-import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
-import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
-import static org.apache.solr.core.SolrConfig.PluginOpts.NOOP;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
+import com.google.common.collect.ImmutableList;
 
 
 /**
@@ -327,12 +330,13 @@ public class SolrConfig extends Config implements MapSerializable {
     }
 
     solrRequestParsers = new SolrRequestParsers(this);
-    log.info("Loaded SolrConfig: {}", name);
+    log.debug("Loaded SolrConfig: {}", name);
   }
 
   public static final List<SolrPluginInfo> plugins = ImmutableList.<SolrPluginInfo>builder()
       .add(new SolrPluginInfo(SolrRequestHandler.class, SolrRequestHandler.TYPE, REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK, LAZY))
       .add(new SolrPluginInfo(QParserPlugin.class, "queryParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
+      .add(new SolrPluginInfo(Expressible.class, "expressible", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(QueryResponseWriter.class, "queryResponseWriter", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK, LAZY))
       .add(new SolrPluginInfo(ValueSourceParser.class, "valueSourceParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(TransformerFactory.class, "transformer", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))

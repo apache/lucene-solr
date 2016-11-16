@@ -71,7 +71,8 @@ public class TestMultiDocValues extends LuceneTestCase {
       assertEquals(single.longValue(), multi.longValue());
     }
     testRandomAdvance(merged.getNumericDocValues("numbers"), MultiDocValues.getNumericValues(ir, "numbers"));
-    
+    testRandomAdvanceExact(merged.getNumericDocValues("numbers"), MultiDocValues.getNumericValues(ir, "numbers"), merged.maxDoc());
+
     ir.close();
     ir2.close();
     dir.close();
@@ -113,6 +114,7 @@ public class TestMultiDocValues extends LuceneTestCase {
       assertEquals(expected, actual);
     }
     testRandomAdvance(merged.getBinaryDocValues("bytes"), MultiDocValues.getBinaryValues(ir, "bytes"));
+    testRandomAdvanceExact(merged.getBinaryDocValues("bytes"), MultiDocValues.getBinaryValues(ir, "bytes"), merged.maxDoc());
 
     ir.close();
     ir2.close();
@@ -164,6 +166,7 @@ public class TestMultiDocValues extends LuceneTestCase {
       assertEquals(single.ordValue(), multi.ordValue());
     }
     testRandomAdvance(merged.getSortedDocValues("bytes"), MultiDocValues.getSortedValues(ir, "bytes"));
+    testRandomAdvanceExact(merged.getSortedDocValues("bytes"), MultiDocValues.getSortedValues(ir, "bytes"), merged.maxDoc());
     ir.close();
     ir2.close();
     dir.close();
@@ -209,6 +212,7 @@ public class TestMultiDocValues extends LuceneTestCase {
       assertEquals(expected, actual);
     }
     testRandomAdvance(merged.getSortedDocValues("bytes"), MultiDocValues.getSortedValues(ir, "bytes"));
+    testRandomAdvanceExact(merged.getSortedDocValues("bytes"), MultiDocValues.getSortedValues(ir, "bytes"), merged.maxDoc());
     
     ir.close();
     ir2.close();
@@ -275,6 +279,7 @@ public class TestMultiDocValues extends LuceneTestCase {
       }
     }
     testRandomAdvance(merged.getSortedSetDocValues("bytes"), MultiDocValues.getSortedSetValues(ir, "bytes"));
+    testRandomAdvanceExact(merged.getSortedSetDocValues("bytes"), MultiDocValues.getSortedSetValues(ir, "bytes"), merged.maxDoc());
     
     ir.close();
     ir2.close();
@@ -341,7 +346,8 @@ public class TestMultiDocValues extends LuceneTestCase {
       }
     }
     testRandomAdvance(merged.getSortedSetDocValues("bytes"), MultiDocValues.getSortedSetValues(ir, "bytes"));
-    
+    testRandomAdvanceExact(merged.getSortedSetDocValues("bytes"), MultiDocValues.getSortedSetValues(ir, "bytes"), merged.maxDoc());
+
     ir.close();
     ir2.close();
     dir.close();
@@ -391,6 +397,7 @@ public class TestMultiDocValues extends LuceneTestCase {
       }
     }
     testRandomAdvance(merged.getSortedNumericDocValues("nums"), MultiDocValues.getSortedNumericValues(ir, "nums"));
+    testRandomAdvanceExact(merged.getSortedNumericDocValues("nums"), MultiDocValues.getSortedNumericValues(ir, "nums"), merged.maxDoc());
     
     ir.close();
     ir2.close();
@@ -408,6 +415,14 @@ public class TestMultiDocValues extends LuceneTestCase {
         int target = iter1.docID() + TestUtil.nextInt(random(), 1, 100);
         assertEquals(iter1.advance(target), iter2.advance(target));
       }
+    }
+  }
+
+  private void testRandomAdvanceExact(DocValuesIterator iter1, DocValuesIterator iter2, int maxDoc) throws IOException {
+    for (int target = random().nextInt(Math.min(maxDoc, 10)); target < maxDoc; target += random().nextInt(10)) {
+      final boolean exists1 = iter1.advanceExact(target);
+      final boolean exists2 = iter2.advanceExact(target);
+      assertEquals(exists1, exists2);
     }
   }
 }

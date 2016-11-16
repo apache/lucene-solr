@@ -48,12 +48,17 @@ public abstract class FilterNumericDocValues extends NumericDocValues {
   }
   
   @Override
+  public boolean advanceExact(int target) throws IOException {
+    return in.advanceExact(target);
+  }
+  
+  @Override
   public long cost() {
     return in.cost();
   }
 
   @Override
-  public long longValue() {
+  public long longValue() throws IOException {
     return in.longValue();
   }
 }

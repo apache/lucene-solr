@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,7 +35,6 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 
-import com.google.common.base.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -285,6 +285,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     public boolean local() {
       return provider == null;
     }
+    public ClientProvider getClientProvider() { return provider; }
 
     public void testJQ(SolrParams args, String... tests) throws Exception {
       if (queryDefaults != null) {
@@ -433,7 +434,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       copyConfFile(baseDir, collection, schemaFile);
 
       File collDir = new File(baseDir, collection);
-      try (Writer w = new OutputStreamWriter(Files.newOutputStream(collDir.toPath().resolve("core.properties")), Charsets.UTF_8)) {
+      try (Writer w = new OutputStreamWriter(Files.newOutputStream(collDir.toPath().resolve("core.properties")), StandardCharsets.UTF_8)) {
         Properties coreProps = new Properties();
         coreProps.put("name", "collection1");
         coreProps.put("config", solrconfigFile);

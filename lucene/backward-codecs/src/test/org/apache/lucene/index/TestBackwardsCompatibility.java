@@ -157,6 +157,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for(int i=0;i<50;i++) {
       writer.addDocument(docs.nextDoc());
     }
+    docs.close();
     writer.close();
     dir.close();
 
@@ -230,7 +231,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "6.2.0-cfs",
     "6.2.0-nocfs",
     "6.2.1-cfs",
-    "6.2.1-nocfs"
+    "6.2.1-nocfs",
+    "6.3.0-cfs",
+    "6.3.0-nocfs"
   };
   
   final String[] unsupportedNames = {
@@ -1481,7 +1484,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
   
-  static long getValue(BinaryDocValues bdv) {
+  static long getValue(BinaryDocValues bdv) throws IOException {
     BytesRef term = bdv.binaryValue();
     int idx = term.offset;
     byte b = term.bytes[idx++];

@@ -237,7 +237,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
+  public PointValues getPointValues(String field) {
     ensureOpen();
     return null;
   }

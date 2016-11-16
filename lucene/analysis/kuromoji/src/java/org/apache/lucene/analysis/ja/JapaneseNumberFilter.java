@@ -104,6 +104,8 @@ public class JapaneseNumberFilter extends TokenFilter {
   private StringBuilder numeral;
 
   private int fallThroughTokens;
+  
+  private boolean exhausted = false;
 
   static {
     numerals = new char[0x10000];
@@ -149,7 +151,12 @@ public class JapaneseNumberFilter extends TokenFilter {
       return true;
     }
 
+    if (exhausted) {
+      return false;
+    }
+    
     if (!input.incrementToken()) {
+      exhausted = true;
       return false;
     }
 
@@ -184,6 +191,9 @@ public class JapaneseNumberFilter extends TokenFilter {
 
       endOffset = offsetAttr.endOffset();
       moreTokens = input.incrementToken();
+      if (moreTokens == false) {
+        exhausted = true;
+      }
 
       if (posIncrAttr.getPositionIncrement() == 0) {
         // This token is a stacked/synonym token, capture number of tokens "under" this token,
@@ -227,6 +237,7 @@ public class JapaneseNumberFilter extends TokenFilter {
     fallThroughTokens = 0;
     numeral = new StringBuilder();
     state = null;
+    exhausted = false;
   }
 
   /**

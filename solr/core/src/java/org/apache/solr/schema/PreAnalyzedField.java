@@ -50,7 +50,7 @@ import static org.apache.solr.common.params.CommonParams.JSON;
  * Pre-analyzed field type provides a way to index a serialized token stream,
  * optionally with an independent stored value of a field.
  */
-public class PreAnalyzedField extends TextField {
+public class PreAnalyzedField extends TextField implements HasImplicitIndexAnalyzer {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** Init argument name. Value is a fully-qualified class name of the parser
@@ -263,8 +263,8 @@ public class PreAnalyzedField extends TextField {
         }
       } else {
         if (f != null) {
-          f.fieldType().setIndexOptions(IndexOptions.NONE);
-          f.fieldType().setTokenized(false);
+          type.setIndexOptions(IndexOptions.NONE);
+          type.setTokenized(false);
         }
       }
     }

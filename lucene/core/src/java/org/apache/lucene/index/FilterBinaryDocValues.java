@@ -50,12 +50,17 @@ public abstract class FilterBinaryDocValues extends BinaryDocValues {
   }
   
   @Override
+  public boolean advanceExact(int target) throws IOException {
+    return in.advanceExact(target);
+  }
+  
+  @Override
   public long cost() {
     return in.cost();
   }
 
   @Override
-  public BytesRef binaryValue() {
+  public BytesRef binaryValue() throws IOException {
     return in.binaryValue();
   }
 }

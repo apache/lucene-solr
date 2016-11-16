@@ -64,7 +64,7 @@ public class Field implements IndexableField {
   /**
    * Field's type
    */
-  protected final FieldType type;
+  protected final IndexableFieldType type;
 
   /**
    * Field's name
@@ -94,7 +94,7 @@ public class Field implements IndexableField {
    * @throws IllegalArgumentException if either the name or type
    *         is null.
    */
-  protected Field(String name, FieldType type) {
+  protected Field(String name, IndexableFieldType type) {
     if (name == null) {
       throw new IllegalArgumentException("name must not be null");
     }
@@ -115,7 +115,7 @@ public class Field implements IndexableField {
    *         if tokenized() is false.
    * @throws NullPointerException if the reader is null
    */
-  public Field(String name, Reader reader, FieldType type) {
+  public Field(String name, Reader reader, IndexableFieldType type) {
     if (name == null) {
       throw new IllegalArgumentException("name must not be null");
     }
@@ -147,7 +147,7 @@ public class Field implements IndexableField {
    *         if tokenized() is false, or if indexed() is false.
    * @throws NullPointerException if the tokenStream is null
    */
-  public Field(String name, TokenStream tokenStream, FieldType type) {
+  public Field(String name, TokenStream tokenStream, IndexableFieldType type) {
     if (name == null) {
       throw new IllegalArgumentException("name must not be null");
     }
@@ -179,7 +179,7 @@ public class Field implements IndexableField {
    *         or the field's type is indexed()
    * @throws NullPointerException if the type is null
    */
-  public Field(String name, byte[] value, FieldType type) {
+  public Field(String name, byte[] value, IndexableFieldType type) {
     this(name, value, 0, value.length, type);
   }
 
@@ -197,7 +197,7 @@ public class Field implements IndexableField {
    *         or the field's type is indexed()
    * @throws NullPointerException if the type is null
    */
-  public Field(String name, byte[] value, int offset, int length, FieldType type) {
+  public Field(String name, byte[] value, int offset, int length, IndexableFieldType type) {
     this(name, new BytesRef(value, offset, length), type);
   }
 
@@ -213,7 +213,7 @@ public class Field implements IndexableField {
    *         or the field's type is indexed()
    * @throws NullPointerException if the type is null
    */
-  public Field(String name, BytesRef bytes, FieldType type) {
+  public Field(String name, BytesRef bytes, IndexableFieldType type) {
     if (name == null) {
       throw new IllegalArgumentException("name must not be null");
     }
@@ -237,7 +237,7 @@ public class Field implements IndexableField {
    *         or if indexed() is false but storeTermVectors() is true.
    * @throws NullPointerException if the type is null
    */
-  public Field(String name, String value, FieldType type) {
+  public Field(String name, String value, IndexableFieldType type) {
     if (name == null) {
       throw new IllegalArgumentException("name must not be null");
     }
@@ -496,7 +496,7 @@ public class Field implements IndexableField {
   
   /** Returns the {@link FieldType} for this field. */
   @Override
-  public FieldType fieldType() {
+  public IndexableFieldType fieldType() {
     return type;
   }
 

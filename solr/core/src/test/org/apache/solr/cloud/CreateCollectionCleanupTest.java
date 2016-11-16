@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import java.util.ArrayList;
 import java.util.Properties;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -77,8 +76,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     assertFalse(rsp.isSuccess());
 
     // Confirm using LIST that the collection does not exist
-    CollectionAdminRequest.List list = CollectionAdminRequest.listCollections();
-    rsp = list.process(cloudClient);
-    assertFalse(((ArrayList) rsp.getResponse().get("collections")).contains("foo"));
+    assertFalse(CollectionAdminRequest.listCollections(cloudClient).contains("foo"));
+
   }
 }

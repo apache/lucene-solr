@@ -157,7 +157,17 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         if (o2.start == null) {
           return 1;
         }
-        return o1.start.compareTo(o2.start);
+        int startComparison = o1.start.compareTo(o2.start);
+        if (startComparison == 0) {
+          if (o1.startOpen != o2.startOpen) {
+            if (!o1.startOpen) {
+              return -1;
+            } else {
+              return 1;
+            }
+          }
+        }
+        return startComparison;
       }
     });
     return sortedIntervals;
@@ -201,7 +211,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
             longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
               @Override
-              public long longValue() {
+              public long longValue() throws IOException {
                 long bits = super.longValue();
                 if (bits < 0) bits ^= 0x7fffffffffffffffL;
                 return bits;
@@ -212,7 +222,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
             longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
               @Override
-              public long longValue() {
+              public long longValue() throws IOException {
                 long bits = super.longValue();
                 if (bits < 0) bits ^= 0x7fffffffffffffffL;
                 return bits;
@@ -626,7 +636,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      *
      * @param sdv DocValues for the current reader
      */
-    public void updateContext(SortedDocValues sdv) {
+    public void updateContext(SortedDocValues sdv) throws IOException {
       if (start == null) {
         /*
          * Unset start. All ordinals will be greater than -1.
@@ -689,7 +699,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      *
      * @param sdv DocValues for the current reader
      */
-    public void updateContext(SortedSetDocValues sdv) {
+    public void updateContext(SortedSetDocValues sdv) throws IOException {
       if (start == null) {
         /*
          * Unset start. All ordinals will be greater than -1.

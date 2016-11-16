@@ -20,7 +20,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.common.StringUtils;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
@@ -81,7 +80,9 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
         digestReadonlyUsername, digestReadonlyPassword);
   }
 
-  @VisibleForTesting
+  /**
+   * Note: only used for tests
+   */
   protected List<ACL> createACLsToAdd(boolean includeReadOnly,
                                       String digestAllUsername, String digestAllPassword,
                                       String digestReadonlyUsername, String digestReadonlyPassword) {

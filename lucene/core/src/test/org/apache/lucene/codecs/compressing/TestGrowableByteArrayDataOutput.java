@@ -37,7 +37,7 @@ public class TestGrowableByteArrayDataOutput extends LuceneTestCase {
       // create a small string such that the single pass approach is used
       int length = TestUtil.nextInt(random(), 1, minSizeForDoublePass - 1);
       String unicode = TestUtil.randomFixedByteLengthUnicodeString(random(), length);
-      byte[] utf8 = new byte[unicode.length() * UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR];
+      byte[] utf8 = new byte[UnicodeUtil.maxUTF8Length(unicode.length())];
       int len = UnicodeUtil.UTF16toUTF8(unicode, 0, unicode.length(), utf8);
 
       GrowableByteArrayDataOutput dataOutput = new GrowableByteArrayDataOutput(1 << 8);
@@ -61,7 +61,7 @@ public class TestGrowableByteArrayDataOutput extends LuceneTestCase {
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
       String unicode = TestUtil.randomRealisticUnicodeString(random(), minSizeForDoublePass, 10 * minSizeForDoublePass);
-      byte[] utf8 = new byte[unicode.length() * UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR];
+      byte[] utf8 = new byte[UnicodeUtil.maxUTF8Length(unicode.length())];
       int len = UnicodeUtil.UTF16toUTF8(unicode, 0, unicode.length(), utf8);
 
       GrowableByteArrayDataOutput dataOutput = new GrowableByteArrayDataOutput(1 << 8);

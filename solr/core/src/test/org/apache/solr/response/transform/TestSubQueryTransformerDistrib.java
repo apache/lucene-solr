@@ -29,6 +29,7 @@ import java.util.Random;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -64,13 +65,16 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
 
     int shards = 2;
     int replicas = 2 ;
-    assertNotNull(cluster.createCollection(people, shards, replicas,
-        configName,
-        collectionProperties));
-    
-    assertNotNull(cluster.createCollection(depts, shards, replicas,
-        configName, collectionProperties));
-    
+    CollectionAdminRequest.createCollection(people, configName, shards, replicas)
+        .withProperty("config", "solrconfig-doctransformers.xml")
+        .withProperty("schema", "schema-docValuesJoin.xml")
+        .process(cluster.getSolrClient());
+
+    CollectionAdminRequest.createCollection(depts, configName, shards, replicas)
+        .withProperty("config", "solrconfig-doctransformers.xml")
+        .withProperty("schema", "schema-docValuesJoin.xml")
+        .process(cluster.getSolrClient());
+
     CloudSolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(people);
     

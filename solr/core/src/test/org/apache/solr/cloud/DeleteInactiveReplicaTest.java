@@ -16,144 +16,89 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.CollectionsAPIDistributedZkTest.*;
-
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.TimeOut;
+import org.apache.solr.core.CoreContainer;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
+public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(4)
+        .addConfig("conf", configset("cloud-minimal"))
+        .withProperty(ZkStateReader.LEGACY_CLOUD, "false")
+        .configure();
+  }
+
   @Test
   public void deleteInactiveReplicaTest() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null)) {
 
-      String collectionName = "delDeadColl";
+    String collectionName = "delDeadColl";
+    int replicationFactor = 2;
+    int numShards = 2;
+    int maxShardsPerNode = ((((numShards + 1) * replicationFactor) / cluster.getJettySolrRunners().size())) + 1;
 
-      setClusterProp(client, ZkStateReader.LEGACY_CLOUD, "false");
+    CollectionAdminRequest.createCollection(collectionName, "conf", numShards, replicationFactor)
+        .setMaxShardsPerNode(maxShardsPerNode)
+        .process(cluster.getSolrClient());
+    waitForState("Expected a cluster of 2 shards and 2 replicas", collectionName, (n, c) -> {
+      return DocCollection.isFullyActive(n, c, numShards, replicationFactor);
+    });
 
-      int replicationFactor = 2;
-      int numShards = 2;
-      int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrClient()
-          .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
+    DocCollection collectionState = getCollectionState(collectionName);
 
-      Map<String,List<Integer>> collectionInfos = new HashMap<>();
-      createCollection(collectionInfos, collectionName, numShards, replicationFactor, maxShardsPerNode, client, null);
+    Slice shard = getRandomShard(collectionState);
+    Replica replica = getRandomReplica(shard);
+    JettySolrRunner jetty = cluster.getReplicaJetty(replica);
+    cluster.stopJettySolrRunner(jetty);
 
-      waitForRecoveriesToFinish(collectionName, false);
+    waitForState("Expected replica " + replica.getName() + " on down node to be removed from cluster state", collectionName, (n, c) -> {
+      Replica r = c.getReplica(replica.getCoreName());
+      return r == null || r.getState() != Replica.State.ACTIVE;
+    });
 
-      Thread.sleep(3000);
+    log.info("Removing replica {}/{} ", shard.getName(), replica.getName());
+    CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName())
+        .process(cluster.getSolrClient());
+    waitForState("Expected deleted replica " + replica.getName() + " to be removed from cluster state", collectionName, (n, c) -> {
+      return c.getReplica(replica.getCoreName()) == null;
+    });
 
-      boolean stopped = false;
-      JettySolrRunner stoppedJetty = null;
-      StringBuilder sb = new StringBuilder();
-      Replica replica1 = null;
-      Slice shard1 = null;
-      TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS);
-      DocCollection testcoll = null;
-      while (!stopped && ! timeout.hasTimedOut()) {
-        testcoll = client.getZkStateReader().getClusterState().getCollection(collectionName);
-        for (JettySolrRunner jetty : jettys)
-          sb.append(jetty.getBaseUrl()).append(",");
+    cluster.startJettySolrRunner(jetty);
+    log.info("restarted jetty");
 
-        for (Slice slice : testcoll.getActiveSlices()) {
-          for (Replica replica : slice.getReplicas())
-            for (JettySolrRunner jetty : jettys) {
-              URL baseUrl = null;
-              try {
-                baseUrl = jetty.getBaseUrl();
-              } catch (Exception e) {
-                continue;
-              }
-              if (baseUrl.toString().startsWith(
-                  replica.getStr(ZkStateReader.BASE_URL_PROP))) {
-                stoppedJetty = jetty;
-                ChaosMonkey.stop(jetty);
-                replica1 = replica;
-                shard1 = slice;
-                stopped = true;
-                break;
-              }
-            }
-        }
-        Thread.sleep(100);
-      }
+    CoreContainer cc = jetty.getCoreContainer();
+    CoreContainer.CoreLoadFailure loadFailure = cc.getCoreInitFailures().get(replica.getCoreName());
+    assertNotNull("Deleted core was still loaded!", loadFailure);
+    assertTrue("Unexpected load failure message: " + loadFailure.exception.getMessage(),
+        loadFailure.exception.getMessage().contains("does not exist in shard"));
 
-
-      if (!stopped) {
-        fail("Could not find jetty to stop in collection " + testcoll
-            + " jettys: " + sb);
-      }
-
-      timeout = new TimeOut(20, TimeUnit.SECONDS);
-      boolean success = false;
-      while (! timeout.hasTimedOut()) {
-        testcoll = client.getZkStateReader()
-            .getClusterState().getCollection(collectionName);
-        if (testcoll.getSlice(shard1.getName()).getReplica(replica1.getName()).getState() != Replica.State.ACTIVE) {
-          success = true;
-        }
-        if (success) break;
-        Thread.sleep(100);
-      }
-
-      log.info("removed_replicas {}/{} ", shard1.getName(), replica1.getName());
-      DeleteReplicaTest.removeAndWaitForReplicaGone(collectionName, client, replica1,
-          shard1.getName());
-      ChaosMonkey.start(stoppedJetty);
-      log.info("restarted jetty");
-
-      Map m = Utils.makeMap("qt", "/admin/cores", "action", "status");
-
-      try (SolrClient queryClient = getHttpSolrClient(replica1.getStr(ZkStateReader.BASE_URL_PROP))) {
-        NamedList<Object> resp = queryClient.request(new QueryRequest(new MapSolrParams(m)));
-        assertNull("The core is up and running again",
-            ((NamedList) resp.get("status")).get(replica1.getStr("core")));
-      }
-
-      Exception exp = null;
-
-      try {
-
-        m = Utils.makeMap(
-            "action", CoreAdminParams.CoreAdminAction.CREATE.toString(),
-            ZkStateReader.COLLECTION_PROP, collectionName,
-            ZkStateReader.SHARD_ID_PROP, "shard2",
-            CoreAdminParams.NAME, "testcore");
-
-        QueryRequest request = new QueryRequest(new MapSolrParams(m));
-        request.setPath("/admin/cores");
-        NamedList<Object> rsp = client.request(request);
-      } catch (Exception e) {
-        exp = e;
-        log.info("error_expected", e);
-      }
-      assertNotNull("Exception expected", exp);
-      setClusterProp(client, ZkStateReader.LEGACY_CLOUD, null);
+    // Check that we can't create a core with no coreNodeName
+    try (SolrClient queryClient = getHttpSolrClient(jetty.getBaseUrl().toString())) {
+      Exception e = expectThrows(Exception.class, () -> {
+        CoreAdminRequest.Create createRequest = new CoreAdminRequest.Create();
+        createRequest.setCoreName("testcore");
+        createRequest.setCollection(collectionName);
+        createRequest.setShardId("shard2");
+        queryClient.request(createRequest);
+      });
+      assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().contains("coreNodeName missing"));
 
     }
-
   }
+
 }

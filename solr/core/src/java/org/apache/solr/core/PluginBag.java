@@ -230,7 +230,7 @@ public class PluginBag<T> implements AutoCloseable {
       if (old != null) log.warn("Multiple entries of {} with name {}", meta.getCleanTag(), name);
     }
     if (infos.size() > 0) { // Aggregate logging
-      log.info("[{}] Initialized {} plugins of type {}: {}", solrCore.getName(), infos.size(), meta.getCleanTag(),
+      log.debug("[{}] Initialized {} plugins of type {}: {}", solrCore.getName(), infos.size(), meta.getCleanTag(),
           infos.stream().map(i -> i.name).collect(Collectors.toList()));
     }
     for (Map.Entry<String, T> e : defaults.entrySet()) {

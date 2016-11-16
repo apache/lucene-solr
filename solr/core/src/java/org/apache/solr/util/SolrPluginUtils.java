@@ -84,6 +84,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
+import static java.util.Collections.singletonList;
 import static org.apache.solr.core.PluginInfo.APPENDS;
 import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.PluginInfo.INVARIANTS;
@@ -182,8 +183,10 @@ public class SolrPluginUtils {
   private static SolrParams applyParamSet(RequestParams requestParams,
                                           SolrParams defaults, String paramSets, String type) {
     if (paramSets == null) return defaults;
-    for (String name : StrUtils.splitSmart(paramSets, ',')) {
+    List<String> paramSetList = paramSets.indexOf(',') == -1 ? singletonList(paramSets) : StrUtils.splitSmart(paramSets, ',');
+    for (String name : paramSetList) {
       RequestParams.VersionedParams params = requestParams.getParams(name, type);
+      if (params == null) return defaults;
       if (type.equals(DEFAULTS)) {
         defaults = SolrParams.wrapDefaults(params, defaults);
       } else if (type.equals(INVARIANTS)) {

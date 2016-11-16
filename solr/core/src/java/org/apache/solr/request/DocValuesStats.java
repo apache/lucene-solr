@@ -83,13 +83,13 @@ public class DocValuesStats {
     SortedSetDocValues si; // for term lookups only
     OrdinalMap ordinalMap = null; // for mapping per-segment ords to global ones
     if (multiValued) {
-      si = searcher.getLeafReader().getSortedSetDocValues(fieldName);
+      si = searcher.getSlowAtomicReader().getSortedSetDocValues(fieldName);
       
       if (si instanceof MultiSortedSetDocValues) {
         ordinalMap = ((MultiDocValues.MultiSortedSetDocValues)si).mapping;
       }
     } else {
-      SortedDocValues single = searcher.getLeafReader().getSortedDocValues(fieldName);
+      SortedDocValues single = searcher.getSlowAtomicReader().getSortedDocValues(fieldName);
       si = single == null ? null : DocValues.singleton(single);
       if (single instanceof MultiDocValues.MultiSortedDocValues) {
         ordinalMap = ((MultiDocValues.MultiSortedDocValues)single).mapping;

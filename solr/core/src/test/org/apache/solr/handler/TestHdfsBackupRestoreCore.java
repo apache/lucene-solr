@@ -27,7 +27,10 @@ import java.util.Map;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.permission.FsAction;
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
@@ -88,6 +91,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
       "      <str name=\"location\">${solr.hdfs.default.backup.path}</str>\n" +
       "      <str name=\"solr.hdfs.home\">${solr.hdfs.home:}</str>\n" +
       "      <str name=\"solr.hdfs.confdir\">${solr.hdfs.confdir:}</str>\n" +
+      "      <str name=\"solr.hdfs.permissions.umask-mode\">${solr.hdfs.permissions.umask-mode:000}</str>\n" +
       "    </repository>\n" +
       "  </backup>\n" +
       "  \n" +
@@ -233,6 +237,13 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
         }
         //See if restore was successful by checking if all the docs are present again
         BackupRestoreUtils.verifyDocs(nDocs, masterClient, coreName);
+
+        // Verify the permissions for the backup folder.
+        FileStatus status = fs.getFileStatus(new org.apache.hadoop.fs.Path("/backup/snapshot."+backupName));
+        FsPermission perm = status.getPermission();
+        assertEquals(FsAction.ALL, perm.getUserAction());
+        assertEquals(FsAction.ALL, perm.getGroupAction());
+        assertEquals(FsAction.ALL, perm.getOtherAction());
       }
     }
   }

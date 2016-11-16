@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.collect.Sets;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -45,7 +47,7 @@ public class ImplicitSnitchTest {
   @Before
   public void beforeImplicitSnitchTest() {
     snitch = new ImplicitSnitch();
-    context = new SnitchContext(null, null, new HashMap<>());
+    context = new ServerSnitchContext(null, null, new HashMap<>(),null);
   }
 
 
@@ -82,7 +84,7 @@ public class ImplicitSnitchTest {
   public void testGetTags_withIPv4RequestedTags_ip2_and_ip4_returns_two_tags() throws Exception {
     String node = "192.168.1.2:8983_solr";
 
-    SnitchContext context = new SnitchContext(null, node, new HashMap<>());
+    SnitchContext context = new ServerSnitchContext(null, node, new HashMap<>(),null);
     snitch.getTags(node, Sets.newHashSet(IP_2, IP_4), context);
 
     Map<String, Object> tags = context.getTags();
@@ -95,7 +97,7 @@ public class ImplicitSnitchTest {
   public void testGetTags_with_wrong_ipv4_format_ip_returns_nothing() throws Exception {
     String node = "192.168.1.2.1:8983_solr";
 
-    SnitchContext context = new SnitchContext(null, node, new HashMap<>());
+    SnitchContext context = new ServerSnitchContext(null, node, new HashMap<>(),null);
     snitch.getTags(node, Sets.newHashSet(IP_1), context);
 
     Map<String, Object> tags = context.getTags();
@@ -107,7 +109,7 @@ public class ImplicitSnitchTest {
   public void testGetTags_with_correct_ipv6_format_ip_returns_nothing() throws Exception {
     String node = "[0:0:0:0:0:0:0:1]:8983_solr";
 
-    SnitchContext context = new SnitchContext(null, node, new HashMap<>());
+    SnitchContext context = new ServerSnitchContext(null, node, new HashMap<>(),null);
     snitch.getTags(node, Sets.newHashSet(IP_1), context);
 
     Map<String, Object> tags = context.getTags();
@@ -130,7 +132,7 @@ public class ImplicitSnitchTest {
   public void testGetTags_withAllHostNameRequestedTags_returns_all_Tags() throws Exception {
     String node = "serv01.dc01.london.uk.apache.org:8983_solr";
 
-    SnitchContext context = new SnitchContext(null, node, new HashMap<>());
+    SnitchContext context = new ServerSnitchContext(null, node, new HashMap<>(),null);
     //We need mocking here otherwise, we would need proper DNS entry for this test to pass
     ImplicitSnitch mockedSnitch = Mockito.spy(snitch);
     when(mockedSnitch.getHostIp(anyString())).thenReturn("10.11.12.13");
@@ -149,7 +151,7 @@ public class ImplicitSnitchTest {
   public void testGetTags_withHostNameRequestedTag_ip3_returns_1_tag() throws Exception {
     String node = "serv01.dc01.london.uk.apache.org:8983_solr";
 
-    SnitchContext context = new SnitchContext(null, node, new HashMap<>());
+    SnitchContext context = new ServerSnitchContext(null, node, new HashMap<>(),null);
     //We need mocking here otherwise, we would need proper DNS entry for this test to pass
     ImplicitSnitch mockedSnitch = Mockito.spy(snitch);
     when(mockedSnitch.getHostIp(anyString())).thenReturn("10.11.12.13");
@@ -164,7 +166,7 @@ public class ImplicitSnitchTest {
   public void testGetTags_withHostNameRequestedTag_ip99999_returns_nothing() throws Exception {
     String node = "serv01.dc01.london.uk.apache.org:8983_solr";
 
-    SnitchContext context = new SnitchContext(null, node, new HashMap<>());
+    SnitchContext context = new ServerSnitchContext(null, node, new HashMap<>(),null);
     //We need mocking here otherwise, we would need proper DNS entry for this test to pass
     ImplicitSnitch mockedSnitch = Mockito.spy(snitch);
     when(mockedSnitch.getHostIp(anyString())).thenReturn("10.11.12.13");

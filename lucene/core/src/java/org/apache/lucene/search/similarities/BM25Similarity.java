@@ -175,7 +175,9 @@ public class BM25Similarity extends Similarity {
     final long df = termStats.docFreq();
     final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
     final float idf = idf(df, docCount);
-    return Explanation.match(idf, "idf(docFreq=" + df + ", docCount=" + docCount + ")");
+    return Explanation.match(idf, "idf, computed as log(1 + (docCount - docFreq + 0.5) / (docFreq + 0.5)) from:",
+        Explanation.match(df, "docFreq"),
+        Explanation.match(docCount, "docCount"));
   }
 
   /**
@@ -192,16 +194,14 @@ public class BM25Similarity extends Similarity {
    *         for each term.
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
-    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
-    float idf = 0.0f;
+    double idf = 0d; // sum into a double before casting into a float
     List<Explanation> details = new ArrayList<>();
     for (final TermStatistics stat : termStats ) {
-      final long df = stat.docFreq();
-      final float termIdf = idf(df, docCount);
-      details.add(Explanation.match(termIdf, "idf(docFreq=" + df + ", docCount=" + docCount + ")"));
-      idf += termIdf;
+      Explanation idfExplain = idfExplain(collectionStats, stat);
+      details.add(idfExplain);
+      idf += idfExplain.getValue();
     }
-    return Explanation.match(idf, "idf(), sum of:", details);
+    return Explanation.match((float) idf, "idf(), sum of:", details);
   }
 
   @Override
@@ -244,11 +244,7 @@ public class BM25Similarity extends Similarity {
       if (norms == null) {
         norm = k1;
       } else {
-        int normsDocID = norms.docID();
-        if (normsDocID < doc) {
-          normsDocID = norms.advance(doc);
-        }
-        if (normsDocID == doc) {
+        if (norms.advanceExact(doc)) {
           norm = cache[(byte)norms.longValue() & 0xFF];
         } else {
           norm = cache[0];
@@ -307,10 +303,10 @@ public class BM25Similarity extends Similarity {
       subs.add(Explanation.match(0, "parameter b (norms omitted for field)"));
       return Explanation.match(
           (freq.getValue() * (k1 + 1)) / (freq.getValue() + k1),
-          "tfNorm, computed from:", subs);
+          "tfNorm, computed as (freq * (k1 + 1)) / (freq + k1) from:", subs);
     } else {
       byte norm;
-      if (norms.advance(doc) == doc) {
+      if (norms.advanceExact(doc)) {
         norm = (byte) norms.longValue();
       } else {
         norm = 0;
@@ -321,7 +317,7 @@ public class BM25Similarity extends Similarity {
       subs.add(Explanation.match(doclen, "fieldLength"));
       return Explanation.match(
           (freq.getValue() * (k1 + 1)) / (freq.getValue() + k1 * (1 - b + b * doclen/stats.avgdl)),
-          "tfNorm, computed from:", subs);
+          "tfNorm, computed as (freq * (k1 + 1)) / (freq + k1 * (1 - b + b * fieldLength / avgFieldLength)) from:", subs);
     }
   }
 

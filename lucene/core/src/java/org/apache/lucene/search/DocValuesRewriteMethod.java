@@ -25,7 +25,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LongBitSet;
 
 /**
@@ -74,14 +73,14 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
     
     @Override
     public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-      return new RandomAccessWeight(this, boost) {
+      return new ConstantScoreWeight(this, boost) {
         @Override
-        protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
+        public Scorer scorer(LeafReaderContext context) throws IOException {
           final SortedSetDocValues fcsi = DocValues.getSortedSet(context.reader(), query.field);
           TermsEnum termsEnum = query.getTermsEnum(new Terms() {
             
             @Override
-            public TermsEnum iterator() {
+            public TermsEnum iterator() throws IOException {
               return fcsi.termsEnum();
             }
 
@@ -141,38 +140,28 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
             }
           } while (termsEnum.next() != null);
 
-          return new Bits() {
+          return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(fcsi) {
 
             @Override
-            public boolean get(int doc) {
-              try {
-                if (doc > fcsi.docID()) {
-                  fcsi.advance(doc);
+            public boolean matches() throws IOException {
+              for (long ord = fcsi.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = fcsi.nextOrd()) {
+                if (termSet.get(ord)) {
+                  return true;
                 }
-                if (doc == fcsi.docID()) {
-                  for (long ord = fcsi.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = fcsi.nextOrd()) {
-                    if (termSet.get(ord)) {
-                      return true;
-                    }
-                  }
-                }
-                return false;
-              } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
               }
+              return false;
             }
 
             @Override
-            public int length() {
-              return context.reader().maxDoc();
+            public float matchCost() {
+              return 3; // lookup in a bitset
             }
-
-          };
+          });
         }
       };
     }
   }
-  
+
   @Override
   public boolean equals(Object other) {
     return other != null &&

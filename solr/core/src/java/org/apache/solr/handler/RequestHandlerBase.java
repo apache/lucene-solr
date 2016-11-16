@@ -115,18 +115,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
     // Copied from StandardRequestHandler
     if( args != null ) {
-      Object o = args.get("defaults");
-      if (o != null && o instanceof NamedList) {
-        defaults = SolrParams.toSolrParams((NamedList)o);
-      }
-      o = args.get("appends");
-      if (o != null && o instanceof NamedList) {
-        appends = SolrParams.toSolrParams((NamedList)o);
-      }
-      o = args.get("invariants");
-      if (o != null && o instanceof NamedList) {
-        invariants = SolrParams.toSolrParams((NamedList)o);
-      }
+      defaults = getSolrParamsFromNamedList(args, "defaults");
+      appends = getSolrParamsFromNamedList(args, "appends");
+      invariants = getSolrParamsFromNamedList(args, "invariants");
     }
     
     if (initArgs != null) {
@@ -134,6 +125,14 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       httpCaching = caching != null ? Boolean.parseBoolean(caching.toString()) : true;
     }
 
+  }
+
+  public static SolrParams getSolrParamsFromNamedList(NamedList args, String key) {
+    Object o = args.get(key);
+    if (o != null && o instanceof NamedList) {
+      return  SolrParams.toSolrParams((NamedList) o);
+    }
+    return null;
   }
 
   public NamedList getInitArgs() {

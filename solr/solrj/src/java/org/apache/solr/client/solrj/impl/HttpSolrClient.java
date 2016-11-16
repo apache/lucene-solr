@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -31,7 +30,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -49,6 +47,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
@@ -112,6 +111,8 @@ public class HttpSolrClient extends SolrClient {
   public static final String AGENT = "Solr[" + HttpSolrClient.class.getName() + "] 1.0";
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
+  static final Class<HttpSolrClient> cacheKey = HttpSolrClient.class;
   
   /**
    * The URL of the Solr server.
@@ -510,7 +511,8 @@ public class HttpSolrClient extends SolrClient {
     boolean shouldClose = true;
     try {
       // Execute the method.
-      final HttpResponse response = httpClient.execute(method, HttpClientUtil.createNewHttpClientRequestContext());
+      HttpClientContext httpClientRequestContext = HttpClientUtil.createNewHttpClientRequestContext();
+      final HttpResponse response = httpClient.execute(method, httpClientRequestContext);
       int httpStatus = response.getStatusLine().getStatusCode();
       
       // Read the contents
@@ -746,43 +748,6 @@ public class HttpSolrClient extends SolrClient {
     }
   }
 
-  private static class DelegationTokenHttpSolrClient extends HttpSolrClient {
-    private final String DELEGATION_TOKEN_PARAM = "delegation";
-    private final String delegationToken;
-
-    public DelegationTokenHttpSolrClient(String baseURL,
-                                         HttpClient client,
-                                         ResponseParser parser,
-                                         boolean allowCompression,
-                                         String delegationToken) {
-      super(baseURL, client, parser, allowCompression);
-      if (delegationToken == null) {
-        throw new IllegalArgumentException("Delegation token cannot be null");
-      }
-      this.delegationToken = delegationToken;
-      setQueryParams(new TreeSet<String>(Arrays.asList(DELEGATION_TOKEN_PARAM)));
-      invariantParams = new ModifiableSolrParams();
-      invariantParams.set(DELEGATION_TOKEN_PARAM, delegationToken);
-    }
-
-    @Override
-    protected HttpRequestBase createMethod(final SolrRequest request, String collection) throws IOException, SolrServerException {
-      SolrParams params = request.getParams();
-      if (params.getParams(DELEGATION_TOKEN_PARAM) != null) {
-        throw new IllegalArgumentException(DELEGATION_TOKEN_PARAM + " parameter not supported");
-      }
-      return super.createMethod(request, collection);
-    }
-
-    @Override
-    public void setQueryParams(Set<String> queryParams) {
-      if (queryParams == null || !queryParams.contains(DELEGATION_TOKEN_PARAM)) {
-        throw new IllegalArgumentException("Query params must contain " + DELEGATION_TOKEN_PARAM);
-      }
-      super.setQueryParams(queryParams);
-    }
-  }
-
   /**
    * Constructs {@link HttpSolrClient} instances from provided configuration.
    */
@@ -792,7 +757,16 @@ public class HttpSolrClient extends SolrClient {
     private ResponseParser responseParser;
     private boolean compression;
     private String delegationToken;
-    
+
+    public Builder() {
+      this.responseParser = new BinaryResponseParser();
+    }
+
+    public Builder withBaseSolrUrl(String baseSolrUrl) {
+      this.baseSolrUrl = baseSolrUrl;
+      return this;
+    }
+
     /**
      * Create a Builder object, based on the provided Solr URL.
      * 
@@ -831,6 +805,15 @@ public class HttpSolrClient extends SolrClient {
 
     /**
      * Use a delegation token for authenticating via the KerberosPlugin
+     */
+    public Builder withKerberosDelegationToken(String delegationToken) {
+      this.delegationToken = delegationToken;
+      return this;
+    }
+
+    @Deprecated
+    /**
+     * @deprecated use {@link withKerberosDelegationToken(String)} instead
      */
     public Builder withDelegationToken(String delegationToken) {
       this.delegationToken = delegationToken;

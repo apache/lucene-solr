@@ -65,6 +65,10 @@ public class ScoreNodesStream extends TupleStream implements Expressible
   private Map<String, Tuple> nodes = new HashMap();
   private Iterator<Tuple> tuples;
   private String termFreq;
+  private boolean facet;
+
+  private String bucket;
+  private String facetCollection;
 
   public ScoreNodesStream(TupleStream tupleStream, String nodeFreqField) throws IOException {
     init(tupleStream, nodeFreqField);
@@ -98,6 +102,17 @@ public class ScoreNodesStream extends TupleStream implements Expressible
   private void init(TupleStream tupleStream, String termFreq) throws IOException{
     this.stream = tupleStream;
     this.termFreq = termFreq;
+    if(stream instanceof FacetStream) {
+      FacetStream facetStream = (FacetStream) stream;
+
+      if(facetStream.getBuckets().length != 1) {
+        throw new IOException("scoreNodes operates over a single bucket. Num buckets:"+facetStream.getBuckets().length);
+      }
+
+      this.bucket = facetStream.getBuckets()[0].toString();
+      this.facetCollection = facetStream.getCollection();
+      this.facet = true;
+    }
   }
 
   @Override
@@ -164,12 +179,20 @@ public class ScoreNodesStream extends TupleStream implements Expressible
         break;
       }
 
+      if(facet) {
+        //Turn the facet tuple into a node.
+        String nodeId = node.getString(bucket);
+        node.put("node", nodeId);
+        node.remove(bucket);
+        node.put("collection", facetCollection);
+        node.put("field", bucket);
+      }
+
       if(!node.fields.containsKey("node")) {
         throw new IOException("node field not present in the Tuple");
       }
 
       String nodeId = node.getString("node");
-
 
       nodes.put(nodeId, node);
       if(builder.length() > 0) {

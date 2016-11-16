@@ -20,15 +20,14 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PagedBytes;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
@@ -47,10 +46,11 @@ class BinaryDocValuesWriter extends DocValuesWriter {
 
   private final Counter iwBytesUsed;
   private final PackedLongValues.Builder lengths;
-  private FixedBitSet docsWithField;
+  private DocsWithFieldSet docsWithField;
   private final FieldInfo fieldInfo;
-  private int addedValues;
   private long bytesUsed;
+  private int lastDocID = -1;
+  private int maxLength = 0;
 
   public BinaryDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
@@ -58,13 +58,13 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     this.bytesOut = bytes.getDataOutput();
     this.lengths = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
     this.iwBytesUsed = iwBytesUsed;
-    this.docsWithField = new FixedBitSet(64);
-    this.bytesUsed = docsWithFieldBytesUsed();
+    this.docsWithField = new DocsWithFieldSet();
+    this.bytesUsed = lengths.ramBytesUsed() + docsWithField.ramBytesUsed();
     iwBytesUsed.addAndGet(bytesUsed);
   }
 
   public void addValue(int docID, BytesRef value) {
-    if (docID < addedValues) {
+    if (docID <= lastDocID) {
       throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
     }
     if (value == null) {
@@ -74,12 +74,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
       throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" is too large, must be <= " + MAX_LENGTH);
     }
 
-    // Fill in any holes:
-    while(addedValues < docID) {
-      addedValues++;
-      lengths.add(0);
-    }
-    addedValues++;
+    maxLength = Math.max(value.length, maxLength);
     lengths.add(value.length);
     try {
       bytesOut.writeBytes(value.bytes, value.offset, value.length);
@@ -87,18 +82,14 @@ class BinaryDocValuesWriter extends DocValuesWriter {
       // Should never happen!
       throw new RuntimeException(ioe);
     }
-    docsWithField = FixedBitSet.ensureCapacity(docsWithField, docID);
-    docsWithField.set(docID);
+    docsWithField.add(docID);
     updateBytesUsed();
-  }
-  
-  private long docsWithFieldBytesUsed() {
-    // size of the long[] + some overhead
-    return RamUsageEstimator.sizeOf(docsWithField.getBits()) + 64;
+
+    lastDocID = docID;
   }
 
   private void updateBytesUsed() {
-    final long newBytesUsed = lengths.ramBytesUsed() + bytes.ramBytesUsed() + docsWithFieldBytesUsed();
+    final long newBytesUsed = lengths.ramBytesUsed() + bytes.ramBytesUsed() + docsWithField.ramBytesUsed();
     iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
     bytesUsed = newBytesUsed;
   }
@@ -109,7 +100,6 @@ class BinaryDocValuesWriter extends DocValuesWriter {
 
   @Override
   public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
-    final int maxDoc = state.segmentInfo.maxDoc();
     bytes.freeze(false);
     final PackedLongValues lengths = this.lengths.build();
     dvConsumer.addBinaryField(fieldInfo,
@@ -119,53 +109,38 @@ class BinaryDocValuesWriter extends DocValuesWriter {
                                   if (fieldInfoIn != fieldInfo) {
                                     throw new IllegalArgumentException("wrong fieldInfo");
                                   }
-                                  return new BufferedBinaryDocValues(maxDoc, lengths);
+                                  return new BufferedBinaryDocValues(lengths, maxLength, bytes.getDataInput(), docsWithField.iterator());
                                 }
                               });
   }
 
   // iterates over the values we have in ram
-  private class BufferedBinaryDocValues extends BinaryDocValues {
-    final BytesRefBuilder value = new BytesRefBuilder();
+  private static class BufferedBinaryDocValues extends BinaryDocValues {
+    final BytesRefBuilder value;
     final PackedLongValues.Iterator lengthsIterator;
-    final DataInput bytesIterator = bytes.getDataInput();
-    final int size;
-    final int maxDoc;
-    private int docID = -1;
+    final DocIdSetIterator docsWithField;
+    final DataInput bytesIterator;
     
-    BufferedBinaryDocValues(int maxDoc, PackedLongValues lengths) {
-      this.maxDoc = maxDoc;
+    BufferedBinaryDocValues(PackedLongValues lengths, int maxLength, DataInput bytesIterator, DocIdSetIterator docsWithFields) {
+      this.value = new BytesRefBuilder();
+      this.value.grow(maxLength);
       this.lengthsIterator = lengths.iterator();
-      this.size = (int) lengths.size();
+      this.bytesIterator = bytesIterator;
+      this.docsWithField = docsWithFields;
     }
 
     @Override
     public int docID() {
-      return docID;
+      return docsWithField.docID();
     }
 
     @Override
     public int nextDoc() throws IOException {
-      if (docID == size-1) {
-        docID = NO_MORE_DOCS;
-      } else {
-        int next = docsWithField.nextSetBit(docID+1);
-        if (next == NO_MORE_DOCS) {
-          docID = NO_MORE_DOCS;
-        } else {
-
-          int length = 0;
-
-          // skip missing values:
-          while (docID < next) {
-            docID++;
-            length = (int) lengthsIterator.next();
-            assert docID == next || length == 0;
-          }
-          value.grow(length);
-          value.setLength(length);
-          bytesIterator.readBytes(value.bytes(), 0, length);
-        }
+      int docID = docsWithField.nextDoc();
+      if (docID != NO_MORE_DOCS) {
+        int length = Math.toIntExact(lengthsIterator.next());
+        value.setLength(length);
+        bytesIterator.readBytes(value.bytes(), 0, length);
       }
       return docID;
     }
@@ -176,8 +151,13 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long cost() {
-      return docsWithField.cardinality();
+      return docsWithField.cost();
     }
 
     @Override

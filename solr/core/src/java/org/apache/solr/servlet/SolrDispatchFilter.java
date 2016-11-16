@@ -35,6 +35,7 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
@@ -48,6 +49,7 @@ import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.HttpClient;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -120,6 +122,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   public void init(FilterConfig config) throws ServletException
   {
     log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
+
+    StartupLoggingUtils.checkLogDir();
+    logWelcomeBanner();
     String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
     if (muteConsole != null && !Arrays.asList("false","0","off","no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
       StartupLoggingUtils.muteConsole();
@@ -160,6 +165,33 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
 
     log.trace("SolrDispatchFilter.init() done");
+  }
+
+  private void logWelcomeBanner() {
+    log.info(" ___      _       Welcome to Apache Solr™ version {}", solrVersion());
+    log.info("/ __| ___| |_ _   Starting in {} mode on port {}", isCloudMode() ? "cloud" : "standalone", getSolrPort());
+    log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty("solr.install.dir"));
+    log.info("|___/\\___/_|_|    Start time: {}", Instant.now().toString());
+  }
+
+  private String solrVersion() {
+    String specVer = Version.LATEST.toString();
+    try {
+      String implVer = SolrCore.class.getPackage().getImplementationVersion();
+      return (specVer.equals(implVer.split(" ")[0])) ? specVer : implVer;
+    } catch (Exception e) {
+      return specVer;
+    }
+  }
+
+  private String getSolrPort() {
+    return System.getProperty("jetty.port");
+  }
+
+  /* We are in cloud mode if Java option zkRun exists OR zkHost exists and is non-empty */
+  private boolean isCloudMode() {
+    return ((System.getProperty("zkHost") != null && !StringUtils.isEmpty(System.getProperty("zkHost")))
+    || System.getProperty("zkRun") != null);
   }
 
   /**
@@ -316,27 +348,23 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (authenticationPlugin == null) {
       return true;
     } else {
-      try {
-        if (PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getPathInfo())) return true;
-      } catch (Exception e) {
-        log.error("Unexpected error ", e);
-      }
-
-      //special case when solr is securing inter-node requests
+      // /admin/info/key must be always open. see SOLR-9188
+      // tests work only w/ getPathInfo
+      //otherwise it's just enough to have getServletPath()
+      if (PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getServletPath()) ||
+          PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getPathInfo())) return true;
       String header = ((HttpServletRequest) request).getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
         authenticationPlugin = cores.getPkiAuthenticationPlugin();
       try {
         log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
         // upon successful authentication, this should call the chain's next filter.
-        requestContinues = authenticationPlugin.doAuthenticate(request, response, new FilterChain() {
-          public void doFilter(ServletRequest req, ServletResponse rsp) throws IOException, ServletException {
-            isAuthenticated.set(true);
-            wrappedRequest.set(req);
-          }
+        requestContinues = authenticationPlugin.doAuthenticate(request, response, (req, rsp) -> {
+          isAuthenticated.set(true);
+          wrappedRequest.set(req);
         });
       } catch (Exception e) {
-        e.printStackTrace();
+        log.info("Error authenticating", e);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error during request authentication, ", e);
       }
     }

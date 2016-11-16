@@ -17,13 +17,19 @@
 package org.apache.lucene.facet.taxonomy;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.ConjunctionDISI;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /** Computes facets counts, assuming the default encoding
@@ -48,6 +54,16 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
     count(fc.getMatchingDocs());
   }
 
+  /** Create {@code FastTaxonomyFacetCounts}, using the
+   *  specified {@code indexFieldName} for ordinals, and
+   *  counting all non-deleted documents in the index.  This is 
+   *  the same result as searching on {@link MatchAllDocsQuery},
+   *  but faster */
+  public FastTaxonomyFacetCounts(String indexFieldName, IndexReader reader, TaxonomyReader taxoReader, FacetsConfig config) throws IOException {
+    super(indexFieldName, taxoReader, config);
+    countAll(reader);
+  }
+
   private final void count(List<MatchingDocs> matchingDocs) throws IOException {
     for(MatchingDocs hits : matchingDocs) {
       BinaryDocValues dv = hits.context.reader().getBinaryDocValues(indexFieldName);
@@ -55,29 +71,59 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
         continue;
       }
 
-      DocIdSetIterator docs = hits.bits.iterator();
+      DocIdSetIterator it = ConjunctionDISI.intersectIterators(Arrays.asList(
+          hits.bits.iterator(), dv));
       
-      int doc;
-      while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        if (dv.docID() < doc) {
-          dv.advance(doc);
+      for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+        final BytesRef bytesRef = dv.binaryValue();
+        byte[] bytes = bytesRef.bytes;
+        int end = bytesRef.offset + bytesRef.length;
+        int ord = 0;
+        int offset = bytesRef.offset;
+        int prev = 0;
+        while (offset < end) {
+          byte b = bytes[offset++];
+          if (b >= 0) {
+            prev = ord = ((ord << 7) | b) + prev;
+            ++values[ord];
+            ord = 0;
+          } else {
+            ord = (ord << 7) | (b & 0x7F);
+          }
         }
-        if (dv.docID() == doc) {
-          final BytesRef bytesRef = dv.binaryValue();
-          byte[] bytes = bytesRef.bytes;
-          int end = bytesRef.offset + bytesRef.length;
-          int ord = 0;
-          int offset = bytesRef.offset;
-          int prev = 0;
-          while (offset < end) {
-            byte b = bytes[offset++];
-            if (b >= 0) {
-              prev = ord = ((ord << 7) | b) + prev;
-              ++values[ord];
-              ord = 0;
-            } else {
-              ord = (ord << 7) | (b & 0x7F);
-            }
+      }
+    }
+
+    rollup();
+  }
+
+  private final void countAll(IndexReader reader) throws IOException {
+    for(LeafReaderContext context : reader.leaves()) {
+      BinaryDocValues dv = context.reader().getBinaryDocValues(indexFieldName);
+      if (dv == null) { // this reader does not have DocValues for the requested category list
+        continue;
+      }
+
+      Bits liveDocs = context.reader().getLiveDocs();
+
+      for (int doc = dv.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = dv.nextDoc()) {
+        if (liveDocs != null && liveDocs.get(doc) == false) {
+          continue;
+        }
+        final BytesRef bytesRef = dv.binaryValue();
+        byte[] bytes = bytesRef.bytes;
+        int end = bytesRef.offset + bytesRef.length;
+        int ord = 0;
+        int offset = bytesRef.offset;
+        int prev = 0;
+        while (offset < end) {
+          byte b = bytes[offset++];
+          if (b >= 0) {
+            prev = ord = ((ord << 7) | b) + prev;
+            ++values[ord];
+            ord = 0;
+          } else {
+            ord = (ord << 7) | (b & 0x7F);
           }
         }
       }

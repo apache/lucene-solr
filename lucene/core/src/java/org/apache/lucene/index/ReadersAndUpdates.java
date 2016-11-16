@@ -360,6 +360,11 @@ class ReadersAndUpdates {
                 }
 
                 @Override
+                public boolean advanceExact(int target) throws IOException {
+                  throw new UnsupportedOperationException();
+                }
+
+                @Override
                 public long cost() {
                   // TODO
                   return 0;
@@ -458,6 +463,11 @@ class ReadersAndUpdates {
 
                 @Override
                 public int advance(int target) {
+                  throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public boolean advanceExact(int target) throws IOException {
                   throw new UnsupportedOperationException();
                 }
 

@@ -82,9 +82,6 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
-import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.ReplicationHandler.*;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -436,11 +433,15 @@ public class IndexFetcher {
           } finally {
             writer.decref();
           }
-          solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
         }
         boolean reloadCore = false;
 
         try {
+          // we have to be careful and do this after we know isFullCopyNeeded won't be flipped
+          if (!isFullCopyNeeded) {
+            solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
+          }
+
           LOG.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
           successfulInstall = false;
 
@@ -474,17 +475,8 @@ public class IndexFetcher {
                 // may be closed
                 if (indexDir != null) {
                   solrCore.getDirectoryFactory().doneWithDirectory(indexDir);
-
-                  SolrSnapshotMetaDataManager snapshotsMgr = solrCore.getSnapshotMetaDataManager();
-                  Collection<SnapshotMetaData> snapshots = snapshotsMgr.listSnapshotsInIndexDir(indexDirPath);
-
-                  // Delete the old index directory only if no snapshot exists in that directory.
-                  if(snapshots.isEmpty()) {
-                    LOG.info("removing old index directory " + indexDir);
-                    solrCore.getDirectoryFactory().remove(indexDir);
-                  } else {
-                    SolrSnapshotManager.deleteNonSnapshotIndexFiles(indexDir, snapshots);
-                  }
+                  // Cleanup all index files not associated with any *named* snapshot.
+                  solrCore.deleteNonSnapshotIndexFiles(indexDirPath);
                 }
               }
 

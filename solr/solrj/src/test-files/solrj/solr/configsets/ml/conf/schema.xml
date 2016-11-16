@@ -50,7 +50,7 @@
 
 
     <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="_version_" type="long" indexed="true" stored="true"/>
+    <field name="_version_" type="long" indexed="true" stored="true" docValues="true"/>
 
     <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
          will be used if the name matches any of the patterns.

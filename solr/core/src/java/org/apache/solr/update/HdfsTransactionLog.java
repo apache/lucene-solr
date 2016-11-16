@@ -128,6 +128,7 @@ public class HdfsTransactionLog extends TransactionLog {
       success = true;
 
       assert ObjectReleaseTracker.track(this);
+      log.debug("Opening new tlog {}", this);
       
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -334,7 +335,7 @@ public class HdfsTransactionLog extends TransactionLog {
   public void close() {
     try {
       if (debug) {
-        log.debug("Closing tlog" + this);
+        log.debug("Closing tlog {}", this);
       }
 
       doCloseOutput();

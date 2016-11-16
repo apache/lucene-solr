@@ -92,7 +92,7 @@ public class MockTokenizer extends Tokenizer {
     super(factory);
     this.runAutomaton = runAutomaton;
     this.lowerCase = lowerCase;
-    this.state = runAutomaton.getInitialState();
+    this.state = 0;
     this.maxTokenLength = maxTokenLength;
   }
 
@@ -252,7 +252,7 @@ public class MockTokenizer extends Tokenizer {
 
   protected boolean isTokenChar(int c) {
     if (state < 0) {
-      state = runAutomaton.getInitialState();
+      state = 0;
     }
     state = runAutomaton.step(state, c);
     if (state < 0) {
@@ -270,7 +270,7 @@ public class MockTokenizer extends Tokenizer {
   public void reset() throws IOException {
     try {
       super.reset();
-      state = runAutomaton.getInitialState();
+      state = 0;
       lastOffset = off = 0;
       bufferedCodePoint = -1;
       if (streamState == State.RESET) {

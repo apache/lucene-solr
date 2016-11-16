@@ -131,7 +131,7 @@ public final class CustomAnalyzer extends Analyzer {
 
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer tk = tokenizer.create(attributeFactory());
+    final Tokenizer tk = tokenizer.create(attributeFactory(fieldName));
     TokenStream ts = tk;
     for (final TokenFilterFactory filter : tokenFilters) {
       ts = filter.create(ts);

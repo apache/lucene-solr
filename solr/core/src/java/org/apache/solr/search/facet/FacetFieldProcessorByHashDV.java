@@ -197,7 +197,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           getClass()+" doesn't support prefix"); // yet, but it could
     }
-    FieldInfo fieldInfo = fcontext.searcher.getLeafReader().getFieldInfos().fieldInfo(sf.getName());
+    FieldInfo fieldInfo = fcontext.searcher.getSlowAtomicReader().getFieldInfos().fieldInfo(sf.getName());
     if (fieldInfo != null &&
         fieldInfo.getDocValuesType() != DocValuesType.NUMERIC &&
         fieldInfo.getDocValuesType() != DocValuesType.SORTED) {
@@ -332,7 +332,13 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
 
       // TODO support SortedSetDocValues
       SortedDocValues globalDocValues = FieldUtil.getSortedDocValues(fcontext.qcontext, sf, null);
-      ((TermOrdCalc)calc).lookupOrdFunction = globalDocValues::lookupOrd;
+      ((TermOrdCalc)calc).lookupOrdFunction = ord -> {
+        try {
+          return globalDocValues.lookupOrd(ord);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      };
 
       DocSetUtil.collectSortedDocSet(fcontext.base, fcontext.searcher.getIndexReader(), new SimpleCollector() {
           SortedDocValues docValues = globalDocValues; // this segment/leaf. NN

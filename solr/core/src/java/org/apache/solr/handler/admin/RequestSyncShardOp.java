@@ -65,7 +65,7 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
         props.put(ZkStateReader.CORE_NAME_PROP, cname);
         props.put(ZkStateReader.NODE_NAME_PROP, zkController.getNodeName());
 
-        boolean success = syncStrategy.sync(zkController, core, new ZkNodeProps(props), true);
+        boolean success = syncStrategy.sync(zkController, core, new ZkNodeProps(props), true).isSuccess();
         // solrcloud_debug
         if (log.isDebugEnabled()) {
           try {

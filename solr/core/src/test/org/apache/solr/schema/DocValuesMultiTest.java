@@ -63,7 +63,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
       final RefCounted<SolrIndexSearcher> searcherRef = core.openNewSearcher(true, true);
       final SolrIndexSearcher searcher = searcherRef.get();
       try {
-        final LeafReader reader = searcher.getLeafReader();
+        final LeafReader reader = searcher.getSlowAtomicReader();
         assertEquals(1, reader.numDocs());
         final FieldInfos infos = reader.getFieldInfos();
         assertEquals(DocValuesType.SORTED_SET, infos.fieldInfo("stringdv").getDocValuesType());

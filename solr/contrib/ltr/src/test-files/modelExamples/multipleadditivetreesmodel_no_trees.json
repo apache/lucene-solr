@@ -1,0 +1,10 @@
+{
+    "class":"org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+    "name":"multipleadditivetreesmodel_no_trees",
+    "features":[
+        { "name": "matchedTitle"},
+        { "name": "constantScoreToForceMultipleAdditiveTreesScoreAllDocs"}
+    ],
+    "params":{
+    }
+}

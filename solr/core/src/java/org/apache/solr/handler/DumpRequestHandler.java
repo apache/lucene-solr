@@ -56,13 +56,15 @@ public class DumpRequestHandler extends RequestHandlerBase
       }
     }
 
-    if(Boolean.TRUE.equals( req.getParams().getBool("getdefaults"))){
+    if(req.getParams().getBool("getdefaults", false)){
       NamedList def = (NamedList) initArgs.get(PluginInfo.DEFAULTS);
       rsp.add("getdefaults", def);
     }
 
 
-    if(Boolean.TRUE.equals( req.getParams().getBool("initArgs"))) rsp.add("initArgs", initArgs);
+    if(req.getParams().getBool("initArgs", false)) {
+      rsp.add("initArgs", initArgs);
+    }
         
     // Write the streams...
     if( req.getContentStreams() != null ) {

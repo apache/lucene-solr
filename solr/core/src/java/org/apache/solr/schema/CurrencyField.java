@@ -35,6 +35,7 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -180,14 +181,11 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
     f.add(currencyField.createField(value.getCurrencyCode(), currencyField.indexed() && !currencyField.omitNorms() ? boost : 1F));
 
     if (field.stored()) {
-      org.apache.lucene.document.FieldType customType = new org.apache.lucene.document.FieldType();
-      assert !customType.omitNorms();
-      customType.setStored(true);
       String storedValue = externalVal.toString().trim();
       if (storedValue.indexOf(",") < 0) {
         storedValue += "," + defaultCurrency;
       }
-      f.add(createField(field.getName(), storedValue, customType, 1F));
+      f.add(createField(field.getName(), storedValue, StoredField.TYPE, 1F));
     }
 
     return f;

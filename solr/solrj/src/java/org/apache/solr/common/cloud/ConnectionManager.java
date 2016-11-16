@@ -136,7 +136,7 @@ public class ConnectionManager implements Watcher {
       }
       
       do {
-        // This loop will break iff a valid connection is made. If a connection is not made then it will repeat and
+        // This loop will break if a valid connection is made. If a connection is not made then it will repeat and
         // try again to create a new connection.
         try {
           connectionStrategy.reconnect(zkServerAddress,
@@ -232,7 +232,7 @@ public class ConnectionManager implements Watcher {
     if (!connected) {
       throw new TimeoutException("Could not connect to ZooKeeper " + zkServerAddress + " within " + waitForConnection + " ms");
     }
-    log.info("Client is connected to ZooKeeper");
+    log.debug("Client is connected to ZooKeeper");
   }
 
   public synchronized void waitForDisconnected(long timeout)

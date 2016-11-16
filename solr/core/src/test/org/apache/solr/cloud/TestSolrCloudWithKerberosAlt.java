@@ -172,8 +172,7 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
 
       // create collection
       String configName = "solrCloudCollectionConfig";
-      File configDir = new File(SolrTestCaseJ4.TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
-      miniCluster.uploadConfigDir(configDir, configName);
+      miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
       CollectionAdminRequest.Create createRequest = new CollectionAdminRequest.Create();
       createRequest.setCollectionName(collectionName);

@@ -18,6 +18,7 @@
 package org.apache.solr.search.facet;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -157,9 +158,21 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     // If we are missing a bucket for this shard, we'll need to get the specific buckets that need refining.
     Collection<String> tagsWithPartial = mcontext.getSubsWithPartial(freq);
 
-    boolean thisMissing = mcontext.bucketWasMissing();
+    boolean thisMissing = mcontext.bucketWasMissing(); // Was this whole facet missing (i.e. inside a bucket that was missing)?
 
-    int num = (int)(freq.offset + freq.limit);
+    // TODO: add information in sub-shard response about dropped buckets (i.e. not all returned due to limit)
+    // If we know we've seen all the buckets from a shard, then we don't have to add to leafBuckets or missingBuckets, only skipBuckets
+    boolean isCommandPartial = freq.returnsPartial();
+    boolean returnedAllBuckets = !isCommandPartial && !thisMissing;  // did the shard return all of the possible buckets?
+
+    if (returnedAllBuckets && tags.isEmpty() && tagsWithPartial.isEmpty()) {
+      // this facet returned all possible buckets, and there were no sub-facets with partial results
+      // and sub-facets that require refining
+      return null;
+    }
+
+
+    int num = freq.limit < 0 ? Integer.MAX_VALUE : (int)(freq.offset + freq.limit);
     int numBucketsToCheck = Math.min(buckets.size(), num);
 
     Collection<FacetBucket> bucketList;
@@ -176,8 +189,8 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     }
 
     ArrayList<Object> leafBuckets = null;    // "_l" missing buckets specified by bucket value only (no need to specify anything further)
-    ArrayList<Object> missingBuckets = null; // "_m" missing buckets that need to specify values for partial facets
-    ArrayList<Object> skipBuckets = null;    // "_s" present buckets that we need to recurse into because children facets have refinement requirements
+    ArrayList<Object> missingBuckets = null; // "_m" missing buckets that need to specify values for partial facets.. each entry is [bucketval, subs]
+    ArrayList<Object> skipBuckets = null;    // "_s" present buckets that we need to recurse into because children facets have refinement requirements. each entry is [bucketval, subs]
 
     for (FacetBucket bucket : bucketList) {
       if (numBucketsToCheck-- <= 0) break;
@@ -196,7 +209,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
 
           if (bucketRefinement != null) {
             if (missingBuckets==null) missingBuckets = new ArrayList<>();
-            missingBuckets.add(bucketRefinement);
+            missingBuckets.add( Arrays.asList(bucket.bucketValue, bucketRefinement) );
           }
         }
 
@@ -211,7 +224,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
         Map<String,Object> bucketRefinement = bucket.getRefinement(mcontext, tagsWithPartial);
         if (bucketRefinement != null) {
           if (skipBuckets == null) skipBuckets = new ArrayList<>();
-          skipBuckets.add(bucketRefinement);
+          skipBuckets.add( Arrays.asList(bucket.bucketValue, bucketRefinement) );
         }
       }
 

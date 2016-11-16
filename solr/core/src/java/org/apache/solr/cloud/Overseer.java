@@ -227,7 +227,7 @@ public class Overseer implements Closeable {
             while (workQueue.poll() != null);
 
           } catch (KeeperException.BadVersionException bve) {
-            log.warn("Bad version writing to ZK using compare-and-set, will force refresh cluster state", bve);
+            log.warn("Bad version writing to ZK using compare-and-set, will force refresh cluster state: {}", bve.getMessage());
             refreshClusterState = true;
           } catch (KeeperException e) {
             if (e.code() == KeeperException.Code.SESSIONEXPIRED) {

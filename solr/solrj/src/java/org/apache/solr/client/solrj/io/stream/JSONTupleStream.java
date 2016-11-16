@@ -40,7 +40,7 @@ import org.noggit.ObjectBuilder;
   Initial version works with the json format and only SolrDocs are handled.
 */
 
-public class JSONTupleStream {
+public class JSONTupleStream implements TupleStreamParser {
   private List<String> path;  // future... for more general stream handling
   private Reader reader;
   private JSONParser parser;
@@ -71,6 +71,7 @@ public class JSONTupleStream {
 
 
   /** returns the next Tuple or null */
+  @Override
   public Map<String,Object> next() throws IOException {
     if (!atDocs) {
       boolean found = advanceToDocs();

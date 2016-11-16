@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.clustering.carrot2;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.carrot2.core.Cluster;
@@ -28,8 +29,6 @@ import org.carrot2.util.attribute.Attribute;
 import org.carrot2.util.attribute.Bindable;
 import org.carrot2.util.attribute.Input;
 import org.carrot2.util.attribute.Output;
-
-import com.google.common.collect.Lists;
 
 /**
  * A mock Carrot2 clustering algorithm that outputs input documents as clusters.
@@ -56,7 +55,7 @@ public class EchoClusteringAlgorithm extends ProcessingComponentBase implements
   
   @Override
   public void process() throws ProcessingException {
-    clusters = Lists.newArrayListWithCapacity(documents.size());
+    clusters = new ArrayList<>();
     
     for (Document document : documents) {
       final Cluster cluster = new Cluster();

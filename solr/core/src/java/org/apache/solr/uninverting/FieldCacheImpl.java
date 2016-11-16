@@ -33,9 +33,9 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedDocValues;
@@ -112,12 +112,7 @@ class FieldCacheImpl implements FieldCache {
   }
 
   // per-segment fieldcaches don't purge until the shared core closes.
-  final SegmentReader.CoreClosedListener purgeCore = new SegmentReader.CoreClosedListener() {
-    @Override
-    public void onClose(Object ownerCoreCacheKey) {
-      FieldCacheImpl.this.purgeByCacheKey(ownerCoreCacheKey);
-    }
-  };
+  final SegmentReader.CoreClosedListener purgeCore = FieldCacheImpl.this::purgeByCacheKey;
   
   private void initReader(LeafReader reader) {
     reader.addCoreClosedListener(purgeCore);
@@ -282,12 +277,12 @@ class FieldCacheImpl implements FieldCache {
     
     final void uninvertPoints(LeafReader reader, String field) throws IOException {
       final int maxDoc = reader.maxDoc();
-      PointValues values = reader.getPointValues();
+      PointValues values = reader.getPointValues(field);
       assert values != null;
-      assert values.size(field) > 0;
+      assert values.size() > 0;
 
       final boolean setDocsWithField;
-      final int docCount = values.getDocCount(field);
+      final int docCount = values.getDocCount();
       assert docCount <= maxDoc;
       if (docCount == maxDoc) {
         // Fast case: all docs have this field:
@@ -298,7 +293,7 @@ class FieldCacheImpl implements FieldCache {
       }
 
       BytesRef scratch = new BytesRef();
-      values.intersect(field, new IntersectVisitor() {
+      values.intersect(new IntersectVisitor() {
         @Override
         public void visit(int docID) throws IOException { 
           throw new AssertionError(); 
@@ -517,11 +512,11 @@ class FieldCacheImpl implements FieldCache {
 
     private BitsEntry createValuePoints(LeafReader reader, String field) throws IOException {
       final int maxDoc = reader.maxDoc();
-      PointValues values = reader.getPointValues();
+      PointValues values = reader.getPointValues(field);
       assert values != null;
-      assert values.size(field) > 0;
+      assert values.size() > 0;
       
-      final int docCount = values.getDocCount(field);
+      final int docCount = values.getDocCount();
       assert docCount <= maxDoc;
       if (docCount == maxDoc) {
         // Fast case: all docs have this field:
@@ -620,14 +615,14 @@ class FieldCacheImpl implements FieldCache {
         if (info.getPointDimensionCount() != 1) {
           throw new IllegalStateException("Type mismatch: " + field + " was indexed with dimensions=" + info.getPointDimensionCount());
         }
-        PointValues values = reader.getPointValues();
+        PointValues values = reader.getPointValues(field);
         // no actual points for this field (e.g. all points deleted)
-        if (values == null || values.size(field) == 0) {
+        if (values == null || values.size() == 0) {
           return DocValues.emptyNumeric();
         }
         // not single-valued
-        if (values.size(field) != values.getDocCount(field)) {
-          throw new IllegalStateException("Type mismatch: " + field + " was indexed with multiple values, numValues=" + values.size(field) + ",numDocs=" + values.getDocCount(field));
+        if (values.size() != values.getDocCount()) {
+          throw new IllegalStateException("Type mismatch: " + field + " was indexed with multiple values, numValues=" + values.size() + ",numDocs=" + values.getDocCount());
         }
       } else {
         // postings case 
@@ -694,6 +689,12 @@ class FieldCacheImpl implements FieldCache {
             docID = NO_MORE_DOCS;
             return docID;
           }
+        }
+
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          docID = target;
+          return docsWithField.get(docID);
         }
 
         @Override
@@ -823,6 +824,12 @@ class FieldCacheImpl implements FieldCache {
             docID = NO_MORE_DOCS;
             return docID;
           }
+        }
+
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          docID = target;
+          return docToTermOrd.get(docID) != 0;
         }
 
         @Override
@@ -1024,6 +1031,12 @@ class FieldCacheImpl implements FieldCache {
             docID = NO_MORE_DOCS;
             return docID;
           }
+        }
+
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          docID = target;
+          return docsWithField.get(docID);
         }
 
         @Override
