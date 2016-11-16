@@ -43,10 +43,10 @@ public abstract class Axiomatic extends SimilarityBase {
   protected final int queryLen;
 
   public Axiomatic(float s, int queryLen, float k)  {
-    if (Float.isNaN(s) || s < 0 || s > 1) {
+    if (Float.isFinite(s) == false || Float.isNaN(s) || s < 0 || s > 1) {
       throw new IllegalArgumentException("illegal s value: " + s + ", must be between 0 and 1");
     }
-    if (Float.isNaN(k) || k < 0 || k > 1) {
+    if (Float.isFinite(k) == false || Float.isNaN(k) || k < 0 || k > 1) {
       throw new IllegalArgumentException("illegal k value: " + k + ", must be between 0 and 1");
     }
     if (queryLen < 0 || queryLen > Integer.MAX_VALUE) {
