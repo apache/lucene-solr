@@ -185,6 +185,8 @@ Other Changes
 
 * SOLR-9597: Add setReadOnly(String ...) to ConnectionImpl (Kevin Risden)
 
+* SOLR-9609: Change hard-coded keysize from 512 to 1024 (Jeremy Martini via Erick Erickson)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
