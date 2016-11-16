@@ -694,13 +694,14 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     luke.setShowSchema( false );
     LukeResponse rsp = luke.process( client );
     assertNull( rsp.getFieldTypeInfo() ); // if you don't ask for it, the schema is null
+    assertNull( rsp.getDynamicFieldInfo() );
     
     luke.setShowSchema( true );
     rsp = luke.process( client );
     assertNotNull( rsp.getFieldTypeInfo() );
     assertNotNull(rsp.getFieldInfo().get("id").getSchemaFlags());
     assertTrue(rsp.getFieldInfo().get("id").getSchemaFlags().contains(FieldFlag.INDEXED));
-
+    assertNotNull( rsp.getDynamicFieldInfo() );
   }
 
  @Test

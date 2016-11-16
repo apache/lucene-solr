@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -407,18 +406,21 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
   }
 
   private void getCheckpoints() throws IOException {
-    this.checkpoints = new HashMap();
+    this.checkpoints = new HashMap<>();
     ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+
+    Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
+
     ClusterState clusterState = zkStateReader.getClusterState();
-    Collection<Slice> slices = clusterState.getActiveSlices(collection);
+    Set<String> liveNodes = clusterState.getLiveNodes();
 
     for(Slice slice : slices) {
       String sliceName = slice.getName();
-      long checkpoint = 0;
+      long checkpoint;
       if(initialCheckpoint > -1) {
         checkpoint = initialCheckpoint;
       } else {
-        checkpoint = getCheckpoint(slice, clusterState.getLiveNodes());
+        checkpoint = getCheckpoint(slice, liveNodes);
       }
 
       this.checkpoints.put(sliceName, checkpoint);
@@ -482,21 +484,19 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
   }
 
   private void getPersistedCheckpoints() throws IOException {
-
     ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+    Collection<Slice> slices = CloudSolrStream.getSlices(checkpointCollection, zkStateReader, false);
+
     ClusterState clusterState = zkStateReader.getClusterState();
-    Collection<Slice> slices = clusterState.getActiveSlices(checkpointCollection);
     Set<String> liveNodes = clusterState.getLiveNodes();
+
     OUTER:
     for(Slice slice : slices) {
       Collection<Replica> replicas = slice.getReplicas();
       for(Replica replica : replicas) {
         if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())){
-
-
           HttpSolrClient httpClient = streamContext.getSolrClientCache().getHttpSolrClient(replica.getCoreUrl());
           try {
-
             SolrDocument doc = httpClient.getById(id);
             if(doc != null) {
               List<String> checkpoints = (List<String>)doc.getFieldValue("checkpoint_ss");
@@ -505,7 +505,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
                 this.checkpoints.put(pair[0], Long.parseLong(pair[1]));
               }
             }
-          }catch (Exception e) {
+          } catch (Exception e) {
             throw new IOException(e);
           }
           break OUTER;
@@ -515,22 +515,10 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
   }
 
   protected void constructStreams() throws IOException {
-
     try {
-
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
-      //System.out.println("Connected to zk an got cluster state.");
+      Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 
-      Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
-      if (slices == null) slices = getSlicesIgnoreCase(this.collection, clusterState);
-      if (slices == null) {
-        throw new Exception("Collection not found:" + this.collection);
-      }
-
-
-      Iterator<String> iterator = params.getParameterNamesIterator();
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       mParams.set("distrib", "false"); // We are the aggregator.
       String fl = mParams.get("fl");
@@ -542,12 +530,15 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
       Random random = new Random();
 
+      ClusterState clusterState = zkStateReader.getClusterState();
+      Set<String> liveNodes = clusterState.getLiveNodes();
+
       for(Slice slice : slices) {
         ModifiableSolrParams localParams = new ModifiableSolrParams(mParams);
         long checkpoint = checkpoints.get(slice.getName());
 
         Collection<Replica> replicas = slice.getReplicas();
-        List<Replica> shuffler = new ArrayList();
+        List<Replica> shuffler = new ArrayList<>();
         for(Replica replica : replicas) {
           if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName()))
             shuffler.add(replica);

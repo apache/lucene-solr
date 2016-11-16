@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -60,6 +61,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 
 /**
  * Connects to Zookeeper to pick replicas from a specific collection to send the query to.
@@ -352,37 +354,57 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
   }
 
-  public static Collection<Slice> getSlicesIgnoreCase(String name, ClusterState clusterState) {
-    for (String coll : clusterState.getCollectionStates().keySet()) {
-      if (coll.equalsIgnoreCase(name)) {
-        DocCollection collection = clusterState.getCollectionOrNull(coll);
-        if (collection != null) return collection.getActiveSlices();
+  public static Collection<Slice> getSlices(String collectionName, ZkStateReader zkStateReader, boolean checkAlias) throws IOException {
+    ClusterState clusterState = zkStateReader.getClusterState();
+
+    Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
+
+    // Check collection case sensitive
+    if(collectionsMap.containsKey(collectionName)) {
+      return collectionsMap.get(collectionName).getActiveSlices();
+    }
+
+    // Check collection case insensitive
+    for(String collectionMapKey : collectionsMap.keySet()) {
+      if(collectionMapKey.equalsIgnoreCase(collectionName)) {
+        return collectionsMap.get(collectionMapKey).getActiveSlices();
       }
     }
-    return null;
+
+    if(checkAlias) {
+      // check for collection alias
+      Aliases aliases = zkStateReader.getAliases();
+      String alias = aliases.getCollectionAlias(collectionName);
+      if (alias != null) {
+        Collection<Slice> slices = new ArrayList<>();
+
+        List<String> aliasList = StrUtils.splitSmart(alias, ",", true);
+        for (String aliasCollectionName : aliasList) {
+          // Add all active slices for this alias collection
+          slices.addAll(collectionsMap.get(aliasCollectionName).getActiveSlices());
+        }
+
+        return slices;
+      }
+    }
+
+    throw new IOException("Slices not found for " + collectionName);
   }
 
   protected void constructStreams() throws IOException {
-
     try {
-
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
-      //System.out.println("Connected to zk an got cluster state.");
 
-      Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
-      if (slices == null) slices = getSlicesIgnoreCase(this.collection, clusterState);
-      if (slices == null) {
-        throw new Exception("Collection not found:" + this.collection);
-      }
+      Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, true);
 
       ModifiableSolrParams mParams = new ModifiableSolrParams(params); 
       mParams.set("distrib", "false"); // We are the aggregator.
 
+      Set<String> liveNodes = clusterState.getLiveNodes();
       for(Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
-        List<Replica> shuffler = new ArrayList();
+        List<Replica> shuffler = new ArrayList<>();
         for(Replica replica : replicas) {
           if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName()))
           shuffler.add(replica);

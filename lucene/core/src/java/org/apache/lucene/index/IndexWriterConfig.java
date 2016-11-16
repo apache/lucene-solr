@@ -468,7 +468,8 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    */
   public IndexWriterConfig setIndexSort(Sort sort) {
     for(SortField sortField : sort.getSort()) {
-      if (ALLOWED_INDEX_SORT_TYPES.contains(sortField.getType()) == false) {
+      final SortField.Type sortType = Sorter.getSortFieldType(sortField);
+      if (ALLOWED_INDEX_SORT_TYPES.contains(sortType) == false) {
         throw new IllegalArgumentException("invalid SortField type: must be one of " + ALLOWED_INDEX_SORT_TYPES + " but got: " + sortField);
       }
     }

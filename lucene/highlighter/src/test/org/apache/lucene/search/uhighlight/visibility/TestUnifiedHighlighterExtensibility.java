@@ -22,11 +22,13 @@ import java.text.BreakIterator;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -66,6 +68,11 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
       @Override
       public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
         return Collections.emptyList();
+      }
+
+      @Override
+      protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader leafReader, int doc) throws IOException {
+        return super.createOffsetsEnumsFromReader(leafReader, doc);
       }
 
     };
@@ -142,8 +149,8 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
       }
 
       @Override
-      protected FieldOffsetStrategy getOffsetStrategy(String field, Query query, SortedSet<Term> allTerms) {
-        return super.getOffsetStrategy(field, query, allTerms);
+      protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, String field, BytesRef[] terms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, Set<HighlightFlag> highlightFlags) {
+        return super.getOffsetStrategy(offsetSource, field, terms, phraseHelper, automata, highlightFlags);
       }
 
       @Override

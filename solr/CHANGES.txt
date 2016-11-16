@@ -116,6 +116,10 @@ New Features
 * SOLR-9633: Limit memory consumed by FastLRUCache with a new 'maxRamMB' config parameter.
   (yonik, Michael Sun, shalin)
 
+* SOLR-9666: SolrJ LukeResponse support dynamic fields (Fengtan via Kevin Risden)
+
+* SOLR-9077: Streaming expressions should support collection alias (Kevin Risden)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
@@ -158,6 +162,8 @@ Bug Fixes
 
 * SOLR-9284: The HDFS BlockDirectoryCache should not let it's keysToRelease or names maps grow indefinitely.
   (Mark Miller, Michael Sun)
+
+* SOLR-9729: JDBCStream improvements (Kevin Risden)
   
 Other Changes
 ----------------------
