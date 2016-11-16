@@ -116,6 +116,8 @@ New Features
 * SOLR-9633: Limit memory consumed by FastLRUCache with a new 'maxRamMB' config parameter.
   (yonik, Michael Sun, shalin)
 
+* SOLR-9666: SolrJ LukeResponse support dynamic fields (Fengtan via Kevin Risden)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
