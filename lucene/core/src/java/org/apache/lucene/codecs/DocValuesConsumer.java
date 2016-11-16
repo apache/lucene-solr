@@ -221,21 +221,26 @@ public abstract class DocValuesConsumer implements Closeable {
           mergeSortedSetField(mergeFieldInfo, mergeState, toMerge);
         } else if (type == DocValuesType.SORTED_NUMERIC) {
           List<SortedNumericDocValues> toMerge = new ArrayList<>();
+          List<SortedNumericDocValues> toMerge2 = new ArrayList<>();
           for (int i=0;i<mergeState.docValuesProducers.length;i++) {
             SortedNumericDocValues values = null;
+            SortedNumericDocValues values2 = null;
             DocValuesProducer docValuesProducer = mergeState.docValuesProducers[i];
             if (docValuesProducer != null) {
               FieldInfo fieldInfo = mergeState.fieldInfos[i].fieldInfo(mergeFieldInfo.name);
               if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.SORTED_NUMERIC) {
                 values = docValuesProducer.getSortedNumeric(fieldInfo);
+                values2 = docValuesProducer.getSortedNumeric(fieldInfo);
               }
             }
             if (values == null) {
               values = DocValues.emptySortedNumeric(mergeState.maxDocs[i]);
+              values2 = values;
             }
             toMerge.add(values);
+            toMerge2.add(values2);
           }
-          mergeSortedNumericField(mergeFieldInfo, mergeState, toMerge);
+          mergeSortedNumericField(mergeFieldInfo, mergeState, toMerge, toMerge2);
         } else {
           throw new AssertionError("type=" + type);
         }
@@ -445,6 +450,11 @@ public abstract class DocValuesConsumer implements Closeable {
         return docID;
       }
     }
+
+    @Override
+    public String toString() {
+      return "SortedNumericDocValuesSub values=" + values + " docID=" + docID + " mappedDocID=" + mappedDocID;
+    }
   }
 
   /**
@@ -452,8 +462,10 @@ public abstract class DocValuesConsumer implements Closeable {
    * <p>
    * The default implementation calls {@link #addSortedNumericField}, passing
    * iterables that filter deleted documents.
+   * <p>
+   * We require two <code>toMerge</code> lists because we need to separately iterate the values for each segment concurrently.
    */
-  public void mergeSortedNumericField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedNumericDocValues> toMerge) throws IOException {
+  public void mergeSortedNumericField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedNumericDocValues> toMerge, List<SortedNumericDocValues> toMerge2) throws IOException {
     
     addSortedNumericField(fieldInfo,
         // doc -> value count
@@ -514,9 +526,9 @@ public abstract class DocValuesConsumer implements Closeable {
           public Iterator<Number> iterator() {
             // We must make a new DocIDMerger for each iterator:
             List<SortedNumericDocValuesSub> subs = new ArrayList<>();
-            assert mergeState.docMaps.length == toMerge.size();
-            for(int i=0;i<toMerge.size();i++) {
-              subs.add(new SortedNumericDocValuesSub(mergeState.docMaps[i], toMerge.get(i), mergeState.maxDocs[i]));
+            assert mergeState.docMaps.length == toMerge2.size();
+            for(int i=0;i<toMerge2.size();i++) {
+              subs.add(new SortedNumericDocValuesSub(mergeState.docMaps[i], toMerge2.get(i), mergeState.maxDocs[i]));
             }
 
             final DocIDMerger<SortedNumericDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);

@@ -149,7 +149,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
           Number next = valueIterator.next();
           assert next != null;
           long nextValue = next.longValue();
-          assert nextValue >= previous;
+          assert nextValue >= previous: "nextValue=" + nextValue + " vs previous=" + previous;
           previous = nextValue;
         }
       }

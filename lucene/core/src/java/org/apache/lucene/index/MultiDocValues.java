@@ -143,7 +143,7 @@ public class MultiDocValues {
       };
     }
   }
-  
+
   /** Returns a Bits for a reader's docsWithField (potentially merging on-the-fly) 
    * <p>
    * This is a slow way to access this bitset. Instead, access them per-segment
@@ -329,6 +329,33 @@ public class MultiDocValues {
       OrdinalMap mapping = OrdinalMap.build(r.getCoreCacheKey(), values, PackedInts.DEFAULT);
       return new MultiSortedDocValues(values, starts, mapping);
     }
+  }
+
+  /** Expert: returns a SortedDocValues from an array of leaf reader's sorted doc values (potentially doing extremely slow things).
+   * <p>
+   * This is an extremely slow way to access sorted values. Instead, access them per-segment
+   * with {@link LeafReader#getSortedDocValues(String)}
+   * </p>
+   */
+  public static SortedDocValues getSortedValues(IndexReader r, final SortedDocValues[] leafValues, final int[] docStarts) throws IOException {
+    final List<LeafReaderContext> leaves = r.leaves();
+    final int size = leaves.size();
+
+    if (leafValues.length != size) {
+      throw new IllegalArgumentException("leafValues must match the number of leaves; got leafValues.length=" + leafValues.length + " vs leaves.size()=" + leaves.size());
+    }
+    if (docStarts.length != size+1) {
+      throw new IllegalArgumentException("docStarts must match the number of leaves, plus one; got docStarts.length=" + docStarts.length + " vs leaves.size()=" + leaves.size());
+    }
+    
+    if (leafValues.length == 0) {
+      return null;
+    } else if (leafValues.length == 1) {
+      return leafValues[0];
+    }
+
+    OrdinalMap mapping = OrdinalMap.build(r.getCoreCacheKey(), leafValues, PackedInts.DEFAULT);
+    return new MultiSortedDocValues(leafValues, docStarts, mapping);
   }
   
   /** Returns a SortedSetDocValues for a reader's docvalues (potentially doing extremely slow things).

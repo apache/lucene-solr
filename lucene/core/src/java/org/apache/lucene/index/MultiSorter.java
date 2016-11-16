@@ -128,18 +128,21 @@ final class MultiSorter {
     final int reverseMul = sortField.getReverse() ? -1 : 1;
     final SortField.Type sortType = Sorter.getSortFieldType(sortField);
 
-    switch(sortField.getType()) {
+    switch(sortType) {
 
     case STRING:
       {
         // this uses the efficient segment-local ordinal map:
         MultiReader multiReader = new MultiReader(readers.toArray(new LeafReader[readers.size()]));
-        final SortedDocValues sorted = MultiDocValues.getSortedValues(multiReader, sortField.getField());
-        final int[] docStarts = new int[readers.size()];
+        final int[] docStarts = new int[readers.size()+1];
         List<LeafReaderContext> leaves = multiReader.leaves();
+        final SortedDocValues[] leafValues = new SortedDocValues[readers.size()];
         for(int i=0;i<readers.size();i++) {
+          leafValues[i] = Sorter.getOrWrapSorted(readers.get(i), sortField);
           docStarts[i] = leaves.get(i).docBase;
         }
+        docStarts[readers.size()] = multiReader.maxDoc();
+        final SortedDocValues sorted = MultiDocValues.getSortedValues(multiReader, leafValues, docStarts);
         final int missingOrd;
         if (sortField.getMissingValue() == SortField.STRING_LAST) {
           missingOrd = sortField.getReverse() ? Integer.MIN_VALUE : Integer.MAX_VALUE;
@@ -176,7 +179,7 @@ final class MultiSorter {
         if (sortField.getMissingValue() != null) {
           missingValue = (Long) sortField.getMissingValue();
         } else {
-          missingValue = 0;
+          missingValue = 0l;
         }
 
         return new CrossReaderComparator() {

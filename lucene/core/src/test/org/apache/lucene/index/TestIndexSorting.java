@@ -411,6 +411,9 @@ public class TestIndexSorting extends LuceneTestCase {
     assertFalse(docsWithField.get(0));
     assertEquals(7, values.get(1));
     assertEquals(18, values.get(2));
+    r.close();
+    w.close();
+    dir.close();
   }
 
   public void testMissingMultiValuedLongFirst() throws Exception {
@@ -1016,9 +1019,9 @@ public class TestIndexSorting extends LuceneTestCase {
     LeafReader leaf = getOnlyLeafReader(r);
     assertEquals(3, leaf.maxDoc());
     NumericDocValues values = leaf.getNumericDocValues("foo");
-    assertEquals(-1.0, Double.longBitsToDouble(values.get(0)), 0.0);
-    assertEquals(7.0, Double.longBitsToDouble(values.get(1)), 0.0);
-    assertEquals(18.0, Double.longBitsToDouble(values.get(2)), 0.0);
+    assertEquals(-1.0, Float.intBitsToFloat((int) values.get(0)), 0.0);
+    assertEquals(7.0, Float.intBitsToFloat((int) values.get(1)), 0.0);
+    assertEquals(18.0, Float.intBitsToFloat((int) values.get(2)), 0.0);
     r.close();
     w.close();
     dir.close();
@@ -1298,11 +1301,21 @@ public class TestIndexSorting extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     final int numDocs = atLeast(1000);
     final FixedBitSet deleted = new FixedBitSet(numDocs);
+    if (VERBOSE) {
+      System.out.println("TEST: " + numDocs + " docs");
+    }
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
       int num = random().nextInt(10);
+      if (VERBOSE) {
+        System.out.println("doc id=" + i + " count=" + num);
+      }
       for (int j = 0; j < num; j++) {
-        doc.add(new SortedNumericDocValuesField("foo", random().nextInt(2000)));
+        int n = random().nextInt(2000);
+        if (VERBOSE) {
+          System.out.println("  " + n);
+        }
+        doc.add(new SortedNumericDocValuesField("foo", n));
       }
       doc.add(new StringField("id", Integer.toString(i), Store.YES));
       doc.add(new NumericDocValuesField("id", i));
@@ -1315,6 +1328,9 @@ public class TestIndexSorting extends LuceneTestCase {
         final int id = TestUtil.nextInt(random(), 0, i);
         deleted.set(id);
         w.deleteDocuments(new Term("id", Integer.toString(id)));
+        if (VERBOSE) {
+          System.out.println("  delete doc id=" + id);
+        }
       }
     }
 
@@ -1329,8 +1345,7 @@ public class TestIndexSorting extends LuceneTestCase {
       } else {
         assertEquals(1, topDocs.totalHits);
         NumericDocValues values = MultiDocValues.getNumericValues(reader, "id");
-        assertEquals(topDocs.scoreDocs[0].doc, values.advance(topDocs.scoreDocs[0].doc));
-        assertEquals(i, values.longValue());
+        assertEquals(i, MultiDocValues.getNumericValues(reader, "id").get(topDocs.scoreDocs[0].doc));
         Document document = reader.document(topDocs.scoreDocs[0].doc);
         assertEquals(Integer.toString(i), document.get("id"));
       }
