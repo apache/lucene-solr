@@ -49,8 +49,9 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.protocol.HttpContext;
+import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
+import org.apache.solr.client.solrj.impl.Krb5HttpClientConfigurer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
@@ -97,6 +98,13 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
     }
   };
 
+  private final HttpClientConfigurer configurer = new Krb5HttpClientConfigurer() {
+    public void configure(org.apache.http.impl.client.DefaultHttpClient httpClient, org.apache.solr.common.params.SolrParams config) {
+      super.configure(httpClient, config);
+      httpClient.addRequestInterceptor(interceptor);
+    };
+  };
+
   public HttpParamDelegationTokenPlugin(CoreContainer coreContainer) {
     super(coreContainer);
   }
@@ -140,9 +148,8 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
   }
 
   @Override
-  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
-    HttpClientUtil.addRequestInterceptor(interceptor);
-    return super.getHttpClientBuilder(builder);
+  public HttpClientConfigurer getClientConfigurer() {
+    return configurer;
   }
 
   @Override

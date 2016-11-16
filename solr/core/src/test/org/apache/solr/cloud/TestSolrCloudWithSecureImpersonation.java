@@ -343,7 +343,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   @Test
   public void testForwarding() throws Exception {
     String collectionName = "forwardingCollection";
-    File configDir = getFile("solr").toPath().resolve("collection1/conf").toFile();
+    File configDir = TEST_PATH().resolve("collection1/conf").toFile();
     miniCluster.uploadConfigDir(configDir, "conf1");
     create1ShardCollection(collectionName, "conf1", miniCluster);
 
