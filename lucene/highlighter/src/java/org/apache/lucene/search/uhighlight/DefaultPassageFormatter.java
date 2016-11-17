@@ -63,13 +63,13 @@ public class DefaultPassageFormatter extends PassageFormatter {
         int pos = 0;
         for (Passage passage : passages) {
             // don't add ellipsis if its the first one, or if its connected.
-            if (passage.startOffset > pos && pos > 0) {
+            if (passage.getStartOffset() > pos && pos > 0) {
                 sb.append(ellipsis);
             }
-            pos = passage.startOffset;
-            for (int i = 0; i < passage.numMatches; i++) {
-                int start = passage.matchStarts[i];
-                int end = passage.matchEnds[i];
+            pos = passage.getStartOffset();
+            for (int i = 0; i < passage.getNumMatches(); i++) {
+                int start = passage.getMatchStarts()[i];
+                int end = passage.getMatchEnds()[i];
                 // its possible to have overlapping terms
                 if (start > pos) {
                     append(sb, content, pos, start);
@@ -82,8 +82,8 @@ public class DefaultPassageFormatter extends PassageFormatter {
                 }
             }
             // its possible a "term" from the analyzer could span a sentence boundary.
-            append(sb, content, pos, Math.max(pos, passage.endOffset));
-            pos = passage.endOffset;
+            append(sb, content, pos, Math.max(pos, passage.getEndOffset()));
+            pos = passage.getEndOffset();
         }
         return sb.toString();
     }

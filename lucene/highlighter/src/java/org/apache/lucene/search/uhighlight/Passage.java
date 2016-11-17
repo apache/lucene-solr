@@ -30,16 +30,17 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * @lucene.experimental
  */
-public final class Passage {
-    int startOffset = -1;
-    int endOffset = -1;
-    float score = 0.0f;
+public class Passage {
+    private int startOffset = -1;
+    private int endOffset = -1;
+    private float score = 0.0f;
 
-    int matchStarts[] = new int[8];
-    int matchEnds[] = new int[8];
-    BytesRef matchTerms[] = new BytesRef[8];
-    int numMatches = 0;
+    private int[] matchStarts = new int[8];
+    private int[] matchEnds = new int[8];
+    private BytesRef[] matchTerms = new BytesRef[8];
+    private int numMatches = 0;
 
+    /** @lucene.internal */
     public void addMatch(int startOffset, int endOffset, BytesRef term) {
         assert startOffset >= this.startOffset && startOffset <= this.endOffset;
         if (numMatches == matchStarts.length) {
@@ -61,7 +62,8 @@ public final class Passage {
         numMatches++;
     }
 
-    void sort() {
+    /** @lucene.internal */
+    public void sort() {
         final int starts[] = matchStarts;
         final int ends[] = matchEnds;
         final BytesRef terms[] = matchTerms;
@@ -89,7 +91,8 @@ public final class Passage {
         }.sort(0, numMatches);
     }
 
-    void reset() {
+    /** @lucene.internal */
+    public void reset() {
         startOffset = endOffset = -1;
         score = 0.0f;
         numMatches = 0;
@@ -157,5 +160,20 @@ public final class Passage {
      */
     public BytesRef[] getMatchTerms() {
         return matchTerms;
+    }
+
+    /** @lucene.internal */
+    public void setStartOffset(int startOffset) {
+        this.startOffset = startOffset;
+    }
+
+    /** @lucene.internal */
+    public void setEndOffset(int endOffset) {
+        this.endOffset = endOffset;
+    }
+
+    /** @lucene.internal */
+    public void setScore(float score) {
+        this.score = score;
     }
 }
