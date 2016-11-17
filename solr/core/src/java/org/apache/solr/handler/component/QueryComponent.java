@@ -616,7 +616,7 @@ public class QueryComponent extends SearchComponent
         // :TODO: would be simpler to always serialize every position of SortField[]
         if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
 
-        FieldComparator<?> comparator = null;
+        FieldComparator<?> comparator = sortField.getComparator(1,0);
         LeafFieldComparator leafComparator = null;
         Object[] vals = new Object[nDocs];
 
@@ -633,13 +633,13 @@ public class QueryComponent extends SearchComponent
             idx = ReaderUtil.subIndex(doc, leaves);
             currentLeaf = leaves.get(idx);
             if (idx != lastIdx) {
-              // we switched segments.  invalidate comparator.
-              comparator = null;
+              // we switched segments.  invalidate leafComparator.
+              lastIdx = idx;
+              leafComparator = null;
             }
           }
 
-          if (comparator == null) {
-            comparator = sortField.getComparator(1,0);
+          if (leafComparator == null) {
             leafComparator = comparator.getLeafComparator(currentLeaf);
           }
 

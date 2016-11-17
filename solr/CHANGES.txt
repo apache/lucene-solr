@@ -128,6 +128,9 @@ Optimizations
 * SOLR-9726: Reduce number of lookupOrd calls made by the DocValuesFacets.getCounts method.
   (Jonny Marks via Christine Poerschke)
 
+* SOLR-9772: Deriving distributed sort values (fieldSortValues) should reuse
+  comparator and only invalidate leafComparator. (John Call via yonik)
+
 Bug Fixes
 ----------------------
 * SOLR-9701: NPE in export handler when "fl" parameter is omitted.
