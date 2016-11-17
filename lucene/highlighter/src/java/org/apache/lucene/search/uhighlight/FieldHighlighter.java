@@ -117,9 +117,9 @@ public class FieldHighlighter {
         break;
       }
       Passage passage = new Passage();
-      passage.score = Float.NaN;
-      passage.startOffset = pos;
-      passage.endOffset = next;
+      passage.setScore(Float.NaN);
+      passage.setStartOffset(pos);
+      passage.setEndOffset(next);
       passages.add(passage);
       pos = next;
     }
@@ -145,12 +145,12 @@ public class FieldHighlighter {
     offsetsEnumQueue.add(new OffsetsEnum(null, EMPTY)); // a sentinel for termination
 
     PriorityQueue<Passage> passageQueue = new PriorityQueue<>(Math.min(64, maxPassages + 1), (left, right) -> {
-      if (left.score < right.score) {
+      if (left.getScore() < right.getScore()) {
         return -1;
-      } else if (left.score > right.score) {
+      } else if (left.getScore() > right.getScore()) {
         return 1;
       } else {
-        return left.startOffset - right.startOffset;
+        return left.getStartOffset() - right.getStartOffset();
       }
     });
     Passage passage = new Passage(); // the current passage in-progress.  Will either get reset or added to queue.
@@ -170,12 +170,12 @@ public class FieldHighlighter {
         continue;
       }
       // See if this term should be part of a new passage.
-      if (start >= passage.endOffset) {
-        if (passage.startOffset >= 0) { // true if this passage has terms; otherwise couldn't find any (yet)
+      if (start >= passage.getEndOffset()) {
+        if (passage.getStartOffset() >= 0) { // true if this passage has terms; otherwise couldn't find any (yet)
           // finalize passage
-          passage.score *= scorer.norm(passage.startOffset);
+          passage.setScore(passage.getScore() * scorer.norm(passage.getStartOffset()));
           // new sentence: first add 'passage' to queue
-          if (passageQueue.size() == maxPassages && passage.score < passageQueue.peek().score) {
+          if (passageQueue.size() == maxPassages && passage.getScore() < passageQueue.peek().getScore()) {
             passage.reset(); // can't compete, just reset it
           } else {
             passageQueue.offer(passage);
@@ -192,8 +192,8 @@ public class FieldHighlighter {
           break;
         }
         // advance breakIterator
-        passage.startOffset = Math.max(breakIterator.preceding(start + 1), 0);
-        passage.endOffset = Math.min(breakIterator.following(start), contentLength);
+        passage.setStartOffset(Math.max(breakIterator.preceding(start + 1), 0));
+        passage.setEndOffset(Math.min(breakIterator.following(start), contentLength));
       }
       // Add this term to the passage.
       int tf = 0;
@@ -209,12 +209,12 @@ public class FieldHighlighter {
         off.nextPosition();
         start = off.startOffset();
         end = off.endOffset();
-        if (start >= passage.endOffset || end > contentLength) { // it's beyond this passage
+        if (start >= passage.getEndOffset() || end > contentLength) { // it's beyond this passage
           offsetsEnumQueue.offer(off);
           break;
         }
       }
-      passage.score += off.weight * scorer.tf(tf, passage.endOffset - passage.startOffset);
+      passage.setScore(passage.getScore() + off.weight * scorer.tf(tf, passage.getEndOffset() - passage.getStartOffset()));
     }
 
     Passage[] passages = passageQueue.toArray(new Passage[passageQueue.size()]);
@@ -222,7 +222,7 @@ public class FieldHighlighter {
       p.sort();
     }
     // sort in ascending order
-    Arrays.sort(passages, (left, right) -> left.startOffset - right.startOffset);
+    Arrays.sort(passages, (left, right) -> left.getStartOffset() - right.getStartOffset());
     return passages;
   }
 

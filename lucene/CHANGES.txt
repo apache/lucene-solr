@@ -111,6 +111,9 @@ Other
 
 * LUCENE-7534: fix smokeTestRelease.py to run on Cygwin (Mikhail Khludnev)
 
+* LUCENE-7559: UnifiedHighlighter: Make Passage more exposed to allow passage creation to
+  be customized. (David Smiley)
+
 Build
 
 * LUCENE-7387: fix defaultCodec in build.xml to account for the line ending (hossman)
