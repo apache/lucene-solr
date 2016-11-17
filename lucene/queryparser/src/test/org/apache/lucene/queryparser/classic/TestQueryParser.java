@@ -702,4 +702,19 @@ public class TestQueryParser extends QueryParserTestBase {
     assertQueryEquals("guinea pig", new MockSynonymAnalyzer(), "guinea pig");
     splitOnWhitespace = oldSplitOnWhitespace;
   }
+
+  // LUCENE-7533
+  public void test_splitOnWhitespace_with_autoGeneratePhraseQueries() {
+    final QueryParser qp = new QueryParser("field", new MockAnalyzer(random()));
+    expectThrows(IllegalArgumentException.class, () -> {
+      qp.setSplitOnWhitespace(false);
+      qp.setAutoGeneratePhraseQueries(true);
+    });
+    final QueryParser qp2 = new QueryParser("field", new MockAnalyzer(random()));
+    expectThrows(IllegalArgumentException.class, () -> {
+      qp2.setSplitOnWhitespace(true);
+      qp2.setAutoGeneratePhraseQueries(true);
+      qp2.setSplitOnWhitespace(false);
+    });
+  }
 }
