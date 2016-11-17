@@ -120,6 +120,9 @@ New Features
 
 * SOLR-9077: Streaming expressions should support collection alias (Kevin Risden)
 
+* SOLR-9324: Support Secure Impersonation / Proxy User for solr authentication
+  (Gregory Chanan, Hrishikesh Gadre via yonik)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
@@ -621,9 +624,6 @@ New Features
 
 * SOLR-9279: New boolean comparison function queries comparing numeric arguments: gt, gte, lt, lte, eq
   (Doug Turnbull, David Smiley)
-
-* SOLR-9324: Support Secure Impersonation / Proxy User for solr authentication
-  (Gregory Chanan)
 
 * SOLR-9252: Feature selection and logistic regression on text (Cao Manh Dat, Joel Bernstein)
 
