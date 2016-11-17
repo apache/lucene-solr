@@ -144,7 +144,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    * Set to false if phrase queries should only be generated when
    * surrounded by double quotes.
    */
-  public final void setAutoGeneratePhraseQueries(boolean value) {
+  public void setAutoGeneratePhraseQueries(boolean value) {
     this.autoGeneratePhraseQueries = value;
   }
 
