@@ -886,7 +886,7 @@ public class JavaBinCodec implements PushWriter {
       daos.writeByte(NULL);
       return true;
     } else if (val instanceof CharSequence) {
-      writeStr((String) val);
+      writeStr((CharSequence) val);
       return true;
     } else if (val instanceof Number) {
 
