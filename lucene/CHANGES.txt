@@ -25,6 +25,9 @@ Bug Fixes
 * LUCENE-7533: Classic query parser: disallow autoGeneratePhraseQueries=true
   when splitOnWhitespace=false (and vice-versa). (Steve Rowe)
 
+* LUCENE-7536: ASCIIFoldingFilterFactory used to return an illegal multi-term
+  component when preserveOriginal was set to true. (Adrien Grand)
+
 Improvements
 
 * LUCENE-7532: Add back lost codec file format documentation
