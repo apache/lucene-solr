@@ -840,6 +840,20 @@ public class TestQueryParser extends QueryParserTestBase {
     assertTrue(isAHit(qp.parse("เ??"), s, analyzer));
   }
    
+  // LUCENE-7533
+  public void test_splitOnWhitespace_with_autoGeneratePhraseQueries() {
+    final QueryParser qp = new QueryParser(FIELD, new MockAnalyzer(random()));
+    expectThrows(IllegalArgumentException.class, () -> {
+      qp.setSplitOnWhitespace(false);
+      qp.setAutoGeneratePhraseQueries(true);
+    });
+    final QueryParser qp2 = new QueryParser(FIELD, new MockAnalyzer(random()));
+    expectThrows(IllegalArgumentException.class, () -> {
+      qp2.setSplitOnWhitespace(true);
+      qp2.setAutoGeneratePhraseQueries(true);
+      qp2.setSplitOnWhitespace(false);
+    });
+  }
   
   private boolean isAHit(Query q, String content, Analyzer analyzer) throws IOException{
     Directory ramDir = newDirectory();

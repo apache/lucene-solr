@@ -35,11 +35,14 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -1333,5 +1336,113 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     assertTrue(result.contexts.contains(new BytesRef("bar")));
 
     suggester.close();
+  }
+  
+  public void testCloseIndexWriterOnBuild() throws Exception {
+    class MyAnalyzingInfixSuggester extends AnalyzingInfixSuggester {
+      public MyAnalyzingInfixSuggester(Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer, 
+                                       int minPrefixChars, boolean commitOnBuild, boolean allTermsRequired,
+                                       boolean highlight, boolean closeIndexWriterOnBuild) throws IOException {
+        super(dir, indexAnalyzer, queryAnalyzer, minPrefixChars, commitOnBuild, 
+              allTermsRequired, highlight, closeIndexWriterOnBuild);
+      }
+      public IndexWriter getIndexWriter() {
+        return writer;
+      } 
+      public SearcherManager getSearcherManager() {
+        return searcherMgr;
+      }
+    }
+
+    // After build(), when closeIndexWriterOnBuild = true: 
+    // * The IndexWriter should be null 
+    // * The SearcherManager should be non-null
+    // * SearcherManager's IndexWriter reference should be closed 
+    //   (as evidenced by maybeRefreshBlocking() throwing AlreadyClosedException)
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    MyAnalyzingInfixSuggester suggester = new MyAnalyzingInfixSuggester(newDirectory(), a, a, 3, false,
+        AnalyzingInfixSuggester.DEFAULT_ALL_TERMS_REQUIRED, AnalyzingInfixSuggester.DEFAULT_HIGHLIGHT, true);
+    suggester.build(new InputArrayIterator(sharedInputs));
+    assertNull(suggester.getIndexWriter());
+    assertNotNull(suggester.getSearcherManager());
+    expectThrows(AlreadyClosedException.class, () -> suggester.getSearcherManager().maybeRefreshBlocking());
+    
+    suggester.close();
+    a.close();
+  }
+  
+  public void testCommitAfterBuild() throws Exception {
+    performOperationWithAllOptionCombinations(suggester -> {
+      suggester.build(new InputArrayIterator(sharedInputs));
+      suggester.commit();
+    });    
+  }
+
+  public void testRefreshAfterBuild() throws Exception {
+    performOperationWithAllOptionCombinations(suggester -> {
+      suggester.build(new InputArrayIterator(sharedInputs)); 
+      suggester.refresh(); 
+    });
+  }
+  
+  public void testDisallowCommitBeforeBuild() throws Exception {
+    performOperationWithAllOptionCombinations
+        (suggester -> expectThrows(IllegalStateException.class, suggester::commit));
+  }
+
+  public void testDisallowRefreshBeforeBuild() throws Exception {
+    performOperationWithAllOptionCombinations
+        (suggester -> expectThrows(IllegalStateException.class, suggester::refresh));
+  }
+
+  private Input sharedInputs[] = new Input[] {
+      new Input("lend me your ear", 8, new BytesRef("foobar")),
+      new Input("a penny saved is a penny earned", 10, new BytesRef("foobaz")),
+  };
+
+  private interface SuggesterOperation {
+    void operate(AnalyzingInfixSuggester suggester) throws Exception;
+  }
+
+  /**
+   * Perform the given operation on suggesters constructed with all combinations of options
+   * commitOnBuild and closeIndexWriterOnBuild, including defaults.
+   */
+  private void performOperationWithAllOptionCombinations(SuggesterOperation operation) throws Exception {
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newDirectory(), a);
+    operation.operate(suggester);
+    suggester.close();
+
+    suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, false);
+    operation.operate(suggester);
+    suggester.close();
+
+    suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, true);
+    operation.operate(suggester);
+    suggester.close();
+
+    suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, true,
+        AnalyzingInfixSuggester.DEFAULT_ALL_TERMS_REQUIRED, AnalyzingInfixSuggester.DEFAULT_HIGHLIGHT, true);
+    operation.operate(suggester);
+    suggester.close();
+
+    suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, true,
+        AnalyzingInfixSuggester.DEFAULT_ALL_TERMS_REQUIRED, AnalyzingInfixSuggester.DEFAULT_HIGHLIGHT, false);
+    operation.operate(suggester);
+    suggester.close();
+
+    suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, false,
+        AnalyzingInfixSuggester.DEFAULT_ALL_TERMS_REQUIRED, AnalyzingInfixSuggester.DEFAULT_HIGHLIGHT, true);
+    operation.operate(suggester);
+    suggester.close();
+
+    suggester = new AnalyzingInfixSuggester(newDirectory(), a, a, 3, false,
+        AnalyzingInfixSuggester.DEFAULT_ALL_TERMS_REQUIRED, AnalyzingInfixSuggester.DEFAULT_HIGHLIGHT, false);
+    operation.operate(suggester);
+    suggester.close();
+
+    a.close();
   }
 }

@@ -120,6 +120,9 @@ New Features
 
 * SOLR-9077: Streaming expressions should support collection alias (Kevin Risden)
 
+* SOLR-9324: Support Secure Impersonation / Proxy User for solr authentication
+  (Gregory Chanan, Hrishikesh Gadre via yonik)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
@@ -127,6 +130,9 @@ Optimizations
 
 * SOLR-9726: Reduce number of lookupOrd calls made by the DocValuesFacets.getCounts method.
   (Jonny Marks via Christine Poerschke)
+
+* SOLR-9772: Deriving distributed sort values (fieldSortValues) should reuse
+  comparator and only invalidate leafComparator. (John Call via yonik)
 
 Bug Fixes
 ----------------------
@@ -182,6 +188,10 @@ Other Changes
 
 * SOLR-8332: Factor HttpShardHandler[Factory]'s url shuffling out into a ReplicaListTransformer class.
   (Christine Poerschke, Noble Paul)
+
+* SOLR-9597: Add setReadOnly(String ...) to ConnectionImpl (Kevin Risden)
+
+* SOLR-9609: Change hard-coded keysize from 512 to 1024 (Jeremy Martini via Erick Erickson)
 
 ==================  6.3.0 ==================
 
@@ -614,9 +624,6 @@ New Features
 
 * SOLR-9279: New boolean comparison function queries comparing numeric arguments: gt, gte, lt, lte, eq
   (Doug Turnbull, David Smiley)
-
-* SOLR-9324: Support Secure Impersonation / Proxy User for solr authentication
-  (Gregory Chanan)
 
 * SOLR-9252: Feature selection and logistic regression on text (Cao Manh Dat, Joel Bernstein)
 

@@ -69,10 +69,8 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
     return Collections.singletonList(new OffsetsEnum(null, mtqPostingsEnum));
   }
 
-  // but this would have a performance cost for likely little gain in the user experience, it
-  // would only serve to make this method less bogus.
-  // instead, we always return freq() = Integer.MAX_VALUE and let the highlighter terminate based on offset...
-  // TODO: DWS perhaps instead OffsetsEnum could become abstract and this would be an impl?
+  // See class javadocs.
+  // TODO: DWS perhaps instead OffsetsEnum could become abstract and this would be an impl?  See TODOs in OffsetsEnum.
   private static class TokenStreamPostingsEnum extends PostingsEnum implements Closeable {
     TokenStream stream; // becomes null when closed
     final CharacterRunAutomaton[] matchers;
@@ -134,6 +132,7 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
       return currentEndOffset;
     }
 
+    // TOTAL HACK; used in OffsetsEnum.getTerm()
     @Override
     public BytesRef getPayload() throws IOException {
       if (matchDescriptions[currentMatch] == null) {

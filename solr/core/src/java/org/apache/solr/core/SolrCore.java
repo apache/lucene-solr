@@ -2645,16 +2645,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       try {
         FileUtils.deleteDirectory(dataDir);
       } catch (IOException e) {
-        SolrException.log(log, "Failed to delete data dir for unloaded core:" + cd.getName()
-            + " dir:" + dataDir.getAbsolutePath());
+        log.error("Failed to delete data dir for unloaded core: {} dir: {}", cd.getName(), dataDir.getAbsolutePath(), e);
       }
     }
     if (deleteInstanceDir) {
       try {
         FileUtils.deleteDirectory(cd.getInstanceDir().toFile());
       } catch (IOException e) {
-        SolrException.log(log, "Failed to delete instance dir for unloaded core:" + cd.getName()
-            + " dir:" + cd.getInstanceDir());
+        log.error("Failed to delete instance dir for unloaded core: {} dir: {}", cd.getName(), cd.getInstanceDir(), e);
       }
     }
   }

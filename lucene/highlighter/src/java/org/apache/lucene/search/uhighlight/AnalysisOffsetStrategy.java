@@ -75,6 +75,9 @@ public abstract class AnalysisOffsetStrategy extends FieldOffsetStrategy {
    *
    * @lucene.internal
    */
+  // TODO we could make this go away.  MemoryIndexOffsetStrategy could simply split and analyze each value into the
+  //   MemoryIndex. TokenStreamOffsetStrategy's hack TokenStreamPostingsEnum could incorporate this logic,
+  //   albeit with less code, less hack.
   private static final class MultiValueTokenStream extends TokenFilter {
 
     private final String fieldName;
