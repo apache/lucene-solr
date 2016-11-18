@@ -56,7 +56,7 @@ public abstract class PrimaryNode extends Node {
   // Current NRT segment infos, incRef'd with IndexWriter.deleter:
   private SegmentInfos curInfos;
 
-  final IndexWriter writer;
+  protected final IndexWriter writer;
 
   // IncRef'd state of the last published NRT point; when a replica comes asking, we give it this as the current NRT point:
   private CopyState copyState;
