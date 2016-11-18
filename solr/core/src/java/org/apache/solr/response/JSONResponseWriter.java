@@ -188,10 +188,10 @@ class JSONWriter extends TextResponseWriter {
   }
 
   /** Represents a NamedList directly as a JSON Object (essentially a Map)
-   * repeating any keys if they are repeated in the NamedList.  null is mapped
-   * to "".
+   * repeating any keys if they are repeated in the NamedList.
+   * null key is mapped to "".
    */ 
-  // NamedList("a"=1,"bar"="foo",null=3) => {"a":1,"bar":"foo","":3}
+  // NamedList("a"=1,"bar"="foo",null=3,null=null) => {"a":1,"bar":"foo","":3,"":null}
   protected void writeNamedListAsMapWithDups(String name, NamedList val) throws IOException {
     int sz = val.size();
     writeMapOpener(sz);
@@ -214,7 +214,7 @@ class JSONWriter extends TextResponseWriter {
   }
 
   // Represents a NamedList directly as an array of JSON objects...
-  // NamedList("a"=1,"b"=2,null=3) => [{"a":1},{"b":2},3]
+  // NamedList("a"=1,"b"=2,null=3,null=null) => [{"a":1},{"b":2},3,null]
   protected void writeNamedListAsArrMap(String name, NamedList val) throws IOException {
     int sz = val.size();
     indent();
@@ -249,7 +249,7 @@ class JSONWriter extends TextResponseWriter {
   }
 
   // Represents a NamedList directly as an array of JSON objects...
-  // NamedList("a"=1,"b"=2,null=3) => [["a",1],["b",2],[null,3]]
+  // NamedList("a"=1,"b"=2,null=3,null=null) => [["a",1],["b",2],[null,3],[null,null]]
   protected void writeNamedListAsArrArr(String name, NamedList val) throws IOException {
     int sz = val.size();
     indent();
@@ -293,7 +293,7 @@ class JSONWriter extends TextResponseWriter {
 
   // Represents a NamedList directly as an array with keys/values
   // interleaved.
-  // NamedList("a"=1,"b"=2,null=3) => ["a",1,"b",2,null,3]
+  // NamedList("a"=1,"b"=2,null=3,null=null) => ["a",1,"b",2,null,3,null,null]
   protected void writeNamedListAsFlat(String name, NamedList val) throws IOException {
     int sz = val.size();
     writeArrayOpener(sz*2);
@@ -676,7 +676,7 @@ class JSONWriter extends TextResponseWriter {
 
 /**
  * Writes NamedLists directly as an array of NamedValuePair JSON objects...
- * NamedList("a"=1,"b"=2,null=3) => [{"name":"a","int":1},{"name":"b","int":2},{"int":3}]
+ * NamedList("a"=1,"b"=2,null=3,null=null) => [{"name":"a","int":1},{"name":"b","int":2},{"int":3},{"null":null}]
  * NamedList("a"=1,"bar"="foo",null=3.4f) => [{"name":"a","int":1},{"name":"bar","str":"foo"},{"float":3.4}]
  */
 class ArrayOfNamedValuePairJSONWriter extends JSONWriter {
