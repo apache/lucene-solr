@@ -170,6 +170,8 @@ Bug Fixes
   (Mark Miller, Michael Sun)
 
 * SOLR-9729: JDBCStream improvements (Kevin Risden)
+
+* SOLR-9626: new Admin UI now also highlights matched terms in the Analysis screen. (Alexandre Rafalovitch)
   
 Other Changes
 ----------------------
