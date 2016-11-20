@@ -65,6 +65,8 @@ New features
 
 * LUCENE-5867: Added BooleanSimilarity. (Robert Muir, Adrien Grand)
 
+* LUCENE-7466: Added AxiomaticSimilarity. (Peilin Yang via Tommaso Teofili)
+
 Bug Fixes
 
 * LUCENE-7547: JapaneseTokenizerFactory was failing to close the
