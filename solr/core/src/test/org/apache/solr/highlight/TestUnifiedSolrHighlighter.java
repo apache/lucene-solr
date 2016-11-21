@@ -17,10 +17,9 @@
 package org.apache.solr.highlight;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.handler.component.HighlightComponent;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /** Tests for the UnifiedHighlighter Solr plugin **/
 public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
@@ -31,10 +30,6 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     
     // test our config is sane, just to be sure:
 
-    //Unified highlighter should be used
-    SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
-    assertTrue("wrong highlighter: " + highlighter.getClass(), highlighter instanceof UnifiedSolrHighlighter);
-    
     // 'text' and 'text3' should have offsets, 'text2' should not
     IndexSchema schema = h.getCore().getLatestSchema();
     assertTrue(schema.getField("text").storeOffsetsWithPositions());
@@ -50,10 +45,19 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertU(adoc("text", "second document", "text2", "second document", "text3", "crappier document", "id", "102"));
     assertU(commit());
   }
-  
+
+  public static SolrQueryRequest req(String... params) {
+    String[] defaultParams = new String[] { "hl.method", "unified"};
+    String[] newParams = new String[params.length + defaultParams.length];
+    System.arraycopy(params, 0, newParams, 0, params.length);
+    System.arraycopy(defaultParams, 0, newParams, params.length, defaultParams.length);
+    return SolrTestCaseJ4.req(newParams);
+
+  }
+
   public void testSimple() {
     assertQ("simplest test", 
-        req("q", "text:document", "sort", "id asc", "hl", "true"),
+        req("q", "text:document", "hl.method", "unified", "sort", "id asc", "hl", "true"),
         "count(//lst[@name='highlighting']/*)=2",
         "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");

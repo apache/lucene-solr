@@ -28,7 +28,4 @@
       <bool name="hl.defaultSummary">false</bool>
     </lst>
   </requestHandler>
-  <searchComponent class="solr.HighlightComponent" name="highlight">
-    <highlighting class="org.apache.solr.highlight.UnifiedSolrHighlighter"/>
-  </searchComponent>
 </config>

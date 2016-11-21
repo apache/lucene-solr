@@ -116,7 +116,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     private static final String[] ZERO_LEN_STR_ARRAY = new String[0];
 
     //TODO move to Solr HighlightParams
-    private static final String METHOD = "hl.method";
+    private static final String OFFSET_SOURCE = "hl.offsetSource";
     private static final String CACHE_FIELD_VAL_CHARS_THRESHOLD = "hl.cacheFieldValCharsThreshold";
 
     @Override
@@ -256,7 +256,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
         @Override
         protected OffsetSource getOffsetSource(String field) {
-            String sourceStr = params.getFieldParam(field, METHOD);
+            String sourceStr = params.getFieldParam(field, OFFSET_SOURCE);
             if (sourceStr != null) {
                 return OffsetSource.valueOf(sourceStr.toUpperCase(Locale.ROOT));
             } else {
