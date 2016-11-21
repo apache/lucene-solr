@@ -51,8 +51,8 @@ import org.apache.lucene.search.TermQuery;
  * are provided so that the generated queries can be customized.
  */
 public class QueryBuilder {
-  private Analyzer analyzer;
-  private boolean enablePositionIncrements = true;
+  protected Analyzer analyzer;
+  protected boolean enablePositionIncrements = true;
   
   /** Creates a new QueryBuilder using the given analyzer. */
   public QueryBuilder(Analyzer analyzer) {
@@ -187,9 +187,12 @@ public class QueryBuilder {
   /**
    * Creates a query from the analysis chain.
    * <p>
-   * Expert: this is more useful for subclasses such as queryparsers. 
+   * Expert: this is more useful for subclasses such as queryparsers.
    * If using this class directly, just use {@link #createBooleanQuery(String, String)}
-   * and {@link #createPhraseQuery(String, String)}
+   * and {@link #createPhraseQuery(String, String)}.  This is a complex method and
+   * it is usually not necessary to override it in a subclass; instead, override
+   * methods like {@link #newBooleanQuery}, etc., if possible.
+   *
    * @param analyzer analyzer used for this query
    * @param operator default boolean operator used for this query
    * @param field field to create queries against
@@ -266,7 +269,7 @@ public class QueryBuilder {
   /** 
    * Creates simple term query from the cached tokenstream contents 
    */
-  private Query analyzeTerm(String field, TokenStream stream) throws IOException {
+  protected Query analyzeTerm(String field, TokenStream stream) throws IOException {
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     
     stream.reset();
@@ -280,7 +283,7 @@ public class QueryBuilder {
   /** 
    * Creates simple boolean query from the cached tokenstream contents 
    */
-  private Query analyzeBoolean(String field, TokenStream stream) throws IOException {
+  protected Query analyzeBoolean(String field, TokenStream stream) throws IOException {
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     
     stream.reset();
@@ -292,7 +295,7 @@ public class QueryBuilder {
     return newSynonymQuery(terms.toArray(new Term[terms.size()]));
   }
 
-  private void add(BooleanQuery.Builder q, List<Term> current, BooleanClause.Occur operator) {
+  protected void add(BooleanQuery.Builder q, List<Term> current, BooleanClause.Occur operator) {
     if (current.isEmpty()) {
       return;
     }
@@ -306,7 +309,7 @@ public class QueryBuilder {
   /** 
    * Creates complex boolean query from the cached tokenstream contents 
    */
-  private Query analyzeMultiBoolean(String field, TokenStream stream, BooleanClause.Occur operator) throws IOException {
+  protected Query analyzeMultiBoolean(String field, TokenStream stream, BooleanClause.Occur operator) throws IOException {
     BooleanQuery.Builder q = newBooleanQuery();
     List<Term> currentQuery = new ArrayList<>();
     
@@ -329,7 +332,7 @@ public class QueryBuilder {
   /** 
    * Creates simple phrase query from the cached tokenstream contents 
    */
-  private Query analyzePhrase(String field, TokenStream stream, int slop) throws IOException {
+  protected Query analyzePhrase(String field, TokenStream stream, int slop) throws IOException {
     PhraseQuery.Builder builder = new PhraseQuery.Builder();
     builder.setSlop(slop);
     
@@ -353,7 +356,7 @@ public class QueryBuilder {
   /** 
    * Creates complex phrase query from the cached tokenstream contents 
    */
-  private Query analyzeMultiPhrase(String field, TokenStream stream, int slop) throws IOException {
+  protected Query analyzeMultiPhrase(String field, TokenStream stream, int slop) throws IOException {
     MultiPhraseQuery.Builder mpqb = newMultiPhraseQueryBuilder();
     mpqb.setSlop(slop);
     
