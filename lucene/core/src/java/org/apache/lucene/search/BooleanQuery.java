@@ -109,7 +109,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
      * @throws TooManyClauses if the new number of clauses exceeds the maximum clause number
      */
     public Builder add(BooleanClause clause) {
-      add(clause.getQuery(), clause.getOccur());
+      if (clauses.size() >= maxClauseCount) {
+        throw new TooManyClauses();
+      }
+      clauses.add(clause);
       return this;
     }
 
@@ -120,11 +123,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
      * @throws TooManyClauses if the new number of clauses exceeds the maximum clause number
      */
     public Builder add(Query query, Occur occur) {
-      if (clauses.size() >= maxClauseCount) {
-        throw new TooManyClauses();
-      }
-      clauses.add(new BooleanClause(query, occur));
-      return this;
+      return add(new BooleanClause(query, occur));
     }
 
     /** Create a new {@link BooleanQuery} based on the parameters that have

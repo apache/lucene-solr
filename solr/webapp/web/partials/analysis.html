@@ -106,7 +106,7 @@ limitations under the License.
                         <td class="details">
                           <table border="0" cellspacing="0" cellpadding="0">
                             <tbody>
-                              <tr class="{{value.name}}" ng-repeat="value in token.keys" ng-show="verbose || value.name=='text'">
+                              <tr class="{{value.name}} {{value.extraclass}}" ng-repeat="value in token.keys" ng-show="verbose || value.name=='text'">
                                 <td>{{value.value}}</td>
                               </tr>
                             </tbody>

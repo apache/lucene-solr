@@ -65,6 +65,8 @@ New features
 
 * LUCENE-5867: Added BooleanSimilarity. (Robert Muir, Adrien Grand)
 
+* LUCENE-7466: Added AxiomaticSimilarity. (Peilin Yang via Tommaso Teofili)
+
 Bug Fixes
 
 * LUCENE-7547: JapaneseTokenizerFactory was failing to close the
@@ -129,6 +131,10 @@ Build
 
 * LUCENE-7387: fix defaultCodec in build.xml to account for the line ending (hossman)
 
+* LUCENE-7543: Make changes-to-html target an offline operation, by moving the
+  Lucene and Solr DOAP RDF files into the Git source repository under
+  dev-tools/doap/ and then pulling release dates from those files, rather than
+  from JIRA. (Mano Kovacs, hossman, Steve Rowe)
 
 ======================= Lucene 6.3.0 =======================
 
