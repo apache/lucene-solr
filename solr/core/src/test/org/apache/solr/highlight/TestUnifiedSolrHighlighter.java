@@ -47,20 +47,29 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
   }
 
   public static SolrQueryRequest req(String... params) {
-    String[] defaultParams = new String[] { "hl.method", "unified"};
-    String[] newParams = new String[params.length + defaultParams.length];
-    System.arraycopy(params, 0, newParams, 0, params.length);
-    System.arraycopy(defaultParams, 0, newParams, params.length, defaultParams.length);
-    return SolrTestCaseJ4.req(newParams);
-
+    return SolrTestCaseJ4.req(params, "hl.method", "unified");
   }
 
   public void testSimple() {
     assertQ("simplest test", 
-        req("q", "text:document", "hl.method", "unified", "sort", "id asc", "hl", "true"),
+        req("q", "text:document", "sort", "id asc", "hl", "true"),
         "count(//lst[@name='highlighting']/*)=2",
         "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");
+  }
+
+  public void testImpossibleOffsetSource() {
+    try {
+      assertQ("impossible offset source",
+          req("q", "text2:document", "hl.offsetSource", "postings", "hl.fl", "text2", "sort", "id asc", "hl", "true"),
+          "count(//lst[@name='highlighting']/*)=2",
+          "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
+          "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");
+      fail("Did not encounter exception for no offsets");
+    } catch (Exception e) {
+      assertTrue("Cause should be illegal argument", e.getCause() instanceof IllegalArgumentException);
+      assertTrue("Should warn no offsets", e.getCause().getMessage().contains("indexed without offsets"));
+    }
   }
 
   public void testMultipleSnippetsReturned() {
