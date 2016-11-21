@@ -1,21 +1,35 @@
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one
+   or more contributor license agreements.  See the NOTICE file
+   distributed with this work for additional information
+   regarding copyright ownership.  The ASF licenses this file
+   to you under the Apache License, Version 2.0 (the
+   "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing,
+   software distributed under the License is distributed on an
+   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+   KIND, either express or implied.  See the License for the
+   specific language governing permissions and limitations
+   under the License.    
+-->
 <?xml version="1.0"?>
-<?xml-stylesheet type="text/xsl"?>
 <rdf:RDF xml:lang="en"
          xmlns="http://usefulinc.com/ns/doap#"
          xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
          xmlns:asfext="http://projects.apache.org/ns/asfext#"
          xmlns:foaf="http://xmlns.com/foaf/0.1/">
 <!--
-  =======================================================================
+  This file's canonical URL is: http://lucene.apache.org/lucene/doap.rdf
 
-   Copyright (c) 2016 The Apache Software Foundation.
-   All rights reserved.
-
-  =======================================================================
+  Note that the canonical URL may redirect to other non-canonical locations.
 -->
   <Project rdf:about="http://lucene.apache.org/core/">
     <created>2001-09-01</created>
-    <license rdf:resource="http://www.apache.org/licenses/LICENSE-2.0.txt"/>
+    <license rdf:resource="http://www.apache.org/licenses/LICENSE-2.0"/>
     <name>Apache Lucene Core</name>
     <homepage rdf:resource="http://lucene.apache.org/core/" />
     <asfext:pmc rdf:resource="http://lucene.apache.org" />
