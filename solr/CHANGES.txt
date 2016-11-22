@@ -142,6 +142,16 @@ Optimizations
 * SOLR-9772: Deriving distributed sort values (fieldSortValues) should reuse
   comparator and only invalidate leafComparator. (John Call via yonik)
 
+* SOLR-9786: FieldType has a new getSetQuery() method that can take a set of terms
+  and create a more efficient query (such as TermsQuery).  The solr query parser has been
+  changed to use this method when appropriate.  The parser also knows when it is being
+  used to parse a filter and will create TermsQueries from large lists of normal terms
+  or numbers, resulting in a query that will execute faster.  This also acts to avoid
+  BooleanQuery maximum clause limit.  Query parsing itself has also been optimized,
+  resulting in less produced garbage and 5-7% better performance.
+  (yonik)
+
+
 Bug Fixes
 ----------------------
 * SOLR-9701: NPE in export handler when "fl" parameter is omitted.

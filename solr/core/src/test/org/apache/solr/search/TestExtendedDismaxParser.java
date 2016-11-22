@@ -1453,11 +1453,11 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       
       @Override
       protected Query getFieldQuery(String field,
-          String val, boolean quoted) throws SyntaxError {
+          String val, boolean quoted, boolean raw) throws SyntaxError {
         if(frequentlyMisspelledWords.contains(val)) {
           return getFuzzyQuery(field, val, 0.75F);
         }
-        return super.getFieldQuery(field, val, quoted);
+        return super.getFieldQuery(field, val, quoted, raw);
       }
     }
   }

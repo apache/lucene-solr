@@ -16,11 +16,20 @@
  */
 package org.apache.solr.search;
 
+import java.util.Locale;
+import java.util.Random;
+
+import org.apache.lucene.queries.TermsQuery;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.parser.QueryParser;
+import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,9 +46,9 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public static void createIndex() {
     String v;
     v = "how now brown cow";
-    assertU(adoc("id", "1", "text", v, "text_np", v));
+    assertU(adoc("id", "1", "text", v, "text_np", v, "foo_i","11"));
     v = "now cow";
-    assertU(adoc("id", "2", "text", v, "text_np", v));
+    assertU(adoc("id", "2", "text", v, "text_np", v, "foo_i","12"));
     assertU(adoc("id", "3", "foo_s", "a ' \" \\ {! ) } ( { z"));  // A value filled with special chars
 
     assertU(adoc("id", "10", "qqq_s", "X"));
@@ -184,6 +193,92 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     req.close();
   }
 
+
+  // automatically use TermsQuery when appropriate
+  @Test
+  public void testAutoTerms() throws Exception {
+    SolrQueryRequest req = req();
+    QParser qParser;
+    Query q,qq;
+
+    // relevance query should not be a filter
+    qParser = QParser.getParser("foo_s:(a b c)", req);
+    q = qParser.getQuery();
+    assertEquals(3, ((BooleanQuery)q).clauses().size());
+
+    // small filter query should still use BooleanQuery
+    if (QueryParser.TERMS_QUERY_THRESHOLD > 3) {
+      qParser = QParser.getParser("foo_s:(a b c)", req);
+      qParser.setIsFilter(true); // this may change in the future
+      q = qParser.getQuery();
+      assertEquals(3, ((BooleanQuery) q).clauses().size());
+    }
+
+    // large relevancy query should use BooleanQuery
+    // TODO: we may decide that string fields shouldn't have relevance in the future... change to a text field w/o a stop filter if so
+    qParser = QParser.getParser("foo_s:(a b c d e f g h i j k l m n o p q r s t u v w x y z)", req);
+    q = qParser.getQuery();
+    assertEquals(26, ((BooleanQuery)q).clauses().size());
+
+    // large filter query should use TermsQuery
+    qParser = QParser.getParser("foo_s:(a b c d e f g h i j k l m n o p q r s t u v w x y z)", req);
+    qParser.setIsFilter(true); // this may change in the future
+    q = qParser.getQuery();
+    assertEquals(26, ((TermsQuery)q).getTermData().size());
+
+    // large numeric filter query should use TermsQuery (for trie fields)
+    qParser = QParser.getParser("foo_i:(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 11)", req);
+    qParser.setIsFilter(true); // this may change in the future
+    q = qParser.getQuery();
+    assertEquals(20, ((TermsQuery)q).getTermData().size());
+
+    // a filter() clause inside a relevancy query should be able to use a TermsQuery
+    qParser = QParser.getParser("foo_s:aaa filter(foo_s:(a b c d e f g h i j k l m n o p q r s t u v w x y z))", req);
+    q = qParser.getQuery();
+    assertEquals(2, ((BooleanQuery)q).clauses().size());
+    qq = ((BooleanQuery)q).clauses().get(0).getQuery();
+    if (qq instanceof TermQuery) {
+      qq = ((BooleanQuery)q).clauses().get(1).getQuery();
+    }
+
+    if (qq instanceof FilterQuery) {
+      qq = ((FilterQuery)qq).getQuery();
+    }
+
+    assertEquals(26, ((TermsQuery)qq).getTermData().size());
+
+    // test mixed boolean query, including quotes (which shouldn't matter)
+    qParser = QParser.getParser("foo_s:(a +aaa b -bbb c d e f bar_s:(qqq www) g h i j k l m n o p q r s t u v w x y z)", req);
+    qParser.setIsFilter(true); // this may change in the future
+    q = qParser.getQuery();
+    assertEquals(4, ((BooleanQuery)q).clauses().size());
+    qq = null;
+    for (BooleanClause clause : ((BooleanQuery)q).clauses()) {
+      qq = clause.getQuery();
+      if (qq instanceof TermsQuery) break;
+    }
+    assertEquals(26, ((TermsQuery)qq).getTermData().size());
+
+    req.close();
+  }
+
+  @Test
+  public void testManyClauses() throws Exception {
+    String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
+    StringBuilder sb = new StringBuilder("id:(");
+    for (int i = 0; i < 1024; i++) { // historically, the max number of boolean clauses defaulted to 1024
+      sb.append('z').append(i).append(' ');
+    }
+    sb.append(a);
+    sb.append(")");
+
+    String q = sb.toString();
+
+    // This will still fail when used as the main query, but will pass in a filter query since TermsQuery can be used.
+    assertJQ(req("q","*:*", "fq", q)
+        ,"/response/numFound==6");
+  }
+
   @Test
   public void testComments() throws Exception {
     assertJQ(req("q", "id:1 id:2 /* *:* */ id:3")
@@ -315,6 +410,105 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         , "/response/docs==[{id:'13'}]"
     );
 
+  }
+
+  // parsing performance test
+  // Run from command line with ant test -Dtestcase=TestSolrQueryParser -Dtestmethod=testParsingPerformance -Dtests.asserts=false 2>/dev/null | grep QPS
+  @Test
+  public void testParsingPerformance() throws Exception {
+    String[] args = {"-queries","100" ,"-iter","1000", "-clauses","100", "-format","term%d", "-seed","0"};
+    args = new String[] {"-queries","1000" ,"-iter","2000", "-clauses","10", "-format","term%d", "-seed","0"};
+    // args = new String[] {"-queries","1000" ,"-iter","1000000000", "-clauses","10", "-format","term%d", "-seed","0"};
+
+    boolean assertOn = false;
+    assert assertOn = true;
+    if (assertOn) {
+      // System.out.println("WARNING! Assertions are enabled!!!! Will only execute small run.  Change with -Dtests.asserts=false");
+      args = new String[]{"-queries","10" ,"-iter","2", "-clauses","20", "-format","term%d", "-seed","0"};
+    }
+
+
+    int iter = 1000;
+    int numQueries = 100;
+    int maxClauses = 5;
+    int maxTerm = 10000000;
+    String format = "term%d";
+    String field = "foo_s";
+    long seed = 0;
+    boolean isFilter = true;
+    boolean rewrite = false;
+
+    String otherStuff = "";
+
+    for (int i = 0; i < args.length; i++) {
+      String a = args[i];
+      if ("-queries".equals(a)) {
+        numQueries = Integer.parseInt(args[++i]);
+      } else if ("-iter".equals(a)) {
+        iter = Integer.parseInt(args[++i]);
+      } else if ("-clauses".equals(a)) {
+        maxClauses = Integer.parseInt(args[++i]);
+      } else if ("-format".equals(a)) {
+        format = args[++i];
+      } else if ("-seed".equals(a)) {
+        seed = Long.parseLong(args[++i]);
+      } else {
+        otherStuff = otherStuff + " " + a;
+      }
+    }
+
+    Random r = new Random(seed);
+
+    String[] queries = new String[numQueries];
+    for (int i = 0; i < queries.length; i++) {
+      StringBuilder sb = new StringBuilder();
+      boolean explicitField = r.nextInt(5) == 0;
+      if (!explicitField) {
+        sb.append(field + ":(");
+      }
+
+      sb.append(otherStuff).append(" ");
+
+      int nClauses = r.nextInt(maxClauses) + 1;  // TODO: query parse can't parse () for some reason???
+
+      for (int c = 0; c<nClauses; c++) {
+        String termString = String.format(Locale.US, format, r.nextInt(maxTerm));
+        if (explicitField) {
+          sb.append(field).append(':');
+        }
+        sb.append(termString);
+        sb.append(' ');
+      }
+
+      if (!explicitField) {
+        sb.append(")");
+      }
+      queries[i] = sb.toString();
+      // System.out.println(queries[i]);
+    }
+
+    SolrQueryRequest req = req();
+
+    long start = System.nanoTime();
+
+    int ret = 0;
+    for (int i=0; i<iter; i++) {
+      for (String qStr : queries) {
+        QParser parser = QParser.getParser(qStr,req);
+        parser.setIsFilter(isFilter);
+        Query q = parser.getQuery();
+        if (rewrite) {
+          // TODO: do rewrite
+        }
+        ret += q.getClass().hashCode(); // use the query somehow
+      }
+    }
+
+    long end = System.nanoTime();
+
+    System.out.println((assertOn ? "WARNING, assertions enabled. " : "") + "ret=" + ret + " Parser QPS:" + ((long)numQueries * iter)*1000000000/(end-start));
+
+    req.close();
   }
 
 }

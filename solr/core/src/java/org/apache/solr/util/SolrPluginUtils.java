@@ -907,7 +907,7 @@ public class SolrPluginUtils {
      * aliases should work)
      */
     @Override
-    protected Query getFieldQuery(String field, String queryText, boolean quoted)
+    protected Query getFieldQuery(String field, String queryText, boolean quoted, boolean raw)
         throws SyntaxError {
 
       if (aliases.containsKey(field)) {
@@ -917,7 +917,7 @@ public class SolrPluginUtils {
         List<Query> disjuncts = new ArrayList<>();
         for (String f : a.fields.keySet()) {
 
-          Query sub = getFieldQuery(f,queryText,quoted);
+          Query sub = getFieldQuery(f,queryText,quoted, false);
           if (null != sub) {
             if (null != a.fields.get(f)) {
               sub = new BoostQuery(sub, a.fields.get(f));
@@ -931,7 +931,7 @@ public class SolrPluginUtils {
 
       } else {
         try {
-          return super.getFieldQuery(field, queryText, quoted);
+          return super.getFieldQuery(field, queryText, quoted, raw);
         } catch (Exception e) {
           return null;
         }
