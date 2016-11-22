@@ -204,7 +204,7 @@ Other Changes
 * SOLR-9609: Change hard-coded keysize from 512 to 1024 (Jeremy Martini via Erick Erickson)
 
 * SOLR-8785: Use Dropwizard Metrics library for core metrics. The copied over code in
-  org.apache.solr.util.stats has been removed. (Jeff Wartes, Christine Poerschke, Kelvin Wong, shalin)
+  org.apache.solr.util.stats has been removed. (Jeff Wartes, Kelvin Wong, Christine Poerschke, shalin)
 
 ==================  6.3.0 ==================
 
