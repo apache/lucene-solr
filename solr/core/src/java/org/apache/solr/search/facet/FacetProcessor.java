@@ -98,6 +98,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
         QParser parser = null;
         try {
           parser = QParser.getParser((String)rawFilter, fcontext.req);
+          parser.setIsFilter(true);
           Query symbolicFilter = parser.getQuery();
           qlist.add(symbolicFilter);
         } catch (SyntaxError syntaxError) {
@@ -134,6 +135,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
             QParser parser = null;
             try {
               parser = QParser.getParser((String) qstring, fcontext.req);
+              parser.setIsFilter(true);
               Query symbolicFilter = parser.getQuery();
               qlist.add(symbolicFilter);
             } catch (SyntaxError syntaxError) {
@@ -237,6 +239,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     Query parentQuery;
     try {
       QParser parser = QParser.getParser(parentStr, fcontext.req);
+      parser.setIsFilter(true);
       parentQuery = parser.getQuery();
     } catch (SyntaxError err) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing block join parent specification: " + parentStr);
