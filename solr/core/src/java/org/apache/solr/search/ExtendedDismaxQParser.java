@@ -1034,8 +1034,8 @@ public class ExtendedDismaxQParser extends QParser {
     }
     
     @Override
-    protected Query getFieldQuery(String field, String val, boolean quoted) throws SyntaxError {
-      this.type = QType.FIELD;
+    protected Query getFieldQuery(String field, String val, boolean quoted, boolean raw) throws SyntaxError {
+      this.type = quoted ? QType.PHRASE : QType.FIELD;
       this.field = field;
       this.val = val;
       this.slop = getPhraseSlop(); // unspecified
@@ -1216,7 +1216,7 @@ public class ExtendedDismaxQParser extends QParser {
         switch (type) {
           case FIELD:  // fallthrough
           case PHRASE:
-            Query query = super.getFieldQuery(field, val, type == QType.PHRASE);
+            Query query = super.getFieldQuery(field, val, type == QType.PHRASE, false);
             // A BooleanQuery is only possible from getFieldQuery if it came from
             // a single whitespace separated term. In this case, check the coordination
             // factor on the query: if it's enabled, that means we aren't a set of synonyms
