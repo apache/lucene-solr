@@ -98,8 +98,10 @@
 # Be sure to update the paths to the correct keystore for your environment
 #SOLR_SSL_KEY_STORE=/home/shalin/work/oss/shalin-lusolr/solr/server/etc/solr-ssl.keystore.jks
 #SOLR_SSL_KEY_STORE_PASSWORD=secret
+#SOLR_SSL_KEY_STORE_TYPE=JKS
 #SOLR_SSL_TRUST_STORE=/home/shalin/work/oss/shalin-lusolr/solr/server/etc/solr-ssl.keystore.jks
 #SOLR_SSL_TRUST_STORE_PASSWORD=secret
+#SOLR_SSL_TRUST_STORE_TYPE=JKS
 #SOLR_SSL_NEED_CLIENT_AUTH=false
 #SOLR_SSL_WANT_CLIENT_AUTH=false
 
@@ -107,8 +109,10 @@
 # otherwise keep them commented and the above values will automatically be set for HTTP clients
 #SOLR_SSL_CLIENT_KEY_STORE=
 #SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
+#SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 #SOLR_SSL_CLIENT_TRUST_STORE=
 #SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
+#SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
 # Settings for authentication
 #SOLR_AUTHENTICATION_CLIENT_CONFIGURER=

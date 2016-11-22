@@ -86,8 +86,10 @@ REM Uncomment to set SSL-related system properties
 REM Be sure to update the paths to the correct keystore for your environment
 REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
 REM set SOLR_SSL_KEY_STORE_PASSWORD=secret
+REM set SOLR_SSL_KEY_STORE_TYPE=JKS
 REM set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
 REM set SOLR_SSL_TRUST_STORE_PASSWORD=secret
+REM set SOLR_SSL_TRUST_STORE_TYPE=JKS
 REM set SOLR_SSL_NEED_CLIENT_AUTH=false
 REM set SOLR_SSL_WANT_CLIENT_AUTH=false
 
@@ -95,8 +97,10 @@ REM Uncomment if you want to override previously defined SSL values for HTTP cli
 REM otherwise keep them commented and the above values will automatically be set for HTTP clients
 REM set SOLR_SSL_CLIENT_KEY_STORE=
 REM set SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
+REM set SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 REM set SOLR_SSL_CLIENT_TRUST_STORE=
-REM setSOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
+REM set SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
+REM set SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
 REM Settings for authentication
 REM set SOLR_AUTHENTICATION_CLIENT_CONFIGURER=
