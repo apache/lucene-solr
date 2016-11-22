@@ -33,7 +33,9 @@ import org.apache.lucene.util.packed.PackedLongValues;
 final class MultiSorter {
   
   /** Does a merge sort of the leaves of the incoming reader, returning {@link DocMap} to map each leaf's
-   *  documents into the merged segment.  The documents for each incoming leaf reader must already be sorted by the same sort! */
+   *  documents into the merged segment.  The documents for each incoming leaf reader must already be sorted by the same sort!
+   *  Returns null if the merge sort is not needed (segments are already in index sort order).
+   **/
   static MergeState.DocMap[] sort(Sort sort, List<CodecReader> readers) throws IOException {
 
     // TODO: optimize if only 1 reader is incoming, though that's a rare case
@@ -73,8 +75,15 @@ final class MultiSorter {
     }
 
     int mappedDocID = 0;
+    int lastReaderIndex = 0;
+    boolean isSorted = true;
     while (queue.size() != 0) {
       LeafAndDocID top = queue.top();
+      if (lastReaderIndex > top.readerIndex) {
+        // merge sort is needed
+        isSorted = false;
+      }
+      lastReaderIndex = top.readerIndex;
       builders[top.readerIndex].add(mappedDocID);
       if (top.liveDocs == null || top.liveDocs.get(top.docID)) {
         mappedDocID++;
@@ -85,6 +94,9 @@ final class MultiSorter {
       } else {
         queue.pop();
       }
+    }
+    if (isSorted) {
+      return null;
     }
 
     MergeState.DocMap[] docMaps = new MergeState.DocMap[leafCount];

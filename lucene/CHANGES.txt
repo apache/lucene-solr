@@ -69,6 +69,11 @@ Improvements
 * LUCENE-7537: Index time sorting now supports multi-valued sorts
   using selectors (MIN, MAX, etc.) (Jim Ferenczi via Mike McCandless)
 
+Optimizations
+
+* LUCENE-7568: Optimize merging when index sorting is used but the
+  index is already sorted (Jim Ferenczi via Mike McCandless)
+
 Other
 
 * LUCENE-7546: Fixed references to benchmark wikipedia data and the Jenkins line-docs file
