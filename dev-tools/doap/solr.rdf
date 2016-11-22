@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
    Licensed to the Apache Software Foundation (ASF) under one
    or more contributor license agreements.  See the NOTICE file
@@ -16,7 +17,6 @@
    specific language governing permissions and limitations
    under the License.    
 -->
-<?xml version="1.0"?>
 <rdf:RDF xml:lang="en"
          xmlns="http://usefulinc.com/ns/doap#"
          xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
