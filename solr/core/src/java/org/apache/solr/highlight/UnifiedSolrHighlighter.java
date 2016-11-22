@@ -47,11 +47,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
-/*
- * TODO: The HighlightComponent should not call rewrite on the query; it should be up to the
- * SolrHighlighter to do if needed.  Furthermore this arrangement is odd -- why are these abstractions separate?
- */
-
 /**
  * Highlighter impl that uses {@link UnifiedHighlighter}
  * <p>
@@ -74,6 +69,11 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * &lt;str name="hl.bs.type"&gt;SENTENCE&lt;/str&gt;
  * &lt;int name="hl.maxAnalyzedChars"&gt;10000&lt;/int&gt;
  * &lt;bool name="hl.highlightMultiTerm"&gt;true&lt;/bool&gt;
+ * &lt;bool name="hl.highlightMultiTerm"&gt;true&lt;/bool&gt;
+ * &lt;bool name="hl.usePhraseHighlighter"&gt;true;&lt;/bool&gt;
+ * &lt;int name="hl.cacheFieldValCharsThreshold"&gt;524288&lt;/int&gt;
+ * &lt;str name="hl.method"&gt;null&lt;/str&gt;
+ * &lt;str name="hl.offsetSource"&gt;postings&lt;/str&gt;
  * &lt;/lst&gt;
  * &lt;/requestHandler&gt;
  * </pre>
@@ -102,11 +102,13 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * <li>hl.bs.language (string) specifies language code for BreakIterator. default is empty string (root locale)
  * <li>hl.bs.country (string) specifies country code for BreakIterator. default is empty string (root locale)
  * <li>hl.bs.variant (string) specifies country code for BreakIterator. default is empty string (root locale)
- * <li>hl.maxAnalyzedChars specifies how many characters at most will be processed in a document for any one field.
- * <li>hl.highlightMultiTerm enables highlighting for range/wildcard/fuzzy/prefix queries at some cost. default is true
+ * <li>hl.maxAnalyzedChars (int) specifies how many characters at most will be processed in a document for any one field.
+ * <li>hl.highlightMultiTerm (bool) enables highlighting for range/wildcard/fuzzy/prefix queries at some cost. default is true
  * <li>hl.usePhraseHighlighter (bool) enables phrase highlighting. default is true
+ * <li>hl.cacheFieldValCharsThreshold (int) controls how many characters from a field are cached. default is 524288 (1MB in 2 byte chars)
+ * <li>hl.method (string) determines which highlighter to invoke {@see HighlightComponent} default is null
+ * <li>hl.offsetSource (string) specifies which offset source to use, prefers postings, but will use what's available if not specified
  * </ul>
- * TODO add hl.method, hl.cacheFieldValCharsThreshold
  *
  * @lucene.experimental
  */
@@ -115,7 +117,6 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     protected static final String SNIPPET_SEPARATOR = "\u0000";
     private static final String[] ZERO_LEN_STR_ARRAY = new String[0];
 
-    //TODO move to Solr HighlightParams
     private static final String OFFSET_SOURCE = "hl.offsetSource";
     private static final String CACHE_FIELD_VAL_CHARS_THRESHOLD = "hl.cacheFieldValCharsThreshold";
 
