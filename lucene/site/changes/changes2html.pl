@@ -23,7 +23,6 @@
 
 use strict;
 use warnings;
-use XML::Simple;
 
 my $jira_url_prefix = 'http://issues.apache.org/jira/browse/';
 my $github_pull_request_prefix = 'https://github.com/apache/lucene-solr/pull/';
@@ -823,26 +822,33 @@ sub get_release_date {
 # Pulls release dates from the project DOAP file.
 #
 sub setup_release_dates {
-  my %release_dates;
+  my %release_dates = ();
   my $file = shift;
+print STDERR "file: $file\n";
+  open(FILE, "<$file") || die "could not open $file: $!";
+  my $version_list = <FILE>;
+  my $created_list = <FILE>;
+  close(FILE);
 
-  my $project_info = XMLin($file)->{Project};
-  my $version;
+  $version_list =~ s/^\s+|\s+$//g;
+  my @versions = split /\s*,\s*/, $version_list;
+  $created_list =~ s/^\s+|\s+$//g;
+  my @created = split /\s*,\s*/, $created_list; 
+
+  if (scalar(@versions) != scalar(@created)) {
+    die $file . " contains" . scalar(@versions) . " versions but " . scalar(@created) . " creation dates.";
+  }
   my $date;
-  for my $release (@{$project_info->{release}}) {
-    $version = $release->{Version};
-    if ($version->{created}) {
-      $date = normalize_date($version->{created});
-      my $version_name = $version->{revision};
-      $release_dates{$version->{revision}} = $date;
-      if ($version_name =~ /^([1-9]\d*\.\d+)([^.0-9].*|$)/) {
-        my $padded_version_name = "$1.0$2";             # Alias w/trailing ".0"
-        $release_dates{$padded_version_name} = $date;
-      } elsif ($version_name =~ /\.0(?=[^.0-9]|$)/) {
-        my $trimmed_version_name = $version_name;
-        $trimmed_version_name =~ s/\.0(?=[^.0-9]|$)//;  # Alias w/o trailing ".0"
-        $release_dates{$trimmed_version_name} = $date;
-      }
+  for my $pos (0..$#versions) {
+    $date = normalize_date($created[$pos]);
+    $release_dates{$versions[$pos]} = $date;
+    if ($versions[$pos] =~ /^([1-9]\d*\.\d+)([^.0-9].*|$)/) {
+      my $padded_version_name = "$1.0$2";             # Alias w/trailing ".0"
+      $release_dates{$padded_version_name} = $date;
+    } elsif ($versions[$pos] =~ /\.0(?=[^.0-9]|$)/) {
+      my $trimmed_version_name = $versions[$pos];
+      $trimmed_version_name =~ s/\.0(?=[^.0-9]|$)//;  # Alias w/o trailing ".0"
+      $release_dates{$trimmed_version_name} = $date;
     }
   }
   return %release_dates;
