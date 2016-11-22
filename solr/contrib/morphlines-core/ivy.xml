@@ -34,8 +34,8 @@
 
     <dependency org="org.kitesdk" name="kite-morphlines-avro" rev="${/org.kitesdk/kite-morphlines-avro}" conf="compile" />
     
-    <dependency org="com.codahale.metrics" name="metrics-core" rev="${/com.codahale.metrics/metrics-core}" conf="compile" />
-    <dependency org="com.codahale.metrics" name="metrics-healthchecks" rev="${/com.codahale.metrics/metrics-healthchecks}" conf="compile" />
+    <dependency org="io.dropwizard.metrics" name="metrics-core" rev="${/io.dropwizard.metrics/metrics-core}" conf="compile" />
+    <dependency org="io.dropwizard.metrics" name="metrics-healthchecks" rev="${/io.dropwizard.metrics/metrics-healthchecks}" conf="compile" />
     <dependency org="com.typesafe" name="config" rev="${/com.typesafe/config}" conf="compile" />
     
     <!-- Test Dependencies -->
