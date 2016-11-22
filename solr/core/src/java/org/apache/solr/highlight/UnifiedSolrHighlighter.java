@@ -57,6 +57,8 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * &lt;int name="hl.snippets"&gt;1&lt;/int&gt;
  * &lt;str name="hl.tag.pre"&gt;&amp;lt;em&amp;gt;&lt;/str&gt;
  * &lt;str name="hl.tag.post"&gt;&amp;lt;/em&amp;gt;&lt;/str&gt;
+ * &lt;str name="hl.simple.pre"&gt;&amp;lt;em&amp;gt;&lt;/str&gt;
+ * &lt;str name="hl.simple.post"&gt;&amp;lt;/em&amp;gt;&lt;/str&gt;
  * &lt;str name="hl.tag.ellipsis"&gt;... &lt;/str&gt;
  * &lt;bool name="hl.defaultSummary"&gt;true&lt;/bool&gt;
  * &lt;str name="hl.encoder"&gt;simple&lt;/str&gt;
@@ -91,6 +93,8 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * <li>hl.snippets (int) specifies how many snippets to return.
  * <li>hl.tag.pre (string) specifies text which appears before a highlighted term.
  * <li>hl.tag.post (string) specifies text which appears after a highlighted term.
+ * <li>hl.simple.pre (string) specifies text which appears before a highlighted term. (prefer hl.tag.pre)
+ * <li>hl.simple.post (string) specifies text which appears before a highlighted term. (prefer hl.tag.post)
  * <li>hl.tag.ellipsis (string) specifies text which joins non-adjacent passages. The default is to retain each
  * value in a list without joining them.
  * <li>hl.defaultSummary (bool) specifies if a field should have a default summary of the leading text.
