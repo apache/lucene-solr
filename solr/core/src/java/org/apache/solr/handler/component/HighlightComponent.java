@@ -143,7 +143,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
 
     if (rb.doHighlights) {
       SolrQueryRequest req = rb.req;
-      SolrParams params = normalizeParameters(req.getParams());
+      SolrParams params = req.getParams();
 
       SolrHighlighter highlighter = overriddenHighlighter(params);
 
@@ -183,20 +183,6 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
         }
       }
     }
-  }
-
-  /**
-   * Normalizes parameters between highlighters
-   */
-  private SolrParams normalizeParameters(SolrParams params) {
-    String simplePre = params.get(HighlightParams.SIMPLE_PRE);
-    String simplePost = params.get(HighlightParams.SIMPLE_POST);
-    if (simplePre != null || simplePost != null) {
-      ModifiableSolrParams modifiableParams = new ModifiableSolrParams(params);
-      modifiableParams.add(HighlightParams.TAG_PRE, simplePre);
-      modifiableParams.add(HighlightParams.TAG_POST, simplePost);
-    }
-    return params;
   }
 
   private SolrHighlighter overriddenHighlighter(SolrParams params) {

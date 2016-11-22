@@ -276,8 +276,13 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
         @Override
         protected PassageFormatter getFormatter(String fieldName) {
-            String preTag = params.getFieldParam(fieldName, HighlightParams.TAG_PRE, "<em>");
-            String postTag = params.getFieldParam(fieldName, HighlightParams.TAG_POST, "</em>");
+            String preTag = params.getFieldParam(fieldName, HighlightParams.TAG_PRE,
+                params.getFieldParam(fieldName, HighlightParams.SIMPLE_PRE, "<em>")
+            );
+
+            String postTag = params.getFieldParam(fieldName, HighlightParams.TAG_POST,
+                params.getFieldParam(fieldName, HighlightParams.SIMPLE_POST, "</em>")
+            );
             String ellipsis = params.getFieldParam(fieldName, HighlightParams.TAG_ELLIPSIS, SNIPPET_SEPARATOR);
             String encoder = params.getFieldParam(fieldName, HighlightParams.ENCODER, "simple");
             return new DefaultPassageFormatter(preTag, postTag, ellipsis, "html".equals(encoder));

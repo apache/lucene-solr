@@ -175,7 +175,23 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='[document] one'",
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second [document]'");
   }
-  
+
+  public void testUsingSimplePrePostTags() {
+    assertQ("different pre/post tags",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.simple.pre", "[", "hl.simple.post", "]"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='[document] one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second [document]'");
+  }
+
+  public void testUsingSimplePrePostTagsPerField() {
+    assertQ("different pre/post tags",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "f.text.hl.simple.pre", "[", "f.text.hl.simple.post", "]"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='[document] one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second [document]'");
+  }
+
   public void testTagsPerField() {
     assertQ("highlighting text and text3", 
         req("q", "text:document text3:document", "sort", "id asc", "hl", "true", "hl.fl", "text,text3", "f.text3.hl.tag.pre", "[", "f.text3.hl.tag.post", "]"),
