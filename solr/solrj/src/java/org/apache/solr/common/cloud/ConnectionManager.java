@@ -163,6 +163,8 @@ public class ConnectionManager implements Watcher {
                     closeKeeper(keeper);
                     throw new RuntimeException(t);
                   }
+
+                  client.onConnect();
   
                   if (onReconnect != null) {
                     onReconnect.command();
