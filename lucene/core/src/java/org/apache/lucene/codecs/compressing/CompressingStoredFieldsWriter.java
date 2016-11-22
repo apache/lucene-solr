@@ -486,7 +486,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   @Override
   public int merge(MergeState mergeState) throws IOException {
-    if (mergeState.segmentInfo.getIndexSort() != null) {
+    if (mergeState.needsIndexSort) {
       // TODO: can we gain back some optos even if index is sorted?  E.g. if sort results in large chunks of contiguous docs from one sub
       // being copied over...?
       return super.merge(mergeState);

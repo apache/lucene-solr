@@ -117,6 +117,11 @@ Improvements
   control how text is analyzed and converted into a query (Matt Weber
   via Mike McCandless)
 
+Optimizations
+
+* LUCENE-7568: Optimize merging when index sorting is used but the
+  index is already sorted (Jim Ferenczi via Mike McCandless)
+
 Other
 
 * LUCENE-7546: Fixed references to benchmark wikipedia data and the Jenkins line-docs file

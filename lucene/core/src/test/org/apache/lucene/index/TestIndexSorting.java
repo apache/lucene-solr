@@ -28,6 +28,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -37,14 +38,19 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatDocValuesField;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -79,6 +85,182 @@ import org.apache.lucene.util.TestUtil;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 public class TestIndexSorting extends LuceneTestCase {
+  static class AssertingNeedsIndexSortCodec extends FilterCodec {
+    boolean needsIndexSort;
+    int numCalls;
+
+    AssertingNeedsIndexSortCodec() {
+      super(TestUtil.getDefaultCodec().getName(), TestUtil.getDefaultCodec());
+    }
+
+    @Override
+    public PointsFormat pointsFormat() {
+      final PointsFormat pf = delegate.pointsFormat();
+      return new PointsFormat() {
+        @Override
+        public PointsWriter fieldsWriter(SegmentWriteState state) throws IOException {
+          final PointsWriter writer = pf.fieldsWriter(state);
+          return new PointsWriter() {
+            @Override
+            public void merge(MergeState mergeState) throws IOException {
+              assertEquals(needsIndexSort, mergeState.needsIndexSort);
+              ++ numCalls;
+              writer.merge(mergeState);
+            }
+
+            @Override
+            public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
+              writer.writeField(fieldInfo, values);
+            }
+
+            @Override
+            public void finish() throws IOException {
+              writer.finish();
+            }
+
+            @Override
+            public void close() throws IOException {
+              writer.close();
+            }
+          };
+        }
+
+        @Override
+        public PointsReader fieldsReader(SegmentReadState state) throws IOException {
+          return pf.fieldsReader(state);
+        }
+      };
+    }
+  }
+
+  private static void assertNeedsIndexSortMerge(SortField sortField, Consumer<Document> defaultValueConsumer, Consumer<Document> randomValueConsumer) throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    AssertingNeedsIndexSortCodec codec = new AssertingNeedsIndexSortCodec();
+    iwc.setCodec(codec);
+    Sort indexSort = new Sort(sortField,
+        new SortField("id", SortField.Type.INT));
+    iwc.setIndexSort(indexSort);
+    iwc.setMergePolicy(newLogMergePolicy());
+
+    // add already sorted documents
+    codec.numCalls = 0;
+    codec.needsIndexSort = false;
+    IndexWriter w = new IndexWriter(dir, iwc);
+    boolean withValues = random().nextBoolean();
+    for (int i = 100; i < 200; i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", Integer.toString(i), Store.YES));
+      doc.add(new NumericDocValuesField("id", i));
+      doc.add(new IntPoint("point", random().nextInt()));
+      if (withValues) {
+        defaultValueConsumer.accept(doc);
+      }
+      w.addDocument(doc);
+      if (i % 10 == 0) {
+        w.commit();
+      }
+    }
+    Set<Integer> deletedDocs = new HashSet<> ();
+    int num = random().nextInt(20);
+    for (int i = 0; i < num; i++) {
+      int nextDoc = random().nextInt(100);
+      w.deleteDocuments(new Term("id", Integer.toString(nextDoc)));
+      deletedDocs.add(nextDoc);
+    }
+    w.commit();
+    w.waitForMerges();
+    w.forceMerge(1);
+    assertTrue(codec.numCalls > 0);
+
+
+    // merge sort is needed
+    codec.numCalls = 0;
+    codec.needsIndexSort = true;
+    for (int i = 10; i >= 0; i--) {
+      Document doc = new Document();
+      doc.add(new StringField("id", Integer.toString(i), Store.YES));
+      doc.add(new NumericDocValuesField("id", i));
+      doc.add(new IntPoint("point", random().nextInt()));
+      if (withValues) {
+        defaultValueConsumer.accept(doc);
+      }
+      w.addDocument(doc);
+      w.commit();
+    }
+    w.commit();
+    w.waitForMerges();
+    w.forceMerge(1);
+    assertTrue(codec.numCalls > 0);
+
+    // segment sort is needed
+    codec.needsIndexSort = true;
+    codec.numCalls = 0;
+    for (int i = 200; i < 300; i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", Integer.toString(i), Store.YES));
+      doc.add(new NumericDocValuesField("id", i));
+      doc.add(new IntPoint("point", random().nextInt()));
+      randomValueConsumer.accept(doc);
+      w.addDocument(doc);
+      if (i % 10 == 0) {
+        w.commit();
+      }
+    }
+    w.commit();
+    w.waitForMerges();
+    w.forceMerge(1);
+    assertTrue(codec.numCalls > 0);
+
+    w.close();
+    dir.close();
+  }
+
+  public void testNumericAlreadySorted() throws Exception {
+    assertNeedsIndexSortMerge(new SortField("foo", SortField.Type.INT),
+        (doc) -> doc.add(new NumericDocValuesField("foo", 0)),
+        (doc) -> doc.add(new NumericDocValuesField("foo", random().nextInt())));
+  }
+
+  public void testStringAlreadySorted() throws Exception {
+    assertNeedsIndexSortMerge(new SortField("foo", SortField.Type.STRING),
+        (doc) -> doc.add(new SortedDocValuesField("foo", new BytesRef("default"))),
+        (doc) -> doc.add(new SortedDocValuesField("foo", TestUtil.randomBinaryTerm(random()))));
+  }
+
+  public void testMultiValuedNumericAlreadySorted() throws Exception {
+    assertNeedsIndexSortMerge(new SortedNumericSortField("foo", SortField.Type.INT),
+        (doc) -> {
+          doc.add(new SortedNumericDocValuesField("foo", Integer.MIN_VALUE));
+          int num = random().nextInt(5);
+          for (int j = 0; j < num; j++) {
+            doc.add(new SortedNumericDocValuesField("foo", random().nextInt()));
+          }
+        },
+        (doc) -> {
+          int num = random().nextInt(5);
+          for (int j = 0; j < num; j++) {
+            doc.add(new SortedNumericDocValuesField("foo", random().nextInt()));
+          }
+        });
+  }
+
+  public void testMultiValuedStringAlreadySorted() throws Exception {
+    assertNeedsIndexSortMerge(new SortedSetSortField("foo", false),
+        (doc) -> {
+          doc.add(new SortedSetDocValuesField("foo", new BytesRef("")));
+          int num = random().nextInt(5);
+          for (int j = 0; j < num; j++) {
+            doc.add(new SortedSetDocValuesField("foo", TestUtil.randomBinaryTerm(random())));
+          }
+        },
+        (doc) -> {
+          int num = random().nextInt(5);
+          for (int j = 0; j < num; j++) {
+            doc.add(new SortedSetDocValuesField("foo",  TestUtil.randomBinaryTerm(random())));
+          }
+        });
+  }
 
   public void testBasicString() throws Exception {
     Directory dir = newDirectory();
