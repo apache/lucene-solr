@@ -18,8 +18,11 @@ package org.apache.solr.handler;
 
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.HashMap;
+import java.util.Map;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -29,6 +32,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -43,7 +47,7 @@ import static org.apache.solr.core.RequestParams.USEPARAM;
 /**
  *
  */
-public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoMBean, NestedRequestHandler {
+public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoMBean, SolrMetricProducer, NestedRequestHandler {
 
   protected NamedList initArgs = null;
   protected SolrParams defaults;
@@ -52,11 +56,11 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   protected boolean httpCaching = true;
 
   // Statistics
-  private final LongAdder numRequests = new LongAdder();
-  private final LongAdder numServerErrors = new LongAdder();
-  private final LongAdder numClientErrors = new LongAdder();
-  private final LongAdder numTimeouts = new LongAdder();
-  private final Timer requestTimes = new Timer();
+  private final Meter numErrors = new Meter();
+  private final Meter numServerErrors = new Meter();
+  private final Meter numClientErrors = new Meter();
+  private final Meter numTimeouts = new Meter();
+  private final Timer requestTimes = new Timer(); // `requestTimes` doubles as a meter for requests
 
   private final long handlerStart;
 
@@ -142,7 +146,6 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    numRequests.increment();
     Timer.Context timer = requestTimes.time();
     try {
       if(pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM)) req.getContext().put(USEPARAM,pluginInfo.attributes.get(USEPARAM));
@@ -156,7 +159,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         Object partialResults = header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
         boolean timedOut = partialResults == null ? false : (Boolean)partialResults;
         if( timedOut ) {
-          numTimeouts.increment();
+          numTimeouts.mark();
           rsp.setHttpCaching(false);
         }
       }
@@ -182,10 +185,11 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       if (incrementErrors) {
         SolrException.log(log, e);
 
+        numErrors.mark();
         if (isServerError) {
-          numServerErrors.increment();
+          numServerErrors.mark();
         } else {
-          numClientErrors.increment();
+          numClientErrors.mark();
         }
       }
     }
@@ -268,15 +272,25 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   public NamedList<Object> getStatistics() {
     NamedList<Object> lst = new SimpleOrderedMap<>();
     lst.add("handlerStart",handlerStart);
-    lst.add("requests", numRequests.longValue());
-    lst.add("errors", numServerErrors.longValue() + numClientErrors.longValue());
-    lst.add("serverErrors", numServerErrors.longValue());
-    lst.add("clientErrors", numClientErrors.longValue());
-    lst.add("timeouts", numTimeouts.longValue());
+    lst.add("requests", requestTimes.getCount());
+    lst.add("errors", numErrors.getCount());
+    lst.add("serverErrors", numServerErrors.getCount());
+    lst.add("clientErrors", numClientErrors.getCount());
+    lst.add("timeouts", numTimeouts.getCount());
     TimerUtils.addMetrics(lst, requestTimes);
     return lst;
   }
 
+  @Override
+  public Map<String, Metric> getMetrics() {
+    HashMap<String, Metric> metrics = new HashMap<>(5, 1.0f);
+    metrics.put("errors", numErrors);
+    metrics.put("serverErrors", numServerErrors);
+    metrics.put("clientErrors", numClientErrors);
+    metrics.put("timeouts", numTimeouts);
+    metrics.put("requests", requestTimes);
+    return metrics;
+  }
 }
 
 
