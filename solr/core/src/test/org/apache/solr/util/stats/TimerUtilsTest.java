@@ -43,9 +43,9 @@ public class TimerUtilsTest extends SolrTestCaseJ4 {
     assertEquals(lst.size(), 9);
     final Snapshot snapshot = timer.getSnapshot();
     // cannot test avgRequestsPerMinute directly because mean rate changes as time increases!
-    // assertEquals(lst.get("avgRequestsPerMinute"), TimerUtils.convertRateToPerMinute(timer.getMeanRate()));
-    assertEquals(lst.get("5minRateRequestsPerMinute"), TimerUtils.convertRateToPerMinute(timer.getFiveMinuteRate()));
-    assertEquals(lst.get("15minRateRequestsPerMinute"), TimerUtils.convertRateToPerMinute(timer.getFifteenMinuteRate()));
+    // assertEquals(lst.get("avgRequestsPerSecond"), timer.getMeanRate());
+    assertEquals(lst.get("5minRateRequestsPerSecond"), timer.getFiveMinuteRate());
+    assertEquals(lst.get("15minRateRequestsPerSecond"), timer.getFifteenMinuteRate());
     assertEquals(lst.get("avgTimePerRequest"), TimerUtils.nsToMs(snapshot.getMean()));
     assertEquals(lst.get("medianRequestTime"), TimerUtils.nsToMs(snapshot.getMedian()));
     assertEquals(lst.get("75thPcRequestTime"), TimerUtils.nsToMs(snapshot.get75thPercentile()));

@@ -27,8 +27,6 @@ import org.apache.solr.common.util.NamedList;
  */
 public class TimerUtils {
 
-  private static final double RATE_FACTOR = TimeUnit.MINUTES.toSeconds(1);
-
   /**
    * Adds metrics from a Timer to a NamedList, using well-known names.
    * @param lst The NamedList to add the metrics data to
@@ -36,9 +34,9 @@ public class TimerUtils {
    */
   public static void addMetrics(NamedList<Object> lst, Timer timer) {
     Snapshot snapshot = timer.getSnapshot();
-    lst.add("avgRequestsPerMinute", convertRateToPerMinute(timer.getMeanRate()));
-    lst.add("5minRateRequestsPerMinute", convertRateToPerMinute(timer.getFiveMinuteRate()));
-    lst.add("15minRateRequestsPerMinute", convertRateToPerMinute(timer.getFifteenMinuteRate()));
+    lst.add("avgRequestsPerSecond", timer.getMeanRate());
+    lst.add("5minRateRequestsPerSecond", timer.getFiveMinuteRate());
+    lst.add("15minRateRequestsPerSecond", timer.getFifteenMinuteRate());
     lst.add("avgTimePerRequest", nsToMs(snapshot.getMean()));
     lst.add("medianRequestTime", nsToMs(snapshot.getMedian()));
     lst.add("75thPcRequestTime", nsToMs(snapshot.get75thPercentile()));
@@ -55,10 +53,6 @@ public class TimerUtils {
    */
   static double nsToMs(double ns) {
     return ns / TimeUnit.MILLISECONDS.toNanos(1);
-  }
-
-  static double convertRateToPerMinute(double rate) {
-    return rate * RATE_FACTOR;
   }
 
 }
