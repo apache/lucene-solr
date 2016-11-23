@@ -88,11 +88,15 @@ Upgrade Notes
 
 * SOLR-8785: Metrics related classes in org.apache.solr.util.stats have been removed in favor of
   the dropwizard metrics library. Any custom plugins using these classes should be changed to use
-  the equivalent classes from the metrics library. As part of these changes, the "totalTime" metric
-  exposed by Overseer Status API in previous versions has been removed because it is no longer supported
-  by the metrics library. Also, the metrics "75thPctlRequestTime", "95thPctlRequestTime", "99thPctlRequestTime"
-  and "999thPctlRequestTime" in Overseer Status API have been renamed to "75thPcRequestTime", "95thPcRequestTime"
-  and so on for consistency with stats output in other parts of Solr.
+  the equivalent classes from the metrics library.
+  As part of this, the following changes were made to the output of Overseer Status API:
+  * The "totalTime" metric has been removed because it is no longer supported
+  * The metrics "75thPctlRequestTime", "95thPctlRequestTime", "99thPctlRequestTime"
+    and "999thPctlRequestTime" in Overseer Status API have been renamed to "75thPcRequestTime", "95thPcRequestTime"
+    and so on for consistency with stats output in other parts of Solr.
+  * The metrics "avgRequestsPerMinute", "5minRateRequestsPerMinute" and "15minRateRequestsPerMinute" have been
+    replaced by corresponding per-second rates viz. "avgRequestsPerSecond", "5minRateRequestsPerSecond"
+    and "15minRateRequestsPerSecond" for consistency with stats output in other parts of Solr.
 
 New Features
 ----------------------
