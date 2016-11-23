@@ -635,14 +635,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     return solr.request(qr);
   }
 
-  protected int getReplicaPort(Replica replica) {
-    String replicaNode = replica.getNodeName();    
-    String tmp = replicaNode.substring(replicaNode.indexOf(':')+1);
-    if (tmp.indexOf('_') != -1)
-      tmp = tmp.substring(0,tmp.indexOf('_'));
-    return Integer.parseInt(tmp);    
-  }
-
   protected void waitToSeeReplicasActive(String testCollectionName, String shardId, Set<String> replicasToCheck, int maxWaitSecs) throws Exception {
     final RTimer timer = new RTimer();
 

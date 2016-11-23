@@ -23,6 +23,7 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,7 +31,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -130,7 +131,8 @@ public class ZkStateReader implements Closeable {
   /** Collections with format2 state.json, not "interesting" and not actively watched. */
   private final ConcurrentHashMap<String, LazyCollectionRef> lazyCollectionStates = new ConcurrentHashMap<>();
 
-  private volatile Set<String> liveNodes = emptySet();
+  /** visibility relaxed for testing **/
+  protected volatile Map<String, String> liveNodes = emptyMap();
 
   private volatile Map<String, Object> clusterProperties = Collections.emptyMap();
 
@@ -483,7 +485,7 @@ public class ZkStateReader implements Closeable {
    */
   private void constructState(Set<String> changedCollections) {
 
-    Set<String> liveNodes = this.liveNodes; // volatile read
+    Set<String> liveNodes = this.liveNodes.keySet(); // volatile read
 
     // Legacy clusterstate is authoritative, for backwards compatibility.
     // To move a collection's state to format2, first create the new state2 format node, then remove legacy entry.
@@ -651,25 +653,35 @@ public class ZkStateReader implements Closeable {
   // We don't get a Stat or track versions on getChildren() calls, so force linearization.
   private final Object refreshLiveNodesLock = new Object();
   // Ensures that only the latest getChildren fetch gets applied.
-  private final AtomicReference<Set<String>> lastFetchedLiveNodes = new AtomicReference<>();
+  private final AtomicReference<Map<String, String>> lastFetchedLiveNodes = new AtomicReference<>();
 
   /**
    * Refresh live_nodes.
    */
   private void refreshLiveNodes(Watcher watcher) throws KeeperException, InterruptedException {
     synchronized (refreshLiveNodesLock) {
-      Set<String> newLiveNodes;
+      Map<String, String> newLiveNodes;
       try {
         List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, true);
-        newLiveNodes = new HashSet<>(nodeList);
+        newLiveNodes = new HashMap<String, String>();
+        for(String c: nodeList) {
+          byte[] ndb = zkClient.getData(LIVE_NODES_ZKNODE + "/" + c , null, null, false);
+          String nodeData;
+          if(null == ndb || ndb.length == 0) {
+            nodeData = c;
+          } else {
+            nodeData = new String(ndb);
+          }
+          newLiveNodes.put(c, nodeData);
+        }
       } catch (KeeperException.NoNodeException e) {
-        newLiveNodes = emptySet();
+        newLiveNodes = emptyMap();
       }
       lastFetchedLiveNodes.set(newLiveNodes);
     }
 
     // Can't lock getUpdateLock() until we release the other, it would cause deadlock.
-    Set<String> oldLiveNodes, newLiveNodes;
+    Map<String, String> oldLiveNodes, newLiveNodes;
     synchronized (getUpdateLock()) {
       newLiveNodes = lastFetchedLiveNodes.getAndSet(null);
       if (newLiveNodes == null) {
@@ -680,14 +692,14 @@ public class ZkStateReader implements Closeable {
       oldLiveNodes = this.liveNodes;
       this.liveNodes = newLiveNodes;
       if (clusterState != null) {
-        clusterState.setLiveNodes(newLiveNodes);
+        clusterState.setLiveNodes(newLiveNodes.keySet());
       }
     }
     if (oldLiveNodes.size() != newLiveNodes.size()) {
       LOG.info("Updated live nodes from ZooKeeper... ({}) -> ({})", oldLiveNodes.size(), newLiveNodes.size());
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Updated live nodes from ZooKeeper... {} -> {}", new TreeSet<>(oldLiveNodes), new TreeSet<>(newLiveNodes));
+      LOG.debug("Updated live nodes from ZooKeeper... {} -> {}", new TreeMap<>(oldLiveNodes), new TreeMap<>(newLiveNodes));
     }
   }
 
@@ -918,18 +930,41 @@ public class ZkStateReader implements Closeable {
   
   /**
    * Returns the baseURL corresponding to a given node's nodeName --
+   * NOTE: THIS NOW REQUIRES THAT THE nodeName EXISTS in liveNodes in the cluster.
+   * @lucene.experimental
+   */
+  public String getBaseUrlForNodeName(final String nodeName) {
+    final String genericNodeName = this.liveNodes.get(nodeName); //volatile read
+    
+    if(null == genericNodeName) {
+      //TODO how to handle this?
+      //In here means that someone might be using this method to convert
+      //<host>:<port>_<context> url to a base url as this method used to do
+      //
+      //should we fallback to original behavior or throw an exception?
+      //when parsing the liveNodes map the key will still be
+      //genericNodeName -> genericNodeName if no data value is found in liveNodes
+      //return getBaseUrlFromGenericNodeName(nodeName);
+      throw new IllegalArgumentException(String.format("nodeName: '%s' is not one of %s", nodeName, this.liveNodes.keySet()));
+    }
+    
+    return getBaseUrlFromGenericNodeName(genericNodeName);   
+  }
+  
+  /**
+   * Returns the baseURL corresponding to a given node's nodeName --
    * NOTE: does not (currently) imply that the nodeName (or resulting 
    * baseURL) exists in the cluster.
    * @lucene.experimental
    */
-  public String getBaseUrlForNodeName(final String nodeName) {
-    final int _offset = nodeName.indexOf("_");
+  public String getBaseUrlFromGenericNodeName(final String genericNodeName) {
+    final int _offset = genericNodeName.indexOf("_");
     if (_offset < 0) {
-      throw new IllegalArgumentException("nodeName does not contain expected '_' seperator: " + nodeName);
+      throw new IllegalArgumentException("nodeName does not contain expected '_' seperator: " + genericNodeName);
     }
-    final String hostAndPort = nodeName.substring(0,_offset);
+    final String hostAndPort = genericNodeName.substring(0,_offset);
     try {
-      final String path = URLDecoder.decode(nodeName.substring(1+_offset), "UTF-8");
+      final String path = URLDecoder.decode(genericNodeName.substring(1+_offset), "UTF-8");
       String urlScheme = getClusterProperty(URL_SCHEME, "http");
       return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
     } catch (UnsupportedEncodingException e) {
@@ -958,7 +993,7 @@ public class ZkStateReader implements Closeable {
         return;
       }
 
-      Set<String> liveNodes = ZkStateReader.this.liveNodes;
+      Set<String> liveNodes = ZkStateReader.this.liveNodes.keySet();
       LOG.info("A cluster state change: [{}] for collection [{}] has occurred - updating... (live nodes size: [{}])",
               event, coll, liveNodes.size());
 
@@ -1210,7 +1245,7 @@ public class ZkStateReader implements Closeable {
     }
     
     DocCollection state = clusterState.getCollectionOrNull(collection);
-    if (stateWatcher.onStateChanged(liveNodes, state) == true) {
+    if (stateWatcher.onStateChanged(liveNodes.keySet(), state) == true) {
       removeCollectionStateWatcher(collection, stateWatcher);
     }
   }
@@ -1286,7 +1321,6 @@ public class ZkStateReader implements Closeable {
 
   // returns true if the state has changed
   private boolean updateWatchedCollection(String coll, DocCollection newState) {
-
     if (newState == null) {
       LOG.debug("Removing cached collection state for [{}]", coll);
       watchedCollectionStates.remove(coll);

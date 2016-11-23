@@ -1241,6 +1241,10 @@ public class CoreContainer {
     return zkSys.getZkController();
   }
   
+  public ZkStateReader getZkStateReader() {
+    return isZooKeeperAware() ? zkSys.getZkController().getZkStateReader() : null;
+  }
+  
   public NodeConfig getConfig() {
     return cfg;
   }

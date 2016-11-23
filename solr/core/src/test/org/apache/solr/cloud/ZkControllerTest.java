@@ -97,41 +97,41 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
           // getBaseUrlForNodeName
           assertEquals("http://zzz.xxx:1234/solr",
-              zkStateReader.getBaseUrlForNodeName("zzz.xxx:1234_solr"));
+              zkStateReader.getBaseUrlFromGenericNodeName("zzz.xxx:1234_solr"));
           assertEquals("http://xxx:99",
-              zkStateReader.getBaseUrlForNodeName("xxx:99_"));
+              zkStateReader.getBaseUrlFromGenericNodeName("xxx:99_"));
           assertEquals("http://foo-bar.baz.org:9999/some_dir",
-              zkStateReader.getBaseUrlForNodeName("foo-bar.baz.org:9999_some_dir"));
+              zkStateReader.getBaseUrlFromGenericNodeName("foo-bar.baz.org:9999_some_dir"));
           assertEquals("http://foo-bar.baz.org:9999/solr/sub_dir",
-              zkStateReader.getBaseUrlForNodeName("foo-bar.baz.org:9999_solr%2Fsub_dir"));
+              zkStateReader.getBaseUrlFromGenericNodeName("foo-bar.baz.org:9999_solr%2Fsub_dir"));
 
           // generateNodeName + getBaseUrlForNodeName
           assertEquals("http://foo:9876/solr",
-              zkStateReader.getBaseUrlForNodeName
+              zkStateReader.getBaseUrlFromGenericNodeName
                   (ZkController.generateNodeName("foo", "9876", "solr")));
           assertEquals("http://foo:9876/solr",
-              zkStateReader.getBaseUrlForNodeName
+              zkStateReader.getBaseUrlFromGenericNodeName
                   (ZkController.generateNodeName("foo", "9876", "/solr")));
           assertEquals("http://foo:9876/solr",
-              zkStateReader.getBaseUrlForNodeName
+              zkStateReader.getBaseUrlFromGenericNodeName
                   (ZkController.generateNodeName("foo", "9876", "/solr/")));
           assertEquals("http://foo.bar.com:9876/solr/sub_dir",
-              zkStateReader.getBaseUrlForNodeName
+              zkStateReader.getBaseUrlFromGenericNodeName
                   (ZkController.generateNodeName("foo.bar.com", "9876", "solr/sub_dir")));
           assertEquals("http://foo.bar.com:9876/solr/sub_dir",
-              zkStateReader.getBaseUrlForNodeName
+              zkStateReader.getBaseUrlFromGenericNodeName
                   (ZkController.generateNodeName("foo.bar.com", "9876", "/solr/sub_dir/")));
           assertEquals("http://foo-bar:9876",
-              zkStateReader.getBaseUrlForNodeName
+              zkStateReader.getBaseUrlFromGenericNodeName
                   (ZkController.generateNodeName("foo-bar", "9876", "")));
           assertEquals("http://foo-bar:9876",
-              zkStateReader.getBaseUrlForNodeName
+              zkStateReader.getBaseUrlFromGenericNodeName
                   (ZkController.generateNodeName("foo-bar", "9876", "/")));
           assertEquals("http://foo-bar.com:80/some_dir",
-              zkStateReader.getBaseUrlForNodeName
+              zkStateReader.getBaseUrlFromGenericNodeName
                   (ZkController.generateNodeName("foo-bar.com", "80", "some_dir")));
           assertEquals("http://foo-bar.com:80/some_dir",
-              zkStateReader.getBaseUrlForNodeName
+              zkStateReader.getBaseUrlFromGenericNodeName
                   (ZkController.generateNodeName("foo-bar.com", "80", "/some_dir")));
 
         }
@@ -146,10 +146,10 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           zkStateReader.createClusterStateWatchersAndUpdate();
 
           assertEquals("https://zzz.xxx:1234/solr",
-              zkStateReader.getBaseUrlForNodeName("zzz.xxx:1234_solr"));
+              zkStateReader.getBaseUrlFromGenericNodeName("zzz.xxx:1234_solr"));
 
           assertEquals("https://foo-bar.com:80/some_dir",
-              zkStateReader.getBaseUrlForNodeName
+              zkStateReader.getBaseUrlFromGenericNodeName
                   (ZkController.generateNodeName("foo-bar.com", "80", "/some_dir")));
 
         }
