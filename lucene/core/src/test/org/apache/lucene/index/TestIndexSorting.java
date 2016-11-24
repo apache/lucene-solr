@@ -141,7 +141,12 @@ public class TestIndexSorting extends LuceneTestCase {
     Sort indexSort = new Sort(sortField,
         new SortField("id", SortField.Type.INT));
     iwc.setIndexSort(indexSort);
-    iwc.setMergePolicy(newLogMergePolicy());
+    LogMergePolicy policy = newLogMergePolicy();
+    // make sure that merge factor is always > 2
+    if (policy.getMergeFactor() <= 2) {
+      policy.setMergeFactor(3);
+    }
+    iwc.setMergePolicy(policy);
 
     // add already sorted documents
     codec.numCalls = 0;
