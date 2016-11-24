@@ -196,7 +196,9 @@ Bug Fixes
 * SOLR-9729: JDBCStream improvements (Kevin Risden)
 
 * SOLR-9626: new Admin UI now also highlights matched terms in the Analysis screen. (Alexandre Rafalovitch)
-  
+
+* SOLR-9512: CloudSolrClient's cluster state cache can break direct updates to leaders (noble)
+
 Other Changes
 ----------------------
 
@@ -221,6 +223,8 @@ Other Changes
 
 * SOLR-8785: Use Dropwizard Metrics library for core metrics. The copied over code in
   org.apache.solr.util.stats has been removed. (Jeff Wartes, Kelvin Wong, Christine Poerschke, shalin)
+
+* SOLR-9784: Refactor CloudSolrClient to eliminate direct dependency on ZK (noble)
 
 ==================  6.3.0 ==================
 
