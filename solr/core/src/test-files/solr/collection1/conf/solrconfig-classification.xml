@@ -47,6 +47,21 @@
       <str name="knn.minTf">1</str>
       <str name="knn.minDf">1</str>
       <str name="knn.k">5</str>
+      <str name="knn.filterQuery">cat:(class1 OR class2)</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory"/>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="classification-unsupported-filterQuery">
+    <processor class="solr.ClassificationUpdateProcessorFactory">
+      <str name="inputFields">title,content,author</str>
+      <str name="classField">cat</str>
+      <!-- Knn algorithm specific-->
+      <str name="algorithm">knn</str>
+      <str name="knn.minTf">1</str>
+      <str name="knn.minDf">1</str>
+      <str name="knn.k">5</str>
+      <str name="knn.filterQuery">not valid ( lucene query</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory"/>
   </updateRequestProcessorChain>

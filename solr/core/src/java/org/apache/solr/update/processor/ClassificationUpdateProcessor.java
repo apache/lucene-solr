@@ -19,6 +19,7 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -33,6 +34,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.processor.ClassificationUpdateProcessorFactory.Algorithm;
 
 /**
  * This Class is a Request Update Processor to classify the document in input and add a field
@@ -42,41 +44,52 @@ import org.apache.solr.update.AddUpdateCommand;
 class ClassificationUpdateProcessor
     extends UpdateRequestProcessor {
 
-  private String classFieldName; // the field to index the assigned class
-
+  private final String trainingClassField;
+  private final String predictedClassField;
+  private final int maxOutputClasses;
   private DocumentClassifier<BytesRef> classifier;
 
   /**
    * Sole constructor
    *
-   * @param inputFieldNames fields to be used as classifier's inputs
-   * @param classFieldName  field to be used as classifier's output
-   * @param minDf           setting for {@link org.apache.lucene.queries.mlt.MoreLikeThis#minDocFreq}, in case algorithm is {@code "knn"}
-   * @param minTf           setting for {@link org.apache.lucene.queries.mlt.MoreLikeThis#minTermFreq}, in case algorithm is {@code "knn"}
-   * @param k               setting for k nearest neighbors to analyze, in case algorithm is {@code "knn"}
-   * @param algorithm       the name of the classifier to use
+   * @param classificationParams classification advanced params
    * @param next            next update processor in the chain
    * @param indexReader     index reader
    * @param schema          schema
    */
-  public ClassificationUpdateProcessor(String[] inputFieldNames, String classFieldName, int minDf, int minTf, int k, String algorithm,
-                                       UpdateRequestProcessor next, IndexReader indexReader, IndexSchema schema) {
+  public ClassificationUpdateProcessor(ClassificationUpdateProcessorParams classificationParams, UpdateRequestProcessor next, IndexReader indexReader, IndexSchema schema) {
     super(next);
-    this.classFieldName = classFieldName;
-    Map<String, Analyzer> field2analyzer = new HashMap<String, Analyzer>();
+    this.trainingClassField = classificationParams.getTrainingClassField();
+    this.predictedClassField = classificationParams.getPredictedClassField();
+    this.maxOutputClasses = classificationParams.getMaxPredictedClasses();
+    String[] inputFieldNamesWithBoost = classificationParams.getInputFieldNames();
+    Algorithm classificationAlgorithm = classificationParams.getAlgorithm();
+
+    Map<String, Analyzer> field2analyzer = new HashMap<>();
+    String[] inputFieldNames = this.removeBoost(inputFieldNamesWithBoost);
     for (String fieldName : inputFieldNames) {
       SchemaField fieldFromSolrSchema = schema.getField(fieldName);
       Analyzer indexAnalyzer = fieldFromSolrSchema.getType().getQueryAnalyzer();
       field2analyzer.put(fieldName, indexAnalyzer);
     }
-    switch (algorithm) {
-      case "knn":
-        classifier = new KNearestNeighborDocumentClassifier(indexReader, null, null, k, minDf, minTf, classFieldName, field2analyzer, inputFieldNames);
+    switch (classificationAlgorithm) {
+      case KNN:
+        classifier = new KNearestNeighborDocumentClassifier(indexReader, null, classificationParams.getTrainingFilterQuery(), classificationParams.getK(), classificationParams.getMinDf(), classificationParams.getMinTf(), trainingClassField, field2analyzer, inputFieldNamesWithBoost);
         break;
-      case "bayes":
-        classifier = new SimpleNaiveBayesDocumentClassifier(indexReader, null, classFieldName, field2analyzer, inputFieldNames);
+      case BAYES:
+        classifier = new SimpleNaiveBayesDocumentClassifier(indexReader, null, trainingClassField, field2analyzer, inputFieldNamesWithBoost);
         break;
     }
+  }
+
+  private String[] removeBoost(String[] inputFieldNamesWithBoost) {
+    String[] inputFieldNames = new String[inputFieldNamesWithBoost.length];
+    for (int i = 0; i < inputFieldNamesWithBoost.length; i++) {
+      String singleFieldNameWithBoost = inputFieldNamesWithBoost[i];
+      String[] fieldName2boost = singleFieldNameWithBoost.split("\\^");
+      inputFieldNames[i] = fieldName2boost[0];
+    }
+    return inputFieldNames;
   }
 
   /**
@@ -89,12 +102,14 @@ class ClassificationUpdateProcessor
     SolrInputDocument doc = cmd.getSolrInputDocument();
     Document luceneDocument = cmd.getLuceneDocument();
     String assignedClass;
-    Object documentClass = doc.getFieldValue(classFieldName);
+    Object documentClass = doc.getFieldValue(trainingClassField);
     if (documentClass == null) {
-      ClassificationResult<BytesRef> classificationResult = classifier.assignClass(luceneDocument);
-      if (classificationResult != null) {
-        assignedClass = classificationResult.getAssignedClass().utf8ToString();
-        doc.addField(classFieldName, assignedClass);
+      List<ClassificationResult<BytesRef>> assignedClassifications = classifier.getClasses(luceneDocument, maxOutputClasses);
+      if (assignedClassifications != null) {
+        for (ClassificationResult<BytesRef> singleClassification : assignedClassifications) {
+          assignedClass = singleClassification.getAssignedClass().utf8ToString();
+          doc.addField(predictedClassField, assignedClass);
+        }
       }
     }
     super.processAdd(cmd);
