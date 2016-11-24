@@ -135,6 +135,8 @@ New Features
 * SOLR-9324: Support Secure Impersonation / Proxy User for solr authentication
   (Gregory Chanan, Hrishikesh Gadre via yonik)
 
+* SOLR-9721: javabin Tuple parser for streaming and other end points (noble)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have

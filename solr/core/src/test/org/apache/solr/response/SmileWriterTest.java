@@ -147,13 +147,8 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void test10Docs() throws IOException {
-    SolrDocumentList l = new SolrDocumentList();
-    for(int i=0;i<10; i++){
-      l.add(sampleDoc(random(), i));
-    }
-
     SolrQueryResponse response = new SolrQueryResponse();
-    response.getValues().add("results", l);
+    SolrDocumentList l = constructSolrDocList(response);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     new SmileResponseWriter().write(baos, new LocalSolrQueryRequest(null, new ModifiableSolrParams()), response);
 
@@ -169,6 +164,16 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
       compareSolrDocument(l.get(i), d);
     }
 
+  }
+
+  public static SolrDocumentList constructSolrDocList(SolrQueryResponse response) {
+    SolrDocumentList l = new SolrDocumentList();
+    for(int i=0;i<10; i++){
+      l.add(sampleDoc(random(), i));
+    }
+
+    response.getValues().add("results", l);
+    return l;
   }
 
   public static SolrDocument sampleDoc(Random r, int bufnum) {
