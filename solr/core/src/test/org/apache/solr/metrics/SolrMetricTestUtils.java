@@ -55,6 +55,8 @@ public final class SolrMetricTestUtils {
     return shouldDefineMetrics ? getRandomMetricsWithReplacements(random, new HashMap<>()) : null;
   }
 
+  public static final String SUFFIX = "_testing";
+
   public static Map<String, Metric> getRandomMetricsWithReplacements(Random random, Map<String, Metric> existing) {
     HashMap<String, Metric> metrics = new HashMap<>();
     ArrayList<String> existingKeys = new ArrayList<>(existing.keySet());
@@ -64,7 +66,7 @@ public final class SolrMetricTestUtils {
       boolean shouldReplaceMetric = !existing.isEmpty() && random.nextBoolean();
       String name = shouldReplaceMetric
           ? existingKeys.get(TestUtil.nextInt(random, 0, existingKeys.size() - 1))
-          : TestUtil.randomSimpleString(random); // must be simple string for JMX publishing
+          : TestUtil.randomSimpleString(random) + SUFFIX; // must be simple string for JMX publishing
 
       Counter counter = new Counter();
       counter.inc(random.nextLong());

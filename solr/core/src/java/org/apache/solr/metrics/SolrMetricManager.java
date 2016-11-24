@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.SharedMetricRegistries;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
@@ -54,7 +55,7 @@ public class SolrMetricManager implements Closeable {
    */
   public SolrMetricManager(SolrCore core) {
     this.core = core;
-    this.registry = new MetricRegistry();
+    this.registry = SharedMetricRegistries.getOrCreate(core.getName());
     this.metricInfos = new ConcurrentHashMap<>();
     this.reporters = new ConcurrentHashMap<>();
   }

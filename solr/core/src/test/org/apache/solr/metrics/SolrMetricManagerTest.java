@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import com.codahale.metrics.Metric;
 import org.apache.lucene.util.TestUtil;
@@ -64,7 +65,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     String scope = SolrMetricTestUtils.getRandomScope(random);
     SolrInfoMBean.Category category = SolrMetricTestUtils.getRandomCategory(random);
     Map<String, Metric> metrics = SolrMetricTestUtils.getRandomMetrics(random);
-
     try {
       metricManager.registerMetrics(scope, category, metrics);
       assertNotNull(scope);
@@ -121,11 +121,15 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     }
   }
 
-  private static void assertRegistered(Map<String, Metric> metrics, SolrMetricManager metricManager) {
-    assertEquals(metrics.size(), metricManager.getMetricInfos().size());
-    assertEquals(metrics.size(), metricManager.getRegistry().getMetrics().size());
+  private static void assertRegistered(Map<String, Metric> newMetrics, SolrMetricManager metricManager) {
+    assertEquals(newMetrics.size(), metricManager.getMetricInfos().
+        keySet().stream().filter(s -> s.endsWith(SolrMetricTestUtils.SUFFIX)).count());
+    assertEquals(newMetrics.size(), metricManager.getRegistry().getMetrics().
+        keySet().stream().filter(s -> s.endsWith(SolrMetricTestUtils.SUFFIX)).count());
 
-    Map<String, Metric> registeredMetrics = metricManager.getRegistry().getMetrics();
+    Map<String, Metric> registeredMetrics = metricManager.getRegistry().getMetrics().
+        entrySet().stream().filter(e -> e.getKey().endsWith(SolrMetricTestUtils.SUFFIX)).
+        collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
     for (Map.Entry<String, Metric> entry : registeredMetrics.entrySet()) {
       String name = entry.getKey();
       Metric expectedMetric = entry.getValue();
