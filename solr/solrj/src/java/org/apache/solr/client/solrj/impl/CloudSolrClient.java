@@ -1230,7 +1230,7 @@ public class CloudSolrClient extends SolrClient {
     }
     List<String> theUrlList = new ArrayList<>();
     if (ADMIN_PATHS.contains(request.getPath())) {
-      Set<String> liveNodes = getLiveNodes();
+      Set<String> liveNodes = stateProvider.liveNodes();
       for (String liveNode : liveNodes) {
         theUrlList.add(ZkStateReader.getBaseUrlForNodeName(liveNode,
             (String) stateProvider.getClusterProperties().getOrDefault(ZkStateReader.URL_SCHEME,"http")));
@@ -1263,7 +1263,7 @@ public class CloudSolrClient extends SolrClient {
         Collection<Slice> routeSlices = col.getRouter().getSearchSlices(shardKeys, reqParams , col);
         ClientUtils.addSlices(slices, collectionName, routeSlices, true);
       }
-      Set<String> liveNodes = getLiveNodes();
+      Set<String> liveNodes = stateProvider.liveNodes();
 
       List<String> leaderUrlList = null;
       List<String> urlList = null;
@@ -1337,10 +1337,6 @@ public class CloudSolrClient extends SolrClient {
     LBHttpSolrClient.Req req = new LBHttpSolrClient.Req(request, theUrlList);
     LBHttpSolrClient.Rsp rsp = lbClient.request(req);
     return rsp.getResponse();
-  }
-
-  private Set<String> getLiveNodes() {
-    return getZkStateReader().getClusterState().getLiveNodes();
   }
 
   Set<String> getCollectionNames(String collection) {
