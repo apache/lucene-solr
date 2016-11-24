@@ -16,22 +16,12 @@
  */
 package org.apache.solr.uima.processor;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.MultiMapSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.UpdateRequestHandler;
-import org.apache.solr.request.SolrQueryRequestBase;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
@@ -186,21 +176,6 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     for (int i = 0; i < RANDOM_MULTIPLIER; i++) {
       testProcessing();
     }
-  }
-
-  private void addDoc(String chain, String doc) throws Exception {
-    Map<String, String[]> params = new HashMap<>();
-    params.put(UpdateParams.UPDATE_CHAIN, new String[] { chain });
-    MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
-    SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), (SolrParams) mmparams) {
-    };
-
-    UpdateRequestHandler handler = new UpdateRequestHandler();
-    handler.init(null);
-    ArrayList<ContentStream> streams = new ArrayList<>(2);
-    streams.add(new ContentStreamBase.StringStream(doc));
-    req.setContentStreams(streams);
-    handler.handleRequestBody(req, new SolrQueryResponse());
   }
 
 }
