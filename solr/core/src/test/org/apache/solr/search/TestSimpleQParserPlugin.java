@@ -79,9 +79,9 @@ public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testOnlyAndOperatorEnabledDisabled() throws Exception {
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "+",
-        "q.operators", "NOT, OR, PHRASE, SUFFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==1");
+        "q.operators", "NOT, OR, PHRASE, PREFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==1");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "-",
-        "q.operators", "NOT, OR, PHRASE, SUFFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==0");
+        "q.operators", "NOT, OR, PHRASE, PREFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "+",
         "q.operators", "AND"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "-",
@@ -91,9 +91,9 @@ public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testOnlyNotOperatorEnabledDisabled() throws Exception {
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "-",
-        "q.operators", "AND, OR, PHRASE, SUFFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==1");
+        "q.operators", "AND, OR, PHRASE, PREFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==1");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "|",
-        "q.operators", "AND, OR, PHRASE, SUFFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==0");
+        "q.operators", "AND, OR, PHRASE, PREFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "-",
         "q.operators", "NOT"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "|",
@@ -103,9 +103,9 @@ public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testOnlyOrOperatorEnabledDisabled() throws Exception {
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "|",
-        "q.operators", "AND, NOT, PHRASE, SUFFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==1");
+        "q.operators", "AND, NOT, PHRASE, PREFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==1");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\"",
-        "q.operators", "AND, NOT, PHRASE, SUFFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==0");
+        "q.operators", "AND, NOT, PHRASE, PREFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "|",
         "q.operators", "OR"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\"",
@@ -115,9 +115,9 @@ public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testOnlyPhraseOperatorEnabledDisabled() throws Exception {
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\"",
-        "q.operators", "AND, NOT, OR, SUFFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==1");
+        "q.operators", "AND, NOT, OR, PREFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==1");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "|",
-        "q.operators", "AND, NOT, OR, SUFFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==0");
+        "q.operators", "AND, NOT, OR, PREFIX, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\"",
         "q.operators", "PHRASE"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "|",
@@ -131,26 +131,26 @@ public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "(",
         "q.operators", "AND, NOT, OR, PHRASE, PRECEDENCE, ESCAPE, WHITESPACE"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "t*",
-        "q.operators", "SUFFIX"), "/response/numFound==6");
+        "q.operators", "PREFIX"), "/response/numFound==6");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "(",
-        "q.operators", "SUFFIX"), "/response/numFound==1");
+        "q.operators", "PREFIX"), "/response/numFound==1");
   }
 
   @Test
   public void testOnlyPrecedenceOperatorEnabledDisabled() throws Exception {
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "(",
-        "q.operators", "AND, NOT, OR, PHRASE, SUFFIX, ESCAPE, WHITESPACE"), "/response/numFound==1");
+        "q.operators", "AND, NOT, OR, PHRASE, PREFIX, ESCAPE, WHITESPACE"), "/response/numFound==1");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\\",
-        "q.operators", "AND, NOT, OR, PHRASE, SUFFIX, ESCAPE, WHITESPACE"), "/response/numFound==0");
+        "q.operators", "AND, NOT, OR, PHRASE, PREFIX, ESCAPE, WHITESPACE"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "(",
         "q.operators", "PRECEDENCE"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\\",
         "q.operators", "PRECEDENCE"), "/response/numFound==1");
 
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", ")",
-        "q.operators", "AND, NOT, OR, PHRASE, SUFFIX, ESCAPE, WHITESPACE"), "/response/numFound==1");
+        "q.operators", "AND, NOT, OR, PHRASE, PREFIX, ESCAPE, WHITESPACE"), "/response/numFound==1");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\\",
-        "q.operators", "AND, NOT, OR, PHRASE, SUFFIX, ESCAPE, WHITESPACE"), "/response/numFound==0");
+        "q.operators", "AND, NOT, OR, PHRASE, PREFIX, ESCAPE, WHITESPACE"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", ")",
         "q.operators", "PRECEDENCE"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\\",
@@ -160,9 +160,9 @@ public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testOnlyEscapeOperatorEnabledDisabled() throws Exception {
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\\",
-        "q.operators", "AND, NOT, OR, PHRASE, SUFFIX, PRECEDENCE, WHITESPACE"), "/response/numFound==1");
+        "q.operators", "AND, NOT, OR, PHRASE, PREFIX, PRECEDENCE, WHITESPACE"), "/response/numFound==1");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\n",
-        "q.operators", "AND, NOT, OR, PHRASE, SUFFIX, PRECEDENCE, WHITESPACE"), "/response/numFound==0");
+        "q.operators", "AND, NOT, OR, PHRASE, PREFIX, PRECEDENCE, WHITESPACE"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\\",
         "q.operators", "ESCAPE"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\n",
@@ -172,9 +172,9 @@ public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testOnlyWhitespaceOperatorEnabledDisabled() throws Exception {
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\n",
-        "q.operators", "AND, NOT, OR, PHRASE, SUFFIX, PRECEDENCE, ESCAPE"), "/response/numFound==1");
+        "q.operators", "AND, NOT, OR, PHRASE, PREFIX, PRECEDENCE, ESCAPE"), "/response/numFound==1");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\\",
-        "q.operators", "AND, NOT, OR, PHRASE, SUFFIX, PRECEDENCE, ESCAPE"), "/response/numFound==0");
+        "q.operators", "AND, NOT, OR, PHRASE, PREFIX, PRECEDENCE, ESCAPE"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\n",
         "q.operators", "WHITESPACE"), "/response/numFound==0");
     assertJQ(req("defType", "simple", "qf", "text0 text1 text-keyword0", "q", "\\",
