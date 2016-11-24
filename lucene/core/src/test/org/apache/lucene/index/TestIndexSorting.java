@@ -2127,6 +2127,7 @@ public class TestIndexSorting extends LuceneTestCase {
   }
 
   // pits index time sorting against query time sorting
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-7569")
   public void testRandom3() throws Exception {
     int numDocs;
     if (TEST_NIGHTLY) {
