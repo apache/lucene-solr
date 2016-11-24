@@ -140,7 +140,12 @@ public class TestIndexSorting extends LuceneTestCase {
     Sort indexSort = new Sort(sortField,
         new SortField("id", SortField.Type.INT));
     iwc.setIndexSort(indexSort);
-    iwc.setMergePolicy(newLogMergePolicy());
+    LogMergePolicy policy = newLogMergePolicy();
+    // make sure that merge factor is always > 2
+    if (policy.getMergeFactor() <= 2) {
+      policy.setMergeFactor(3);
+    }
+    iwc.setMergePolicy(policy);
 
     // add already sorted documents
     codec.numCalls = 0;
@@ -2127,7 +2132,6 @@ public class TestIndexSorting extends LuceneTestCase {
   }
 
   // pits index time sorting against query time sorting
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-7569")
   public void testRandom3() throws Exception {
     int numDocs;
     if (TEST_NIGHTLY) {
