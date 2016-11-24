@@ -1071,9 +1071,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   private void printTimingStats(Timer timer) {
     Snapshot snapshot = timer.getSnapshot();
-    log.info("\t avgRequestsPerMinute: {}", timer.getMeanRate());
-    log.info("\t 5minRateRequestsPerMinute: {}", timer.getFiveMinuteRate());
-    log.info("\t 15minRateRequestsPerMinute: {}", timer.getFifteenMinuteRate());
+    log.info("\t avgRequestsPerSecond: {}", timer.getMeanRate());
+    log.info("\t 5minRateRequestsPerSecond: {}", timer.getFiveMinuteRate());
+    log.info("\t 15minRateRequestsPerSecond: {}", timer.getFifteenMinuteRate());
     log.info("\t avgTimePerRequest: {}", nsToMs(snapshot.getMean()));
     log.info("\t medianRequestTime: {}", nsToMs(snapshot.getMedian()));
     log.info("\t 75thPcRequestTime: {}", nsToMs(snapshot.get75thPercentile()));
