@@ -98,6 +98,13 @@ Upgrade Notes
     replaced by corresponding per-second rates viz. "avgRequestsPerSecond", "5minRateRequestsPerSecond"
     and "15minRateRequestsPerSecond" for consistency with stats output in other parts of Solr.
 
+* SOLR-9708: You are encouraged to try out the UnifiedHighlighter by setting hl.method=unified and report feedback. It
+  might become the default in 7.0. It's more efficient/faster than the other highlighters, especially compared to the
+  original Highlighter. That said, some options aren't supported yet, notably hl.fragsize and
+  hl.requireFieldMatch=false. It will get more features in time, especially with your input. See HighlightParams.java
+  for a listing of highlight parameters annotated with which highlighters use them.
+  hl.useFastVectorHighlighter is now considered deprecated in lieu of hl.method=fastVector.
+
 New Features
 ----------------------
 * SOLR-9293: Solrj client support for hierarchical clusters and other topics 
@@ -136,6 +143,12 @@ New Features
   (Gregory Chanan, Hrishikesh Gadre via yonik)
 
 * SOLR-9721: javabin Tuple parser for streaming and other end points (noble)
+
+* SOLR-9708: Added UnifiedSolrHighlighter, a highlighter adapter for Lucene's UnifiedHighlighter. The adapter is a
+  derivative of the PostingsSolrHighlighter, supporting mostly the same parameters with some differences.
+  Introduced "hl.method" parameter which can be set to original|fastVector|postings|unified to pick the highlighter at
+  runtime without the need to modify solrconfig from the default configuration. hl.useFastVectorHighlighter is now
+  considered deprecated in lieu of hl.method=fastVector. (Timothy Rodriguez, David Smiley)
 
 Optimizations
 ----------------------
