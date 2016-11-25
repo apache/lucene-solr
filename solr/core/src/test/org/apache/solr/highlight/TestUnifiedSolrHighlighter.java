@@ -17,23 +17,19 @@
 package org.apache.solr.highlight;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.handler.component.HighlightComponent;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
 
-/** simple tests for PostingsSolrHighlighter */
-public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
+/** Tests for the UnifiedHighlighter Solr plugin **/
+public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-postingshighlight.xml", "schema-postingshighlight.xml");
+    initCore("solrconfig-basic.xml", "schema-unifiedhighlight.xml");
     
     // test our config is sane, just to be sure:
-    
-    // postingshighlighter should be used
-    SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
-    assertTrue("wrong highlighter: " + highlighter.getClass(), highlighter instanceof PostingsSolrHighlighter);
-    
+
     // 'text' and 'text3' should have offsets, 'text2' should not
     IndexSchema schema = h.getCore().getLatestSchema();
     assertTrue(schema.getField("text").storeOffsetsWithPositions());
@@ -49,15 +45,88 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
     assertU(adoc("text", "second document", "text2", "second document", "text3", "crappier document", "id", "102"));
     assertU(commit());
   }
-  
+
+  public static SolrQueryRequest req(String... params) {
+    return SolrTestCaseJ4.req(params, "hl.method", "unified");
+  }
+
   public void testSimple() {
     assertQ("simplest test", 
-        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.method", "postings"), // test hl.method is happy too
+        req("q", "text:document", "sort", "id asc", "hl", "true"),
         "count(//lst[@name='highlighting']/*)=2",
         "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");
   }
-  
+
+  public void testImpossibleOffsetSource() {
+    try {
+      assertQ("impossible offset source",
+          req("q", "text2:document", "hl.offsetSource", "postings", "hl.fl", "text2", "sort", "id asc", "hl", "true"),
+          "count(//lst[@name='highlighting']/*)=2",
+          "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
+          "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");
+      fail("Did not encounter exception for no offsets");
+    } catch (Exception e) {
+      assertTrue("Cause should be illegal argument", e.getCause() instanceof IllegalArgumentException);
+      assertTrue("Should warn no offsets", e.getCause().getMessage().contains("indexed without offsets"));
+    }
+  }
+
+  public void testMultipleSnippetsReturned() {
+    clearIndex();
+    assertU(adoc("text", "Document snippet one. Intermediate sentence. Document snippet two.",
+        "text2", "document one", "text3", "crappy document", "id", "101"));
+    assertU(commit());
+    assertQ("multiple snippets test",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.snippets", "2", "hl.bs.type", "SENTENCE"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Document</em> snippet one. '",
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[2]='<em>Document</em> snippet two.'");
+  }
+
+  public void testStrictPhrasesEnabledByDefault() {
+    clearIndex();
+    assertU(adoc("text", "Strict phrases should be enabled for phrases",
+        "text2", "document one", "text3", "crappy document", "id", "101"));
+    assertU(commit());
+    assertQ("strict phrase handling",
+        req("q", "text:\"strict phrases\"", "sort", "id asc", "hl", "true"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=1",
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Strict</em> <em>phrases</em> should be enabled for phrases'");
+  }
+
+  public void testStrictPhrasesCanBeDisabled() {
+    clearIndex();
+    assertU(adoc("text", "Strict phrases should be disabled for phrases",
+        "text2", "document one", "text3", "crappy document", "id", "101"));
+    assertU(commit());
+    assertQ("strict phrase handling",
+        req("q", "text:\"strict phrases\"", "sort", "id asc", "hl", "true", "hl.usePhraseHighlighter", "false"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=1",
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Strict</em> <em>phrases</em> should be disabled for <em>phrases</em>'");
+  }
+
+  public void testMultiTermQueryEnabledByDefault() {
+    clearIndex();
+    assertU(adoc("text", "Aviary Avenue document",
+        "text2", "document one", "text3", "crappy document", "id", "101"));
+    assertU(commit());
+    assertQ("multi term query handling",
+        req("q", "text:av*", "sort", "id asc", "hl", "true"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=1",
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Aviary</em> <em>Avenue</em> document'");
+  }
+
+  public void testMultiTermQueryCanBeDisabled() {
+    clearIndex();
+    assertU(adoc("text", "Aviary Avenue document",
+        "text2", "document one", "text3", "crappy document", "id", "101"));
+    assertU(commit());
+    assertQ("multi term query handling",
+        req("q", "text:av*", "sort", "id asc", "hl", "true", "hl.highlightMultiTerm", "false"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=0");
+  }
+
   public void testPagination() {
     assertQ("pagination test", 
         req("q", "text:document", "sort", "id asc", "hl", "true", "rows", "1", "start", "1"),
@@ -98,19 +167,7 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'",
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='crappier <em>document</em>'");
   }
-  
-  public void testMisconfiguredField() {
-    ignoreException("was indexed without offsets");
-    try {
-      assertQ("should fail, has no offsets",
-        req("q", "text2:document", "sort", "id asc", "hl", "true", "hl.fl", "text2"));
-      fail();
-    } catch (Exception expected) {
-      // expected
-    }
-    resetExceptionIgnores();
-  }
-  
+
   public void testTags() {
     assertQ("different pre/post tags", 
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.tag.pre", "[", "hl.tag.post", "]"),
@@ -118,7 +175,23 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='[document] one'",
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second [document]'");
   }
-  
+
+  public void testUsingSimplePrePostTags() {
+    assertQ("different pre/post tags",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.simple.pre", "[", "hl.simple.post", "]"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='[document] one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second [document]'");
+  }
+
+  public void testUsingSimplePrePostTagsPerField() {
+    assertQ("different pre/post tags",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "f.text.hl.simple.pre", "[", "f.text.hl.simple.post", "]"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='[document] one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second [document]'");
+  }
+
   public void testTagsPerField() {
     assertQ("highlighting text and text3", 
         req("q", "text:document text3:document", "sort", "id asc", "hl", "true", "hl.fl", "text,text3", "f.text3.hl.tag.pre", "[", "f.text3.hl.tag.post", "]"),
@@ -153,11 +226,4 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em>&#32;one&#32;has&#32;a&#32;first&#32;&lt;i&gt;sentence&lt;&#x2F;i&gt;&#46;'");
   }
   
-  public void testWildcard() {
-    assertQ("simplest test", 
-        req("q", "text:doc*ment", "sort", "id asc", "hl", "true", "hl.highlightMultiTerm", "true"),
-        "count(//lst[@name='highlighting']/*)=2",
-        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
-        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");
-  }
 }
