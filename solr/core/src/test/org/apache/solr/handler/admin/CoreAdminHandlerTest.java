@@ -25,6 +25,7 @@ import java.util.Map;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -283,6 +284,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDeleteInstanceDirAfterCreateFailure() throws Exception  {
+    assumeFalse("Ignore test on windows because it does not delete data directory immediately after unload", Constants.WINDOWS);
     File solrHomeDirectory = new File(initCoreDataDir, getClass().getName() + "-corex-"
         + System.nanoTime());
     solrHomeDirectory.mkdirs();
