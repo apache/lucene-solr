@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.MergeState.DocMap;
-import org.apache.lucene.index.MergeState;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Bits;
@@ -156,10 +155,11 @@ final class MultiSorter {
         docStarts[readers.size()] = multiReader.maxDoc();
         final SortedDocValues sorted = MultiDocValues.getSortedValues(multiReader, leafValues, docStarts);
         final int missingOrd;
+        // no need to take sortField.getReverse() into account here since we apply reverseMul on top of the ordinal comparison later on
         if (sortField.getMissingValue() == SortField.STRING_LAST) {
-          missingOrd = sortField.getReverse() ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+          missingOrd = Integer.MAX_VALUE;
         } else {
-          missingOrd = sortField.getReverse() ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+          missingOrd = Integer.MIN_VALUE;
         }
 
         return new CrossReaderComparator() {
