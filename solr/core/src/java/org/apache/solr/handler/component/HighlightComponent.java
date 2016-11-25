@@ -16,6 +16,14 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
 import com.google.common.base.Objects;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -29,6 +37,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.highlight.PostingsSolrHighlighter;
 import org.apache.solr.highlight.SolrHighlighter;
+import org.apache.solr.highlight.UnifiedSolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
@@ -38,9 +47,7 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.List;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * TODO!
@@ -50,13 +57,50 @@ import java.util.List;
  */
 public class HighlightComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware
 {
-  public static final String COMPONENT_NAME = "highlight";
-  private PluginInfo info = PluginInfo.EMPTY_INFO;
-  private SolrHighlighter highlighter;
+  public enum HighlightMethod {
+    UNIFIED("unified"),
+    FAST_VECTOR("fastVector"),
+    POSTINGS("postings"),
+    ORIGINAL("original");
 
+    private static final Map<String, HighlightMethod> METHODS = Collections.unmodifiableMap(Stream.of(values())
+        .collect(toMap(HighlightMethod::getMethodName, Function.identity())));
+
+    private final String methodName;
+
+    HighlightMethod(String method) {
+      this.methodName = method;
+    }
+
+    public String getMethodName() {
+      return methodName;
+    }
+
+    public static HighlightMethod parse(String method) {
+      return METHODS.get(method);
+    }
+  }
+
+  public static final String COMPONENT_NAME = "highlight";
+
+  private PluginInfo info = PluginInfo.EMPTY_INFO;
+
+  @Deprecated // DWS: in 7.0 lets restructure the abstractions/relationships
+  private SolrHighlighter solrConfigHighlighter;
+
+  /**
+   * @deprecated instead depend on {@link #process(ResponseBuilder)} to choose the highlighter based on
+   * {@link HighlightParams#METHOD}
+   */
+  @Deprecated
   public static SolrHighlighter getHighlighter(SolrCore core) {
     HighlightComponent hl = (HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
-    return hl==null ? null: hl.getHighlighter();    
+    return hl==null ? null: hl.getHighlighter();
+  }
+
+  @Deprecated
+  public SolrHighlighter getHighlighter() {
+    return solrConfigHighlighter;
   }
 
   @Override
@@ -67,7 +111,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
-    rb.doHighlights = highlighter.isHighlightingEnabled(params);
+    rb.doHighlights = solrConfigHighlighter.isHighlightingEnabled(params);
     if(rb.doHighlights){
       rb.setNeedDocList(true);
       String hlq = params.get(HighlightParams.Q);
@@ -90,26 +134,28 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     if(children.isEmpty()) {
       PluginInfo pluginInfo = core.getSolrConfig().getPluginInfo(SolrHighlighter.class.getName()); //TODO deprecated configuration remove later
       if (pluginInfo != null) {
-        highlighter = core.createInitInstance(pluginInfo, SolrHighlighter.class, null, DefaultSolrHighlighter.class.getName());
+        solrConfigHighlighter = core.createInitInstance(pluginInfo, SolrHighlighter.class, null, DefaultSolrHighlighter.class.getName());
       } else {
         DefaultSolrHighlighter defHighlighter = new DefaultSolrHighlighter(core);
         defHighlighter.init(PluginInfo.EMPTY_INFO);
-        highlighter = defHighlighter;
+        solrConfigHighlighter = defHighlighter;
       }
     } else {
-      highlighter = core.createInitInstance(children.get(0),SolrHighlighter.class,null, DefaultSolrHighlighter.class.getName());
+      solrConfigHighlighter = core.createInitInstance(children.get(0),SolrHighlighter.class,null, DefaultSolrHighlighter.class.getName());
     }
 
   }
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
+
     if (rb.doHighlights) {
       SolrQueryRequest req = rb.req;
       SolrParams params = req.getParams();
 
-      String[] defaultHighlightFields;  //TODO: get from builder by default?
+      SolrHighlighter highlighter = getHighlighter(params);
 
+      String[] defaultHighlightFields;  //TODO: get from builder by default?
       if (rb.getQparser() != null) {
         defaultHighlightFields = rb.getQparser().getDefaultHighlightFields();
       } else {
@@ -130,14 +176,8 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
           rb.setHighlightQuery( highlightQuery );
         }
       }
-      
-      if(highlightQuery != null) {
-        boolean rewrite = (highlighter instanceof PostingsSolrHighlighter == false) && !(Boolean.valueOf(params.get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true")) &&
-            Boolean.valueOf(params.get(HighlightParams.HIGHLIGHT_MULTI_TERM, "true")));
-        highlightQuery = rewrite ?  highlightQuery.rewrite(req.getSearcher().getIndexReader()) : highlightQuery;
-      }
 
-      // No highlighting if there is no query -- consider q.alt="*:*
+      // No highlighting if there is no query -- consider q.alt=*:*
       if( highlightQuery != null ) {
         NamedList sumData = highlighter.doHighlighting(
                 rb.getResults().docList,
@@ -149,6 +189,36 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
           rb.rsp.add("highlighting", sumData);
         }
       }
+    }
+  }
+
+  protected SolrHighlighter getHighlighter(SolrParams params) {
+    HighlightMethod method = HighlightMethod.parse(params.get(HighlightParams.METHOD));
+    if (method == null) {
+      return solrConfigHighlighter;
+    }
+
+    switch (method) {
+      case UNIFIED:
+        if (solrConfigHighlighter instanceof UnifiedSolrHighlighter) {
+          return solrConfigHighlighter;
+        }
+        return new UnifiedSolrHighlighter(); // TODO cache one?
+      case POSTINGS:
+        if (solrConfigHighlighter instanceof PostingsSolrHighlighter) {
+          return solrConfigHighlighter;
+        }
+        return new PostingsSolrHighlighter(); // TODO cache one?
+      case FAST_VECTOR: // fall-through
+      case ORIGINAL:
+        if (solrConfigHighlighter instanceof DefaultSolrHighlighter) {
+          return solrConfigHighlighter;
+        } else {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "In order to use " + HighlightParams.METHOD + "=" + method.getMethodName() + " the configured" +
+                  " highlighter in solrconfig must be " + DefaultSolrHighlighter.class);
+        }
+      default: throw new AssertionError();
     }
   }
 
@@ -195,10 +265,6 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     }
   }
 
-
-  public SolrHighlighter getHighlighter() {
-    return highlighter;
-  }
   ////////////////////////////////////////////
   ///  SolrInfoMBean
   ////////////////////////////////////////////

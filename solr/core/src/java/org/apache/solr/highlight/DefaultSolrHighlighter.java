@@ -66,6 +66,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -373,6 +374,13 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     if (!isHighlightingEnabled(params)) // also returns early if no unique key field
       return null;
 
+    boolean rewrite = query != null && !(Boolean.valueOf(params.get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true")) &&
+        Boolean.valueOf(params.get(HighlightParams.HIGHLIGHT_MULTI_TERM, "true")));
+
+    if (rewrite) {
+      query = query.rewrite(req.getSearcher().getIndexReader());
+    }
+
     SolrIndexSearcher searcher = req.getSearcher();
     IndexSchema schema = searcher.getSchema();
 
@@ -463,8 +471,11 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * Determines if we should use the FastVectorHighlighter for this field.
    */
   protected boolean useFastVectorHighlighter(SolrParams params, SchemaField schemaField) {
-    boolean useFvhParam = params.getFieldBool(schemaField.getName(), HighlightParams.USE_FVH, false);
-    if (!useFvhParam) return false;
+    boolean methodFvh =
+        HighlightComponent.HighlightMethod.FAST_VECTOR.getMethodName().equals(
+            params.getFieldParam(schemaField.getName(), HighlightParams.METHOD))
+        || params.getFieldBool(schemaField.getName(), HighlightParams.USE_FVH, false);
+    if (!methodFvh) return false;
     boolean termPosOff = schemaField.storeTermPositions() && schemaField.storeTermOffsets();
     if (!termPosOff) {
       log.warn("Solr will use the standard Highlighter instead of FastVectorHighlighter because the {} field " +

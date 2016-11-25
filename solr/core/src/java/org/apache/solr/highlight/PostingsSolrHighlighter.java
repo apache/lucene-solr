@@ -50,8 +50,9 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * <p>
  * Example configuration:
  * <pre class="prettyprint">
- *   &lt;requestHandler name="standard" class="solr.StandardRequestHandler"&gt;
+ *   &lt;requestHandler name="/select" class="solr.SearchHandler"&gt;
  *     &lt;lst name="defaults"&gt;
+ *       &lt;str name="hl.method"&gt;postings&lt;/str&gt;
  *       &lt;int name="hl.snippets"&gt;1&lt;/int&gt;
  *       &lt;str name="hl.tag.pre"&gt;&amp;lt;em&amp;gt;&lt;/str&gt;
  *       &lt;str name="hl.tag.post"&gt;&amp;lt;/em&amp;gt;&lt;/str&gt;
@@ -70,12 +71,6 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  *       &lt;bool name="hl.highlightMultiTerm"&gt;false&lt;/bool&gt;
  *     &lt;/lst&gt;
  *   &lt;/requestHandler&gt;
- * </pre>
- * ...
- * <pre class="prettyprint">
- *   &lt;searchComponent class="solr.HighlightComponent" name="highlight"&gt;
- *     &lt;highlighting class="org.apache.solr.highlight.PostingsSolrHighlighter"/&gt;
- *   &lt;/searchComponent&gt;
  * </pre>
  * <p>
  * Notes:
