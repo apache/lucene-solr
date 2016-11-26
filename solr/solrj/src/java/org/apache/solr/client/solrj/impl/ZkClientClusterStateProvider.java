@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStateProvider {
+public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
@@ -95,6 +95,17 @@ class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStateProvid
     zkStateReader.getConfigManager().downloadConfigDir(configName, downloadPath);
   }
 
+  /**
+   * Upload a set of config files to Zookeeper and give it a name
+   *
+   * NOTE: You should only allow trusted users to upload configs.  If you
+   * are allowing client access to zookeeper, you should protect the
+   * /configs node against unauthorised write access.
+   *
+   * @param configPath {@link java.nio.file.Path} to the config files
+   * @param configName the name of the config
+   * @throws IOException if an IO error occurs
+   */
   public void uploadConfig(Path configPath, String configName) throws IOException {
     connect();
     zkStateReader.getConfigManager().uploadConfigDir(configPath, configName);

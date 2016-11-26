@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -159,7 +160,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig);
       CloudSolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
-        client.uploadConfig(config.path, config.name);
+        ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);
       }
 
       if (clusterProperties.size() > 0) {
