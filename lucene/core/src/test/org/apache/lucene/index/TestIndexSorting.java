@@ -103,7 +103,10 @@ public class TestIndexSorting extends LuceneTestCase {
           return new PointsWriter() {
             @Override
             public void merge(MergeState mergeState) throws IOException {
-              assertEquals(needsIndexSort, mergeState.needsIndexSort);
+              // For single segment merge we cannot infer if the segment is already sorted or not.
+              if (mergeState.docMaps.length > 1) {
+                assertEquals(needsIndexSort, mergeState.needsIndexSort);
+              }
               ++ numCalls;
               writer.merge(mergeState);
             }
