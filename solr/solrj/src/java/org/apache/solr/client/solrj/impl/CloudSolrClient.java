@@ -1562,37 +1562,7 @@ public class CloudSolrClient extends SolrClient {
     
     return lbClient;
   }
-  
-  private static String buildZkHostString(Collection<String> zkHosts, String chroot) {
-    if (zkHosts == null || zkHosts.isEmpty()) {
-      throw new IllegalArgumentException("Cannot create CloudSearchClient without valid ZooKeeper host; none specified!");
-    }
-    
-    StringBuilder zkBuilder = new StringBuilder();
-    int lastIndexValue = zkHosts.size() - 1;
-    int i = 0;
-    for (String zkHost : zkHosts) {
-      zkBuilder.append(zkHost);
-      if (i < lastIndexValue) {
-        zkBuilder.append(",");
-      }
-      i++;
-    }
-    if (chroot != null) {
-      if (chroot.startsWith("/")) {
-        zkBuilder.append(chroot);
-      } else {
-        throw new IllegalArgumentException(
-            "The chroot must start with a forward slash.");
-      }
-    }
 
-    /* Log the constructed connection string and then initialize. */
-    final String zkHostString = zkBuilder.toString();
-    log.debug("Final constructed zkHost string: " + zkHostString);
-    return zkHostString;
-  }
-  
   /**
    * Constructs {@link CloudSolrClient} instances from provided configuration.
    */
