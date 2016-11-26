@@ -212,6 +212,8 @@ Bug Fixes
 
 * SOLR-9512: CloudSolrClient's cluster state cache can break direct updates to leaders (noble)
 
+* SOLR-5260: Facet search on a docvalue field in a multi shard collection (Trym Møller, Erick Erickson)
+
 Other Changes
 ----------------------
 
