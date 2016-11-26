@@ -649,6 +649,7 @@ public class CloudSolrClient extends SolrClient {
    * @param configName the name of the config
    * @throws IOException if an IO error occurs
    */
+  @Deprecated
   public void uploadConfig(Path configPath, String configName) throws IOException {
     stateProvider.connect();
     assertZKStateProvider().uploadConfig(configPath, configName);
@@ -668,6 +669,7 @@ public class CloudSolrClient extends SolrClient {
    * @param downloadPath  the path to write config files to
    * @throws IOException  if an I/O exception occurs
    */
+  @Deprecated
   public void downloadConfig(String configName, Path downloadPath) throws IOException {
     assertZKStateProvider().downloadConfig(configName, downloadPath);
   }
@@ -1530,6 +1532,10 @@ public class CloudSolrClient extends SolrClient {
   
   public void setConnectionTimeout(int timeout) {
     this.lbClient.setConnectionTimeout(timeout); 
+  }
+
+  public ClusterStateProvider getClusterStateProvider(){
+    return stateProvider;
   }
 
   private static boolean hasInfoToFindLeaders(UpdateRequest updateRequest, String idField) {
