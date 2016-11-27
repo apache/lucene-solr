@@ -256,23 +256,6 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       for (int idx = 0; idx < res.size(); ++idx) {
         if (prop.getName().startsWith("bool")) expected = orderBool[idx];
         else expected = order[idx];
-        //nocommit
-        if (res.get(idx).get("id").equals(expected) == false) {
-          for (int jdx = 0; jdx < order.length; ++jdx) {
-            System.out.println(String.format("EOEOE Val in doc %s for field %s is %s", 
-                res.get(jdx).get("id"),
-                prop.getName(),
-                res.get(jdx).get(prop.getName())));
-          }
-          for (int jdx = 0; jdx < order.length; ++jdx) {
-            System.out.println(String.format("EOEOE order pos %d is %s", jdx, order[jdx]));
-          }
-
-          for (int jdx = 0; jdx < orderBool.length; ++jdx) {
-            System.out.println(String.format("EOEOE bool order pos %d is %s", jdx, orderBool[jdx]));
-          }
-
-        }
         assertEquals("Documents in wrong order for field: " + prop.getName(),
             expected, res.get(idx).get("id"));
       }
