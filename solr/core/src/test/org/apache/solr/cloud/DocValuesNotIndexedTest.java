@@ -157,8 +157,20 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     CloudSolrClient client = cluster.getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
+    resetFieldBases(fieldsToTestSingle);
+    resetFieldBases(fieldsToTestMulti);
+    resetFieldBases(fieldsToTestGroupSortFirst);
+    resetFieldBases(fieldsToTestGroupSortLast);
   }
 
+  private void resetFieldBases(List<FieldProps> props) {
+    // OK, it's not bad with the int and string fields, but every time a new test counts on docs being
+    // indexed so they sort in a particular order, then particularly the boolean and string fields need to be
+    // reset to a known state.
+    for (FieldProps prop : props) {
+      prop.resetBase();
+    }
+  }
   @Test
   public void testDistribFaceting() throws IOException, SolrServerException {
     // For this test, I want to insure that there are shards that do _not_ have a doc with any of the DV_only 
@@ -224,11 +236,11 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
         .add(docs)
         .commit(client, COLLECTION);
 
-    checkSortOrder(client, fieldsToTestGroupSortFirst, "asc", new String[]{"4", "2", "1", "3"}, new String[]{"4", "2", "3", "1"});
-    checkSortOrder(client, fieldsToTestGroupSortFirst, "desc", new String[]{"3", "1", "2", "4"}, new String[]{"1", "2", "3", "4"});
+    checkSortOrder(client, fieldsToTestGroupSortFirst, "asc", new String[]{"4", "2", "1", "3"}, new String[]{"4", "1", "2", "3"});
+    checkSortOrder(client, fieldsToTestGroupSortFirst, "desc", new String[]{"3", "1", "2", "4"}, new String[]{"2", "3", "1", "4"});
 
-    checkSortOrder(client, fieldsToTestGroupSortLast, "asc", new String[]{"4", "2", "1", "3"}, new String[]{"4", "2", "3", "1"});
-    checkSortOrder(client, fieldsToTestGroupSortLast, "desc", new String[]{"3", "1", "2", "4"}, new String[]{"1", "2", "3", "4"});
+    checkSortOrder(client, fieldsToTestGroupSortLast, "asc", new String[]{"4", "2", "1", "3"}, new String[]{"4", "1", "2", "3"});
+    checkSortOrder(client, fieldsToTestGroupSortLast, "desc", new String[]{"3", "1", "2", "4"}, new String[]{"2", "3", "1", "4"});
 
   }
 
@@ -244,6 +256,23 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       for (int idx = 0; idx < res.size(); ++idx) {
         if (prop.getName().startsWith("bool")) expected = orderBool[idx];
         else expected = order[idx];
+        //nocommit
+        if (res.get(idx).get("id").equals(expected) == false) {
+          for (int jdx = 0; jdx < order.length; ++jdx) {
+            System.out.println(String.format("EOEOE Val in doc %s for field %s is %s", 
+                res.get(jdx).get("id"),
+                prop.getName(),
+                res.get(jdx).get(prop.getName())));
+          }
+          for (int jdx = 0; jdx < order.length; ++jdx) {
+            System.out.println(String.format("EOEOE order pos %d is %s", jdx, order[jdx]));
+          }
+
+          for (int jdx = 0; jdx < orderBool.length; ++jdx) {
+            System.out.println(String.format("EOEOE bool order pos %d is %s", jdx, orderBool[jdx]));
+          }
+
+        }
         assertEquals("Documents in wrong order for field: " + prop.getName(),
             expected, res.get(idx).get("id"));
       }
@@ -444,6 +473,9 @@ class FieldProps {
     this.name = name;
     this.type = type;
     this.expectedCount = expectedCount;
+    resetBase();
+  }
+  void resetBase() {
     if (name.startsWith("int")) {
       base = Math.abs(DocValuesNotIndexedTest.random().nextInt());
     } else if (name.startsWith("long")) {
@@ -454,12 +486,10 @@ class FieldProps {
       base = Math.abs(DocValuesNotIndexedTest.random().nextDouble());
     } else if (name.startsWith("date")) {
       base = Math.abs(DocValuesNotIndexedTest.random().nextLong());
-    } else if ("boolGSF".equals(name) || "boolGSL".equals(name)) {
-      base = false; // Special for sorting
     } else if (name.startsWith("bool")) {
-      base = DocValuesNotIndexedTest.random().nextBoolean();
+      base = true; // Must start with a known value since bools only have a two values....
     } else if (name.startsWith("string")) {
-      base = "base_string_" + DocValuesNotIndexedTest.random().nextInt(1_000_000);
+      base = "base_string_" + DocValuesNotIndexedTest.random().nextInt(1_000_000) + "_";
     } else {
       throw new RuntimeException("Should have found a prefix for the field before now!");
     }
@@ -506,7 +536,7 @@ class FieldProps {
       return ret;
     }
     if (name.startsWith("string")) {
-      return (String) base + counter;
+      return String.format(Locale.ROOT, "%s_%08d", (String) base, counter);
     }
     throw new RuntimeException("Should have found a prefix for the field before now!");
   }
