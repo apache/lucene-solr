@@ -74,7 +74,7 @@ Carrot2 3.15.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
-Jetty 9.3.8.v20160314
+Jetty 9.3.14.v20161028
 
 Detailed Change List
 ----------------------
@@ -85,6 +85,25 @@ Upgrade Notes
 * SOLR-9166: Export handler returns zero for numeric fields that are not in the original doc. One
   consequence of this change is that you must be aware that some tuples will not have values if 
   there were none in the original document.
+
+* SOLR-8785: Metrics related classes in org.apache.solr.util.stats have been removed in favor of
+  the dropwizard metrics library. Any custom plugins using these classes should be changed to use
+  the equivalent classes from the metrics library.
+  As part of this, the following changes were made to the output of Overseer Status API:
+  * The "totalTime" metric has been removed because it is no longer supported
+  * The metrics "75thPctlRequestTime", "95thPctlRequestTime", "99thPctlRequestTime"
+    and "999thPctlRequestTime" in Overseer Status API have been renamed to "75thPcRequestTime", "95thPcRequestTime"
+    and so on for consistency with stats output in other parts of Solr.
+  * The metrics "avgRequestsPerMinute", "5minRateRequestsPerMinute" and "15minRateRequestsPerMinute" have been
+    replaced by corresponding per-second rates viz. "avgRequestsPerSecond", "5minRateRequestsPerSecond"
+    and "15minRateRequestsPerSecond" for consistency with stats output in other parts of Solr.
+
+* SOLR-9708: You are encouraged to try out the UnifiedHighlighter by setting hl.method=unified and report feedback. It
+  might become the default in 7.0. It's more efficient/faster than the other highlighters, especially compared to the
+  original Highlighter. That said, some options aren't supported yet, notably hl.fragsize and
+  hl.requireFieldMatch=false. It will get more features in time, especially with your input. See HighlightParams.java
+  for a listing of highlight parameters annotated with which highlighters use them.
+  hl.useFastVectorHighlighter is now considered deprecated in lieu of hl.method=fastVector.
 
 New Features
 ----------------------
@@ -123,6 +142,16 @@ New Features
 * SOLR-9324: Support Secure Impersonation / Proxy User for solr authentication
   (Gregory Chanan, Hrishikesh Gadre via yonik)
 
+* SOLR-9721: javabin Tuple parser for streaming and other end points (noble)
+
+* SOLR-9708: Added UnifiedSolrHighlighter, a highlighter adapter for Lucene's UnifiedHighlighter. The adapter is a
+  derivative of the PostingsSolrHighlighter, supporting mostly the same parameters with some differences.
+  Introduced "hl.method" parameter which can be set to original|fastVector|postings|unified to pick the highlighter at
+  runtime without the need to modify solrconfig from the default configuration. hl.useFastVectorHighlighter is now
+  considered deprecated in lieu of hl.method=fastVector. (Timothy Rodriguez, David Smiley)
+
+* SOLR-9728: Ability to specify Key Store type in solr.in.sh file for SSL (Michael Suzuki, Kevin Risden)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
@@ -133,6 +162,16 @@ Optimizations
 
 * SOLR-9772: Deriving distributed sort values (fieldSortValues) should reuse
   comparator and only invalidate leafComparator. (John Call via yonik)
+
+* SOLR-9786: FieldType has a new getSetQuery() method that can take a set of terms
+  and create a more efficient query (such as TermsQuery).  The solr query parser has been
+  changed to use this method when appropriate.  The parser also knows when it is being
+  used to parse a filter and will create TermsQueries from large lists of normal terms
+  or numbers, resulting in a query that will execute faster.  This also acts to avoid
+  BooleanQuery maximum clause limit.  Query parsing itself has also been optimized,
+  resulting in less produced garbage and 5-7% better performance.
+  (yonik)
+
 
 Bug Fixes
 ----------------------
@@ -172,7 +211,11 @@ Bug Fixes
 * SOLR-9729: JDBCStream improvements (Kevin Risden)
 
 * SOLR-9626: new Admin UI now also highlights matched terms in the Analysis screen. (Alexandre Rafalovitch)
-  
+
+* SOLR-9512: CloudSolrClient's cluster state cache can break direct updates to leaders (noble)
+
+* SOLR-5260: Facet search on a docvalue field in a multi shard collection (Trym Møller, Erick Erickson)
+
 Other Changes
 ----------------------
 
@@ -194,6 +237,13 @@ Other Changes
 * SOLR-9597: Add setReadOnly(String ...) to ConnectionImpl (Kevin Risden)
 
 * SOLR-9609: Change hard-coded keysize from 512 to 1024 (Jeremy Martini via Erick Erickson)
+
+* SOLR-8785: Use Dropwizard Metrics library for core metrics. The copied over code in
+  org.apache.solr.util.stats has been removed. (Jeff Wartes, Kelvin Wong, Christine Poerschke, shalin)
+
+* SOLR-9784: Refactor CloudSolrClient to eliminate direct dependency on ZK (noble)
+
+* SOLR-9801: Upgrade jetty to 9.3.14.v20161028 (shalin)
 
 ==================  6.3.0 ==================
 
@@ -5458,6 +5508,31 @@ Other Changes
 
 * SOLR-6391: Improve message for CREATECOLLECTION failure due to missing
   numShards (Anshum Gupta)
+
+==================  4.9.1 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.5 (with upgraded Apache POI 3.10.1)
+Carrot2 3.9.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+
+Detailed Change List
+----------------------
+
+Other Changes
+---------------------
+
+* SOLR-6503: Removed support for parsing netcdf files in Solr Cell because
+  of license issues. If you need support for this format, download the parser
+  JAR yourself (version 4.2) and add it to contrib/extraction/lib folder:
+  http://www.unidata.ucar.edu/software/thredds/current/netcdf-java/
+  (Uwe Schindler)
+
+* SOLR-6388: Force upgrade of Apache POI dependency in Solr Cell to version
+  3.10.1 to fix CVE-2014-3529 and CVE-2014-3574.  (Uwe Schindler)
 
 ==================  4.9.0 ==================
 
@@ -11845,6 +11920,122 @@ Documentation
 
 * SOLR-1792: Documented peculiar behavior of TestHarness.LocalRequestFactory
   (hossman)
+
+================== Release 1.4.1 ==================
+Release Date:  See http://lucene.apache.org/solr for the official release date.
+
+Upgrading from Solr 1.4
+-----------------------
+
+This is a bug fix release - no changes are required when upgrading from Solr 1.4.
+However, a reindex is needed for some of the analysis fixes to take effect.
+
+Versions of Major Components
+----------------------------
+Apache Lucene 2.9.3
+Apache Tika 0.4
+Carrot2 3.1.0
+
+Lucene Information
+----------------
+
+Since Solr is built on top of Lucene, many people add customizations to Solr
+that are dependent on Lucene.  Please see http://lucene.apache.org/java/2_9_3/,
+especially http://lucene.apache.org/java/2_9_3/changes/Changes.html for more
+information on the version of Lucene used in Solr.
+
+Bug Fixes
+----------------------
+
+* SOLR-1934: Upgrade to Apache Lucene 2.9.3 to obtain several bug
+  fixes from the previous 2.9.1.  See the Lucene 2.9.3 release notes
+  for details.  (hossman, Mark Miller)
+
+* SOLR-1432: Make the new ValueSource.getValues(context,reader) delegate
+  to the original ValueSource.getValues(reader) so custom sources
+  will work. (yonik)
+
+* SOLR-1572: FastLRUCache correctly implemented the LRU policy only
+  for the first 2B accesses. (yonik)
+
+* SOLR-1595: StreamingUpdateSolrServer used the platform default character
+  set when streaming updates, rather than using UTF-8 as the HTTP headers
+  indicated, leading to an encoding mismatch. (hossman, yonik)
+
+* SOLR-1660: CapitalizationFilter crashes if you use the maxWordCountOption
+  (Robert Muir via shalin)
+
+* SOLR-1662: Added Javadocs in BufferedTokenStream and fixed incorrect cloning
+  in TestBufferedTokenStream (Robert Muir, Uwe Schindler via shalin)
+
+* SOLR-1711: SolrJ - StreamingUpdateSolrServer had a race condition that
+  could halt the streaming of documents. The original patch to fix this
+  (never officially released) introduced another hanging bug due to
+  connections not being released.  (Attila Babo, Erik Hetzner via yonik)
+
+* SOLR-1748, SOLR-1747, SOLR-1746, SOLR-1745, SOLR-1744: Streams and Readers
+  retrieved from ContentStreams are not closed in various places, resulting
+  in file descriptor leaks.
+  (Christoff Brill, Mark Miller)
+
+* SOLR-1580: Solr Configuration ignores 'mergeFactor' parameter, always
+  uses Lucene default. (Lance Norskog via Mark Miller)
+
+* SOLR-1777: fieldTypes with sortMissingLast=true or sortMissingFirst=true can
+  result in incorrectly sorted results.  (yonik)
+
+* SOLR-1797: fix ConcurrentModificationException and potential memory
+  leaks in ResourceLoader. (yonik)
+
+* SOLR-1798: Small memory leak (~100 bytes) in fastLRUCache for every
+  commit. (yonik)
+
+* SOLR-1522: Show proper message if <script> tag is missing for DIH
+  ScriptTransformer (noble)
+
+* SOLR-1538: Reordering of object allocations in ConcurrentLRUCache to eliminate
+  (an extremely small) potential for deadlock.
+  (gabriele renzi via hossman)
+
+* SOLR-1558: QueryElevationComponent only works if the uniqueKey field is
+  implemented using StrField.  In previous versions of Solr no warning or
+  error would be generated if you attempted to use QueryElevationComponent,
+  it would just fail in unexpected ways.  This has been changed so that it
+  will fail with a clear error message on initialization. (hossman)
+
+* SOLR-1563: Binary fields, including trie-based numeric fields, caused null
+  pointer exceptions in the luke request handler. (yonik)
+
+* SOLR-1579: Fixes to XML escaping in stats.jsp
+  (David Bowen and hossman)
+
+* SOLR-1582: copyField was ignored for BinaryField types (gsingers)
+
+* SOLR-1596: A rollback operation followed by the shutdown of Solr
+  or the close of a core resulted in a warning:
+  "SEVERE: SolrIndexWriter was not closed prior to finalize()" although
+  there were no other consequences. (yonik)
+
+* SOLR-1651: Fixed Incorrect dataimport handler package name in SolrResourceLoader
+  (Akshay Ukey via shalin)
+
+* SOLR-1936: The JSON response format needed to escape unicode code point
+  U+2028 - 'LINE SEPARATOR' (Robert Hofstra, yonik)
+
+* SOLR-1852: Fix WordDelimiterFilterFactory bug where position increments
+  were not being applied properly to subwords.  (Peter Wolanin via Robert Muir)
+
+* SOLR-1706: fixed WordDelimiterFilter for certain combinations of options
+  where it would output incorrect tokens. (Robert Muir, Chris Male)
+
+* SOLR-1948: PatternTokenizerFactory should use parent's args (koji)
+
+* SOLR-1870: Indexing documents using the 'javabin' format no longer
+  fails with a ClassCastException whenSolrInputDocuments contain field
+  values which are Collections or other classes that implement
+  Iterable. (noble, hossman)
+
+* SOLR-1769 Solr 1.4 Replication - Repeater throwing NullPointerException (noble)
 
 ================== Release 1.4.0 ==================
 Release Date:  See http://lucene.apache.org/solr for the official release date.

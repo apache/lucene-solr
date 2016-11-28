@@ -109,6 +109,7 @@ public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifi
     TopDocs knnResults = knnSearch(document);
     List<ClassificationResult<BytesRef>> assignedClasses = buildListFromTopDocs(knnResults);
     Collections.sort(assignedClasses);
+    max = Math.min(max, assignedClasses.size());
     return assignedClasses.subList(0, max);
   }
 
@@ -130,15 +131,14 @@ public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifi
         boost = field2boost[1];
       }
       String[] fieldValues = document.getValues(fieldName);
+      mlt.setBoost(true); // we want always to use the boost coming from TF * IDF of the term
       if (boost != null) {
-        mlt.setBoost(true);
-        mlt.setBoostFactor(Float.parseFloat(boost));
+        mlt.setBoostFactor(Float.parseFloat(boost)); // this is an additional multiplicative boost coming from the field boost
       }
       mlt.setAnalyzer(field2analyzer.get(fieldName));
       for (String fieldContent : fieldValues) {
         mltQuery.add(new BooleanClause(mlt.like(fieldName, new StringReader(fieldContent)), BooleanClause.Occur.SHOULD));
       }
-      mlt.setBoost(false);
     }
     Query classFieldQuery = new WildcardQuery(new Term(classFieldName, "*"));
     mltQuery.add(new BooleanClause(classFieldQuery, BooleanClause.Occur.MUST));

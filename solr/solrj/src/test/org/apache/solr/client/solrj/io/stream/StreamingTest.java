@@ -2230,7 +2230,7 @@ public void testTrace() throws Exception {
     for (int idx = 0; idx < vals.length; idx += 2) {
       params.add(vals[idx], vals[idx + 1]);
     }
-
+    if(random().nextBoolean()) params.add("wt","javabin");
     return params;
   }
   

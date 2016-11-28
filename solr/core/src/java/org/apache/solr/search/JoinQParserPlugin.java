@@ -110,6 +110,7 @@ public class JoinQParserPlugin extends QParserPlugin {
         } else {
           coreName = null;
           QParser fromQueryParser = subQuery(v, null);
+          fromQueryParser.setIsFilter(true);
           fromQuery = fromQueryParser.getQuery();
         }
 

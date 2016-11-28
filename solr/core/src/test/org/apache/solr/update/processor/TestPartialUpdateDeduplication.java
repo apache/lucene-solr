@@ -25,8 +25,6 @@ import org.junit.Test;
 
 import java.util.Map;
 
-import static org.apache.solr.update.processor.SignatureUpdateProcessorFactoryTest.addDoc;
-
 public class TestPartialUpdateDeduplication extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {

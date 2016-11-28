@@ -52,7 +52,7 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
   
   public void testSimple() {
     assertQ("simplest test", 
-        req("q", "text:document", "sort", "id asc", "hl", "true"),
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.method", "postings"), // test hl.method is happy too
         "count(//lst[@name='highlighting']/*)=2",
         "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
         "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");

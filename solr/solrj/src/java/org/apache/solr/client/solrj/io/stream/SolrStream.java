@@ -274,15 +274,18 @@ public class SolrStream extends TupleStream {
     }
 
     String wt = requestParams.get(CommonParams.WT, "json");
-    assert CommonParams.JSON.equals(wt);
     QueryRequest query = new QueryRequest(requestParams);
     query.setPath(p);
     query.setResponseParser(new InputStreamResponseParser(wt));
     query.setMethod(SolrRequest.METHOD.POST);
     NamedList<Object> genericResponse = server.request(query);
     InputStream stream = (InputStream) genericResponse.get("stream");
-    InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
-    return new JSONTupleStream(reader);
+    if (CommonParams.JAVABIN.equals(wt)) {
+      return new JavabinTupleStreamParser(stream, true);
+    } else {
+      InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+      return new JSONTupleStream(reader);
+    }
   }
 
 

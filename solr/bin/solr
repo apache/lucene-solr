@@ -158,22 +158,74 @@ SOLR_SSL_OPTS=""
 if [ -n "$SOLR_SSL_KEY_STORE" ]; then
   SOLR_JETTY_CONFIG+=("--module=https")
   SOLR_URL_SCHEME=https
-  SOLR_SSL_OPTS=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE \
-    -Dsolr.jetty.keystore.password=$SOLR_SSL_KEY_STORE_PASSWORD \
-    -Dsolr.jetty.truststore=$SOLR_SSL_TRUST_STORE \
-    -Dsolr.jetty.truststore.password=$SOLR_SSL_TRUST_STORE_PASSWORD \
-    -Dsolr.jetty.ssl.needClientAuth=$SOLR_SSL_NEED_CLIENT_AUTH \
-    -Dsolr.jetty.ssl.wantClientAuth=$SOLR_SSL_WANT_CLIENT_AUTH"
+  SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
+  if [ -n "$SOLR_SSL_KEY_STORE_PASSWORD" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore.password=$SOLR_SSL_KEY_STORE_PASSWORD"
+  fi
+  if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore.type=$SOLR_SSL_KEY_STORE_TYPE"
+  fi
+
+  if [ -n "$SOLR_SSL_TRUST_STORE" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore=$SOLR_SSL_TRUST_STORE"
+  fi
+  if [ -n "$SOLR_SSL_TRUST_STORE_PASSWORD" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.password=$SOLR_SSL_TRUST_STORE_PASSWORD"
+  fi
+  if [ -n "$SOLR_SSL_TRUST_STORE_TYPE" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.type=$SOLR_SSL_TRUST_STORE_TYPE"
+  fi
+
+  if [ -n "$SOLR_SSL_NEED_CLIENT_AUTH" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.needClientAuth=$SOLR_SSL_NEED_CLIENT_AUTH"
+  fi
+  if [ -n "$SOLR_SSL_WANT_CLIENT_AUTH" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.wantClientAuth=$SOLR_SSL_WANT_CLIENT_AUTH"
+  fi
+
   if [ -n "$SOLR_SSL_CLIENT_KEY_STORE" ]; then
-    SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_CLIENT_KEY_STORE \
-      -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD \
-      -Djavax.net.ssl.trustStore=$SOLR_SSL_CLIENT_TRUST_STORE \
-      -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD"
+    SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_CLIENT_KEY_STORE"
+
+    if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD"
+    fi
+    if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_TYPE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_CLIENT_KEY_STORE_TYPE"
+    fi
   else
-    SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_KEY_STORE \
-      -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_KEY_STORE_PASSWORD \
-      -Djavax.net.ssl.trustStore=$SOLR_SSL_TRUST_STORE \
-      -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_TRUST_STORE_PASSWORD"
+    if [ -n "$SOLR_SSL_KEY_STORE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_KEY_STORE"
+    fi
+    if [ -n "$SOLR_SSL_KEY_STORE_PASSWORD" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStorePassword=$SOLR_SSL_KEY_STORE_PASSWORD"
+    fi
+    if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_KEYSTORE_TYPE"
+    fi
+  fi
+
+  if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
+    SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStore=$SOLR_SSL_CLIENT_TRUST_STORE"
+
+    if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD"
+    fi
+
+    if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE_TYPE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStoreType=$SOLR_SSL_CLIENT_TRUST_STORE_TYPE"
+    fi
+  else
+    if [ -n "$SOLR_SSL_TRUST_STORE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStore=$SOLR_SSL_TRUST_STORE"
+    fi
+
+    if [ -n "$SOLR_SSL_TRUST_STORE_PASSWORD" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStorePassword=$SOLR_SSL_TRUST_STORE_PASSWORD"
+    fi
+
+    if [ -n "$SOLR_SSL_TRUST_STORE_TYPE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStoreType=$SOLR_SSL_TRUST_STORE_TYPE"
+    fi
   fi
 else
   SOLR_JETTY_CONFIG+=("--module=http")

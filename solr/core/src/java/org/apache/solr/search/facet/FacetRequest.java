@@ -568,6 +568,7 @@ class FacetQueryParser extends FacetParser<FacetQuery> {
 
     if (qstring != null) {
       QParser parser = QParser.getParser(qstring, getSolrRequest());
+      parser.setIsFilter(true);
       facet.q = parser.getQuery();
     }
 

@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
@@ -49,9 +49,6 @@ import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateShardHandler;
-import org.apache.solr.util.stats.Clock;
-import org.apache.solr.util.stats.Timer;
-import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -254,7 +251,7 @@ public class Overseer implements Closeable {
     private ClusterState processQueueItem(ZkNodeProps message, ClusterState clusterState, ZkStateWriter zkStateWriter, boolean enableBatching, ZkStateWriter.ZkWriteCallback callback) throws Exception {
       final String operation = message.getStr(QUEUE_OPERATION);
       List<ZkWriteCommand> zkWriteCommands = null;
-      final TimerContext timerContext = stats.time(operation);
+      final Timer.Context timerContext = stats.time(operation);
       try {
         zkWriteCommands = processMessage(clusterState, message, operation);
         stats.success(operation);
@@ -392,7 +389,7 @@ public class Overseer implements Closeable {
     }
 
     private LeaderStatus amILeader() {
-      TimerContext timerContext = stats.time("am_i_leader");
+      Timer.Context timerContext = stats.time("am_i_leader");
       boolean success = true;
       try {
         ZkNodeProps props = ZkNodeProps.load(zkClient.getData(
@@ -795,7 +792,7 @@ public class Overseer implements Closeable {
       stat.errors.incrementAndGet();
     }
 
-    public TimerContext time(String operation) {
+    public Timer.Context time(String operation) {
       String op = operation.toLowerCase(Locale.ROOT);
       Stat stat = stats.get(op);
       if (stat == null) {
@@ -853,7 +850,7 @@ public class Overseer implements Closeable {
     public Stat() {
       this.success = new AtomicInteger();
       this.errors = new AtomicInteger();
-      this.requestTime = new Timer(TimeUnit.MILLISECONDS, TimeUnit.MINUTES, Clock.defaultClock());
+      this.requestTime = new Timer();
       this.failureDetails = new LinkedList<>();
     }
   }

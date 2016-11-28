@@ -17,13 +17,20 @@
 
 package org.apache.solr.update.processor;
 
+import java.util.Locale;
+
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.LuceneQParser;
+import org.apache.solr.search.SyntaxError;
+
+import static org.apache.solr.update.processor.ClassificationUpdateProcessorFactory.Algorithm.KNN;
 
 /**
  * This class implements an UpdateProcessorFactory for the Classification Update Processor.
@@ -33,49 +40,67 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
 
   // Update Processor Config params
   private static final String INPUT_FIELDS_PARAM = "inputFields";
-  private static final String CLASS_FIELD_PARAM = "classField";
+  private static final String TRAINING_CLASS_FIELD_PARAM = "classField";
+  private static final String PREDICTED_CLASS_FIELD_PARAM = "predictedClassField";
+  private static final String MAX_CLASSES_TO_ASSIGN_PARAM = "predictedClass.maxCount";
   private static final String ALGORITHM_PARAM = "algorithm";
   private static final String KNN_MIN_TF_PARAM = "knn.minTf";
   private static final String KNN_MIN_DF_PARAM = "knn.minDf";
   private static final String KNN_K_PARAM = "knn.k";
+  private static final String KNN_FILTER_QUERY = "knn.filterQuery";
+
+  public enum Algorithm {KNN, BAYES}
 
   //Update Processor Defaults
+  private static final int DEFAULT_MAX_CLASSES_TO_ASSIGN = 1;
   private static final int DEFAULT_MIN_TF = 1;
   private static final int DEFAULT_MIN_DF = 1;
   private static final int DEFAULT_K = 10;
-  private static final String DEFAULT_ALGORITHM = "knn";
+  private static final Algorithm DEFAULT_ALGORITHM = KNN;
 
-  private String[] inputFieldNames; // the array of fields to be sent to the Classifier
-
-  private String classFieldName; // the field containing the class for the Document
-
-  private String algorithm; // the Classification Algorithm to use - currently 'knn' or 'bayes'
-
-  private int minTf; // knn specific - the minimum Term Frequency for considering a term
-
-  private int minDf; // knn specific - the minimum Document Frequency for considering a term
-
-  private int k; // knn specific - thw window of top results to evaluate, when assigning the class
+  private SolrParams params;
+  private ClassificationUpdateProcessorParams classificationParams;
 
   @Override
   public void init(final NamedList args) {
     if (args != null) {
-      SolrParams params = SolrParams.toSolrParams(args);
+      params = SolrParams.toSolrParams(args);
+      classificationParams = new ClassificationUpdateProcessorParams();
 
       String fieldNames = params.get(INPUT_FIELDS_PARAM);// must be a comma separated list of fields
       checkNotNull(INPUT_FIELDS_PARAM, fieldNames);
-      inputFieldNames = fieldNames.split("\\,");
+      classificationParams.setInputFieldNames(fieldNames.split("\\,"));
 
-      classFieldName = params.get(CLASS_FIELD_PARAM);
-      checkNotNull(CLASS_FIELD_PARAM, classFieldName);
+      String trainingClassField = (params.get(TRAINING_CLASS_FIELD_PARAM));
+      checkNotNull(TRAINING_CLASS_FIELD_PARAM, trainingClassField);
+      classificationParams.setTrainingClassField(trainingClassField);
 
-      algorithm = params.get(ALGORITHM_PARAM);
-      if (algorithm == null)
-        algorithm = DEFAULT_ALGORITHM;
+      String predictedClassField = (params.get(PREDICTED_CLASS_FIELD_PARAM));
+      if (predictedClassField == null || predictedClassField.isEmpty()) {
+        predictedClassField = trainingClassField;
+      }
+      classificationParams.setPredictedClassField(predictedClassField);
 
-      minTf = getIntParam(params, KNN_MIN_TF_PARAM, DEFAULT_MIN_TF);
-      minDf = getIntParam(params, KNN_MIN_DF_PARAM, DEFAULT_MIN_DF);
-      k = getIntParam(params, KNN_K_PARAM, DEFAULT_K);
+      classificationParams.setMaxPredictedClasses(getIntParam(params, MAX_CLASSES_TO_ASSIGN_PARAM, DEFAULT_MAX_CLASSES_TO_ASSIGN));
+
+      String algorithmString = params.get(ALGORITHM_PARAM);
+      Algorithm classificationAlgorithm;
+      try {
+        if (algorithmString == null || Algorithm.valueOf(algorithmString.toUpperCase(Locale.ROOT)) == null) {
+          classificationAlgorithm = DEFAULT_ALGORITHM;
+        } else {
+          classificationAlgorithm = Algorithm.valueOf(algorithmString.toUpperCase(Locale.ROOT));
+        }
+      } catch (IllegalArgumentException e) {
+        throw new SolrException
+            (SolrException.ErrorCode.SERVER_ERROR,
+                "Classification UpdateProcessor Algorithm: '" + algorithmString + "' not supported");
+      }
+      classificationParams.setAlgorithm(classificationAlgorithm);
+
+      classificationParams.setMinTf(getIntParam(params, KNN_MIN_TF_PARAM, DEFAULT_MIN_TF));
+      classificationParams.setMinDf(getIntParam(params, KNN_MIN_DF_PARAM, DEFAULT_MIN_DF));
+      classificationParams.setK(getIntParam(params, KNN_K_PARAM, DEFAULT_K));
     }
   }
 
@@ -108,116 +133,34 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
 
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    String trainingFilterQueryString = (params.get(KNN_FILTER_QUERY));
+    try {
+      if (trainingFilterQueryString != null && !trainingFilterQueryString.isEmpty()) {
+        Query trainingFilterQuery = this.parseFilterQuery(trainingFilterQueryString, params, req);
+        classificationParams.setTrainingFilterQuery(trainingFilterQuery);
+      }
+    } catch (SyntaxError | RuntimeException syntaxError) {
+      throw new SolrException
+          (SolrException.ErrorCode.SERVER_ERROR,
+              "Classification UpdateProcessor Training Filter Query: '" + trainingFilterQueryString + "' is not supported", syntaxError);
+    }
+
     IndexSchema schema = req.getSchema();
     IndexReader indexReader = req.getSearcher().getIndexReader();
-    return new ClassificationUpdateProcessor(inputFieldNames, classFieldName, minDf, minTf, k, algorithm, next, indexReader, schema);
+
+    return new ClassificationUpdateProcessor(classificationParams, next, indexReader, schema);
   }
 
-  /**
-   * get field names used as classifier's inputs
-   *
-   * @return the input field names
-   */
-  public String[] getInputFieldNames() {
-    return inputFieldNames;
+  private Query parseFilterQuery(String trainingFilterQueryString, SolrParams params, SolrQueryRequest req) throws SyntaxError {
+    LuceneQParser parser = new LuceneQParser(trainingFilterQueryString, null, params, req);
+    return parser.parse();
   }
 
-  /**
-   * set field names used as classifier's inputs
-   *
-   * @param inputFieldNames the input field names
-   */
-  public void setInputFieldNames(String[] inputFieldNames) {
-    this.inputFieldNames = inputFieldNames;
+  public ClassificationUpdateProcessorParams getClassificationParams() {
+    return classificationParams;
   }
 
-  /**
-   * get field names used as classifier's output
-   *
-   * @return the output field name
-   */
-  public String getClassFieldName() {
-    return classFieldName;
-  }
-
-  /**
-   * set field names used as classifier's output
-   *
-   * @param classFieldName the output field name
-   */
-  public void setClassFieldName(String classFieldName) {
-    this.classFieldName = classFieldName;
-  }
-
-  /**
-   * get the name of the classifier algorithm used
-   *
-   * @return the classifier algorithm used
-   */
-  public String getAlgorithm() {
-    return algorithm;
-  }
-
-  /**
-   * set the name of the classifier algorithm used
-   *
-   * @param algorithm the classifier algorithm used
-   */
-  public void setAlgorithm(String algorithm) {
-    this.algorithm = algorithm;
-  }
-
-  /**
-   * get the min term frequency value to be used in case algorithm is {@code "knn"}
-   *
-   * @return the min term frequency
-   */
-  public int getMinTf() {
-    return minTf;
-  }
-
-  /**
-   * set the min term frequency value to be used in case algorithm is {@code "knn"}
-   *
-   * @param minTf the min term frequency
-   */
-  public void setMinTf(int minTf) {
-    this.minTf = minTf;
-  }
-
-  /**
-   * get the min document frequency value to be used in case algorithm is {@code "knn"}
-   *
-   * @return the min document frequency
-   */
-  public int getMinDf() {
-    return minDf;
-  }
-
-  /**
-   * set the min document frequency value to be used in case algorithm is {@code "knn"}
-   *
-   * @param minDf the min document frequency
-   */
-  public void setMinDf(int minDf) {
-    this.minDf = minDf;
-  }
-
-  /**
-   * get the the no. of nearest neighbor to analyze, to be used in case algorithm is {@code "knn"}
-   *
-   * @return the no. of neighbors to analyze
-   */
-  public int getK() {
-    return k;
-  }
-
-  /**
-   * set the the no. of nearest neighbor to analyze, to be used in case algorithm is {@code "knn"}
-   *
-   * @param k the no. of neighbors to analyze
-   */
-  public void setK(int k) {
-    this.k = k;
+  public void setClassificationParams(ClassificationUpdateProcessorParams classificationParams) {
+    this.classificationParams = classificationParams;
   }
 }
