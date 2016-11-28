@@ -16,14 +16,19 @@
  */
 package org.apache.solr.metrics;
 
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoMBean;
 
 public final class SolrMetricTestUtils {
@@ -36,7 +41,7 @@ public final class SolrMetricTestUtils {
   }
 
   public static String getRandomScope(Random random, boolean shouldDefineScope) {
-    return shouldDefineScope ? TestUtil.randomSimpleString(random) : null; // must be simple string for JMX publishing
+    return shouldDefineScope ? TestUtil.randomSimpleString(random, 1, 10) : null; // must be simple string for JMX publishing
   }
 
   public static SolrInfoMBean.Category getRandomCategory(Random random) {
@@ -47,18 +52,18 @@ public final class SolrMetricTestUtils {
     return shouldDefineCategory ? CATEGORIES[TestUtil.nextInt(random, 0, CATEGORIES.length - 1)] : null;
   }
 
-  public static Map<String, Metric> getRandomMetrics(Random random) {
+  public static Map<String, Counter> getRandomMetrics(Random random) {
     return getRandomMetrics(random, random.nextBoolean());
   }
 
-  public static Map<String, Metric> getRandomMetrics(Random random, boolean shouldDefineMetrics) {
+  public static Map<String, Counter> getRandomMetrics(Random random, boolean shouldDefineMetrics) {
     return shouldDefineMetrics ? getRandomMetricsWithReplacements(random, new HashMap<>()) : null;
   }
 
   public static final String SUFFIX = "_testing";
 
-  public static Map<String, Metric> getRandomMetricsWithReplacements(Random random, Map<String, Metric> existing) {
-    HashMap<String, Metric> metrics = new HashMap<>();
+  public static Map<String, Counter> getRandomMetricsWithReplacements(Random random, Map<String, Counter> existing) {
+    HashMap<String, Counter> metrics = new HashMap<>();
     ArrayList<String> existingKeys = new ArrayList<>(existing.keySet());
 
     int numMetrics = TestUtil.nextInt(random, 0, MAX_ITERATIONS);
@@ -66,7 +71,7 @@ public final class SolrMetricTestUtils {
       boolean shouldReplaceMetric = !existing.isEmpty() && random.nextBoolean();
       String name = shouldReplaceMetric
           ? existingKeys.get(TestUtil.nextInt(random, 0, existingKeys.size() - 1))
-          : TestUtil.randomSimpleString(random) + SUFFIX; // must be simple string for JMX publishing
+          : TestUtil.randomSimpleString(random, 1, 10) + SUFFIX; // must be simple string for JMX publishing
 
       Counter counter = new Counter();
       counter.inc(random.nextLong());
@@ -74,5 +79,64 @@ public final class SolrMetricTestUtils {
     }
 
     return metrics;
+  }
+
+  public static SolrMetricProducer getProducerOf(SolrInfoMBean.Category category, String scope, Map<String, Counter> metrics) {
+    return new SolrMetricProducer() {
+      @Override
+      public Collection<String> initializeMetrics(String registry, String scope) {
+        if (metrics == null || metrics.isEmpty()) {
+          return Collections.emptyList();
+        }
+        for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
+          SolrMetricManager.getOrCreateCounter(registry, entry.getKey(), category.toString(), scope);
+        }
+        return metrics.keySet();
+      }
+
+      @Override
+      public String getName() {
+        return scope;
+      }
+
+      @Override
+      public String getVersion() {
+        return "0.0";
+      }
+
+      @Override
+      public String getDescription() {
+        return "foo";
+      }
+
+      @Override
+      public Category getCategory() {
+        return category;
+      }
+
+      @Override
+      public String getSource() {
+        return null;
+      }
+
+      @Override
+      public URL[] getDocs() {
+        return new URL[0];
+      }
+
+      @Override
+      public NamedList getStatistics() {
+        return null;
+      }
+
+      @Override
+      public String toString() {
+        return "SolrMetricProducer.of{" +
+            "\ncategory=" + category +
+            "\nscope=" + scope +
+            "\nmetrics=" + metrics +
+            "\n}";
+      }
+    };
   }
 }

@@ -40,6 +40,26 @@ public final class SolrMetricInfo {
     this.category = category;
   }
 
+  public static SolrMetricInfo of(String fullName) {
+    if (fullName == null || fullName.isEmpty()) {
+      return null;
+    }
+    String[] names = fullName.split("\\.");
+    if (names.length < 3) { // not a valid info
+      return null;
+    }
+    // check top-level name for valid category
+    SolrInfoMBean.Category category;
+    try {
+      category = SolrInfoMBean.Category.valueOf(names[0]);
+    } catch (IllegalArgumentException e) { // not a valid category
+      return null;
+    }
+    String scope = names[1];
+    String name = fullName.substring(names[0].length() + names[1].length() + 2);
+    return new SolrMetricInfo(name, scope, category);
+  }
+
   /**
    * Returns the metric name defined by this object.
    * For example, if the name is `Requests`, scope is `/admin/ping`,
@@ -50,5 +70,35 @@ public final class SolrMetricInfo {
    */
   public String getMetricName() {
     return MetricRegistry.name(category.toString(), scope, name);
+  }
+
+  @Override
+  public String toString() {
+    return "SolrMetricInfo{" +
+        "name='" + name + '\'' +
+        ", scope='" + scope + '\'' +
+        ", category=" + category +
+        '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    SolrMetricInfo that = (SolrMetricInfo) o;
+
+    if (name != null ? !name.equals(that.name) : that.name != null) return false;
+    if (scope != null ? !scope.equals(that.scope) : that.scope != null) return false;
+    return category == that.category;
+
+  }
+
+  @Override
+  public int hashCode() {
+    int result = name != null ? name.hashCode() : 0;
+    result = 31 * result + (scope != null ? scope.hashCode() : 0);
+    result = 31 * result + (category != null ? category.hashCode() : 0);
+    return result;
   }
 }

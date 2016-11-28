@@ -25,18 +25,18 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 /**
  * Interface for 'pluggable' metric reporters that can be
- * registered with a {@link SolrMetricManager}.
+ * registered with a {@link SolrCoreMetricManager}.
  */
 public abstract class SolrMetricReporter implements Closeable, PluginInfoInitialized {
 
-  protected final SolrMetricManager metricManager;
+  protected final SolrCoreMetricManager metricManager;
 
   /**
    * Creates a new instance of {@link SolrMetricReporter}.
    *
    * @param metricManager the metric manager to which the reporter will be registered
    */
-  public SolrMetricReporter(SolrMetricManager metricManager) {
+  public SolrMetricReporter(SolrCoreMetricManager metricManager) {
     this.metricManager = metricManager;
   }
 

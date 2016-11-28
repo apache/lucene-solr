@@ -29,6 +29,7 @@ import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.ObjectNameFactory;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.metrics.SolrMetricInfo;
+import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
 import org.apache.solr.util.JmxUtil;
@@ -55,8 +56,9 @@ public class SolrJmxReporter extends SolrMetricReporter {
    *
    * @param metricManager the metric manager to which the reporter will be registered
    */
-  public SolrJmxReporter(SolrMetricManager metricManager) {
+  public SolrJmxReporter(SolrCoreMetricManager metricManager) {
     super(metricManager);
+    this.domain = metricManager.getCore().getName();
   }
 
   /**
@@ -96,7 +98,7 @@ public class SolrJmxReporter extends SolrMetricReporter {
 
     JmxObjectNameFactory jmxObjectNameFactory = new JmxObjectNameFactory(metricManager);
 
-    reporter = JmxReporter.forRegistry(metricManager.getRegistry())
+    reporter = JmxReporter.forRegistry(SolrMetricManager.registryFor(metricManager.getRegistryName()))
                           .registerWith(mBeanServer)
                           .inDomain(domain)
                           .createsObjectNamesWith(jmxObjectNameFactory)
@@ -183,9 +185,9 @@ public class SolrJmxReporter extends SolrMetricReporter {
    */
   private static class JmxObjectNameFactory implements ObjectNameFactory {
 
-    private final SolrMetricManager metricManager;
+    private final SolrCoreMetricManager metricManager;
 
-    JmxObjectNameFactory(SolrMetricManager metricManager) {
+    JmxObjectNameFactory(SolrCoreMetricManager metricManager) {
       this.metricManager = metricManager;
     }
 
@@ -198,9 +200,9 @@ public class SolrJmxReporter extends SolrMetricReporter {
      */
     @Override
     public ObjectName createName(String type, String domain, String name) {
-      SolrMetricInfo metricInfo = metricManager.getMetricInfo(name);
+      SolrMetricInfo metricInfo = SolrMetricInfo.of(name);
       if (metricInfo == null) {
-        throw new IllegalStateException(name + " does not exist in the metric manager = " + metricManager);
+        throw new IllegalStateException(name + " is not a metric info in the metric manager = " + metricManager);
       }
 
       Hashtable<String, String> properties = new Hashtable<>();

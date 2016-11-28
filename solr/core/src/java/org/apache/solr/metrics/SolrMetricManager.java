@@ -16,191 +16,137 @@
  */
 package org.apache.solr.metrics;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.ConcurrentHashMap;
-
-import com.codahale.metrics.Metric;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean;
-import org.apache.solr.core.SolrResourceLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.codahale.metrics.Snapshot;
+import com.codahale.metrics.Timer;
+import org.apache.solr.common.util.NamedList;
 
 /**
- * Responsible for collecting metrics from {@link SolrMetricProducer}'s
- * and exposing metrics to {@link SolrMetricReporter}'s.
+ *
  */
-public class SolrMetricManager implements Closeable {
+public class SolrMetricManager {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String REGISTRY_NAME_PREFIX = "solr";
+  public static final String DEFAULT_REGISTRY = MetricRegistry.name(REGISTRY_NAME_PREFIX, "default");
 
-  private final SolrCore core;
-  private final MetricRegistry registry;
-  private final ConcurrentHashMap<String, SolrMetricInfo> metricInfos;
-  private final ConcurrentHashMap<String, SolrMetricReporter> reporters;
+  // don't create instances of this class
+  private SolrMetricManager() { }
 
-  /**
-   * Constructs a metric manager.
-   *
-   * @param core the metric manager's core
-   */
-  public SolrMetricManager(SolrCore core) {
-    this.core = core;
-    this.registry = SharedMetricRegistries.getOrCreate(core.getName());
-    this.metricInfos = new ConcurrentHashMap<>();
-    this.reporters = new ConcurrentHashMap<>();
+
+  public static MetricRegistry registryFor(String registry) {
+    return SharedMetricRegistries.getOrCreate(overridableRegistryName(registry));
+  }
+
+  public static void clearRegistryFor(String registry) {
+    SharedMetricRegistries.getOrCreate(overridableRegistryName(registry)).removeMatching(MetricFilter.ALL);
+  }
+
+  public static void clearMetric(String registry, String metricName, String... metricPath) {
+    SharedMetricRegistries.getOrCreate(overridableRegistryName(registry)).
+        remove(mkName(metricName, metricPath));
+  }
+
+  public static Meter getOrCreateMeter(String registry, String metricName, String... metricPath) {
+    return SharedMetricRegistries.getOrCreate(overridableRegistryName(registry)).
+        meter(mkName(metricName, metricPath));
+  }
+
+  public static Timer getOrCreateTimer(String registry, String metricName, String... metricPath) {
+    return SharedMetricRegistries.getOrCreate(overridableRegistryName(registry)).
+        timer(mkName(metricName, metricPath));
+  }
+
+  public static Counter getOrCreateCounter(String registry, String metricName, String... metricPath) {
+    return SharedMetricRegistries.getOrCreate(overridableRegistryName(registry)).
+        counter(mkName(metricName, metricPath));
+  }
+
+  public static Histogram getOrCreateHistogram(String registry, String metricName, String... metricPath) {
+    return SharedMetricRegistries.getOrCreate(overridableRegistryName(registry)).
+        histogram(mkName(metricName, metricPath));
   }
 
   /**
-   * Registers a mapping of name/metric's with the manager's metric registry.
-   * If a metric with the same metric name has already been registered, this method
-   * replaces the original metric with the new metric.
-   *
-   * @param scope     the scope of the metrics to be registered (e.g. `/admin/ping`)
-   * @param category  the category of the metrics to be registered (e.g. `QUERYHANDLERS`)
-   * @param metrics   the mapping of name/metric's to be registered (e.g. `requestTimes`)
+   * This method creates a hierarchical name with arbitrary levels of hierarchy
+   * @param name the final segment of the name, must not be null or empty.
+   * @param path optional path segments, starting from the top level. Empty or null
+   *             segments will be skipped.
+   * @return fully-qualified name with all valid hierarchy segments prepended to the name.
    */
-  public void registerMetrics(String scope, SolrInfoMBean.Category category, Map<String, Metric> metrics) {
-    if (scope == null || category == null || metrics == null) {
-      throw new IllegalArgumentException("registerMetrics() called with illegal arguments: " +
-          "scope = " + scope + ", category = " + category + ", metrics = " + metrics);
+  public static String mkName(String name, String... path) {
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("name must not be empty");
     }
-
-    for (Map.Entry<String, Metric> entry : metrics.entrySet()) {
-      String name = entry.getKey();
-      Metric metric = entry.getValue();
-
-      SolrMetricInfo metricInfo = new SolrMetricInfo(name, scope, category);
-      String metricName = metricInfo.getMetricName();
-      metricInfos.put(metricName, metricInfo);
-
-      try {
-        registry.register(metricName, metric);
-      } catch (IllegalArgumentException e) {
-        log.warn("{} has already been registered; replacing existing metric.", metricName);
-        synchronized (registry) {
-          registry.remove(metricName);
-          registry.register(metricName, metric);
+    if (path == null || path.length == 0) {
+      return name;
+    } else {
+      StringBuilder sb = new StringBuilder();
+      for (String s : path) {
+        if (s == null || s.isEmpty()) {
+          continue;
         }
-      } catch (Exception e) {
-        log.error("registerMetrics() encountered error registering {}: {}.", metricName, e);
-        registry.remove(metricName);
-        metricInfos.remove(metricName);
+        if (sb.length() > 0) {
+          sb.append('.');
+        }
+        sb.append(s);
       }
-    }
-  }
-
-  /**
-   * Loads a reporter and registers it to listen to the manager's metric registry.
-   * If a reporter with the same name has already been registered, this method
-   * closes the original reporter and registers the new reporter.
-   *
-   * @param pluginInfo the configuration of the reporter
-   * @throws IOException if the reporter could not be loaded
-   */
-  public void loadReporter(PluginInfo pluginInfo) throws IOException {
-    if (pluginInfo == null) {
-      throw new IllegalArgumentException("loadReporter called with null plugin info.");
-    }
-
-    SolrResourceLoader resourceLoader = core.getResourceLoader();
-    SolrMetricReporter reporter = resourceLoader.newInstance(
-      pluginInfo.className,
-      SolrMetricReporter.class,
-      new String[0],
-      new Class[] { SolrMetricManager.class },
-      new Object[] { this }
-    );
-
-    try {
-      reporter.init(pluginInfo);
-    } catch (IllegalStateException e) {
-      throw new IllegalArgumentException("loadReporter called with invalid plugin info = " + pluginInfo);
-    }
-
-    SolrMetricReporter existing = reporters.putIfAbsent(pluginInfo.name, reporter);
-    if (existing != null) {
-      log.warn("{} has already been register; replacing existing reporter = {}.", pluginInfo.name, existing);
-      synchronized (reporters) {
-        reporters.get(pluginInfo.name).close(); // Get the existing reporter again in case it was replaced
-        reporters.put(pluginInfo.name, reporter); // Replace the existing reporter with the new one
+      if (sb.length() > 0) {
+        sb.append('.');
       }
+      sb.append(name);
+      return sb.toString();
     }
-
-    log.info("{} is successfully registered.", pluginInfo.name);
   }
 
   /**
-   * Closes registered reporters and clears registered metrics.
+   * Allows named registries to be renamed using System properties.
+   * This would be mostly be useful if you want to combine the metrics from a few registries for a single
+   * reporter.
+   * @param registry The name of the registry
+   * @return A potentially overridden (via System properties) registry name
    */
-  @Override
-  public void close() throws IOException {
-    // Close reporters first to ensure no reporter is listening to the registry.
-    Iterator<Map.Entry<String, SolrMetricReporter>> it = reporters.entrySet().iterator();
-    while (it.hasNext()) {
-      Map.Entry<String, SolrMetricReporter> entry = it.next();
-      entry.getValue().close();
-      it.remove();
-    }
+  public static String overridableRegistryName(String registry) {
+    String fqRegistry = enforcePrefix(registry);
+    return enforcePrefix(System.getProperty(fqRegistry,fqRegistry));
+  }
 
-    // Clear `registry` before `metricInfos` to prevent the scenario where a metric's
-    // meta-data is removed but the metric itself is still contained in the registry.
-    registry.removeMatching(MetricFilter.ALL);
-    metricInfos.clear();
+  private static String enforcePrefix(String name) {
+    if (name.startsWith(REGISTRY_NAME_PREFIX))
+      return name;
+    else
+      return MetricRegistry.name(REGISTRY_NAME_PREFIX, name);
   }
 
   /**
-   * Retrieves meta-data for a metric. If the metric does not exist, null is returned.
-   *
-   * @param metricName the metric name with which the metric was registered
-   * @return the meta-data of the metric
+   * Adds metrics from a Timer to a NamedList, using well-known names.
+   * @param lst The NamedList to add the metrics data to
+   * @param timer The Timer to extract the metrics from
    */
-  public SolrMetricInfo getMetricInfo(String metricName) {
-    return metricInfos.get(metricName);
+  public static void addTimerMetrics(NamedList<Object> lst, Timer timer) {
+    Snapshot snapshot = timer.getSnapshot();
+    lst.add("avgRequestsPerMinute", timer.getMeanRate());
+    lst.add("5minRateRequestsPerMinute", timer.getFiveMinuteRate());
+    lst.add("15minRateRequestsPerMinute", timer.getFifteenMinuteRate());
+    lst.add("avgTimePerRequest", nsToMs(snapshot.getMean()));
+    lst.add("medianRequestTime", nsToMs(snapshot.getMedian()));
+    lst.add("75thPctlRequestTime", nsToMs(snapshot.get75thPercentile()));
+    lst.add("95thPctlRequestTime", nsToMs(snapshot.get95thPercentile()));
+    lst.add("99thPctlRequestTime", nsToMs(snapshot.get99thPercentile()));
+    lst.add("999thPctlRequestTime", nsToMs(snapshot.get999thPercentile()));
   }
 
   /**
-   * Retrieves the solr core of the manager.
-   *
-   * @return the solr core of the manager.
+   * Timers return measurements as a double representing nanos.
+   * This converts that to a double representing millis.
+   * @param ns Nanoseconds
+   * @return Milliseconds
    */
-  public SolrCore getCore() {
-    return core;
-  }
-
-  /**
-   * Retrieves the metric registry of the manager.
-   *
-   * @return the metric registry of the manager.
-   */
-  public MetricRegistry getRegistry() {
-    return registry;
-  }
-
-  /**
-   * Retrieves all registered reporters and their names.
-   *
-   * @return all registered reporters and their names
-   */
-  public Map<String, SolrMetricReporter> getReporters() {
-    return Collections.unmodifiableMap(reporters);
-  }
-
-  /**
-   * Retrieves all metric meta-data.
-   *
-   * @return all metric meta-data
-   */
-  public Map<String, SolrMetricInfo> getMetricInfos() {
-    return Collections.unmodifiableMap(metricInfos);
+  public static double nsToMs(double ns) {
+    return ns / 1000000;  // Using TimeUnit involves casting to Long, so don't bother.
   }
 }

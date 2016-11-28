@@ -18,11 +18,16 @@ package org.apache.solr.handler;
 
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -32,6 +37,8 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.metrics.SolrMetricInfo;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -56,11 +63,11 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   protected boolean httpCaching = true;
 
   // Statistics
-  private final Meter numErrors = new Meter();
-  private final Meter numServerErrors = new Meter();
-  private final Meter numClientErrors = new Meter();
-  private final Meter numTimeouts = new Meter();
-  private final Timer requestTimes = new Timer(); // `requestTimes` doubles as a meter for requests
+  private Meter numErrors = new Meter();
+  private Meter numServerErrors = new Meter();
+  private Meter numClientErrors = new Meter();
+  private Meter numTimeouts = new Meter();
+  private Timer requestTimes = new Timer(); // `requestTimes` doubles as a meter for requests
 
   private final long handlerStart;
 
@@ -128,6 +135,16 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       httpCaching = caching != null ? Boolean.parseBoolean(caching.toString()) : true;
     }
 
+  }
+
+  @Override
+  public Collection<String> initializeMetrics(String registryName, String scope) {
+    numErrors = SolrMetricManager.getOrCreateMeter(registryName, "errors", getCategory().toString(), scope);
+    numServerErrors = SolrMetricManager.getOrCreateMeter(registryName, "serverErrors", getCategory().toString(), scope);
+    numClientErrors = SolrMetricManager.getOrCreateMeter(registryName, "clientErrors", getCategory().toString(), scope);
+    numTimeouts = SolrMetricManager.getOrCreateMeter(registryName, "timeouts", getCategory().toString(), scope);
+    requestTimes = SolrMetricManager.getOrCreateTimer(registryName, "requests", getCategory().toString(), scope);
+    return Arrays.asList("errors", "serverErrors", "clientErrors", "timeouts", "requests");
   }
 
   public static SolrParams getSolrParamsFromNamedList(NamedList args, String key) {
@@ -279,17 +296,6 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     lst.add("timeouts", numTimeouts.getCount());
     TimerUtils.addMetrics(lst, requestTimes);
     return lst;
-  }
-
-  @Override
-  public Map<String, Metric> getMetrics() {
-    HashMap<String, Metric> metrics = new HashMap<>(5, 1.0f);
-    metrics.put("errors", numErrors);
-    metrics.put("serverErrors", numServerErrors);
-    metrics.put("clientErrors", numClientErrors);
-    metrics.put("timeouts", numTimeouts);
-    metrics.put("requests", requestTimes);
-    return metrics;
   }
 }
 

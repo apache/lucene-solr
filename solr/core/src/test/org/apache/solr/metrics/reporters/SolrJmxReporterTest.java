@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -34,7 +35,8 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrCoreMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.schema.FieldType;
 import org.junit.After;
@@ -49,7 +51,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   private String domain;
   private String coreHashCode;
 
-  private SolrMetricManager metricManager;
+  private SolrCoreMetricManager metricManager;
   private SolrJmxReporter reporter;
   private MBeanServer mBeanServer;
 
@@ -84,7 +86,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     }
 
     PluginInfo pluginInfo = new PluginInfo(TestUtil.randomUnicodeString(random), attrs);
-    metricManager = new SolrMetricManager(core);
+    metricManager = new SolrCoreMetricManager(core);
     metricManager.loadReporter(pluginInfo);
 
     assertEquals(1, metricManager.getReporters().size());
@@ -109,18 +111,20 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   public void testReportMetrics() throws Exception {
     Random random = random();
 
-    Map<String, Metric> registered = new HashMap<>();
+    Map<String, Counter> registered = new HashMap<>();
     String scope = SolrMetricTestUtils.getRandomScope(random, true);
     SolrInfoMBean.Category category = SolrMetricTestUtils.getRandomCategory(random, true);
 
     int iterations = TestUtil.nextInt(random, 0, MAX_ITERATIONS);
     for (int i = 0; i < iterations; ++i) {
-      Map<String, Metric> metrics = SolrMetricTestUtils.getRandomMetricsWithReplacements(random, registered);
-      metricManager.registerMetrics(scope, category, metrics);
+      Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetricsWithReplacements(random, registered);
+      SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
+      metricManager.registerMetricProducer(scope, producer);
       registered.putAll(metrics);
 
       Set<ObjectInstance> objects = mBeanServer.queryMBeans(getObjectName(), null);
-      assertEquals(registered.size(), objects.size());
+      assertEquals(registered.size(), objects.stream().
+          filter(o -> o.getObjectName().getKeyProperty("scope").equals(scope)).count());
     }
   }
 
@@ -130,17 +134,20 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
     String scope = SolrMetricTestUtils.getRandomScope(random, true);
     SolrInfoMBean.Category category = SolrMetricTestUtils.getRandomCategory(random, true);
-    Map<String, Metric> metrics = SolrMetricTestUtils.getRandomMetrics(random, true);
-    metricManager.registerMetrics(scope, category, metrics);
+    Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random, true);
+    SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
+    metricManager.registerMetricProducer(scope, producer);
 
     Set<ObjectInstance> objects = mBeanServer.queryMBeans(getObjectName(), null);
-    assertEquals(metrics.size(), objects.size());
+    assertEquals(metrics.size(), objects.stream().
+        filter(o -> o.getObjectName().getKeyProperty("scope").equals(scope)).count());
 
     h.getCoreContainer().reload(h.getCore().getName());
-    metricManager.registerMetrics(scope, category, metrics); // re-register the metrics
+    metricManager.registerMetricProducer(scope, producer);
 
     objects = mBeanServer.queryMBeans(getObjectName(), null);
-    assertEquals(metrics.size(), objects.size());
+    assertEquals(metrics.size(), objects.stream().
+        filter(o -> o.getObjectName().getKeyProperty("scope").equals(scope)).count());
   }
 
   private ObjectName getObjectName() throws MalformedObjectNameException {

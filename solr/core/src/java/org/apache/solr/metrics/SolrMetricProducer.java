@@ -16,20 +16,22 @@
  */
 package org.apache.solr.metrics;
 
-import java.util.Map;
-import com.codahale.metrics.Metric;
+import java.util.Collection;
+
 import org.apache.solr.core.SolrInfoMBean;
 
 /**
  * Extension of {@link SolrInfoMBean} for use by objects that
- * expose metrics through {@link SolrMetricManager}.
+ * expose metrics through {@link SolrCoreMetricManager}.
  */
 public interface SolrMetricProducer extends SolrInfoMBean {
 
   /**
-   * Retrieves a mapping of name/metric's to be registered.
-   *
-   * @return a mapping of name/metric's to be registered
+   * Initializes metrics specific to this producer
+   * @param registry registry name where metrics are registered
+   * @param scope scope of the metrics (eg. handler name) to separate metrics of
+   *              instances of the same component executing in different contexts
+   * @return registered (or existing) unqualified names of metrics specific to this producer.
    */
-  Map<String, Metric> getMetrics();
+  Collection<String> initializeMetrics(String registry, String scope);
 }

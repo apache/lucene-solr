@@ -94,7 +94,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -190,7 +190,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final PluginBag<SearchComponent> searchComponents = new PluginBag<>(SearchComponent.class, this);
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors = new PluginBag<>(UpdateRequestProcessorFactory.class, this, true);
   private final Map<String,UpdateRequestProcessorChain> updateProcessorChains;
-  private final SolrMetricManager metricManager;
+  private final SolrCoreMetricManager metricManager;
   private final Map<String, SolrInfoMBean> infoRegistry;
   private final IndexDeletionPolicyWrapper solrDelPolicy;
   private final SolrSnapshotMetaDataManager snapshotMgr;
@@ -1049,14 +1049,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   }
 
   /**
-   * Initializes the core's {@link SolrMetricManager} with a given configuration.
+   * Initializes the core's {@link SolrCoreMetricManager} with a given configuration.
    * If metric reporters are configured, they are also registered with the manager.
    *
    * @param config the given configuration
-   * @return an instance of {@link SolrMetricManager}
+   * @return an instance of {@link SolrCoreMetricManager}
    */
-  private SolrMetricManager initMetricManager(SolrConfig config) {
-    SolrMetricManager metricManager = new SolrMetricManager(this);
+  private SolrCoreMetricManager initMetricManager(SolrConfig config) {
+    SolrCoreMetricManager metricManager = new SolrCoreMetricManager(this);
     for (PluginInfo pluginInfo : config.readPluginInfos("metricReporter", true, true)) {
       try {
         metricManager.loadReporter(pluginInfo);
@@ -2790,7 +2790,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     if (solrInfoMBean instanceof SolrMetricProducer) {
       SolrMetricProducer producer = (SolrMetricProducer) solrInfoMBean;
-      metricManager.registerMetrics(name, producer.getCategory(), producer.getMetrics());
+      metricManager.registerMetricProducer(name, producer);
     }
   }
 

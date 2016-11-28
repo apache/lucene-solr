@@ -33,7 +33,7 @@ import org.junit.Test;
 
 public class SolrMetricReporterTest extends SolrTestCaseJ4 {
 
-  private SolrMetricManager metricManager;
+  private SolrCoreMetricManager metricManager;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -42,7 +42,7 @@ public class SolrMetricReporterTest extends SolrTestCaseJ4 {
 
   @Before
   public void beforeTest() {
-    metricManager = new SolrMetricManager(h.getCore());
+    metricManager = new SolrCoreMetricManager(h.getCore());
   }
 
   @After
@@ -87,7 +87,7 @@ public class SolrMetricReporterTest extends SolrTestCaseJ4 {
     String configurable;
     boolean didValidate = false;
 
-    MockReporter(SolrMetricManager metricManager) {
+    MockReporter(SolrCoreMetricManager metricManager) {
       super(metricManager);
     }
 

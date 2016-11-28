@@ -22,7 +22,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -35,10 +37,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class SolrMetricManagerTest extends SolrTestCaseJ4 {
+public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
   private static final int MAX_ITERATIONS = 100;
 
-  private SolrMetricManager metricManager;
+  private SolrCoreMetricManager metricManager;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -47,15 +49,13 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
   @Before
   public void beforeTest() {
-    metricManager = new SolrMetricManager(h.getCore());
+    metricManager = new SolrCoreMetricManager(h.getCore());
   }
 
   @After
   public void afterTest() throws IOException {
     metricManager.close();
     assertTrue(metricManager.getReporters().isEmpty());
-    assertTrue(metricManager.getMetricInfos().isEmpty());
-    assertTrue(metricManager.getRegistry().getMetrics().isEmpty());
   }
 
   @Test
@@ -64,17 +64,18 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
     String scope = SolrMetricTestUtils.getRandomScope(random);
     SolrInfoMBean.Category category = SolrMetricTestUtils.getRandomCategory(random);
-    Map<String, Metric> metrics = SolrMetricTestUtils.getRandomMetrics(random);
+    Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random);
+    SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
     try {
-      metricManager.registerMetrics(scope, category, metrics);
+      metricManager.registerMetricProducer(scope, producer);
       assertNotNull(scope);
       assertNotNull(category);
       assertNotNull(metrics);
-      assertRegistered(metrics, metricManager);
+      assertRegistered(scope, metrics, metricManager);
     } catch (final IllegalArgumentException e) {
       assertTrue("expected at least one null but got: scope="+scope+" category="+category+" metrics="+metrics,
           (scope == null || category == null || metrics == null));
-      assertRegistered(new HashMap<>(), metricManager);
+      assertRegistered(scope, new HashMap<>(), metricManager);
     }
   }
 
@@ -82,16 +83,20 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   public void testRegisterMetricsWithReplacements() {
     Random random = random();
 
-    Map<String, Metric> registered = new HashMap<>();
+    Map<String, Counter> registered = new HashMap<>();
     String scope = SolrMetricTestUtils.getRandomScope(random, true);
     SolrInfoMBean.Category category = SolrMetricTestUtils.getRandomCategory(random, true);
 
     int iterations = TestUtil.nextInt(random, 0, MAX_ITERATIONS);
     for (int i = 0; i < iterations; ++i) {
-      Map<String, Metric> metrics = SolrMetricTestUtils.getRandomMetricsWithReplacements(random, registered);
-      metricManager.registerMetrics(scope, category, metrics);
+      Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetricsWithReplacements(random, registered);
+      if (metrics.isEmpty()) {
+        continue;
+      }
+      SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
+      metricManager.registerMetricProducer(scope, producer);
       registered.putAll(metrics);
-      assertRegistered(registered, metricManager);
+      assertRegistered(scope, registered, metricManager);
     }
   }
 
@@ -121,24 +126,23 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     }
   }
 
-  private static void assertRegistered(Map<String, Metric> newMetrics, SolrMetricManager metricManager) {
-    assertEquals(newMetrics.size(), metricManager.getMetricInfos().
-        keySet().stream().filter(s -> s.endsWith(SolrMetricTestUtils.SUFFIX)).count());
-    assertEquals(newMetrics.size(), metricManager.getRegistry().getMetrics().
-        keySet().stream().filter(s -> s.endsWith(SolrMetricTestUtils.SUFFIX)).count());
+  private static void assertRegistered(String scope, Map<String, Counter> newMetrics, SolrCoreMetricManager metricManager) {
+    if (scope == null) {
+      return;
+    }
+    String filter = "." + scope + ".";
+    MetricRegistry registry = SolrMetricManager.registryFor(metricManager.getRegistryName());
+    assertEquals(newMetrics.size(), registry.getMetrics().
+        keySet().stream().filter(s -> s.contains(filter)).count());
 
-    Map<String, Metric> registeredMetrics = metricManager.getRegistry().getMetrics().
-        entrySet().stream().filter(e -> e.getKey().endsWith(SolrMetricTestUtils.SUFFIX)).
+    Map<String, Metric> registeredMetrics = registry.getMetrics().
+        entrySet().stream().filter(e -> e.getKey() != null && e.getKey().contains(filter)).
         collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
     for (Map.Entry<String, Metric> entry : registeredMetrics.entrySet()) {
       String name = entry.getKey();
       Metric expectedMetric = entry.getValue();
 
-      SolrMetricInfo actualMetricInfo = metricManager.getMetricInfo(name);
-      Metric actualMetric = metricManager.getRegistry().getMetrics().get(name);
-
-      assertNotNull(actualMetricInfo);
-      assertEquals(name, actualMetricInfo.getMetricName());
+      Metric actualMetric = registry.getMetrics().get(name);
 
       assertNotNull(actualMetric);
       assertEquals(expectedMetric, actualMetric);
