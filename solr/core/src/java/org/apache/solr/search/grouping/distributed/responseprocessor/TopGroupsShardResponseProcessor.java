@@ -61,9 +61,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
     String[] fields = rb.getGroupingSpec().getFields();
     String[] queries = rb.getGroupingSpec().getQueries();
     Sort sortWithinGroup = rb.getGroupingSpec().getSortWithinGroup();
-    if (sortWithinGroup == null) { // TODO prevent it from being null in the first place
-      sortWithinGroup = Sort.RELEVANCE;
-    }
+    assert sortWithinGroup != null;
 
     // If group.format=simple group.offset doesn't make sense
     int groupOffsetDefault;
