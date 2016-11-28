@@ -150,6 +150,9 @@ New Features
   runtime without the need to modify solrconfig from the default configuration. hl.useFastVectorHighlighter is now
   considered deprecated in lieu of hl.method=fastVector. (Timothy Rodriguez, David Smiley)
 
+* SOLR-9788: Use instrumented jetty classes provided by the dropwizard metric library. This also introduces a
+  new /admin/metrics API endpoint to return all registered metrics in JSON format. (shalin)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
