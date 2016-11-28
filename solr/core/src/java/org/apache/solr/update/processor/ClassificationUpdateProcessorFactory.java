@@ -17,12 +17,13 @@
 
 package org.apache.solr.update.processor;
 
+import java.util.Locale;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -60,7 +61,6 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
   private SolrParams params;
   private ClassificationUpdateProcessorParams classificationParams;
 
-  @SuppressForbidden(reason = "Need toUpperCase to match algorithm enum value")
   @Override
   public void init(final NamedList args) {
     if (args != null) {
@@ -86,10 +86,10 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
       String algorithmString = params.get(ALGORITHM_PARAM);
       Algorithm classificationAlgorithm;
       try {
-        if (algorithmString == null || Algorithm.valueOf(algorithmString.toUpperCase()) == null) {
+        if (algorithmString == null || Algorithm.valueOf(algorithmString.toUpperCase(Locale.ROOT)) == null) {
           classificationAlgorithm = DEFAULT_ALGORITHM;
         } else {
-          classificationAlgorithm = Algorithm.valueOf(algorithmString.toUpperCase());
+          classificationAlgorithm = Algorithm.valueOf(algorithmString.toUpperCase(Locale.ROOT));
         }
       } catch (IllegalArgumentException e) {
         throw new SolrException
