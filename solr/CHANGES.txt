@@ -245,6 +245,9 @@ Other Changes
 
 * SOLR-9801: Upgrade jetty to 9.3.14.v20161028 (shalin)
 
+* SOLR-9783: (Search|Top)Group[s]ShardResponseProcessor.process: turned sortWithinGroup null check into assert.
+  (Christine Poerschke)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
