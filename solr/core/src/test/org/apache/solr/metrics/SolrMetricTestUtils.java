@@ -66,7 +66,7 @@ public final class SolrMetricTestUtils {
     HashMap<String, Counter> metrics = new HashMap<>();
     ArrayList<String> existingKeys = new ArrayList<>(existing.keySet());
 
-    int numMetrics = TestUtil.nextInt(random, 0, MAX_ITERATIONS);
+    int numMetrics = TestUtil.nextInt(random, 1, MAX_ITERATIONS);
     for (int i = 0; i < numMetrics; ++i) {
       boolean shouldReplaceMetric = !existing.isEmpty() && random.nextBoolean();
       String name = shouldReplaceMetric

@@ -54,11 +54,11 @@ public class SolrJmxReporter extends SolrMetricReporter {
   /**
    * Creates a new instance of {@link SolrJmxReporter}.
    *
-   * @param metricManager the metric manager to which the reporter will be registered
+   * @param registryName name of the registry to report
    */
-  public SolrJmxReporter(SolrCoreMetricManager metricManager) {
-    super(metricManager);
-    this.domain = metricManager.getCore().getName();
+  public SolrJmxReporter(String registryName) {
+    super(registryName);
+    this.domain = registryName;
   }
 
   /**
@@ -96,9 +96,9 @@ public class SolrJmxReporter extends SolrMetricReporter {
       return;
     }
 
-    JmxObjectNameFactory jmxObjectNameFactory = new JmxObjectNameFactory(metricManager);
+    JmxObjectNameFactory jmxObjectNameFactory = new JmxObjectNameFactory(registryName);
 
-    reporter = JmxReporter.forRegistry(SolrMetricManager.registryFor(metricManager.getRegistryName()))
+    reporter = JmxReporter.forRegistry(SolrMetricManager.registryFor(registryName))
                           .registerWith(mBeanServer)
                           .inDomain(domain)
                           .createsObjectNamesWith(jmxObjectNameFactory)
@@ -141,7 +141,7 @@ public class SolrJmxReporter extends SolrMetricReporter {
     if (domain != null) {
       this.domain = domain;
     } else {
-      this.domain = metricManager.getCore().getName();
+      this.domain = registryName;
     }
   }
 
@@ -185,10 +185,10 @@ public class SolrJmxReporter extends SolrMetricReporter {
    */
   private static class JmxObjectNameFactory implements ObjectNameFactory {
 
-    private final SolrCoreMetricManager metricManager;
+    private final String registryName;
 
-    JmxObjectNameFactory(SolrCoreMetricManager metricManager) {
-      this.metricManager = metricManager;
+    JmxObjectNameFactory(String registryName) {
+      this.registryName = registryName;
     }
 
     /**
@@ -201,20 +201,48 @@ public class SolrJmxReporter extends SolrMetricReporter {
     @Override
     public ObjectName createName(String type, String domain, String name) {
       SolrMetricInfo metricInfo = SolrMetricInfo.of(name);
-      if (metricInfo == null) {
-        throw new IllegalStateException(name + " is not a metric info in the metric manager = " + metricManager);
-      }
 
-      Hashtable<String, String> properties = new Hashtable<>();
-      properties.put("category", metricInfo.category.toString());
-      properties.put("scope", metricInfo.scope);
-      properties.put("name", metricInfo.name);
-      properties.put("core", String.valueOf(metricManager.getCore().hashCode()));
+      // It turns out that ObjectName(String) mostly preserves key ordering
+      // as specified in the constructor (except for the 'type' key that ends
+      // up at top level) - unlike ObjectName(String, Map) constructor
+      // that seems to have a mind of its own...
+      StringBuilder sb = new StringBuilder(domain);
+      sb.append(':');
+      if (metricInfo != null) {
+        sb.append("category=");
+        sb.append(metricInfo.category.toString());
+        sb.append(",scope=");
+        sb.append(metricInfo.scope);
+        // split by type, but don't call it 'type' :)
+        sb.append(",class=");
+        sb.append(type);
+        sb.append(",name=");
+        sb.append(metricInfo.name);
+      } else {
+        // make dotted names into hierarchies
+        String[] path = name.split("\\.");
+        for (int i = 0; i < path.length - 1; i++) {
+          if (i > 0) {
+            sb.append(',');
+          }
+          sb.append("name"); sb.append(String.valueOf(i));
+          sb.append('=');
+          sb.append(path[i]);
+        }
+        if (path.length > 1) {
+          sb.append(',');
+        }
+        // split by type
+        sb.append("class=");
+        sb.append(type);
+        sb.append(",name=");
+        sb.append(path[path.length - 1]);
+      }
 
       ObjectName objectName;
 
       try {
-        objectName = new ObjectName(domain, properties);
+        objectName = new ObjectName(sb.toString());
       } catch (MalformedObjectNameException e) {
         throw new RuntimeException(e);
       }

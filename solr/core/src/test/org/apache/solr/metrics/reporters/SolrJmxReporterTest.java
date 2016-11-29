@@ -29,6 +29,7 @@ import java.util.Set;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistryListener;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -36,6 +37,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.metrics.SolrCoreMetricManager;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.schema.FieldType;
@@ -46,10 +48,9 @@ import org.junit.Test;
 
 public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
-  private static final int MAX_ITERATIONS = 100;
+  private static final int MAX_ITERATIONS = 20;
 
   private String domain;
-  private String coreHashCode;
 
   private SolrCoreMetricManager metricManager;
   private SolrJmxReporter reporter;
@@ -70,7 +71,6 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
     final SolrCore core = h.getCore();
     domain = core.getName();
-    coreHashCode = String.valueOf(core.hashCode());
 
     String className = SolrJmxReporter.class.getName();
     String reporterName = TestUtil.randomUnicodeString(random);
@@ -101,7 +101,8 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   @After
   public void afterTest() throws Exception {
     reporter.close();
-    Set<ObjectInstance> objects = mBeanServer.queryMBeans(getObjectName(), null);
+    Set<ObjectInstance> objects =
+        mBeanServer.queryMBeans(ObjectName.getInstance(domain + ":*"), null);
     assertTrue(objects.isEmpty());
 
     metricManager.close();
@@ -121,10 +122,11 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
       SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
       metricManager.registerMetricProducer(scope, producer);
       registered.putAll(metrics);
-
-      Set<ObjectInstance> objects = mBeanServer.queryMBeans(getObjectName(), null);
+      //waitForListener();
+      Set<ObjectInstance> objects = mBeanServer.queryMBeans(null, null);
       assertEquals(registered.size(), objects.stream().
-          filter(o -> o.getObjectName().getKeyProperty("scope").equals(scope)).count());
+          filter(o -> o.getObjectName().getKeyProperty("scope") != null &&
+              o.getObjectName().getKeyProperty("scope").equals(scope)).count());
     }
   }
 
@@ -137,20 +139,20 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random, true);
     SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
     metricManager.registerMetricProducer(scope, producer);
+    //waitForListener();
 
-    Set<ObjectInstance> objects = mBeanServer.queryMBeans(getObjectName(), null);
+    Set<ObjectInstance> objects = mBeanServer.queryMBeans(null, null);
     assertEquals(metrics.size(), objects.stream().
-        filter(o -> o.getObjectName().getKeyProperty("scope").equals(scope)).count());
+        filter(o -> o.getObjectName().getKeyProperty("scope") != null &&
+            o.getObjectName().getKeyProperty("scope").equals(scope)).count());
 
     h.getCoreContainer().reload(h.getCore().getName());
     metricManager.registerMetricProducer(scope, producer);
 
-    objects = mBeanServer.queryMBeans(getObjectName(), null);
+    objects = mBeanServer.queryMBeans(null, null);
     assertEquals(metrics.size(), objects.stream().
-        filter(o -> o.getObjectName().getKeyProperty("scope").equals(scope)).count());
+        filter(o -> o.getObjectName().getKeyProperty("scope") != null &&
+            o.getObjectName().getKeyProperty("scope").equals(scope)).count());
   }
 
-  private ObjectName getObjectName() throws MalformedObjectNameException {
-    return ObjectName.getInstance(domain + ":core=" + coreHashCode + ",*");
-  }
 }

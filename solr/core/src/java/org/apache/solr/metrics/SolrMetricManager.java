@@ -16,6 +16,8 @@
  */
 package org.apache.solr.metrics;
 
+import java.util.Set;
+
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
@@ -38,34 +40,89 @@ public class SolrMetricManager {
   private SolrMetricManager() { }
 
 
+  /**
+   * Return a set of existing registry names.
+   */
+  public static Set<String> registryNames() {
+    return SharedMetricRegistries.names();
+  }
+
+  /**
+   * Get (or create if not present) a named registry
+   * @param registry name of the registry
+   * @return existing or newly created registry
+   */
   public static MetricRegistry registryFor(String registry) {
     return SharedMetricRegistries.getOrCreate(overridableRegistryName(registry));
   }
 
+  /**
+   * Remove all metrics from a specified registry.
+   * @param registry registry name
+   */
   public static void clearRegistryFor(String registry) {
     SharedMetricRegistries.getOrCreate(overridableRegistryName(registry)).removeMatching(MetricFilter.ALL);
   }
 
+  /**
+   * Remove a single specific metric from a named registry
+   * @param registry registry name
+   * @param metricName metric name, either final name or a fully-qualified name
+   *                   using dotted notation
+   * @param metricPath (optional) additional top-most metric name path elements
+   */
   public static void clearMetric(String registry, String metricName, String... metricPath) {
     SharedMetricRegistries.getOrCreate(overridableRegistryName(registry)).
         remove(mkName(metricName, metricPath));
   }
 
+  /**
+   * Create or get an existing named {@link Meter}
+   * @param registry registry name
+   * @param metricName metric name, either final name or a fully-qualified name
+   *                   using dotted notation
+   * @param metricPath (optional) additional top-most metric name path elements
+   * @return existing or a newly created {@link Meter}
+   */
   public static Meter getOrCreateMeter(String registry, String metricName, String... metricPath) {
     return SharedMetricRegistries.getOrCreate(overridableRegistryName(registry)).
         meter(mkName(metricName, metricPath));
   }
 
+  /**
+   * Create or get an existing named {@link Timer}
+   * @param registry registry name
+   * @param metricName metric name, either final name or a fully-qualified name
+   *                   using dotted notation
+   * @param metricPath (optional) additional top-most metric name path elements
+   * @return existing or a newly created {@link Timer}
+   */
   public static Timer getOrCreateTimer(String registry, String metricName, String... metricPath) {
     return SharedMetricRegistries.getOrCreate(overridableRegistryName(registry)).
         timer(mkName(metricName, metricPath));
   }
 
+  /**
+   * Create or get an existing named {@link Counter}
+   * @param registry registry name
+   * @param metricName metric name, either final name or a fully-qualified name
+   *                   using dotted notation
+   * @param metricPath (optional) additional top-most metric name path elements
+   * @return existing or a newly created {@link Counter}
+   */
   public static Counter getOrCreateCounter(String registry, String metricName, String... metricPath) {
     return SharedMetricRegistries.getOrCreate(overridableRegistryName(registry)).
         counter(mkName(metricName, metricPath));
   }
 
+  /**
+   * Create or get an existing named {@link Histogram}
+   * @param registry registry name
+   * @param metricName metric name, either final name or a fully-qualified name
+   *                   using dotted notation
+   * @param metricPath (optional) additional top-most metric name path elements
+   * @return existing or a newly created {@link Histogram}
+   */
   public static Histogram getOrCreateHistogram(String registry, String metricName, String... metricPath) {
     return SharedMetricRegistries.getOrCreate(overridableRegistryName(registry)).
         histogram(mkName(metricName, metricPath));
@@ -76,7 +133,8 @@ public class SolrMetricManager {
    * @param name the final segment of the name, must not be null or empty.
    * @param path optional path segments, starting from the top level. Empty or null
    *             segments will be skipped.
-   * @return fully-qualified name with all valid hierarchy segments prepended to the name.
+   * @return fully-qualified name using dotted notation, with all valid hierarchy
+   * segments prepended to the name.
    */
   public static String mkName(String name, String... path) {
     if (name == null || name.isEmpty()) {
@@ -115,7 +173,13 @@ public class SolrMetricManager {
     return enforcePrefix(System.getProperty(fqRegistry,fqRegistry));
   }
 
-  private static String enforcePrefix(String name) {
+  /**
+   * Enforces the leading {@link #REGISTRY_NAME_PREFIX} in a name.
+   * @param name input name, possibly without the prefix
+   * @return original name if it contained the prefix, or the
+   * input name with the prefix prepended.
+   */
+  public static String enforcePrefix(String name) {
     if (name.startsWith(REGISTRY_NAME_PREFIX))
       return name;
     else

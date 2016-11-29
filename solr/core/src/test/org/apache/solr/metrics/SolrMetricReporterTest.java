@@ -54,7 +54,7 @@ public class SolrMetricReporterTest extends SolrTestCaseJ4 {
   public void testInit() throws Exception {
     Random random = random();
 
-    MockReporter reporter = new MockReporter(metricManager);
+    MockReporter reporter = new MockReporter(h.getCore().getName());
 
     Map<String, Object> attrs = new HashMap<>();
     attrs.put(FieldType.CLASS_NAME, MockReporter.class.getName());
@@ -87,8 +87,8 @@ public class SolrMetricReporterTest extends SolrTestCaseJ4 {
     String configurable;
     boolean didValidate = false;
 
-    MockReporter(SolrCoreMetricManager metricManager) {
-      super(metricManager);
+    MockReporter(String registryName) {
+      super(registryName);
     }
 
     @Override

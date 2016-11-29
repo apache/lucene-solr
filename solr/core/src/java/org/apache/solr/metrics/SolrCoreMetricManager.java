@@ -95,8 +95,8 @@ public class SolrCoreMetricManager implements Closeable {
       pluginInfo.className,
       SolrMetricReporter.class,
       new String[0],
-      new Class[] { SolrCoreMetricManager.class },
-      new Object[] { this }
+      new Class[] { String.class },
+      new Object[] { registryName }
     );
 
     try {

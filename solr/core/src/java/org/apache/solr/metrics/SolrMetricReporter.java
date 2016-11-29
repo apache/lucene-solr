@@ -24,22 +24,20 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 /**
- * Interface for 'pluggable' metric reporters that can be
- * registered with a {@link SolrCoreMetricManager}.
+ * Interface for 'pluggable' metric reporters.
  */
 public abstract class SolrMetricReporter implements Closeable, PluginInfoInitialized {
 
-  protected final SolrCoreMetricManager metricManager;
+  protected final String registryName;
 
   /**
-   * Creates a new instance of {@link SolrMetricReporter}.
-   *
-   * @param metricManager the metric manager to which the reporter will be registered
+   * Create a reporter for metrics managed in a named registry.
+   * @param registryName registry to use, one of registries managed by
+   *                     {@link SolrMetricManager}
    */
-  public SolrMetricReporter(SolrCoreMetricManager metricManager) {
-    this.metricManager = metricManager;
+  protected SolrMetricReporter(String registryName) {
+    this.registryName = registryName;
   }
-
   /**
    * Initializes a {@link SolrMetricReporter} with the plugin's configuration.
    *
