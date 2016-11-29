@@ -68,9 +68,9 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
     if (rb.getGroupingSpec().getResponseFormat() == Grouping.Format.simple || rb.getGroupingSpec().isMain()) {
       groupOffsetDefault = 0;
     } else {
-      groupOffsetDefault = rb.getGroupingSpec().getGroupOffset();
+      groupOffsetDefault = rb.getGroupingSpec().getWithinGroupOffset();
     }
-    int docsPerGroupDefault = rb.getGroupingSpec().getGroupLimit();
+    int docsPerGroupDefault = rb.getGroupingSpec().getWithinGroupLimit();
 
     Map<String, List<TopGroups<BytesRef>>> commandTopGroups = new HashMap<>();
     for (String field : fields) {

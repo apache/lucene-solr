@@ -250,6 +250,9 @@ Other Changes
 * SOLR-9783: (Search|Top)Group[s]ShardResponseProcessor.process: turned sortWithinGroup null check into assert.
   (Christine Poerschke)
 
+* SOLR-9660: in GroupingSpecification factor [group](sort|offset|limit) into [group](sortSpec)
+  (Judith Silverman, Christine Poerschke)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

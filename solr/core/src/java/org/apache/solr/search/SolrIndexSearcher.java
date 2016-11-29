@@ -924,6 +924,32 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return (sort != null) ? sort.rewrite(this) : null;
   }
 
+  /** Returns a weighted sort spec according to this searcher */
+  public SortSpec weightSortSpec(SortSpec originalSortSpec, Sort nullEquivalent) throws IOException {
+    return implWeightSortSpec(
+        originalSortSpec.getSort(),
+        originalSortSpec.getCount(),
+        originalSortSpec.getOffset(),
+        nullEquivalent);
+  }
+
+  /** Returns a weighted sort spec according to this searcher */
+  private SortSpec implWeightSortSpec(Sort originalSort, int num, int offset, Sort nullEquivalent) throws IOException {
+    Sort rewrittenSort = weightSort(originalSort);
+    if (rewrittenSort == null) {
+      rewrittenSort = nullEquivalent;
+    }
+
+    final SortField[] rewrittenSortFields = rewrittenSort.getSort();
+    final SchemaField[] rewrittenSchemaFields = new SchemaField[rewrittenSortFields.length];
+    for (int ii = 0; ii < rewrittenSortFields.length; ++ii) {
+      final String fieldName = rewrittenSortFields[ii].getField();
+      rewrittenSchemaFields[ii] = (fieldName == null ? null : schema.getFieldOrNull(fieldName));
+    }
+
+    return new SortSpec(rewrittenSort, rewrittenSchemaFields, num, offset);
+  }
+
   /**
    * Returns the first document number containing the term <code>t</code> Returns -1 if no document was found. This
    * method is primarily intended for clients that want to fetch documents using a unique identifier."
