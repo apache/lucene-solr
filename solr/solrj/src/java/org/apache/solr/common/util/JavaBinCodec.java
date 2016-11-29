@@ -169,6 +169,11 @@ public class JavaBinCodec implements PushWriter {
   byte version;
 
   public Object unmarshal(InputStream is) throws IOException {
+    FastInputStream dis = initRead(is);
+    return readVal(dis);
+  }
+
+  protected FastInputStream initRead(InputStream is) throws IOException {
     assert !alreadyUnmarshalled;
     FastInputStream dis = FastInputStream.wrap(is);
     version = dis.readByte();
@@ -176,9 +181,9 @@ public class JavaBinCodec implements PushWriter {
       throw new RuntimeException("Invalid version (expected " + VERSION +
           ", but " + version + ") or the data in not in 'javabin' format");
     }
-    
+
     alreadyUnmarshalled = true;
-    return readVal(dis);
+    return dis;
   }
 
 
@@ -243,7 +248,10 @@ public class JavaBinCodec implements PushWriter {
 
   public Object readVal(DataInputInputStream dis) throws IOException {
     tagByte = dis.readByte();
+    return readObject(dis);
+  }
 
+  protected Object readObject(DataInputInputStream dis) throws IOException {
     // if ((tagByte & 0xe0) == 0) {
     // if top 3 bits are clear, this is a normal tag
 

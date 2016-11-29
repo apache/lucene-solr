@@ -103,7 +103,10 @@ public class TestIndexSorting extends LuceneTestCase {
           return new PointsWriter() {
             @Override
             public void merge(MergeState mergeState) throws IOException {
-              assertEquals(needsIndexSort, mergeState.needsIndexSort);
+              // For single segment merge we cannot infer if the segment is already sorted or not.
+              if (mergeState.docMaps.length > 1) {
+                assertEquals(needsIndexSort, mergeState.needsIndexSort);
+              }
               ++ numCalls;
               writer.merge(mergeState);
             }
@@ -141,7 +144,12 @@ public class TestIndexSorting extends LuceneTestCase {
     Sort indexSort = new Sort(sortField,
         new SortField("id", SortField.Type.INT));
     iwc.setIndexSort(indexSort);
-    iwc.setMergePolicy(newLogMergePolicy());
+    LogMergePolicy policy = newLogMergePolicy();
+    // make sure that merge factor is always > 2
+    if (policy.getMergeFactor() <= 2) {
+      policy.setMergeFactor(3);
+    }
+    iwc.setMergePolicy(policy);
 
     // add already sorted documents
     codec.numCalls = 0;

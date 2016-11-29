@@ -51,10 +51,13 @@ import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.JSONResponseWriter;
+import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.FieldType;
@@ -125,8 +128,14 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   public void write(OutputStream os) throws IOException {
-    respWriter = new OutputStreamWriter(os, StandardCharsets.UTF_8);
-    writer = JSONResponseWriter.getPushWriter(respWriter, req, res);
+    QueryResponseWriter rw = req.getCore().getResponseWriters().get(wt);
+    if (rw instanceof BinaryResponseWriter) {
+      //todo add support for other writers after testing
+      writer = new JavaBinCodec(os, null);
+    } else {
+      respWriter = new OutputStreamWriter(os, StandardCharsets.UTF_8);
+      writer = JSONResponseWriter.getPushWriter(respWriter, req, res);
+    }
     Exception exception = res.getException();
     if (exception != null) {
       if (!(exception instanceof IgnoreException)) {

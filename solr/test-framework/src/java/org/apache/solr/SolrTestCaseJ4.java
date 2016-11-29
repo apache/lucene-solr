@@ -83,7 +83,11 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
@@ -96,7 +100,9 @@ import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -1009,6 +1015,22 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return out.toString();
   }
 
+  public static void addDoc(String doc, String updateRequestProcessorChain) throws Exception {
+    Map<String, String[]> params = new HashMap<>();
+    MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
+    params.put(UpdateParams.UPDATE_CHAIN, new String[]{updateRequestProcessorChain});
+    SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(),
+        (SolrParams) mmparams) {
+    };
+
+    UpdateRequestHandler handler = new UpdateRequestHandler();
+    handler.init(null);
+    ArrayList<ContentStream> streams = new ArrayList<>(2);
+    streams.add(new ContentStreamBase.StringStream(doc));
+    req.setContentStreams(streams);
+    handler.handleRequestBody(req, new SolrQueryResponse());
+    req.close();
+  }
 
   /**
    * Generates an &lt;add&gt;&lt;doc&gt;... XML String with options
