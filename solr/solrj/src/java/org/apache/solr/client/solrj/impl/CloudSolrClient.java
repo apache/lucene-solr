@@ -645,6 +645,8 @@ public class CloudSolrClient extends SolrClient {
    * are allowing client access to zookeeper, you should protect the
    * /configs node against unauthorised write access.
    *
+   *  @deprecated Please use {@link ZkClientClusterStateProvider#uploadConfig(Path, String)} instead
+   *
    * @param configPath {@link java.nio.file.Path} to the config files
    * @param configName the name of the config
    * @throws IOException if an IO error occurs
@@ -665,6 +667,8 @@ public class CloudSolrClient extends SolrClient {
 
   /**
    * Download a named config from Zookeeper to a location on the filesystem
+   *
+   * @deprecated Please use {@link ZkClientClusterStateProvider#downloadConfig(String, Path)} instead
    * @param configName    the name of the config
    * @param downloadPath  the path to write config files to
    * @throws IOException  if an I/O exception occurs
