@@ -30,11 +30,11 @@ public final class SolrMetricInfo {
   /**
    * Creates a new instance of {@link SolrMetricInfo}.
    *
-   * @param name     the name of the metric (e.g. `Requests`)
-   * @param scope    the scope of the metric (e.g. `/admin/ping`)
    * @param category the category of the metric (e.g. `QUERYHANDLERS`)
+   * @param scope    the scope of the metric (e.g. `/admin/ping`)
+   * @param name     the name of the metric (e.g. `Requests`)
    */
-  public SolrMetricInfo(String name, String scope, SolrInfoMBean.Category category) {
+  public SolrMetricInfo(SolrInfoMBean.Category category, String scope, String name) {
     this.name = name;
     this.scope = scope;
     this.category = category;
@@ -57,7 +57,7 @@ public final class SolrMetricInfo {
     }
     String scope = names[1];
     String name = fullName.substring(names[0].length() + names[1].length() + 2);
-    return new SolrMetricInfo(name, scope, category);
+    return new SolrMetricInfo(category, scope, name);
   }
 
   /**
