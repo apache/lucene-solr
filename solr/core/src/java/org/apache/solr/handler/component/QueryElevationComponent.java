@@ -461,15 +461,15 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       // alter the sorting in the grouping specification if there is one
       GroupingSpecification groupingSpec = rb.getGroupingSpec();
       if(groupingSpec != null) {
-        SortField[] groupSort = groupingSpec.getGroupSort().getSort();
-        Sort modGroupSort = this.modifySort(groupSort, force, comparator);
-        if(modGroupSort != null) {
-          groupingSpec.setGroupSort(modGroupSort);
+        SortSpec groupSortSpec = groupingSpec.getGroupSortSpec();
+        SortSpec modGroupSortSpec = this.modifySortSpec(groupSortSpec, force, comparator);
+        if (modGroupSortSpec != null) {
+          groupingSpec.setGroupSortSpec(modGroupSortSpec);
         }
-        SortField[] withinGroupSort = groupingSpec.getSortWithinGroup().getSort();
-        Sort modWithinGroupSort = this.modifySort(withinGroupSort, force, comparator);
-        if(modWithinGroupSort != null) {
-          groupingSpec.setSortWithinGroup(modWithinGroupSort);
+        SortSpec withinGroupSortSpec = groupingSpec.getSortSpecWithinGroup();
+        SortSpec modWithinGroupSortSpec = this.modifySortSpec(withinGroupSortSpec, force, comparator);
+        if (modWithinGroupSortSpec != null) {
+          groupingSpec.setSortSpecWithinGroup(modWithinGroupSortSpec);
         }
       }
     }
@@ -493,12 +493,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         rb.addDebugInfo("queryBoosting", dbg);
       }
     }
-  }
-
-  private Sort modifySort(SortField[] current, boolean force, ElevationComparatorSource comparator) {
-    SortSpec tmp = new SortSpec(new Sort(current), Arrays.asList(new SchemaField[current.length]));
-    tmp = modifySortSpec(tmp, force, comparator);
-    return null == tmp ? null : tmp.getSort();
   }
 
   private SortSpec modifySortSpec(SortSpec current, boolean force, ElevationComparatorSource comparator) {
@@ -527,9 +521,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
     if (modify) {
       SortSpec newSpec = new SortSpec(new Sort(sorts.toArray(new SortField[sorts.size()])),
-                                      fields);
-      newSpec.setOffset(current.getOffset());
-      newSpec.setCount(current.getCount());
+                                      fields,
+                                      current.getCount(),
+                                      current.getOffset());
       return newSpec;
     }
     return null;
