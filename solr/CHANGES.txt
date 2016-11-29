@@ -150,6 +150,8 @@ New Features
   runtime without the need to modify solrconfig from the default configuration. hl.useFastVectorHighlighter is now
   considered deprecated in lieu of hl.method=fastVector. (Timothy Rodriguez, David Smiley)
 
+* SOLR-9728: Ability to specify Key Store type in solr.in.sh file for SSL (Michael Suzuki, Kevin Risden)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
@@ -211,6 +213,8 @@ Bug Fixes
 * SOLR-9626: new Admin UI now also highlights matched terms in the Analysis screen. (Alexandre Rafalovitch)
 
 * SOLR-9512: CloudSolrClient's cluster state cache can break direct updates to leaders (noble)
+
+* SOLR-5260: Facet search on a docvalue field in a multi shard collection (Trym Møller, Erick Erickson)
 
 Other Changes
 ----------------------
