@@ -216,6 +216,8 @@ Bug Fixes
 
 * SOLR-5260: Facet search on a docvalue field in a multi shard collection (Trym Møller, Erick Erickson)
 
+* SOLR-9768: RecordingJsonParser produces incomplete json (Wojciech Stryszyk via ab)
+
 Other Changes
 ----------------------
 
