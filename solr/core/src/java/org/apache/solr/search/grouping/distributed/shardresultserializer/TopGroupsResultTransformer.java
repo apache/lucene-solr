@@ -90,6 +90,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
    */
   @Override
   public Map<String, ?> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard) {
+//public Map<String, ?> transformToNative(NamedList<NamedList> shardResponse, SortSpec groupSortSpec, SortSpec sortSpecWithinGroup, String shard) {
     Map<String, Object> result = new HashMap<>();
 
     final IndexSchema schema = rb.req.getSearcher().getSchema();
@@ -233,6 +234,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
             }
           }
           convertedSortValues[j] = sortValue;
+        //convertedSortValues[j] = aNewStaticMethod(j, rb.getGroupingSpec().getSortSpecWithinGroup(), fieldDoc.fields);
         }
         document.add("sortValues", convertedSortValues);
       }
@@ -284,6 +286,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
           }
         }
         convertedSortValues[j] = sortValue;
+      //convertedSortValues[j] = aNewStaticMethod(j, rb.getGroupingSpec().getGroupSortSpec(), fieldDoc.fields);
       }
       document.add("sortValues", convertedSortValues);
     }

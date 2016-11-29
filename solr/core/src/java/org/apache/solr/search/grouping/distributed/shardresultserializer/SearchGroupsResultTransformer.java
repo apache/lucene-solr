@@ -77,6 +77,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
    */
   @Override
   public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard) {
+//public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, SortSpec groupSortSpec, SortSpec sortSpecWithinGroup, String shard) {
     final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>(shardResponse.size());
     for (Map.Entry<String, NamedList> command : shardResponse) {
       List<SearchGroup<BytesRef>> searchGroups = new ArrayList<>();
@@ -108,6 +109,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
   }
 
   private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, Sort groupSort) {
+//private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SortSpec groupSortSpec) {
     final NamedList<Object[]> result = new NamedList<>(data.size());
 
     for (SearchGroup<BytesRef> searchGroup : data) {

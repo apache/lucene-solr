@@ -49,5 +49,6 @@ public interface ShardResultTransformer<T, R> {
    * @return native structure of the data
    */
   R transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard);
+//R transformToNative(NamedList<NamedList> shardResponse, SortSpec groupSortSpec, SortSpec sortSpecWithinGroup, String shard);
 
 }
