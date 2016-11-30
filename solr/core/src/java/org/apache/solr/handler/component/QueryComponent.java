@@ -252,21 +252,27 @@ public class QueryComponent extends SearchComponent
     final SortSpec sortSpec = rb.getSortSpec();
 
     //TODO: move weighting of sort
-    Sort groupSort = searcher.weightSort(sortSpec.getSort());
-    if (groupSort == null) {
-      groupSort = Sort.RELEVANCE;
-    }
+    final SortSpec groupSortSpec = searcher.weightSortSpec(sortSpec, Sort.RELEVANCE);
 
     // groupSort defaults to sort
     String sortWithinGroupStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
-    Sort sortWithinGroup = sortWithinGroupStr == null ?  groupSort : searcher.weightSort(SortSpecParsing.parseSortSpec(sortWithinGroupStr, req).getSort());
-    if (sortWithinGroup == null) {
-      sortWithinGroup = Sort.RELEVANCE;
+    final SortSpec sortSpecWithinGroup;
+    if (sortWithinGroupStr != null) {
+      SortSpec parsedSortSpecWithinGroup = SortSpecParsing.parseSortSpec(sortWithinGroupStr, req);
+      sortSpecWithinGroup = searcher.weightSortSpec(parsedSortSpecWithinGroup, Sort.RELEVANCE);
+    } else {
+      sortSpecWithinGroup = new SortSpec(
+          groupSortSpec.getSort(),
+          groupSortSpec.getSchemaFields(),
+          groupSortSpec.getCount(),
+          groupSortSpec.getOffset());
     }
+    sortSpecWithinGroup.setOffset(params.getInt(GroupParams.GROUP_OFFSET, 0));
+    sortSpecWithinGroup.setCount(params.getInt(GroupParams.GROUP_LIMIT, 1));
 
-    groupingSpec.setSortWithinGroup(sortWithinGroup);
-    groupingSpec.setGroupSort(groupSort);
+    groupingSpec.setSortSpecWithinGroup(sortSpecWithinGroup);
+    groupingSpec.setGroupSortSpec(groupSortSpec);
 
     String formatStr = params.get(GroupParams.GROUP_FORMAT, Grouping.Format.grouped.name());
     Grouping.Format responseFormat;
@@ -280,10 +286,6 @@ public class QueryComponent extends SearchComponent
     groupingSpec.setFields(params.getParams(GroupParams.GROUP_FIELD));
     groupingSpec.setQueries(params.getParams(GroupParams.GROUP_QUERY));
     groupingSpec.setFunctions(params.getParams(GroupParams.GROUP_FUNC));
-    groupingSpec.setGroupOffset(params.getInt(GroupParams.GROUP_OFFSET, 0));
-    groupingSpec.setGroupLimit(params.getInt(GroupParams.GROUP_LIMIT, 1));
-    groupingSpec.setOffset(sortSpec.getOffset());
-    groupingSpec.setLimit(sortSpec.getCount());
     groupingSpec.setIncludeGroupCount(params.getBool(GroupParams.GROUP_TOTAL_COUNT, false));
     groupingSpec.setMain(params.getBool(GroupParams.GROUP_MAIN, false));
     groupingSpec.setNeedScore((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0);
@@ -415,7 +417,7 @@ public class QueryComponent extends SearchComponent
               .setTruncateGroups(groupingSpec.isTruncateGroups() && groupingSpec.getFields().length > 0)
               .setSearcher(searcher);
 
-          int docsToCollect = Grouping.getMax(groupingSpec.getGroupOffset(), groupingSpec.getGroupLimit(), searcher.maxDoc());
+          int docsToCollect = Grouping.getMax(groupingSpec.getWithinGroupOffset(), groupingSpec.getWithinGroupLimit(), searcher.maxDoc());
           docsToCollect = Math.max(docsToCollect, 1);
 
           for (String field : groupingSpec.getFields()) {
@@ -477,8 +479,8 @@ public class QueryComponent extends SearchComponent
             .setDefaultFormat(groupingSpec.getResponseFormat())
             .setLimitDefault(limitDefault)
             .setDefaultTotalCount(defaultTotalCount)
-            .setDocsPerGroupDefault(groupingSpec.getGroupLimit())
-            .setGroupOffsetDefault(groupingSpec.getGroupOffset())
+            .setDocsPerGroupDefault(groupingSpec.getWithinGroupLimit())
+            .setGroupOffsetDefault(groupingSpec.getWithinGroupOffset())
             .setGetGroupedDocSet(groupingSpec.isTruncateGroups());
 
         if (groupingSpec.getFields() != null) {
