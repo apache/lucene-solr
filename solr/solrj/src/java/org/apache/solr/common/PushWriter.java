@@ -33,7 +33,7 @@ public interface PushWriter extends Closeable {
   void writeMap(MapWriter mw) throws IOException;
 
   /**Write an array. The array is opened at the beginning of this method
-   * and closed at the end. All array entries must be returned before this
+   * and closed at the end. All array entries must be written before this
    * method returns
    *
    */
