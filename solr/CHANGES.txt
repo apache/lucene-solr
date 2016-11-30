@@ -218,6 +218,8 @@ Bug Fixes
 
 * SOLR-9768: RecordingJsonParser produces incomplete json (Wojciech Stryszyk via ab)
 
+* SOLR-9616: Solr throws exception when expand=true on empty index (Timo Hund via Ishan Chattopadhyaya)
+
 Other Changes
 ----------------------
 
