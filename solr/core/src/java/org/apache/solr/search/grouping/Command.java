@@ -27,7 +27,7 @@ import java.util.List;
  * This is an abstraction on how the {@link Collector} instances are created
  * and how the results are retrieved from the {@link Collector} instances.
  *
- * @lucene.experimental
+ * @lucene.experimental   <===
  */
 public interface Command<T> {
 
@@ -73,6 +73,9 @@ public interface Command<T> {
 
 
   // JTODO Would be nice to add these two but don't want to break anything for users of the interface.
+  // CP reply: The class is marked @lucene.experimental and based on that I think we would be okay to make
+  //           (reasonable) changes to the interface, such as replacing the ...Sort with a ...SortSpec
+  //           if that is needed.
 //   /**
 //    * @return The group SortSpec (overall sort)
 //    */
