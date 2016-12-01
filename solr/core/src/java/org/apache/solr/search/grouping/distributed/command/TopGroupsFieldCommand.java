@@ -29,6 +29,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.Command;
 
 import java.io.IOException;
@@ -46,8 +47,8 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   public static class Builder {
 
     private SchemaField field;
-    private Sort groupSort;
-    private Sort sortWithinGroup;
+    private SortSpec groupSortSpec;
+    private SortSpec withinGroupSortSpec;
     private Collection<SearchGroup<BytesRef>> firstPhaseGroups;
     private Integer maxDocPerGroup;
     private boolean needScores = false;
@@ -58,14 +59,29 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
       return this;
     }
 
+    //JTODO
+    // We can't reconstruct a SortSpec from a Sort.
+    @Deprecated
     public Builder setGroupSort(Sort groupSort) {
-      this.groupSort = groupSort;
+  //      this.groupSort = groupSort;
       return this;
     }
 
+    // Same as above
+    @Deprecated
     public Builder setSortWithinGroup(Sort sortWithinGroup) {
-      this.sortWithinGroup = sortWithinGroup;
+//      this.withinGroupSort = sortWithinGroup;
       return this;
+    }
+
+    public Builder setGroupSortSpec(SortSpec groupSortSpec) {
+        this.groupSortSpec = groupSortSpec;
+        return this;
+    }
+
+    public Builder setWithinGroupSortSpec(SortSpec withinGroupSortSpec) {
+        this.withinGroupSortSpec = withinGroupSortSpec;
+        return this;
     }
 
     public Builder setFirstPhaseGroups(Collection<SearchGroup<BytesRef>> firstPhaseGroups) {
@@ -89,19 +105,19 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
     }
 
     public TopGroupsFieldCommand build() {
-      if (field == null || groupSort == null ||  sortWithinGroup == null || firstPhaseGroups == null ||
+        if (field == null || groupSortSpec == null || groupSortSpec.getSort() == null || withinGroupSortSpec == null ||  withinGroupSortSpec.getSort() == null || firstPhaseGroups == null ||
           maxDocPerGroup == null) {
         throw new IllegalStateException("All required fields must be set");
       }
 
-      return new TopGroupsFieldCommand(field, groupSort, sortWithinGroup, firstPhaseGroups, maxDocPerGroup, needScores, needMaxScore);
+      return new TopGroupsFieldCommand(field, groupSortSpec, withinGroupSortSpec, firstPhaseGroups, maxDocPerGroup, needScores, needMaxScore);
     }
 
   }
 
   private final SchemaField field;
-  private final Sort groupSort;
-  private final Sort sortWithinGroup;
+  private final SortSpec groupSortSpec;
+  private final SortSpec withinGroupSortSpec;
   private final Collection<SearchGroup<BytesRef>> firstPhaseGroups;
   private final int maxDocPerGroup;
   private final boolean needScores;
@@ -109,15 +125,15 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   private AbstractSecondPassGroupingCollector secondPassCollector;
 
   private TopGroupsFieldCommand(SchemaField field,
-                                Sort groupSort,
-                                Sort sortWithinGroup,
+                                SortSpec groupSortSpec,
+                                SortSpec withinGroupSortSpec,
                                 Collection<SearchGroup<BytesRef>> firstPhaseGroups,
                                 int maxDocPerGroup,
                                 boolean needScores,
                                 boolean needMaxScore) {
     this.field = field;
-    this.groupSort = groupSort;
-    this.sortWithinGroup = sortWithinGroup;
+    this.groupSortSpec = groupSortSpec;
+    this.withinGroupSortSpec = withinGroupSortSpec;
     this.firstPhaseGroups = firstPhaseGroups;
     this.maxDocPerGroup = maxDocPerGroup;
     this.needScores = needScores;
@@ -130,17 +146,20 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
       return Collections.emptyList();
     }
 
+    final Sort groupSort = groupSortSpec.getSort();
+    final Sort withinGroupSort = withinGroupSortSpec.getSort();
+
     final List<Collector> collectors = new ArrayList<>(1);
     final FieldType fieldType = field.getType();
     if (fieldType.getNumericType() != null) {
       ValueSource vs = fieldType.getValueSource(field, null);
       Collection<SearchGroup<MutableValue>> v = GroupConverter.toMutable(field, firstPhaseGroups);
       secondPassCollector = new FunctionSecondPassGroupingCollector(
-          v, groupSort, sortWithinGroup, maxDocPerGroup, needScores, needMaxScore, true, vs, new HashMap<Object,Object>()
+          v, groupSort, withinGroupSort, maxDocPerGroup, needScores, needMaxScore, true, vs, new HashMap<Object,Object>()
       );
     } else {
       secondPassCollector = new TermSecondPassGroupingCollector(
-          field.getName(), firstPhaseGroups, groupSort, sortWithinGroup, maxDocPerGroup, needScores, needMaxScore, true
+          field.getName(), firstPhaseGroups, groupSort, withinGroupSort, maxDocPerGroup, needScores, needMaxScore, true
       );
     }
     collectors.add(secondPassCollector);
@@ -151,7 +170,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   @SuppressWarnings("unchecked")
   public TopGroups<BytesRef> result() {
     if (firstPhaseGroups.isEmpty()) {
-      return new TopGroups<>(groupSort.getSort(), sortWithinGroup.getSort(), 0, 0, new GroupDocs[0], Float.NaN);
+      return new TopGroups<>(groupSortSpec.getSort().getSort(), withinGroupSortSpec.getSort().getSort(), 0, 0, new GroupDocs[0], Float.NaN);
     }
 
     FieldType fieldType = field.getType();
@@ -169,11 +188,17 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
 
   @Override
   public Sort getGroupSort() {
-    return groupSort;
+      return groupSortSpec.getSort();
+  }
+
+  @Deprecated
+  @Override
+  public Sort getSortWithinGroup() {
+      return getWithinGroupSort();
   }
 
   @Override
-  public Sort getSortWithinGroup() {
-    return sortWithinGroup;
+  public Sort getWithinGroupSort() {
+      return withinGroupSortSpec.getSort();
   }
 }

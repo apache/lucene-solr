@@ -18,6 +18,7 @@ package org.apache.solr.search.grouping;
 
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Sort;
+import org.apache.solr.search.SortSpec;
 import java.io.IOException;
 import java.util.List;
 
@@ -57,9 +58,31 @@ public interface Command<T> {
    */
   Sort getGroupSort();
 
+
+
+  @Deprecated
   /**
    * @return The sort inside a group
    */
   Sort getSortWithinGroup();
+
+  /**
+   * @return The sort inside a group
+   */
+  Sort getWithinGroupSort();
+
+
+  // JTODO Would be nice to add these two but don't want to break anything for users of the interface.
+//   /**
+//    * @return The group SortSpec (overall sort)
+//    */
+//   SortSpec getGroupSortSpec();
+
+
+
+//   /**
+//    * @return The SortSpec inside a group
+//    */
+//   SortSpec getWithinGroupSortSpec();
 
 }

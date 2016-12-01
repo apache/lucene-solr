@@ -23,6 +23,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.Command;
 import org.apache.solr.search.grouping.distributed.command.SearchGroupsFieldCommand;
 import org.apache.solr.search.grouping.distributed.command.SearchGroupsFieldCommandResult;
@@ -57,7 +58,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
         final SearchGroupsFieldCommandResult fieldCommandResult = fieldCommand.result();
         final Collection<SearchGroup<BytesRef>> searchGroups = fieldCommandResult.getSearchGroups();
         if (searchGroups != null) {
-          commandResult.add(TOP_GROUPS, serializeSearchGroup(searchGroups, fieldCommand.getGroupSort()));
+          commandResult.add(TOP_GROUPS, serializeSearchGroup(searchGroups, fieldCommand.getGroupSortSpec()));
         }
         final Integer groupedCount = fieldCommandResult.getGroupCount();
         if (groupedCount != null) {
@@ -76,9 +77,10 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
    * {@inheritDoc}
    */
   @Override
-  public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard) {
-//public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, SortSpec groupSortSpec, SortSpec sortSpecWithinGroup, String shard) {
+  public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, SortSpec groupSortSpec, SortSpec withinGroupSortSpec, String shard) {
     final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>(shardResponse.size());
+    final Sort groupSort = groupSortSpec.getSort();
+
     for (Map.Entry<String, NamedList> command : shardResponse) {
       List<SearchGroup<BytesRef>> searchGroups = new ArrayList<>();
       NamedList topGroupsAndGroupCount = command.getValue();
@@ -108,9 +110,10 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     return result;
   }
 
-  private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, Sort groupSort) {
-//private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SortSpec groupSortSpec) {
+
+  private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SortSpec groupSortSpec) {
     final NamedList<Object[]> result = new NamedList<>(data.size());
+    final Sort groupSort = groupSortSpec.getSort();
 
     for (SearchGroup<BytesRef> searchGroup : data) {
       Object[] convertedSortValues = new Object[searchGroup.sortValues.length];

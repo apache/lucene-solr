@@ -29,6 +29,7 @@ import org.apache.lucene.search.grouping.term.TermFirstPassGroupingCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.Command;
 
 import java.io.IOException;
@@ -42,7 +43,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   public static class Builder {
 
     private SchemaField field;
-    private Sort groupSort;
+    private SortSpec groupSortSpec;
     private Integer topNGroups;
     private boolean includeGroupCount = false;
 
@@ -51,8 +52,15 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
       return this;
     }
 
-    public Builder setGroupSort(Sort groupSort) {
-      this.groupSort = groupSort;
+    // We can't reconstruct a SortSpec from a Sort.
+     @Deprecated  // JTODO
+     public Builder setGroupSort(Sort groupSort) {
+  //      this.groupSort = groupSort;
+        return this;
+      }
+
+    public Builder setGroupSortSpec(SortSpec groupSortSpec) {
+      this.groupSortSpec = groupSortSpec;
       return this;
     }
 
@@ -67,32 +75,35 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
     }
 
     public SearchGroupsFieldCommand build() {
-      if (field == null || groupSort == null || topNGroups == null) {
-        throw new IllegalStateException("All fields must be set");
-      }
+        if (field == null || groupSortSpec == null || groupSortSpec.getSort() == null || topNGroups == null) {
+            throw new IllegalStateException("All fields must be set");
+        }
 
-      return new SearchGroupsFieldCommand(field, groupSort, topNGroups, includeGroupCount);
+      return new SearchGroupsFieldCommand(field, groupSortSpec, topNGroups, includeGroupCount);
     }
 
   }
 
   private final SchemaField field;
-  private final Sort groupSort;
+  private final SortSpec groupSortSpec;
   private final int topNGroups;
   private final boolean includeGroupCount;
 
   private AbstractFirstPassGroupingCollector firstPassGroupingCollector;
   private AbstractAllGroupsCollector allGroupsCollector;
 
-  private SearchGroupsFieldCommand(SchemaField field, Sort groupSort, int topNGroups, boolean includeGroupCount) {
+  private SearchGroupsFieldCommand(SchemaField field, SortSpec groupSortSpec, int topNGroups, boolean includeGroupCount) {
     this.field = field;
-    this.groupSort = groupSort;
+    this.groupSortSpec = groupSortSpec;
     this.topNGroups = topNGroups;
     this.includeGroupCount = includeGroupCount;
   }
 
   @Override
   public List<Collector> create() throws IOException {
+
+    final Sort groupSort = groupSortSpec.getSort();
+
     final List<Collector> collectors = new ArrayList<>(2);
     final FieldType fieldType = field.getType();
     if (topNGroups > 0) {
@@ -137,14 +148,33 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
     return new SearchGroupsFieldCommandResult(groupCount, topGroups);
   }
 
+  @Deprecated
   @Override
   public Sort getSortWithinGroup() {
+      return null;
+  }
+
+
+  @Override
+  public Sort getWithinGroupSort() {
     return null;
   }
 
+
   @Override
   public Sort getGroupSort() {
-    return groupSort;
+      return groupSortSpec.getSort();
+  }
+
+
+//  @Override  // Not yet part of interface
+  public SortSpec getGroupSortSpec() {
+    return groupSortSpec;
+  }
+
+//  @Override // Not yet part of interface
+  public SortSpec getWithinGroupSortSpec() {
+      return null;
   }
 
   @Override
