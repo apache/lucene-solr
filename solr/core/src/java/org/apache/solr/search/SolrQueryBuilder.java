@@ -17,18 +17,35 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanQueryBuilder;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.solr.request.SolrQueryRequest;
+import org.w3c.dom.Element;
 
-public abstract class SolrQueryBuilder implements QueryBuilder {
+public abstract class SolrQueryBuilder implements QueryBuilder, SpanQueryBuilder {
 
   protected final SolrQueryRequest req;
   protected final QueryBuilder queryFactory;
+  protected SpanQueryBuilder spanFactory;
 
+  @Deprecated
   public SolrQueryBuilder(String defaultField, Analyzer analyzer,
       SolrQueryRequest req, QueryBuilder queryFactory) {
     this.req = req;
     this.queryFactory = queryFactory;
+  }
+
+  public SolrQueryBuilder(String defaultField, Analyzer analyzer,
+      SolrQueryRequest req, QueryBuilder queryFactory, SpanQueryBuilder spanFactory) {
+    this(defaultField, analyzer, req, queryFactory);
+    this.spanFactory = spanFactory;
+  }
+
+  @Override
+  public SpanQuery getSpanQuery(Element e) throws ParserException {
+    return null;
   }
 
 }
