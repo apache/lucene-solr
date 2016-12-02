@@ -255,6 +255,8 @@ Other Changes
 * SOLR-9660: in GroupingSpecification factor [group](sort|offset|limit) into [group](sortSpec)
   (Judith Silverman, Christine Poerschke)
 
+* SOLR-9819: Upgrade commons-fileupload to 1.3.2, fixing a potential vulnerability CVE-2016-3092 (Anshum Gupta)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
