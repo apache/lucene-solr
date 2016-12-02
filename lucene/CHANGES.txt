@@ -81,6 +81,10 @@ Bug Fixes
 * LUCENE-7536: ASCIIFoldingFilterFactory used to return an illegal multi-term
   component when preserveOriginal was set to true. (Adrien Grand)
 
+* LUCENE-7576: Fix Terms.intersect in the default codec to detect when
+  the incoming automaton is a special case and throw a clearer
+  exception than NullPointerException (Tom Mortimer via Mike McCandless)
+
 Improvements
 
 * LUCENE-6824: TermAutomatonQuery now rewrites to TermQuery,
