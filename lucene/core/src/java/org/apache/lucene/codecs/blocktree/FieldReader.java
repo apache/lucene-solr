@@ -182,6 +182,9 @@ public final class FieldReader extends Terms implements Accountable {
     //System.out.println("intersect: " + compiled.type + " a=" + compiled.automaton);
     // TODO: we could push "it's a range" or "it's a prefix" down into IntersectTermsEnum?
     // can we optimize knowing that...?
+    if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
+      throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
+    }
     return new IntersectTermsEnum(this, compiled.automaton, compiled.runAutomaton, compiled.commonSuffixRef, startTerm, compiled.sinkState);
   }
     
