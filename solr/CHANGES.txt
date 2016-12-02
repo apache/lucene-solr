@@ -28,6 +28,8 @@ Other Changes
 * SOLR-8677: Prevent shards containing invalid characters from being created.  Checks added server-side
   and in SolrJ.  (Shai Erera, Jason Gerlowski, Anshum Gupta)
 
+* SOLR-9819: Upgrade commons-fileupload to 1.3.2, fixing a potential vulnerability CVE-2016-3092 (Anshum Gupta)
+
 ======================= 5.5.3 =======================
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
