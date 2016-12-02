@@ -133,19 +133,24 @@ import org.apache.lucene.util.Version;
   
   <a name="deletionPolicy"></a>
   <p>Expert: <code>IndexWriter</code> allows an optional
-  {@link IndexDeletionPolicy} implementation to be
-  specified.  You can use this to control when prior commits
-  are deleted from the index.  The default policy is {@link
-  KeepOnlyLastCommitDeletionPolicy} which removes all prior
-  commits as soon as a new commit is done (this matches
-  behavior before 2.2).  Creating your own policy can allow
-  you to explicitly keep previous "point in time" commits
-  alive in the index for some time, to allow readers to
-  refresh to the new commit without having the old commit
-  deleted out from under them.  This is necessary on
-  filesystems like NFS that do not support "delete on last
-  close" semantics, which Lucene's "point in time" search
-  normally relies on. </p>
+  {@link IndexDeletionPolicy} implementation to be specified.  You
+  can use this to control when prior commits are deleted from
+  the index.  The default policy is {@link KeepOnlyLastCommitDeletionPolicy}
+  which removes all prior commits as soon as a new commit is
+  done.  Creating your own policy can allow you to explicitly
+  keep previous "point in time" commits alive in the index for
+  some time, either because this is useful for your application,
+  or to give readers enough time to refresh to the new commit
+  without having the old commit deleted out from under them.
+  The latter is necessary when multiple computers take turns opening
+  their own {@code IndexWriter} and {@code IndexReader}s
+  against a single shared index mounted via remote filesystems
+  like NFS which do not support "delete on last close" semantics.
+  A single computer accessing an index via NFS is fine with the
+  default deletion policy since NFS clients emulate "delete on
+  last close" locally.  That said, accessing an index via NFS
+  will likely result in poor performance compared to a local IO
+  device. </p>
 
   <a name="mergePolicy"></a> <p>Expert:
   <code>IndexWriter</code> allows you to separately change
