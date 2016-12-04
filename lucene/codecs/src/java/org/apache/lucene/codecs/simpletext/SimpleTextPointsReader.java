@@ -36,7 +36,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.bkd.BKDReader;
 
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_FP;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BYTES_PER_DIM;
@@ -58,7 +57,7 @@ class SimpleTextPointsReader extends PointsReader {
 
   private final IndexInput dataIn;
   final SegmentReadState readState;
-  final Map<String,BKDReader> readers = new HashMap<>();
+  final Map<String,SimpleTextBKDReader> readers = new HashMap<>();
   final BytesRefBuilder scratch = new BytesRefBuilder();
 
   public SimpleTextPointsReader(SegmentReadState readState) throws IOException {
@@ -98,7 +97,7 @@ class SimpleTextPointsReader extends PointsReader {
     this.readState = readState;
   }
 
-  private BKDReader initReader(long fp) throws IOException {
+  private SimpleTextBKDReader initReader(long fp) throws IOException {
     // NOTE: matches what writeIndex does in SimpleTextPointsWriter
     dataIn.seek(fp);
     readLine(dataIn);

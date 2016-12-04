@@ -621,6 +621,9 @@ public class TestPointQueries extends LuceneTestCase {
     int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
 
     int sameValuePct = random().nextInt(100);
+    if (VERBOSE) {
+      System.out.println("TEST: sameValuePct=" + sameValuePct);
+    }
 
     byte[][][] docValues = new byte[numValues][][];
 

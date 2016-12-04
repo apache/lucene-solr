@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.util.bkd;
+package org.apache.lucene.codecs.simpletext;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -33,10 +33,10 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefComparator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
@@ -46,6 +46,30 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.bkd.BKDWriter;
+import org.apache.lucene.util.bkd.HeapPointWriter;
+import org.apache.lucene.util.bkd.MutablePointsReaderUtils;
+import org.apache.lucene.util.bkd.OfflinePointReader;
+import org.apache.lucene.util.bkd.OfflinePointWriter;
+import org.apache.lucene.util.bkd.PointReader;
+import org.apache.lucene.util.bkd.PointWriter;
+
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_DOC_ID;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_FP;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_VALUE;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BYTES_PER_DIM;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.DOC_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.INDEX_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.MAX_LEAF_POINTS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.MAX_VALUE;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.MIN_VALUE;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.NUM_DIMS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.POINT_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.SPLIT_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.SPLIT_DIM;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.SPLIT_VALUE;
+
 
 // TODO
 //   - allow variable length byte[] (across docs and dims), but this is quite a bit more hairy
@@ -57,35 +81,16 @@ import org.apache.lucene.util.StringHelper;
 //     per leaf, and you can reduce that by putting more points per leaf
 //   - we could use threads while building; the higher nodes are very parallelizable
 
-/** Recursively builds a block KD-tree to assign all incoming points in N-dim space to smaller
- *  and smaller N-dim rectangles (cells) until the number of points in a given
- *  rectangle is &lt;= <code>maxPointsInLeafNode</code>.  The tree is
- *  fully balanced, which means the leaf nodes will have between 50% and 100% of
- *  the requested <code>maxPointsInLeafNode</code>.  Values that fall exactly
- *  on a cell boundary may be in either cell.
- *
- *  <p>The number of dimensions can be 1 to 8, but every byte[] value is fixed length.
- *
- *  <p>
- *  See <a href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a> for details.
- *
- *  <p>This consumes heap during writing: it allocates a <code>LongBitSet(numPoints)</code>,
- *  and then uses up to the specified {@code maxMBSortInHeap} heap space for writing.
- *
- *  <p>
- *  <b>NOTE</b>: This can write at most Integer.MAX_VALUE * <code>maxPointsInLeafNode</code> total points.
- *
- * @lucene.experimental */
+/** Forked from {@link BKDWriter} and simplified/specialized for SimpleText's usage */
 
-public class BKDWriter implements Closeable {
+final class SimpleTextBKDWriter implements Closeable {
 
   public static final String CODEC_NAME = "BKD";
   public static final int VERSION_START = 0;
   public static final int VERSION_COMPRESSED_DOC_IDS = 1;
   public static final int VERSION_COMPRESSED_VALUES = 2;
   public static final int VERSION_IMPLICIT_SPLIT_DIM_1D = 3;
-  public static final int VERSION_PACKED_INDEX = 4;
-  public static final int VERSION_CURRENT = VERSION_PACKED_INDEX;
+  public static final int VERSION_CURRENT = VERSION_IMPLICIT_SPLIT_DIM_1D;
 
   /** How many bytes each docs takes in the fixed-width offline format */
   private final int bytesPerDoc;
@@ -107,6 +112,8 @@ public class BKDWriter implements Closeable {
 
   /** numDims * bytesPerDim */
   protected final int packedBytesLength;
+
+  final BytesRefBuilder scratch = new BytesRefBuilder();
 
   final TrackingDirectoryWrapper tempDir;
   final String tempFileNamePrefix;
@@ -153,15 +160,15 @@ public class BKDWriter implements Closeable {
 
   private final int maxDoc;
 
-  public BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim,
-                   int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount, boolean singleValuePerDoc) throws IOException {
+  public SimpleTextBKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim,
+                             int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount, boolean singleValuePerDoc) throws IOException {
     this(maxDoc, tempDir, tempFileNamePrefix, numDims, bytesPerDim, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount, singleValuePerDoc,
          totalPointCount > Integer.MAX_VALUE, Math.max(1, (long) maxMBSortInHeap), OfflineSorter.MAX_TEMPFILES);
   }
 
-  protected BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim,
-                      int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount,
-                      boolean singleValuePerDoc, boolean longOrds, long offlineSorterBufferMB, int offlineSorterMaxTempFiles) throws IOException {
+  private SimpleTextBKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim,
+                              int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount,
+                              boolean singleValuePerDoc, boolean longOrds, long offlineSorterBufferMB, int offlineSorterMaxTempFiles) throws IOException {
     verifyParams(numDims, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount);
     // We use tracking dir to deal with removing files on exception, so each place that
     // creates temp files doesn't need crazy try/finally/sucess logic:
@@ -303,8 +310,8 @@ public class BKDWriter implements Closeable {
   }
 
   private static class MergeReader {
-    final BKDReader bkd;
-    final BKDReader.IntersectState state;
+    final SimpleTextBKDReader bkd;
+    final SimpleTextBKDReader.IntersectState state;
     final MergeState.DocMap docMap;
 
     /** Current doc ID */
@@ -321,16 +328,21 @@ public class BKDWriter implements Closeable {
 
     private final byte[] packedValues;
 
-    public MergeReader(BKDReader bkd, MergeState.DocMap docMap) throws IOException {
+    public MergeReader(SimpleTextBKDReader bkd, MergeState.DocMap docMap) throws IOException {
       this.bkd = bkd;
-      state = new BKDReader.IntersectState(bkd.in.clone(),
-                                           bkd.numDims,
-                                           bkd.packedBytesLength,
-                                           bkd.maxPointsInLeafNode,
-                                           null,
-                                           null);
+      state = new SimpleTextBKDReader.IntersectState(bkd.in.clone(),
+                                                     bkd.numDims,
+                                                     bkd.packedBytesLength,
+                                                     bkd.maxPointsInLeafNode,
+                                                     null);
       this.docMap = docMap;
-      state.in.seek(bkd.getMinLeafBlockFP());
+      long minFP = Long.MAX_VALUE;
+      //System.out.println("MR.init " + this + " bkdreader=" + bkd + " leafBlockFPs.length=" + bkd.leafBlockFPs.length);
+      for(long fp : bkd.leafBlockFPs) {
+        minFP = Math.min(minFP, fp);
+        //System.out.println("  leaf fp=" + fp);
+      }
+      state.in.seek(minFP);
       this.packedValues = new byte[bkd.maxPointsInLeafNode * bkd.packedBytesLength];
     }
 
@@ -338,7 +350,7 @@ public class BKDWriter implements Closeable {
       //System.out.println("MR.next this=" + this);
       while (true) {
         if (docBlockUpto == docsInBlock) {
-          if (blockID == bkd.leafNodeOffset) {
+          if (blockID == bkd.leafBlockFPs.length) {
             //System.out.println("  done!");
             return false;
           }
@@ -486,6 +498,7 @@ public class BKDWriter implements Closeable {
     return indexFP;
   }
 
+
   /* In the 1D case, we can simply sort points in ascending order and use the
    * same writing logic as we use at merge time. */
   private long writeField1Dim(IndexOutput out, String fieldName, MutablePointValues reader) throws IOException {
@@ -514,16 +527,18 @@ public class BKDWriter implements Closeable {
     return oneDimWriter.finish();
   }
 
-  /** More efficient bulk-add for incoming {@link BKDReader}s.  This does a merge sort of the already
+  // TODO: remove this opto: SimpleText is supposed to be simple!
+  
+  /** More efficient bulk-add for incoming {@link SimpleTextBKDReader}s.  This does a merge sort of the already
    *  sorted values and currently only works when numDims==1.  This returns -1 if all documents containing
    *  dimensional values were deleted. */
-  public long merge(IndexOutput out, List<MergeState.DocMap> docMaps, List<BKDReader> readers) throws IOException {
+  public long merge(IndexOutput out, List<MergeState.DocMap> docMaps, List<SimpleTextBKDReader> readers) throws IOException {
     assert docMaps == null || readers.size() == docMaps.size();
 
     BKDMergeQueue queue = new BKDMergeQueue(bytesPerDim, readers.size());
 
     for(int i=0;i<readers.size();i++) {
-      BKDReader bkd = readers.get(i);
+      SimpleTextBKDReader bkd = readers.get(i);
       MergeState.DocMap docMap;
       if (docMaps == null) {
         docMap = null;
@@ -644,7 +659,6 @@ public class BKDWriter implements Closeable {
     }
 
     private void writeLeafBlock() throws IOException {
-      //System.out.println("writeLeafBlock pos=" + out.getFilePointer());
       assert leafCount != 0;
       if (valueCount == 0) {
         System.arraycopy(leafValues, 0, minPackedValue, 0, packedBytesLength);
@@ -674,7 +688,6 @@ public class BKDWriter implements Closeable {
       }
 
       writeLeafBlockDocs(out, leafDocs, 0, leafCount);
-      writeCommonPrefixes(out, commonPrefixLengths, leafValues);
 
       final IntFunction<BytesRef> packedValues = new IntFunction<BytesRef>() {
         final BytesRef scratch = new BytesRef();
@@ -807,24 +820,6 @@ public class BKDWriter implements Closeable {
 
     }.sort(0, pointCount);
   }
-
-  // useful for debugging:
-  /*
-  private void printPathSlice(String desc, PathSlice slice, int dim) throws IOException {
-    System.out.println("    " + desc + " dim=" + dim + " count=" + slice.count + ":");    
-    try(PointReader r = slice.writer.getReader(slice.start, slice.count)) {
-      int count = 0;
-      while (r.next()) {
-        byte[] v = r.packedValue();
-        System.out.println("      " + count + ": " + new BytesRef(v, dim*bytesPerDim, bytesPerDim));
-        count++;
-        if (count == slice.count) {
-          break;
-        }
-      }
-    }
-  }
-  */
 
   private PointWriter sort(int dim) throws IOException {
     assert dim >= 0 && dim < numDims;
@@ -1034,259 +1029,85 @@ public class BKDWriter implements Closeable {
     return indexFP;
   }
 
-  /** Packs the two arrays, representing a balanced binary tree, into a compact byte[] structure. */
-  private byte[] packIndex(long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
-
-    int numLeaves = leafBlockFPs.length;
-
-    // Possibly rotate the leaf block FPs, if the index not fully balanced binary tree (only happens
-    // if it was created by OneDimensionBKDWriter).  In this case the leaf nodes may straddle the two bottom
-    // levels of the binary tree:
-    if (numDims == 1 && numLeaves > 1) {
-      int levelCount = 2;
-      while (true) {
-        if (numLeaves >= levelCount && numLeaves <= 2*levelCount) {
-          int lastLevel = 2*(numLeaves - levelCount);
-          assert lastLevel >= 0;
-          if (lastLevel != 0) {
-            // Last level is partially filled, so we must rotate the leaf FPs to match.  We do this here, after loading
-            // at read-time, so that we can still delta code them on disk at write:
-            long[] newLeafBlockFPs = new long[numLeaves];
-            System.arraycopy(leafBlockFPs, lastLevel, newLeafBlockFPs, 0, leafBlockFPs.length - lastLevel);
-            System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, leafBlockFPs.length - lastLevel, lastLevel);
-            leafBlockFPs = newLeafBlockFPs;
-          }
-          break;
-        }
-
-        levelCount *= 2;
-      }
-    }
-
-    /** Reused while packing the index */
-    RAMOutputStream writeBuffer = new RAMOutputStream();
-
-    // This is the "file" we append the byte[] to:
-    List<byte[]> blocks = new ArrayList<>();
-    byte[] lastSplitValues = new byte[bytesPerDim * numDims];
-    //System.out.println("\npack index");
-    int totalSize = recursePackIndex(writeBuffer, leafBlockFPs, splitPackedValues, 0l, blocks, 1, lastSplitValues, new boolean[numDims], false);
-
-    // Compact the byte[] blocks into single byte index:
-    byte[] index = new byte[totalSize];
-    int upto = 0;
-    for(byte[] block : blocks) {
-      System.arraycopy(block, 0, index, upto, block.length);
-      upto += block.length;
-    }
-    assert upto == totalSize;
-
-    return index;
-  }
-
-  /** Appends the current contents of writeBuffer as another block on the growing in-memory file */
-  private int appendBlock(RAMOutputStream writeBuffer, List<byte[]> blocks) throws IOException {
-    int pos = Math.toIntExact(writeBuffer.getFilePointer());
-    byte[] bytes = new byte[pos];
-    writeBuffer.writeTo(bytes, 0);
-    writeBuffer.reset();
-    blocks.add(bytes);
-    return pos;
-  }
-
-  /**
-   * lastSplitValues is per-dimension split value previously seen; we use this to prefix-code the split byte[] on each inner node
-   */
-  private int recursePackIndex(RAMOutputStream writeBuffer, long[] leafBlockFPs, byte[] splitPackedValues, long minBlockFP, List<byte[]> blocks,
-                               int nodeID, byte[] lastSplitValues, boolean[] negativeDeltas, boolean isLeft) throws IOException {
-    if (nodeID >= leafBlockFPs.length) {
-      int leafID = nodeID - leafBlockFPs.length;
-      //System.out.println("recursePack leaf nodeID=" + nodeID);
-
-      // In the unbalanced case it's possible the left most node only has one child:
-      if (leafID < leafBlockFPs.length) {
-        long delta = leafBlockFPs[leafID] - minBlockFP;
-        if (isLeft) {
-          assert delta == 0;
-          return 0;
-        } else {
-          assert nodeID == 1 || delta > 0: "nodeID=" + nodeID;
-          writeBuffer.writeVLong(delta);
-          return appendBlock(writeBuffer, blocks);
-        }
-      } else {
-        return 0;
-      }
-    } else {
-      long leftBlockFP;
-      if (isLeft == false) {
-        leftBlockFP = getLeftMostLeafBlockFP(leafBlockFPs, nodeID);
-        long delta = leftBlockFP - minBlockFP;
-        assert nodeID == 1 || delta > 0;
-        writeBuffer.writeVLong(delta);
-      } else {
-        // The left tree's left most leaf block FP is always the minimal FP:
-        leftBlockFP = minBlockFP;
-      }
-
-      int address = nodeID * (1+bytesPerDim);
-      int splitDim = splitPackedValues[address++] & 0xff;
-
-      //System.out.println("recursePack inner nodeID=" + nodeID + " splitDim=" + splitDim + " splitValue=" + new BytesRef(splitPackedValues, address, bytesPerDim));
-
-      // find common prefix with last split value in this dim:
-      int prefix = 0;
-      for(;prefix<bytesPerDim;prefix++) {
-        if (splitPackedValues[address+prefix] != lastSplitValues[splitDim * bytesPerDim + prefix]) {
-          break;
-        }
-      }
-
-      //System.out.println("writeNodeData nodeID=" + nodeID + " splitDim=" + splitDim + " numDims=" + numDims + " bytesPerDim=" + bytesPerDim + " prefix=" + prefix);
-
-      int firstDiffByteDelta;
-      if (prefix < bytesPerDim) {
-        //System.out.println("  delta byte cur=" + Integer.toHexString(splitPackedValues[address+prefix]&0xFF) + " prev=" + Integer.toHexString(lastSplitValues[splitDim * bytesPerDim + prefix]&0xFF) + " negated?=" + negativeDeltas[splitDim]);
-        firstDiffByteDelta = (splitPackedValues[address+prefix]&0xFF) - (lastSplitValues[splitDim * bytesPerDim + prefix]&0xFF);
-        if (negativeDeltas[splitDim]) {
-          firstDiffByteDelta = -firstDiffByteDelta;
-        }
-        //System.out.println("  delta=" + firstDiffByteDelta);
-        assert firstDiffByteDelta > 0;
-      } else {
-        firstDiffByteDelta = 0;
-      }
-
-      // pack the prefix, splitDim and delta first diff byte into a single vInt:
-      int code = (firstDiffByteDelta * (1+bytesPerDim) + prefix) * numDims + splitDim;
-
-      //System.out.println("  code=" + code);
-      //System.out.println("  splitValue=" + new BytesRef(splitPackedValues, address, bytesPerDim));
-
-      writeBuffer.writeVInt(code);
-
-      // write the split value, prefix coded vs. our parent's split value:
-      int suffix = bytesPerDim - prefix;
-      byte[] savSplitValue = new byte[suffix];
-      if (suffix > 1) {
-        writeBuffer.writeBytes(splitPackedValues, address+prefix+1, suffix-1);
-      }
-
-      byte[] cmp = lastSplitValues.clone();
-
-      System.arraycopy(lastSplitValues, splitDim * bytesPerDim + prefix, savSplitValue, 0, suffix);
-
-      // copy our split value into lastSplitValues for our children to prefix-code against
-      System.arraycopy(splitPackedValues, address+prefix, lastSplitValues, splitDim * bytesPerDim + prefix, suffix);
-
-      int numBytes = appendBlock(writeBuffer, blocks);
-
-      // placeholder for left-tree numBytes; we need this so that at search time if we only need to recurse into the right sub-tree we can
-      // quickly seek to its starting point
-      int idxSav = blocks.size();
-      blocks.add(null);
-
-      boolean savNegativeDelta = negativeDeltas[splitDim];
-      negativeDeltas[splitDim] = true;
-
-      int leftNumBytes = recursePackIndex(writeBuffer, leafBlockFPs, splitPackedValues, leftBlockFP, blocks, 2*nodeID, lastSplitValues, negativeDeltas, true);
-
-      if (nodeID * 2 < leafBlockFPs.length) {
-        writeBuffer.writeVInt(leftNumBytes);
-      } else {
-        assert leftNumBytes == 0: "leftNumBytes=" + leftNumBytes;
-      }
-      int numBytes2 = Math.toIntExact(writeBuffer.getFilePointer());
-      byte[] bytes2 = new byte[numBytes2];
-      writeBuffer.writeTo(bytes2, 0);
-      writeBuffer.reset();
-      // replace our placeholder:
-      blocks.set(idxSav, bytes2);
-
-      negativeDeltas[splitDim] = false;
-      int rightNumBytes = recursePackIndex(writeBuffer, leafBlockFPs, splitPackedValues, leftBlockFP, blocks, 2*nodeID+1, lastSplitValues, negativeDeltas, false);
-
-      negativeDeltas[splitDim] = savNegativeDelta;
-
-      // restore lastSplitValues to what caller originally passed us:
-      System.arraycopy(savSplitValue, 0, lastSplitValues, splitDim * bytesPerDim + prefix, suffix);
-
-      assert Arrays.equals(lastSplitValues, cmp);
-      
-      return numBytes + numBytes2 + leftNumBytes + rightNumBytes;
-    }
-  }
-
-  private long getLeftMostLeafBlockFP(long[] leafBlockFPs, int nodeID) {
-    int nodeIDIn = nodeID;
-    // TODO: can we do this cheaper, e.g. a closed form solution instead of while loop?  Or
-    // change the recursion while packing the index to return this left-most leaf block FP
-    // from each recursion instead?
-    //
-    // Still, the overall cost here is minor: this method's cost is O(log(N)), and while writing
-    // we call it O(N) times (N = number of leaf blocks)
-    while (nodeID < leafBlockFPs.length) {
-      nodeID *= 2;
-    }
-    int leafID = nodeID - leafBlockFPs.length;
-    long result = leafBlockFPs[leafID];
-    if (result < 0) {
-      throw new AssertionError(result + " for leaf " + leafID);
-    }
-    return result;
-  }
-
+  /** Subclass can change how it writes the index. */
   private void writeIndex(IndexOutput out, long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
-    byte[] packedIndex = packIndex(leafBlockFPs, splitPackedValues);
-    writeIndex(out, leafBlockFPs.length, packedIndex);
+    write(out, NUM_DIMS);
+    writeInt(out, numDims);
+    newline(out);
+
+    write(out, BYTES_PER_DIM);
+    writeInt(out, bytesPerDim);
+    newline(out);
+
+    write(out, MAX_LEAF_POINTS);
+    writeInt(out, maxPointsInLeafNode);
+    newline(out);
+
+    write(out, INDEX_COUNT);
+    writeInt(out, leafBlockFPs.length);
+    newline(out);
+
+    write(out, MIN_VALUE);
+    BytesRef br = new BytesRef(minPackedValue, 0, minPackedValue.length);
+    write(out, br.toString());
+    newline(out);
+
+    write(out, MAX_VALUE);
+    br = new BytesRef(maxPackedValue, 0, maxPackedValue.length);
+    write(out, br.toString());
+    newline(out);
+
+    write(out, POINT_COUNT);
+    writeLong(out, pointCount);
+    newline(out);
+
+    write(out, DOC_COUNT);
+    writeInt(out, docsSeen.cardinality());
+    newline(out);
+
+    for(int i=0;i<leafBlockFPs.length;i++) {
+      write(out, BLOCK_FP);
+      writeLong(out, leafBlockFPs[i]);
+      newline(out);
+    }
+
+    assert (splitPackedValues.length % (1 + bytesPerDim)) == 0;
+    int count = splitPackedValues.length / (1 + bytesPerDim);
+    assert count == leafBlockFPs.length;
+
+    write(out, SPLIT_COUNT);
+    writeInt(out, count);
+    newline(out);
+
+    for(int i=0;i<count;i++) {
+      write(out, SPLIT_DIM);
+      writeInt(out, splitPackedValues[i * (1 + bytesPerDim)] & 0xff);
+      newline(out);
+      write(out, SPLIT_VALUE);
+      br = new BytesRef(splitPackedValues, 1+(i * (1+bytesPerDim)), bytesPerDim);
+      write(out, br.toString());
+      newline(out);
+    }
   }
-  
-  private void writeIndex(IndexOutput out, int numLeaves, byte[] packedIndex) throws IOException {
-    
-    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
-    out.writeVInt(numDims);
-    out.writeVInt(maxPointsInLeafNode);
-    out.writeVInt(bytesPerDim);
 
-    assert numLeaves > 0;
-    out.writeVInt(numLeaves);
-    out.writeBytes(minPackedValue, 0, packedBytesLength);
-    out.writeBytes(maxPackedValue, 0, packedBytesLength);
-
-    out.writeVLong(pointCount);
-    out.writeVInt(docsSeen.cardinality());
-    out.writeVInt(packedIndex.length);
-    out.writeBytes(packedIndex, 0, packedIndex.length);
+  protected void writeLeafBlockDocs(IndexOutput out, int[] docIDs, int start, int count) throws IOException {
+    write(out, BLOCK_COUNT);
+    writeInt(out, count);
+    newline(out);
+    for(int i=0;i<count;i++) {
+      write(out, BLOCK_DOC_ID);
+      writeInt(out, docIDs[start+i]);
+      newline(out);
+    }
   }
 
-  private void writeLeafBlockDocs(IndexOutput out, int[] docIDs, int start, int count) throws IOException {
-    assert count > 0: "maxPointsInLeafNode=" + maxPointsInLeafNode;
-    out.writeVInt(count);
-    DocIdsWriter.writeDocIds(docIDs, start, count, out);
-  }
-
-  private void writeLeafBlockPackedValues(IndexOutput out, int[] commonPrefixLengths, int count, int sortedDim, IntFunction<BytesRef> packedValues) throws IOException {
-    int prefixLenSum = Arrays.stream(commonPrefixLengths).sum();
-    if (prefixLenSum == packedBytesLength) {
-      // all values in this block are equal
-      out.writeByte((byte) -1);
-    } else {
-      assert commonPrefixLengths[sortedDim] < bytesPerDim;
-      out.writeByte((byte) sortedDim);
-      int compressedByteOffset = sortedDim * bytesPerDim + commonPrefixLengths[sortedDim];
-      commonPrefixLengths[sortedDim]++;
-      for (int i = 0; i < count; ) {
-        // do run-length compression on the byte at compressedByteOffset
-        int runLen = runLen(packedValues, i, Math.min(i + 0xff, count), compressedByteOffset);
-        assert runLen <= 0xff;
-        BytesRef first = packedValues.apply(i);
-        byte prefixByte = first.bytes[first.offset + compressedByteOffset];
-        out.writeByte(prefixByte);
-        out.writeByte((byte) runLen);
-        writeLeafBlockPackedValuesRange(out, commonPrefixLengths, i, i + runLen, packedValues);
-        i += runLen;
-        assert i <= count;
-      }
+  protected void writeLeafBlockPackedValues(IndexOutput out, int[] commonPrefixLengths, int count, int sortedDim, IntFunction<BytesRef> packedValues) throws IOException {
+    for (int i = 0; i < count; ++i) {
+      BytesRef packedValue = packedValues.apply(i);
+      // NOTE: we don't do prefix coding, so we ignore commonPrefixLengths
+      write(out, BLOCK_VALUE);
+      write(out, packedValue.toString());
+      newline(out);
     }
   }
 
@@ -1314,14 +1135,6 @@ public class BKDWriter implements Closeable {
       }
     }
     return end - start;
-  }
-
-  private void writeCommonPrefixes(IndexOutput out, int[] commonPrefixes, byte[] packedValue) throws IOException {
-    for(int dim=0;dim<numDims;dim++) {
-      out.writeVInt(commonPrefixes[dim]);
-      //System.out.println(commonPrefixes[dim] + " of " + bytesPerDim);
-      out.writeBytes(packedValue, dim*bytesPerDim, commonPrefixes[dim]);
-    }
   }
 
   @Override
@@ -1384,7 +1197,7 @@ public class BKDWriter implements Closeable {
     // TODO: find a way to also checksum this reader?  If we changed to markLeftTree, and scanned the final chunk, it could work?
     try (PointReader reader = source.writer.getReader(source.start + source.count - rightCount, rightCount)) {
       boolean result = reader.next();
-      assert result: "rightCount=" + rightCount + " source.count=" + source.count + " source.writer=" + source.writer;
+      assert result;
       System.arraycopy(reader.packedValue(), splitDim*bytesPerDim, scratch1, 0, bytesPerDim);
       if (numDims > 1) {
         assert ordBitSet.get(reader.ord()) == false;
@@ -1451,12 +1264,12 @@ public class BKDWriter implements Closeable {
 
   /* Recursively reorders the provided reader and writes the bkd-tree on the fly. */
   private void build(int nodeID, int leafNodeOffset,
-                     MutablePointValues reader, int from, int to,
-                     IndexOutput out,
-                     byte[] minPackedValue, byte[] maxPackedValue,
-                     byte[] splitPackedValues,
-                     long[] leafBlockFPs,
-                     int[] spareDocIds) throws IOException {
+      MutablePointValues reader, int from, int to,
+      IndexOutput out,
+      byte[] minPackedValue, byte[] maxPackedValue,
+      byte[] splitPackedValues,
+      long[] leafBlockFPs,
+      int[] spareDocIds) throws IOException {
 
     if (nodeID >= leafNodeOffset) {
       // leaf node
@@ -1508,7 +1321,7 @@ public class BKDWriter implements Closeable {
 
       // sort by sortedDim
       MutablePointsReaderUtils.sortByDim(sortedDim, bytesPerDim, commonPrefixLengths,
-          reader, from, to, scratchBytesRef1, scratchBytesRef2);
+                                         reader, from, to, scratchBytesRef1, scratchBytesRef2);
 
       // Save the block file pointer:
       leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();
@@ -1518,13 +1331,11 @@ public class BKDWriter implements Closeable {
       for (int i = from; i < to; ++i) {
         docIDs[i - from] = reader.getDocID(i);
       }
-      //System.out.println("writeLeafBlock pos=" + out.getFilePointer());
       writeLeafBlockDocs(out, docIDs, 0, count);
 
       // Write the common prefixes:
       reader.getValue(from, scratchBytesRef1);
       System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset, scratch1, 0, packedBytesLength);
-      writeCommonPrefixes(out, commonPrefixLengths, scratch1);
 
       // Write the full values:
       IntFunction<BytesRef> packedValues = new IntFunction<BytesRef>() {
@@ -1552,7 +1363,6 @@ public class BKDWriter implements Closeable {
           break;
         }
       }
-
       MutablePointsReaderUtils.partition(maxDoc, splitDim, bytesPerDim, commonPrefixLen,
           reader, from, to, mid, scratchBytesRef1, scratchBytesRef2);
 
@@ -1590,7 +1400,7 @@ public class BKDWriter implements Closeable {
     for(PathSlice slice : slices) {
       assert slice.count == slices[0].count;
     }
-    
+
     if (numDims == 1 && slices[0].writer instanceof OfflinePointWriter && slices[0].count <= maxPointsSortInHeap) {
       // Special case for 1D, to cutover to heap once we recurse deeply enough:
       slices[0] = switchToHeap(slices[0], toCloseHeroically);
@@ -1666,9 +1476,6 @@ public class BKDWriter implements Closeable {
 
       // TODO: minor opto: we don't really have to write the actual common prefixes, because BKDReader on recursing can regenerate it for us
       // from the index, much like how terms dict does so from the FST:
-
-      // Write the common prefixes:
-      writeCommonPrefixes(out, commonPrefixLengths, scratch1);
 
       // Write the full values:
       IntFunction<BytesRef> packedValues = new IntFunction<BytesRef>() {
@@ -1832,4 +1639,23 @@ public class BKDWriter implements Closeable {
     }
   }
 
+  private void write(IndexOutput out, String s) throws IOException {
+    SimpleTextUtil.write(out, s, scratch);
+  }
+
+  private void writeInt(IndexOutput out, int x) throws IOException {
+    SimpleTextUtil.write(out, Integer.toString(x), scratch);
+  }
+
+  private void writeLong(IndexOutput out, long x) throws IOException {
+    SimpleTextUtil.write(out, Long.toString(x), scratch);
+  }
+
+  private void write(IndexOutput out, BytesRef b) throws IOException {
+    SimpleTextUtil.write(out, b);
+  }
+
+  private void newline(IndexOutput out) throws IOException {
+    SimpleTextUtil.writeNewline(out);
+  }
 }
