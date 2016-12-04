@@ -26,7 +26,10 @@ import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SloppyMath;
+import org.apache.lucene.util.bkd.BKDReader.IndexTree;
+import org.apache.lucene.util.bkd.BKDReader.IntersectState;
 import org.apache.lucene.util.bkd.BKDReader;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
@@ -41,16 +44,16 @@ class NearestNeighbor {
 
   static class Cell implements Comparable<Cell> {
     final int readerIndex;
-    final int nodeID;
     final byte[] minPacked;
     final byte[] maxPacked;
+    final IndexTree index;
 
     /** The closest possible distance of all points in this cell */
     final double distanceMeters;
 
-    public Cell(int readerIndex, int nodeID, byte[] minPacked, byte[] maxPacked, double distanceMeters) {
+    public Cell(IndexTree index, int readerIndex, byte[] minPacked, byte[] maxPacked, double distanceMeters) {
+      this.index = index;
       this.readerIndex = readerIndex;
-      this.nodeID = nodeID;
       this.minPacked = minPacked.clone();
       this.maxPacked = maxPacked.clone();
       this.distanceMeters = distanceMeters;
@@ -66,7 +69,7 @@ class NearestNeighbor {
       double minLon = decodeLongitude(minPacked, Integer.BYTES);
       double maxLat = decodeLatitude(maxPacked, 0);
       double maxLon = decodeLongitude(maxPacked, Integer.BYTES);
-      return "Cell(readerIndex=" + readerIndex + " lat=" + minLat + " TO " + maxLat + ", lon=" + minLon + " TO " + maxLon + "; distanceMeters=" + distanceMeters + ")";
+      return "Cell(readerIndex=" + readerIndex + " nodeID=" + index.getNodeID() + " isLeaf=" + index.isLeafNode() + " lat=" + minLat + " TO " + maxLat + ", lon=" + minLon + " TO " + maxLon + "; distanceMeters=" + distanceMeters + ")";
     }
   }
 
@@ -219,13 +222,21 @@ class NearestNeighbor {
     List<BKDReader.IntersectState> states = new ArrayList<>();
 
     // Add root cell for each reader into the queue:
+    int bytesPerDim = -1;
+    
     for(int i=0;i<readers.size();i++) {
       BKDReader reader = readers.get(i);
+      if (bytesPerDim == -1) {
+        bytesPerDim = reader.getBytesPerDimension();
+      } else if (bytesPerDim != reader.getBytesPerDimension()) {
+        throw new IllegalStateException("bytesPerDim changed from " + bytesPerDim + " to " + reader.getBytesPerDimension() + " across readers");
+      }
       byte[] minPackedValue = reader.getMinPackedValue();
       byte[] maxPackedValue = reader.getMaxPackedValue();
-      states.add(reader.getIntersectState(visitor));
+      IntersectState state = reader.getIntersectState(visitor);
+      states.add(state);
 
-      cellQueue.offer(new Cell(i, 1, reader.getMinPackedValue(), reader.getMaxPackedValue(),
+      cellQueue.offer(new Cell(state.index, i, reader.getMinPackedValue(), reader.getMaxPackedValue(),
                                approxBestDistance(minPackedValue, maxPackedValue, pointLat, pointLon)));
     }
 
@@ -236,12 +247,12 @@ class NearestNeighbor {
       // TODO: if we replace approxBestDistance with actualBestDistance, we can put an opto here to break once this "best" cell is fully outside of the hitQueue bottom's radius:
       BKDReader reader = readers.get(cell.readerIndex);
 
-      if (reader.isLeafNode(cell.nodeID)) {
+      if (cell.index.isLeafNode()) {
         //System.out.println("    leaf");
         // Leaf block: visit all points and possibly collect them:
         visitor.curDocBase = docBases.get(cell.readerIndex);
         visitor.curLiveDocs = liveDocs.get(cell.readerIndex);
-        reader.visitLeafBlockValues(cell.nodeID, states.get(cell.readerIndex));
+        reader.visitLeafBlockValues(cell.index, states.get(cell.readerIndex));
         //System.out.println("    now " + hitQueue.size() + " hits");
       } else {
         //System.out.println("    non-leaf");
@@ -257,14 +268,23 @@ class NearestNeighbor {
           continue;
         }
         
+        BytesRef splitValue = BytesRef.deepCopyOf(cell.index.getSplitDimValue());
+        int splitDim = cell.index.getSplitDim();
+        
+        // we must clone the index so that we we can recurse left and right "concurrently":
+        IndexTree newIndex = cell.index.clone();
         byte[] splitPackedValue = cell.maxPacked.clone();
-        reader.copySplitValue(cell.nodeID, splitPackedValue);
-        cellQueue.offer(new Cell(cell.readerIndex, 2*cell.nodeID, cell.minPacked, splitPackedValue,
+        System.arraycopy(splitValue.bytes, splitValue.offset, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+
+        cell.index.pushLeft();
+        cellQueue.offer(new Cell(cell.index, cell.readerIndex, cell.minPacked, splitPackedValue,
                                  approxBestDistance(cell.minPacked, splitPackedValue, pointLat, pointLon)));
 
         splitPackedValue = cell.minPacked.clone();
-        reader.copySplitValue(cell.nodeID, splitPackedValue);
-        cellQueue.offer(new Cell(cell.readerIndex, 2*cell.nodeID+1, splitPackedValue, cell.maxPacked,
+        System.arraycopy(splitValue.bytes, splitValue.offset, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+
+        newIndex.pushRight();
+        cellQueue.offer(new Cell(newIndex, cell.readerIndex, splitPackedValue, cell.maxPacked,
                                  approxBestDistance(splitPackedValue, cell.maxPacked, pointLat, pointLon)));
       }
     }

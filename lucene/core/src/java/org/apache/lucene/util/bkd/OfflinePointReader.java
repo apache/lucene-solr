@@ -27,8 +27,10 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LongBitSet;
 
-/** Reads points from disk in a fixed-with format, previously written with {@link OfflinePointWriter}. */
-final class OfflinePointReader extends PointReader {
+/** Reads points from disk in a fixed-with format, previously written with {@link OfflinePointWriter}.
+ *
+ * @lucene.internal */
+public final class OfflinePointReader extends PointReader {
   long countLeft;
   final IndexInput in;
   private final byte[] packedValue;
@@ -43,7 +45,7 @@ final class OfflinePointReader extends PointReader {
   // File name we are reading
   final String name;
 
-  OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length,
+  public OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length,
                      boolean longOrds, boolean singleValuePerDoc) throws IOException {
     this.singleValuePerDoc = singleValuePerDoc;
     int bytesPerDoc = packedBytesLength + Integer.BYTES;

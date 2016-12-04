@@ -28,6 +28,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.CorruptingIndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
@@ -1010,4 +1011,57 @@ public class TestBKD extends LuceneTestCase {
     }
   }
 
+  // Claims 16 bytes per dim, but only use the bottom N 1-3 bytes; this would happen e.g. if a user indexes what are actually just short
+  // values as a LongPoint:
+  public void testWastedLeadingBytes() throws Exception {
+    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
+    int bytesPerDim = PointValues.MAX_NUM_BYTES;
+    int bytesUsed = TestUtil.nextInt(random(), 1, 3);
+
+    Directory dir = newFSDirectory(createTempDir());
+    int numDocs = 100000;
+    BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", numDims, bytesPerDim, 32, 1f, numDocs, true);
+    byte[] tmp = new byte[bytesUsed];
+    byte[] buffer = new byte[numDims * bytesPerDim];
+    for(int i=0;i<numDocs;i++) {
+      for(int dim=0;dim<numDims;dim++) {
+        random().nextBytes(tmp);
+        System.arraycopy(tmp, 0, buffer, dim*bytesPerDim+(bytesPerDim-bytesUsed), tmp.length);
+      }
+      w.add(buffer, i);
+    }
+    
+    IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
+    long fp = w.finish(out);
+    out.close();
+
+    IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
+    in.seek(fp);
+    BKDReader r = new BKDReader(in);
+    int[] count = new int[1];
+    r.intersect(new IntersectVisitor() {
+
+        @Override
+        public void visit(int docID) {
+          count[0]++;
+        }
+
+        @Override
+        public void visit(int docID, byte[] packedValue) {
+          visit(docID);
+        }
+
+        @Override
+        public Relation compare(byte[] minPacked, byte[] maxPacked) {
+          if (random().nextInt(7) == 1) {
+            return Relation.CELL_CROSSES_QUERY;
+          } else {
+            return Relation.CELL_INSIDE_QUERY;
+          }
+        }
+      });
+    assertEquals(numDocs, count[0]);
+    in.close();
+    dir.close();
+  }
 }

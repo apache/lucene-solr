@@ -24,18 +24,21 @@ import java.util.List;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
-final class HeapPointWriter implements PointWriter {
-  int[] docIDs;
-  long[] ordsLong;
-  int[] ords;
+/** Utility class to write new points into in-heap arrays.
+ *
+ *  @lucene.internal */
+public final class HeapPointWriter implements PointWriter {
+  public int[] docIDs;
+  public long[] ordsLong;
+  public int[] ords;
   private int nextWrite;
   private boolean closed;
   final int maxSize;
-  final int valuesPerBlock;
+  public final int valuesPerBlock;
   final int packedBytesLength;
   final boolean singleValuePerDoc;
   // NOTE: can't use ByteBlockPool because we need random-write access when sorting in heap
-  final List<byte[]> blocks = new ArrayList<>();
+  public final List<byte[]> blocks = new ArrayList<>();
 
   public HeapPointWriter(int initSize, int maxSize, int packedBytesLength, boolean longOrds, boolean singleValuePerDoc) {
     docIDs = new int[initSize];
@@ -77,7 +80,7 @@ final class HeapPointWriter implements PointWriter {
     nextWrite = other.nextWrite;
   }
 
-  void readPackedValue(int index, byte[] bytes) {
+  public void readPackedValue(int index, byte[] bytes) {
     assert bytes.length == packedBytesLength;
     int block = index / valuesPerBlock;
     int blockIndex = index % valuesPerBlock;
@@ -85,7 +88,7 @@ final class HeapPointWriter implements PointWriter {
   }
 
   /** Returns a reference, in <code>result</code>, to the byte[] slice holding this value */
-  void getPackedValueSlice(int index, BytesRef result) {
+  public void getPackedValueSlice(int index, BytesRef result) {
     int block = index / valuesPerBlock;
     int blockIndex = index % valuesPerBlock;
     result.bytes = blocks.get(block);
@@ -138,7 +141,8 @@ final class HeapPointWriter implements PointWriter {
   @Override
   public PointReader getReader(long start, long length) {
     assert start + length <= docIDs.length: "start=" + start + " length=" + length + " docIDs.length=" + docIDs.length;
-    return new HeapPointReader(blocks, valuesPerBlock, packedBytesLength, ords, ordsLong, docIDs, (int) start, nextWrite, singleValuePerDoc);
+    assert start + length <= nextWrite: "start=" + start + " length=" + length + " nextWrite=" + nextWrite;
+    return new HeapPointReader(blocks, valuesPerBlock, packedBytesLength, ords, ordsLong, docIDs, (int) start, Math.toIntExact(start+length), singleValuePerDoc);
   }
 
   @Override
