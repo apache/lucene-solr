@@ -49,7 +49,7 @@ class TermsQuery extends MultiTermQuery {
     super(field);
     this.fromQuery = fromQuery;
     this.terms = terms;
-    ords = terms.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+    ords = terms.sort(BytesRef.getUTF8SortedAsUnicodeComparator(),this);
   }
 
   @Override

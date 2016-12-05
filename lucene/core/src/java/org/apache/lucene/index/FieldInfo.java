@@ -20,6 +20,9 @@ package org.apache.lucene.index;
 import java.util.Map;
 import java.util.Comparator;
 import java.util.Objects;
+
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.SerializableSortedDocValuesComparator;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -50,8 +53,12 @@ public final class FieldInfo {
 
   private long dvGen;
 
-  private Comparator<BytesRef> docValuesComparator=null;
-
+  private SerializableSortedDocValuesComparator docValuesComparator=null;
+  public FieldInfo(String name, int number, boolean storeTermVector, boolean omitNorms,
+                   boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues,
+                   long dvGen, Map<String,String> attributes) {
+    this(name,number, storeTermVector, omitNorms, storePayloads,indexOptions,docValues,dvGen,attributes,null);
+  }
   /**
    * Sole constructor.
    *
@@ -59,7 +66,7 @@ public final class FieldInfo {
    */
   public FieldInfo(String name, int number, boolean storeTermVector, boolean omitNorms, 
       boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues,
-      long dvGen, Map<String,String> attributes) {
+      long dvGen, Map<String,String> attributes, SerializableSortedDocValuesComparator docValuesComparator) {
     this.name = Objects.requireNonNull(name);
     this.number = number;
     this.docValuesType = Objects.requireNonNull(docValues, "DocValuesType cannot be null (field: \"" + name + "\")");
@@ -75,6 +82,7 @@ public final class FieldInfo {
     }
     this.dvGen = dvGen;
     this.attributes = Objects.requireNonNull(attributes);
+    this.docValuesComparator=docValuesComparator;
     assert checkConsistency();
   }
 
@@ -270,14 +278,28 @@ public final class FieldInfo {
   }
 
   //TODO coment
-  public Comparator<BytesRef> docValuesComparator() {
+  public SerializableSortedDocValuesComparator docValuesComparator() {
     return docValuesComparator;
   }
 
   //TODO coment
-  public void setDocValuesComparator(Comparator<BytesRef> comparator) {
+  public void setDocValuesComparator(SerializableSortedDocValuesComparator comparator) {
     docValuesComparator = comparator;
   }
 
-
+  @Override
+  public String toString() {
+    return "FieldInfo{" +
+        "name='" + name + '\'' +
+        ", number=" + number +
+        ", docValuesType=" + docValuesType +
+        ", storeTermVector=" + storeTermVector +
+        ", omitNorms=" + omitNorms +
+        ", indexOptions=" + indexOptions +
+        ", storePayloads=" + storePayloads +
+        ", attributes=" + attributes +
+        ", dvGen=" + dvGen +
+        ", docValuesComparator=" + docValuesComparator +
+        '}';
+  }
 }

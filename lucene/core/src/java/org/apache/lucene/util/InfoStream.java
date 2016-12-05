@@ -55,7 +55,7 @@ public abstract class InfoStream implements Closeable {
   /** returns true if messages are enabled and should be posted to {@link #message}. */
   public abstract boolean isEnabled(String component);
   
-  private static InfoStream defaultInfoStream = NO_OUTPUT;
+  private static InfoStream defaultInfoStream = new PrintStreamInfoStream(System.out);
   
   /** The default {@code InfoStream} used by a newly instantiated classes.
    * @see #setDefault */

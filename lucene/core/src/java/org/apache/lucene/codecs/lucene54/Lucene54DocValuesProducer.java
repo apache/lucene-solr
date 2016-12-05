@@ -793,7 +793,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
     final BinaryDocValues binary = getBinary(field);
     NumericEntry entry = ords.get(field.name);
     final LongValues ordinals = getNumeric(entry);
-    return new SortedDocValues() {
+    SortedDocValues sdv= new SortedDocValues() {
 
       @Override
       public int getOrd(int docID) {
@@ -828,6 +828,8 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
         }
       }
     };
+
+    return sdv;
   }
 
   /** returns an address instance for sortedset ordinal lists */

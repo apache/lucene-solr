@@ -24,6 +24,8 @@ import java.util.Map;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.SerializableSortedDocValuesComparator;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -150,9 +152,19 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
             attributes = lastAttributes;
           }
           lastAttributes = attributes;
+
+          SerializableSortedDocValuesComparator docValuesComparator=null;
+          bits = input.readByte();
+          boolean hasCustomDocValuesComparator=(bits & CUSTOM_DOCVALES_COMPARATOR) != 0;
+          if (hasCustomDocValuesComparator) {
+            String fullName=input.readString();
+            docValuesComparator=(SerializableSortedDocValuesComparator)Class.forName(fullName).newInstance();
+            docValuesComparator=docValuesComparator.read(input);
+          }
+
           try {
             infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, 
-                                     indexOptions, docValuesType, dvGen, attributes);
+                                     indexOptions, docValuesType, dvGen, attributes,docValuesComparator);
             infos[i].checkConsistency();
           } catch (IllegalStateException e) {
             throw new CorruptIndexException("invalid fieldinfo for field: " + name + ", fieldNumber=" + fieldNumber, input, e);
@@ -163,7 +175,9 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
       } finally {
         CodecUtil.checkFooter(input, priorE);
       }
-      return new FieldInfos(infos);
+      FieldInfos fieldInfos= new FieldInfos(infos);
+      //System.out.println("lucenen50FieldInfoFormat readingFieldInfoFormat from file:"+fieldInfos.toString());
+      return fieldInfos;
     }
   }
   
@@ -256,7 +270,9 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
 
   @Override
   public void write(Directory directory, SegmentInfo segmentInfo, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, EXTENSION);
+    //System.out.println("lucenen50FieldInfoFormat writing FieldInfoFormat from file:"+infos.toString());
+
+        final String fileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, EXTENSION);
     try (IndexOutput output = directory.createOutput(fileName, context)) {
       CodecUtil.writeIndexHeader(output, Lucene50FieldInfosFormat.CODEC_NAME, Lucene50FieldInfosFormat.FORMAT_CURRENT, segmentInfo.getId(), segmentSuffix);
       output.writeVInt(infos.size());
@@ -278,6 +294,24 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
         output.writeByte(docValuesByte(fi.getDocValuesType()));
         output.writeLong(fi.getDocValuesGen());
         output.writeMapOfStrings(fi.attributes());
+
+        bits = 0x0;
+        SerializableSortedDocValuesComparator comp= fi.docValuesComparator();
+        if (comp==null) {
+          bits |= DEFAULT_DOCVALES_COMPARATOR;
+          output.writeByte(bits);
+        } else  {
+          bits |= CUSTOM_DOCVALES_COMPARATOR;
+          output.writeByte(bits);
+          output.writeString(comp.getClass().getName());
+          comp.write(output);
+        }
+
+
+
+
+
+
       }
       CodecUtil.writeFooter(output);
     }
@@ -296,4 +330,8 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
   static final byte STORE_TERMVECTOR = 0x1;
   static final byte OMIT_NORMS = 0x2;
   static final byte STORE_PAYLOADS = 0x4;
+
+
+  static final byte CUSTOM_DOCVALES_COMPARATOR = 0x1;
+  static final byte DEFAULT_DOCVALES_COMPARATOR = 0x0;
 }

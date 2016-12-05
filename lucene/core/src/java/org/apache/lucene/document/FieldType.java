@@ -17,14 +17,12 @@
 package org.apache.lucene.document;
 
 
-import org.apache.lucene.analysis.Analyzer; // javadocs
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.search.NumericRangeQuery; // javadocs
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.util.NumericUtils;
-import java.util.Comparator;
-import org.apache.lucene.util.BytesRef;
 
 
 /**
@@ -58,7 +56,7 @@ public class FieldType implements IndexableFieldType {
   private boolean frozen;
   private int numericPrecisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
   private DocValuesType docValuesType = DocValuesType.NONE;
-  private Comparator<BytesRef> docValuesComparator=null;
+  private SerializableSortedDocValuesComparator docValuesComparator=null;
 
 
   /**
@@ -429,9 +427,9 @@ public class FieldType implements IndexableFieldType {
    * {@inheritDoc}
    * <p>
    * The default is <code>null</code> (no docValues)
-   * @see #setDocValuesComparator(Comparator)
+   * @see #setDocValuesComparator(SerializableSortedDocValuesComparator)
    */
-  public Comparator<BytesRef> docValuesComparator() {
+  public SerializableSortedDocValuesComparator docValuesComparator() {
     return docValuesComparator;
   }
 
@@ -442,7 +440,7 @@ public class FieldType implements IndexableFieldType {
    *         future modifications.
    * @see #docValuesComparator()
    */
-  public void setDocValuesComparator(Comparator<BytesRef> comparator) {
+  public void setDocValuesComparator(SerializableSortedDocValuesComparator comparator) {
     checkIfFrozen();
     docValuesComparator = comparator;
   }

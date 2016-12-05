@@ -19,6 +19,9 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.Analyzer; // javadocs
 import java.util.Comparator;
+
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.SerializableSortedDocValuesComparator;
 import org.apache.lucene.util.BytesRef;
 
 /** 
@@ -101,5 +104,5 @@ public interface IndexableFieldType {
   public DocValuesType docValuesType();  
 
   //TODO
-  public Comparator<BytesRef> docValuesComparator();
+  public SerializableSortedDocValuesComparator docValuesComparator();
 }

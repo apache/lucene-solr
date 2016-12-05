@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.SerializableSortedDocValuesComparator;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -92,9 +93,10 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       @Override
-      public Comparator<BytesRef> docValuesComparator() {
+      public SerializableSortedDocValuesComparator docValuesComparator() {
         return null;
       }
+
 
     };
 
