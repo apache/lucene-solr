@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.classification.ClassificationResult;
 import org.apache.lucene.classification.SimpleNaiveBayesClassifier;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
@@ -59,15 +60,15 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
   /**
    * Creates a new NaiveBayes classifier.
    *
-   * @param leafReader     the reader on the index to be used for classification
+   * @param indexReader     the reader on the index to be used for classification
    * @param query          a {@link org.apache.lucene.search.Query} to eventually filter the docs used for training the classifier, or {@code null}
    *                       if all the indexed docs should be used
    * @param classFieldName the name of the field used as the output for the classifier NOTE: must not be havely analyzed
    *                       as the returned class will be a token indexed for this field
    * @param textFieldNames the name of the fields used as the inputs for the classifier, they can contain boosting indication e.g. title^10
    */
-  public SimpleNaiveBayesDocumentClassifier(LeafReader leafReader, Query query, String classFieldName, Map<String, Analyzer> field2analyzer, String... textFieldNames) {
-    super(leafReader, null, query, classFieldName, textFieldNames);
+  public SimpleNaiveBayesDocumentClassifier(IndexReader indexReader, Query query, String classFieldName, Map<String, Analyzer> field2analyzer, String... textFieldNames) {
+    super(indexReader, null, query, classFieldName, textFieldNames);
     this.field2analyzer = field2analyzer;
   }
 
@@ -112,7 +113,7 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
     List<ClassificationResult<BytesRef>> assignedClasses = new ArrayList<>();
     Map<String, List<String[]>> fieldName2tokensArray = new LinkedHashMap<>();
     Map<String, Float> fieldName2boost = new LinkedHashMap<>();
-    Terms classes = MultiFields.getTerms(leafReader, classFieldName);
+    Terms classes = MultiFields.getTerms(indexReader, classFieldName);
     TermsEnum classesEnum = classes.iterator();
     BytesRef c;
 
@@ -225,10 +226,10 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
    */
   private double getTextTermFreqForClass(Term term, String fieldName) throws IOException {
     double avgNumberOfUniqueTerms;
-    Terms terms = MultiFields.getTerms(leafReader, fieldName);
+    Terms terms = MultiFields.getTerms(indexReader, fieldName);
     long numPostings = terms.getSumDocFreq(); // number of term/doc pairs
     avgNumberOfUniqueTerms = numPostings / (double) terms.getDocCount(); // avg # of unique terms per doc
-    int docsWithC = leafReader.docFreq(term);
+    int docsWithC = indexReader.docFreq(term);
     return avgNumberOfUniqueTerms * docsWithC; // avg # of unique terms in text fields per doc * # docs with c
   }
 
@@ -261,6 +262,6 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
   }
 
   private int docCount(Term term) throws IOException {
-    return leafReader.docFreq(term);
+    return indexReader.docFreq(term);
   }
 }
