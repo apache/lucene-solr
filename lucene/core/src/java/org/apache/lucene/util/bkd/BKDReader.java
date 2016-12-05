@@ -347,7 +347,6 @@ public final class BKDReader extends PointValues implements Accountable {
       index.nodeID = nodeID;
       index.level = level;
       index.splitDim = splitDim;
-      System.arraycopy(negativeDeltas, level*numDims, index.negativeDeltas, level*numDims, numDims);
       index.leafBlockFPStack[level] = leafBlockFPStack[level];
       index.leftNodePositions[level] = leftNodePositions[level];
       index.rightNodePositions[level] = rightNodePositions[level];
