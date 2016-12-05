@@ -162,12 +162,14 @@ public final class BytesRefHash {
    * @param comp
    *          the {@link Comparator} used for sorting
    */
+
   public int[] sort(final Comparator<BytesRef> comp, Object caller) {
+    /*
     if (comp==null) {
       System.out.println("BRH calling sort from "+caller.toString()+" with null comparator");
     } else {
       System.out.println("BRH calling sort from "+caller.toString()+" with Comparator:"+comp.toString());
-    }
+    }*/
 
     final int[] compact = compact();
     final Comparator<BytesRef> comparator;

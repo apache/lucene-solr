@@ -114,19 +114,19 @@ class SortedDocValuesWriter extends DocValuesWriter {
     final int valueCount = hash.size();
     final PackedLongValues ords = pending.build();
 
-    System.out.println("DSDVW sorting docValues for fieldInfo: "+this.fieldInfo.name);
+    //System.out.println("DSDVW sorting docValues for fieldInfo: "+this.fieldInfo.name);
 
     final int[] sortedValues = hash.sort(this.fieldInfo.docValuesComparator(), this);
-    System.out.println("DSDVW sorted docValues");
+    //System.out.println("DSDVW sorted docValues");
 
 
 
     final int[] ordMap = new int[valueCount];
-    BytesRef scratch = new BytesRef();
+    //BytesRef scratch = new BytesRef();
     for(int ord=0;ord<valueCount;ord++) {
       ordMap[sortedValues[ord]] = ord;
-      hash.get(sortedValues[ord],scratch);
-      System.out.println("DSDVW ord: "+Integer.toString(ord)+" docId: "+sortedValues[ord]+" Document: "+scratch.toString());
+      //hash.get(sortedValues[ord],scratch);
+      //System.out.println("DSDVW ord: "+Integer.toString(ord)+" docId: "+sortedValues[ord]+" Document: "+scratch.toString());
     }
 
     dvConsumer.addSortedField(fieldInfo,

@@ -469,7 +469,8 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
       minLength = Math.min(minLength, v.length);
       maxLength = Math.max(maxLength, v.length);
       numValues++;
-      System.out.println("writing docValue to file: "+v.toString());
+
+      //System.out.println("writing docValue to file: "+v.toString());
     }
     if (minLength == maxLength) {
       // no index needed: direct addressing by mult
@@ -614,7 +615,7 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
     addTermsDict(field, values);
 
 
-    System.out.println("DocValuesConsumer writing sorted docValues: "+values.iterator().toString());
+    //System.out.println("DocValuesConsumer writing sorted docValues: "+values.iterator().toString());
 
     addNumericField(field, docToOrd, NumberType.ORDINAL);
   }
