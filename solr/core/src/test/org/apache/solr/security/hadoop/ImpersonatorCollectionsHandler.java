@@ -25,13 +25,13 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.GenericHadoopAuthPlugin;
+import org.apache.solr.security.HadoopAuthPlugin;
 import org.apache.solr.security.KerberosPlugin;
 import org.junit.Assert;
 
 /**
  * This class extends {@linkplain CollectionsHandler} and implements extra validations
- * for verifying proxy users support in {@linkplain GenericHadoopAuthPlugin}
+ * for verifying proxy users support in {@linkplain HadoopAuthPlugin}
  */
 public class ImpersonatorCollectionsHandler extends CollectionsHandler {
   static AtomicBoolean called = new AtomicBoolean(false);

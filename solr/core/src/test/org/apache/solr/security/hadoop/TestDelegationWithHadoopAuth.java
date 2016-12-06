@@ -22,6 +22,7 @@ import java.util.Set;
 import org.apache.hadoop.security.authentication.client.PseudoAuthenticator;
 import org.apache.hadoop.util.Time;
 import org.apache.http.HttpStatus;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -50,6 +51,8 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
+
     configureCluster(NUM_SERVERS)// nodes
         .withSecurityJson(TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json"))
         .configure();

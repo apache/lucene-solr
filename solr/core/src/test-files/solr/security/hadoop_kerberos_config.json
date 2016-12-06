@@ -1,6 +1,6 @@
 {
     "authentication": {
-        "class": "org.apache.solr.security.GenericHadoopAuthPlugin",
+        "class": "org.apache.solr.security.ConfigurableInternodeAuthHadoopPlugin",
         "sysPropPrefix": "solr.",
         "type": "kerberos",
         "clientBuilderFactory": "org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder",

@@ -28,8 +28,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
@@ -41,9 +39,7 @@ import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.apache.commons.collections.iterators.IteratorEnumeration;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
-import org.apache.solr.client.solrj.impl.HttpClientBuilderFactory;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
-import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -66,10 +62,11 @@ import org.slf4j.LoggerFactory;
  * The proxy users are configured by specifying relevant Hadoop configuration parameters. Please note that
  * the delegation token support must be enabled for using the proxy users support.
  *
- * For Solr internal communication, this plugin enables configuring {@linkplain HttpClientBuilderFactory}
- * implementation (e.g. based on kerberos).
- */
-public class GenericHadoopAuthPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
+ * Note - this class does not support configuring authentication mechanism for Solr internal communication.
+ * For this purpose {@linkplain ConfigurableInternodeAuthHadoopPlugin} should be used. If this plugin is used in the
+ * SolrCloud mode, it will use PKI based authentication mechanism for Solr internal communication.
+ **/
+public class HadoopAuthPlugin extends AuthenticationPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -91,12 +88,6 @@ public class GenericHadoopAuthPlugin extends AuthenticationPlugin implements Htt
    * defined by {@linkplain #HADOOP_AUTH_TYPE} property.
    */
   private static final String AUTH_CONFIG_NAMES_PROPERTY = "authConfigs";
-
-  /**
-   * A property specifying the {@linkplain HttpClientBuilderFactory} used for the Solr internal
-   * communication.
-   */
-  private static final String HTTPCLIENT_BUILDER_FACTORY = "clientBuilderFactory";
 
   /**
    * A property specifying the default values for the configuration parameters specified by the
@@ -122,14 +113,12 @@ public class GenericHadoopAuthPlugin extends AuthenticationPlugin implements Htt
   public static final String PROXY_USER_CONFIGS = "proxyUserConfigs";
 
   private AuthenticationFilter authFilter;
-  private HttpClientBuilderFactory factory = null;
-  private final CoreContainer coreContainer;
+  protected final CoreContainer coreContainer;
 
-  public GenericHadoopAuthPlugin(CoreContainer coreContainer) {
+  public HadoopAuthPlugin(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
   }
 
-  @SuppressWarnings("rawtypes")
   @Override
   public void init(Map<String,Object> pluginConfig) {
     try {
@@ -145,14 +134,8 @@ public class GenericHadoopAuthPlugin extends AuthenticationPlugin implements Htt
       FilterConfig conf = getInitFilterConfig(pluginConfig);
       authFilter.init(conf);
 
-      String httpClientBuilderFactory = (String)pluginConfig.get(HTTPCLIENT_BUILDER_FACTORY);
-      if (httpClientBuilderFactory != null) {
-        Class c = Class.forName(httpClientBuilderFactory);
-        factory = (HttpClientBuilderFactory)c.newInstance();
-      }
-
-    } catch (ServletException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error initializing kerberos authentication plugin: "+e);
+    } catch (ServletException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error initializing GenericHadoopAuthPlugin: "+e);
     }
   }
 
@@ -250,17 +233,9 @@ public class GenericHadoopAuthPlugin extends AuthenticationPlugin implements Htt
   }
 
   @Override
-  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
-    return (factory != null) ? factory.getHttpClientBuilder(Optional.ofNullable(builder)) : builder;
-  }
-
-  @Override
   public void close() throws IOException {
     if (authFilter != null) {
       authFilter.destroy();
-    }
-    if (factory != null) {
-      factory.close();
     }
   }
 }

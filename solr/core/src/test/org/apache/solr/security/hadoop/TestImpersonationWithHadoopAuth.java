@@ -34,7 +34,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.security.GenericHadoopAuthPlugin;
+import org.apache.solr.security.HadoopAuthPlugin;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -42,7 +42,6 @@ import org.junit.Test;
 
 public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
   protected static final int NUM_SERVERS = 2;
-  private static SolrClient solrClient;
   private static final boolean defaultAddRequestHeadersToContext =
       SolrRequestParsers.DEFAULT.isAddRequestHeadersToContext();
 
@@ -58,7 +57,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
     Map<String, Object> securityConfig = (Map<String, Object>)Utils.fromJSONString(securityJson);
     Map<String, Object> authConfig = (Map<String, Object>)securityConfig.get("authentication");
     Map<String,String> proxyUserConfigs = (Map<String,String>) authConfig
-        .getOrDefault(GenericHadoopAuthPlugin.PROXY_USER_CONFIGS, new HashMap<>());
+        .getOrDefault(HadoopAuthPlugin.PROXY_USER_CONFIGS, new HashMap<>());
     proxyUserConfigs.put("proxyuser.noGroups.hosts", "*");
     proxyUserConfigs.put("proxyuser.anyHostAnyUser.hosts", "*");
     proxyUserConfigs.put("proxyuser.anyHostAnyUser.groups", "*");
@@ -73,7 +72,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
     proxyUserConfigs.put("proxyuser.anyHostUsersGroup.groups", ImpersonationUtil.getUsersFirstGroup());
     proxyUserConfigs.put("proxyuser.anyHostUsersGroup.hosts", "*");
 
-    authConfig.put(GenericHadoopAuthPlugin.PROXY_USER_CONFIGS, proxyUserConfigs);
+    authConfig.put(HadoopAuthPlugin.PROXY_USER_CONFIGS, proxyUserConfigs);
 
     SolrRequestParsers.DEFAULT.setAddRequestHeadersToContext(true);
     System.setProperty("collectionsHandler", ImpersonatorCollectionsHandler.class.getName());
@@ -82,23 +81,22 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
         .withSecurityJson(Utils.toJSONString(securityConfig))
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
-    solrClient = new HttpSolrClient.Builder(
-        cluster.getJettySolrRunner(0).getBaseUrl().toString()).build();
   }
 
   @AfterClass
   public static void tearDownClass() throws Exception {
-    if (solrClient != null) {
-      solrClient.close();
-      solrClient = null;
-    }
     SolrRequestParsers.DEFAULT.setAddRequestHeadersToContext(defaultAddRequestHeadersToContext);
     System.clearProperty("collectionsHandler");
   }
 
+  private SolrClient newSolrClient() {
+    return new HttpSolrClient.Builder(
+        cluster.getJettySolrRunner(0).getBaseUrl().toString()).build();
+  }
+
   @Test
   public void testProxyNoConfigGroups() throws Exception {
-    try {
+    try (SolrClient solrClient = newSolrClient()) {
       solrClient.request(getProxyRequest("noGroups","bar"));
       fail("Expected RemoteSolrException");
     }
@@ -109,7 +107,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
 
   @Test
   public void testProxyWrongHost() throws Exception {
-    try {
+    try (SolrClient solrClient = newSolrClient()) {
       solrClient.request(getProxyRequest("wrongHost","bar"));
       fail("Expected RemoteSolrException");
     }
@@ -120,7 +118,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
 
   @Test
   public void testProxyNoConfigHosts() throws Exception {
-    try {
+    try (SolrClient solrClient = newSolrClient()) {
       solrClient.request(getProxyRequest("noHosts","bar"));
       fail("Expected RemoteSolrException");
     }
@@ -131,13 +129,15 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
 
   @Test
   public void testProxyValidateAnyHostAnyUser() throws Exception {
-    solrClient.request(getProxyRequest("anyHostAnyUser", "bar"));
-    assertTrue(ImpersonatorCollectionsHandler.called.get());
+    try (SolrClient solrClient = newSolrClient()) {
+      solrClient.request(getProxyRequest("anyHostAnyUser", "bar"));
+      assertTrue(ImpersonatorCollectionsHandler.called.get());
+    }
   }
 
   @Test
   public void testProxyInvalidProxyUser() throws Exception {
-    try {
+    try (SolrClient solrClient = newSolrClient()) {
       // wrong direction, should fail
       solrClient.request(getProxyRequest("bar","anyHostAnyUser"));
       fail("Expected RemoteSolrException");
@@ -149,19 +149,23 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
 
   @Test
   public void testProxyValidateHost() throws Exception {
-    solrClient.request(getProxyRequest("localHostAnyGroup", "bar"));
-    assertTrue(ImpersonatorCollectionsHandler.called.get());
+    try (SolrClient solrClient = newSolrClient()) {
+      solrClient.request(getProxyRequest("localHostAnyGroup", "bar"));
+      assertTrue(ImpersonatorCollectionsHandler.called.get());
+    }
   }
 
   @Test
   public void testProxyValidateGroup() throws Exception {
-    solrClient.request(getProxyRequest("anyHostUsersGroup", System.getProperty("user.name")));
-    assertTrue(ImpersonatorCollectionsHandler.called.get());
+    try (SolrClient solrClient = newSolrClient()) {
+      solrClient.request(getProxyRequest("anyHostUsersGroup", System.getProperty("user.name")));
+      assertTrue(ImpersonatorCollectionsHandler.called.get());
+    }
   }
 
   @Test
   public void testProxyInvalidGroup() throws Exception {
-    try {
+    try (SolrClient solrClient = newSolrClient()) {
       solrClient.request(getProxyRequest("bogusGroup","bar"));
       fail("Expected RemoteSolrException");
     }
@@ -172,7 +176,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
 
   @Test
   public void testProxyNullProxyUser() throws Exception {
-    try {
+    try (SolrClient solrClient = newSolrClient()) {
       solrClient.request(getProxyRequest("","bar"));
       fail("Expected RemoteSolrException");
     }
@@ -189,7 +193,9 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
     // create collection
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1",
         1, 1);
-    create.process(solrClient);
+    try (SolrClient solrClient = newSolrClient()) {
+      create.process(solrClient);
+    }
 
     // try a command to each node, one of them must be forwarded
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {

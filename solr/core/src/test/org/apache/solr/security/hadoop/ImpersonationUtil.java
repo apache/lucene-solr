@@ -25,11 +25,11 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.security.GenericHadoopAuthPlugin;
+import org.apache.solr.security.HadoopAuthPlugin;
 import org.apache.solr.security.KerberosPlugin;
 
 /**
- * This class implements utility functions required to test the secure impersonation feature for {@linkplain GenericHadoopAuthPlugin}
+ * This class implements utility functions required to test the secure impersonation feature for {@linkplain HadoopAuthPlugin}
  */
 public class ImpersonationUtil {
 

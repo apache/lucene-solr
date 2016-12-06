@@ -41,6 +41,7 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
     assumeFalse("FIXME: SOLR-8182: This test fails under Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
 
     setupMiniKdc();
