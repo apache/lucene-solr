@@ -152,6 +152,9 @@ New Features
 
 * SOLR-9728: Ability to specify Key Store type in solr.in.sh file for SSL (Michael Suzuki, Kevin Risden)
 
+* SOLR-5043: New solr.dns.prevent.reverse.lookup system property that can be used to prevent long core
+  (re)load delays on systems with missconfigured hostname/DNS (hossman)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
