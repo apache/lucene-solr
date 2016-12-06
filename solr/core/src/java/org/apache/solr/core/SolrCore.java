@@ -119,7 +119,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.ManagedIndexSchema;
-import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheMBean;
@@ -2702,13 +2701,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       if (checkStale(zkClient, overlayPath, solrConfigversion) ||
           checkStale(zkClient, solrConfigPath, overlayVersion) ||
           checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
-
-        try (SolrCore solrCore = cc.solrCores.getCoreFromAnyList(coreName, true)) {
-          solrCore.setLatestSchema(SchemaManager.getFreshManagedSchema(solrCore));
-        } catch (Exception e) {
-          log.warn("", SolrZkClient.checkInterrupted(e));
-        }
-
         log.info("core reload {}", coreName);
         try {
           cc.reload(coreName);
