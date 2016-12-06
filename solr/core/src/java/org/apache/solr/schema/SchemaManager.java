@@ -133,8 +133,8 @@ public class SchemaManager {
         try {
           int latestVersion = ZkController.persistConfigResourceToZooKeeper(zkLoader, managedIndexSchema.getSchemaZkVersion(),
               managedIndexSchema.getResourceName(), sw.toString().getBytes(StandardCharsets.UTF_8), true);
+          req.getCore().getCoreDescriptor().getCoreContainer().reload(req.getCore().getName());
           waitForOtherReplicasToUpdate(timeOut, latestVersion);
-          core.setLatestSchema(managedIndexSchema);
           return Collections.emptyList();
         } catch (ZkController.ResourceModifiedInZkException e) {
           log.info("Schema was modified by another node. Retrying..");

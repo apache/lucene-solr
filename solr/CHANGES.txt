@@ -220,6 +220,8 @@ Bug Fixes
 
 * SOLR-9616: Solr throws exception when expand=true on empty index (Timo Hund via Ishan Chattopadhyaya)
 
+* SOLR-9832: Schema modifications are not immediately visible on the coordinating node. (Steve Rowe)
+
 Other Changes
 ----------------------
 
