@@ -441,7 +441,7 @@ public class SolrQueryTest extends LuceneTestCase {
     solrQuery.addMoreLikeThisField("mlt3");
     solrQuery.addMoreLikeThisField("mlt4");
     assertEquals(4, solrQuery.getMoreLikeThisFields().length);
-    solrQuery.setMoreLikeThisFields(null);
+    solrQuery.setMoreLikeThisFields((String[])null);
     assertTrue(null == solrQuery.getMoreLikeThisFields());
     assertFalse(solrQuery.getMoreLikeThis());
 
