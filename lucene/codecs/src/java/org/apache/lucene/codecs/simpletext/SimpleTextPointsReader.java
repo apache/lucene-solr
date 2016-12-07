@@ -184,7 +184,7 @@ class SimpleTextPointsReader extends PointsReader {
     return new String(scratch.bytes(), prefix.length, scratch.length() - prefix.length, StandardCharsets.UTF_8);
   }
 
-  private BKDReader getBKDReader(String fieldName) {
+  private SimpleTextBKDReader getBKDReader(String fieldName) {
     FieldInfo fieldInfo = readState.fieldInfos.fieldInfo(fieldName);
     if (fieldInfo == null) {
       throw new IllegalArgumentException("field=\"" + fieldName + "\" is unrecognized");
@@ -198,7 +198,7 @@ class SimpleTextPointsReader extends PointsReader {
   /** Finds all documents and points matching the provided visitor */
   @Override
   public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
-    BKDReader bkdReader = getBKDReader(fieldName);
+    SimpleTextBKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
       // Schema ghost corner case!  This field did index points in the past, but
       // now all docs having this field were deleted in this segment:
@@ -246,7 +246,7 @@ class SimpleTextPointsReader extends PointsReader {
 
   @Override
   public byte[] getMinPackedValue(String fieldName) {
-    BKDReader bkdReader = getBKDReader(fieldName);
+    SimpleTextBKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
       // Schema ghost corner case!  This field did index points in the past, but
       // now all docs having this field were deleted in this segment:
@@ -257,7 +257,7 @@ class SimpleTextPointsReader extends PointsReader {
 
   @Override
   public byte[] getMaxPackedValue(String fieldName) {
-    BKDReader bkdReader = getBKDReader(fieldName);
+    SimpleTextBKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
       // Schema ghost corner case!  This field did index points in the past, but
       // now all docs having this field were deleted in this segment:
@@ -268,7 +268,7 @@ class SimpleTextPointsReader extends PointsReader {
 
   @Override
   public int getNumDimensions(String fieldName) {
-    BKDReader bkdReader = getBKDReader(fieldName);
+    SimpleTextBKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
       // Schema ghost corner case!  This field did index points in the past, but
       // now all docs having this field were deleted in this segment:
@@ -279,7 +279,7 @@ class SimpleTextPointsReader extends PointsReader {
 
   @Override
   public int getBytesPerDimension(String fieldName) {
-    BKDReader bkdReader = getBKDReader(fieldName);
+    SimpleTextBKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
       // Schema ghost corner case!  This field did index points in the past, but
       // now all docs having this field were deleted in this segment:
@@ -290,7 +290,7 @@ class SimpleTextPointsReader extends PointsReader {
 
   @Override
   public long size(String fieldName) {
-    BKDReader bkdReader = getBKDReader(fieldName);
+    SimpleTextBKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
       // Schema ghost corner case!  This field did index points in the past, but
       // now all docs having this field were deleted in this segment:
@@ -301,7 +301,7 @@ class SimpleTextPointsReader extends PointsReader {
 
   @Override
   public int getDocCount(String fieldName) {
-    BKDReader bkdReader = getBKDReader(fieldName);
+    SimpleTextBKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
       // Schema ghost corner case!  This field did index points in the past, but
       // now all docs having this field were deleted in this segment:

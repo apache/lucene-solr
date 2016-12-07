@@ -33,9 +33,9 @@ public final class MutablePointsReaderUtils {
 
   MutablePointsReaderUtils() {}
 
-  /** Sort the given {@link MutablePointValues} based on its packed value then doc ID. */
+  /** Sort the given {@link MutablePointsReader} based on its packed value then doc ID. */
   public static void sort(int maxDoc, int packedBytesLength,
-                          MutablePointValues reader, int from, int to) {
+                          MutablePointsReader reader, int from, int to) {
     final int bitsPerDocId = PackedInts.bitsRequired(maxDoc - 1);
     new MSBRadixSorter(packedBytesLength + (bitsPerDocId + 7) / 8) {
 
@@ -92,7 +92,7 @@ public final class MutablePointsReaderUtils {
 
   /** Sort points on the given dimension. */
   public static void sortByDim(int sortedDim, int bytesPerDim, int[] commonPrefixLengths,
-                               MutablePointValues reader, int from, int to,
+                               MutablePointsReader reader, int from, int to,
                                BytesRef scratch1, BytesRef scratch2) {
 
     // No need for a fancy radix sort here, this is called on the leaves only so
@@ -131,7 +131,7 @@ public final class MutablePointsReaderUtils {
    *  than or equal to it and all values on the right must be greater than or
    *  equal to it. */
   public static void partition(int maxDoc, int splitDim, int bytesPerDim, int commonPrefixLen,
-                               MutablePointValues reader, int from, int to, int mid,
+                               MutablePointsReader reader, int from, int to, int mid,
                                BytesRef scratch1, BytesRef scratch2) {
     final int offset = splitDim * bytesPerDim + commonPrefixLen;
     final int cmpBytes = bytesPerDim - commonPrefixLen;

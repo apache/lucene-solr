@@ -1799,18 +1799,14 @@ public final class CheckIndex implements Closeable {
         }
         for (FieldInfo fieldInfo : fieldInfos) {
           if (fieldInfo.getPointDimensionCount() > 0) {
-            PointValues values = pointsReader.getValues(fieldInfo.name);
-            if (values == null) {
-              continue;
-            }
 
             status.totalValueFields++;
 
-            long size = values.size();
-            int docCount = values.getDocCount();
+            long size = values.size(fieldInfo.name);
+            int docCount = values.getDocCount(fieldInfo.name);
 
             VerifyPointsVisitor visitor = new VerifyPointsVisitor(fieldInfo.name, reader.maxDoc(), values);
-            values.intersect(visitor);
+            values.intersect(fieldInfo.name, visitor);
 
             if (visitor.getPointCountSeen() != size) {
               throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have size=" + size + " points, but in fact has " + visitor.getPointCountSeen());
@@ -1863,34 +1859,34 @@ public final class CheckIndex implements Closeable {
     public VerifyPointsVisitor(String fieldName, int maxDoc, PointValues values) throws IOException {
       this.maxDoc = maxDoc;
       this.fieldName = fieldName;
-      numDims = values.getNumDimensions();
-      bytesPerDim = values.getBytesPerDimension();
+      numDims = values.getNumDimensions(fieldName);
+      bytesPerDim = values.getBytesPerDimension(fieldName);
       packedBytesCount = numDims * bytesPerDim;
-      globalMinPackedValue = values.getMinPackedValue();
-      globalMaxPackedValue = values.getMaxPackedValue();
+      globalMinPackedValue = values.getMinPackedValue(fieldName);
+      globalMaxPackedValue = values.getMaxPackedValue(fieldName);
       docsSeen = new FixedBitSet(maxDoc);
       lastMinPackedValue = new byte[packedBytesCount];
       lastMaxPackedValue = new byte[packedBytesCount];
       lastPackedValue = new byte[packedBytesCount];
 
-      if (values.getDocCount() > values.size()) {
-        throw new RuntimeException("point values for field \"" + fieldName + "\" claims to have size=" + values.size() + " points and inconsistent docCount=" + values.getDocCount());
+      if (values.getDocCount(fieldName) > values.size(fieldName)) {
+        throw new RuntimeException("point values for field \"" + fieldName + "\" claims to have size=" + values.size(fieldName) + " points and inconsistent docCount=" + values.getDocCount(fieldName));
       }
 
-      if (values.getDocCount() > maxDoc) {
-        throw new RuntimeException("point values for field \"" + fieldName + "\" claims to have docCount=" + values.getDocCount() + " but that's greater than maxDoc=" + maxDoc);
+      if (values.getDocCount(fieldName) > maxDoc) {
+        throw new RuntimeException("point values for field \"" + fieldName + "\" claims to have docCount=" + values.getDocCount(fieldName) + " but that's greater than maxDoc=" + maxDoc);
       }
 
       if (globalMinPackedValue == null) {
-        if (values.size() != 0) {
-          throw new RuntimeException("getMinPackedValue is null points for field \"" + fieldName + "\" yet size=" + values.size());
+        if (values.size(fieldName) != 0) {
+          throw new RuntimeException("getMinPackedValue is null points for field \"" + fieldName + "\" yet size=" + values.size(fieldName));
         }
       } else if (globalMinPackedValue.length != packedBytesCount) {
         throw new RuntimeException("getMinPackedValue for field \"" + fieldName + "\" return length=" + globalMinPackedValue.length + " array, but should be " + packedBytesCount);
       }
       if (globalMaxPackedValue == null) {
-        if (values.size() != 0) {
-          throw new RuntimeException("getMaxPackedValue is null points for field \"" + fieldName + "\" yet size=" + values.size());
+        if (values.size(fieldName) != 0) {
+          throw new RuntimeException("getMaxPackedValue is null points for field \"" + fieldName + "\" yet size=" + values.size(fieldName));
         }
       } else if (globalMaxPackedValue.length != packedBytesCount) {
         throw new RuntimeException("getMaxPackedValue for field \"" + fieldName + "\" return length=" + globalMaxPackedValue.length + " array, but should be " + packedBytesCount);

@@ -16,7 +16,10 @@
  */
 package org.apache.lucene.util.bkd;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -65,9 +68,9 @@ public class Test2BBKDPoints extends LuceneTestCase {
     IndexInput in = dir.openInput("1d.bkd", IOContext.DEFAULT);
     in.seek(indexFP);
     BKDReader r = new BKDReader(in);
-    CheckIndex.VerifyPointsVisitor visitor = new CheckIndex.VerifyPointsVisitor("1d", numDocs, r);
+    CheckIndex.VerifyPointsVisitor visitor = new CheckIndex.VerifyPointsVisitor("1d", numDocs, new BKDReaderToPointValues("1d", r));
     r.intersect(visitor);
-    assertEquals(r.size(), visitor.getPointCountSeen());
+    assertEquals(r.getPointCount(), visitor.getPointCountSeen());
     assertEquals(r.getDocCount(), visitor.getDocCountSeen());
     in.close();
     dir.close();
@@ -105,11 +108,70 @@ public class Test2BBKDPoints extends LuceneTestCase {
     IndexInput in = dir.openInput("2d.bkd", IOContext.DEFAULT);
     in.seek(indexFP);
     BKDReader r = new BKDReader(in);
-    CheckIndex.VerifyPointsVisitor visitor = new CheckIndex.VerifyPointsVisitor("2d", numDocs, r);
+    CheckIndex.VerifyPointsVisitor visitor = new CheckIndex.VerifyPointsVisitor("2d", numDocs, new BKDReaderToPointValues("2d", r));
     r.intersect(visitor);
-    assertEquals(r.size(), visitor.getPointCountSeen());
+    assertEquals(r.getPointCount(), visitor.getPointCountSeen());
     assertEquals(r.getDocCount(), visitor.getDocCountSeen());
     in.close();
     dir.close();
+  }
+
+  private class BKDReaderToPointValues extends PointValues {
+
+    private final BKDReader bkdReader;
+    private final String fieldName;
+    
+    public BKDReaderToPointValues(String fieldName, BKDReader bkdReader) {
+      this.fieldName = fieldName;
+      this.bkdReader = bkdReader;
+    }
+
+    @Override
+    public void intersect(String fieldNameIn, IntersectVisitor visitor) throws IOException {
+      verifyFieldName(fieldNameIn);
+      bkdReader.intersect(visitor);
+    }
+
+    @Override
+    public byte[] getMinPackedValue(String fieldNameIn) throws IOException {
+      verifyFieldName(fieldNameIn);
+      return bkdReader.getMinPackedValue();
+    }
+
+    @Override
+    public byte[] getMaxPackedValue(String fieldNameIn) throws IOException {
+      verifyFieldName(fieldNameIn);
+      return bkdReader.getMaxPackedValue();
+    }
+
+    @Override
+    public int getNumDimensions(String fieldNameIn) throws IOException {
+      verifyFieldName(fieldNameIn);
+      return bkdReader.getNumDimensions();
+    }
+
+    @Override
+    public int getBytesPerDimension(String fieldNameIn) throws IOException {
+      verifyFieldName(fieldNameIn);
+      return bkdReader.getBytesPerDimension();
+    }
+
+    @Override
+    public long size(String fieldNameIn) {
+      verifyFieldName(fieldNameIn);
+      return bkdReader.getPointCount();
+    }
+
+    @Override
+    public int getDocCount(String fieldNameIn) {
+      verifyFieldName(fieldNameIn);
+      return bkdReader.getDocCount();
+    }
+
+    private void verifyFieldName(String fieldNameIn) {
+      if (fieldName.equals(fieldNameIn) == false) {
+        throw new IllegalArgumentException("expected fieldName=\"" + fieldName + "\" but got \"" + fieldNameIn + "\"");
+      }
+    }
   }
 }

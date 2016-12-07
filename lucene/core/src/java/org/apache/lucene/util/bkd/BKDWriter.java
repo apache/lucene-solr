@@ -1451,7 +1451,7 @@ public class BKDWriter implements Closeable {
 
   /* Recursively reorders the provided reader and writes the bkd-tree on the fly. */
   private void build(int nodeID, int leafNodeOffset,
-                     MutablePointValues reader, int from, int to,
+                     MutablePointsReader reader, int from, int to,
                      IndexOutput out,
                      byte[] minPackedValue, byte[] maxPackedValue,
                      byte[] splitPackedValues,
