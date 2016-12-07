@@ -152,6 +152,9 @@ New Features
 
 * SOLR-9728: Ability to specify Key Store type in solr.in.sh file for SSL (Michael Suzuki, Kevin Risden)
 
+* SOLR-5043: New solr.dns.prevent.reverse.lookup system property that can be used to prevent long core
+  (re)load delays on systems with missconfigured hostname/DNS (hossman)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
@@ -220,6 +223,8 @@ Bug Fixes
 
 * SOLR-9616: Solr throws exception when expand=true on empty index (Timo Hund via Ishan Chattopadhyaya)
 
+* SOLR-9832: Schema modifications are not immediately visible on the coordinating node. (Steve Rowe)
+
 Other Changes
 ----------------------
 
@@ -256,6 +261,10 @@ Other Changes
   (Judith Silverman, Christine Poerschke)
 
 * SOLR-9819: Upgrade commons-fileupload to 1.3.2, fixing a potential vulnerability CVE-2016-3092 (Anshum Gupta)
+
+* SOLR-9827: ConcurrentUpdateSolrClient creates a RemoteSolrException if the remote host responded with a non-ok
+  response (instead of a SolrException) and includes the remote error message as part of the exception message
+  (Tomás Fernández Löbbe)
 
 ==================  6.3.0 ==================
 

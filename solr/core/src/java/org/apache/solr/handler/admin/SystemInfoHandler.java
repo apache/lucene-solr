@@ -31,7 +31,6 @@ import java.lang.management.PlatformManagedObject;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -50,6 +49,8 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.RTimer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,8 +65,22 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class SystemInfoHandler extends RequestHandlerBase 
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
 
+  /**
+   * <p>
+   * Undocumented expert level system property to prevent doing a reverse lookup of our hostname.
+   * This property ill be logged as a suggested workaround if any probems are noticed when doing reverse 
+   * lookup.
+   * </p>
+   *
+   * <p>
+   * TODO: should we refactor this (and the associated logic) into a helper method for any other places
+   * where DNS is used?
+   * </p>
+   * @see #initHostname
+   */
+  private static final String PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP = "solr.dns.prevent.reverse.lookup";
+  
   // on some platforms, resolving canonical hostname can cause the thread
   // to block for several seconds if nameservices aren't available
   // so resolve this once per handler instance 
@@ -75,22 +90,42 @@ public class SystemInfoHandler extends RequestHandlerBase
   private CoreContainer cc;
 
   public SystemInfoHandler() {
-    super();
-    init();
+    this(null);
   }
 
   public SystemInfoHandler(CoreContainer cc) {
     super();
     this.cc = cc;
-    init();
+    initHostname();
   }
   
-  private void init() {
+  private void initHostname() {
+    if (null != System.getProperty(PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP, null)) {
+      log.info("Resolving canonical hostname for local host prevented due to '{}' sysprop",
+               PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP);
+      hostname = null;
+      return;
+    }
+    
+    RTimer timer = new RTimer();
     try {
       InetAddress addr = InetAddress.getLocalHost();
       hostname = addr.getCanonicalHostName();
-    } catch (UnknownHostException e) {
-      //default to null
+    } catch (Exception e) {
+      log.warn("Unable to resolve canonical hostname for local host, possible DNS misconfiguration. " +
+               "Set the '"+PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP+"' sysprop to true on startup to " +
+               "prevent future lookups if DNS can not be fixed.", e);
+      hostname = null;
+      return;
+    }
+    timer.stop();
+    
+    if (15000D < timer.getTime()) {
+      String readableTime = String.format(Locale.ROOT, "%.3f", (timer.getTime() / 1000));
+      log.warn("Resolving canonical hostname for local host took {} seconds, possible DNS misconfiguration. " +
+               "Set the '{}' sysprop to true on startup to prevent future lookups if DNS can not be fixed.",
+               readableTime, PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP);
+    
     }
   }
 

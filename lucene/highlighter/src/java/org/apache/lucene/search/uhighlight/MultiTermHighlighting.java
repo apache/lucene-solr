@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
@@ -56,50 +57,52 @@ class MultiTermHighlighting {
   }
 
   /**
-   * Extracts all MultiTermQueries for {@code field}, and returns equivalent
-   * automata that will match terms.
+   * Extracts MultiTermQueries that match the provided field predicate.
+   * Returns equivalent automata that will match terms.
    */
-  public static CharacterRunAutomaton[] extractAutomata(Query query, String field, boolean lookInSpan,
+  public static CharacterRunAutomaton[] extractAutomata(Query query,
+                                                        Predicate<String> fieldMatcher,
+                                                        boolean lookInSpan,
                                                         Function<Query, Collection<Query>> preRewriteFunc) {
     List<CharacterRunAutomaton> list = new ArrayList<>();
     Collection<Query> customSubQueries = preRewriteFunc.apply(query);
     if (customSubQueries != null) {
       for (Query sub : customSubQueries) {
-        list.addAll(Arrays.asList(extractAutomata(sub, field, lookInSpan, preRewriteFunc)));
+        list.addAll(Arrays.asList(extractAutomata(sub, fieldMatcher, lookInSpan, preRewriteFunc)));
       }
     } else if (query instanceof BooleanQuery) {
       for (BooleanClause clause : (BooleanQuery) query) {
         if (!clause.isProhibited()) {
-          list.addAll(Arrays.asList(extractAutomata(clause.getQuery(), field, lookInSpan, preRewriteFunc)));
+          list.addAll(Arrays.asList(extractAutomata(clause.getQuery(), fieldMatcher, lookInSpan, preRewriteFunc)));
         }
       }
     } else if (query instanceof ConstantScoreQuery) {
-      list.addAll(Arrays.asList(extractAutomata(((ConstantScoreQuery) query).getQuery(), field, lookInSpan,
+      list.addAll(Arrays.asList(extractAutomata(((ConstantScoreQuery) query).getQuery(), fieldMatcher, lookInSpan,
           preRewriteFunc)));
     } else if (query instanceof DisjunctionMaxQuery) {
       for (Query sub : ((DisjunctionMaxQuery) query).getDisjuncts()) {
-        list.addAll(Arrays.asList(extractAutomata(sub, field, lookInSpan, preRewriteFunc)));
+        list.addAll(Arrays.asList(extractAutomata(sub, fieldMatcher, lookInSpan, preRewriteFunc)));
       }
     } else if (lookInSpan && query instanceof SpanOrQuery) {
       for (Query sub : ((SpanOrQuery) query).getClauses()) {
-        list.addAll(Arrays.asList(extractAutomata(sub, field, lookInSpan, preRewriteFunc)));
+        list.addAll(Arrays.asList(extractAutomata(sub, fieldMatcher, lookInSpan, preRewriteFunc)));
       }
     } else if (lookInSpan && query instanceof SpanNearQuery) {
       for (Query sub : ((SpanNearQuery) query).getClauses()) {
-        list.addAll(Arrays.asList(extractAutomata(sub, field, lookInSpan, preRewriteFunc)));
+        list.addAll(Arrays.asList(extractAutomata(sub, fieldMatcher, lookInSpan, preRewriteFunc)));
       }
     } else if (lookInSpan && query instanceof SpanNotQuery) {
-      list.addAll(Arrays.asList(extractAutomata(((SpanNotQuery) query).getInclude(), field, lookInSpan,
+      list.addAll(Arrays.asList(extractAutomata(((SpanNotQuery) query).getInclude(), fieldMatcher, lookInSpan,
           preRewriteFunc)));
     } else if (lookInSpan && query instanceof SpanPositionCheckQuery) {
-      list.addAll(Arrays.asList(extractAutomata(((SpanPositionCheckQuery) query).getMatch(), field, lookInSpan,
+      list.addAll(Arrays.asList(extractAutomata(((SpanPositionCheckQuery) query).getMatch(), fieldMatcher, lookInSpan,
           preRewriteFunc)));
     } else if (lookInSpan && query instanceof SpanMultiTermQueryWrapper) {
-      list.addAll(Arrays.asList(extractAutomata(((SpanMultiTermQueryWrapper<?>) query).getWrappedQuery(), field,
-          lookInSpan, preRewriteFunc)));
+      list.addAll(Arrays.asList(extractAutomata(((SpanMultiTermQueryWrapper<?>) query).getWrappedQuery(),
+          fieldMatcher, lookInSpan, preRewriteFunc)));
     } else if (query instanceof AutomatonQuery) {
       final AutomatonQuery aq = (AutomatonQuery) query;
-      if (aq.getField().equals(field)) {
+      if (fieldMatcher.test(aq.getField())) {
         list.add(new CharacterRunAutomaton(aq.getAutomaton()) {
           @Override
           public String toString() {
@@ -110,7 +113,7 @@ class MultiTermHighlighting {
     } else if (query instanceof PrefixQuery) {
       final PrefixQuery pq = (PrefixQuery) query;
       Term prefix = pq.getPrefix();
-      if (prefix.field().equals(field)) {
+      if (fieldMatcher.test(prefix.field())) {
         list.add(new CharacterRunAutomaton(Operations.concatenate(Automata.makeString(prefix.text()),
             Automata.makeAnyString())) {
           @Override
@@ -121,7 +124,7 @@ class MultiTermHighlighting {
       }
     } else if (query instanceof FuzzyQuery) {
       final FuzzyQuery fq = (FuzzyQuery) query;
-      if (fq.getField().equals(field)) {
+      if (fieldMatcher.test(fq.getField())) {
         String utf16 = fq.getTerm().text();
         int termText[] = new int[utf16.codePointCount(0, utf16.length())];
         for (int cp, i = 0, j = 0; i < utf16.length(); i += Character.charCount(cp)) {
@@ -142,7 +145,7 @@ class MultiTermHighlighting {
       }
     } else if (query instanceof TermRangeQuery) {
       final TermRangeQuery tq = (TermRangeQuery) query;
-      if (tq.getField().equals(field)) {
+      if (fieldMatcher.test(tq.getField())) {
         final CharsRef lowerBound;
         if (tq.getLowerTerm() == null) {
           lowerBound = null;

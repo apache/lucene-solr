@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -31,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -58,7 +60,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
@@ -119,12 +120,12 @@ public class UnifiedHighlighter {
 
   private boolean defaultPassageRelevancyOverSpeed = true; //For analysis, prefer MemoryIndexOffsetStrategy
 
-  // private boolean defaultRequireFieldMatch = true; TODO
-
   private int maxLength = DEFAULT_MAX_LENGTH;
 
   // BreakIterator is stateful so we use a Supplier factory method
   private Supplier<BreakIterator> defaultBreakIterator = () -> BreakIterator.getSentenceInstance(Locale.ROOT);
+
+  private Predicate<String> defaultFieldMatcher;
 
   private PassageScorer defaultScorer = new PassageScorer();
 
@@ -140,8 +141,8 @@ public class UnifiedHighlighter {
   /**
    * Calls {@link Weight#extractTerms(Set)} on an empty index for the query.
    */
-  protected static SortedSet<Term> extractTerms(Query query) throws IOException {
-    SortedSet<Term> queryTerms = new TreeSet<>();
+  protected static Set<Term> extractTerms(Query query) throws IOException {
+    Set<Term> queryTerms = new HashSet<>();
     EMPTY_INDEXSEARCHER.createNormalizedWeight(query, false).extractTerms(queryTerms);
     return queryTerms;
   }
@@ -197,6 +198,10 @@ public class UnifiedHighlighter {
     this.cacheFieldValCharsThreshold = cacheFieldValCharsThreshold;
   }
 
+  public void setFieldMatcher(Predicate<String> predicate) {
+    this.defaultFieldMatcher = predicate;
+  }
+
   /**
    * Returns whether {@link MultiTermQuery} derivatives will be highlighted.  By default it's enabled.  MTQ
    * highlighting can be expensive, particularly when using offsets in postings.
@@ -220,6 +225,18 @@ public class UnifiedHighlighter {
     return defaultPassageRelevancyOverSpeed;
   }
 
+  /**
+   * Returns the predicate to use for extracting the query part that must be highlighted.
+   * By default only queries that target the current field are kept. (AKA requireFieldMatch)
+   */
+  protected Predicate<String> getFieldMatcher(String field) {
+    if (defaultFieldMatcher != null) {
+      return defaultFieldMatcher;
+    } else {
+      // requireFieldMatch = true
+      return (qf) -> field.equals(qf);
+    }
+  }
 
   /**
    * The maximum content size to process.  Content will be truncated to this size before highlighting. Typically
@@ -548,7 +565,7 @@ public class UnifiedHighlighter {
     copyAndSortFieldsWithMaxPassages(fieldsIn, maxPassagesIn, fields, maxPassages); // latter 2 are "out" params
 
     // Init field highlighters (where most of the highlight logic lives, and on a per field basis)
-    SortedSet<Term> queryTerms = extractTerms(query);
+    Set<Term> queryTerms = extractTerms(query);
     FieldHighlighter[] fieldHighlighters = new FieldHighlighter[fields.length];
     int numTermVectors = 0;
     int numPostings = 0;
@@ -718,13 +735,13 @@ public class UnifiedHighlighter {
           getClass().getSimpleName() + " without an IndexSearcher.");
     }
     Objects.requireNonNull(content, "content is required");
-    SortedSet<Term> queryTerms = extractTerms(query);
+    Set<Term> queryTerms = extractTerms(query);
     return getFieldHighlighter(field, query, queryTerms, maxPassages)
         .highlightFieldForDoc(null, -1, content);
   }
 
-  protected FieldHighlighter getFieldHighlighter(String field, Query query, SortedSet<Term> allTerms, int maxPassages) {
-    BytesRef[] terms = filterExtractedTerms(field, allTerms);
+  protected FieldHighlighter getFieldHighlighter(String field, Query query, Set<Term> allTerms, int maxPassages) {
+    BytesRef[] terms = filterExtractedTerms(getFieldMatcher(field), allTerms);
     Set<HighlightFlag> highlightFlags = getFlags(field);
     PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
     CharacterRunAutomaton[] automata = getAutomata(field, query, highlightFlags);
@@ -738,19 +755,15 @@ public class UnifiedHighlighter {
         getFormatter(field));
   }
 
-  protected static BytesRef[] filterExtractedTerms(String field, SortedSet<Term> queryTerms) {
-    // TODO consider requireFieldMatch
-    Term floor = new Term(field, "");
-    Term ceiling = new Term(field, UnicodeUtil.BIG_TERM);
-    SortedSet<Term> fieldTerms = queryTerms.subSet(floor, ceiling);
-
-    // Strip off the redundant field:
-    BytesRef[] terms = new BytesRef[fieldTerms.size()];
-    int termUpto = 0;
-    for (Term term : fieldTerms) {
-      terms[termUpto++] = term.bytes();
+  protected static BytesRef[] filterExtractedTerms(Predicate<String> fieldMatcher, Set<Term> queryTerms) {
+    // Strip off the redundant field and sort the remaining terms
+    SortedSet<BytesRef> filteredTerms = new TreeSet<>();
+    for (Term term : queryTerms) {
+      if (fieldMatcher.test(term.field())) {
+        filteredTerms.add(term.bytes());
+      }
     }
-    return terms;
+    return filteredTerms.toArray(new BytesRef[filteredTerms.size()]);
   }
 
   protected Set<HighlightFlag> getFlags(String field) {
@@ -771,14 +784,13 @@ public class UnifiedHighlighter {
     boolean highlightPhrasesStrictly = highlightFlags.contains(HighlightFlag.PHRASES);
     boolean handleMultiTermQuery = highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY);
     return highlightPhrasesStrictly ?
-        new PhraseHelper(query, field, this::requiresRewrite, this::preSpanQueryRewrite, !handleMultiTermQuery) :
-        PhraseHelper.NONE;
+        new PhraseHelper(query, field, getFieldMatcher(field),
+            this::requiresRewrite, this::preSpanQueryRewrite, !handleMultiTermQuery) : PhraseHelper.NONE;
   }
 
   protected CharacterRunAutomaton[] getAutomata(String field, Query query, Set<HighlightFlag> highlightFlags) {
     return highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)
-        ? MultiTermHighlighting.extractAutomata(query, field, !highlightFlags.contains(HighlightFlag.PHRASES),
-          this::preMultiTermQueryRewrite)
+        ? MultiTermHighlighting.extractAutomata(query, getFieldMatcher(field), !highlightFlags.contains(HighlightFlag.PHRASES), this::preMultiTermQueryRewrite)
         : ZERO_LEN_AUTOMATA_ARRAY;
   }
 
@@ -826,7 +838,7 @@ public class UnifiedHighlighter {
           //skip using a memory index since it's pure term filtering
           return new TokenStreamOffsetStrategy(field, terms, phraseHelper, automata, getIndexAnalyzer());
         } else {
-          return new MemoryIndexOffsetStrategy(field, terms, phraseHelper, automata, getIndexAnalyzer(),
+          return new MemoryIndexOffsetStrategy(field, getFieldMatcher(field), terms, phraseHelper, automata, getIndexAnalyzer(),
               this::preMultiTermQueryRewrite);
         }
       case NONE_NEEDED:

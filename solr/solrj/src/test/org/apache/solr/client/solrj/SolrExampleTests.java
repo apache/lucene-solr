@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -463,7 +464,11 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       concurrentClient.lastError = null;
       concurrentClient.add(doc);
       concurrentClient.blockUntilFinished();
-      assertNotNull("Should throw exception!", concurrentClient.lastError); 
+      assertNotNull("Should throw exception!", concurrentClient.lastError);
+      assertEquals("Unexpected exception type", 
+          RemoteSolrException.class, concurrentClient.lastError.getClass());
+      assertTrue("Unexpected exception message: " + concurrentClient.lastError.getMessage(), 
+          concurrentClient.lastError.getMessage().contains("Remote error message: Document contains multiple values for uniqueKey"));
     } else {
       log.info("Ignoring update test for client:" + client.getClass().getName());
     }

@@ -121,6 +121,10 @@ Improvements
   control how text is analyzed and converted into a query (Matt Weber
   via Mike McCandless)
 
+* LUCENE-7575: UnifiedHighlighter can now highlight fields with queries that don't
+  necessarily refer to that field (AKA requireFieldMatch==false). Disabled by default.
+  See UH get/setFieldMatcher. (Jim Ferenczi via David Smiley)
+
 Optimizations
 
 * LUCENE-7568: Optimize merging when index sorting is used but the
