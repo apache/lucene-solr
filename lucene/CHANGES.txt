@@ -3,57 +3,6 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
-======================= Lucene 7.0.0 =======================
-
-API Changes
-
-* LUCENE-2605: Classic QueryParser no longer splits on whitespace by default.
-  Use setSplitOnWhitespace(true) to get the old behavior.  (Steve Rowe)
-
-* LUCENE-7369: Similarity.coord and BooleanQuery.disableCoord are removed.
-  (Adrien Grand)
-
-* LUCENE-7368: Removed query normalization. (Adrien Grand)
-
-* LUCENE-7355: AnalyzingQueryParser has been removed as its functionality has
-  been folded into the classic QueryParser. (Adrien Grand)
-
-* LUCENE-7407: Doc values APIs have been switched from random access
-  to iterators, enabling future codec compression improvements. (Mike
-  McCandless)
-
-* LUCENE-7475: Norms now support sparsity, allowing to pay for what is
-  actually used. (Adrien Grand)
-
-* LUCENE-7494: Points now have a per-field API, like doc values. (Adrien Grand)
-
-Bug Fixes
-
-Improvements
-
-* LUCENE-7489: Better storage of sparse doc-values fields with the default
-  codec. (Adrien Grand)
-
-Optimizations
-
-* LUCENE-7416: BooleanQuery optimizes queries that have queries that occur both
-  in the sets of SHOULD and FILTER clauses, or both in MUST/FILTER and MUST_NOT
-  clauses. (Spyros Kapnissis via Adrien Grand, Uwe Schindler)
-
-* LUCENE-7506: FastTaxonomyFacetCounts should use CPU in proportion to
-  the size of the intersected set of hits from the query and documents
-  that have a facet value, so sparse faceting works as expected
-  (Adrien Grand via Mike McCandless)
-
-* LUCENE-7519: Add optimized APIs to compute browse-only top level
-  facets (Mike McCandless)
-
-Other
-
-* LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
-
-* LUCENE-7360: Remove Explanation.toHtml() (Alan Woodward)
-
 ======================= Lucene 6.4.0 =======================
 
 API Changes
