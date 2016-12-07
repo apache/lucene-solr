@@ -16,7 +16,7 @@
  */
 package org.apache.solr.ltr.model;
 
-//import static org.junit.internal.matchers.StringContains.containsString;
+import static org.junit.internal.matchers.StringContains.containsString;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
@@ -93,30 +93,28 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
     // test out the explain feature, make sure it returns something
     query.setParam("debugQuery", "on");
-    String qryResult = JQ("/query" + query.toQueryString());
 
+    String qryResult = JQ("/query" + query.toQueryString());
     qryResult = qryResult.replaceAll("\n", " ");
-    // FIXME containsString doesn't exist.
-    // assertThat(qryResult, containsString("\"debug\":{"));
-    // qryResult = qryResult.substring(qryResult.indexOf("debug"));
-    //
-    // assertThat(qryResult, containsString("\"explain\":{"));
-    // qryResult = qryResult.substring(qryResult.indexOf("explain"));
-    //
-    // assertThat(qryResult, containsString("multipleadditivetreesmodel"));
-    // assertThat(qryResult,
-    // containsString(MultipleAdditiveTreesModel.class.getCanonicalName()));
-    //
-    // assertThat(qryResult, containsString("-100.0 = tree 0"));
-    // assertThat(qryResult, containsString("50.0 = tree 0"));
-    // assertThat(qryResult, containsString("-20.0 = tree 1"));
-    // assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
-    // assertThat(qryResult, containsString("'matchedTitle':0.0 <= 0.5"));
-    //
-    // assertThat(qryResult, containsString(" Go Right "));
-    // assertThat(qryResult, containsString(" Go Left "));
-    // assertThat(qryResult,
-    // containsString("'this_feature_doesnt_exist' does not exist in FV"));
+
+    assertThat(qryResult, containsString("\"debug\":{"));
+    qryResult = qryResult.substring(qryResult.indexOf("debug"));
+
+    assertThat(qryResult, containsString("\"explain\":{"));
+    qryResult = qryResult.substring(qryResult.indexOf("explain"));
+
+    assertThat(qryResult, containsString("multipleadditivetreesmodel"));
+    assertThat(qryResult, containsString(MultipleAdditiveTreesModel.class.getCanonicalName()));
+
+    assertThat(qryResult, containsString("-100.0 = tree 0"));
+    assertThat(qryResult, containsString("50.0 = tree 0"));
+    assertThat(qryResult, containsString("-20.0 = tree 1"));
+    assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
+    assertThat(qryResult, containsString("'matchedTitle':0.0 <= 0.5"));
+
+    assertThat(qryResult, containsString(" Go Right "));
+    assertThat(qryResult, containsString(" Go Left "));
+    assertThat(qryResult, containsString("'this_feature_doesnt_exist' does not exist in FV"));
   }
 
   @Test

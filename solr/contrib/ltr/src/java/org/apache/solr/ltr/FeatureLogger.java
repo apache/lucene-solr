@@ -151,7 +151,6 @@ public abstract class FeatureLogger<FV_TYPE> {
   }
 
   public static class CSVFeatureLogger extends FeatureLogger<String> {
-    StringBuilder sb = new StringBuilder(500);
     char keyValueSep = ':';
     char featureSep = ';';
 
@@ -171,6 +170,10 @@ public abstract class FeatureLogger<FV_TYPE> {
 
     @Override
     public String makeFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo) {
+      // Allocate the buffer to a size based on the number of features instead of the
+      // default 16.  You need space for the name, value, and two separators per feature,
+      // but not all the features are expected to fire, so this is just a naive estimate.
+      StringBuilder sb = new StringBuilder(featuresInfo.length * 3);
       boolean isDense = featureFormat.equals(FeatureFormat.DENSE);
       for (LTRScoringQuery.FeatureInfo featInfo:featuresInfo) {
         if (featInfo.isUsed() || isDense){
@@ -181,9 +184,8 @@ public abstract class FeatureLogger<FV_TYPE> {
         }
       }
 
-      final String features = (sb.length() > 0 ? sb.substring(0,
-          sb.length() - 1) : "");
-      sb.setLength(0);
+      final String features = (sb.length() > 0 ?
+          sb.substring(0, sb.length() - 1) : "");
 
       return features;
     }
