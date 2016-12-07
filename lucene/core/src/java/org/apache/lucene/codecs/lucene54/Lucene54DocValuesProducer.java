@@ -101,7 +101,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
   }
 
   /** expert: instantiates a new reader */
-  Lucene54DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+    Lucene54DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     this.maxDoc = state.segmentInfo.maxDoc();
     merging = false;

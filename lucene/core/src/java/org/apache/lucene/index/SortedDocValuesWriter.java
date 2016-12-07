@@ -126,7 +126,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
     for(int ord=0;ord<valueCount;ord++) {
       ordMap[sortedValues[ord]] = ord;
       //hash.get(sortedValues[ord],scratch);
-      //System.out.println("DSDVW ord: "+Integer.toString(ord)+" docId: "+sortedValues[ord]+" Document: "+scratch.toString());
+      //System.out.println("DSDVW ord: "+Integer.toString(or  d)+" docId: "+sortedValues[ord]+" Document: "+scratch.toString());
     }
 
     dvConsumer.addSortedField(fieldInfo,
