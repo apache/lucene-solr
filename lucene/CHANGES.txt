@@ -134,6 +134,10 @@ Optimizations
   a compressed format, using substantially less RAM in some cases
   (Adrien Grand, Mike McCandless)
 
+* LUCENE-7583: BKD writing now buffers each leaf block in heap before
+  writing to disk, giving a small speedup in points-heavy use cases.
+  (Mike McCandless)
+
 Other
 
 * LUCENE-7546: Fixed references to benchmark wikipedia data and the Jenkins line-docs file
