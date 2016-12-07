@@ -29,6 +29,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.BoolField;
 
 /**
  * This feature returns the value of a field in the current document
@@ -119,13 +120,16 @@ public class FieldValueFeature extends Feature {
             return number.floatValue();
           } else {
             final String string = indexableField.stringValue();
-            // boolean values in the index are encoded with the
-            // chars T/F
-            if (string.equals("T")) {
-              return 1;
-            }
-            if (string.equals("F")) {
-              return 0;
+            if (string.length() == 1) {
+              // boolean values in the index are encoded with the
+              // a single char contained in TRUE_TOKEN or FALSE_TOKEN
+              // (see BoolField)
+              if (string.charAt(0) == BoolField.TRUE_TOKEN[0]) {
+                return 1;
+              }
+              if (string.charAt(0) == BoolField.FALSE_TOKEN[0]) {
+                return 0;
+              }
             }
           }
         } catch (final IOException e) {

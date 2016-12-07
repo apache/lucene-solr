@@ -21,8 +21,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -123,9 +125,9 @@ public class SolrFeature extends Feature {
    * Weight for a SolrFeature
    **/
   public class SolrFeatureWeight extends FeatureWeight {
-    Weight solrQueryWeight;
-    Query query;
-    List<Query> queryAndFilters;
+    final private Weight solrQueryWeight;
+    final private Query query;
+    final private List<Query> queryAndFilters;
 
     public SolrFeatureWeight(IndexSearcher searcher,
         SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException {
@@ -174,6 +176,8 @@ public class SolrFeature extends Feature {
         if (query != null) {
           queryAndFilters.add(query);
           solrQueryWeight = searcher.createNormalizedWeight(query, true);
+        } else {
+          solrQueryWeight = null;
         }
       } catch (final SyntaxError e) {
         throw new FeatureException("Failed to parse feature query.", e);
@@ -198,6 +202,13 @@ public class SolrFeature extends Feature {
         return new LocalSolrQueryRequest(core, returnList);
       } else {
         return null;
+      }
+    }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      if (solrQueryWeight != null) {
+        solrQueryWeight.extractTerms(terms);
       }
     }
 

@@ -205,10 +205,10 @@ public class LTRScoringQuery extends Query {
     List<Feature.FeatureWeight > featureWeights = new ArrayList<>(features.size());
 
     if (querySemaphore == null) {
-      createWeights(searcher, needsScores, boost, featureWeights, features);
+      createWeights(searcher, needsScores, featureWeights, features);
     }
     else{
-      createWeightsParallel(searcher, needsScores, boost, featureWeights, features);
+      createWeightsParallel(searcher, needsScores, featureWeights, features);
     }
     int i=0, j = 0;
     if (this.extractAllFeatures) {
@@ -228,7 +228,7 @@ public class LTRScoringQuery extends Query {
     return new ModelWeight(modelFeaturesWeights, extractedFeatureWeights, allFeatures.size());
   }
 
-  private void createWeights(IndexSearcher searcher, boolean needsScores, float boost,
+  private void createWeights(IndexSearcher searcher, boolean needsScores,
       List<Feature.FeatureWeight > featureWeights, Collection<Feature> features) throws IOException {
     final SolrQueryRequest req = getRequest();
     // since the feature store is a linkedhashmap order is preserved
@@ -271,7 +271,7 @@ public class LTRScoringQuery extends Query {
     }
   } // end of call CreateWeightCallable
 
-  private void createWeightsParallel(IndexSearcher searcher, boolean needsScores, float boost,
+  private void createWeightsParallel(IndexSearcher searcher, boolean needsScores,
       List<Feature.FeatureWeight > featureWeights, Collection<Feature> features) throws RuntimeException {
 
     final SolrQueryRequest req = getRequest();
@@ -401,8 +401,9 @@ public class LTRScoringQuery extends Query {
     /**
      * Goes through all the stored feature values, and calculates the normalized
      * values for all the features that will be used for scoring.
+     * Then calculate and return the model's score.
      */
-    private void makeNormalizedFeatures() {
+    private float makeNormalizedFeaturesAndScore() {
       int pos = 0;
       for (final Feature.FeatureWeight feature : modelFeatureWeights) {
         final int featureId = feature.getIndex();
@@ -415,6 +416,7 @@ public class LTRScoringQuery extends Query {
         pos++;
       }
       ltrScoringModel.normalizeFeaturesInPlace(modelFeatureValuesNormalized);
+      return ltrScoringModel.score(modelFeatureValuesNormalized);
     }
 
     @Override
@@ -491,8 +493,8 @@ public class LTRScoringQuery extends Query {
         for (final Feature.FeatureWeight.FeatureScorer subSocer : featureScorers) {
           subSocer.setDocInfo(docInfo);
         }
-        if (featureScorers.size() <= 1) { // TODO: Allow the use of dense
-          // features in other cases
+        if (featureScorers.size() <= 1) {
+          // future enhancement: allow the use of dense features in other cases
           featureTraversalScorer = new DenseModelScorer(weight, featureScorers);
         } else {
           featureTraversalScorer = new SparseModelScorer(weight, featureScorers);
@@ -570,8 +572,7 @@ public class LTRScoringQuery extends Query {
               featuresInfo[featureId].setUsed(true);
             }
           }
-          makeNormalizedFeatures();
-          return ltrScoringModel.score(modelFeatureValuesNormalized);
+          return makeNormalizedFeaturesAndScore();
         }
 
         @Override
@@ -663,8 +664,7 @@ public class LTRScoringQuery extends Query {
               }
             }
           }
-          makeNormalizedFeatures();
-          return ltrScoringModel.score(modelFeatureValuesNormalized);
+          return makeNormalizedFeaturesAndScore();
         }
 
         @Override
