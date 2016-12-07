@@ -58,9 +58,9 @@ import org.apache.lucene.util.packed.PackedLongValues;
  * Expert: The default cache implementation, storing all values in memory.
  * A WeakHashMap is used for storage.
  *
- * @since   lucene 1.4
+ * @lucene.internal
  */
-class FieldCacheImpl implements FieldCache {
+public class FieldCacheImpl implements FieldCache {
 
   private Map<Class<?>,Cache> caches;
   FieldCacheImpl() {
@@ -786,79 +786,89 @@ class FieldCacheImpl implements FieldCache {
       this.termOrdToBytesOffset = termOrdToBytesOffset;
       this.numOrd = numOrd;
     }
-    
+
     public SortedDocValues iterator() {
-      final BytesRef term = new BytesRef();
-      return new SortedDocValues() {
-        private int docID = -1;
+      return new Iter();
+    }
 
-        @Override
-        public int docID() {
-          return docID;
-        }
+    public class Iter extends SortedDocValues {
+      private int docID = -1;
+      private final BytesRef term = new BytesRef();
 
-        @Override
-        public int nextDoc() {
-          while (true) {
-            docID++;
-            if (docID >= docToTermOrd.size()) {
-              docID = NO_MORE_DOCS;
-              return docID;
-            }
-            if (docToTermOrd.get(docID) != 0) {
-              return docID;
-            }
-          }
-        }
+      /** @lucene.internal Specific to this implementation and subject to change.  For internal optimization only. */
+      public int getOrd(int docID) {
+        // Subtract 1, matching the 1+ord we did when
+        // storing, so that missing values, which are 0 in the
+        // packed ints, are returned as -1 ord:
+        return (int) docToTermOrd.get(docID)-1;
+      }
 
-        @Override
-        public int advance(int target) {
-          if (target < docToTermOrd.size()) {
-            docID = target;
-            if (docToTermOrd.get(docID) != 0) {
-              return docID;
-            } else{
-              return nextDoc();
-            }
-          } else {
+      @Override
+      public int docID() {
+        return docID;
+      }
+
+      @Override
+      public int nextDoc() {
+        while (true) {
+          docID++;
+          if (docID >= docToTermOrd.size()) {
             docID = NO_MORE_DOCS;
             return docID;
           }
-        }
-
-        @Override
-        public boolean advanceExact(int target) throws IOException {
-          docID = target;
-          return docToTermOrd.get(docID) != 0;
-        }
-
-        @Override
-        public long cost() {
-          return 0;
-        }
-        
-        @Override
-        public int ordValue() {
-          // Subtract 1, matching the 1+ord we did when
-          // storing, so that missing values, which are 0 in the
-          // packed ints, are returned as -1 ord:
-          return (int) docToTermOrd.get(docID)-1;
-        }
-
-        @Override
-        public int getValueCount() {
-          return numOrd;
-        }
-
-        @Override
-        public BytesRef lookupOrd(int ord) {
-          if (ord < 0) {
-            throw new IllegalArgumentException("ord must be >=0 (got ord=" + ord + ")");
+          if (docToTermOrd.get(docID) != 0) {
+            return docID;
           }
-          bytes.fill(term, termOrdToBytesOffset.get(ord));
-          return term;
         }
-      };
+      }
+
+      @Override
+      public int advance(int target) {
+        if (target < docToTermOrd.size()) {
+          docID = target;
+          if (docToTermOrd.get(docID) != 0) {
+            return docID;
+          } else{
+            return nextDoc();
+          }
+        } else {
+          docID = NO_MORE_DOCS;
+          return docID;
+        }
+      }
+
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        docID = target;
+        return docToTermOrd.get(docID) != 0;
+      }
+
+      @Override
+      public long cost() {
+        return 0;
+      }
+
+      @Override
+      public int ordValue() {
+        // Subtract 1, matching the 1+ord we did when
+        // storing, so that missing values, which are 0 in the
+        // packed ints, are returned as -1 ord:
+        return (int) docToTermOrd.get(docID)-1;
+      }
+
+      @Override
+      public int getValueCount() {
+        return numOrd;
+      }
+
+      @Override
+      public BytesRef lookupOrd(int ord) {
+        if (ord < 0) {
+          throw new IllegalArgumentException("ord must be >=0 (got ord=" + ord + ")");
+        }
+        bytes.fill(term, termOrdToBytesOffset.get(ord));
+        return term;
+      }
     }
 
     @Override
