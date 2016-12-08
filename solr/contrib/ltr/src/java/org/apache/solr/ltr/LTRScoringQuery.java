@@ -187,7 +187,7 @@ public class LTRScoringQuery extends Query {
   }
 
   @Override
-  public ModelWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost)
+  public ModelWeight createWeight(IndexSearcher searcher, boolean needsScores)
       throws IOException {
     final Collection<Feature> modelFeatures = ltrScoringModel.getFeatures();
     final Collection<Feature> allFeatures = ltrScoringModel.getAllFeatures();
@@ -455,6 +455,18 @@ public class LTRScoringQuery extends Query {
         float value = extractedFeatureWeights[i].getDefaultValue();
         featuresInfo[featId].setValue(value); // need to set default value everytime as the default value is used in 'dense' mode even if used=false
         featuresInfo[featId].setUsed(false);
+      }
+    }
+
+    @Override
+    public float getValueForNormalization() throws IOException {
+      return 1f;
+    }
+
+    @Override
+    public void normalize(float norm, float boost) {
+      for (final Feature.FeatureWeight featureWeight : extractedFeatureWeights) {
+        featureWeight.normalize(norm, boost);
       }
     }
 

@@ -273,7 +273,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     MockModel ltrScoringModel = new MockModel("test",
         features, norms, "test", allFeatures, null);
     LTRScoringQuery query = new LTRScoringQuery(ltrScoringModel);
-    LTRScoringQuery.ModelWeight wgt = query.createWeight(null, true, 1f);
+    LTRScoringQuery.ModelWeight wgt = query.createWeight(null, true);
     LTRScoringQuery.ModelWeight.ModelScorer modelScr = wgt.scorer(null);
     modelScr.getDocInfo().setOriginalDocScore(new Float(1f));
     for (final Scorer.ChildScorer feat : modelScr.getChildren()) {
@@ -289,7 +289,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
     ltrScoringModel = new MockModel("test", features, norms,
         "test", allFeatures, null);
     query = new LTRScoringQuery(ltrScoringModel);
-    wgt = query.createWeight(null, true, 1f);
+    wgt = query.createWeight(null, true);
     modelScr = wgt.scorer(null);
     modelScr.getDocInfo().setOriginalDocScore(new Float(1f));
     for (final Scorer.ChildScorer feat : modelScr.getChildren()) {

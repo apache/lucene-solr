@@ -199,7 +199,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       featureLogger = scoringQuery.getFeatureLogger();
 
       try {
-        modelWeight = scoringQuery.createWeight(searcher, true, 1f);
+        modelWeight = scoringQuery.createWeight(searcher, true);
       } catch (final IOException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
       }

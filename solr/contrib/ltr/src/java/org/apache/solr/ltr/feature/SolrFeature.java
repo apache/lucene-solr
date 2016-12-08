@@ -213,6 +213,22 @@ public class SolrFeature extends Feature {
     }
 
     @Override
+    public float getValueForNormalization() throws IOException {
+      if (solrQueryWeight != null) {
+        return solrQueryWeight.getValueForNormalization();
+      } else {
+        return 0f;
+      }
+    }
+
+    @Override
+    public void normalize(float norm, float boost) {
+      if (solrQueryWeight != null) {
+        solrQueryWeight.normalize(norm, boost);
+      }
+    }
+
+    @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
       Scorer solrScorer = null;
       if (solrQueryWeight != null) {

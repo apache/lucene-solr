@@ -112,6 +112,16 @@ public class FieldLengthFeature extends Feature {
     }
 
     @Override
+    public float getValueForNormalization() throws IOException {
+      return 1f;
+    }
+
+    @Override
+    public void normalize(float norm, float boost) {
+      // no op
+    }
+
+    @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
       NumericDocValues norms = context.reader().getNormValues(field);
       if (norms == null){
@@ -127,7 +137,7 @@ public class FieldLengthFeature extends Feature {
 
       public FieldLengthFeatureScorer(FeatureWeight weight,
           NumericDocValues norms) throws IOException {
-        super(weight, norms);
+        super(weight, DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
         this.norms = norms;
 
         // In the constructor, docId is -1, so using 0 as default lookup
@@ -142,7 +152,7 @@ public class FieldLengthFeature extends Feature {
       @Override
       public float score() throws IOException {
 
-        final long l = norms.longValue();
+        final long l = norms.get(itr.docID());
         final float numTerms = decodeNorm(l);
         return numTerms;
       }

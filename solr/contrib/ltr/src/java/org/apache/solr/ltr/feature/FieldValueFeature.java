@@ -90,6 +90,16 @@ public class FieldValueFeature extends Feature {
     }
 
     @Override
+    public float getValueForNormalization() throws IOException {
+      return 1f;
+    }
+
+    @Override
+    public void normalize(float norm, float boost) {
+      // no op
+    }
+
+    @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
       return new FieldValueFeatureScorer(this, context,
           DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));

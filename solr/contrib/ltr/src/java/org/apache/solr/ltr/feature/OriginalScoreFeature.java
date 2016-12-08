@@ -84,6 +84,16 @@ public class OriginalScoreFeature extends Feature {
     }
 
     @Override
+    public float getValueForNormalization() throws IOException {
+      return w.getValueForNormalization();
+    }
+
+    @Override
+    public void normalize(float norm, float boost) {
+      w.normalize(norm, boost);
+    }
+
+    @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
 
       final Scorer originalScorer = w.scorer(context);

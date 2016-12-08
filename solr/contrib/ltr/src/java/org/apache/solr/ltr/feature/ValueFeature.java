@@ -130,6 +130,16 @@ public class ValueFeature extends Feature {
     }
 
     @Override
+    public float getValueForNormalization() throws IOException {
+      return 1f;
+    }
+
+    @Override
+    public void normalize(float norm, float boost) {
+      // no op
+    }
+
+    @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
       if(featureValue!=null) {
         return new ValueFeatureScorer(this, featureValue,
