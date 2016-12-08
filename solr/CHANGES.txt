@@ -50,6 +50,10 @@ Bug Fixes
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
   (Mark Miller, shalin)
 
+* SOLR-9837: Fix 55% performance regression of FieldCache uninvert time of
+  numeric fields.  (yonik)
+
+
 Optimizations
 ----------------------
 
