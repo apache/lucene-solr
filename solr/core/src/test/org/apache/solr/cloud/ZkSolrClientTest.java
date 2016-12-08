@@ -26,6 +26,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -301,6 +302,59 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
       }
       
       assertEquals(2, cnt.intValue());
+
+    }
+  }
+  
+  public void testSkipPathPartsOnMakePath() throws Exception {
+    try (ZkConnection conn = new ZkConnection()) {
+      final SolrZkClient zkClient = conn.getClient();
+
+      zkClient.makePath("/test", true);
+
+      // should work
+      zkClient.makePath("/test/path/here", (byte[]) null, CreateMode.PERSISTENT, (Watcher) null, true, true, 1);
+
+      zkClient.clean("/");
+
+      // should not work
+      try {
+        zkClient.makePath("/test/path/here", (byte[]) null, CreateMode.PERSISTENT, (Watcher) null, true, true, 1);
+        fail("We should not be able to create this path");
+      } catch (Exception e) {
+
+      }
+
+      zkClient.clean("/");
+
+      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(30000);
+      try {
+        zkCmdExecutor.ensureExists("/collection/collection/leader", (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
+        fail("We should not be able to create this path");
+      } catch (Exception e) {
+
+      }
+
+      zkClient.makePath("/collection", true);
+
+      try {
+        zkCmdExecutor.ensureExists("/collections/collection/leader", (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
+        fail("We should not be able to create this path");
+      } catch (Exception e) {
+
+      }
+      zkClient.makePath("/collection/collection", true);
+ 
+      byte[] bytes = new byte[10];
+      zkCmdExecutor.ensureExists("/collection/collection", bytes, CreateMode.PERSISTENT, zkClient, 2);
+      
+      byte[] returnedBytes = zkClient.getData("/collection/collection", null, null, true);
+      
+      assertNull("We skipped 2 path parts, so data won't be written", returnedBytes);
+
+      zkClient.makePath("/collection/collection/leader", true);
+
+      zkCmdExecutor.ensureExists("/collection/collection/leader", (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
 
     }
   }
