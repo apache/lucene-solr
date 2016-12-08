@@ -230,6 +230,9 @@ Bug Fixes
 
 * SOLR-9832: Schema modifications are not immediately visible on the coordinating node. (Steve Rowe)
 
+* SOLR-9834: A variety of spots in the code can create a collection zk node after the collection has been 
+  removed. (Mark Miller)
+
 Other Changes
 ----------------------
 
