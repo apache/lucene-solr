@@ -90,6 +90,10 @@ Bug Fixes
   that does not extend ReflectiveAccessException in Java 9.
   (Uwe Schindler)
 
+* LUCENE-7581: Lucene now prevents updating a doc values field that is used
+  in the index sort, since this would lead to corruption.  (Jim
+  Ferenczi via Mike McCandless)
+
 Improvements
 
 * LUCENE-6824: TermAutomatonQuery now rewrites to TermQuery,
