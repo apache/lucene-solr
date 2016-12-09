@@ -94,6 +94,10 @@ Bug Fixes
   in the index sort, since this would lead to corruption.  (Jim
   Ferenczi via Mike McCandless)
 
+* LUCENE-7570: IndexWriter may deadlock if a commit is running while
+  there are too many merges running and one of the merges hits a
+  tragic exception (Joey Echeverria via Mike McCandless)
+
 Improvements
 
 * LUCENE-6824: TermAutomatonQuery now rewrites to TermQuery,
