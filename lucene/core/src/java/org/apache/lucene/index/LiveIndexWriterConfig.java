@@ -17,6 +17,9 @@
 package org.apache.lucene.index;
 
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
@@ -97,6 +100,9 @@ public class LiveIndexWriterConfig {
 
   /** The sort order to use to write merged segments. */
   protected Sort indexSort = null;
+
+  /** The field names involved in the index sort */
+  protected Set<String> indexSortFields = Collections.emptySet();
 
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer) {
@@ -455,6 +461,13 @@ public class LiveIndexWriterConfig {
    */
   public Sort getIndexSort() {
     return indexSort;
+  }
+
+  /**
+   * Returns the field names involved in the index sort
+   */
+  public Set<String> getIndexSortFields() {
+    return indexSortFields;
   }
 
   @Override
