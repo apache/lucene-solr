@@ -476,7 +476,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
       }
     }
     this.indexSort = sort;
-    this.indexSortFields = Arrays.stream(sort.getSort()).map((s) -> s.getField()).collect(Collectors.toSet());
+    this.indexSortFields = Arrays.stream(sort.getSort()).map(SortField::getField).collect(Collectors.toSet());
     return this;
   }
 
