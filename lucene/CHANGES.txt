@@ -85,6 +85,11 @@ Bug Fixes
   the incoming automaton is a special case and throw a clearer
   exception than NullPointerException (Tom Mortimer via Mike McCandless)
 
+* LUCENE-6989: Fix Exception handling in MMapDirectory's unmap hack
+  support code to work with Java 9's new InaccessibleObjectException
+  that does not extend ReflectiveAccessException in Java 9.
+  (Uwe Schindler)
+
 Improvements
 
 * LUCENE-6824: TermAutomatonQuery now rewrites to TermQuery,
