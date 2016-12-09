@@ -57,7 +57,6 @@ public class ManagedFeatureStore extends ManagedResource implements ManagedResou
 
   /** the feature store rest endpoint **/
   public static final String REST_END_POINT = "/schema/feature-store";
-  // TODO: reduce from public to package visibility (once tests no longer need public access)
 
   /** name of the attribute containing the feature class **/
   static final String CLASS_KEY = "class";

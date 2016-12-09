@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
 
+package org.apache.lucene.store;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -43,13 +43,13 @@ public class TestGrowableByteArrayDataOutput extends LuceneTestCase {
       GrowableByteArrayDataOutput dataOutput = new GrowableByteArrayDataOutput(1 << 8);
       //explicitly write utf8 len so that we know how many bytes it occupies
       dataOutput.writeVInt(len);
-      int vintLen = dataOutput.length;
+      int vintLen = dataOutput.getPosition();
       // now write the string which will internally write number of bytes as a vint and then utf8 bytes
       dataOutput.writeString(unicode);
 
-      assertEquals("GrowableByteArrayDataOutput wrote the wrong length after encode", len + vintLen * 2, dataOutput.length);
+      assertEquals("GrowableByteArrayDataOutput wrote the wrong length after encode", len + vintLen * 2, dataOutput.getPosition());
       for (int j = 0, k = vintLen * 2; j < len; j++, k++) {
-        assertEquals(utf8[j], dataOutput.bytes[k]);
+        assertEquals(utf8[j], dataOutput.getBytes()[k]);
       }
     }
   }
@@ -67,13 +67,13 @@ public class TestGrowableByteArrayDataOutput extends LuceneTestCase {
       GrowableByteArrayDataOutput dataOutput = new GrowableByteArrayDataOutput(1 << 8);
       //explicitly write utf8 len so that we know how many bytes it occupies
       dataOutput.writeVInt(len);
-      int vintLen = dataOutput.length;
+      int vintLen = dataOutput.getPosition();
       // now write the string which will internally write number of bytes as a vint and then utf8 bytes
       dataOutput.writeString(unicode);
 
-      assertEquals("GrowableByteArrayDataOutput wrote the wrong length after encode", len + vintLen * 2, dataOutput.length);
+      assertEquals("GrowableByteArrayDataOutput wrote the wrong length after encode", len + vintLen * 2, dataOutput.getPosition());
       for (int j = 0, k = vintLen * 2; j < len; j++, k++) {
-        assertEquals(utf8[j], dataOutput.bytes[k]);
+        assertEquals(utf8[j], dataOutput.getBytes()[k]);
       }
     }
   }

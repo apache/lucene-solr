@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
 
+package org.apache.lucene.store;
 
 import java.io.IOException;
 
@@ -25,6 +25,7 @@ import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * A {@link DataOutput} that can be used to build a byte[].
+ *
  * @lucene.internal
  */
 public final class GrowableByteArrayDataOutput extends DataOutput {
@@ -33,12 +34,13 @@ public final class GrowableByteArrayDataOutput extends DataOutput {
   static final int MIN_UTF8_SIZE_TO_ENABLE_DOUBLE_PASS_ENCODING = 65536;
 
   /** The bytes */
-  public byte[] bytes;
+  private byte[] bytes;
+
   /** The length */
-  public int length;
+  private int length;
 
   // scratch for utf8 encoding of small strings
-  byte[] scratchBytes = new byte[16];
+  private byte[] scratchBytes;
 
   /** Create a {@link GrowableByteArrayDataOutput} with the given initial capacity. */
   public GrowableByteArrayDataOutput(int cp) {
@@ -57,7 +59,9 @@ public final class GrowableByteArrayDataOutput extends DataOutput {
   @Override
   public void writeBytes(byte[] b, int off, int len) {
     final int newLength = length + len;
-    bytes = ArrayUtil.grow(bytes, newLength);
+    if (newLength > bytes.length) {
+      bytes = ArrayUtil.grow(bytes, newLength);
+    }
     System.arraycopy(b, off, bytes, length, len);
     length = newLength;
   }
@@ -68,7 +72,11 @@ public final class GrowableByteArrayDataOutput extends DataOutput {
     if (maxLen <= MIN_UTF8_SIZE_TO_ENABLE_DOUBLE_PASS_ENCODING)  {
       // string is small enough that we don't need to save memory by falling back to double-pass approach
       // this is just an optimized writeString() that re-uses scratchBytes.
-      scratchBytes = ArrayUtil.grow(scratchBytes, maxLen);
+      if (scratchBytes == null) {
+        scratchBytes = new byte[ArrayUtil.oversize(maxLen, Character.BYTES)];
+      } else {
+        scratchBytes = ArrayUtil.grow(scratchBytes, maxLen);
+      }
       int len = UnicodeUtil.UTF16toUTF8(string, 0, string.length(), scratchBytes);
       writeVInt(len);
       writeBytes(scratchBytes, len);
@@ -79,5 +87,17 @@ public final class GrowableByteArrayDataOutput extends DataOutput {
       bytes = ArrayUtil.grow(bytes, length + numBytes);
       length = UnicodeUtil.UTF16toUTF8(string, 0, string.length(), bytes, length);
     }
+  }
+
+  public byte[] getBytes() {
+    return bytes;
+  }
+
+  public int getPosition() {
+    return length;
+  }
+
+  public void reset() {
+    length = 0;
   }
 }

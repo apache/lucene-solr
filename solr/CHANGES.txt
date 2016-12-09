@@ -50,6 +50,10 @@ Bug Fixes
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
   (Mark Miller, shalin)
 
+* SOLR-9837: Fix 55% performance regression of FieldCache uninvert time of
+  numeric fields.  (yonik)
+
+
 Optimizations
 ----------------------
 
@@ -61,6 +65,11 @@ Optimizations
 
 * SOLR-9579: Make Solr's SchemaField implement Lucene's IndexableFieldType, removing the 
   creation of a Lucene FieldType every time a field is indexed. (John Call, yonik) 
+
+* SOLR-9822: JSON Facet API: Recover performance lost due to the DocValues transition to
+  an iterator API (LUCENE-7407).  This only fixes calculating counts for single-valued
+  string fields from the FieldCache, resulting in up to 56% better throughput for those cases.
+  (yonik)
 
 
 ==================  6.4.0 ==================
@@ -224,6 +233,9 @@ Bug Fixes
 * SOLR-9616: Solr throws exception when expand=true on empty index (Timo Hund via Ishan Chattopadhyaya)
 
 * SOLR-9832: Schema modifications are not immediately visible on the coordinating node. (Steve Rowe)
+
+* SOLR-9834: A variety of spots in the code can create a collection zk node after the collection has been 
+  removed. (Mark Miller)
 
 Other Changes
 ----------------------

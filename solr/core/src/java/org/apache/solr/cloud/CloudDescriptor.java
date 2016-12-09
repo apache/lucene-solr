@@ -33,7 +33,7 @@ public class CloudDescriptor {
   private String roles = null;
   private Integer numShards;
   private String nodeName = null;
-  private Map<String, String> collectionParams = new HashMap<>();
+  private Map<String,String> collectionParams = new HashMap<>();
 
   private volatile boolean isLeader = false;
   

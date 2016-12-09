@@ -45,7 +45,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * @lucene.internal
  */
-interface FieldCache {
+public interface FieldCache {
 
   /**
    * Placeholder indicating creation of this cache is currently in-progress.

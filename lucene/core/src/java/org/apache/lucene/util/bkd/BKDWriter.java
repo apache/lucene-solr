@@ -30,7 +30,9 @@ import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.GrowableByteArrayDataOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
@@ -478,8 +480,8 @@ public class BKDWriter implements Closeable {
     }
 
     build(1, numLeaves, values, 0, Math.toIntExact(pointCount), out,
-        minPackedValue, maxPackedValue, splitPackedValues, leafBlockFPs,
-        new int[maxPointsInLeafNode]);
+          minPackedValue, maxPackedValue, splitPackedValues, leafBlockFPs,
+          new int[maxPointsInLeafNode]);
 
     long indexFP = out.getFilePointer();
     writeIndex(out, leafBlockFPs, splitPackedValues);
@@ -556,6 +558,9 @@ public class BKDWriter implements Closeable {
     return oneDimWriter.finish();
   }
 
+  // reused when writing leaf blocks
+  private final GrowableByteArrayDataOutput scratchOut = new GrowableByteArrayDataOutput(32*1024);
+
   private class OneDimensionBKDWriter {
 
     final IndexOutput out;
@@ -563,8 +568,8 @@ public class BKDWriter implements Closeable {
     final List<byte[]> leafBlockStartValues = new ArrayList<>();
     final byte[] leafValues = new byte[maxPointsInLeafNode * packedBytesLength];
     final int[] leafDocs = new int[maxPointsInLeafNode];
-    long valueCount;
-    int leafCount;
+    private long valueCount;
+    private int leafCount;
 
     OneDimensionBKDWriter(IndexOutput out) {
       if (numDims != 1) {
@@ -589,7 +594,7 @@ public class BKDWriter implements Closeable {
 
     // for asserts
     final byte[] lastPackedValue;
-    int lastDocID;
+    private int lastDocID;
 
     void add(byte[] packedValue, int docID) throws IOException {
       assert valueInOrder(valueCount + leafCount,
@@ -606,8 +611,7 @@ public class BKDWriter implements Closeable {
 
       if (leafCount == maxPointsInLeafNode) {
         // We write a block once we hit exactly the max count ... this is different from
-        // when we flush a new segment, where we write between max/2 and max per leaf block,
-        // so merged segments will behave differently from newly flushed segments:
+        // when we write N > 1 dimensional points where we write between max/2 and max per leaf block
         writeLeafBlock();
         leafCount = 0;
       }
@@ -644,7 +648,6 @@ public class BKDWriter implements Closeable {
     }
 
     private void writeLeafBlock() throws IOException {
-      //System.out.println("writeLeafBlock pos=" + out.getFilePointer());
       assert leafCount != 0;
       if (valueCount == 0) {
         System.arraycopy(leafValues, 0, minPackedValue, 0, packedBytesLength);
@@ -660,42 +663,39 @@ public class BKDWriter implements Closeable {
       leafBlockFPs.add(out.getFilePointer());
       checkMaxLeafNodeCount(leafBlockFPs.size());
 
-      Arrays.fill(commonPrefixLengths, bytesPerDim);
       // Find per-dim common prefix:
-      for(int dim=0;dim<numDims;dim++) {
-        int offset1 = dim * bytesPerDim;
-        int offset2 = (leafCount - 1) * packedBytesLength + offset1;
-        for(int j=0;j<commonPrefixLengths[dim];j++) {
-          if (leafValues[offset1+j] != leafValues[offset2+j]) {
-            commonPrefixLengths[dim] = j;
-            break;
-          }
+      int prefix = bytesPerDim;
+      int offset = (leafCount - 1) * packedBytesLength;
+      for(int j=0;j<bytesPerDim;j++) {
+        if (leafValues[j] != leafValues[offset+j]) {
+          prefix = j;
+          break;
         }
       }
 
-      writeLeafBlockDocs(out, leafDocs, 0, leafCount);
-      writeCommonPrefixes(out, commonPrefixLengths, leafValues);
+      commonPrefixLengths[0] = prefix;
 
+      assert scratchOut.getPosition() == 0;
+      writeLeafBlockDocs(scratchOut, leafDocs, 0, leafCount);
+      writeCommonPrefixes(scratchOut, commonPrefixLengths, leafValues);
+
+      scratchBytesRef1.length = packedBytesLength;
+      scratchBytesRef1.bytes = leafValues;
+      
       final IntFunction<BytesRef> packedValues = new IntFunction<BytesRef>() {
-        final BytesRef scratch = new BytesRef();
-
-        {
-          scratch.length = packedBytesLength;
-          scratch.bytes = leafValues;
-        }
-
         @Override
         public BytesRef apply(int i) {
-          scratch.offset = packedBytesLength * i;
-          return scratch;
+          scratchBytesRef1.offset = packedBytesLength * i;
+          return scratchBytesRef1;
         }
       };
       assert valuesInOrderAndBounds(leafCount, 0, Arrays.copyOf(leafValues, packedBytesLength),
           Arrays.copyOfRange(leafValues, (leafCount - 1) * packedBytesLength, leafCount * packedBytesLength),
           packedValues, leafDocs, 0);
-      writeLeafBlockPackedValues(out, commonPrefixLengths, leafCount, 0, packedValues);
+      writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, leafCount, 0, packedValues);
+      out.writeBytes(scratchOut.getBytes(), 0, scratchOut.getPosition());
+      scratchOut.reset();
     }
-
   }
 
   // TODO: there must be a simpler way?
@@ -1259,13 +1259,13 @@ public class BKDWriter implements Closeable {
     out.writeBytes(packedIndex, 0, packedIndex.length);
   }
 
-  private void writeLeafBlockDocs(IndexOutput out, int[] docIDs, int start, int count) throws IOException {
+  private void writeLeafBlockDocs(DataOutput out, int[] docIDs, int start, int count) throws IOException {
     assert count > 0: "maxPointsInLeafNode=" + maxPointsInLeafNode;
     out.writeVInt(count);
     DocIdsWriter.writeDocIds(docIDs, start, count, out);
   }
 
-  private void writeLeafBlockPackedValues(IndexOutput out, int[] commonPrefixLengths, int count, int sortedDim, IntFunction<BytesRef> packedValues) throws IOException {
+  private void writeLeafBlockPackedValues(DataOutput out, int[] commonPrefixLengths, int count, int sortedDim, IntFunction<BytesRef> packedValues) throws IOException {
     int prefixLenSum = Arrays.stream(commonPrefixLengths).sum();
     if (prefixLenSum == packedBytesLength) {
       // all values in this block are equal
@@ -1290,7 +1290,7 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  private void writeLeafBlockPackedValuesRange(IndexOutput out, int[] commonPrefixLengths, int start, int end, IntFunction<BytesRef> packedValues) throws IOException {
+  private void writeLeafBlockPackedValuesRange(DataOutput out, int[] commonPrefixLengths, int start, int end, IntFunction<BytesRef> packedValues) throws IOException {
     for (int i = start; i < end; ++i) {
       BytesRef ref = packedValues.apply(i);
       assert ref.length == packedBytesLength;
@@ -1316,7 +1316,7 @@ public class BKDWriter implements Closeable {
     return end - start;
   }
 
-  private void writeCommonPrefixes(IndexOutput out, int[] commonPrefixes, byte[] packedValue) throws IOException {
+  private void writeCommonPrefixes(DataOutput out, int[] commonPrefixes, byte[] packedValue) throws IOException {
     for(int dim=0;dim<numDims;dim++) {
       out.writeVInt(commonPrefixes[dim]);
       //System.out.println(commonPrefixes[dim] + " of " + bytesPerDim);
@@ -1449,7 +1449,8 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  /* Recursively reorders the provided reader and writes the bkd-tree on the fly. */
+  /* Recursively reorders the provided reader and writes the bkd-tree on the fly; this method is used
+   * when we are writing a new segment directly from IndexWriter's indexing buffer (MutablePointsReader). */
   private void build(int nodeID, int leafNodeOffset,
                      MutablePointValues reader, int from, int to,
                      IndexOutput out,
@@ -1513,18 +1514,20 @@ public class BKDWriter implements Closeable {
       // Save the block file pointer:
       leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();
 
+      assert scratchOut.getPosition() == 0;
+
       // Write doc IDs
       int[] docIDs = spareDocIds;
       for (int i = from; i < to; ++i) {
         docIDs[i - from] = reader.getDocID(i);
       }
       //System.out.println("writeLeafBlock pos=" + out.getFilePointer());
-      writeLeafBlockDocs(out, docIDs, 0, count);
+      writeLeafBlockDocs(scratchOut, docIDs, 0, count);
 
       // Write the common prefixes:
       reader.getValue(from, scratchBytesRef1);
       System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset, scratch1, 0, packedBytesLength);
-      writeCommonPrefixes(out, commonPrefixLengths, scratch1);
+      writeCommonPrefixes(scratchOut, commonPrefixLengths, scratch1);
 
       // Write the full values:
       IntFunction<BytesRef> packedValues = new IntFunction<BytesRef>() {
@@ -1536,7 +1539,10 @@ public class BKDWriter implements Closeable {
       };
       assert valuesInOrderAndBounds(count, sortedDim, minPackedValue, maxPackedValue, packedValues,
           docIDs, 0);
-      writeLeafBlockPackedValues(out, commonPrefixLengths, count, sortedDim, packedValues);
+      writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, count, sortedDim, packedValues);
+      
+      out.writeBytes(scratchOut.getBytes(), 0, scratchOut.getPosition());
+      scratchOut.reset();
 
     } else {
       // inner node
@@ -1577,7 +1583,8 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  /** The array (sized numDims) of PathSlice describe the cell we have currently recursed to. */
+  /** The array (sized numDims) of PathSlice describe the cell we have currently recursed to.
+  /*  This method is used when we are merging previously written segments, in the numDims > 1 case. */
   private void build(int nodeID, int leafNodeOffset,
                      PathSlice[] slices,
                      LongBitSet ordBitSet,

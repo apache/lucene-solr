@@ -80,6 +80,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
     zkStateReader = new ZkStateReader(zkClient);
     seqToThread = Collections.synchronizedMap(new HashMap<Integer,Thread>());
+    zkClient.makePath("/collections/collection1", true);
+    zkClient.makePath("/collections/collection2", true);
   }
   
   class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
