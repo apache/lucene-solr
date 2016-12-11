@@ -25,6 +25,7 @@ parent.iml
 **/pom.xml
 /nbproject
 /nb-build
+.pydevproject
 
 /solr/package
 
