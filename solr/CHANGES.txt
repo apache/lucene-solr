@@ -240,6 +240,8 @@ Bug Fixes
 * SOLR-9834: A variety of spots in the code can create a collection zk node after the collection has been 
   removed. (Mark Miller)
 
+* SOLR-9707: Don't forward DeleteByQuery requests to down replicas. (Jessica Cheng Mallet via Varun Thacker)
+
 Other Changes
 ----------------------
 
