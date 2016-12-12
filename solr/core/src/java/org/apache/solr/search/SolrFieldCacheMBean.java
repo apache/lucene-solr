@@ -64,11 +64,13 @@ public class SolrFieldCacheMBean implements JmxAugmentedSolrInfoMBean {
     if (listEntries) {
       String[] entries = UninvertingReader.getUninvertedStats();
       stats.add("entries_count", entries.length);
+      stats.add("total_size", UninvertingReader.getTotalSize());
       for (int i = 0; i < entries.length; i++) {
         stats.add("entry#" + i, entries[i]);
       }
     } else {
       stats.add("entries_count", UninvertingReader.getUninvertedStatsSize());
+      stats.add("total_size", UninvertingReader.getTotalSize());
     }
     return stats;
   }

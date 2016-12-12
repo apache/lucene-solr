@@ -164,6 +164,9 @@ New Features
 * SOLR-5043: New solr.dns.prevent.reverse.lookup system property that can be used to prevent long core
   (re)load delays on systems with missconfigured hostname/DNS (hossman)
 
+* SOLR-9844: FieldCache information fetched via the mbeans handler or seen via the UI now displays the total size used.
+  The individual cache entries in the response are now formatted better as well. (Varun Thacker)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have

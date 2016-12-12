@@ -384,7 +384,7 @@ public interface FieldCache {
       return custom;
     }
 
-    public Object getValue() {
+    public Accountable getValue() {
       return value;
     }
 
@@ -399,15 +399,11 @@ public interface FieldCache {
     
     @Override
     public String toString() {
-      StringBuilder b = new StringBuilder(250);
-      b.append("'").append(getReaderKey()).append("'=>");
-      b.append("'").append(getFieldName()).append("',");
-      b.append(getCacheType()).append(",").append(getCustom());
-      b.append("=>").append(getValue().getClass().getName()).append("#");
-      b.append(System.identityHashCode(getValue()));
-      
+      StringBuilder b = new StringBuilder(100);
+      b.append("segment='").append(getReaderKey().toString()).append("', ");
+      b.append("field='").append(getFieldName()).append("', ");
       String s = getEstimatedSize();
-      b.append(" (size =~ ").append(s).append(')');
+      b.append("size =~ ").append(s);
 
       return b.toString();
     }
