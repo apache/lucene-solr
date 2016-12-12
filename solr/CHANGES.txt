@@ -230,7 +230,7 @@ Other Changes
 
 * SOLR-8959: Refactored TestSegmentSorting out of TestMiniSolrCloudCluster (hossman)
 
-
+* SOLR-9846: OverseerAutoReplicaFailoverThread can take too long to stop and leak out of unit tests. (Mark Miller)
 
 ==================  6.3.0 ==================
 
