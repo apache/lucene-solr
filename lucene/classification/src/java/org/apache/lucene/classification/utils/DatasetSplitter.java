@@ -94,7 +94,8 @@ public class DatasetSplitter {
         }
       }
       if (classValues == null) {
-        throw new IllegalStateException("field \"" + classFieldName + "\" must have sorted (set) doc values");
+        // approximate with no. of terms
+        noOfClasses += leave.reader().terms(classFieldName).size();
       }
       noOfClasses += valueCount;
     }
