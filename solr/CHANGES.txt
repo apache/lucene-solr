@@ -288,6 +288,8 @@ Other Changes
   response (instead of a SolrException) and includes the remote error message as part of the exception message
   (Tomás Fernández Löbbe)
 
+* SOLR-9846: OverseerAutoReplicaFailoverThread can take too long to stop and leak out of unit tests. (Mark Miller)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
