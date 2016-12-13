@@ -242,6 +242,8 @@ Bug Fixes
 
 * SOLR-9707: Don't forward DeleteByQuery requests to down replicas. (Jessica Cheng Mallet via Varun Thacker)
 
+* SOLR-9823: CoreContainer incorrectly setting MDCLoggingContext for core (Jessica Cheng Mallet via Erick Erickson)
+
 Other Changes
 ----------------------
 
