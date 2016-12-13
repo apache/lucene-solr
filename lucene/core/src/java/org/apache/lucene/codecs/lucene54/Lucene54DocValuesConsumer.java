@@ -613,10 +613,6 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
     meta.writeVInt(field.number);
     meta.writeByte(Lucene54DocValuesFormat.SORTED);
     addTermsDict(field, values);
-
-
-    //System.out.println("DocValuesConsumer writing sorted docValues: "+values.iterator().toString());
-
     addNumericField(field, docToOrd, NumberType.ORDINAL);
   }
 

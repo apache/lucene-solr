@@ -112,7 +112,7 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
     final int size = col.terms.size();
     if (size > 0) {
       IndexableFieldType field = reader.document(0).getField(query.getField()).fieldType();
-      final int sort[] = col.terms.sort(field.docValuesComparator(),this);
+      final int sort[] = col.terms.sort(field.docValuesComparator());
 
 
       final float[] boost = col.array.boost;
