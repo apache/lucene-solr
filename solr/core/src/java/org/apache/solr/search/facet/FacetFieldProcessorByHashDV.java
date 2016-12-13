@@ -181,6 +181,11 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
       throw new UnsupportedOperationException();
     }
 
+
+    @Override
+    protected float getSlot(Comparable start, Comparable gap, Comparable value) {
+      throw new UnsupportedOperationException();
+    }
   }
 
   FacetRangeProcessor.Calc calc;

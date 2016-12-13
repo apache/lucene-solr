@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
@@ -35,9 +34,11 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.schema.TrieDoubleField;
 import org.apache.solr.schema.TrieField;
+import org.apache.solr.schema.TrieFloatField;
+import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.search.DocSetCollector;
 import org.apache.solr.util.DateMathParser;
 
 public class FacetRange extends FacetRequestSorted {
@@ -90,6 +91,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   Comparable start;
   Comparable end;
   String gap;
+  
   EnumSet<FacetParams.FacetRangeInclude> include;
   
   FacetRangeProcessor(FacetContext fcontext, FacetRange freq) {
@@ -196,6 +198,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     start = calc.getValue(freq.start.toString());
     end = calc.getValue(freq.end.toString());
     gap = freq.gap.toString();
+    
     include = freq.include;
     
     
@@ -336,10 +339,26 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   
   @Override
   void collect(int segDoc) throws IOException {
-    
-    numericDocValues.
-    countAcc.incrementCount(slot, 1);
-    docSetAcc.collect(segDoc, slot);
+    if (numericDocValues.advanceExact(segDoc)) {
+      Long val = numericDocValues.longValue();
+      
+      Comparable newVal = val;
+      if (sf.getType() instanceof TrieIntField) {
+        newVal = val.intValue();
+      } else if (sf.getType() instanceof TrieFloatField) {
+        newVal = Float.intBitsToFloat(val.intValue());
+      } else if (sf.getType() instanceof TrieDoubleField) {
+        newVal = Double.longBitsToDouble(val);
+      } else if (sf.getType() instanceof TrieDateField) {
+        newVal = new Date(val);
+      }
+      
+      float slot = calc.getSlot(start, gap, newVal);
+      if (slot != (int) slot) {
+        countAcc.incrementCount((int)slot, 1);
+        docSetAcc.collect(segDoc, (int)slot);
+      }
+    }
   }
   
   private Query[] filters;
@@ -486,7 +505,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
      */
     protected abstract Comparable parseAndAddGap(Comparable value, String gap)
         throws java.text.ParseException;
-
+    
+    protected abstract float getSlot(Comparable start, String gap, Comparable value) ;
   }
 
   private static class FloatCalc extends Calc {
@@ -510,6 +530,15 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     public Float parseAndAddGap(Comparable value, String gap) {
       return new Float(((Number)value).floatValue() + Float.valueOf(gap).floatValue());
     }
+
+    @Override
+    protected float getSlot(Comparable s, String g, Comparable v) {
+      Float start = ((Number)s).floatValue();
+      Float gap = Float.valueOf(g).floatValue();
+      Float value = ((Number)v).floatValue();
+      
+      return (value-start) / gap;
+    }
   }
   private static class DoubleCalc extends Calc {
     @Override
@@ -531,6 +560,14 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     public Double parseAndAddGap(Comparable value, String gap) {
       return new Double(((Number)value).doubleValue() + Double.valueOf(gap).doubleValue());
     }
+    @Override
+    protected float getSlot(Comparable s, String g, Comparable v) {
+      Double start = ((Number)s).doubleValue();
+      Double gap = Double.valueOf(g).doubleValue();
+      Double value = ((Number)v).doubleValue();
+      
+      return (float)((value-start) / gap);
+    }
   }
   private static class IntCalc extends Calc {
 
@@ -543,6 +580,14 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     public Integer parseAndAddGap(Comparable value, String gap) {
       return new Integer(((Number)value).intValue() + Integer.valueOf(gap).intValue());
     }
+    @Override
+    protected float getSlot(Comparable s, String g, Comparable v) {
+      Integer start = ((Number)s).intValue();
+      Integer gap = Integer.valueOf(g).intValue();
+      Integer value = ((Number)v).intValue();
+      
+      return (value-start) / (float)gap;
+    }
   }
   private static class LongCalc extends Calc {
 
@@ -554,6 +599,14 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     @Override
     public Long parseAndAddGap(Comparable value, String gap) {
       return new Long(((Number)value).longValue() + Long.valueOf(gap).longValue());
+    }
+    @Override
+    protected float getSlot(Comparable s, String g, Comparable v) {
+      Long start = ((Number)s).longValue();
+      Long gap = Long.valueOf(g).longValue();
+      Long value = ((Number)v).longValue();
+      
+      return (value-start) / (float)gap;
     }
   }
   private static class DateCalc extends Calc {
@@ -589,6 +642,20 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       final DateMathParser dmp = new DateMathParser();
       dmp.setNow((Date)value);
       return dmp.parseMath(gap);
+    }
+    @Override
+    protected float getSlot(Comparable s, String g, Comparable v) {
+      try {
+        Long start = ((Date)s).getTime();
+        Long gap = parseAndAddGap(new Date(0), g).getTime();
+        Long value = ((Date)v).getTime();
+        
+        return (value-start) / (float)gap;
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Can't parse gap "+g+" for field: " +
+                field.getName(), e);
+      }
     }
   }
 
