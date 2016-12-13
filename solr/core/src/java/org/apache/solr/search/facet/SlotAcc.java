@@ -17,11 +17,14 @@
 package org.apache.solr.search.facet;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.DocSetCollector;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.Closeable;
@@ -466,4 +469,61 @@ class SortSlotAcc extends SlotAcc {
     // sort slot only works with direct-mapped accumulators
     throw new UnsupportedOperationException();
   }
+}
+
+
+class DocSetAcc extends SlotAcc {
+  private LeafReaderContext context;
+  private DocSetCollector[] setCollectors;
+  private LeafCollector[] leafCollectors;
+
+  public DocSetAcc(FacetContext fcontext, int numSlots) {
+    super(fcontext);
+
+    setCollectors = new DocSetCollector[numSlots];
+    leafCollectors = new LeafCollector[numSlots];
+  }
+
+  @Override
+  public void setNextReader(LeafReaderContext ctx) throws IOException {
+    super.setNextReader(ctx);
+    
+    context = ctx;
+    
+    for (int i=0; i<setCollectors.length; i++) {
+      if (setCollectors[i] == null) continue;
+      leafCollectors[i] = setCollectors[i].getLeafCollector(context);
+    }
+  }
+
+  @Override
+  public void collect(int doc, int slot) throws IOException {
+    if (setCollectors[slot] == null)  {
+      setCollectors[slot] = new DocSetCollector(fcontext.searcher.maxDoc());
+      leafCollectors[slot] = setCollectors[slot].getLeafCollector(context);
+    }
+    
+    leafCollectors[slot].collect(doc);
+  }
+
+  @Override
+  public int compare(int slotA, int slotB) {
+    return 0;
+  }
+
+  public DocSet getDocSet(int slot) {
+    return setCollectors[slot].getDocSet();
+  }
+  
+  @Override
+  public Object getValue(int slotNum) throws IOException {
+    return null;
+  }
+
+  @Override
+  public void reset() {}
+
+  @Override
+  public void resize(Resizer resizer) {}
+  
 }

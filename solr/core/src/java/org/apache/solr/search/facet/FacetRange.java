@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
@@ -34,6 +37,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.DocSetCollector;
 import org.apache.solr.util.DateMathParser;
 
 public class FacetRange extends FacetRequestSorted {
@@ -80,7 +84,14 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   List<Range> rangeList;
   List<Range> otherList;
   long effectiveMincount;
-
+  NumericDocValues numericDocValues;
+  DocSetAcc docSetAcc;
+  
+  Comparable start;
+  Comparable end;
+  String gap;
+  EnumSet<FacetParams.FacetRangeInclude> include;
+  
   FacetRangeProcessor(FacetContext fcontext, FacetRange freq) {
     super(fcontext, freq);
   }
@@ -182,6 +193,12 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
               "Unable to range facet on field:" + sf);
     }
 
+    start = calc.getValue(freq.start.toString());
+    end = calc.getValue(freq.end.toString());
+    gap = freq.gap.toString();
+    include = freq.include;
+    
+    
     createRangeList();
     return getRangeCountsIndexed();
   }
@@ -271,20 +288,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   private  SimpleOrderedMap getRangeCountsIndexed() throws IOException {
 
     int slotCount = rangeList.size() + otherList.size();
-    intersections = new DocSet[slotCount];
     filters = new Query[slotCount];
 
-
     createAccs(fcontext.base.size(), slotCount);
-
-    for (int idx = 0; idx<rangeList.size(); idx++) {
-      rangeStats(rangeList.get(idx), idx);
-    }
-
-    for (int idx = 0; idx<otherList.size(); idx++) {
-      rangeStats(otherList.get(idx), rangeList.size() + idx);
-    }
-
+    
+    collectSlots(fcontext.base);
 
     final SimpleOrderedMap res = new SimpleOrderedMap<>();
     List<SimpleOrderedMap> buckets = new ArrayList<>();
@@ -312,14 +320,36 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     return res;
   }
 
+  protected void createAccs(int docCount, int slotCount) throws IOException {
+    super.createAccs(docCount, slotCount);
+    
+    docSetAcc = new DocSetAcc(fcontext, slotCount);
+  }
+  
+  @Override
+  void setNextReader(LeafReaderContext ctx) throws IOException {
+    super.setNextReader(ctx);
+    
+    numericDocValues = ctx.reader().getNumericDocValues(sf.getName());
+    docSetAcc.setNextReader(ctx);
+  }
+  
+  @Override
+  void collect(int segDoc) throws IOException {
+    
+    numericDocValues.
+    countAcc.incrementCount(slot, 1);
+    docSetAcc.collect(segDoc, slot);
+  }
+  
   private Query[] filters;
-  private DocSet[] intersections;
+
   private void rangeStats(Range range, int slot) throws IOException {
     Query rangeQ = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
     // TODO: specialize count only
     DocSet intersection = fcontext.searcher.getDocSet(rangeQ, fcontext.base);
     filters[slot] = rangeQ;
-    intersections[slot] = intersection;  // save for later  // TODO: only save if number of slots is small enough?
+//    intersections[slot] = intersection;  // save for later  // TODO: only save if number of slots is small enough?
     int num = collect(intersection, slot);
     countAcc.incrementCount(slot, num); // TODO: roll this into collect()
   }
@@ -327,7 +357,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   private void doSubs(SimpleOrderedMap bucket, int slot) throws IOException {
     // handle sub-facets for this bucket
     if (freq.getSubFacets().size() > 0) {
-      DocSet subBase = intersections[slot];
+      DocSet subBase = docSetAcc.getDocSet(slot);
       try {
         processSubs(bucket, filters[slot], subBase);
       } finally {
