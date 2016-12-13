@@ -33,8 +33,18 @@ import org.apache.solr.common.params.SolrParams;
 
 public class DelegationTokenHttpSolrClient extends HttpSolrClient {
   public final static String DELEGATION_TOKEN_PARAM = "delegation";
-  private final String delegationToken;
 
+  /**
+   * This constructor is deprecated in favor of passing delegation token via
+   * {@linkplain org.apache.solr.client.solrj.impl.HttpSolrClient.Builder#withInvariantParams(ModifiableSolrParams)}.
+   *
+   * @param baseURL The base url to communicate with the Solr server
+   * @param client Http client instance to use for communication
+   * @param parser Response parser instance to use to decode response from Solr server
+   * @param allowCompression Should compression be allowed ?
+   * @param delegationToken The delegation token string.
+   */
+  @Deprecated
   public DelegationTokenHttpSolrClient(String baseURL,
                                        HttpClient client,
                                        ResponseParser parser,
@@ -44,10 +54,30 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
     if (delegationToken == null) {
       throw new IllegalArgumentException("Delegation token cannot be null");
     }
-    this.delegationToken = delegationToken;
     setQueryParams(new TreeSet<>(Arrays.asList(DELEGATION_TOKEN_PARAM)));
     invariantParams = new ModifiableSolrParams();
     invariantParams.set(DELEGATION_TOKEN_PARAM, delegationToken);
+  }
+
+  /**
+   * This constructor is defined at "protected" scope. Ideally applications should
+   * use {@linkplain org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} instance
+   * to configure this Solr client instance.
+   *
+   * @param baseURL The base url to communicate with the Solr server
+   * @param client Http client instance to use for communication
+   * @param parser Response parser instance to use to decode response from Solr server
+   * @param allowCompression Should compression be allowed ?
+   * @param invariantParams The parameters which should be passed with every request.
+   */
+  protected DelegationTokenHttpSolrClient(String baseURL,
+      HttpClient client,
+      ResponseParser parser,
+      boolean allowCompression,
+      ModifiableSolrParams invariantParams) {
+    super(baseURL, client, parser, allowCompression, invariantParams);
+
+    setQueryParams(new TreeSet<>(Arrays.asList(DELEGATION_TOKEN_PARAM)));
   }
 
   @Override
