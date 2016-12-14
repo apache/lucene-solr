@@ -51,7 +51,7 @@ public abstract class DocValuesStats<T> {
    * Initializes this object with the given reader context. Returns whether stats can be computed for this segment (i.e.
    * it does have the requested DocValues field).
    */
-  protected abstract boolean init(LeafReaderContext contxt) throws IOException;
+  protected abstract boolean init(LeafReaderContext context) throws IOException;
 
   /** Returns whether the given document has a value for the requested DocValues field. */
   protected abstract boolean hasValue(int doc) throws IOException;
@@ -106,8 +106,8 @@ public abstract class DocValuesStats<T> {
     }
 
     @Override
-    protected final boolean init(LeafReaderContext contxt) throws IOException {
-      ndv = contxt.reader().getNumericDocValues(field);
+    protected final boolean init(LeafReaderContext context) throws IOException {
+      ndv = context.reader().getNumericDocValues(field);
       return ndv != null;
     }
 
