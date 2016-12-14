@@ -138,6 +138,10 @@ Improvements
   necessarily refer to that field (AKA requireFieldMatch==false). Disabled by default.
   See UH get/setFieldMatcher. (Jim Ferenczi via David Smiley)
 
+* LUCENE-7592: If the segments file is truncated, we now throw
+  CorruptIndexException instead of the more confusing EOFException
+  (Mike Drob via Mike McCandless)
+
 Optimizations
 
 * LUCENE-7568: Optimize merging when index sorting is used but the
