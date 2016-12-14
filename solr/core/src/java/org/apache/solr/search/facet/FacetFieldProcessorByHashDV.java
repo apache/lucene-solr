@@ -181,9 +181,8 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
       throw new UnsupportedOperationException();
     }
 
-
     @Override
-    protected float getSlot(Comparable start, Comparable gap, Comparable value) {
+    protected float getGapIndex(Comparable start, String gap, Comparable value) {
       throw new UnsupportedOperationException();
     }
   }

@@ -34,10 +34,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
-import org.apache.solr.schema.TrieDoubleField;
 import org.apache.solr.schema.TrieField;
-import org.apache.solr.schema.TrieFloatField;
-import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.util.DateMathParser;
 
@@ -83,7 +80,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   SchemaField sf;
   Calc calc;
   List<Range> rangeList;
-  List<Range> otherList;
+  Range[] otherList;
   long effectiveMincount;
   NumericDocValues numericDocValues;
   DocSetAcc docSetAcc;
@@ -91,6 +88,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   Comparable start;
   Comparable end;
   String gap;
+  int maxIndex;
   
   EnumSet<FacetParams.FacetRangeInclude> include;
   
@@ -195,13 +193,6 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
               "Unable to range facet on field:" + sf);
     }
 
-    start = calc.getValue(freq.start.toString());
-    end = calc.getValue(freq.end.toString());
-    gap = freq.gap.toString();
-    
-    include = freq.include;
-    
-    
     createRangeList();
     return getRangeCountsIndexed();
   }
@@ -209,17 +200,17 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
   private void createRangeList() throws IOException {
 
-    rangeList = new ArrayList<>();
-    otherList = new ArrayList<>(3);
-
-    Comparable start = calc.getValue(freq.start.toString());
-    Comparable end = calc.getValue(freq.end.toString());
+    start = calc.getValue(freq.start.toString());
+    end = calc.getValue(freq.end.toString());
+    gap = freq.gap.toString();
+    
+    rangeList = new ArrayList<Range>();
+    otherList = new Range[3];
+    
     EnumSet<FacetParams.FacetRangeInclude> include = freq.include;
 
-    String gap = freq.gap.toString();
-
     Comparable low = start;
-
+    
     while (low.compareTo(end) < 0) {
       Comparable high = calc.addGap(low, gap);
       if (end.compareTo(high) < 0) {
@@ -250,7 +241,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
                   0 == high.compareTo(end)));
 
       Range range = new Range(low, low, high, incLower, incUpper);
-      rangeList.add( range );
+      rangeList.add(range);
 
       low = high;
     }
@@ -266,14 +257,14 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         boolean incUpper = (include.contains(FacetParams.FacetRangeInclude.OUTER) ||
             (!(include.contains(FacetParams.FacetRangeInclude.LOWER) ||
                 include.contains(FacetParams.FacetRangeInclude.EDGE))));
-        otherList.add( new Range(FacetParams.FacetRangeOther.BEFORE.toString(), null, start, false, incUpper) );
+        otherList[0] = new Range(FacetParams.FacetRangeOther.BEFORE.toString(), null, start, false, incUpper);
       }
       if (all || freq.others.contains(FacetParams.FacetRangeOther.AFTER)) {
         // include lower bound if "outer" or if last gap doesn't already include it
         boolean incLower = (include.contains(FacetParams.FacetRangeInclude.OUTER) ||
             (!(include.contains(FacetParams.FacetRangeInclude.UPPER) ||
                 include.contains(FacetParams.FacetRangeInclude.EDGE))));
-        otherList.add( new Range(FacetParams.FacetRangeOther.AFTER.toString(), end, null, incLower, false));
+        otherList[1] = new Range(FacetParams.FacetRangeOther.AFTER.toString(), end, null, incLower, false);
       }
       if (all || freq.others.contains(FacetParams.FacetRangeOther.BETWEEN)) {
         boolean incLower = (include.contains(FacetParams.FacetRangeInclude.LOWER) ||
@@ -281,16 +272,15 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         boolean incUpper = (include.contains(FacetParams.FacetRangeInclude.UPPER) ||
             include.contains(FacetParams.FacetRangeInclude.EDGE));
 
-        otherList.add( new Range(FacetParams.FacetRangeOther.BETWEEN.toString(), start, end, incLower, incUpper) );
+        otherList[2]  = new Range(FacetParams.FacetRangeOther.BETWEEN.toString(), start, end, incLower, incUpper);
       }
     }
 
   }
 
-
   private  SimpleOrderedMap getRangeCountsIndexed() throws IOException {
 
-    int slotCount = rangeList.size() + otherList.size();
+    int slotCount = rangeList.size() + otherList.length;
     filters = new Query[slotCount];
 
     createAccs(fcontext.base.size(), slotCount);
@@ -311,11 +301,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       doSubs(bucket, idx);
     }
 
-    for (int idx = 0; idx<otherList.size(); idx++) {
+    for (int idx = 0; idx<otherList.length; idx++) {
+      if (otherList[idx] == null) continue;
       // we dont' skip these buckets based on mincount
-      Range range = otherList.get(idx);
       SimpleOrderedMap bucket = new SimpleOrderedMap();
-      res.add(range.label.toString(), bucket);
+      res.add(otherList[idx].label.toString(), bucket);
       addStats(bucket, rangeList.size() + idx);
       doSubs(bucket, rangeList.size() + idx);
     }
@@ -340,25 +330,35 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   @Override
   void collect(int segDoc) throws IOException {
     if (numericDocValues.advanceExact(segDoc)) {
-      Long val = numericDocValues.longValue();
+      Long bits = numericDocValues.longValue();
       
-      Comparable newVal = val;
-      if (sf.getType() instanceof TrieIntField) {
-        newVal = val.intValue();
-      } else if (sf.getType() instanceof TrieFloatField) {
-        newVal = Float.intBitsToFloat(val.intValue());
-      } else if (sf.getType() instanceof TrieDoubleField) {
-        newVal = Double.longBitsToDouble(val);
-      } else if (sf.getType() instanceof TrieDateField) {
-        newVal = new Date(val);
-      }
-      
-      float slot = calc.getSlot(start, gap, newVal);
-      if (slot != (int) slot) {
-        countAcc.incrementCount((int)slot, 1);
-        docSetAcc.collect(segDoc, (int)slot);
-      }
+      Comparable value = calc.bitsToValue(bits);
+      int slot = (int)Math.floor(calc.getGapIndex(start, gap, value));
+          
+      Range low = slot > 0 && slot <= rangeList.size() ? rangeList.get(slot-1) : null;
+      Range mid = slot >= 0 && slot < rangeList.size() ? rangeList.get(slot) : null;
+      Range high = slot >= -1 && slot < rangeList.size()-1 ? rangeList.get(slot+1) : null;
+          
+      if (low != null && isInsideRange(low, value)) collect(segDoc, slot-1);
+      if (mid != null && isInsideRange(mid, value)) collect(segDoc, slot);
+      if (high != null && isInsideRange(high, value)) collect(segDoc, slot+1);
+
+      if (otherList[0] != null && isInsideRange(otherList[0], value)) collect(segDoc, rangeList.size());
+      if (otherList[1] != null && isInsideRange(otherList[1], value)) collect(segDoc, rangeList.size()+1);
+      if (otherList[2] != null && isInsideRange(otherList[2], value)) collect(segDoc, rangeList.size()+2);
     }
+  }
+  
+  @Override 
+  void collect(int segDoc, int slot) throws IOException {
+    countAcc.incrementCount(slot, 1);
+    docSetAcc.collect(segDoc, slot);
+  }
+  
+  boolean isInsideRange(Range range, Comparable value) {
+    return (range.includeLower && range.low.compareTo(value) == 0) ||
+           (range.low.compareTo(value) < 0 && range.high.compareTo(value) > 0) || 
+           (range.includeUpper && range.high.compareTo(value) == 0);
   }
   
   private Query[] filters;
@@ -506,7 +506,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     protected abstract Comparable parseAndAddGap(Comparable value, String gap)
         throws java.text.ParseException;
     
-    protected abstract float getSlot(Comparable start, String gap, Comparable value) ;
+    protected abstract float getGapIndex(Comparable start, String gap, Comparable value) ;
   }
 
   private static class FloatCalc extends Calc {
@@ -532,7 +532,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
 
     @Override
-    protected float getSlot(Comparable s, String g, Comparable v) {
+    protected float getGapIndex(Comparable s, String g, Comparable v) {
       Float start = ((Number)s).floatValue();
       Float gap = Float.valueOf(g).floatValue();
       Float value = ((Number)v).floatValue();
@@ -561,7 +561,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       return new Double(((Number)value).doubleValue() + Double.valueOf(gap).doubleValue());
     }
     @Override
-    protected float getSlot(Comparable s, String g, Comparable v) {
+    protected float getGapIndex(Comparable s, String g, Comparable v) {
       Double start = ((Number)s).doubleValue();
       Double gap = Double.valueOf(g).doubleValue();
       Double value = ((Number)v).doubleValue();
@@ -581,7 +581,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       return new Integer(((Number)value).intValue() + Integer.valueOf(gap).intValue());
     }
     @Override
-    protected float getSlot(Comparable s, String g, Comparable v) {
+    protected float getGapIndex(Comparable s, String g, Comparable v) {
       Integer start = ((Number)s).intValue();
       Integer gap = Integer.valueOf(g).intValue();
       Integer value = ((Number)v).intValue();
@@ -601,7 +601,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       return new Long(((Number)value).longValue() + Long.valueOf(gap).longValue());
     }
     @Override
-    protected float getSlot(Comparable s, String g, Comparable v) {
+    protected float getGapIndex(Comparable s, String g, Comparable v) {
       Long start = ((Number)s).longValue();
       Long gap = Long.valueOf(g).longValue();
       Long value = ((Number)v).longValue();
@@ -644,7 +644,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       return dmp.parseMath(gap);
     }
     @Override
-    protected float getSlot(Comparable s, String g, Comparable v) {
+    protected float getGapIndex(Comparable s, String g, Comparable v) {
       try {
         Long start = ((Date)s).getTime();
         Long gap = parseAndAddGap(new Date(0), g).getTime();
