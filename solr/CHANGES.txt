@@ -164,6 +164,9 @@ New Features
 * SOLR-5043: New solr.dns.prevent.reverse.lookup system property that can be used to prevent long core
   (re)load delays on systems with missconfigured hostname/DNS (hossman)
 
+* SOLR-9844: FieldCache information fetched via the mbeans handler or seen via the UI now displays the total size used.
+  The individual cache entries in the response are now formatted better as well. (Varun Thacker)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
@@ -237,6 +240,13 @@ Bug Fixes
 * SOLR-9834: A variety of spots in the code can create a collection zk node after the collection has been 
   removed. (Mark Miller)
 
+* SOLR-9707: Don't forward DeleteByQuery requests to down replicas. (Jessica Cheng Mallet via Varun Thacker)
+
+* SOLR-9823: CoreContainer incorrectly setting MDCLoggingContext for core (Jessica Cheng Mallet via Erick Erickson)
+
+* SOLR-1953: It may be possible for temporary files to accumulate until the Solr process is shut down.
+  (Karl Wright, Mark Miller)
+
 Other Changes
 ----------------------
 
@@ -277,6 +287,11 @@ Other Changes
 * SOLR-9827: ConcurrentUpdateSolrClient creates a RemoteSolrException if the remote host responded with a non-ok
   response (instead of a SolrException) and includes the remote error message as part of the exception message
   (Tomás Fernández Löbbe)
+
+* SOLR-9846: OverseerAutoReplicaFailoverThread can take too long to stop and leak out of unit tests. (Mark Miller)
+
+* SOLR-8959: Refactored TestSegmentSorting out of TestMiniSolrCloudCluster (hossman)
+
 
 ==================  6.3.0 ==================
 

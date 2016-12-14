@@ -37,6 +37,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.uninverting.FieldCache.CacheEntry;
 
 /**
@@ -374,16 +375,34 @@ public class UninvertingReader extends FilterLeafReader {
    * Return information about the backing cache
    * @lucene.internal 
    */
-  public static String[] getUninvertedStats() {
+  public static FieldCacheStats getUninvertedStats() {
     CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
+    long totalBytesUsed = 0;
     String[] info = new String[entries.length];
     for (int i = 0; i < entries.length; i++) {
       info[i] = entries[i].toString();
+      totalBytesUsed += entries[i].getValue().ramBytesUsed();
     }
-    return info;
+    String totalSize = RamUsageEstimator.humanReadableUnits(totalBytesUsed);
+    return new FieldCacheStats(totalSize, info);
   }
 
   public static int getUninvertedStatsSize() {
     return FieldCache.DEFAULT.getCacheEntries().length;
+  }
+
+  /**
+   * Return information about the backing cache
+   * @lucene.internal
+   */
+  public static class FieldCacheStats {
+    public String totalSize;
+    public String[] info;
+
+    public FieldCacheStats(String totalSize, String[] info) {
+      this.totalSize = totalSize;
+      this.info = info;
+    }
+
   }
 }

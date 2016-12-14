@@ -1619,6 +1619,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     if (!globalFieldNumberMap.contains(field, DocValuesType.NUMERIC)) {
       throw new IllegalArgumentException("can only update existing numeric-docvalues fields!");
     }
+    if (config.getIndexSortFields().contains(field)) {
+      throw new IllegalArgumentException("cannot update docvalues field involved in the index sort, field=" + field + ", sort=" + config.getIndexSort());
+    }
     try {
       long seqNo = docWriter.updateDocValues(new NumericDocValuesUpdate(term, field, value));
       if (seqNo < 0) {
@@ -1712,6 +1715,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
       if (!globalFieldNumberMap.contains(f.name(), dvType)) {
         throw new IllegalArgumentException("can only update existing docvalues fields! field=" + f.name() + ", type=" + dvType);
+      }
+      if (config.getIndexSortFields().contains(f.name())) {
+        throw new IllegalArgumentException("cannot update docvalues field involved in the index sort, field=" + f.name() + ", sort=" + config.getIndexSort());
       }
       switch (dvType) {
         case NUMERIC:
@@ -2946,11 +2952,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   @Override
   public final long prepareCommit() throws IOException {
     ensureOpen();
-    pendingSeqNo = prepareCommitInternal(config.getMergePolicy());
+    boolean[] doMaybeMerge = new boolean[1];
+    pendingSeqNo = prepareCommitInternal(doMaybeMerge);
+    // we must do this outside of the commitLock else we can deadlock:
+    if (doMaybeMerge[0]) {
+      maybeMerge(config.getMergePolicy(), MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);      
+    }
     return pendingSeqNo;
   }
 
-  private long prepareCommitInternal(MergePolicy mergePolicy) throws IOException {
+  private long prepareCommitInternal(boolean[] doMaybeMerge) throws IOException {
     startCommitTime = System.nanoTime();
     synchronized(commitLock) {
       ensureOpen(false);
@@ -3057,7 +3068,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       boolean success = false;
       try {
         if (anySegmentsFlushed) {
-          maybeMerge(mergePolicy, MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
+          doMaybeMerge[0] = true;
         }
         startCommit(toCommit);
         success = true;
@@ -3178,6 +3189,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       infoStream.message("IW", "commit: start");
     }
 
+    boolean[] doMaybeMerge = new boolean[1];
+
+    long seqNo;
+
     synchronized(commitLock) {
       ensureOpen(false);
 
@@ -3185,13 +3200,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         infoStream.message("IW", "commit: enter lock");
       }
 
-      long seqNo;
-
       if (pendingCommit == null) {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: now prepare");
         }
-        seqNo = prepareCommitInternal(mergePolicy);
+        seqNo = prepareCommitInternal(doMaybeMerge);
       } else {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: already prepared");
@@ -3200,9 +3213,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
 
       finishCommit();
-
-      return seqNo;
     }
+
+    // we must do this outside of the commitLock else we can deadlock:
+    if (doMaybeMerge[0]) {
+      maybeMerge(mergePolicy, MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);      
+    }
+    
+    return seqNo;
   }
 
   private final void finishCommit() throws IOException {

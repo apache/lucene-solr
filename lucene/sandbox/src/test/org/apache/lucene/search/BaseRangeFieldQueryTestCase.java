@@ -93,7 +93,7 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
         ranges[id] = new Range[] {nextRange(dimensions)};
       }
       if (x == 17) {
-        // dome docs don't have a box:
+        // some docs don't have a box:
         ranges[id][0].isMissing = true;
         if (VERBOSE) {
           System.out.println("  id=" + id + " is missing");
