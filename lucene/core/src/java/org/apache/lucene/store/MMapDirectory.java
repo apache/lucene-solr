@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.Future;
 import java.lang.invoke.MethodHandle;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import org.apache.lucene.store.ByteBufferGuard.BufferCleaner;
@@ -174,14 +175,13 @@ public class MMapDirectory extends FSDirectory {
    * is closed while another thread is still accessing it (SIGSEGV).
    * <p>To enable the hack, the following requirements need to be
    * fulfilled: The used JVM must be Oracle Java / OpenJDK 8
-   * <em>(preliminary support for Java 9 was added with Lucene 6)</em>.
+   * <em>(preliminary support for Java 9 (nocommit: build 148 or later) was added with Lucene 6.4)</em>.
    * In addition, the following permissions need to be granted
    * to {@code lucene-core.jar} in your
    * <a href="http://docs.oracle.com/javase/8/docs/technotes/guides/security/PolicyFiles.html">policy file</a>:
    * <ul>
    * <li>{@code permission java.lang.reflect.ReflectPermission "suppressAccessChecks";}</li>
    * <li>{@code permission java.lang.RuntimePermission "accessClassInPackage.sun.misc";}</li>
-   * <li>{@code permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.ref";}</li>
    * </ul>
    * @throws IllegalArgumentException if {@link #UNMAP_SUPPORTED}
    * is <code>false</code> and the workaround cannot be enabled.
@@ -338,61 +338,70 @@ public class MMapDirectory extends FSDirectory {
   @SuppressForbidden(reason = "Needs access to private APIs in DirectBuffer and sun.misc.Cleaner to enable hack")
   private static Object unmapHackImpl() {
     final Lookup lookup = lookup();
+    Class<?> unmappableBufferClass;
+    MethodHandle unmapper;
     try {
-      final Class<?> directBufferClass = Class.forName("java.nio.DirectByteBuffer");
-      
-      final Method m = directBufferClass.getMethod("cleaner");
-      m.setAccessible(true);
-      MethodHandle directBufferCleanerMethod = lookup.unreflect(m);
-      Class<?> cleanerClass = directBufferCleanerMethod.type().returnType();
-      
-      final MethodHandle cleanMethod;
-      if (Runnable.class.isAssignableFrom(cleanerClass)) {
-        // early Java 9 impl using Runnable (we do the security check early that the Runnable does at runtime):
-        final SecurityManager sm = System.getSecurityManager();
-        if (sm != null) {
-          sm.checkPackageAccess("jdk.internal.ref");
-        }
-        // cast return value of cleaner() to Runnable:
-        directBufferCleanerMethod = directBufferCleanerMethod.asType(directBufferCleanerMethod.type().changeReturnType(Runnable.class));
-        cleanerClass = Runnable.class;
-        // lookup run() method on the interface instead of Cleaner:
-        cleanMethod = lookup.findVirtual(cleanerClass, "run", methodType(void.class));
-      } else {
-        // can be either the old internal "sun.misc.Cleaner" or
-        // the new Java 9 "java.lang.ref.Cleaner$Cleanable":
-        cleanMethod = lookup.findVirtual(cleanerClass, "clean", methodType(void.class));
+      try {
+        // *** Unsafe unmapping (Java 9+) ***
+        final Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+        // we do not need to check for a specific class, we can call the Unsafe method with any buffer class:
+        unmappableBufferClass = ByteBuffer.class;
+        // first check if Unsafe has the right method, otherwise we can give up
+        // without doing any security critical stuff:
+        unmapper = lookup.findVirtual(unsafeClass, "invokeCleaner",
+            methodType(void.class, unmappableBufferClass));
+        // fetch the unsafe instance and bind it to the virtual MH:
+        final Field f = unsafeClass.getDeclaredField("theUnsafe");
+        f.setAccessible(true);
+        final Object theUnsafe = f.get(null);
+        unmapper = unmapper.bindTo(theUnsafe);
+      } catch (SecurityException se) {
+        // rethrow to report errors correctly (we need to catch it here, as we also catch RuntimeException below!):
+        throw se;
+      } catch (ReflectiveOperationException | RuntimeException e) {
+        // *** legacy Java 8 unmapping with sun.misc.Cleaner ***
+        unmappableBufferClass = Class.forName("java.nio.DirectByteBuffer");
+        
+        final Method m = unmappableBufferClass.getMethod("cleaner");
+        m.setAccessible(true);
+        final MethodHandle directBufferCleanerMethod = lookup.unreflect(m);
+        final Class<?> cleanerClass = directBufferCleanerMethod.type().returnType();
+        
+        final MethodHandle cleanMethod = lookup.findVirtual(cleanerClass, "clean", methodType(void.class));
+        final MethodHandle nonNullTest = lookup.findStatic(Objects.class, "nonNull", methodType(boolean.class, Object.class))
+            .asType(methodType(boolean.class, cleanerClass));
+        final MethodHandle noop = dropArguments(constant(Void.class, null).asType(methodType(void.class)), 0, cleanerClass);
+        unmapper = filterReturnValue(directBufferCleanerMethod, guardWithTest(nonNullTest, cleanMethod, noop))
+            .asType(methodType(void.class, ByteBuffer.class));
       }
-      
-      final MethodHandle nonNullTest = lookup.findStatic(Objects.class, "nonNull", methodType(boolean.class, Object.class))
-          .asType(methodType(boolean.class, cleanerClass));
-      final MethodHandle noop = dropArguments(constant(Void.class, null).asType(methodType(void.class)), 0, cleanerClass);
-      final MethodHandle unmapper = filterReturnValue(directBufferCleanerMethod, guardWithTest(nonNullTest, cleanMethod, noop))
-          .asType(methodType(void.class, ByteBuffer.class));
-      
-      return (BufferCleaner) (String resourceDescription, ByteBuffer buffer) -> {
-        if (directBufferClass.isInstance(buffer)) {
-          final Throwable error = AccessController.doPrivileged((PrivilegedAction<Throwable>) () -> {
-            try {
-              unmapper.invokeExact(buffer);
-              return null;
-            } catch (Throwable t) {
-              return t;
-            }
-          });
-          if (error != null) {
-            throw new IOException("Unable to unmap the mapped buffer: " + resourceDescription, error);
-          }
-        }
-      };
-    } catch (SecurityException e) {
-      return "Unmapping is not supported, because not all required permissions are given to the Lucene JAR file: " + e +
-          " [Please grant at least the following permissions: RuntimePermission(\"accessClassInPackage.sun.misc\"), " +
-          "RuntimePermission(\"accessClassInPackage.jdk.internal.ref\"), and " +
-          "ReflectPermission(\"suppressAccessChecks\")]";
+    } catch (SecurityException se) {
+      return "Unmapping is not supported, because not all required permissions are given to the Lucene JAR file: " + se +
+          " [Please grant at least the following permissions: RuntimePermission(\"accessClassInPackage.sun.misc\") " +
+          " and ReflectPermission(\"suppressAccessChecks\")]";
     } catch (ReflectiveOperationException | RuntimeException e) {
       return "Unmapping is not supported on this platform, because internal Java APIs are not compatible to this Lucene version: " + e; 
     }
+    
+    final Class<?> directBufferClass0 = unmappableBufferClass;
+    final MethodHandle unmapper0 = unmapper;
+    return (BufferCleaner) (String resourceDescription, ByteBuffer buffer) -> {
+      if (!buffer.isDirect()) {
+        throw new IllegalArgumentException("Unmapping only works with direct buffers");
+      }
+      if (directBufferClass0.isInstance(buffer)) {
+        final Throwable error = AccessController.doPrivileged((PrivilegedAction<Throwable>) () -> {
+          try {
+            unmapper0.invokeExact(buffer);
+            return null;
+          } catch (Throwable t) {
+            return t;
+          }
+        });
+        if (error != null) {
+          throw new IOException("Unable to unmap the mapped buffer: " + resourceDescription, error);
+        }
+      }
+    };
   }
   
 }
