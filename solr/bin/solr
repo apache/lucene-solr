@@ -73,6 +73,10 @@ while [ -h "$SOLR_SCRIPT" ] ; do
   fi
 done
 
+# if you are using cdpath, almost all "cd somedir" command (if you don't use absolute path) print path where it go
+# thus if SOLR_TIP is /home/user/solr, SOLR_TIP=`cd "$SOLR_TIP"; pwd` will return "/home/user/solr\n/home/user/solr" 
+# and you will see "file or directory not found"
+CDPATH=''
 SOLR_TIP=`dirname "$SOLR_SCRIPT"`/..
 SOLR_TIP=`cd "$SOLR_TIP"; pwd`
 DEFAULT_SERVER_DIR="$SOLR_TIP/server"
