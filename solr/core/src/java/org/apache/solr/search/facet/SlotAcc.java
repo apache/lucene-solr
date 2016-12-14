@@ -511,7 +511,7 @@ class DocSetAcc extends SlotAcc {
   }
 
   public DocSet getDocSet(int slot) {
-    return setCollectors[slot].getDocSet();
+    return (setCollectors[slot] != null) ? setCollectors[slot].getDocSet() : DocSet.EMPTY;
   }
   
   @Override
