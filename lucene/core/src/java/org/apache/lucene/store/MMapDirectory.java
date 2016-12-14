@@ -382,13 +382,13 @@ public class MMapDirectory extends FSDirectory {
       return "Unmapping is not supported on this platform, because internal Java APIs are not compatible to this Lucene version: " + e; 
     }
     
-    final Class<?> directBufferClass0 = unmappableBufferClass;
+    final Class<?> unmappableBufferClass0 = unmappableBufferClass;
     final MethodHandle unmapper0 = unmapper;
     return (BufferCleaner) (String resourceDescription, ByteBuffer buffer) -> {
       if (!buffer.isDirect()) {
         throw new IllegalArgumentException("Unmapping only works with direct buffers");
       }
-      if (directBufferClass0.isInstance(buffer)) {
+      if (unmappableBufferClass0.isInstance(buffer)) {
         final Throwable error = AccessController.doPrivileged((PrivilegedAction<Throwable>) () -> {
           try {
             unmapper0.invokeExact(buffer);
