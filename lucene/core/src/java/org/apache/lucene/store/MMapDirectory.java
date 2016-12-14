@@ -335,7 +335,7 @@ public class MMapDirectory extends FSDirectory {
     }
   }
   
-  @SuppressForbidden(reason = "Needs access to private APIs in DirectBuffer and sun.misc.Cleaner to enable hack")
+  @SuppressForbidden(reason = "Needs access to private APIs in DirectBuffer, sun.misc.Cleaner, and sun.misc.Unsafe to enable hack")
   private static Object unmapHackImpl() {
     final Lookup lookup = lookup();
     Class<?> unmappableBufferClass;
