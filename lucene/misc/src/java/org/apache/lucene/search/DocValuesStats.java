@@ -130,8 +130,8 @@ public abstract class DocValuesStats<T> {
   /** Holds DocValues statistics for a numeric field storing {@code long} values. */
   public static final class LongDocValuesStats extends NumericDocValuesStats<Long> {
 
-    public LongDocValuesStats(String description) {
-      super(description, Long.MAX_VALUE, Long.MIN_VALUE);
+    public LongDocValuesStats(String field) {
+      super(field, Long.MAX_VALUE, Long.MIN_VALUE);
     }
 
     @Override
@@ -150,8 +150,8 @@ public abstract class DocValuesStats<T> {
   /** Holds DocValues statistics for a numeric field storing {@code double} values. */
   public static final class DoubleDocValuesStats extends NumericDocValuesStats<Double> {
 
-    public DoubleDocValuesStats(String description) {
-      super(description, Double.MAX_VALUE, Double.MIN_VALUE);
+    public DoubleDocValuesStats(String field) {
+      super(field, Double.MAX_VALUE, Double.MIN_VALUE);
     }
 
     @Override
