@@ -685,7 +685,12 @@ public class IndexFetcher {
         sb = readToStringBuilder(replicationTime, props.getProperty(REPLICATION_FAILED_AT_LIST));
         props.setProperty(REPLICATION_FAILED_AT_LIST, sb.toString());
       }
-
+      try {
+        dir.deleteFile(REPLICATION_PROPERTIES);
+      } catch(IOException e) {
+        LOG.info("No replication.properties found. Replicating for the first time");
+      }
+      
       final IndexOutput out = dir.createOutput(REPLICATION_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
       Writer outFile = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
       try {
