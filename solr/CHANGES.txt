@@ -225,6 +225,10 @@ Other Changes
   response (instead of a SolrException) and includes the remote error message as part of the exception message
   (Tomás Fernández Löbbe)
 
+* SOLR-8959: Refactored TestSegmentSorting out of TestMiniSolrCloudCluster (hossman)
+
+
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
