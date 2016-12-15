@@ -731,15 +731,17 @@ class FacetRangeProcessorSingledValuedDV extends FacetRangeProcessor {
 
       Comparable value = calc.bitsToValue(bits);
       int slot = (int) Math.floor(calc.getGapIndex(start, gap, value));
-
-      Range low = slot > 0 && slot <= rangeList.size() ? rangeList.get(slot - 1) : null;
+      
+      // Check for lower and upper slots for border cases
+      Range lower = slot > 0 && slot <= rangeList.size() ? rangeList.get(slot - 1) : null;
       Range mid = slot >= 0 && slot < rangeList.size() ? rangeList.get(slot) : null;
-      Range high = slot >= -1 && slot < rangeList.size() - 1 ? rangeList.get(slot + 1) : null;
+      Range upper = slot >= -1 && slot < rangeList.size() - 1 ? rangeList.get(slot + 1) : null;
 
-      if (low != null && isInsideRange(low, value)) collect(segDoc, slot - 1);
+      if (lower != null && isInsideRange(lower, value)) collect(segDoc, slot - 1);
       if (mid != null && isInsideRange(mid, value)) collect(segDoc, slot);
-      if (high != null && isInsideRange(high, value)) collect(segDoc, slot + 1);
+      if (upper != null && isInsideRange(upper, value)) collect(segDoc, slot + 1);
 
+      // Check other list 
       if (otherList[0] != null && isInsideRange(otherList[0], value)) collect(segDoc, rangeList.size());
       if (otherList[1] != null && isInsideRange(otherList[1], value)) collect(segDoc, rangeList.size() + 1);
       if (otherList[2] != null && isInsideRange(otherList[2], value)) collect(segDoc, rangeList.size() + 2);
