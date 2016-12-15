@@ -334,12 +334,10 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
         assert doc >= ctx.docBase;
         setNextReader(ctx);
       }
-      collectSlots(doc - segBase);
+      collect(doc - segBase);
     }
   }
-
-  void collectSlots(int segDoc) throws IOException { }
-
+  
   int collect(DocSet docs, int slot) throws IOException {
     int count = 0;
     SolrIndexSearcher searcher = fcontext.searcher;
@@ -379,6 +377,8 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       }
     }
   }
+
+  void collect(int segDoc) throws IOException { }
 
   void setNextReader(LeafReaderContext ctx) throws IOException {
     // countAcc.setNextReader is a no-op

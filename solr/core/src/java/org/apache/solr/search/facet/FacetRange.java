@@ -103,7 +103,8 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   public void process() throws IOException {
     super.process();
 
-    // Under the normal mincount=0, each shard will need to return 0 counts since we don't calculate buckets at the top level.
+    // Under the normal mincount=0, each shard will need to return 0 counts since we don't calculate buckets at the top
+    // level.
     // But if mincount>0 then our sub mincount can be set to 1.
 
     effectiveMincount = fcontext.isShard() ? (freq.mincount > 0 ? 1 : 0) : freq.mincount;
@@ -151,14 +152,12 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
           calc = new DateCalc(sf, null);
           break;
         default:
-          throw new SolrException
-              (SolrException.ErrorCode.BAD_REQUEST,
-                  "Expected numeric field type :" + sf);
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Expected numeric field type :" + sf);
       }
     } else {
-      throw new SolrException
-          (SolrException.ErrorCode.BAD_REQUEST,
-              "Expected numeric field type :" + sf);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Expected numeric field type :" + sf);
     }
     return calc;
   }
@@ -186,14 +185,12 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
           calc = new DateCalc(sf, null);
           break;
         default:
-          throw new SolrException
-          (SolrException.ErrorCode.BAD_REQUEST,
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Unable to range facet on tried field of unexpected type:" + freq.field);
       }
     } else {
-      throw new SolrException
-          (SolrException.ErrorCode.BAD_REQUEST,
-              "Unable to range facet on field:" + sf);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Unable to range facet on field:" + sf);
     }
 
     createRangeList();
@@ -223,24 +220,23 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         }
       }
       if (high.compareTo(low) < 0) {
-        throw new SolrException
-            (SolrException.ErrorCode.BAD_REQUEST,
-                "range facet infinite loop (is gap negative? did the math overflow?)");
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "range facet infinite loop (is gap negative? did the math overflow?)");
       }
       if (high.compareTo(low) == 0) {
-        throw new SolrException
-            (SolrException.ErrorCode.BAD_REQUEST,
-                "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: " + low + " + " + gap + " = " + high );
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: "
+                + low + " + " + gap + " = " + high);
       }
 
       boolean incLower =
           (include.contains(FacetParams.FacetRangeInclude.LOWER) ||
-              (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
-                  0 == low.compareTo(start)));
+          (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
+          0 == low.compareTo(start)));
       boolean incUpper =
           (include.contains(FacetParams.FacetRangeInclude.UPPER) ||
-              (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
-                  0 == high.compareTo(end)));
+          (include.contains(FacetParams.FacetRangeInclude.EDGE) &&
+          0 == high.compareTo(end)));
 
       Range range = new Range(low, low, high, incLower, incUpper);
       rangeList.add(range);
@@ -287,7 +283,7 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     List<SimpleOrderedMap> buckets = new ArrayList<>();
     res.add("buckets", buckets);
 
-    for (int idx = 0; idx<rangeList.size(); idx++) {
+    for (int idx = 0; idx < rangeList.size(); idx++) {
       if (effectiveMincount > 0 && countAcc.getCount(idx) < effectiveMincount) continue;
       Range range = rangeList.get(idx);
       SimpleOrderedMap bucket = new SimpleOrderedMap();
@@ -297,7 +293,7 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       doSubs(bucket, generateFilterQuery(range), getRangeDocSet(idx));
     }
 
-    for (int idx = 0; idx<otherList.length; idx++) {
+    for (int idx = 0; idx < otherList.length; idx++) {
       if (otherList[idx] == null) continue;
       // we dont' skip these buckets based on mincount
       Range range = otherList[idx];
@@ -317,7 +313,8 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         processSubs(bucket, filter, subBase);
       } finally {
         // subContext.base.decref(); // OFF-HEAP
-        // subContext.base = null; // do not modify context after creation... there may be deferred execution (i.e. streaming)
+        // subContext.base = null; // do not modify context after creation... there may be deferred execution (i.e.
+        // streaming)
       }
     }
   }
@@ -347,11 +344,9 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   // Essentially copied from SimpleFacets...
   // would be nice to unify this stuff w/ analytics component...
   /**
-   * Perhaps someday instead of having a giant "instanceof" case
-   * statement to pick an impl, we can add a "RangeFacetable" marker
-   * interface to FieldTypes and they can return instances of these
-   * directly from some method -- but until then, keep this locked down
-   * and private.
+   * Perhaps someday instead of having a giant "instanceof" case statement to pick an impl, we can add a
+   * "RangeFacetable" marker interface to FieldTypes and they can return instances of these directly from some method --
+   * but until then, keep this locked down and private.
    */
 
   static abstract class Calc {
@@ -722,7 +717,7 @@ class FacetRangeProcessorSingledValuedDV extends FacetRangeProcessor {
   }
 
   @Override
-  protected void collectSlots(int segDoc) throws IOException {
+  protected void collect(int segDoc) throws IOException {
     if (numericDocValues.advanceExact(segDoc)) {
       Long bits = numericDocValues.longValue();
 
@@ -752,9 +747,11 @@ class FacetRangeProcessorSingledValuedDV extends FacetRangeProcessor {
   }
 
   private boolean isInsideRange(Range range, Comparable value) {
-    return (range.includeLower && range.low.compareTo(value) == 0) ||
-           ((range.low == null || range.low.compareTo(value) < 0) && (range.high == null || range.high.compareTo(value) > 0)) ||
-           (range.includeUpper && range.high.compareTo(value) == 0);
+    return (range.includeLower && range.low.compareTo(value) == 0)
+        ||
+        ((range.low == null || range.low.compareTo(value) < 0) && (range.high == null || range.high.compareTo(value) > 0))
+        ||
+        (range.includeUpper && range.high.compareTo(value) == 0);
   }
 
   @Override

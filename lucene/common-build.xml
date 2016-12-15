@@ -215,7 +215,7 @@
   
   <property name="python.exe" value="python" />
   <!-- todo: rename this variable -->
-  <property name="python32.exe" value="python" />
+  <property name="python32.exe" value="python3" />
 
   <property name="gpg.exe" value="gpg" />
   <property name="gpg.key" value="CODE SIGNING KEY" />

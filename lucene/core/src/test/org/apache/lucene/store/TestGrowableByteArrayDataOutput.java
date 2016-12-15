@@ -17,7 +17,6 @@
 
 package org.apache.lucene.store;
 
-import org.apache.lucene.util.GrowableByteArrayDataOutput;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;

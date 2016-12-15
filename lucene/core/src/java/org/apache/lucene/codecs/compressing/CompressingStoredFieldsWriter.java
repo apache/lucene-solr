@@ -33,7 +33,7 @@ import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.GrowableByteArrayDataOutput;
+import org.apache.lucene.store.GrowableByteArrayDataOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;

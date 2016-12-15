@@ -68,6 +68,7 @@ function print_usage() {
   echo "    -host <host> (default: localhost)"
   echo "    -p or -port <port> (default: 8983)"
   echo "    -commit yes|no (default: yes)"
+  echo "    -u or -user <user:pass> (sets BasicAuth credentials)"
   # optimize intentionally omitted, but can be used as '-optimize yes' (default: no)
   echo ""
   echo "  Web crawl options:"
@@ -81,9 +82,10 @@ function print_usage() {
   echo "    -type <content/type> (default: application/xml)"
   echo ""
   echo "  Other options:"
-  echo "    -filetypes <type>[,<type>,...] (default: xml,json,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log)"
+  echo "    -filetypes <type>[,<type>,...] (default: xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log)"
   echo "    -params \"<key>=<value>[&<key>=<value>...]\" (values must be URL-encoded; these pass through to Solr update request)"
   echo "    -out yes|no (default: no; yes outputs Solr response to console)"
+  echo "    -format solr (sends application/json content as Solr commands to /update instead of /update/json/docs)"
   echo ""
   echo ""
   echo "Examples:"
@@ -139,7 +141,7 @@ while [ $# -gt 0 ]; do
         shift
         PROPS+=("-Dport=$1")
       elif [[ ("$1" == "-d" || "$1" == "--data" || "$1" == "-") ]]; then
-        if [[ -s /dev/stdin ]]; then
+        if [[ ! -t 0 ]]; then
           MODE="stdin"
         else
           # when no stdin exists and -d specified, the rest of the arguments
@@ -149,15 +151,28 @@ while [ $# -gt 0 ]; do
           if [[ $# -gt 0 ]]; then
             ARGS=("$@")
             shift $#
+          else
+            # SPT needs a valid args string, useful for 'bin/post -c foo -d' to force a commit
+            ARGS+=("<add/>")
           fi
         fi
-      else
-        key="${1:1}"
+      elif [[ ("$1" == "-u" || "$1" == "-user") ]]; then
         shift
-#       echo "$1: PROP"
-        PROPS+=("-D$key=$1")
-        if [[ "$key" == "url" ]]; then
-          SOLR_URL=$1
+        PROPS+=("-Dbasicauth=$1")
+      else
+        if [[ "$1" == -D* ]] ; then
+          PROPS+=("$1")
+          if [[ "${1:2:4}" == "url=" ]]; then
+            SOLR_URL=${1:6}
+          fi
+        else          
+          key="${1:1}"
+          shift
+  #       echo "$1: PROP"
+          PROPS+=("-D$key=$1")
+          if [[ "$key" == "url" ]]; then
+            SOLR_URL=$1
+          fi
         fi
       fi
     else
@@ -208,10 +223,6 @@ if [[ $MODE != "stdin" && $MODE != "args" ]]; then
     PARAMS=("${URLS[@]}")
   fi
 else
-  if [[ ${#ARGS[@]} == 0 ]]; then
-    # SPT needs a valid (to post to Solr) args string, useful for 'bin/post -c foo -d' to force a commit
-    ARGS+=("<add/>")
-  fi
   PARAMS=("${ARGS[@]}")
 fi
 
