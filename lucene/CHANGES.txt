@@ -67,6 +67,9 @@ New features
 
 * LUCENE-7466: Added AxiomaticSimilarity. (Peilin Yang via Tommaso Teofili)
 
+* LUCENE-7590: Added DocValuesStatsCollector to compute statistics on DocValues
+  fields. (Shai Erera)
+
 Bug Fixes
 
 * LUCENE-7547: JapaneseTokenizerFactory was failing to close the
