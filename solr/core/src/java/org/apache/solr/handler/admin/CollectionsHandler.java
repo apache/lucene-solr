@@ -346,9 +346,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     try {
       String path = ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/schema.xml";
       byte[] data = IOUtils.toByteArray(Thread.currentThread().getContextClassLoader().getResourceAsStream("SystemCollectionSchema.xml"));
+      assert data != null && data.length > 0;
       cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
       path = ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/solrconfig.xml";
       data = IOUtils.toByteArray(Thread.currentThread().getContextClassLoader().getResourceAsStream("SystemCollectionSolrConfig.xml"));
+      assert data != null && data.length > 0;
       cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);

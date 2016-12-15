@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang.StringUtils;
@@ -62,6 +63,7 @@ import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
+import org.apache.solr.util.SolrFileCleaningTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,6 +125,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   {
     log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
 
+    SolrRequestParsers.fileCleaningTracker = new SolrFileCleaningTracker();
+    
     StartupLoggingUtils.checkLogDir();
     logWelcomeBanner();
     String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
@@ -240,6 +244,17 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   @Override
   public void destroy() {
+    try {
+      FileCleaningTracker fileCleaningTracker = SolrRequestParsers.fileCleaningTracker;
+      if (fileCleaningTracker != null) {
+        fileCleaningTracker.exitWhenFinished();
+      }
+    } catch (Exception e) {
+      log.warn("Exception closing FileCleaningTracker", e);
+    } finally {
+      SolrRequestParsers.fileCleaningTracker = null;
+    }
+
     if (cores != null) {
       try {
         cores.shutdown();

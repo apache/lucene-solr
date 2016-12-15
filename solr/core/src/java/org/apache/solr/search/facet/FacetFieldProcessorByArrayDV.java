@@ -33,6 +33,7 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.Filter;
+import org.apache.solr.uninverting.FieldCacheImpl;
 
 /**
  * Grabs values from {@link DocValues}.
@@ -184,15 +185,33 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     int segMax = singleDv.getValueCount() + 1;
     final int[] counts = getCountArr( segMax );
 
+    /** alternate trial implementations
+     // ord
+     // FieldUtil.visitOrds(singleDv, disi,  (doc,ord)->{counts[ord+1]++;} );
+
+    FieldUtil.OrdValues ordValues = FieldUtil.getOrdValues(singleDv, disi);
+    while (ordValues.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+      counts[ ordValues.getOrd() + 1]++;
+    }
+     **/
+
+
+    // calculate segment-local counts
     int doc;
-    while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (singleDv.advanceExact(doc)) {
-        counts[ singleDv.ordValue() + 1 ]++;
-      } else {
-        counts[ 0 ]++;
+    if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter) {
+      FieldCacheImpl.SortedDocValuesImpl.Iter fc = (FieldCacheImpl.SortedDocValuesImpl.Iter) singleDv;
+      while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        counts[fc.getOrd(doc) + 1]++;
+      }
+    } else {
+      while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        if (singleDv.advanceExact(doc)) {
+          counts[singleDv.ordValue() + 1]++;
+        }
       }
     }
 
+    // convert segment-local counts to global counts
     for (int i=1; i<segMax; i++) {
       int segCount = counts[i];
       if (segCount > 0) {
@@ -250,12 +269,26 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
   private void collectCounts(SortedDocValues singleDv, DocIdSetIterator disi, LongValues toGlobal) throws IOException {
     int doc;
-    while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (singleDv.advanceExact(doc)) {
-        int segOrd = singleDv.ordValue();
+    if (singleDv instanceof FieldCacheImpl.SortedDocValuesImpl.Iter) {
+
+      FieldCacheImpl.SortedDocValuesImpl.Iter fc = (FieldCacheImpl.SortedDocValuesImpl.Iter)singleDv;
+      while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        int segOrd = fc.getOrd(doc);
+        if (segOrd < 0) continue;
         int ord = (int)toGlobal.get(segOrd);
         countAcc.incrementCount(ord, 1);
       }
+
+    } else {
+
+      while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        if (singleDv.advanceExact(doc)) {
+          int segOrd = singleDv.ordValue();
+          int ord = (int) toGlobal.get(segOrd);
+          countAcc.incrementCount(ord, 1);
+        }
+      }
+
     }
   }
 

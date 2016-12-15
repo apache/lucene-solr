@@ -33,6 +33,7 @@ import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.GrowableByteArrayDataOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -157,7 +158,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     }
     this.numStoredFields[numBufferedDocs] = numStoredFieldsInDoc;
     numStoredFieldsInDoc = 0;
-    endOffsets[numBufferedDocs] = bufferedDocs.length;
+    endOffsets[numBufferedDocs] = bufferedDocs.getPosition();
     ++numBufferedDocs;
     if (triggerFlush()) {
       flush();
@@ -210,7 +211,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   }
 
   private boolean triggerFlush() {
-    return bufferedDocs.length >= chunkSize || // chunks of at least chunkSize bytes
+    return bufferedDocs.getPosition() >= chunkSize || // chunks of at least chunkSize bytes
         numBufferedDocs >= maxDocsPerChunk;
   }
 
@@ -223,23 +224,23 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       lengths[i] = endOffsets[i] - endOffsets[i - 1];
       assert lengths[i] >= 0;
     }
-    final boolean sliced = bufferedDocs.length >= 2 * chunkSize;
+    final boolean sliced = bufferedDocs.getPosition() >= 2 * chunkSize;
     writeHeader(docBase, numBufferedDocs, numStoredFields, lengths, sliced);
 
     // compress stored fields to fieldsStream
     if (sliced) {
       // big chunk, slice it
-      for (int compressed = 0; compressed < bufferedDocs.length; compressed += chunkSize) {
-        compressor.compress(bufferedDocs.bytes, compressed, Math.min(chunkSize, bufferedDocs.length - compressed), fieldsStream);
+      for (int compressed = 0; compressed < bufferedDocs.getPosition(); compressed += chunkSize) {
+        compressor.compress(bufferedDocs.getBytes(), compressed, Math.min(chunkSize, bufferedDocs.getPosition() - compressed), fieldsStream);
       }
     } else {
-      compressor.compress(bufferedDocs.bytes, 0, bufferedDocs.length, fieldsStream);
+      compressor.compress(bufferedDocs.getBytes(), 0, bufferedDocs.getPosition(), fieldsStream);
     }
 
     // reset
     docBase += numBufferedDocs;
     numBufferedDocs = 0;
-    bufferedDocs.length = 0;
+    bufferedDocs.reset();
     numChunks++;
   }
   
@@ -459,7 +460,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       flush();
       numDirtyChunks++; // incomplete: we had to force this flush
     } else {
-      assert bufferedDocs.length == 0;
+      assert bufferedDocs.getPosition() == 0;
     }
     if (docBase != numDocs) {
       throw new RuntimeException("Wrote " + docBase + " docs, finish called with numDocs=" + numDocs);
@@ -468,7 +469,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     fieldsStream.writeVLong(numChunks);
     fieldsStream.writeVLong(numDirtyChunks);
     CodecUtil.writeFooter(fieldsStream);
-    assert bufferedDocs.length == 0;
+    assert bufferedDocs.getPosition() == 0;
   }
   
   // bulk merge is scary: its caused corruption bugs in the past.

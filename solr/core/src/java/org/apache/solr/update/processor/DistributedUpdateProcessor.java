@@ -658,8 +658,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     String shardId = cloudDesc.getShardId();
 
     try {
-      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
-          collection, shardId);
+      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
       isLeader = leaderReplica.getName().equals(
           req.getCore().getCoreDescriptor().getCloudDescriptor()
               .getCoreNodeName());
@@ -668,7 +667,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       forwardToLeader = false;
       List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
-          .getReplicaProps(collection, shardId, leaderReplica.getName());
+          .getReplicaProps(collection, shardId, leaderReplica.getName(), null, Replica.State.DOWN);
       if (replicaProps != null) {
         nodes = new ArrayList<>(replicaProps.size());
         for (ZkCoreNodeProps props : replicaProps) {
@@ -677,8 +676,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
-          e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
 
     return nodes;

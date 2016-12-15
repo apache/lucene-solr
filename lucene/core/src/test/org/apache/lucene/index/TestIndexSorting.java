@@ -1700,6 +1700,29 @@ public class TestIndexSorting extends LuceneTestCase {
     dir.close();
   }
 
+
+  // docvalues fields involved in the index sort cannot be updated
+  public void testBadDVUpdate() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    Sort indexSort = new Sort(new SortField("foo", SortField.Type.LONG));
+    iwc.setIndexSort(indexSort);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new StringField("id", new BytesRef("0"), Store.NO));
+    doc.add(new NumericDocValuesField("foo", random().nextInt()));
+    w.addDocument(doc);
+    w.commit();
+    IllegalArgumentException exc = expectThrows(IllegalArgumentException.class,
+        () -> w.updateDocValues(new Term("id", "0"), new NumericDocValuesField("foo", -1)));
+    assertEquals(exc.getMessage(), "cannot update docvalues field involved in the index sort, field=foo, sort=<long: \"foo\">");
+    exc = expectThrows(IllegalArgumentException.class,
+        () -> w.updateNumericDocValue(new Term("id", "0"), "foo", -1));
+    assertEquals(exc.getMessage(), "cannot update docvalues field involved in the index sort, field=foo, sort=<long: \"foo\">");
+    w.close();
+    dir.close();
+  }
+
   static class DVUpdateRunnable implements Runnable {
 
     private final int numDocs;
@@ -1727,7 +1750,7 @@ public class TestIndexSorting extends LuceneTestCase {
           final long value = random.nextInt(20);
 
           synchronized (values) {
-            w.updateDocValues(new Term("id", Integer.toString(id)), new NumericDocValuesField("foo", value));
+            w.updateDocValues(new Term("id", Integer.toString(id)), new NumericDocValuesField("bar", value));
             values.put(id, value);
           }
 
@@ -1762,7 +1785,8 @@ public class TestIndexSorting extends LuceneTestCase {
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
       doc.add(new StringField("id", Integer.toString(i), Store.NO));
-      doc.add(new NumericDocValuesField("foo", -1));
+      doc.add(new NumericDocValuesField("foo", random().nextInt()));
+      doc.add(new NumericDocValuesField("bar", -1));
       w.addDocument(doc);
       values.put(i, -1L);
     }
@@ -1786,7 +1810,7 @@ public class TestIndexSorting extends LuceneTestCase {
     for (int i = 0; i < numDocs; ++i) {
       final TopDocs topDocs = searcher.search(new TermQuery(new Term("id", Integer.toString(i))), 1);
       assertEquals(1, topDocs.totalHits);
-      NumericDocValues dvs = MultiDocValues.getNumericValues(reader, "foo");
+      NumericDocValues dvs = MultiDocValues.getNumericValues(reader, "bar");
       int hitDoc = topDocs.scoreDocs[0].doc;
       assertEquals(hitDoc, dvs.advance(hitDoc));
       assertEquals(values.get(i).longValue(), dvs.longValue());

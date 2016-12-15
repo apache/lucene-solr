@@ -265,6 +265,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     * This code gathers the group information for the current page.
     */
     List<LeafReaderContext> contexts = searcher.getTopReaderContext().leaves();
+
+    if(contexts.size() == 0) {
+      //When no context is available we can skip the expanding
+      return;
+    }
+
     int currentContext = 0;
     int currentDocBase = contexts.get(currentContext).docBase;
     int nextDocBase = (currentContext+1)<contexts.size() ? contexts.get(currentContext+1).docBase : Integer.MAX_VALUE;

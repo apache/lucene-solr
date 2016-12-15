@@ -165,6 +165,7 @@ abstract class RangeFieldQuery extends Query {
         FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
         if (fieldInfo == null) {
           // no docs in this segment indexed this field
+          return null;
         }
         checkFieldInfo(fieldInfo);
         boolean allDocsMatch = true;

@@ -29,6 +29,35 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
+/**
+ * The LTRThreadModule is optionally used by the {@link org.apache.solr.ltr.search.LTRQParserPlugin} and
+ * {@link org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory LTRFeatureLoggerTransformerFactory}
+ * classes to parallelize the creation of {@link org.apache.solr.ltr.feature.Feature.FeatureWeight Feature.FeatureWeight}
+ * objects.
+ * <p>
+ * Example configuration:
+ * <pre>
+  &lt;queryParser name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin"&gt;
+     &lt;int name="threadModule.totalPoolThreads"&gt;10&lt;/int&gt;
+     &lt;int name="threadModule.numThreadsPerRequest"&gt;5&lt;/int&gt;
+  &lt;/queryParser&gt;
+
+  &lt;transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory"&gt;
+     &lt;int name="threadModule.totalPoolThreads"&gt;10&lt;/int&gt;
+     &lt;int name="threadModule.numThreadsPerRequest"&gt;5&lt;/int&gt;
+  &lt;/transformer&gt;
+</pre>
+ * If an individual solr instance is expected to receive no more than one query at a time, it is best
+ * to set <code>totalPoolThreads</code> and <code>numThreadsPerRequest</code> to the same value.
+ *
+ * If multiple queries need to be serviced simultaneously then <code>totalPoolThreads</code> and
+ * <code>numThreadsPerRequest</code> can be adjusted based on the expected response times.
+ *
+ * If the value of <code>numThreadsPerRequest</code> is higher, the response time for a single query
+ * will be improved up to a point. If multiple queries are serviced simultaneously, the value of
+ * <code>totalPoolThreads</code> imposes a contention between the queries if
+ * <code>(totalPoolThreads &lt; numThreadsPerRequest * total parallel queries)</code>.
+ */
 final public class LTRThreadModule implements NamedListInitializedPlugin {
 
   public static LTRThreadModule getInstance(NamedList args) {

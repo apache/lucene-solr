@@ -390,17 +390,17 @@ About half the time for ranking is spent in the creation of weights for each fea
   <!-- Query parser used to rerank top docs with a provided model -->
   <queryParser name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin">
      <int name="threadModule.totalPoolThreads">10</int> <!-- Maximum threads to share for all requests -->
-     <int name="threadModule.numThreadsPerRequest">5</int> <!-- Maximum threads to use for a single requests-->
+     <int name="threadModule.numThreadsPerRequest">5</int> <!-- Maximum threads to use for a single request -->
   </queryParser>
   
   <!-- Transformer for extracting features -->
   <transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
      <int name="threadModule.totalPoolThreads">10</int> <!-- Maximum threads to share for all requests -->
-     <int name="threadModule.numThreadsPerRequest">5</int> <!-- Maximum threads to use for a single requests-->
+     <int name="threadModule.numThreadsPerRequest">5</int> <!-- Maximum threads to use for a single request -->
   </transformer>
 </config>
 
 ```
   
-The threadModule.totalPoolThreads option limits the total number of threads to be used across all query instances at any given time. threadModule.numThreadsPerRequest limits the number of threads used to process a single query. In the above example, 10 threads will be used to services all queries and a maximum of 5 threads to service a single query. If the solr instances is expected to receive no more than one query at a time, it is best to set both these numbers to the same value. If multiple queries need to serviced simultaneously, the numbers can be adjusted based on the expected response times. If the value of  threadModule.numThreadsPerRequest is higher, the reponse time for a single query will be improved upto a point. If multiple queries are serviced simultaneously, the threadModule.totalPoolThreads imposes a contention between the queries if (threadModule.numThreadsPerRequest*total parallel queries > threadModule.totalPoolThreads). 
+The threadModule.totalPoolThreads option limits the total number of threads to be used across all query instances at any given time. threadModule.numThreadsPerRequest limits the number of threads used to process a single query. In the above example, 10 threads will be used to services all queries and a maximum of 5 threads to service a single query. If the solr instance is expected to receive no more than one query at a time, it is best to set both these numbers to the same value. If multiple queries need to be serviced simultaneously, the numbers can be adjusted based on the expected response times. If the value of threadModule.numThreadsPerRequest is higher, the response time for a single query will be improved upto a point. If multiple queries are serviced simultaneously, the threadModule.totalPoolThreads imposes a contention between the queries if (threadModule.numThreadsPerRequest*total parallel queries > threadModule.totalPoolThreads).
 

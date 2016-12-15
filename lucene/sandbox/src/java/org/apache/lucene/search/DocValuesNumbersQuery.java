@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -45,11 +46,16 @@ import org.apache.lucene.index.SortedNumericDocValues;
 public class DocValuesNumbersQuery extends Query {
 
   private final String field;
-  private final Set<Long> numbers;
+  private final LongHashSet numbers;
 
-  public DocValuesNumbersQuery(String field, Set<Long> numbers) {
+  public DocValuesNumbersQuery(String field, long[] numbers) {
     this.field = Objects.requireNonNull(field);
-    this.numbers = Objects.requireNonNull(numbers, "Set of numbers must not be null");
+    this.numbers = new LongHashSet(numbers);
+  }
+
+  public DocValuesNumbersQuery(String field, Collection<Long> numbers) {
+    this.field = Objects.requireNonNull(field);
+    this.numbers = new LongHashSet(numbers.stream().mapToLong(Long::longValue).toArray());
   }
 
   public DocValuesNumbersQuery(String field, Long... numbers) {
@@ -82,15 +88,11 @@ public class DocValuesNumbersQuery extends Query {
 
   @Override
   public String toString(String defaultField) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(field).append(": [");
-    for (Long number : numbers) {
-      sb.append(number).append(", ");
-    }
-    if (numbers.size() > 0) {
-      sb.setLength(sb.length() - 2);
-    }
-    return sb.append(']').toString();
+    return new StringBuilder()
+        .append(field)
+        .append(": ")
+        .append(numbers.toString())
+        .toString();
   }
 
   @Override

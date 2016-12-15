@@ -133,19 +133,24 @@ import org.apache.lucene.util.Version;
   
   <a name="deletionPolicy"></a>
   <p>Expert: <code>IndexWriter</code> allows an optional
-  {@link IndexDeletionPolicy} implementation to be
-  specified.  You can use this to control when prior commits
-  are deleted from the index.  The default policy is {@link
-  KeepOnlyLastCommitDeletionPolicy} which removes all prior
-  commits as soon as a new commit is done (this matches
-  behavior before 2.2).  Creating your own policy can allow
-  you to explicitly keep previous "point in time" commits
-  alive in the index for some time, to allow readers to
-  refresh to the new commit without having the old commit
-  deleted out from under them.  This is necessary on
-  filesystems like NFS that do not support "delete on last
-  close" semantics, which Lucene's "point in time" search
-  normally relies on. </p>
+  {@link IndexDeletionPolicy} implementation to be specified.  You
+  can use this to control when prior commits are deleted from
+  the index.  The default policy is {@link KeepOnlyLastCommitDeletionPolicy}
+  which removes all prior commits as soon as a new commit is
+  done.  Creating your own policy can allow you to explicitly
+  keep previous "point in time" commits alive in the index for
+  some time, either because this is useful for your application,
+  or to give readers enough time to refresh to the new commit
+  without having the old commit deleted out from under them.
+  The latter is necessary when multiple computers take turns opening
+  their own {@code IndexWriter} and {@code IndexReader}s
+  against a single shared index mounted via remote filesystems
+  like NFS which do not support "delete on last close" semantics.
+  A single computer accessing an index via NFS is fine with the
+  default deletion policy since NFS clients emulate "delete on
+  last close" locally.  That said, accessing an index via NFS
+  will likely result in poor performance compared to a local IO
+  device. </p>
 
   <a name="mergePolicy"></a> <p>Expert:
   <code>IndexWriter</code> allows you to separately change
@@ -1614,6 +1619,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     if (!globalFieldNumberMap.contains(field, DocValuesType.NUMERIC)) {
       throw new IllegalArgumentException("can only update existing numeric-docvalues fields!");
     }
+    if (config.getIndexSortFields().contains(field)) {
+      throw new IllegalArgumentException("cannot update docvalues field involved in the index sort, field=" + field + ", sort=" + config.getIndexSort());
+    }
     try {
       long seqNo = docWriter.updateDocValues(new NumericDocValuesUpdate(term, field, value));
       if (seqNo < 0) {
@@ -1707,6 +1715,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
       if (!globalFieldNumberMap.contains(f.name(), dvType)) {
         throw new IllegalArgumentException("can only update existing docvalues fields! field=" + f.name() + ", type=" + dvType);
+      }
+      if (config.getIndexSortFields().contains(f.name())) {
+        throw new IllegalArgumentException("cannot update docvalues field involved in the index sort, field=" + f.name() + ", sort=" + config.getIndexSort());
       }
       switch (dvType) {
         case NUMERIC:
@@ -2941,11 +2952,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   @Override
   public final long prepareCommit() throws IOException {
     ensureOpen();
-    pendingSeqNo = prepareCommitInternal(config.getMergePolicy());
+    boolean[] doMaybeMerge = new boolean[1];
+    pendingSeqNo = prepareCommitInternal(doMaybeMerge);
+    // we must do this outside of the commitLock else we can deadlock:
+    if (doMaybeMerge[0]) {
+      maybeMerge(config.getMergePolicy(), MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);      
+    }
     return pendingSeqNo;
   }
 
-  private long prepareCommitInternal(MergePolicy mergePolicy) throws IOException {
+  private long prepareCommitInternal(boolean[] doMaybeMerge) throws IOException {
     startCommitTime = System.nanoTime();
     synchronized(commitLock) {
       ensureOpen(false);
@@ -3052,7 +3068,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       boolean success = false;
       try {
         if (anySegmentsFlushed) {
-          maybeMerge(mergePolicy, MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
+          doMaybeMerge[0] = true;
         }
         startCommit(toCommit);
         success = true;
@@ -3173,6 +3189,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       infoStream.message("IW", "commit: start");
     }
 
+    boolean[] doMaybeMerge = new boolean[1];
+
+    long seqNo;
+
     synchronized(commitLock) {
       ensureOpen(false);
 
@@ -3180,13 +3200,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         infoStream.message("IW", "commit: enter lock");
       }
 
-      long seqNo;
-
       if (pendingCommit == null) {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: now prepare");
         }
-        seqNo = prepareCommitInternal(mergePolicy);
+        seqNo = prepareCommitInternal(doMaybeMerge);
       } else {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: already prepared");
@@ -3195,9 +3213,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
 
       finishCommit();
-
-      return seqNo;
     }
+
+    // we must do this outside of the commitLock else we can deadlock:
+    if (doMaybeMerge[0]) {
+      maybeMerge(mergePolicy, MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);      
+    }
+    
+    return seqNo;
   }
 
   private final void finishCommit() throws IOException {

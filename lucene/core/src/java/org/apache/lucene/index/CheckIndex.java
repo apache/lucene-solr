@@ -1801,161 +1801,32 @@ public final class CheckIndex implements Closeable {
         }
         for (FieldInfo fieldInfo : fieldInfos) {
           if (fieldInfo.getPointDimensionCount() > 0) {
-            FixedBitSet docsSeen = new FixedBitSet(reader.maxDoc());
-            status.totalValueFields++;
-            int dimCount = fieldInfo.getPointDimensionCount();
-            int bytesPerDim = fieldInfo.getPointNumBytes();
-            int packedBytesCount = dimCount * bytesPerDim;
-            byte[] lastMinPackedValue = new byte[packedBytesCount];
-            byte[] lastMaxPackedValue = new byte[packedBytesCount];
-            BytesRef scratch = new BytesRef();
-            scratch.length = bytesPerDim;
-            byte[] lastPackedValue = new byte[packedBytesCount];
-
-            long[] pointCountSeen = new long[1];
-
             PointValues values = pointsReader.getValues(fieldInfo.name);
             if (values == null) {
               continue;
             }
-            byte[] globalMinPackedValue = values.getMinPackedValue();
+
+            status.totalValueFields++;
+
             long size = values.size();
             int docCount = values.getDocCount();
 
-            if (docCount > size) {
-              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have size=" + size + " points and inconsistent docCount=" + docCount);
+            VerifyPointsVisitor visitor = new VerifyPointsVisitor(fieldInfo.name, reader.maxDoc(), values);
+            values.intersect(visitor);
+
+            if (visitor.getPointCountSeen() != size) {
+              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have size=" + size + " points, but in fact has " + visitor.getPointCountSeen());
             }
 
-            if (docCount > reader.maxDoc()) {
-              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have docCount=" + docCount + " but that's greater than maxDoc=" + reader.maxDoc());
+            if (visitor.getDocCountSeen() != docCount) {
+              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have docCount=" + docCount + " but in fact has " + visitor.getDocCountSeen());
             }
 
-            if (globalMinPackedValue == null) {
-              if (size != 0) {
-                throw new RuntimeException("getMinPackedValue is null points for field \"" + fieldInfo.name + "\" yet size=" + size);
-              }
-            } else if (globalMinPackedValue.length != packedBytesCount) {
-              throw new RuntimeException("getMinPackedValue for field \"" + fieldInfo.name + "\" return length=" + globalMinPackedValue.length + " array, but should be " + packedBytesCount);
-            }
-            byte[] globalMaxPackedValue = values.getMaxPackedValue();
-            if (globalMaxPackedValue == null) {
-              if (size != 0) {
-                throw new RuntimeException("getMaxPackedValue is null points for field \"" + fieldInfo.name + "\" yet size=" + size);
-              }
-            } else if (globalMaxPackedValue.length != packedBytesCount) {
-              throw new RuntimeException("getMaxPackedValue for field \"" + fieldInfo.name + "\" return length=" + globalMaxPackedValue.length + " array, but should be " + packedBytesCount);
-            }
-
-            values.intersect(new PointValues.IntersectVisitor() {
-
-                               private int lastDocID = -1;
-
-                               @Override
-                               public void visit(int docID) {
-                                 throw new RuntimeException("codec called IntersectVisitor.visit without a packed value for docID=" + docID);
-                               }
-
-                               @Override
-                               public void visit(int docID, byte[] packedValue) {
-                                 checkPackedValue("packed value", packedValue, docID);
-                                 pointCountSeen[0]++;
-                                 docsSeen.set(docID);
-
-                                 for(int dim=0;dim<dimCount;dim++) {
-                                   int offset = bytesPerDim * dim;
-
-                                   // Compare to last cell:
-                                   if (StringHelper.compare(bytesPerDim, packedValue, offset, lastMinPackedValue, offset) < 0) {
-                                     // This doc's point, in this dimension, is lower than the minimum value of the last cell checked:
-                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldInfo.name + "\", docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
-                                   }
-
-                                   if (StringHelper.compare(bytesPerDim, packedValue, offset, lastMaxPackedValue, offset) > 0) {
-                                     // This doc's point, in this dimension, is greater than the maximum value of the last cell checked:
-                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldInfo.name + "\", docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
-                                   }
-                                 }
-
-                                 // In the 1D case, PointValues must make a single in-order sweep through all values, and tie-break by
-                                 // increasing docID:
-                                 if (dimCount == 1) {
-                                   int cmp = StringHelper.compare(bytesPerDim, lastPackedValue, 0, packedValue, 0);
-                                   if (cmp > 0) {
-                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldInfo.name + "\", for docID=" + docID + " is out-of-order vs the previous document's value " + Arrays.toString(lastPackedValue));
-                                   } else if (cmp == 0) {
-                                     if (docID < lastDocID) {
-                                       throw new RuntimeException("packed points value is the same, but docID=" + docID + " is out of order vs previous docID=" + lastDocID + ", field=\"" + fieldInfo.name + "\"");
-                                     }
-                                   }
-                                   System.arraycopy(packedValue, 0, lastPackedValue, 0, bytesPerDim);
-                                   lastDocID = docID;
-                                 }
-
-                                 status.totalValuePoints++;
-                               }
-
-                               @Override
-                               public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                                 checkPackedValue("min packed value", minPackedValue, -1);
-                                 System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, packedBytesCount);
-                                 checkPackedValue("max packed value", maxPackedValue, -1);
-                                 System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, packedBytesCount);
-
-                                 for(int dim=0;dim<dimCount;dim++) {
-                                   int offset = bytesPerDim * dim;
-
-                                   if (StringHelper.compare(bytesPerDim, minPackedValue, offset, maxPackedValue, offset) > 0) {
-                                     throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
-                                                                " is out-of-bounds of the cell's maxPackedValue " + Arrays.toString(maxPackedValue) + " dim=" + dim + " field=\"" + fieldInfo.name + "\"");
-                                   }
-
-                                   // Make sure this cell is not outside of the global min/max:
-                                   if (StringHelper.compare(bytesPerDim, minPackedValue, offset, globalMinPackedValue, offset) < 0) {
-                                     throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
-                                                                " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim + " field=\"" + fieldInfo.name + "\"");
-                                   }
-
-                                   if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, globalMinPackedValue, offset) < 0) {
-                                     throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(maxPackedValue) +
-                                                                " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim + " field=\"" + fieldInfo.name + "\"");
-                                   }
-
-                                   if (StringHelper.compare(bytesPerDim, minPackedValue, offset, globalMaxPackedValue, offset) > 0) {
-                                     throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
-                                                                " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim + " field=\"" + fieldInfo.name + "\"");
-                                   }
-                                   if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, globalMaxPackedValue, offset) > 0) {
-                                     throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(maxPackedValue) +
-                                                                " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim + " field=\"" + fieldInfo.name + "\"");
-                                   }
-                                 }                                   
-
-                                 // We always pretend the query shape is so complex that it crosses every cell, so
-                                 // that packedValue is passed for every document
-                                 return PointValues.Relation.CELL_CROSSES_QUERY;
-                               }
-
-                               private void checkPackedValue(String desc, byte[] packedValue, int docID) {
-                                 if (packedValue == null) {
-                                   throw new RuntimeException(desc + " is null for docID=" + docID + " field=\"" + fieldInfo.name + "\"");
-                                 }
-
-                                 if (packedValue.length != packedBytesCount) {
-                                   throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedBytesCount + " for docID=" + docID + " field=\"" + fieldInfo.name + "\"");
-                                 }
-                               }
-                             });
-
-            if (pointCountSeen[0] != size) {
-              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have size=" + size + " points, but in fact has " + pointCountSeen[0]);
-            }
-
-            if (docsSeen.cardinality() != docCount) {
-              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have docCount=" + docCount + " but in fact has " + docsSeen.cardinality());
-            }
+            status.totalValuePoints += visitor.getPointCountSeen();
           }
         }
       }
+
       msg(infoStream, String.format(Locale.ROOT, "OK [%d fields, %d points] [took %.3f sec]", status.totalValueFields, status.totalValuePoints, nsToSec(System.nanoTime()-startNS)));
 
     } catch (Throwable e) {
@@ -1972,6 +1843,167 @@ public final class CheckIndex implements Closeable {
     return status;
   }
 
+  /** Walks the entire N-dimensional points space, verifying that all points fall within the last cell's boundaries.
+   *
+   * @lucene.internal */
+  public static class VerifyPointsVisitor implements PointValues.IntersectVisitor {
+    private long pointCountSeen;
+    private int lastDocID = -1;
+    private final int maxDoc;
+    private final FixedBitSet docsSeen;
+    private final byte[] lastMinPackedValue;
+    private final byte[] lastMaxPackedValue;
+    private final byte[] lastPackedValue;
+    private final byte[] globalMinPackedValue;
+    private final byte[] globalMaxPackedValue;
+    private final int packedBytesCount;
+    private final int numDims;
+    private final int bytesPerDim;
+    private final String fieldName;
+
+    /** Sole constructor */
+    public VerifyPointsVisitor(String fieldName, int maxDoc, PointValues values) throws IOException {
+      this.maxDoc = maxDoc;
+      this.fieldName = fieldName;
+      numDims = values.getNumDimensions();
+      bytesPerDim = values.getBytesPerDimension();
+      packedBytesCount = numDims * bytesPerDim;
+      globalMinPackedValue = values.getMinPackedValue();
+      globalMaxPackedValue = values.getMaxPackedValue();
+      docsSeen = new FixedBitSet(maxDoc);
+      lastMinPackedValue = new byte[packedBytesCount];
+      lastMaxPackedValue = new byte[packedBytesCount];
+      lastPackedValue = new byte[packedBytesCount];
+
+      if (values.getDocCount() > values.size()) {
+        throw new RuntimeException("point values for field \"" + fieldName + "\" claims to have size=" + values.size() + " points and inconsistent docCount=" + values.getDocCount());
+      }
+
+      if (values.getDocCount() > maxDoc) {
+        throw new RuntimeException("point values for field \"" + fieldName + "\" claims to have docCount=" + values.getDocCount() + " but that's greater than maxDoc=" + maxDoc);
+      }
+
+      if (globalMinPackedValue == null) {
+        if (values.size() != 0) {
+          throw new RuntimeException("getMinPackedValue is null points for field \"" + fieldName + "\" yet size=" + values.size());
+        }
+      } else if (globalMinPackedValue.length != packedBytesCount) {
+        throw new RuntimeException("getMinPackedValue for field \"" + fieldName + "\" return length=" + globalMinPackedValue.length + " array, but should be " + packedBytesCount);
+      }
+      if (globalMaxPackedValue == null) {
+        if (values.size() != 0) {
+          throw new RuntimeException("getMaxPackedValue is null points for field \"" + fieldName + "\" yet size=" + values.size());
+        }
+      } else if (globalMaxPackedValue.length != packedBytesCount) {
+        throw new RuntimeException("getMaxPackedValue for field \"" + fieldName + "\" return length=" + globalMaxPackedValue.length + " array, but should be " + packedBytesCount);
+      }
+    }
+
+    /** Returns total number of points in this BKD tree */
+    public long getPointCountSeen() {
+      return pointCountSeen;
+    }
+
+    /** Returns total number of unique docIDs in this BKD tree */
+    public long getDocCountSeen() {
+      return docsSeen.cardinality();
+    }
+
+    @Override
+    public void visit(int docID) {
+      throw new RuntimeException("codec called IntersectVisitor.visit without a packed value for docID=" + docID);
+    }
+
+    @Override
+    public void visit(int docID, byte[] packedValue) {
+      checkPackedValue("packed value", packedValue, docID);
+      pointCountSeen++;
+      docsSeen.set(docID);
+
+      for(int dim=0;dim<numDims;dim++) {
+        int offset = bytesPerDim * dim;
+
+        // Compare to last cell:
+        if (StringHelper.compare(bytesPerDim, packedValue, offset, lastMinPackedValue, offset) < 0) {
+          // This doc's point, in this dimension, is lower than the minimum value of the last cell checked:
+          throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldName + "\", docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
+        }
+
+        if (StringHelper.compare(bytesPerDim, packedValue, offset, lastMaxPackedValue, offset) > 0) {
+          // This doc's point, in this dimension, is greater than the maximum value of the last cell checked:
+          throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldName + "\", docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
+        }
+      }
+
+      // In the 1D case, PointValues must make a single in-order sweep through all values, and tie-break by
+      // increasing docID:
+      if (numDims == 1) {
+        int cmp = StringHelper.compare(bytesPerDim, lastPackedValue, 0, packedValue, 0);
+        if (cmp > 0) {
+          throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldName + "\", for docID=" + docID + " is out-of-order vs the previous document's value " + Arrays.toString(lastPackedValue));
+        } else if (cmp == 0) {
+          if (docID < lastDocID) {
+            throw new RuntimeException("packed points value is the same, but docID=" + docID + " is out of order vs previous docID=" + lastDocID + ", field=\"" + fieldName + "\"");
+          }
+        }
+        System.arraycopy(packedValue, 0, lastPackedValue, 0, bytesPerDim);
+        lastDocID = docID;
+      }
+    }
+
+    @Override
+    public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+      checkPackedValue("min packed value", minPackedValue, -1);
+      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, packedBytesCount);
+      checkPackedValue("max packed value", maxPackedValue, -1);
+      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, packedBytesCount);
+
+      for(int dim=0;dim<numDims;dim++) {
+        int offset = bytesPerDim * dim;
+
+        if (StringHelper.compare(bytesPerDim, minPackedValue, offset, maxPackedValue, offset) > 0) {
+          throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
+                                     " is out-of-bounds of the cell's maxPackedValue " + Arrays.toString(maxPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
+        }
+
+        // Make sure this cell is not outside of the global min/max:
+        if (StringHelper.compare(bytesPerDim, minPackedValue, offset, globalMinPackedValue, offset) < 0) {
+          throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
+                                     " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
+        }
+
+        if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, globalMinPackedValue, offset) < 0) {
+          throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(maxPackedValue) +
+                                     " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
+        }
+
+        if (StringHelper.compare(bytesPerDim, minPackedValue, offset, globalMaxPackedValue, offset) > 0) {
+          throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
+                                     " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
+        }
+        if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, globalMaxPackedValue, offset) > 0) {
+          throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(maxPackedValue) +
+                                     " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
+        }
+      }                                   
+
+      // We always pretend the query shape is so complex that it crosses every cell, so
+      // that packedValue is passed for every document
+      return PointValues.Relation.CELL_CROSSES_QUERY;
+    }
+
+    private void checkPackedValue(String desc, byte[] packedValue, int docID) {
+      if (packedValue == null) {
+        throw new RuntimeException(desc + " is null for docID=" + docID + " field=\"" + fieldName + "\"");
+      }
+
+      if (packedValue.length != packedBytesCount) {
+        throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedBytesCount + " for docID=" + docID + " field=\"" + fieldName + "\"");
+      }
+    }
+  }
+
+  
   /**
    * Test stored fields.
    * @lucene.experimental
