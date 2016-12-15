@@ -286,8 +286,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
         } catch (Throwable t) {
           t.printStackTrace();
         }
-      }      
-    }    
+      }
+    }
   }
   
   class OutcomeCountingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
