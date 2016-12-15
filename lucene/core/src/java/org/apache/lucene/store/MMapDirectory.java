@@ -385,13 +385,13 @@ public class MMapDirectory extends FSDirectory {
           }
         }
       };
-    } catch (ReflectiveOperationException e) {
-      return "Unmapping is not supported on this platform, because internal Java APIs are not compatible to this Lucene version: " + e; 
     } catch (SecurityException e) {
       return "Unmapping is not supported, because not all required permissions are given to the Lucene JAR file: " + e +
           " [Please grant at least the following permissions: RuntimePermission(\"accessClassInPackage.sun.misc\"), " +
           "RuntimePermission(\"accessClassInPackage.jdk.internal.ref\"), and " +
           "ReflectPermission(\"suppressAccessChecks\")]";
+    } catch (ReflectiveOperationException | RuntimeException e) {
+      return "Unmapping is not supported on this platform, because internal Java APIs are not compatible to this Lucene version: " + e; 
     }
   }
   

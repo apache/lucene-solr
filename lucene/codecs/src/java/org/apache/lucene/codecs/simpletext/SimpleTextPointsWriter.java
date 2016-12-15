@@ -72,7 +72,7 @@ class SimpleTextPointsWriter extends PointsWriter {
     PointValues values = reader.getValues(fieldInfo.name);
     boolean singleValuePerDoc = values.size() == values.getDocCount();
 
-    // We use the normal BKDWriter, but subclass to customize how it writes the index and blocks to disk:
+    // We use our own fork of the BKDWriter to customize how it writes the index and blocks to disk:
     try (SimpleTextBKDWriter writer = new SimpleTextBKDWriter(writeState.segmentInfo.maxDoc(),
                                                               writeState.directory,
                                                               writeState.segmentInfo.name,

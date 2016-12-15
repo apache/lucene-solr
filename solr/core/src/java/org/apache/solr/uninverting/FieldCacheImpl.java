@@ -365,8 +365,6 @@ public class FieldCacheImpl implements FieldCache {
       }
     }
 
-    /** @deprecated remove this when legacy numerics are removed */
-    @Deprecated
     protected abstract TermsEnum termsEnum(Terms terms) throws IOException;
     protected abstract void visitTerm(BytesRef term);
     protected abstract void visitDoc(int docID);
@@ -632,20 +630,21 @@ public class FieldCacheImpl implements FieldCache {
         }
       }
 
-      Bits docsWithField = getDocsWithField(reader, field, parser);
-      return ((LongsFromArray) caches.get(Long.TYPE).get(reader, new CacheKey(field, parser))).iterator(docsWithField);
+      return ((LongsFromArray) caches.get(Long.TYPE).get(reader, new CacheKey(field, parser))).iterator();
     }
   }
 
-  static class LongsFromArray implements Accountable {
+  public static class LongsFromArray implements Accountable {
     private final PackedInts.Reader values;
     private final long minValue;
+    private final Bits docsWithField;
     private final String field;
 
-    public LongsFromArray(String field, PackedInts.Reader values, long minValue) {
+    public LongsFromArray(String field, PackedInts.Reader values, long minValue, Bits docsWithField) { // TODO: accept null docsWithField?
       this.field = field;
       this.values = values;
       this.minValue = minValue;
+      this.docsWithField = docsWithField;
     }
     
     @Override
@@ -653,7 +652,7 @@ public class FieldCacheImpl implements FieldCache {
       return values.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_OBJECT_REF + Long.BYTES;
     }
 
-    public NumericDocValues iterator(final Bits docsWithField) {
+    public NumericDocValues iterator() {
       return new NumericDocValues() {
         int docID = -1;
 
@@ -767,10 +766,11 @@ public class FieldCacheImpl implements FieldCache {
       u.uninvert(reader, key.field);
       wrapper.setDocsWithField(reader, key.field, u.docsWithField, parser);
       GrowableWriterAndMinValue values = valuesRef.get();
+      Bits docsWithField = u.docsWithField == null ? new Bits.MatchNoBits(reader.maxDoc()) : u.docsWithField;
       if (values == null) {
-        return new LongsFromArray(key.field, new PackedInts.NullReader(reader.maxDoc()), 0L);
+        return new LongsFromArray(key.field, new PackedInts.NullReader(reader.maxDoc()), 0L, docsWithField);
       }
-      return new LongsFromArray(key.field, values.writer.getMutable(), values.minValue);
+      return new LongsFromArray(key.field, values.writer.getMutable(), values.minValue, docsWithField);
     }
   }
 
@@ -993,16 +993,18 @@ public class FieldCacheImpl implements FieldCache {
     }
   }
 
-  private static class BinaryDocValuesImpl implements Accountable {
+  public static class BinaryDocValuesImpl implements Accountable {
     private final PagedBytes.Reader bytes;
     private final PackedInts.Reader docToOffset;
+    private final Bits docsWithField;
 
-    public BinaryDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader docToOffset) {
+    public BinaryDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader docToOffset, Bits docsWithField) {
       this.bytes = bytes;
       this.docToOffset = docToOffset;
+      this.docsWithField = docsWithField;
     }
     
-    public BinaryDocValues iterator(Bits docsWithField) {
+    public BinaryDocValues iterator() {
       return new BinaryDocValues() {
 
         final BytesRef term = new BytesRef();
@@ -1109,7 +1111,7 @@ public class FieldCacheImpl implements FieldCache {
     }
 
     BinaryDocValuesImpl impl = (BinaryDocValuesImpl) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio));
-    return impl.iterator(getDocsWithField(reader, field, null));
+    return impl.iterator();
   }
 
   static final class BinaryDocValuesCache extends Cache {
@@ -1188,19 +1190,21 @@ public class FieldCacheImpl implements FieldCache {
       }
 
       final PackedInts.Reader offsetReader = docToOffset.getMutable();
-      wrapper.setDocsWithField(reader, key.field, new Bits() {
-          @Override
-          public boolean get(int index) {
-            return offsetReader.get(index) != 0;
-          }
+      Bits docsWithField = new Bits() {
+        @Override
+        public boolean get(int index) {
+          return offsetReader.get(index) != 0;
+        }
 
-          @Override
-          public int length() {
-            return maxDoc;
-          }
-        }, null);
+        @Override
+        public int length() {
+          return maxDoc;
+        }
+      };
+
+      wrapper.setDocsWithField(reader, key.field, docsWithField, null);
       // maybe an int-only impl?
-      return new BinaryDocValuesImpl(bytes.freeze(true), offsetReader);
+      return new BinaryDocValuesImpl(bytes.freeze(true), offsetReader, docsWithField);
     }
   }
 

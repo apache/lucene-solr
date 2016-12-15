@@ -18,15 +18,15 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -50,11 +50,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import static org.apache.lucene.util.LuceneTestCase.random;
 import static org.apache.solr.client.solrj.request.schema.SchemaRequest.*;
 
 public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   @Rule
   public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
@@ -79,7 +84,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     fieldsToTestSingle =
-        Collections.unmodifiableList(Stream.of(
+        Collections.unmodifiableList(Arrays.asList(
             new FieldProps("intField", "int", 1),
             new FieldProps("longField", "long", 1),
             new FieldProps("doubleField", "double", 1),
@@ -87,10 +92,10 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
             new FieldProps("dateField", "date", 1),
             new FieldProps("stringField", "string", 1),
             new FieldProps("boolField", "boolean", 1)
-        ).collect(Collectors.toList()));
+        ));
 
     fieldsToTestMulti =
-        Collections.unmodifiableList(Stream.of(
+        Collections.unmodifiableList(Arrays.asList(
             new FieldProps("intFieldMulti", "int", 5),
             new FieldProps("longFieldMulti", "long", 5),
             new FieldProps("doubleFieldMulti", "double", 5),
@@ -98,11 +103,11 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
             new FieldProps("dateFieldMulti", "date", 5),
             new FieldProps("stringFieldMulti", "string", 5),
             new FieldProps("boolFieldMulti", "boolean", 2)
-        ).collect(Collectors.toList()));
+        ));
 
     // Fields to test for grouping and sorting with sortMinssingFirst/Last.
     fieldsToTestGroupSortFirst =
-        Collections.unmodifiableList(Stream.of(
+        Collections.unmodifiableList(Arrays.asList(
             new FieldProps("intGSF", "int"),
             new FieldProps("longGSF", "long"),
             new FieldProps("doubleGSF", "double"),
@@ -110,10 +115,10 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
             new FieldProps("dateGSF", "date"),
             new FieldProps("stringGSF", "string"),
             new FieldProps("boolGSF", "boolean")
-        ).collect(Collectors.toList()));
+        ));
 
     fieldsToTestGroupSortLast =
-        Collections.unmodifiableList(Stream.of(
+        Collections.unmodifiableList(Arrays.asList(
             new FieldProps("intGSL", "int"),
             new FieldProps("longGSL", "long"),
             new FieldProps("doubleGSL", "double"),
@@ -121,7 +126,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
             new FieldProps("dateGSL", "date"),
             new FieldProps("stringGSL", "string"),
             new FieldProps("boolGSL", "boolean")
-        ).collect(Collectors.toList()));
+        ));
 
     List<Update> updateList = new ArrayList<>(fieldsToTestSingle.size() +
         fieldsToTestMulti.size() + fieldsToTestGroupSortFirst.size() + fieldsToTestGroupSortLast.size() +
@@ -235,7 +240,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     new UpdateRequest()
         .add(docs)
         .commit(client, COLLECTION);
-
+    
     checkSortOrder(client, fieldsToTestGroupSortFirst, "asc", new String[]{"4", "2", "1", "3"}, new String[]{"4", "1", "2", "3"});
     checkSortOrder(client, fieldsToTestGroupSortFirst, "desc", new String[]{"3", "1", "2", "4"}, new String[]{"2", "3", "1", "4"});
 
@@ -251,6 +256,10 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       solrQuery.addSort("id", SolrQuery.ORDER.asc);
       final QueryResponse rsp = client.query(COLLECTION, solrQuery);
       SolrDocumentList res = rsp.getResults();
+      //TODO remove after SOLR-9843
+      if (order.length != res.getNumFound()) {
+        log.error("(3) About to fail, response is: " + rsp.toString());
+      }
       assertEquals("Should have exactly " + order.length + " documents returned", order.length, res.getNumFound());
       String expected;
       for (int idx = 0; idx < res.size(); ++idx) {
@@ -264,7 +273,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   @Test
   public void testGroupingDocAbsent() throws IOException, SolrServerException {
-    List<SolrInputDocument> docs = new ArrayList<>(3);
+    List<SolrInputDocument> docs = new ArrayList<>(4);
     docs.add(makeGSDoc(2, fieldsToTestGroupSortFirst, null));
     docs.add(makeGSDoc(1, fieldsToTestGroupSortFirst, null));
     docs.add(makeGSDoc(3, fieldsToTestGroupSortFirst, null));
@@ -296,7 +305,11 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       if (prop.getName().startsWith("bool")) expected = 3; //true, false and null
 
       List<Group> fieldCommandGroups = fieldCommand.getValues();
-      assertEquals("Did not find the expected number of groups!", expected, fieldCommandGroups.size());
+      //TODO: remove me since this is excessive in the normal case, this is in for SOLR-9843
+      if (expected != fieldCommandGroups.size()) {
+        log.error("(1) About to fail assert, response is: " + rsp.toString());
+      }
+      assertEquals("Did not find the expected number of groups for field " + prop.getName(), expected, fieldCommandGroups.size());
     }
   }
 
@@ -316,7 +329,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       docs.add(doc);
       if ((idx % 5) == 0) {
         doc = new SolrInputDocument();
-        doc.addField("id", idx + 100);
+        doc.addField("id", idx + 10_000);
         docs.add(doc);
       }
     }
@@ -368,6 +381,8 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
               break;
             
             default:
+              //TODO remove me after SOLR-9843
+              log.error("(2) About to fail, response is: " + rsp.toString());
               fail("Unexpected number of elements in the group for " + prop.getName() + ": " + grp.getResult().size());
           }
         }
@@ -450,8 +465,6 @@ class FieldProps {
   private Object base;
   private int counter = 0;
 
-  static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ROOT);
-
   FieldProps(String name, String type, int expectedCount) {
     this.name = name;
     this.type = type;
@@ -460,22 +473,23 @@ class FieldProps {
   }
   void resetBase() {
     if (name.startsWith("int")) {
-      base = Math.abs(DocValuesNotIndexedTest.random().nextInt());
+      base = Math.abs(random().nextInt());
     } else if (name.startsWith("long")) {
-      base = Math.abs(DocValuesNotIndexedTest.random().nextLong());
+      base = Math.abs(random().nextLong());
     } else if (name.startsWith("float")) {
-      base = Math.abs(DocValuesNotIndexedTest.random().nextFloat());
+      base = Math.abs(random().nextFloat());
     } else if (name.startsWith("double")) {
-      base = Math.abs(DocValuesNotIndexedTest.random().nextDouble());
+      base = Math.abs(random().nextDouble());
     } else if (name.startsWith("date")) {
-      base = Math.abs(DocValuesNotIndexedTest.random().nextLong());
+      base = Math.abs(random().nextLong());
     } else if (name.startsWith("bool")) {
       base = true; // Must start with a known value since bools only have a two values....
     } else if (name.startsWith("string")) {
-      base = "base_string_" + DocValuesNotIndexedTest.random().nextInt(1_000_000) + "_";
+      base = "base_string_" + random().nextInt(1_000_000) + "_";
     } else {
       throw new RuntimeException("Should have found a prefix for the field before now!");
     }
+    counter = 0;
   }
 
   FieldProps(String name, String type) {
@@ -496,7 +510,7 @@ class FieldProps {
 
   public String getValue(boolean incrementCounter) {
     if (incrementCounter) {
-      counter += DocValuesNotIndexedTest.random().nextInt(10) + 100;
+      counter += random().nextInt(10) + 10_000;
     }
     if (name.startsWith("int")) {
       return Integer.toString((int) base + counter);
@@ -511,7 +525,7 @@ class FieldProps {
       return Double.toString((double) base + counter);
     }
     if (name.startsWith("date")) {
-      return format.format(985_847_645 + (long) base + counter);
+      return Instant.ofEpochMilli(985_847_645 + (long) base + counter).toString();
     }
     if (name.startsWith("bool")) {
       String ret = Boolean.toString((boolean) base);

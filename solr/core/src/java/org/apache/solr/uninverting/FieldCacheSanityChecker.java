@@ -27,6 +27,7 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.MapOfSets;
 import org.apache.solr.uninverting.FieldCache.CacheEntry;
 
@@ -103,7 +104,7 @@ final class FieldCacheSanityChecker {
     // iterate over all the cacheEntries to get the mappings we'll need
     for (int i = 0; i < cacheEntries.length; i++) {
       final CacheEntry item = cacheEntries[i];
-      final Object val = item.getValue();
+      final Accountable val = item.getValue();
 
       // It's OK to have dup entries, where one is eg
       // float[] and the other is the Bits (from
