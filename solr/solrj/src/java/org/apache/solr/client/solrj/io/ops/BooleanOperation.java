@@ -14,30 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.sql;
+package org.apache.solr.client.solrj.io.ops;
 
-import org.apache.calcite.linq4j.tree.Types;
+import org.apache.solr.client.solrj.io.Tuple;
 
-import java.lang.reflect.Method;
-import java.util.List;
 
-/**
- * Builtin methods in the Solr adapter.
- */
-enum SolrMethod {
-  SOLR_QUERYABLE_QUERY(SolrTable.SolrQueryable.class,
-                       "query",
-                       List.class,
-                       String.class,
-                       List.class,
-                       List.class,
-                       List.class,
-                       String.class,
-                       String.class);
-
-  public final Method method;
-
-  SolrMethod(Class clazz, String methodName, Class... argumentTypes) {
-    this.method = Types.lookupMethod(clazz, methodName, argumentTypes);
-  }
+public interface BooleanOperation extends StreamOperation {
+  public abstract boolean evaluate();
 }

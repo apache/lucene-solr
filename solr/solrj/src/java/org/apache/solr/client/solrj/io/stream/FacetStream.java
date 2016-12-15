@@ -234,6 +234,7 @@ public class FacetStream extends TupleStream implements Expressible  {
     this.zkHost  = zkHost;
     this.params = params;
     this.buckets = buckets;
+    System.out.println("####### Bucket count:"+buckets.length);
     this.metrics = metrics;
     this.bucketSizeLimit   = bucketSizeLimit;
     this.collection = collection;

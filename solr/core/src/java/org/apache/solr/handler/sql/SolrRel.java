@@ -36,6 +36,7 @@ interface SolrRel extends RelNode {
   class Implementor {
     final Map<String, String> fieldMappings = new HashMap<>();
     String query = null;
+    boolean negativeQuery;
     String limitValue = null;
     final List<Pair<String, String>> orders = new ArrayList<>();
     final List<String> buckets = new ArrayList<>();
@@ -52,6 +53,10 @@ interface SolrRel extends RelNode {
 
     void addQuery(String query) {
       this.query = query;
+    }
+
+    void setNegativeQuery(boolean negativeQuery) {
+      this.negativeQuery = negativeQuery;
     }
 
     void addOrder(String column, String direction) {

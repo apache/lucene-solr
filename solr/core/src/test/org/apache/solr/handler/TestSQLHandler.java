@@ -104,9 +104,12 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       indexDoc(sdoc("id", "7", "text", "XXXX XXXX", "str_s", "c", "field_i", "50"));
       indexDoc(sdoc("id", "8", "text", "XXXX XXXX", "str_s", "c", "field_i", "60"));
       commit();
-      
+
+
+      System.out.println("############# testBasicSelect() ############");
+
       SolrParams sParams = mapParams(CommonParams.QT, "/sql", 
-          "stmt", "select id, field_i, str_s from collection1 where text='XXXX' order by field_i desc");
+          "stmt", "select id, field_i, str_s from collection1 where (text='(XXXX)' OR text='XXXX') AND text='XXXX' order by field_i desc");
 
       SolrStream solrStream = new SolrStream(jetty.url, sParams);
       List<Tuple> tuples = getTuples(solrStream);
@@ -696,7 +699,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       sParams = mapParams(CommonParams.QT, "/sql",
         "stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), "
-          + "cast(avg(1.0 * field_i) as float) from collection1 where (text='XXXX' AND NOT (text='XXXY')) "
+          + "cast(avg(1.0 * field_i) as float) from collection1 where (text='XXXX' AND NOT ((text='XXXY') AND (text='XXXY' OR text='XXXY'))) "
           + "group by str_s order by str_s desc");
 
       solrStream = new SolrStream(jetty.url, sParams);
@@ -856,9 +859,12 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
           "stmt", "select distinct str_s, field_i from collection1 order by str_s asc, field_i asc");
 
+      System.out.println("######## selectDistinctFacets #######");
+
       SolrStream solrStream = new SolrStream(jetty.url, sParams);
       List<Tuple> tuples = getTuples(solrStream);
 
+      //assert(false);
       assert(tuples.size() == 6);
 
       Tuple tuple;
@@ -991,22 +997,29 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getLong("field_i") == 1);
 
       tuple = tuples.get(1);
+
+
       assert(tuple.get("str_s").equals("a"));
       assert(tuple.getLong("field_i") == 20);
 
       tuple = tuples.get(2);
+
+
       assert(tuple.get("str_s").equals("b"));
       assert(tuple.getLong("field_i") == 2);
 
       tuple = tuples.get(3);
+
       assert(tuple.get("str_s").equals("c"));
       assert(tuple.getLong("field_i") == 30);
 
       tuple = tuples.get(4);
+
       assert(tuple.get("str_s").equals("c"));
       assert(tuple.getLong("field_i") == 50);
 
       tuple = tuples.get(5);
+
       assert(tuple.get("str_s").equals("c"));
       assert(tuple.getLong("field_i") == 60);
 
@@ -1052,6 +1065,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       SolrParams sParams = mapParams(CommonParams.QT, "/sql",
           "stmt", "select distinct str_s, field_i from collection1 order by str_s asc, field_i asc");
+
+      System.out.println("##################### testSelectDistinct()");
 
       TupleStream solrStream = new SolrStream(jetty.url, sParams);
       List<Tuple> tuples = getTuples(solrStream);

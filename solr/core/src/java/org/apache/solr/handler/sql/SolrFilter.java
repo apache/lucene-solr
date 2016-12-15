@@ -24,6 +24,7 @@ import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.Pair;
 
 import java.util.ArrayList;
@@ -56,38 +57,68 @@ class SolrFilter extends Filter implements SolrRel {
     Translator translator = new Translator(SolrRules.solrFieldNames(getRowType()));
     String query = translator.translateMatch(condition);
     implementor.addQuery(query);
+    implementor.setNegativeQuery(translator.negativeQuery);
   }
 
   /** Translates {@link RexNode} expressions into Solr query strings. */
   private static class Translator {
+
     private final List<String> fieldNames;
+    public boolean negativeQuery = true;
 
     Translator(List<String> fieldNames) {
       this.fieldNames = fieldNames;
     }
 
     private String translateMatch(RexNode condition) {
-      return translateOr(condition);
+      if(condition.getKind().belongsTo(SqlKind.COMPARISON)) {
+        return translateComparison(condition);
+      } else if(condition.isA(SqlKind.AND)) {
+        return "("+translateAnd(condition)+")";
+      } else if(condition.isA(SqlKind.OR)) {
+        return "(" + translateOr(condition) + ")";
+      } else {
+        return null;
+      }
     }
 
     private String translateOr(RexNode condition) {
       List<String> ors = new ArrayList<>();
       for (RexNode node : RelOptUtil.disjunctions(condition)) {
-        ors.add(translateAnd(node));
+        ors.add(translateMatch(node));
       }
       return String.join(" OR ", ors);
     }
 
+
+
     private String translateAnd(RexNode node0) {
-      List<String> ands = new ArrayList<>();
-      for (RexNode node : RelOptUtil.conjunctions(node0)) {
-        ands.add(translateMatch2(node));
+      List<String> andStrings = new ArrayList();
+      List<String> notStrings = new ArrayList();
+
+      List<RexNode> ands = new ArrayList();
+      List<RexNode> nots = new ArrayList();
+      RelOptUtil.decomposeConjunction(node0, ands, nots);
+
+
+      for(RexNode node: ands) {
+        andStrings.add(translateMatch(node));
       }
 
-      return String.join(" AND ", ands);
+      String andString = String.join(" AND ", andStrings);
+
+      if(nots.size() > 0) {
+        for(RexNode node: nots) {
+          notStrings.add(translateMatch(node));
+        }
+        String notString = String.join(" NOT ", notStrings);
+        return "("+ andString +") NOT ("+notString+")";
+      } else {
+        return andString;
+      }
     }
 
-    private String translateMatch2(RexNode node) {
+    private String translateComparison(RexNode node) {
       Pair<String, RexLiteral> binaryTranslated = null;
       if (((RexCall) node).getOperands().size() == 2) {
         binaryTranslated = translateBinary((RexCall) node);
@@ -95,19 +126,30 @@ class SolrFilter extends Filter implements SolrRel {
 
       switch (node.getKind()) {
         case NOT:
-          return "-"+translateMatch2(((RexCall) node).getOperands().get(0));
+          return "-"+translateComparison(((RexCall) node).getOperands().get(0));
         case EQUALS:
-          return binaryTranslated.getKey() + ":" + binaryTranslated.getValue().getValue2();
+          String terms = binaryTranslated.getValue().getValue2().toString().trim();
+          if(!terms.startsWith("(")){
+            terms = "\""+terms+"\"";
+          }
+
+          String clause = binaryTranslated.getKey() + ":" + terms;
+          this.negativeQuery = false;
+          return clause;
         case NOT_EQUALS:
-          return "-" + binaryTranslated.getKey() + ":" + binaryTranslated.getValue().getValue2();
+          return "-(" + binaryTranslated.getKey() + ":" + binaryTranslated.getValue().getValue2()+")";
         case LESS_THAN:
-          return binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue().getValue2() + " }";
+          this.negativeQuery = false;
+          return "("+binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue().getValue2() + " })";
         case LESS_THAN_OR_EQUAL:
-          return binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue().getValue2() + " ]";
+          this.negativeQuery = false;
+          return "("+binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue().getValue2() + " ])";
         case GREATER_THAN:
-          return binaryTranslated.getKey() + ": { " + binaryTranslated.getValue().getValue2() + " TO * ]";
+          this.negativeQuery = false;
+          return "("+binaryTranslated.getKey() + ": { " + binaryTranslated.getValue().getValue2() + " TO * ])";
         case GREATER_THAN_OR_EQUAL:
-          return binaryTranslated.getKey() + ": [ " + binaryTranslated.getValue().getValue2() + " TO * ]";
+          this.negativeQuery = false;
+          return "("+binaryTranslated.getKey() + ": [ " + binaryTranslated.getValue().getValue2() + " TO * ])";
         default:
           throw new AssertionError("cannot translate " + node);
       }
