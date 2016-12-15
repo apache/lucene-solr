@@ -507,6 +507,7 @@ class DocSetAcc extends SlotAcc {
 
   @Override
   public int compare(int slotA, int slotB) {
+    // no-op
     return 0;
   }
 
@@ -516,13 +517,19 @@ class DocSetAcc extends SlotAcc {
   
   @Override
   public Object getValue(int slotNum) throws IOException {
-    return null;
+    return (setCollectors[slotNum] != null) ? setCollectors[slotNum].getDocSet() : DocSet.EMPTY;
   }
 
   @Override
-  public void reset() {}
+  public void reset() {
+    Arrays.fill(setCollectors, null);
+    Arrays.fill(leafCollectors, null);
+  }
 
   @Override
-  public void resize(Resizer resizer) {}
+  public void resize(Resizer resizer) {
+    resizer.resize(setCollectors, null);
+    resizer.resize(leafCollectors, null);
+  }
   
 }

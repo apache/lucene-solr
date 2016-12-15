@@ -93,8 +93,6 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   Comparable end;
   String gap;
 
-  EnumSet<FacetParams.FacetRangeInclude> include;
-
   FacetRangeProcessor(FacetContext fcontext, FacetRange freq) {
     super(fcontext, freq);
   }
@@ -103,8 +101,7 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   public void process() throws IOException {
     super.process();
 
-    // Under the normal mincount=0, each shard will need to return 0 counts since we don't calculate buckets at the top
-    // level.
+    // Under the normal mincount=0, each shard will need to return 0 counts since we don't calculate buckets at the top level.
     // But if mincount>0 then our sub mincount can be set to 1.
 
     effectiveMincount = fcontext.isShard() ? (freq.mincount > 0 ? 1 : 0) : freq.mincount;
@@ -133,7 +130,7 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     final FieldType ft = sf.getType();
 
     if (ft instanceof TrieField) {
-      final TrieField trie = (TrieField) ft;
+      final TrieField trie = (TrieField)ft;
 
       switch (trie.getType()) {
         case FLOAT:
@@ -152,12 +149,14 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
           calc = new DateCalc(sf, null);
           break;
         default:
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Expected numeric field type :" + sf);
+          throw new SolrException
+              (SolrException.ErrorCode.BAD_REQUEST,
+                  "Expected numeric field type :" + sf);
       }
     } else {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Expected numeric field type :" + sf);
+      throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+              "Expected numeric field type :" + sf);
     }
     return calc;
   }
@@ -185,14 +184,16 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
           calc = new DateCalc(sf, null);
           break;
         default:
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Unable to range facet on tried field of unexpected type:" + freq.field);
+          throw new SolrException
+              (SolrException.ErrorCode.BAD_REQUEST,
+                  "Unable to range facet on tried field of unexpected type:" + freq.field);
       }
     } else {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Unable to range facet on field:" + sf);
+      throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+              "Unable to range facet on field:" + sf);
     }
-
+    
     createRangeList();
     return getRangeCountsIndexed();
   }
@@ -220,13 +221,14 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         }
       }
       if (high.compareTo(low) < 0) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "range facet infinite loop (is gap negative? did the math overflow?)");
+        throw new SolrException
+            (SolrException.ErrorCode.BAD_REQUEST,
+                "range facet infinite loop (is gap negative? did the math overflow?)");
       }
       if (high.compareTo(low) == 0) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: "
-                + low + " + " + gap + " = " + high);
+        throw new SolrException
+            (SolrException.ErrorCode.BAD_REQUEST,
+                "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: " + low + " + " + gap + " = " + high );
       }
 
       boolean incLower =
@@ -239,7 +241,7 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
           0 == high.compareTo(end)));
 
       Range range = new Range(low, low, high, incLower, incUpper);
-      rangeList.add(range);
+      rangeList.add( range );
 
       low = high;
     }
@@ -313,8 +315,7 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         processSubs(bucket, filter, subBase);
       } finally {
         // subContext.base.decref(); // OFF-HEAP
-        // subContext.base = null; // do not modify context after creation... there may be deferred execution (i.e.
-        // streaming)
+        // subContext.base = null; // do not modify context after creation... there may be deferred execution (i.e. streaming)
       }
     }
   }
@@ -327,8 +328,7 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       bucket.add("val", range.label);
     }
 
-    Query rangeQ = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low),
-        range.high == null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
+    Query rangeQ = generateFilterQuery(range);
     fillBucket(bucket, rangeQ, null);
 
     return bucket;
@@ -344,11 +344,13 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   // Essentially copied from SimpleFacets...
   // would be nice to unify this stuff w/ analytics component...
   /**
-   * Perhaps someday instead of having a giant "instanceof" case statement to pick an impl, we can add a
-   * "RangeFacetable" marker interface to FieldTypes and they can return instances of these directly from some method --
-   * but until then, keep this locked down and private.
+   * Perhaps someday instead of having a giant "instanceof" case
+   * statement to pick an impl, we can add a "RangeFacetable" marker
+   * interface to FieldTypes and they can return instances of these
+   * directly from some method -- but until then, keep this locked down
+   * and private.
    */
-
+  
   static abstract class Calc {
     protected final SchemaField field;
 
@@ -365,14 +367,16 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
 
     /**
-     * Formats a value into a label used in a response Default Impl just uses toString()
+     * Formats a value into a label used in a response 
+     * Default Impl just uses toString()
      */
     public String formatValue(final Comparable val) {
       return val.toString();
     }
 
     /**
-     * Parses a String param into a value throwing an exception if not possible
+     * Parses a String param into a value throwing 
+     * an exception if not possible
      */
     public final Comparable getValue(final String rawval) {
       try {
@@ -712,12 +716,12 @@ class FacetRangeProcessorSingledValuedDV extends FacetRangeProcessor {
     if (numericDocValues == null) {
       numericDocValues = DocValues.emptyNumeric();
     }
-    
+
     docSetAcc.setNextReader(ctx);
   }
 
   @Override
-  protected void collect(int segDoc) throws IOException {
+  protected void collectSlots(int segDoc) throws IOException {
     if (numericDocValues.advanceExact(segDoc)) {
       Long bits = numericDocValues.longValue();
 
