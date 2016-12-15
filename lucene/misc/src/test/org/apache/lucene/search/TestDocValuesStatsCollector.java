@@ -18,6 +18,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.DoubleSummaryStatistics;
+import java.util.LongSummaryStatistics;
 import java.util.stream.DoubleStream;
 import java.util.stream.LongStream;
 
@@ -57,7 +59,33 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
     }
   }
 
-  public void testRandomDocsWithLongValues() throws IOException {
+  public void testOneDoc() throws IOException {
+    try (Directory dir = newDirectory();
+        IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig())) {
+      String field = "numeric";
+      Document doc = new Document();
+      doc.add(new NumericDocValuesField(field, 1));
+      doc.add(new StringField("id", "doc1", Store.NO));
+      indexWriter.addDocument(doc);
+
+      try (DirectoryReader reader = DirectoryReader.open(indexWriter)) {
+        IndexSearcher searcher = new IndexSearcher(reader);
+        LongDocValuesStats stats = new LongDocValuesStats(field);
+        searcher.search(new MatchAllDocsQuery(), new DocValuesStatsCollector(stats));
+
+        assertEquals(1, stats.count());
+        assertEquals(0, stats.missing());
+        assertEquals(1, stats.max().longValue());
+        assertEquals(1, stats.min().longValue());
+        assertEquals(1, stats.sum().longValue());
+        assertEquals(1, stats.mean(), 0.0001);
+        assertEquals(0, stats.variance(), 0.0001);
+        assertEquals(0, stats.stdev(), 0.0001);
+      }
+    }
+  }
+
+  public void testDocsWithLongValues() throws IOException {
     try (Directory dir = newDirectory();
         IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig())) {
       String field = "numeric";
@@ -94,15 +122,20 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
         assertEquals(expCount, stats.count());
         assertEquals(getZeroValues(docValues).count() - reader.numDeletedDocs(), stats.missing());
         if (stats.count() > 0) {
-          assertEquals(getPositiveValues(docValues).max().getAsLong(), stats.max().longValue());
-          assertEquals(getPositiveValues(docValues).min().getAsLong(), stats.min().longValue());
-          assertEquals(getPositiveValues(docValues).average().getAsDouble(), stats.mean(), 0.00001);
+          LongSummaryStatistics sumStats = getPositiveValues(docValues).summaryStatistics();
+          assertEquals(sumStats.getMax(), stats.max().longValue());
+          assertEquals(sumStats.getMin(), stats.min().longValue());
+          assertEquals(sumStats.getAverage(), stats.mean(), 0.00001);
+          assertEquals(sumStats.getSum(), stats.sum().longValue());
+          double variance = computeVariance(docValues, stats.mean, stats.count());
+          assertEquals(variance, stats.variance(), 0.00001);
+          assertEquals(Math.sqrt(variance), stats.stdev(), 0.00001);
         }
       }
     }
   }
 
-  public void testRandomDocsWithDoubleValues() throws IOException {
+  public void testDocsWithDoubleValues() throws IOException {
     try (Directory dir = newDirectory();
         IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig())) {
       String field = "numeric";
@@ -139,9 +172,14 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
         assertEquals(expCount, stats.count());
         assertEquals(getZeroValues(docValues).count() - reader.numDeletedDocs(), stats.missing());
         if (stats.count() > 0) {
-          assertEquals(getPositiveValues(docValues).max().getAsDouble(), stats.max().doubleValue(), 0.00001);
-          assertEquals(getPositiveValues(docValues).min().getAsDouble(), stats.min().doubleValue(), 0.00001);
-          assertEquals(getPositiveValues(docValues).average().getAsDouble(), stats.mean(), 0.00001);
+          DoubleSummaryStatistics sumStats = getPositiveValues(docValues).summaryStatistics();
+          assertEquals(sumStats.getMax(), stats.max().doubleValue(), 0.00001);
+          assertEquals(sumStats.getMin(), stats.min().doubleValue(), 0.00001);
+          assertEquals(sumStats.getAverage(), stats.mean(), 0.00001);
+          assertEquals(sumStats.getSum(), stats.sum(), 0.00001);
+          double variance = computeVariance(docValues, stats.mean, stats.count());
+          assertEquals(variance, stats.variance(), 0.00001);
+          assertEquals(Math.sqrt(variance), stats.stdev(), 0.00001);
         }
       }
     }
@@ -161,6 +199,14 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
 
   private static DoubleStream getZeroValues(double[] docValues) {
     return Arrays.stream(docValues).filter(v -> v == 0);
+  }
+
+  private static double computeVariance(long[] values, double mean, int count) {
+    return getPositiveValues(values).mapToDouble(v -> (v - mean) * (v-mean)).sum() / count;
+  }
+
+  private static double computeVariance(double[] values, double mean, int count) {
+    return getPositiveValues(values).map(v -> (v - mean) * (v-mean)).sum() / count;
   }
 
 }

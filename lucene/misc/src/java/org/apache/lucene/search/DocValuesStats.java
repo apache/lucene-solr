@@ -101,6 +101,7 @@ public abstract class DocValuesStats<T> {
   public static abstract class NumericDocValuesStats<T extends Number> extends DocValuesStats<T> {
 
     protected double mean = 0.0;
+    protected double variance = 0.0;
 
     protected NumericDocValues ndv;
     protected Bits docsWithField;
@@ -121,14 +122,31 @@ public abstract class DocValuesStats<T> {
       return docsWithField.get(doc);
     }
 
-    /** The mean of all values of the field. Undefined when {@link #count} is zero. */
+    /** The mean of all values of the field. */
     public final double mean() {
       return mean;
     }
+
+    /** Returns the variance of all values of the field. */
+    public final double variance() {
+      int count = count();
+      return count > 0 ? variance / count : 0;
+    }
+
+    /** Returns the stdev of all values of the field. */
+    public final double stdev() {
+      return Math.sqrt(variance());
+    }
+
+    /** Returns the sum of values of the field. Note that if the values are large, the {@code sum} might overflow. */
+    public abstract T sum();
   }
 
   /** Holds DocValues statistics for a numeric field storing {@code long} values. */
   public static final class LongDocValuesStats extends NumericDocValuesStats<Long> {
+
+    // To avoid boxing 'long' to 'Long' while the sum is computed, declare it as private variable.
+    private long sum = 0;
 
     public LongDocValuesStats(String field) {
       super(field, Long.MAX_VALUE, Long.MIN_VALUE);
@@ -143,12 +161,23 @@ public abstract class DocValuesStats<T> {
       if (val < min) {
         min = val;
       }
+      sum += val;
+      double oldMean = mean;
       mean += (val - mean) / count;
+      variance += (val - mean) * (val - oldMean);
+    }
+
+    @Override
+    public Long sum() {
+      return sum;
     }
   }
 
   /** Holds DocValues statistics for a numeric field storing {@code double} values. */
   public static final class DoubleDocValuesStats extends NumericDocValuesStats<Double> {
+
+    // To avoid boxing 'double' to 'Double' while the sum is computed, declare it as private variable.
+    private double sum = 0;
 
     public DoubleDocValuesStats(String field) {
       super(field, Double.MAX_VALUE, Double.MIN_VALUE);
@@ -163,7 +192,15 @@ public abstract class DocValuesStats<T> {
       if (Double.compare(val, min) < 0) {
         min = val;
       }
+      sum += val;
+      double oldMean = mean;
       mean += (val - mean) / count;
+      variance += (val - mean) * (val - oldMean);
+    }
+
+    @Override
+    public Double sum() {
+      return sum;
     }
   }
 
