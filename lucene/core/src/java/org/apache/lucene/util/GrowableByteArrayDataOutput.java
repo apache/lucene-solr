@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.store;
+package org.apache.lucene.util;
 
 import java.io.IOException;
 
@@ -31,7 +31,7 @@ import org.apache.lucene.util.UnicodeUtil;
 public final class GrowableByteArrayDataOutput extends DataOutput {
 
   /** Minimum utf8 byte size of a string over which double pass over string is to save memory during encode */
-  static final int MIN_UTF8_SIZE_TO_ENABLE_DOUBLE_PASS_ENCODING = 65536;
+  public static final int MIN_UTF8_SIZE_TO_ENABLE_DOUBLE_PASS_ENCODING = 65536;
 
   /** The bytes */
   private byte[] bytes;
