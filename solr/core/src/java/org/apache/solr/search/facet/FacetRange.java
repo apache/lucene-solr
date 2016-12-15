@@ -292,7 +292,7 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       buckets.add(bucket);
       bucket.add("val", range.label);
       addStats(bucket, idx);
-      doSubs(bucket, generateFilterQuery(range), getRangeDocSet(idx));
+      doSubs(bucket, generateFilterQuery(range), idx);
     }
 
     for (int idx = 0; idx < otherList.length; idx++) {
@@ -302,17 +302,17 @@ abstract class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       SimpleOrderedMap bucket = new SimpleOrderedMap();
       res.add(otherList[idx].label.toString(), bucket);
       addStats(bucket, rangeList.size() + idx);
-      doSubs(bucket, generateFilterQuery(range), getRangeDocSet(rangeList.size() + idx));
+      doSubs(bucket, generateFilterQuery(range), rangeList.size() + idx);
     }
 
     return res;
   }
 
-  protected void doSubs(SimpleOrderedMap bucket, Query filter, DocSet subBase) throws IOException {
+  protected void doSubs(SimpleOrderedMap bucket, Query filter, int idx) throws IOException {
     // handle sub-facets for this bucket
     if (freq.getSubFacets().size() > 0) {
       try {
-        processSubs(bucket, filter, subBase);
+        processSubs(bucket, filter, getRangeDocSet(idx));
       } finally {
         // subContext.base.decref(); // OFF-HEAP
         // subContext.base = null; // do not modify context after creation... there may be deferred execution (i.e. streaming)
@@ -705,7 +705,9 @@ class FacetRangeProcessorSingledValuedDV extends FacetRangeProcessor {
   protected void createAccs(int docCount, int slotCount) throws IOException {
     super.createAccs(docCount, slotCount);
 
-    docSetAcc = new DocSetAcc(fcontext, slotCount);
+    if (freq.getSubFacets().size() > 0) {
+      docSetAcc = new DocSetAcc(fcontext, slotCount);
+    }
   }
 
   @Override
@@ -717,7 +719,9 @@ class FacetRangeProcessorSingledValuedDV extends FacetRangeProcessor {
       numericDocValues = DocValues.emptyNumeric();
     }
 
-    docSetAcc.setNextReader(ctx);
+    if (docSetAcc != null) {
+      docSetAcc.setNextReader(ctx);
+    }
   }
 
   @Override
@@ -747,7 +751,10 @@ class FacetRangeProcessorSingledValuedDV extends FacetRangeProcessor {
     super.collect(segDoc, slot);
 
     countAcc.incrementCount(slot, 1);
-    docSetAcc.collect(segDoc, slot);
+    
+    if (docSetAcc != null) {
+      docSetAcc.collect(segDoc, slot);
+    }
   }
 
   private boolean isInsideRange(Range range, Comparable value) {
@@ -760,7 +767,7 @@ class FacetRangeProcessorSingledValuedDV extends FacetRangeProcessor {
 
   @Override
   DocSet getRangeDocSet(int slot) {
-    return docSetAcc.getDocSet(slot);
+    return docSetAcc==null ? null : docSetAcc.getDocSet(slot);
   }
 
 }
