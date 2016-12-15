@@ -48,6 +48,10 @@ Optimizations
 * LUCENE-7519: Add optimized APIs to compute browse-only top level
   facets (Mike McCandless)
 
+* LUCENE-7589: Numeric doc values now have the ability to encode blocks of
+  values using different numbers of bits per value if this proves to save
+  storage. (Adrien Grand)
+
 Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
