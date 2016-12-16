@@ -49,7 +49,7 @@ public class LessThanOperation extends LeafOperation {
       return true;
     }
     
-    return d < val;
+    return d.doubleValue() < val;
   }
 
   public StreamExpression toExpression(StreamFactory factory) throws IOException {

@@ -74,7 +74,7 @@ public class HavingStream extends TupleStream implements Expressible {
     List<StreamExpression> operationExpressions = factory.getExpressionOperandsRepresentingTypes(expression, BooleanOperation.class);
 
     // validate expression contains only what we want.
-    if(expression.getParameters().size() != streamExpressions.size() + 2){
+    if(expression.getParameters().size() != streamExpressions.size() + 1){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
     }
 

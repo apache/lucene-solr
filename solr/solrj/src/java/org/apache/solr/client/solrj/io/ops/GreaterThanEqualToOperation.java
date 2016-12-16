@@ -49,7 +49,7 @@ public class GreaterThanEqualToOperation extends LeafOperation {
       return false;
     }
 
-    return d >= val;
+    return d.doubleValue() >= val;
   }
 
   public StreamExpression toExpression(StreamFactory factory) throws IOException {

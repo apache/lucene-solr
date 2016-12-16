@@ -49,7 +49,7 @@ public class NotOperation implements BooleanOperation {
     if(operationExpressions != null && operationExpressions.size() == 1) {
       StreamExpression op = operationExpressions.get(0);
       StreamOperation streamOp = factory.constructOperation(op);
-      if(op instanceof BooleanOperation) {
+      if(streamOp instanceof BooleanOperation) {
         operand = (BooleanOperation) streamOp;
       } else {
         throw new IOException("The NotOperation requires a BooleanOperation.");
