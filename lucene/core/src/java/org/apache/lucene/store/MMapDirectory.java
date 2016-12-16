@@ -356,9 +356,9 @@ public class MMapDirectory extends FSDirectory {
         throw se;
       } catch (ReflectiveOperationException | RuntimeException e) {
         // *** sun.misc.Cleaner unmapping (Java 8) ***
-        final Class<?> unmappableBufferClass = Class.forName("java.nio.DirectByteBuffer");
+        final Class<?> directBufferClass = Class.forName("java.nio.DirectByteBuffer");
         
-        final Method m = unmappableBufferClass.getMethod("cleaner");
+        final Method m = directBufferClass.getMethod("cleaner");
         m.setAccessible(true);
         final MethodHandle directBufferCleanerMethod = lookup.unreflect(m);
         final Class<?> cleanerClass = directBufferCleanerMethod.type().returnType();
@@ -379,7 +379,7 @@ public class MMapDirectory extends FSDirectory {
         final MethodHandle noop = dropArguments(constant(Void.class, null).asType(methodType(void.class)), 0, cleanerClass);
         final MethodHandle unmapper = filterReturnValue(directBufferCleanerMethod, guardWithTest(nonNullTest, cleanMethod, noop))
             .asType(methodType(void.class, ByteBuffer.class));
-        return newBufferCleaner(unmappableBufferClass, unmapper);
+        return newBufferCleaner(directBufferClass, unmapper);
       }
     } catch (SecurityException se) {
       return "Unmapping is not supported, because not all required permissions are given to the Lucene JAR file: " + se +
@@ -394,10 +394,10 @@ public class MMapDirectory extends FSDirectory {
     assert Objects.equals(methodType(void.class, ByteBuffer.class), unmapper.type());
     return (String resourceDescription, ByteBuffer buffer) -> {
       if (!buffer.isDirect()) {
-        throw new IllegalArgumentException("Unmapping only works with direct buffers");
+        throw new IllegalArgumentException("unmapping only works with direct buffers");
       }
       if (!unmappableBufferClass.isInstance(buffer)) {
-        throw new IllegalArgumentException("ByteBuffer is not an instance of " + unmappableBufferClass.getName());
+        throw new IllegalArgumentException("buffer is not an instance of " + unmappableBufferClass.getName());
       }
       final Throwable error = AccessController.doPrivileged((PrivilegedAction<Throwable>) () -> {
         try {
