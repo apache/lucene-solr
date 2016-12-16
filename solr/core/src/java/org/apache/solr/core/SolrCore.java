@@ -1868,51 +1868,57 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     // if it isn't necessary.
 
     synchronized (searcherLock) {
-      // see if we can return the current searcher
-      if (_searcher!=null && !forceNew) {
-        if (returnSearcher) {
-          _searcher.incref();
-          return _searcher;
-        } else {
-          return null;
+      for(;;) { // this loop is so w can retry in the event that we exceed maxWarmingSearchers
+        // see if we can return the current searcher
+        if (_searcher != null && !forceNew) {
+          if (returnSearcher) {
+            _searcher.incref();
+            return _searcher;
+          } else {
+            return null;
+          }
         }
-      }
 
-      // check to see if we can wait for someone else's searcher to be set
-      if (onDeckSearchers>0 && !forceNew && _searcher==null) {
-        try {
-          searcherLock.wait();
-        } catch (InterruptedException e) {
-          log.info(SolrException.toStr(e));
+        // check to see if we can wait for someone else's searcher to be set
+        if (onDeckSearchers > 0 && !forceNew && _searcher == null) {
+          try {
+            searcherLock.wait();
+          } catch (InterruptedException e) {
+            log.info(SolrException.toStr(e));
+          }
         }
-      }
 
-      // check again: see if we can return right now
-      if (_searcher!=null && !forceNew) {
-        if (returnSearcher) {
-          _searcher.incref();
-          return _searcher;
-        } else {
-          return null;
+        // check again: see if we can return right now
+        if (_searcher != null && !forceNew) {
+          if (returnSearcher) {
+            _searcher.incref();
+            return _searcher;
+          } else {
+            return null;
+          }
         }
-      }
 
-      // At this point, we know we need to open a new searcher...
-      // first: increment count to signal other threads that we are
-      //        opening a new searcher.
-      onDeckSearchers++;
-      if (onDeckSearchers < 1) {
-        // should never happen... just a sanity check
-        log.error(logid+"ERROR!!! onDeckSearchers is " + onDeckSearchers);
-        onDeckSearchers=1;  // reset
-      } else if (onDeckSearchers > maxWarmingSearchers) {
-        onDeckSearchers--;
-        String msg="Error opening new searcher. exceeded limit of maxWarmingSearchers="+maxWarmingSearchers + ", try again later.";
-        log.warn(logid+""+ msg);
-        // HTTP 503==service unavailable, or 409==Conflict
-        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,msg);
-      } else if (onDeckSearchers > 1) {
-        log.warn(logid+"PERFORMANCE WARNING: Overlapping onDeckSearchers=" + onDeckSearchers);
+        // At this point, we know we need to open a new searcher...
+        // first: increment count to signal other threads that we are
+        //        opening a new searcher.
+        onDeckSearchers++;
+        if (onDeckSearchers < 1) {
+          // should never happen... just a sanity check
+          log.error(logid + "ERROR!!! onDeckSearchers is " + onDeckSearchers);
+          onDeckSearchers = 1;  // reset
+        } else if (onDeckSearchers > maxWarmingSearchers) {
+          onDeckSearchers--;
+          try {
+            searcherLock.wait();
+          } catch (InterruptedException e) {
+            log.info(SolrException.toStr(e));
+          }
+          continue;  // go back to the top of the loop and retry
+        } else if (onDeckSearchers > 1) {
+          log.warn(logid + "PERFORMANCE WARNING: Overlapping onDeckSearchers=" + onDeckSearchers);
+        }
+
+        break; // I can now exit the loop and proceed to open a searcher
       }
     }
 
