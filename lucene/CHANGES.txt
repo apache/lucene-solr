@@ -74,6 +74,10 @@ New features
 * LUCENE-7590: Added DocValuesStatsCollector to compute statistics on DocValues
   fields. (Shai Erera)
 
+* LUCENE-7587: The new FacetQuery and MultiFacetQuery helper classes
+  make it simpler to execute drill down when drill sideways counts are
+  not needed (Emmanuel Keller via Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-7547: JapaneseTokenizerFactory was failing to close the
