@@ -19,8 +19,6 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -28,7 +26,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -41,6 +38,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.handler.ReplicationHandler;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,7 +119,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       checkShardConsistency(false, true);
 
       // index a few docs and commit
-      for (int i = 0; i < 50; i++) {
+      for (int i = 0; i < 100; i++) {
         indexDoc(id, docId, i1, 50, tlong, 50, t1,
             "document number " + docId++);
       }
@@ -135,11 +133,15 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       nodesDown.remove(freshNode);
       waitTillNodesActive();
       
-      Thread.sleep(2000);
-      
-      // the first time freshNode synced by replication, there should be replication.properties, compute its MD5 digest
-      String replicationProperties = (String) freshNode.jetty.getSolrHome() + "/cores/" +  DEFAULT_TEST_COLLECTION_NAME + "/data/replication.properties";
-      String replicationPropertiesMD5 = DigestUtils.md5Hex(Files.readAllBytes(Paths.get(replicationProperties)));
+      // check how to see if fresh node went into recovery (may be check count for replication handler on the new leader) 
+      // There should be a better way to do this
+      long numRequestsBefore = (Long) secondNode.jetty
+          .getCoreContainer()
+          .getCores()
+          .iterator()
+          .next()
+          .getRequestHandler(ReplicationHandler.PATH)
+          .getStatistics().get("requests");
       
       // shutdown the original leader
       log.info("Now shutting down initial leader");
@@ -149,12 +151,17 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       log.info("Updating mappings from zk");
       updateMappingsFromZk(jettys, clients, true);
       
-      CloudJettyRunner newLeader = shardToLeaderJetty.get("shard1");
+      long numRequestsAfter = (Long) secondNode.jetty
+          .getCoreContainer()
+          .getCores()
+          .iterator()
+          .next()
+          .getRequestHandler(ReplicationHandler.PATH)
+          .getStatistics().get("requests");
+
+      assertEquals("Node went into replication", numRequestsBefore, numRequestsAfter);
       
-      assertEquals("Fresh node became the new leader", secondNode, newLeader);
-      
-      // if there was no replication, replication.properties file should not have changed      
-      assertEquals("PeerSync failed. Had to fail back to replication", replicationPropertiesMD5, DigestUtils.md5Hex(Files.readAllBytes(Paths.get(replicationProperties))));
+      success = true;
     } finally {
       System.clearProperty("solr.disableFingerprint");
     }
@@ -188,7 +195,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
   
 
   private void waitTillNodesActive() throws Exception {
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 60; i++) {
       Thread.sleep(3000);
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
@@ -197,8 +204,10 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       Collection<Replica> replicas = slice.getReplicas();
       boolean allActive = true;
 
+      Collection<String> nodesDownNames = nodesDown.stream().map(n -> n.coreNodeName).collect(Collectors.toList());
+      
       Collection<Replica> replicasToCheck = null;
-      replicasToCheck = replicas.stream().filter(r -> nodesDown.contains(r.getName()))
+      replicasToCheck = replicas.stream().filter(r -> !nodesDownNames.contains(r.getName()))
           .collect(Collectors.toList());
 
       for (Replica replica : replicasToCheck) {

@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Collections.singletonList;
 
 /**
- * Test sync peer sync when a node restarts and documents are indexed when node was down.
+ * Test PeerSync when a node restarts and documents are indexed when node was down.
  *
  * This test is modeled after SyncSliceTest
  */
@@ -200,7 +200,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
   private void forceNodeFailures(List<CloudJettyRunner> replicasToShutDown) throws Exception {
     for (CloudJettyRunner replicaToShutDown : replicasToShutDown) {
       chaosMonkey.killJetty(replicaToShutDown);
-      waitForNoShardInconsistency();
+      Thread.sleep(3000);
     }
 
     int totalDown = 0;
@@ -289,9 +289,11 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
       Collection<Replica> replicas = slice.getReplicas();
       boolean allActive = true;
 
+      Collection<String> nodesDownNames = nodesDown.stream().map(n -> n.coreNodeName).collect(Collectors.toList());
+      
       Collection<Replica> replicasToCheck = null;
-      replicasToCheck = replicas.stream().filter(r -> nodesDown.contains(r.getName()))
-            .collect(Collectors.toList());
+      replicasToCheck = replicas.stream().filter(r -> !nodesDownNames.contains(r.getName()))
+          .collect(Collectors.toList());
 
       for (Replica replica : replicasToCheck) {
         if (!clusterState.liveNodesContain(replica.getNodeName()) || replica.getState() != Replica.State.ACTIVE) {
