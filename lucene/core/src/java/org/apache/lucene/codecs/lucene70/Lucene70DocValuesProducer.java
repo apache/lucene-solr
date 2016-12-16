@@ -144,7 +144,7 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
     entry.docsWithFieldLength = meta.readLong();
     entry.numValues = meta.readLong();
     int tableSize = meta.readInt();
-    if (tableSize < -1 || tableSize > 256) {
+    if (tableSize > 256) {
       throw new CorruptIndexException("invalid table size: " + tableSize, meta);
     }
     if (tableSize >= 0) {
@@ -153,6 +153,11 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
       for (int i = 0; i < tableSize; ++i) {
         entry.table[i] = meta.readLong();
       }
+    }
+    if (tableSize < -1) {
+      entry.blockShift = -2 - tableSize;
+    } else {
+      entry.blockShift = -1;
     }
     entry.bitsPerValue = meta.readByte();
     entry.minValue = meta.readLong();
@@ -260,6 +265,7 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
 
   private static class NumericEntry {
     long[] table;
+    int blockShift;
     byte bitsPerValue;
     long docsWithFieldOffset;
     long docsWithFieldLength;
@@ -429,24 +435,62 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
         };
       } else {
         final RandomAccessInput slice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
-        final LongValues values = DirectReader.getInstance(slice, entry.bitsPerValue);
-        if (entry.table != null) {
-          final long[] table = entry.table;
+        if (entry.blockShift >= 0) {
+          // dense but split into blocks of different bits per value
+          final int shift = entry.blockShift;
+          final long mul = entry.gcd;
+          final int mask = (1 << shift) - 1;
           return new DenseNumericDocValues(maxDoc) {
+            int block = -1;
+            long delta;
+            long offset;
+            long blockEndOffset;
+            LongValues values;
+
             @Override
             public long longValue() throws IOException {
-              return table[(int) values.get(doc)];
+              final int block = doc >>> shift;
+              if (this.block != block) {
+                int bitsPerValue;
+                do {
+                  offset = blockEndOffset;
+                  bitsPerValue = slice.readByte(offset++);
+                  delta = slice.readLong(offset);
+                  offset += Long.BYTES;
+                  if (bitsPerValue == 0) {
+                    blockEndOffset = offset;
+                  } else {
+                    final int length = slice.readInt(offset);
+                    offset += Integer.BYTES;
+                    blockEndOffset = offset + length;
+                  }
+                  this.block ++;
+                } while (this.block != block);
+                values = bitsPerValue == 0 ? LongValues.ZEROES : DirectReader.getInstance(slice, bitsPerValue, offset);
+              }
+              return mul * values.get(doc & mask) + delta;
             }
           };
         } else {
-          final long mul = entry.gcd;
-          final long delta = entry.minValue;
-          return new DenseNumericDocValues(maxDoc) {
-            @Override
-            public long longValue() throws IOException {
-              return mul * values.get(doc) + delta;
-            }
-          };
+          final LongValues values = DirectReader.getInstance(slice, entry.bitsPerValue);
+          if (entry.table != null) {
+            final long[] table = entry.table;
+            return new DenseNumericDocValues(maxDoc) {
+              @Override
+              public long longValue() throws IOException {
+                return table[(int) values.get(doc)];
+              }
+            };
+          } else {
+            final long mul = entry.gcd;
+            final long delta = entry.minValue;
+            return new DenseNumericDocValues(maxDoc) {
+              @Override
+              public long longValue() throws IOException {
+                return mul * values.get(doc) + delta;
+              }
+            };
+          }
         }
       }
     } else {
@@ -461,24 +505,63 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
         };
       } else {
         final RandomAccessInput slice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
-        final LongValues values = DirectReader.getInstance(slice, entry.bitsPerValue);
-        if (entry.table != null) {
-          final long[] table = entry.table;
+        if (entry.blockShift >= 0) {
+          // sparse and split into blocks of different bits per value
+          final int shift = entry.blockShift;
+          final long mul = entry.gcd;
+          final int mask = (1 << shift) - 1;
           return new SparseNumericDocValues(disi) {
+            int block = -1;
+            long delta;
+            long offset;
+            long blockEndOffset;
+            LongValues values;
+
             @Override
             public long longValue() throws IOException {
-              return table[(int) values.get(disi.index())];
+              final int index = disi.index();
+              final int block = index >>> shift;
+              if (this.block != block) {
+                int bitsPerValue;
+                do {
+                  offset = blockEndOffset;
+                  bitsPerValue = slice.readByte(offset++);
+                  delta = slice.readLong(offset);
+                  offset += Long.BYTES;
+                  if (bitsPerValue == 0) {
+                    blockEndOffset = offset;
+                  } else {
+                    final int length = slice.readInt(offset);
+                    offset += Integer.BYTES;
+                    blockEndOffset = offset + length;
+                  }
+                  this.block ++;
+                } while (this.block != block);
+                values = bitsPerValue == 0 ? LongValues.ZEROES : DirectReader.getInstance(slice, bitsPerValue, offset);
+              }
+              return mul * values.get(index & mask) + delta;
             }
           };
         } else {
-          final long mul = entry.gcd;
-          final long delta = entry.minValue;
-          return new SparseNumericDocValues(disi) {
-            @Override
-            public long longValue() throws IOException {
-              return mul * values.get(disi.index()) + delta;
-            }
-          };
+          final LongValues values = DirectReader.getInstance(slice, entry.bitsPerValue);
+          if (entry.table != null) {
+            final long[] table = entry.table;
+            return new SparseNumericDocValues(disi) {
+              @Override
+              public long longValue() throws IOException {
+                return table[(int) values.get(disi.index())];
+              }
+            };
+          } else {
+            final long mul = entry.gcd;
+            final long delta = entry.minValue;
+            return new SparseNumericDocValues(disi) {
+              @Override
+              public long longValue() throws IOException {
+                return mul * values.get(disi.index()) + delta;
+              }
+            };
+          }
         }
       }
     }
@@ -494,34 +577,75 @@ final class Lucene70DocValuesProducer extends DocValuesProducer implements Close
       };
     } else {
       final RandomAccessInput slice = data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
-      final LongValues values = DirectReader.getInstance(slice, entry.bitsPerValue);
-      if (entry.table != null) {
-        final long[] table = entry.table;
+      if (entry.blockShift >= 0) {
+        final int shift = entry.blockShift;
+        final long mul = entry.gcd;
+        final long mask = (1L << shift) - 1;
         return new LongValues() {
-          @Override
+          long block = -1;
+          long delta;
+          long offset;
+          long blockEndOffset;
+          LongValues values;
+
           public long get(long index) {
-            return table[(int) values.get(index)];
-          }
-        };
-      } else if (entry.gcd != 1) {
-        final long gcd = entry.gcd;
-        final long minValue = entry.minValue;
-        return new LongValues() {
-          @Override
-          public long get(long index) {
-            return values.get(index) * gcd + minValue;
-          }
-        };
-      } else if (entry.minValue != 0) {
-        final long minValue = entry.minValue;
-        return new LongValues() {
-          @Override
-          public long get(long index) {
-            return values.get(index) + minValue;
+            final long block = index >>> shift;
+            if (this.block != block) {
+              assert block > this.block : "Reading backwards is illegal: " + this.block + " < " + block;
+              int bitsPerValue;
+              do {
+                offset = blockEndOffset;
+                try {
+                  bitsPerValue = slice.readByte(offset++);
+                  delta = slice.readLong(offset);
+                  offset += Long.BYTES;
+                  if (bitsPerValue == 0) {
+                    blockEndOffset = offset;
+                  } else {
+                    final int length = slice.readInt(offset);
+                    offset += Integer.BYTES;
+                    blockEndOffset = offset + length;
+                  }
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+                this.block ++;
+              } while (this.block != block);
+              values = bitsPerValue == 0 ? LongValues.ZEROES : DirectReader.getInstance(slice, bitsPerValue, offset);
+            }
+            return mul * values.get(index & mask) + delta;
           }
         };
       } else {
-        return values;
+        final LongValues values = DirectReader.getInstance(slice, entry.bitsPerValue);
+        if (entry.table != null) {
+          final long[] table = entry.table;
+          return new LongValues() {
+            @Override
+            public long get(long index) {
+              return table[(int) values.get(index)];
+            }
+          };
+        } else if (entry.gcd != 1) {
+          final long gcd = entry.gcd;
+          final long minValue = entry.minValue;
+          return new LongValues() {
+            @Override
+            public long get(long index) {
+              return values.get(index) * gcd + minValue;
+            }
+          };
+        } else if (entry.minValue != 0) {
+          final long minValue = entry.minValue;
+          return new LongValues() {
+            @Override
+            public long get(long index) {
+              return values.get(index) + minValue;
+            }
+          };
+        } else {
+          return values;
+        }
       }
     }
   }

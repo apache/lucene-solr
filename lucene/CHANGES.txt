@@ -48,6 +48,10 @@ Optimizations
 * LUCENE-7519: Add optimized APIs to compute browse-only top level
   facets (Mike McCandless)
 
+* LUCENE-7589: Numeric doc values now have the ability to encode blocks of
+  values using different numbers of bits per value if this proves to save
+  storage. (Adrien Grand)
+
 Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
@@ -66,6 +70,13 @@ New features
 * LUCENE-5867: Added BooleanSimilarity. (Robert Muir, Adrien Grand)
 
 * LUCENE-7466: Added AxiomaticSimilarity. (Peilin Yang via Tommaso Teofili)
+
+* LUCENE-7590: Added DocValuesStatsCollector to compute statistics on DocValues
+  fields. (Shai Erera)
+
+* LUCENE-7587: The new FacetQuery and MultiFacetQuery helper classes
+  make it simpler to execute drill down when drill sideways counts are
+  not needed (Emmanuel Keller via Mike McCandless)
 
 Bug Fixes
 
@@ -138,6 +149,10 @@ Improvements
   necessarily refer to that field (AKA requireFieldMatch==false). Disabled by default.
   See UH get/setFieldMatcher. (Jim Ferenczi via David Smiley)
 
+* LUCENE-7592: If the segments file is truncated, we now throw
+  CorruptIndexException instead of the more confusing EOFException
+  (Mike Drob via Mike McCandless)
+
 Optimizations
 
 * LUCENE-7568: Optimize merging when index sorting is used but the
@@ -150,6 +165,8 @@ Optimizations
 * LUCENE-7583: BKD writing now buffers each leaf block in heap before
   writing to disk, giving a small speedup in points-heavy use cases.
   (Mike McCandless)
+
+* LUCENE-7572: Doc values queries now cache their hash code. (Adrien Grand)
 
 Other
 
