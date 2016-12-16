@@ -81,6 +81,11 @@ public class TestFacetQuery extends FacetTestCase {
   @AfterClass
   public static void closeTestIndex() throws IOException {
     IOUtils.close(indexReader, indexWriter, indexDirectory);
+    indexReader = null;
+    indexWriter = null;
+    indexDirectory = null;
+    searcher = null;
+    config = null;
   }
 
   @Test
