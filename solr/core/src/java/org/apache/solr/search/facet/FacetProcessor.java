@@ -419,6 +419,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
 
       // make a new context for each sub-facet since they can change the domain
       FacetContext subContext = fcontext.sub(filter, domain);
+      subContext.sequentialProcessing = true;
       FacetProcessor subProcessor = subRequest.createFacetProcessor(subContext);
 
       if (fcontext.getDebugInfo() != null) {   // if fcontext.debugInfo != null, it means rb.debug() == true

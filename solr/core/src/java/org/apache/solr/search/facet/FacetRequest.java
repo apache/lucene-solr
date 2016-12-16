@@ -18,6 +18,7 @@ package org.apache.solr.search.facet;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -178,6 +179,15 @@ class FacetContext {
   int flags;
   FacetDebugInfo debugInfo;
   
+  int level; // level of the context
+  boolean sequentialProcessing; // indicates if execution of facet processors happens sequentially 
+  private Map<String, Object> reusables;
+  
+  public FacetContext() {
+    level = 0;
+    reusables = new HashMap<>();
+  }
+  
   public void setDebugInfo(FacetDebugInfo debugInfo) {
     this.debugInfo = debugInfo;
   }
@@ -190,6 +200,16 @@ class FacetContext {
     return (flags & IS_SHARD) != 0;
   }
 
+  public Object getReusable(String key) {
+    return sequentialProcessing ? reusables.get(key) : null;
+  }
+  
+  public void addReusable(String key, Object obj) {
+    if (sequentialProcessing) {
+      reusables.put(key, obj);
+    }
+  }
+  
   /**
    * @param filter The filter for the bucket that resulted in this context/domain.  Can be null if this is the root context.
    * @param domain The resulting set of documents for this facet.
@@ -205,6 +225,9 @@ class FacetContext {
     ctx.qcontext = qcontext;
     ctx.req = req;
     ctx.searcher = searcher;
+    ctx.reusables = reusables;
+    
+    ctx.level = level + 1;
 
     return ctx;
   }

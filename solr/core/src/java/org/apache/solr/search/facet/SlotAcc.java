@@ -394,7 +394,16 @@ class CountSlotArrAcc extends CountSlotAcc {
   int[] result;
   public CountSlotArrAcc(FacetContext fcontext, int numSlots) {
     super(fcontext);
-    result = new int[numSlots];
+    
+    String key = fcontext.level + this.getClass().getSimpleName();
+    result = (int[]) fcontext.getReusable(key);
+    if (result == null || result.length < numSlots) {
+      result = new int[numSlots];
+      fcontext.addReusable(key, result);
+    }
+    else {
+      Arrays.fill(result, 0);
+    }
   }
 
   @Override
