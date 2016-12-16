@@ -175,7 +175,7 @@ public class MMapDirectory extends FSDirectory {
    * is closed while another thread is still accessing it (SIGSEGV).
    * <p>To enable the hack, the following requirements need to be
    * fulfilled: The used JVM must be Oracle Java / OpenJDK 8
-   * <em>(preliminary support for Java 9 (nocommit: build 148 or later) was added with Lucene 6.4)</em>.
+   * <em>(preliminary support for Java 9 EA build 150+ was added with Lucene 6.4)</em>.
    * In addition, the following permissions need to be granted
    * to {@code lucene-core.jar} in your
    * <a href="http://docs.oracle.com/javase/8/docs/technotes/guides/security/PolicyFiles.html">policy file</a>:
@@ -338,41 +338,48 @@ public class MMapDirectory extends FSDirectory {
   @SuppressForbidden(reason = "Needs access to private APIs in DirectBuffer, sun.misc.Cleaner, and sun.misc.Unsafe to enable hack")
   private static Object unmapHackImpl() {
     final Lookup lookup = lookup();
-    Class<?> unmappableBufferClass;
-    MethodHandle unmapper;
     try {
       try {
-        // *** Unsafe unmapping (Java 9+) ***
+        // *** sun.misc.Unsafe unmapping (Java 9+) ***
         final Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
-        // we do not need to check for a specific class, we can call the Unsafe method with any buffer class:
-        unmappableBufferClass = ByteBuffer.class;
         // first check if Unsafe has the right method, otherwise we can give up
         // without doing any security critical stuff:
-        unmapper = lookup.findVirtual(unsafeClass, "invokeCleaner",
-            methodType(void.class, unmappableBufferClass));
+        final MethodHandle unmapper = lookup.findVirtual(unsafeClass, "invokeCleaner",
+            methodType(void.class, ByteBuffer.class));
         // fetch the unsafe instance and bind it to the virtual MH:
         final Field f = unsafeClass.getDeclaredField("theUnsafe");
         f.setAccessible(true);
         final Object theUnsafe = f.get(null);
-        unmapper = unmapper.bindTo(theUnsafe);
+        return newBufferCleaner(ByteBuffer.class, unmapper.bindTo(theUnsafe));
       } catch (SecurityException se) {
         // rethrow to report errors correctly (we need to catch it here, as we also catch RuntimeException below!):
         throw se;
       } catch (ReflectiveOperationException | RuntimeException e) {
-        // *** legacy Java 8 unmapping with sun.misc.Cleaner ***
-        unmappableBufferClass = Class.forName("java.nio.DirectByteBuffer");
+        // *** sun.misc.Cleaner unmapping (Java 8) ***
+        final Class<?> unmappableBufferClass = Class.forName("java.nio.DirectByteBuffer");
         
         final Method m = unmappableBufferClass.getMethod("cleaner");
         m.setAccessible(true);
         final MethodHandle directBufferCleanerMethod = lookup.unreflect(m);
         final Class<?> cleanerClass = directBufferCleanerMethod.type().returnType();
         
+        /* "Compile" a MH that basically is equivalent to the following code:
+         * void unmapper(ByteBuffer byteBuffer) {
+         *   sun.misc.Cleaner cleaner = ((java.nio.DirectByteBuffer) byteBuffer).cleaner();
+         *   if (Objects.nonNull(cleaner)) {
+         *     cleaner.clean();
+         *   } else {
+         *     noop(cleaner); // the noop is needed because MethodHandles#guardWithTest always needs ELSE
+         *   }
+         * }
+         */
         final MethodHandle cleanMethod = lookup.findVirtual(cleanerClass, "clean", methodType(void.class));
         final MethodHandle nonNullTest = lookup.findStatic(Objects.class, "nonNull", methodType(boolean.class, Object.class))
             .asType(methodType(boolean.class, cleanerClass));
         final MethodHandle noop = dropArguments(constant(Void.class, null).asType(methodType(void.class)), 0, cleanerClass);
-        unmapper = filterReturnValue(directBufferCleanerMethod, guardWithTest(nonNullTest, cleanMethod, noop))
+        final MethodHandle unmapper = filterReturnValue(directBufferCleanerMethod, guardWithTest(nonNullTest, cleanMethod, noop))
             .asType(methodType(void.class, ByteBuffer.class));
+        return newBufferCleaner(unmappableBufferClass, unmapper);
       }
     } catch (SecurityException se) {
       return "Unmapping is not supported, because not all required permissions are given to the Lucene JAR file: " + se +
@@ -381,25 +388,27 @@ public class MMapDirectory extends FSDirectory {
     } catch (ReflectiveOperationException | RuntimeException e) {
       return "Unmapping is not supported on this platform, because internal Java APIs are not compatible to this Lucene version: " + e; 
     }
-    
-    final Class<?> unmappableBufferClass0 = unmappableBufferClass;
-    final MethodHandle unmapper0 = unmapper;
-    return (BufferCleaner) (String resourceDescription, ByteBuffer buffer) -> {
+  }
+  
+  private static BufferCleaner newBufferCleaner(final Class<?> unmappableBufferClass, final MethodHandle unmapper) {
+    assert Objects.equals(methodType(void.class, ByteBuffer.class), unmapper.type());
+    return (String resourceDescription, ByteBuffer buffer) -> {
       if (!buffer.isDirect()) {
         throw new IllegalArgumentException("Unmapping only works with direct buffers");
       }
-      if (unmappableBufferClass0.isInstance(buffer)) {
-        final Throwable error = AccessController.doPrivileged((PrivilegedAction<Throwable>) () -> {
-          try {
-            unmapper0.invokeExact(buffer);
-            return null;
-          } catch (Throwable t) {
-            return t;
-          }
-        });
-        if (error != null) {
-          throw new IOException("Unable to unmap the mapped buffer: " + resourceDescription, error);
+      if (!unmappableBufferClass.isInstance(buffer)) {
+        throw new IllegalArgumentException("ByteBuffer is not an instance of " + unmappableBufferClass.getName());
+      }
+      final Throwable error = AccessController.doPrivileged((PrivilegedAction<Throwable>) () -> {
+        try {
+          unmapper.invokeExact(buffer);
+          return null;
+        } catch (Throwable t) {
+          return t;
         }
+      });
+      if (error != null) {
+        throw new IOException("Unable to unmap the mapped buffer: " + resourceDescription, error);
       }
     };
   }
