@@ -179,8 +179,9 @@ class FacetContext {
   int flags;
   FacetDebugInfo debugInfo;
   
-  int level; // level of the context
+  // Parameters for reusable
   boolean sequentialProcessing; // indicates if execution of facet processors happens sequentially 
+  int level; // level of facet processor
   private Map<String, Object> reusables;
   
   public FacetContext() {
