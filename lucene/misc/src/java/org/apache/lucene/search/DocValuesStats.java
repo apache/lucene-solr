@@ -32,6 +32,7 @@ public abstract class DocValuesStats<T> {
 
   private int missing = 0;
   private int count = 0;
+  private Bits docsWithField;
 
   protected final String field;
 
@@ -49,7 +50,7 @@ public abstract class DocValuesStats<T> {
    * the field. Implementations should update the statistics based on the value of the current document.
    *
    * @param doc
-   *          the document to read the value of for udpating statistics.
+   *          the document to read the value of for updating statistics.
    * @param count
    *          the updated number of documents with value for this field.
    */
@@ -59,13 +60,13 @@ public abstract class DocValuesStats<T> {
    * Initializes this object with the given reader context. Returns whether stats can be computed for this segment (i.e.
    * it does have the requested DocValues field).
    */
-  protected abstract boolean init(LeafReaderContext context) throws IOException;
-
-  /** Returns whether the given document has a value for the requested DocValues field. */
-  protected abstract boolean hasValue(int doc) throws IOException;
+  protected boolean init(LeafReaderContext context) throws IOException {
+    docsWithField = context.reader().getDocsWithField(field);
+    return docsWithField == null;
+  }
 
   final void accumulate(int doc) throws IOException {
-    if (hasValue(doc)) {
+    if (docsWithField.get(doc)) {
       ++count;
       doAccumulate(doc, count);
     } else {
@@ -109,7 +110,6 @@ public abstract class DocValuesStats<T> {
     protected double variance = 0.0;
 
     protected NumericDocValues ndv;
-    protected Bits docsWithField;
 
     protected NumericDocValuesStats(String field, T initialMin, T initialMax) {
       super(field, initialMin, initialMax);
@@ -117,14 +117,9 @@ public abstract class DocValuesStats<T> {
 
     @Override
     protected final boolean init(LeafReaderContext context) throws IOException {
+      super.init(context);
       ndv = context.reader().getNumericDocValues(field);
-      docsWithField = context.reader().getDocsWithField(field);
       return ndv != null;
-    }
-
-    @Override
-    protected final boolean hasValue(int doc) throws IOException {
-      return docsWithField.get(doc);
     }
 
     /** The mean of all values of the field. */
@@ -217,7 +212,6 @@ public abstract class DocValuesStats<T> {
     protected double variance = 0.0;
 
     protected SortedNumericDocValues sndv;
-    protected Bits docsWithField;
 
     protected SortedNumericDocValuesStats(String field, T initialMin, T initialMax) {
       super(field, initialMin, initialMax);
@@ -225,14 +219,9 @@ public abstract class DocValuesStats<T> {
 
     @Override
     protected final boolean init(LeafReaderContext context) throws IOException {
+      super.init(context);
       sndv = context.reader().getSortedNumericDocValues(field);
-      docsWithField = context.reader().getDocsWithField(field);
       return sndv != null;
-    }
-
-    @Override
-    protected final boolean hasValue(int doc) throws IOException {
-      return docsWithField.get(doc);
     }
 
     /** The mean of all values of the field. */
@@ -352,7 +341,6 @@ public abstract class DocValuesStats<T> {
   public static class SortedDocValuesStats extends DocValuesStats<BytesRef> {
 
     protected SortedDocValues sdv;
-    protected Bits docsWithField;
 
     protected SortedDocValuesStats(String field) {
       super(field, null, null);
@@ -360,14 +348,9 @@ public abstract class DocValuesStats<T> {
 
     @Override
     protected final boolean init(LeafReaderContext context) throws IOException {
+      super.init(context);
       sdv = context.reader().getSortedDocValues(field);
-      docsWithField = context.reader().getDocsWithField(field);
       return sdv != null;
-    }
-
-    @Override
-    protected final boolean hasValue(int doc) throws IOException {
-      return docsWithField.get(doc);
     }
 
     @Override
@@ -386,7 +369,6 @@ public abstract class DocValuesStats<T> {
   public static class SortedSetDocValuesStats extends DocValuesStats<BytesRef> {
 
     protected SortedSetDocValues ssdv;
-    protected Bits docsWithField;
 
     protected SortedSetDocValuesStats(String field) {
       super(field, null, null);
@@ -394,14 +376,9 @@ public abstract class DocValuesStats<T> {
 
     @Override
     protected final boolean init(LeafReaderContext context) throws IOException {
+      super.init(context);
       ssdv = context.reader().getSortedSetDocValues(field);
-      docsWithField = context.reader().getDocsWithField(field);
       return ssdv != null;
-    }
-
-    @Override
-    protected final boolean hasValue(int doc) throws IOException {
-      return docsWithField.get(doc);
     }
 
     @Override
