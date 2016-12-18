@@ -21,7 +21,11 @@ import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 
 /** Holds statistics for a DocValues field. */
 public abstract class DocValuesStats<T> {
@@ -329,6 +333,90 @@ public abstract class DocValuesStats<T> {
     @Override
     public Double sum() {
       return sum;
+    }
+  }
+
+  private static BytesRef copyFrom(BytesRef src, BytesRef dest) {
+    if (dest == null) {
+      return BytesRef.deepCopyOf(src);
+    }
+
+    dest.bytes = ArrayUtil.grow(dest.bytes, src.length);
+    System.arraycopy(src.bytes, src.offset, dest.bytes, 0, src.length);
+    dest.offset = 0;
+    dest.length = src.length;
+    return dest;
+  }
+
+  /** Holds statistics for a sorted DocValues field. */
+  public static class SortedDocValuesStats extends DocValuesStats<BytesRef> {
+
+    protected SortedDocValues sdv;
+    protected Bits docsWithField;
+
+    protected SortedDocValuesStats(String field) {
+      super(field, null, null);
+    }
+
+    @Override
+    protected final boolean init(LeafReaderContext context) throws IOException {
+      sdv = context.reader().getSortedDocValues(field);
+      docsWithField = context.reader().getDocsWithField(field);
+      return sdv != null;
+    }
+
+    @Override
+    protected final boolean hasValue(int doc) throws IOException {
+      return docsWithField.get(doc);
+    }
+
+    @Override
+    protected void doAccumulate(int doc, int count) throws IOException {
+      BytesRef val = sdv.get(doc);
+      if (max == null || val.compareTo(max) > 0) {
+        max = copyFrom(val, max);
+      }
+      if (min == null || val.compareTo(min) < 0) {
+        min = copyFrom(val, min);
+      }
+    }
+  }
+
+  /** Holds statistics for a sorted-set DocValues field. */
+  public static class SortedSetDocValuesStats extends DocValuesStats<BytesRef> {
+
+    protected SortedSetDocValues ssdv;
+    protected Bits docsWithField;
+
+    protected SortedSetDocValuesStats(String field) {
+      super(field, null, null);
+    }
+
+    @Override
+    protected final boolean init(LeafReaderContext context) throws IOException {
+      ssdv = context.reader().getSortedSetDocValues(field);
+      docsWithField = context.reader().getDocsWithField(field);
+      return ssdv != null;
+    }
+
+    @Override
+    protected final boolean hasValue(int doc) throws IOException {
+      return docsWithField.get(doc);
+    }
+
+    @Override
+    protected void doAccumulate(int doc, int count) throws IOException {
+      ssdv.setDocument(doc);
+      long ord;
+      while ((ord = ssdv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        BytesRef val = ssdv.lookupOrd(ord);
+        if (max == null || val.compareTo(max) > 0) {
+          max = copyFrom(val, max);
+        }
+        if (min == null || val.compareTo(min) < 0) {
+          min = copyFrom(val, min);
+        }
+      }
     }
   }
 
