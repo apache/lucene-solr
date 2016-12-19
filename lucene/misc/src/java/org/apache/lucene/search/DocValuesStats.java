@@ -44,7 +44,7 @@ public abstract class DocValuesStats<T> {
   }
 
   /**
-   * Called after #{@link DocValuesStats#accumulate(int)} was processed and verified that the document has a value for
+   * Called after {@link #accumulate(int)} was processed and verified that the document has a value for
    * the field. Implementations should update the statistics based on the value of the current document.
    *
    * @param count
@@ -89,18 +89,18 @@ public abstract class DocValuesStats<T> {
     return missing;
   }
 
-  /** The minimum value of the field. Undefined when {@link #count} is zero. */
+  /** The minimum value of the field. Undefined when {@link #count()} is zero. */
   public final T min() {
     return min;
   }
 
-  /** The maximum value of the field. Undefined when {@link #count} is zero. */
+  /** The maximum value of the field. Undefined when {@link #count()} is zero. */
   public final T max() {
     return max;
   }
 
   /** Holds statistics for a numeric DocValues field. */
-  static abstract class NumericDocValuesStats<T extends Number> extends DocValuesStats<T> {
+  public static abstract class NumericDocValuesStats<T extends Number> extends DocValuesStats<T> {
 
     protected double mean = 0.0;
     protected double variance = 0.0;
@@ -205,7 +205,7 @@ public abstract class DocValuesStats<T> {
   }
 
   /** Holds statistics for a sorted-numeric DocValues field. */
-  static abstract class SortedNumericDocValuesStats<T extends Number> extends DocValuesStats<T> {
+  public static abstract class SortedNumericDocValuesStats<T extends Number> extends DocValuesStats<T> {
 
     protected long valuesCount = 0;
     protected double mean = 0.0;
