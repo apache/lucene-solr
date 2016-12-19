@@ -1683,7 +1683,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
    *
    * realtimeSearcher is updated to the latest opened searcher, regardless of the value of "realtime".
    *
-   * This method acquires openSearcherLock - do not call with searckLock held!
+   * This method acquires openSearcherLock - do not call with searchLock held!
    */
   public RefCounted<SolrIndexSearcher>  openNewSearcher(boolean updateHandlerReopens, boolean realtime) {
     if (isClosed()) { // catch some errors quicker
@@ -1964,7 +1964,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
       Future future=null;
 
-      // if the underlying seracher has not changed, no warming is needed
+      // if the underlying searcher has not changed, no warming is needed
       if (newSearcher != currSearcher) {
 
         // warm the new searcher based on the current searcher.
