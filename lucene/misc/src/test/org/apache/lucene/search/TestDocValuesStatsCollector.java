@@ -35,6 +35,7 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocValuesStats.DoubleDocValuesStats;
@@ -131,7 +132,8 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
 
         int expCount = (int) Arrays.stream(docValues).filter(v -> v > 0).count();
         assertEquals(expCount, stats.count());
-        assertEquals(getZeroValues(docValues).count() - reader.numDeletedDocs(), stats.missing());
+        int numDocsWithoutField = (int) getZeroValues(docValues).count();
+        assertEquals(computeExpMissing(numDocsWithoutField, numDocs, reader), stats.missing());
         if (stats.count() > 0) {
           LongSummaryStatistics sumStats = getPositiveValues(docValues).summaryStatistics();
           assertEquals(sumStats.getMax(), stats.max().longValue());
@@ -181,7 +183,8 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
 
         int expCount = (int) Arrays.stream(docValues).filter(v -> v > 0).count();
         assertEquals(expCount, stats.count());
-        assertEquals(getZeroValues(docValues).count() - reader.numDeletedDocs(), stats.missing());
+        int numDocsWithoutField = (int) getZeroValues(docValues).count();
+        assertEquals(computeExpMissing(numDocsWithoutField, numDocs, reader), stats.missing());
         if (stats.count() > 0) {
           DoubleSummaryStatistics sumStats = getPositiveValues(docValues).summaryStatistics();
           assertEquals(sumStats.getMax(), stats.max().doubleValue(), 0.00001);
@@ -234,7 +237,8 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
         searcher.search(new MatchAllDocsQuery(), new DocValuesStatsCollector(stats));
 
         assertEquals(nonNull(docValues).count(), stats.count());
-        assertEquals(isNull(docValues).count() - reader.numDeletedDocs(), stats.missing());
+        int numDocsWithoutField = (int) isNull(docValues).count();
+        assertEquals(computeExpMissing(numDocsWithoutField, numDocs, reader), stats.missing());
         if (stats.count() > 0) {
           LongSummaryStatistics sumStats = filterAndFlatValues(docValues, (v) -> v != null).summaryStatistics();
           assertEquals(sumStats.getMax(), stats.max().longValue());
@@ -288,7 +292,8 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
         searcher.search(new MatchAllDocsQuery(), new DocValuesStatsCollector(stats));
 
         assertEquals(nonNull(docValues).count(), stats.count());
-        assertEquals(isNull(docValues).count() - reader.numDeletedDocs(), stats.missing());
+        int numDocsWithoutField = (int) isNull(docValues).count();
+        assertEquals(computeExpMissing(numDocsWithoutField, numDocs, reader), stats.missing());
         if (stats.count() > 0) {
           DoubleSummaryStatistics sumStats = filterAndFlatValues(docValues, (v) -> v != null).summaryStatistics();
           assertEquals(sumStats.getMax(), stats.max().longValue(), 0.00001);
@@ -338,7 +343,8 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
 
         int expCount = (int) nonNull(docValues).count();
         assertEquals(expCount, stats.count());
-        assertEquals(isNull(docValues).count() - reader.numDeletedDocs(), stats.missing());
+        int numDocsWithoutField = (int) isNull(docValues).count();
+        assertEquals(computeExpMissing(numDocsWithoutField, numDocs, reader), stats.missing());
         if (stats.count() > 0) {
           assertEquals(nonNull(docValues).min(BytesRef::compareTo).get(), stats.min());
           assertEquals(nonNull(docValues).max(BytesRef::compareTo).get(), stats.max());
@@ -381,11 +387,13 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
       try (DirectoryReader reader = DirectoryReader.open(indexWriter)) {
         IndexSearcher searcher = new IndexSearcher(reader);
         SortedSetDocValuesStats stats = new SortedSetDocValuesStats(field);
-        searcher.search(new MatchAllDocsQuery(), new DocValuesStatsCollector(stats));
+        TotalHitCountCollector totalHitCount = new TotalHitCountCollector();
+        searcher.search(new MatchAllDocsQuery(), MultiCollector.wrap(totalHitCount, new DocValuesStatsCollector(stats)));
 
         int expCount = (int) nonNull(docValues).count();
         assertEquals(expCount, stats.count());
-        assertEquals(isNull(docValues).count() - reader.numDeletedDocs(), stats.missing());
+        int numDocsWithoutField = (int) isNull(docValues).count();
+        assertEquals(computeExpMissing(numDocsWithoutField, numDocs, reader), stats.missing());
         if (stats.count() > 0) {
           assertEquals(nonNull(docValues).flatMap(Arrays::stream).min(BytesRef::compareTo).get(), stats.min());
           assertEquals(nonNull(docValues).flatMap(Arrays::stream).max(BytesRef::compareTo).get(), stats.max());
@@ -444,5 +452,12 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
 
   private static <T> Stream<T> filterValues(T[] values, Predicate<? super T> p) {
     return Arrays.stream(values).filter(p);
+  }
+
+  private static int computeExpMissing(int numDocsWithoutField, int numIndexedDocs, IndexReader reader) {
+    // The number of missing documents equals the number of docs without the field (not indexed with it, or were
+    // deleted). However, in case we deleted all documents in a segment before the reader was opened, there will be
+    // a mismatch between numDocs (how many we indexed) to reader.maxDoc(), so compensate for that.
+    return numDocsWithoutField - reader.numDeletedDocs() - (numIndexedDocs - reader.maxDoc());
   }
 }
