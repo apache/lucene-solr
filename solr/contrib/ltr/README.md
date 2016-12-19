@@ -13,6 +13,8 @@ deploy that model to Solr and use it to rerank your top X search results.
 
 Solr provides some simple example of indices. In order to test the plugin with
 the techproducts example please follow these steps.
+If you want to install the plugin on your instance of Solr, please refer
+to the [Solr Ref Guide](https://cwiki.apache.org/confluence/display/solr/Result+Reranking).
 
 1. Compile solr and the examples
 
@@ -20,38 +22,17 @@ the techproducts example please follow these steps.
     `ant dist`
     `ant server`
 
-2. Run the example to setup the index
+2. Run the example to setup the index, enabling the ltr plugin 
 
-   `./bin/solr -e techproducts`
+   `./bin/solr -e techproducts -Dsolr.ltr.enabled=true`
 
-3. Stop solr and install the plugin:
-     1. Stop solr
-
-        `./bin/solr stop`
-     2. Create the lib folder
-
-        `mkdir example/techproducts/solr/techproducts/lib`
-     3. Install the plugin in the lib folder
-
-        `cp build/contrib/ltr/solr-ltr-7.0.0-SNAPSHOT.jar example/techproducts/solr/techproducts/lib/`
-     4. Replace the original solrconfig with one importing all the ltr components
-
-        `cp contrib/ltr/example/solrconfig.xml example/techproducts/solr/techproducts/conf/`
-
-4. Run the example again
-
-   `./bin/solr -e techproducts`
-
-   Note you could also have just restarted your collection using the admin page.
-   You can find more detailed instructions [here](https://wiki.apache.org/solr/SolrPlugins).
-
-5. Deploy features and a model
+3. Deploy features and a model
 
       `curl -XPUT 'http://localhost:8983/solr/techproducts/schema/feature-store'  --data-binary "@./contrib/ltr/example/techproducts-features.json"  -H 'Content-type:application/json'`
 
       `curl -XPUT 'http://localhost:8983/solr/techproducts/schema/model-store'  --data-binary "@./contrib/ltr/example/techproducts-model.json"  -H 'Content-type:application/json'`
 
-6. Have fun !
+4. Have fun !
 
      * Access to the default feature store
 
@@ -99,7 +80,9 @@ BONUS: Train an actual machine learning model
   In order to get the feature vector you will have to
   specify that you want the field (e.g., fl="*,[features])  -->
 
-  <transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory" />
+  <transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
+    <str name="fvCacheName">QUERY_DOC_FV</str>
+  </transformer>
 
   <query>
     ...
@@ -395,6 +378,7 @@ About half the time for ranking is spent in the creation of weights for each fea
   
   <!-- Transformer for extracting features -->
   <transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
+     <str name="fvCacheName">QUERY_DOC_FV</str>
      <int name="threadModule.totalPoolThreads">10</int> <!-- Maximum threads to share for all requests -->
      <int name="threadModule.numThreadsPerRequest">5</int> <!-- Maximum threads to use for a single request -->
   </transformer>

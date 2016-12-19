@@ -63,7 +63,7 @@ public class LTRScoringQuery extends Query {
   final private Semaphore querySemaphore; // limits the number of threads per query, so that multiple requests can be serviced simultaneously
 
   // feature logger to output the features.
-  private FeatureLogger<?> fl;
+  private FeatureLogger fl;
   // Map of external parameters, such as query intent, that can be used by
   // features
   final private Map<String,String[]> efi;

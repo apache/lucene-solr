@@ -35,8 +35,9 @@
   in the response. The name of the field we will be the the name of the transformer
   enclosed between brackets (in this case [fv]). In order to get the feature
   vector you will have to specify that you want the field (e.g., fl="*,[fv]) -->
- <transformer name="fv"
-  class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory" />
+ <transformer name="fv" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
+   <str name="fvCacheName">QUERY_DOC_FV</str>
+ </transformer>
 
  <updateHandler class="solr.DirectUpdateHandler2">
   <autoCommit>
