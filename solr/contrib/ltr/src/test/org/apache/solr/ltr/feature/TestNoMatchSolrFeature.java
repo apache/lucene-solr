@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.model.MultipleAdditiveTreesModel;
@@ -104,12 +105,11 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     final Double doc0Score = (Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(0)).get("score");
 
-
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score=="
         + (doc0Score * 1.1));
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/fv=='yesmatchfeature:" + doc0Score + "'");
+        "/response/docs/[0]/fv=='"+FeatureLoggerTestUtils.toFeatureVector("yesmatchfeature", doc0Score.toString())+"'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='2'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==0.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/fv==''");
@@ -144,7 +144,7 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.0");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/fv=='yesmatchfeature:" + doc0Score + "'");
+        "/response/docs/[0]/fv=='"+FeatureLoggerTestUtils.toFeatureVector("yesmatchfeature", doc0Score.toString())+"'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==0.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/fv==''");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==0.0");
