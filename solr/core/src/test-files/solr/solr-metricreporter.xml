@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<solr>
+ <metrics>
+  <!-- this reporter doesn't specify 'group' or 'registry', it will be instantiated for any group. -->
+  <reporter name="universal" class="org.apache.solr.metrics.reporters.MockMetricReporter">
+    <str name="configurable">configured</str>
+  </reporter>
+  <!-- this reporter will be created for both "node" and "core" groups -->
+  <reporter name="multigroup" group="node, core" class="org.apache.solr.metrics.reporters.MockMetricReporter">
+    <str name="configurable">configured</str>
+  </reporter>
+  <!-- this reporter will be created for both "node" and "core.collection1" registries -->
+  <reporter name="multiregistry" registry="node, core.collection1" class="org.apache.solr.metrics.reporters.MockMetricReporter">
+    <str name="configurable">configured</str>
+  </reporter>
+  <reporter name="reporter1" group="jvm" class="org.apache.solr.metrics.reporters.MockMetricReporter">
+    <str name="configurable">configured</str>
+  </reporter>
+  <reporter name="reporter1" group="jetty" class="org.apache.solr.metrics.reporters.MockMetricReporter">
+    <str name="configurable">configured</str>
+  </reporter>
+  <reporter name="reporter1" group="http" class="org.apache.solr.metrics.reporters.MockMetricReporter">
+    <str name="configurable">configured</str>
+  </reporter>
+  <reporter name="reporter1" group="node" class="org.apache.solr.metrics.reporters.MockMetricReporter">
+    <str name="configurable">configured</str>
+  </reporter>
+  <!-- core reporters. -->
+  <reporter name="reporter1" group="core" class="org.apache.solr.metrics.reporters.MockMetricReporter">
+    <str name="configurable">configured</str>
+  </reporter>
+  <reporter name="reporter2" group="core" class="org.apache.solr.metrics.reporters.MockMetricReporter">
+    <str name="configurable">configured</str>
+  </reporter>
+  <!-- reporter for a specific registry -->
+  <reporter name="specific" registry="core.collection1" class="org.apache.solr.metrics.reporters.MockMetricReporter">
+    <str name="configurable">configured</str>
+  </reporter>
+ </metrics>
+</solr>

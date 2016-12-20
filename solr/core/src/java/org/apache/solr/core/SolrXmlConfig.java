@@ -95,7 +95,8 @@ public class SolrXmlConfig {
     configBuilder.setSolrProperties(loadProperties(config));
     if (cloudConfig != null)
       configBuilder.setCloudConfig(cloudConfig);
-    configBuilder.setBackupRepositoryPlugins((getBackupRepositoryPluginInfos(config)));
+    configBuilder.setBackupRepositoryPlugins(getBackupRepositoryPluginInfos(config));
+    configBuilder.setMetricReporterPlugins(getMetricReporterPluginInfos(config));
     return fillSolrSection(configBuilder, entries);
   }
 
@@ -433,6 +434,17 @@ public class SolrXmlConfig {
     PluginInfo[] configs = new PluginInfo[nodes.getLength()];
     for (int i = 0; i < nodes.getLength(); i++) {
       configs[i] = new PluginInfo(nodes.item(i), "BackupRepositoryFactory", true, true);
+    }
+    return configs;
+  }
+
+  private static PluginInfo[] getMetricReporterPluginInfos(Config config) {
+    NodeList nodes = (NodeList) config.evaluate("solr/metrics/reporter", XPathConstants.NODESET);
+    if (nodes == null || nodes.getLength() == 0)
+      return new PluginInfo[0];
+    PluginInfo[] configs = new PluginInfo[nodes.getLength()];
+    for (int i = 0; i < nodes.getLength(); i++) {
+      configs[i] = new PluginInfo(nodes.item(i), "SolrMetricReporter", true, true);
     }
     return configs;
   }
