@@ -59,7 +59,9 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudTestCase {
     System.clearProperty("solr.kerberos.keytab");
     System.clearProperty("solr.kerberos.name.rules");
     System.clearProperty("solr.jaas.debug");
-    kerberosTestServices.stop();
+    if (kerberosTestServices != null) {
+      kerberosTestServices.stop();
+    }
     kerberosTestServices = null;
   }
 
