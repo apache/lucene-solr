@@ -275,6 +275,8 @@ Bug Fixes
   This reduces the likelihood of a (time-limited) distributed deadlock during concurrent schema updates.
   (Mark Miller, Steve Rowe)
 
+* SOLR-9760: Windows script doesn't need write permission (Alex Crome by Mikhail Khludnev)
+
 Other Changes
 ----------------------
 
