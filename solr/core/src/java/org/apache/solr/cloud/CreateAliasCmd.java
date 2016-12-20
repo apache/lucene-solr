@@ -17,8 +17,11 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -35,8 +38,6 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 
 public class CreateAliasCmd implements Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -52,10 +53,12 @@ public class CreateAliasCmd implements Cmd {
     String aliasName = message.getStr(NAME);
     String collections = message.getStr("collections");
 
-    Map<String, Map<String, String>> newAliasesMap = new HashMap<>();
-    Map<String, String> newCollectionAliasesMap = new HashMap<>();
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     Map<String, String> prevColAliases = zkStateReader.getAliases().getCollectionAliasMap();
+    validateAllCollectionsExist(collections, prevColAliases, zkStateReader.getClusterState());
+
+    Map<String, Map<String, String>> newAliasesMap = new HashMap<>();
+    Map<String, String> newCollectionAliasesMap = new HashMap<>();
     if (prevColAliases != null) {
       newCollectionAliasesMap.putAll(prevColAliases);
     }
@@ -78,6 +81,16 @@ public class CreateAliasCmd implements Cmd {
     } catch (InterruptedException e) {
       log.warn("", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+  private void validateAllCollectionsExist(String collections, Map<String,String> prevColAliases, ClusterState clusterState) {
+    String[] collectionArr = collections.split(",");
+    for (String collection:collectionArr) {
+      if (clusterState.getCollectionOrNull(collection) == null && (prevColAliases == null || !prevColAliases.containsKey(collection))) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', '%s' is not an existing collection or alias", collections, collection));
+      }
     }
   }
 

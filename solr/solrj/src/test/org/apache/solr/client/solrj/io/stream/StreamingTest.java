@@ -94,15 +94,17 @@ public static void configureCluster() throws Exception {
 
   String collection;
   useAlias = random().nextBoolean();
-  if(useAlias) {
+  if (useAlias) {
     collection = COLLECTIONORALIAS + "_collection";
-    CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
   } else {
     collection = COLLECTIONORALIAS;
   }
-
   CollectionAdminRequest.createCollection(collection, "conf", numShards, 1).process(cluster.getSolrClient());
-  AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
+  AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
+      false, true, DEFAULT_TIMEOUT);
+  if (useAlias) {
+    CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
+  }
 
   zkHost = cluster.getZkServer().getZkAddress();
   streamFactory.withCollectionZkHost(COLLECTIONORALIAS, zkHost);

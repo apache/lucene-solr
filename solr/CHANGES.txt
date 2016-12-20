@@ -241,6 +241,8 @@ Other Changes
 
 * SOLR-9846: OverseerAutoReplicaFailoverThread can take too long to stop and leak out of unit tests. (Mark Miller)
 
+* SOLR-9874: Solr will reject CREATEALIAS requests if target collections don't exist (Tomás Fernández Löbbe)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
