@@ -21,8 +21,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.function.IntToLongFunction;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -39,6 +42,11 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
   private int currentDoc;
   private long currentValues[] = new long[8];
   private int currentUpto = 0;
+  private int maxCount = 0;
+
+  PackedLongValues finalValues;
+  PackedLongValues finalValueCounts;
+  int[] valueStartPtrs;
 
   public SortedNumericDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
@@ -72,6 +80,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
     }
     // record the number of values for this doc
     pendingCounts.add(currentUpto);
+    maxCount = Math.max(maxCount, currentUpto);
     currentUpto = 0;
     currentDoc++;
   }
@@ -84,6 +93,40 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
     for (int i = currentDoc; i < maxDoc; i++) {
       pendingCounts.add(0); // no values
     }
+
+    assert pendingCounts.size() == maxDoc;
+    finalValues = pending.build();
+    finalValueCounts = pendingCounts.build();
+  }
+
+  @Override
+  Sorter.DocComparator getDocComparator(int numDoc, SortField sortField) throws IOException {
+    SortedNumericSortField sf = (SortedNumericSortField) sortField;
+    valueStartPtrs = new int[numDoc];
+    int ptr = 0;
+    int doc = 0;
+    PackedLongValues.Iterator it = finalValueCounts.iterator();
+    while (it.hasNext()) {
+      valueStartPtrs[doc++] = ptr;
+      ptr += it.next();
+    }
+
+    final IntToLongFunction function = (docID) -> {
+      int count = (int) finalValueCounts.get(docID);
+      assert count > 0;
+      int start = valueStartPtrs[docID];
+      switch (sf.getSelector()) {
+        case MIN:
+          return finalValues.get(start);
+
+        case MAX:
+          return finalValues.get(start + count - 1);
+
+        default:
+          throw new IllegalStateException("Should never happen");
+      }
+    };
+    return NumericDocValuesWriter.getDocComparator(sf, sf.getNumericType(), (docID) -> finalValueCounts.get(docID) > 0, function);
   }
 
   private void addOneValue(long value) {
@@ -102,26 +145,41 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
   }
 
   @Override
-  public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
+  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer dvConsumer) throws IOException {
     final int maxDoc = state.segmentInfo.maxDoc();
-    assert pendingCounts.size() == maxDoc;
-    final PackedLongValues values = pending.build();
-    final PackedLongValues valueCounts = pendingCounts.build();
+
+    if (sortMap != null) {
+      valueStartPtrs = new int[maxDoc];
+      int ptr = 0;
+      int doc = 0;
+      PackedLongValues.Iterator it = finalValueCounts.iterator();
+      while (it.hasNext()) {
+        valueStartPtrs[doc++] = ptr;
+        ptr += it.next();
+      }
+    }
 
     dvConsumer.addSortedNumericField(fieldInfo,
                               // doc -> valueCount
                               new Iterable<Number>() {
                                 @Override
                                 public Iterator<Number> iterator() {
-                                  return new CountIterator(valueCounts);
+                                  if (sortMap == null) {
+                                    return new CountIterator(finalValueCounts);
+                                  } else {
+                                    return new SortingCountIterator(finalValueCounts, sortMap);
+                                  }
                                 }
                               },
-
                               // values
                               new Iterable<Number>() {
                                 @Override
                                 public Iterator<Number> iterator() {
-                                  return new ValuesIterator(values);
+                                  if (sortMap == null) {
+                                    return new ValuesIterator(finalValues);
+                                  } else {
+                                    return new SortingValuesIterator(finalValues, finalValueCounts, maxCount, sortMap, valueStartPtrs);
+                                  }
                                 }
                               });
   }
@@ -152,7 +210,64 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
       throw new UnsupportedOperationException();
     }
   }
-  
+
+  // sort the values we have in ram according to the provided sort map
+  private static class SortingValuesIterator implements Iterator<Number> {
+    final PackedLongValues values;
+    final PackedLongValues counts;
+    final Sorter.DocMap sortMap;
+    final int[] startPtrs;
+
+    final long numValues;
+    long valueUpto;
+    final long currentDoc[];
+    int currentDocSize;
+    int docUpto;
+    int currentLength;
+
+    private SortingValuesIterator(PackedLongValues values, PackedLongValues counts, int maxCount, Sorter.DocMap sortMap,
+                                  int[] startPtrs) {
+      this.values = values;
+      this.numValues = values.size();
+      this.counts = counts;
+      this.sortMap = sortMap;
+      this.startPtrs = startPtrs;
+      this.currentDoc = new long[maxCount];
+    }
+
+    @Override
+    public boolean hasNext() {
+      return valueUpto < numValues;
+    }
+
+    @Override
+    public Number next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      while (currentDocSize == currentLength) {
+        currentDocSize = 0;
+        int oldUpto = sortMap.newToOld(docUpto);
+        currentLength = (int) counts.get(oldUpto);
+        int start = startPtrs[oldUpto];
+        for (int i = 0; i < currentLength; i++) {
+          currentDoc[i] = values.get(start+i);
+        }
+        docUpto++;
+      }
+      long value = currentDoc[currentDocSize];
+      currentDocSize++;
+      valueUpto++;
+      // TODO: make reusable Number
+      return value;
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
   private static class CountIterator implements Iterator<Number> {
     final PackedLongValues.Iterator iter;
 
@@ -171,6 +286,38 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
         throw new NoSuchElementException();
       }
       return iter.next();
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private static class SortingCountIterator implements Iterator<Number> {
+    final PackedLongValues counts;
+    final Sorter.DocMap sortMap;
+    final int size;
+    int currentUpto;
+
+    SortingCountIterator(PackedLongValues valueCounts, Sorter.DocMap sortMap) {
+      this.counts = valueCounts;
+      this.sortMap = sortMap;
+      this.size = (int) valueCounts.size();
+    }
+
+    @Override
+    public boolean hasNext() {
+      return currentUpto < size;
+    }
+
+    @Override
+    public Number next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      int oldUpto = sortMap.newToOld(currentUpto++);
+      return counts.get(oldUpto);
     }
 
     @Override

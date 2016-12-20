@@ -36,15 +36,15 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * An {@link org.apache.lucene.index.LeafReader} which supports sorting documents by a given
- * {@link Sort}.  This is package private and is only used by Lucene when it needs to merge
- * a newly flushed (unsorted) segment.
+ * {@link Sort}. This is package private and is only used by Lucene for BWC when it needs to merge
+ * an unsorted flushed segment built by an older version (newly flushed segments are sorted since version 7.0).
  *
  * @lucene.experimental
  */
 
 class SortingLeafReader extends FilterLeafReader {
 
-  private static class SortingFields extends FilterFields {
+  static class SortingFields extends FilterFields {
 
     private final Sorter.DocMap docMap;
     private final FieldInfos infos;

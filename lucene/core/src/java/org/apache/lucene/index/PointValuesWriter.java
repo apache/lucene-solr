@@ -69,9 +69,8 @@ class PointValuesWriter {
     numPoints++;
   }
 
-  public void flush(SegmentWriteState state, PointsWriter writer) throws IOException {
-    PointsReader reader = new MutablePointsReader() {
-
+  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, PointsWriter writer) throws IOException {
+    MutablePointsReader points = new MutablePointsReader() {
       final int[] ords = new int[numPoints];
       {
         for (int i = 0; i < numPoints; ++i) {
@@ -170,6 +169,109 @@ class PointValuesWriter {
       }
     };
 
-    writer.writeField(fieldInfo, reader);
+    final MutablePointsReader values;
+    if (sortMap == null) {
+      values = points;
+    } else {
+      values = new MutableSortingPointReader(points, sortMap);
+    }
+
+    writer.writeField(fieldInfo, values);
+  }
+
+  static final class MutableSortingPointReader extends MutablePointsReader {
+
+    private final MutablePointsReader in;
+    private final Sorter.DocMap docMap;
+
+    public MutableSortingPointReader(final MutablePointsReader in, Sorter.DocMap docMap) {
+      this.in = in;
+      this.docMap = docMap;
+    }
+
+    @Override
+    public void intersect(String field, PointValues.IntersectVisitor visitor) throws IOException {
+      in.intersect(field, new PointValues.IntersectVisitor() {
+        @Override
+        public void visit(int docID) throws IOException {
+          visitor.visit(docMap.oldToNew(docID));
+        }
+
+        @Override
+        public void visit(int docID, byte[] packedValue) throws IOException {
+          visitor.visit(docMap.oldToNew(docID), packedValue);
+        }
+
+        @Override
+        public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+          return visitor.compare(minPackedValue, maxPackedValue);
+        }
+      });
+    }
+
+    @Override
+    public byte[] getMinPackedValue(String field) throws IOException {
+      return in.getMinPackedValue(field);
+    }
+
+    @Override
+    public byte[] getMaxPackedValue(String field) throws IOException {
+      return in.getMaxPackedValue(field);
+    }
+
+    @Override
+    public int getNumDimensions(String field) throws IOException {
+      return in.getNumDimensions(field);
+    }
+
+    @Override
+    public int getBytesPerDimension(String field) throws IOException {
+      return in.getBytesPerDimension(field);
+    }
+
+    @Override
+    public long size(String field) {
+      return in.size(field);
+    }
+
+    @Override
+    public int getDocCount(String field) {
+      return in.getDocCount(field);
+    }
+
+    @Override
+    public void getValue(int i, BytesRef packedValue) {
+      in.getValue(i, packedValue);
+    }
+
+    @Override
+    public byte getByteAt(int i, int k) {
+      return in.getByteAt(i, k);
+    }
+
+    @Override
+    public int getDocID(int i) {
+      return docMap.oldToNew(in.getDocID(i));
+    }
+
+    @Override
+    public void swap(int i, int j) {
+      in.swap(i, j);
+    }
+
+    @Override
+    public void checkIntegrity() throws IOException {
+      in.checkIntegrity();
+    }
+
+    @Override
+    public void close() throws IOException {
+      in.close();
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return in.ramBytesUsed();
+    }
   }
 }
