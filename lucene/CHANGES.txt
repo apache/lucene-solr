@@ -168,6 +168,11 @@ Optimizations
 
 * LUCENE-7572: Doc values queries now cache their hash code. (Adrien Grand)
 
+* LUCENE-7579: Segments are now also sorted during flush, and merging
+  on a sorted index is substantially faster by using some of the same
+  bulk merge optimizations that non-sorted merging uses (Jim Ferenczi
+  via Mike McCandless)
+
 Other
 
 * LUCENE-7546: Fixed references to benchmark wikipedia data and the Jenkins line-docs file

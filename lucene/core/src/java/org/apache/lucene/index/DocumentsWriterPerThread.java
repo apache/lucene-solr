@@ -36,6 +36,7 @@ import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.MutableBits;
@@ -177,7 +178,7 @@ class DocumentsWriterPerThread {
     assert numDocsInRAM == 0 : "num docs " + numDocsInRAM;
     deleteSlice = deleteQueue.newSlice();
    
-    segmentInfo = new SegmentInfo(directoryOrig, Version.LATEST, segmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
+    segmentInfo = new SegmentInfo(directoryOrig, Version.LATEST, segmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), indexWriterConfig.getIndexSort());
     assert numDocsInRAM == 0;
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segmentName + " delQueue=" + deleteQueue);  
@@ -438,9 +439,9 @@ class DocumentsWriterPerThread {
     if (infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", "flush postings as segment " + flushState.segmentInfo.name + " numDocs=" + numDocsInRAM);
     }
-
+    final Sorter.DocMap sortMap;
     try {
-      consumer.flush(flushState);
+      sortMap = consumer.flush(flushState);
       pendingUpdates.terms.clear();
       segmentInfo.setFiles(new HashSet<>(directory.getCreatedFiles()));
 
@@ -477,7 +478,7 @@ class DocumentsWriterPerThread {
 
       FlushedSegment fs = new FlushedSegment(segmentInfoPerCommit, flushState.fieldInfos,
                                              segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush);
-      sealFlushedSegment(fs);
+      sealFlushedSegment(fs, sortMap);
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "flush time " + ((System.nanoTime() - t0)/1000000.0) + " msec");
       }
@@ -494,11 +495,23 @@ class DocumentsWriterPerThread {
   public Set<String> pendingFilesToDelete() {
     return filesToDelete;
   }
+
+  private MutableBits sortLiveDocs(MutableBits bits, Sorter.DocMap sortMap) {
+    assert bits != null && sortMap != null;
+    FixedBitSet bitSet = new FixedBitSet(bits.length());
+    for (int i = 0; i < bits.length(); i++) {
+      if (bits.get(i)) {
+        bitSet.set(sortMap.oldToNew(i));
+      }
+    }
+    return bitSet;
+  }
+
   /**
    * Seals the {@link SegmentInfo} for the new flushed segment and persists
    * the deleted documents {@link MutableBits}.
    */
-  void sealFlushedSegment(FlushedSegment flushedSegment) throws IOException {
+  void sealFlushedSegment(FlushedSegment flushedSegment, Sorter.DocMap sortMap) throws IOException {
     assert flushedSegment != null;
 
     SegmentCommitInfo newSegment = flushedSegment.segmentInfo;
@@ -548,7 +561,13 @@ class DocumentsWriterPerThread {
           
         SegmentCommitInfo info = flushedSegment.segmentInfo;
         Codec codec = info.info.getCodec();
-        codec.liveDocsFormat().writeLiveDocs(flushedSegment.liveDocs, directory, info, delCount, context);
+        final MutableBits bits;
+        if (sortMap == null) {
+          bits = flushedSegment.liveDocs;
+        } else {
+          bits = sortLiveDocs(flushedSegment.liveDocs, sortMap);
+        }
+        codec.liveDocsFormat().writeLiveDocs(bits, directory, info, delCount, context);
         newSegment.setDelCount(delCount);
         newSegment.advanceDelGen();
       }
