@@ -69,19 +69,20 @@ public class SolrMetricManager {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  /** Common prefix for all registry names that Solr uses. */
   public static final String REGISTRY_NAME_PREFIX = "solr.";
 
+  /** Registry name for Jetty-specific metrics. This name is also subject to overrides controlled by
+   * system properties. This registry is shared between instances of {@link SolrMetricManager}. */
   public static final String JETTY_REGISTRY = REGISTRY_NAME_PREFIX + SolrInfoMBean.Group.jetty.toString();
 
+  /** Registry name for JVM-specific metrics. This name is also subject to overrides controlled by
+   * system properties. This registry is shared between instances of {@link SolrMetricManager}. */
   public static final String JVM_REGISTRY = REGISTRY_NAME_PREFIX + SolrInfoMBean.Group.jvm.toString();
 
   private final ConcurrentMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
 
-  // these reporters are per CoreContainer
   private final Map<String, Map<String, SolrMetricReporter>> reporters = new HashMap<>();
-
-  // these reporters are per JVM
-  private static final Map<String, Map<String, SolrMetricReporter>> sharedReporters = new HashMap<>();
 
   private final Lock reportersLock = new ReentrantLock();
 
@@ -146,13 +147,29 @@ public class SolrMetricManager {
   }
 
   /**
+   * Check for predefined shared registry names. This compares the input name
+   * with normalized and possibly overriden names of predefined shared registries -
+   * {@link #JVM_REGISTRY} and {@link #JETTY_REGISTRY}.
+   * @param registry already normalized and possibly overriden name
+   * @return true if the name matches one of shared registries
+   */
+  private static boolean isSharedRegistry(String registry) {
+    if (overridableRegistryName(JETTY_REGISTRY).equals(registry) ||
+        overridableRegistryName(JVM_REGISTRY).equals(registry)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
    * Get (or create if not present) a named registry
    * @param registry name of the registry
    * @return existing or newly created registry
    */
   public MetricRegistry registry(String registry) {
     registry = overridableRegistryName(registry);
-    if (JETTY_REGISTRY.equals(registry) || JVM_REGISTRY.equals(registry)) {
+    if (isSharedRegistry(registry)) {
       return SharedMetricRegistries.getOrCreate(registry);
     } else {
       final MetricRegistry existing = registries.get(registry);
@@ -179,7 +196,7 @@ public class SolrMetricManager {
     closeReporters(registry);
     // make sure we use a name with prefix, with overrides
     registry = overridableRegistryName(registry);
-    if (JETTY_REGISTRY.equals(registry) || JVM_REGISTRY.equals(registry)) {
+    if (isSharedRegistry(registry)) {
       SharedMetricRegistries.remove(registry);
     } else {
       registries.remove(registry);
