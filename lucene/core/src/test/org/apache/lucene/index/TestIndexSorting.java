@@ -1511,8 +1511,6 @@ public class TestIndexSorting extends LuceneTestCase {
       SegmentInfo info = leaf.getSegmentInfo().info;
       switch (info.getDiagnostics().get(IndexWriter.SOURCE)) {
         case IndexWriter.SOURCE_FLUSH:
-          assertNull(info.getIndexSort());
-          break;
         case IndexWriter.SOURCE_MERGE:
           assertEquals(indexSort, info.getIndexSort());
           final NumericDocValues values = leaf.getNumericDocValues("foo");

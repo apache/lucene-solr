@@ -26,7 +26,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.Test;
 
-public class TimerUtilsTest extends SolrTestCaseJ4 {
+public class MetricUtilsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSolrTimerGetSnapshot() {
@@ -38,7 +38,7 @@ public class TimerUtilsTest extends SolrTestCaseJ4 {
     }
     // obtain timer metrics
     final NamedList<Object> lst = new SimpleOrderedMap<>();
-    TimerUtils.addMetrics(lst, timer);
+    MetricUtils.addMetrics(lst, timer);
     // check that expected metrics were obtained
     assertEquals(lst.size(), 9);
     final Snapshot snapshot = timer.getSnapshot();
@@ -46,12 +46,12 @@ public class TimerUtilsTest extends SolrTestCaseJ4 {
     // assertEquals(lst.get("avgRequestsPerSecond"), timer.getMeanRate());
     assertEquals(lst.get("5minRateRequestsPerSecond"), timer.getFiveMinuteRate());
     assertEquals(lst.get("15minRateRequestsPerSecond"), timer.getFifteenMinuteRate());
-    assertEquals(lst.get("avgTimePerRequest"), TimerUtils.nsToMs(snapshot.getMean()));
-    assertEquals(lst.get("medianRequestTime"), TimerUtils.nsToMs(snapshot.getMedian()));
-    assertEquals(lst.get("75thPcRequestTime"), TimerUtils.nsToMs(snapshot.get75thPercentile()));
-    assertEquals(lst.get("95thPcRequestTime"), TimerUtils.nsToMs(snapshot.get95thPercentile()));
-    assertEquals(lst.get("99thPcRequestTime"), TimerUtils.nsToMs(snapshot.get99thPercentile()));
-    assertEquals(lst.get("999thPcRequestTime"), TimerUtils.nsToMs(snapshot.get999thPercentile()));
+    assertEquals(lst.get("avgTimePerRequest"), MetricUtils.nsToMs(snapshot.getMean()));
+    assertEquals(lst.get("medianRequestTime"), MetricUtils.nsToMs(snapshot.getMedian()));
+    assertEquals(lst.get("75thPcRequestTime"), MetricUtils.nsToMs(snapshot.get75thPercentile()));
+    assertEquals(lst.get("95thPcRequestTime"), MetricUtils.nsToMs(snapshot.get95thPercentile()));
+    assertEquals(lst.get("99thPcRequestTime"), MetricUtils.nsToMs(snapshot.get99thPercentile()));
+    assertEquals(lst.get("999thPcRequestTime"), MetricUtils.nsToMs(snapshot.get999thPercentile()));
   }
 
 }

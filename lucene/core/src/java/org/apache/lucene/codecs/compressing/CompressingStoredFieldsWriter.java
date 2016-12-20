@@ -18,13 +18,16 @@ package org.apache.lucene.codecs.compressing;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsReader.SerializedDocument;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocIDMerger;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -43,6 +46,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
+
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
  * {@link StoredFieldsWriter} impl for {@link CompressingStoredFieldsFormat}.
@@ -487,16 +492,45 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   @Override
   public int merge(MergeState mergeState) throws IOException {
-    if (mergeState.needsIndexSort) {
-      // TODO: can we gain back some optos even if index is sorted?  E.g. if sort results in large chunks of contiguous docs from one sub
-      // being copied over...?
-      return super.merge(mergeState);
-    }
-
     int docCount = 0;
     int numReaders = mergeState.maxDocs.length;
     
     MatchingReaders matching = new MatchingReaders(mergeState);
+    if (mergeState.needsIndexSort) {
+      /**
+       * If all readers are compressed and they have the same fieldinfos then we can merge the serialized document
+       * directly.
+       */
+      List<CompressingStoredFieldsMergeSub> subs = new ArrayList<>();
+      for(int i=0;i<mergeState.storedFieldsReaders.length;i++) {
+        if (matching.matchingReaders[i] &&
+            mergeState.storedFieldsReaders[i] instanceof CompressingStoredFieldsReader) {
+          CompressingStoredFieldsReader storedFieldsReader = (CompressingStoredFieldsReader) mergeState.storedFieldsReaders[i];
+          storedFieldsReader.checkIntegrity();
+          subs.add(new CompressingStoredFieldsMergeSub(storedFieldsReader, mergeState.docMaps[i], mergeState.maxDocs[i]));
+        } else {
+          return super.merge(mergeState);
+        }
+      }
+
+      final DocIDMerger<CompressingStoredFieldsMergeSub> docIDMerger =
+          new DocIDMerger<>(subs, true);
+      while (true) {
+        CompressingStoredFieldsMergeSub sub = docIDMerger.next();
+        if (sub == null) {
+          break;
+        }
+        assert sub.mappedDocID == docCount;
+        SerializedDocument doc = sub.reader.document(sub.docID);
+        startDocument();
+        bufferedDocs.copyBytes(doc.in, doc.length);
+        numStoredFieldsInDoc = doc.numStoredFields;
+        finishDocument();
+        ++docCount;
+      }
+      finish(mergeState.mergeFieldInfos, docCount);
+      return docCount;
+    }
     
     for (int readerIndex=0;readerIndex<numReaders;readerIndex++) {
       MergeVisitor visitor = new MergeVisitor(mergeState, readerIndex);
@@ -629,5 +663,27 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     // more than 1% dirty, or more than hard limit of 1024 dirty chunks
     return candidate.getNumDirtyChunks() > 1024 || 
            candidate.getNumDirtyChunks() * 100 > candidate.getNumChunks();
+  }
+
+  private static class CompressingStoredFieldsMergeSub extends DocIDMerger.Sub {
+    private final CompressingStoredFieldsReader reader;
+    private final int maxDoc;
+    int docID = -1;
+
+    public CompressingStoredFieldsMergeSub(CompressingStoredFieldsReader reader, MergeState.DocMap docMap, int maxDoc) {
+      super(docMap);
+      this.maxDoc = maxDoc;
+      this.reader = reader;
+    }
+
+    @Override
+    public int nextDoc() {
+      docID++;
+      if (docID == maxDoc) {
+        return NO_MORE_DOCS;
+      } else {
+        return docID;
+      }
+    }
   }
 }

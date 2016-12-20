@@ -62,18 +62,19 @@ public class JDBCStreamTest extends SolrCloudTestCase {
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
 
-    String collection;
     boolean useAlias = random().nextBoolean();
-    if(useAlias) {
+    String collection;
+    if (useAlias) {
       collection = COLLECTIONORALIAS + "_collection";
-      CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
     } else {
       collection = COLLECTIONORALIAS;
     }
-
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
         false, true, TIMEOUT);
+    if (useAlias) {
+      CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
+    }
   }
 
   @BeforeClass

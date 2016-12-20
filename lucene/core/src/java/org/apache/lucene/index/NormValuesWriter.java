@@ -68,10 +68,15 @@ class NormValuesWriter {
   public void finish(int maxDoc) {
   }
 
-  public void flush(SegmentWriteState state, NormsConsumer normsConsumer) throws IOException {
-
+  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, NormsConsumer normsConsumer) throws IOException {
     final PackedLongValues values = pending.build();
-
+    final SortingLeafReader.CachedNumericDVs sorted;
+    if (sortMap != null) {
+      sorted = NumericDocValuesWriter.sortDocValues(state.segmentInfo.maxDoc(), sortMap,
+          new BufferedNorms(values, docsWithField.iterator()));
+    } else {
+      sorted = null;
+    }
     normsConsumer.addNormsField(fieldInfo,
                                 new NormsProducer() {
                                   @Override
@@ -79,7 +84,11 @@ class NormValuesWriter {
                                    if (fieldInfo != NormValuesWriter.this.fieldInfo) {
                                      throw new IllegalArgumentException("wrong fieldInfo");
                                    }
-                                   return new BufferedNorms(values, docsWithField.iterator());
+                                   if (sorted == null) {
+                                     return new BufferedNorms(values, docsWithField.iterator());
+                                   } else {
+                                     return new SortingLeafReader.SortingNumericDocValues(sorted);
+                                   }
                                   }
 
                                   @Override

@@ -17,6 +17,7 @@
 package org.apache.solr.ltr.feature;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -103,6 +104,9 @@ public class TestExternalFeatures extends TestRerankBase {
     query.setQuery("*:*");
     query.add("rows", "1");
 
+    final String docs0fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "confidence","2.3", "originalScore","1.0");
+
     // Features we're extracting depend on external feature info not passed in
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(), "/error/msg=='Exception from createWeight for SolrFeature [name=matchedTitle, params={q={!terms f=title}${user_query}}] SolrFeatureWeight requires efi parameter that was not passed in request.'");
@@ -110,13 +114,13 @@ public class TestExternalFeatures extends TestRerankBase {
     // Adding efi in features section should make it work
     query.remove("fl");
     query.add("fl", "score,fvalias:[fv store=fstore2 efi.myconf=2.3]");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='confidence:2.3;originalScore:1.0'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+docs0fv_sparse_csv+"'");
 
     // Adding efi in transformer + rq should still use the transformer's params for feature extraction
     query.remove("fl");
     query.add("fl", "score,fvalias:[fv store=fstore2 efi.myconf=2.3]");
     query.add("rq", "{!ltr reRankDocs=3 model=externalmodel efi.user_query=w3}");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='confidence:2.3;originalScore:1.0'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+docs0fv_sparse_csv+"'");
   }
 
   @Test
@@ -128,7 +132,7 @@ public class TestExternalFeatures extends TestRerankBase {
     // Efi is explicitly not required, so we do not score the feature
     query.remove("fl");
     query.add("fl", "fvalias:[fv store=fstore2]");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='originalScore:0.0'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+FeatureLoggerTestUtils.toFeatureVector("originalScore","0.0")+"'");
   }
 
   @Test
@@ -140,7 +144,7 @@ public class TestExternalFeatures extends TestRerankBase {
     // Efi is explicitly not required, so we do not score the feature
     query.remove("fl");
     query.add("fl", "fvalias:[fv store=fstore3]");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='originalScore:0.0'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+FeatureLoggerTestUtils.toFeatureVector("originalScore","0.0")+"'");
   }
 
   @Test

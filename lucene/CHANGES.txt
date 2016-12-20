@@ -74,6 +74,10 @@ New features
 * LUCENE-7590: Added DocValuesStatsCollector to compute statistics on DocValues
   fields. (Shai Erera)
 
+* LUCENE-7587: The new FacetQuery and MultiFacetQuery helper classes
+  make it simpler to execute drill down when drill sideways counts are
+  not needed (Emmanuel Keller via Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-7547: JapaneseTokenizerFactory was failing to close the
@@ -163,6 +167,11 @@ Optimizations
   (Mike McCandless)
 
 * LUCENE-7572: Doc values queries now cache their hash code. (Adrien Grand)
+
+* LUCENE-7579: Segments are now also sorted during flush, and merging
+  on a sorted index is substantially faster by using some of the same
+  bulk merge optimizations that non-sorted merging uses (Jim Ferenczi
+  via Mike McCandless)
 
 Other
 
