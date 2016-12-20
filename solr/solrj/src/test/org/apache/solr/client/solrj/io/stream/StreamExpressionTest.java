@@ -80,16 +80,17 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     String collection;
     useAlias = random().nextBoolean();
-    if(useAlias) {
+    if (useAlias) {
       collection = COLLECTIONORALIAS + "_collection";
-      CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
     } else {
       collection = COLLECTIONORALIAS;
     }
-
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
         false, true, TIMEOUT);
+    if (useAlias) {
+      CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
+    }
   }
 
   @Before
