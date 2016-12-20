@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 package org.apache.solr.analysis;
+import static org.apache.lucene.analysis.BaseTokenStreamTestCase.assertTokenStreamContents;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,18 +31,23 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.parser.CharStream;
+import org.apache.solr.parser.ParseException;
+import org.apache.solr.parser.SolrQueryParserBase;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrQueryParser;
+import org.apache.solr.search.SyntaxError;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.lucene.analysis.BaseTokenStreamTestCase.*;
 
 public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
+
   Map<String,String> args = new HashMap<>();
   IndexSchema schema;
 
@@ -182,5 +192,37 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     assertQ("should have matched",
         req("+id:1 +one:*omez*"),
         "//result[@numFound=1]");
+  }
+  
+  private static final class SolrQParser extends SolrQueryParserBase {
+    @Override
+    public Query TopLevelQuery(String field) throws ParseException, SyntaxError {
+      return null;
+    }
+
+    @Override
+    public void ReInit(CharStream stream) {}
+
+    @Override
+    protected ReversedWildcardFilterFactory getReversedWildcardFilterFactory(FieldType fieldType) {
+      return super.getReversedWildcardFilterFactory(fieldType);
+    }
+  }
+  
+  @Test 
+  public void testCachingInQueryParser() {
+    SolrQParser parser = new SolrQParser();
+    
+    SolrQueryRequest req = req();
+    String[] fields = new String[]{"one", "two", "three"};
+    String aField = fields[random().nextInt(fields.length)];
+    FieldType type = req.getSchema().getField(aField).getType();
+    
+    FieldType typeSpy = spy(type);
+    // calling twice 
+    parser.getReversedWildcardFilterFactory(typeSpy);
+    parser.getReversedWildcardFilterFactory(typeSpy);
+    // but it should reach only once 
+    verify(typeSpy, times(1)).getIndexAnalyzer();
   }
 }

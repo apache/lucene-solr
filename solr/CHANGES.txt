@@ -322,6 +322,7 @@ Other Changes
 
 * SOLR-9874: Solr will reject CREATEALIAS requests if target collections don't exist (Tomás Fernández Löbbe)
 
+* SOLR-9878: fixing lazy logic for retrieving ReversedWildcardFilterFactory in SolrQueryParserBase (Mikhail Khludnev)
 
 ==================  6.3.0 ==================
 

@@ -787,7 +787,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   protected ReversedWildcardFilterFactory getReversedWildcardFilterFactory(FieldType fieldType) {
     if (leadingWildcards == null) leadingWildcards = new HashMap<>();
     ReversedWildcardFilterFactory fac = leadingWildcards.get(fieldType);
-    if (fac != null || leadingWildcards.containsKey(fac)) {
+    if (fac != null || leadingWildcards.containsKey(fieldType)) {
       return fac;
     }
 
