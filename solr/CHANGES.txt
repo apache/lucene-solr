@@ -119,6 +119,8 @@ New Features
 * SOLR-9860: Enable configuring invariantParams via HttpSolrClient.Builder (Hrishikesh Gadre, Ishan Chattopadhyaya)
 
 
+* SOLR-9884: Add version to segments handler output (Steven Bower via Erick Erickson)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
