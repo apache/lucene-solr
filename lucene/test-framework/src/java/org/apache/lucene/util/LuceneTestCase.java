@@ -94,6 +94,7 @@ import org.apache.lucene.store.FSLockFactory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -456,11 +457,24 @@ public abstract class LuceneTestCase extends Assert {
     LEAVE_TEMPORARY = defaultValue;
   }
 
+  /** Returns true, if MMapDirectory supports unmapping on this platform (required for Windows), or if we are not on Windows. */
+  public static boolean hasWorkingMMapOnWindows() {
+    return !Constants.WINDOWS || MMapDirectory.UNMAP_SUPPORTED;
+  }
+  
+  /** Assumes that the current MMapDirectory implementation supports unmapping, so the test will not fail on Windows.
+   * @see #hasWorkingMMapOnWindows()
+   * */
+  public static void assumeWorkingMMapOnWindows() {
+    assumeTrue(MMapDirectory.UNMAP_NOT_SUPPORTED_REASON, hasWorkingMMapOnWindows());
+  }
+
   /** Filesystem-based {@link Directory} implementations. */
   private static final List<String> FS_DIRECTORIES = Arrays.asList(
     "SimpleFSDirectory",
     "NIOFSDirectory",
-    "MMapDirectory"
+    // SimpleFSDirectory as replacement for MMapDirectory if unmapping is not supported on Windows (to make randomization stable):
+    hasWorkingMMapOnWindows() ? "MMapDirectory" : "SimpleFSDirectory"
   );
 
   /** All {@link Directory} implementations. */
@@ -469,7 +483,7 @@ public abstract class LuceneTestCase extends Assert {
     CORE_DIRECTORIES = new ArrayList<>(FS_DIRECTORIES);
     CORE_DIRECTORIES.add("RAMDirectory");
   }
-
+  
   /** A {@link org.apache.lucene.search.QueryCachingPolicy} that randomly caches. */
   public static final QueryCachingPolicy MAYBE_CACHE_POLICY = new QueryCachingPolicy() {
 
@@ -853,7 +867,7 @@ public abstract class LuceneTestCase extends Assert {
   public static void assumeNoException(String msg, Exception e) {
     RandomizedTest.assumeNoException(msg, e);
   }
-
+  
   /**
    * Return <code>args</code> as a {@link Set} instance. The order of elements is not
    * preserved in iterators.
