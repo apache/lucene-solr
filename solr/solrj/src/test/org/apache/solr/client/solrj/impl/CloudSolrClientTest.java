@@ -349,7 +349,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     SolrQuery qRequest = new SolrQuery("*:*");
 
     ModifiableSolrParams qParams = new ModifiableSolrParams();
-    qParams.add("preferLocalShards", Boolean.toString(preferLocalShards));
+    qParams.add(CommonParams.PREFER_LOCAL_SHARDS, Boolean.toString(preferLocalShards));
     qParams.add(ShardParams.SHARDS_INFO, "true");
     qRequest.add(qParams);
 

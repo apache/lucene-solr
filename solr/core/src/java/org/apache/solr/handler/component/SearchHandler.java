@@ -389,7 +389,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
                   params.remove(CommonParams.QT);
                 }
               }
-              shardHandler1.submit(sreq, shard, params, rb.preferredHostAddress);
+              shardHandler1.submit(sreq, shard, params);
             }
           }
 
