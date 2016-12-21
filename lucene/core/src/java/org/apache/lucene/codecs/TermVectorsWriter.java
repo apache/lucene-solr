@@ -205,7 +205,7 @@ public abstract class TermVectorsWriter implements Closeable {
       subs.add(new TermVectorsMergeSub(mergeState.docMaps[i], reader, mergeState.maxDocs[i]));
     }
 
-    final DocIDMerger<TermVectorsMergeSub> docIDMerger = new DocIDMerger<>(subs, mergeState.needsIndexSort);
+    final DocIDMerger<TermVectorsMergeSub> docIDMerger = DocIDMerger.of(subs, mergeState.needsIndexSort);
 
     int docCount = 0;
     while (true) {

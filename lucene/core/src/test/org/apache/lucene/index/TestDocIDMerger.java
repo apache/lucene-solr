@@ -70,7 +70,7 @@ public class TestDocIDMerger extends LuceneTestCase {
       valueStart += maxDoc;
     }
 
-    DocIDMerger<TestSubUnsorted> merger = new DocIDMerger<>(subs, false);
+    DocIDMerger<TestSubUnsorted> merger = DocIDMerger.of(subs, false);
 
     int count = 0;
     while (true) {
@@ -175,7 +175,7 @@ public class TestDocIDMerger extends LuceneTestCase {
         }, docMap.length, i));
     }
 
-    DocIDMerger<TestSubSorted> merger = new DocIDMerger<>(subs, true);
+    DocIDMerger<TestSubSorted> merger = DocIDMerger.of(subs, true);
 
     int count = 0;
     while (true) {
