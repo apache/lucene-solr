@@ -31,7 +31,7 @@ public class TestModelManagerPersistence extends TestRerankBase {
 
   @Before
   public void init() throws Exception {
-    setupPersistenttest();
+    setupPersistenttest(true);
   }
 
   // executed first

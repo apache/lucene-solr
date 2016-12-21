@@ -29,7 +29,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
   @BeforeClass
   public static void setup() throws Exception {
-    setuptest();
+    setuptest(true);
   }
 
   @AfterClass

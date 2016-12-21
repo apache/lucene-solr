@@ -28,7 +28,7 @@ import org.junit.Test;
 public class TestFilterSolrFeature extends TestRerankBase {
   @BeforeClass
   public static void before() throws Exception {
-    setuptest("solrconfig-ltr.xml", "schema.xml");
+    setuptest(false);
 
     assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
         "1"));
