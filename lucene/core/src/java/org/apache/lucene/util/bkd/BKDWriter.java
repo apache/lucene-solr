@@ -544,7 +544,6 @@ public class BKDWriter implements Closeable {
       MergeReader reader = queue.top();
       // System.out.println("iter reader=" + reader);
 
-      // NOTE: doesn't work with subclasses (e.g. SimpleText!)
       oneDimWriter.add(reader.state.scratchPackedValue, reader.docID);
 
       if (reader.next()) {
