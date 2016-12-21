@@ -20,7 +20,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
-import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -100,22 +99,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     public Boolean getIsLoadOnStartup() { return loadOnStartup; }
     public Boolean getIsTransient() { return isTransient; }
     public String getCollectionConfigName() { return collectionConfigName;}
-    
-    /**
-     * Provide the name of the core to be created.
-     * 
-     * Core names must consist entirely of periods, underscores and alphanumerics.  Other characters are not allowed.
-     * 
-     * @throws IllegalArgumentException if the core name contains invalid characters.
-     */
-    @Override
-    public void setCoreName(String coreName) {
-      if (!SolrIdentifierValidator.validateCoreName(coreName)) {
-        throw new IllegalArgumentException("Invalid collection: " + coreName
-            + ". Core names must consist entirely of periods, underscores, and alphanumerics");
-      }
-      this.core = coreName;
-    }
     
     @Override
     public SolrParams getParams() {
@@ -467,7 +450,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     super( METHOD.GET, path );
   }
 
-  public void setCoreName( String coreName )
+  public final void setCoreName( String coreName )
   {
     this.core = coreName;
   }
@@ -552,18 +535,8 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     return req.process(client);
   }
 
-  /**
-   * Rename an existing core.
-   * 
-   * @throws IllegalArgumentException if the new core name contains invalid characters.
-   */
-  public static CoreAdminResponse renameCore(String coreName, String newName, SolrClient client )
-      throws SolrServerException, IOException {
-    if (!SolrIdentifierValidator.validateCoreName(newName)) {
-      throw new IllegalArgumentException("Invalid collection: " + newName
-          + ". Core names must consist entirely of periods, underscores, and alphanumerics");
-    }
-    
+  public static CoreAdminResponse renameCore(String coreName, String newName, SolrClient client ) throws SolrServerException, IOException
+  {
     CoreAdminRequest req = new CoreAdminRequest();
     req.setCoreName(coreName);
     req.setOtherCoreName(newName);

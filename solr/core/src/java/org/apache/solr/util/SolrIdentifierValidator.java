@@ -14,9 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.util;
+package org.apache.solr.util;
 
+import java.lang.invoke.MethodHandles;
 import java.util.regex.Pattern;
+
+import org.apache.solr.common.SolrException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Ensures that provided identifiers align with Solr's recommendations/requirements for choosing
@@ -25,26 +30,18 @@ import java.util.regex.Pattern;
  * Identifiers are allowed to contain underscores, periods, hyphens, and alphanumeric characters.
  */
 public class SolrIdentifierValidator {
-  final static Pattern identifierPattern = Pattern.compile("^(?!\\\\-)[\\\\._A-Za-z0-9\\\\-]+$");
-  
-  public static boolean validateShardName(String shardName) {
-    return validateIdentifier(shardName);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  final static Pattern identifierPattern = Pattern.compile("^[\\._A-Za-z0-9]*$");
+
+  public static void validateCollectionName(String collectionName) throws SolrException {
+    validateCoreName(collectionName);
   }
   
-  public static boolean validateCollectionName(String collectionName) {
-    return validateIdentifier(collectionName);
-  }
-  
-  public static boolean validateCoreName(String name) {
-    return validateIdentifier(name);
-  }
-  
-  private static boolean validateIdentifier(String identifier) {
-    if (identifier == null || ! identifierPattern.matcher(identifier).matches()) {
-      return false;
+  public static void validateCoreName(String name) throws SolrException {
+    if (name == null || !identifierPattern.matcher(name).matches()) {
+      log.info("Validation failed on the invalid identifier [{}].  Throwing SolrException to indicate a BAD REQUEST.", name);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Invalid name: '" + name + "' Identifiers must consist entirely of periods, underscores and alphanumerics");
     }
-    return true;
   }
 }
-
-

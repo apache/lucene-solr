@@ -37,7 +37,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -65,6 +64,7 @@ import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.SolrIdentifierValidator;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -810,10 +810,7 @@ public class CoreContainer {
     SolrCore core = null;
     try {
       MDCLoggingContext.setCore(core);
-      if (!SolrIdentifierValidator.validateCoreName(dcore.getName())) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid core: " + dcore.getName()
-            + ". Core names must consist entirely of periods, underscores, and alphanumerics");
-      }
+      SolrIdentifierValidator.validateCoreName(dcore.getName());
       if (zkSys.getZkController() != null) {
         zkSys.getZkController().preRegister(dcore);
       }
@@ -1015,10 +1012,7 @@ public class CoreContainer {
   }
 
   public void rename(String name, String toName) {
-    if(!SolrIdentifierValidator.validateCoreName(toName)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid core: " + toName
-          + ". Core names must consist entirely of periods, underscores, and alphanumerics");
-    }
+    SolrIdentifierValidator.validateCoreName(toName);
     try (SolrCore core = getCore(name)) {
       if (core != null) {
         registerCore(toName, core, true);
