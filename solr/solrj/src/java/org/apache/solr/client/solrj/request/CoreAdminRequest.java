@@ -111,7 +111,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     @Override
     public void setCoreName(String coreName) {
       if (!SolrIdentifierValidator.validateCoreName(coreName)) {
-        throw new IllegalArgumentException("Invalid core: " + coreName
+        throw new IllegalArgumentException("Invalid collection: " + coreName
             + ". Core names must consist entirely of periods, underscores, and alphanumerics");
       }
       this.core = coreName;
@@ -560,7 +560,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   public static CoreAdminResponse renameCore(String coreName, String newName, SolrClient client )
       throws SolrServerException, IOException {
     if (!SolrIdentifierValidator.validateCoreName(newName)) {
-      throw new IllegalArgumentException("Invalid core: " + newName
+      throw new IllegalArgumentException("Invalid collection: " + newName
           + ". Core names must consist entirely of periods, underscores, and alphanumerics");
     }
     
