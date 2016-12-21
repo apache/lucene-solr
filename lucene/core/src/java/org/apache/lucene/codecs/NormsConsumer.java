@@ -143,7 +143,7 @@ public abstract class NormsConsumer implements Closeable {
                           subs.add(new NumericDocValuesSub(mergeState.docMaps[i], toMerge.get(i), mergeState.maxDocs[i]));
                         }
 
-                        final DocIDMerger<NumericDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.needsIndexSort);
+                        final DocIDMerger<NumericDocValuesSub> docIDMerger = DocIDMerger.of(subs, mergeState.needsIndexSort);
 
                         return new Iterator<Number>() {
                           long nextValue;
