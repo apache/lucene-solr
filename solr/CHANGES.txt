@@ -191,6 +191,8 @@ New Features
   of which are multi-valued. Example: http://localhost:8983/solr/admin/metrics?group=jvm,jetty&type=counter
   (shalin)
 
+* SOLR-9884: Add version to segments handler output (Steven Bower via Erick Erickson)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
