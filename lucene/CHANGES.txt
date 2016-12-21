@@ -153,6 +153,13 @@ Improvements
   CorruptIndexException instead of the more confusing EOFException
   (Mike Drob via Mike McCandless)
 
+* LUCENE-6989: Make MMapDirectory's unmap hack work with Java 9 EA (b150+):
+  Unmapping uses new sun.misc.Unsafe#invokeCleaner(ByteBuffer).
+  Java 9 now needs same permissions like Java 8;
+  RuntimePermission("accessClassInPackage.jdk.internal.ref")
+  is no longer needed. Support for older Java 9 builds was removed.
+  (Uwe Schindler)
+
 Optimizations
 
 * LUCENE-7568: Optimize merging when index sorting is used but the
