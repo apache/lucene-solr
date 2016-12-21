@@ -28,7 +28,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 
 final class TrackingTmpOutputDirectoryWrapper extends FilterDirectory {
-  private final Map<String, String> fileNames = new HashMap();
+  private final Map<String,String> fileNames = new HashMap<>();
 
   TrackingTmpOutputDirectoryWrapper(Directory in) {
     super(in);
