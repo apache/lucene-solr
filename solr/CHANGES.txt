@@ -328,6 +328,8 @@ Other Changes
 
 * SOLR-9878: fixing lazy logic for retrieving ReversedWildcardFilterFactory in SolrQueryParserBase (Mikhail Khludnev)
 
+* SOLR-9758: refactor preferLocalShards implementation (Christine Poerschke)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
