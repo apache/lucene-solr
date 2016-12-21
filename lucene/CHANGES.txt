@@ -109,6 +109,10 @@ Bug Fixes
   there are too many merges running and one of the merges hits a
   tragic exception (Joey Echeverria via Mike McCandless)
 
+* LUCENE-7594: Fixed point range queries on floating-point types to recommend
+  using helpers for exclusive bounds that are consistent with Double.compare.
+  (Adrien Grand, Dawid Weiss)
+
 Improvements
 
 * LUCENE-6824: TermAutomatonQuery now rewrites to TermQuery,
