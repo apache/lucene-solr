@@ -49,7 +49,6 @@ import java.util.regex.Pattern;
 
 import com.codahale.metrics.jvm.BufferPoolMetricSet;
 import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
-import com.codahale.metrics.jvm.FileDescriptorRatioGauge;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
@@ -69,6 +68,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -187,9 +187,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     SolrMetricManager metricManager = cores.getMetricManager();
     try {
       String registry = SolrMetricManager.getRegistryName(SolrInfoMBean.Group.jvm);
-      metricManager.registerAll(registry, new BufferPoolMetricSet(platformMBeanServer), true, "bufferPools");
-      metricManager.registerAll(registry, new ClassLoadingGaugeSet(), true, "classLoading");
-      metricManager.register(registry, new FileDescriptorRatioGauge(), true, "fileDescriptorRatio");
+      metricManager.registerAll(registry, new BufferPoolMetricSet(platformMBeanServer), true, "buffers");
+      metricManager.registerAll(registry, new ClassLoadingGaugeSet(), true, "classes");
+      metricManager.registerAll(registry, new OperatingSystemMetricSet(platformMBeanServer), true, "os");
       metricManager.registerAll(registry, new GarbageCollectorMetricSet(), true, "gc");
       metricManager.registerAll(registry, new MemoryUsageGaugeSet(), true, "memory");
       metricManager.registerAll(registry, new ThreadStatesGaugeSet(), true, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
