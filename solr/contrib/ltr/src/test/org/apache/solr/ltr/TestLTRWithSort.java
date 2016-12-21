@@ -28,7 +28,7 @@ public class TestLTRWithSort extends TestRerankBase {
 
   @BeforeClass
   public static void before() throws Exception {
-    setuptest("solrconfig-ltr.xml", "schema.xml");
+    setuptest(false);
     assertU(adoc("id", "1", "title", "a1", "description", "E", "popularity",
         "1"));
     assertU(adoc("id", "2", "title", "a1 b1", "description",

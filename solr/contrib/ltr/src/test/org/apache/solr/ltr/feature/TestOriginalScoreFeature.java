@@ -32,7 +32,7 @@ public class TestOriginalScoreFeature extends TestRerankBase {
 
   @BeforeClass
   public static void before() throws Exception {
-    setuptest("solrconfig-ltr.xml", "schema.xml");
+    setuptest(false);
 
     assertU(adoc("id", "1", "title", "w1"));
     assertU(adoc("id", "2", "title", "w2"));

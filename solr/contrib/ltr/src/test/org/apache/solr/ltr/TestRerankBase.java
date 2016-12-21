@@ -75,14 +75,14 @@ public class TestRerankBase extends RestTestBase {
   protected static File fstorefile = null;
   protected static File mstorefile = null;
 
-  public static void setuptest() throws Exception {
+  protected static void setuptest(boolean bulkIndex) throws Exception {
     setuptest("solrconfig-ltr.xml", "schema.xml");
-    bulkIndex();
+    if (bulkIndex) bulkIndex();
   }
 
-  public static void setupPersistenttest() throws Exception {
+  protected static void setupPersistenttest(boolean bulkIndex) throws Exception {
     setupPersistentTest("solrconfig-ltr.xml", "schema.xml");
-    bulkIndex();
+    if (bulkIndex) bulkIndex();
   }
 
   public static ManagedFeatureStore getManagedFeatureStore() {
@@ -178,8 +178,6 @@ public class TestRerankBase extends RestTestBase {
     FileUtils.deleteDirectory(tmpSolrHome);
     System.clearProperty("managed.schema.mutable");
     // System.clearProperty("enable.update.log");
-
-
   }
 
   public static void makeRestTestHarnessNull() {
