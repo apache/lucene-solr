@@ -78,6 +78,14 @@ New features
   make it simpler to execute drill down when drill sideways counts are
   not needed (Emmanuel Keller via Mike McCandless)
 
+* LUCENE-6664: A new SynonymGraphFilter outputs a correct graph
+  structure for multi-token synonyms, separating out a
+  FlattenGraphFilter that is hardwired into the current
+  SynonymFilter.  This finally makes it possible to implement
+  correct multi-token synonyms at search time.  See
+  http://blog.mikemccandless.com/2012/04/lucenes-tokenstreams-are-actually.html
+  for details. (Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-7547: JapaneseTokenizerFactory was failing to close the

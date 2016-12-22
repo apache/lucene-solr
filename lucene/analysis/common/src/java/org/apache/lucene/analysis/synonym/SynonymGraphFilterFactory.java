@@ -14,12 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.synonym;
 
+package org.apache.lucene.analysis.synonym;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
@@ -30,9 +29,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
@@ -40,12 +39,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 
 /**
- * Factory for {@link SynonymFilter}.
+ * Factory for {@link SynonymGraphFilter}.
  * <pre class="prettyprint">
  * &lt;fieldType name="text_synonym" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
- *     &lt;filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" 
+ *     &lt;filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" 
  *             format="solr" ignoreCase="false" expand="true" 
  *             tokenizerFactory="solr.WhitespaceTokenizerFactory"
  *             [optional tokenizer factory parameters]/&gt;
@@ -54,9 +53,9 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  * 
  * <p>
  * An optional param name prefix of "tokenizerFactory." may be used for any 
- * init params that the SynonymFilterFactory needs to pass to the specified 
+ * init params that the SynonymGraphFilterFactory needs to pass to the specified 
  * TokenizerFactory.  If the TokenizerFactory expects an init parameters with 
- * the same name as an init param used by the SynonymFilterFactory, the prefix 
+ * the same name as an init param used by the SynonymGraphFilterFactory, the prefix 
  * is mandatory.
  * </p>
  * 
@@ -73,11 +72,9 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  * </ul>
  * @see SolrSynonymParser SolrSynonymParser: default format
  *
- * @deprecated Use {@link SynonymGraphFilterFactory} instead, but be sure to also
- * use {@link FlattenGraphFilterFactory} at index time (not at search time) as well.
+ * @lucene.experimental
  */
-@Deprecated
-public class SynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+public class SynonymGraphFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private final boolean ignoreCase;
   private final String tokenizerFactory;
   private final String synonyms;
@@ -88,7 +85,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
 
   private SynonymMap map;
   
-  public SynonymFilterFactory(Map<String,String> args) {
+  public SynonymGraphFilterFactory(Map<String,String> args) {
     super(args);
     ignoreCase = getBoolean(args, "ignoreCase", false);
     synonyms = require(args, "synonyms");
@@ -119,7 +116,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
   public TokenStream create(TokenStream input) {
     // if the fst is null, it means there's actually no synonyms... just return the original stream
     // as there is nothing to do here.
-    return map.fst == null ? input : new SynonymFilter(input, map, ignoreCase);
+    return map.fst == null ? input : new SynonymGraphFilter(input, map, ignoreCase);
   }
 
   @Override
@@ -173,9 +170,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
     List<String> files = splitFileNames(synonyms);
     for (String file : files) {
       decoder.reset();
-      try (final Reader isr = new InputStreamReader(loader.openResource(file), decoder)) {
-        parser.parse(isr);
-      }
+      parser.parse(new InputStreamReader(loader.openResource(file), decoder));
     }
     return parser.build();
   }
