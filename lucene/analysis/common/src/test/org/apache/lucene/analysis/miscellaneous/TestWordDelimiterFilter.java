@@ -340,7 +340,10 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         new String[] { "abc", "abcdef", "abcdef123456", "def", "123", "123456", "456" }, 
         new int[] { 0, 0, 0, 4, 8, 8, 12 }, 
         new int[] { 3, 7, 15, 7, 11, 15, 15 },
-        new int[] { 1, 0, 0, 1, 1, 0, 1 });
+        null,
+        new int[] { 1, 0, 0, 1, 1, 0, 1 },
+        null,
+        false);
     a.close();
   }
   
@@ -361,7 +364,10 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         new String[] { "abc-def-123-456", "abc", "abcdef", "abcdef123456", "def", "123", "123456", "456" }, 
         new int[] { 0, 0, 0, 0, 4, 8, 8, 12 }, 
         new int[] { 15, 3, 7, 15, 7, 11, 15, 15 },
-        new int[] { 1, 0, 0, 0, 1, 1, 0, 1 });
+        null,
+        new int[] { 1, 0, 0, 0, 1, 1, 0, 1 },
+        null,
+        false);
     a.close();
   }
   
