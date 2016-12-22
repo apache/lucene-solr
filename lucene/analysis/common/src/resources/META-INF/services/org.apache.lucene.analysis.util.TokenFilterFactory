@@ -101,5 +101,7 @@ org.apache.lucene.analysis.standard.ClassicFilterFactory
 org.apache.lucene.analysis.standard.StandardFilterFactory
 org.apache.lucene.analysis.sv.SwedishLightStemFilterFactory
 org.apache.lucene.analysis.synonym.SynonymFilterFactory
+org.apache.lucene.analysis.synonym.SynonymGraphFilterFactory
+org.apache.lucene.analysis.synonym.FlattenGraphFilterFactory
 org.apache.lucene.analysis.tr.TurkishLowerCaseFilterFactory
 org.apache.lucene.analysis.util.ElisionFilterFactory

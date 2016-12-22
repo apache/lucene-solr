@@ -74,6 +74,11 @@ public class SynonymMap {
     private int maxHorizontalContext;
     private final boolean dedup;
 
+    /** Default constructor, passes {@code dedup=true}. */
+    public Builder() {
+      this(true);
+    }
+
     /** If dedup is true then identical rules (same input,
      *  same output) will be added only once. */
     public Builder(boolean dedup) {
@@ -109,8 +114,6 @@ public class SynonymMap {
       reuse.setLength(upto);
       return reuse.get();
     }
-    
-
 
     /** only used for asserting! */
     private boolean hasHoles(CharsRef chars) {
