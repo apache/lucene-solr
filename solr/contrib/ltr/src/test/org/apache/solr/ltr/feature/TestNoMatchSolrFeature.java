@@ -105,20 +105,48 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     final Double doc0Score = (Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(0)).get("score");
 
+    final String docs0fv_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "nomatchfeature","0.0",
+        "yesmatchfeature",doc0Score.toString(),
+        "nomatchfeature2","0.0");
+    final String docs1fv_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "nomatchfeature","0.0",
+        "yesmatchfeature","0.0",
+        "nomatchfeature2","0.0");
+    final String docs2fv_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "nomatchfeature","0.0",
+        "yesmatchfeature","0.0",
+        "nomatchfeature2","0.0");
+    final String docs3fv_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "nomatchfeature","0.0",
+        "yesmatchfeature","0.0",
+        "nomatchfeature2","0.0");
+
+    final String docs0fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "yesmatchfeature",doc0Score.toString());
+    final String docs1fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector();
+    final String docs2fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector();
+    final String docs3fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector();
+
+    final String docs0fv_default_csv = chooseDefaultFeatureVector(docs0fv_dense_csv, docs0fv_sparse_csv);
+    final String docs1fv_default_csv = chooseDefaultFeatureVector(docs1fv_dense_csv, docs1fv_sparse_csv);
+    final String docs2fv_default_csv = chooseDefaultFeatureVector(docs2fv_dense_csv, docs2fv_sparse_csv);
+    final String docs3fv_default_csv = chooseDefaultFeatureVector(docs3fv_dense_csv, docs3fv_sparse_csv);
+
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score=="
         + (doc0Score * 1.1));
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/fv=='"+FeatureLoggerTestUtils.toFeatureVector("yesmatchfeature", doc0Score.toString())+"'");
+        "/response/docs/[0]/fv=='"+docs0fv_default_csv+"'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='2'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==0.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/fv==''");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/fv=='"+docs1fv_default_csv+"'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==0.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/fv==''");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/fv=='"+docs2fv_default_csv+"'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='4'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/score==0.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/fv==''");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/fv=='"+docs3fv_default_csv+"'");
   }
 
   @Test
@@ -142,15 +170,47 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     final Double doc0Score = (Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(0)).get("score");
 
+    final String docs0fv_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "nomatchfeature","0.0",
+        "yesmatchfeature",doc0Score.toString(),
+        "nomatchfeature2","0.0",
+        "nomatchfeature3","0.0");
+    final String docs1fv_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "nomatchfeature","0.0",
+        "yesmatchfeature","0.0",
+        "nomatchfeature2","0.0",
+        "nomatchfeature3","0.0");
+    final String docs2fv_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "nomatchfeature","0.0",
+        "yesmatchfeature","0.0",
+        "nomatchfeature2","0.0",
+        "nomatchfeature3","0.0");
+    final String docs3fv_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "nomatchfeature","0.0",
+        "yesmatchfeature","0.0",
+        "nomatchfeature2","0.0",
+        "nomatchfeature3","0.0");
+
+    final String docs0fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "yesmatchfeature",doc0Score.toString());
+    final String docs1fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector();
+    final String docs2fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector();
+    final String docs3fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector();
+
+    final String docs0fv_default_csv = chooseDefaultFeatureVector(docs0fv_dense_csv, docs0fv_sparse_csv);
+    final String docs1fv_default_csv = chooseDefaultFeatureVector(docs1fv_dense_csv, docs1fv_sparse_csv);
+    final String docs2fv_default_csv = chooseDefaultFeatureVector(docs2fv_dense_csv, docs2fv_sparse_csv);
+    final String docs3fv_default_csv = chooseDefaultFeatureVector(docs3fv_dense_csv, docs3fv_sparse_csv);
+
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.0");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/fv=='"+FeatureLoggerTestUtils.toFeatureVector("yesmatchfeature", doc0Score.toString())+"'");
+        "/response/docs/[0]/fv=='"+docs0fv_default_csv+"'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==0.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/fv==''");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/fv=='"+docs1fv_default_csv+"'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==0.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/fv==''");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/fv=='"+docs2fv_default_csv+"'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/score==0.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/fv==''");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/fv=='"+docs3fv_default_csv+"'");
   }
 
   @Test
@@ -163,8 +223,14 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     query.add("fv", "true");
     query.add("rq", "{!ltr model=nomatchmodel3 reRankDocs=4}");
 
+    final String docs0fv_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "nomatchfeature4","0.0");
+    final String docs0fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector();
+
+    final String docs0fv_default_csv = chooseDefaultFeatureVector(docs0fv_dense_csv, docs0fv_sparse_csv);
+
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv==''");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_default_csv+"'");
   }
 
   @Test
@@ -184,9 +250,15 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     query.add("rows", "4");
     query.add("rq", "{!ltr model=nomatchmodel4 reRankDocs=4}");
 
+    final String docs0fv_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "nomatchfeature4","0.0");
+    final String docs0fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector();
+
+    final String docs0fv_default_csv = chooseDefaultFeatureVector(docs0fv_dense_csv, docs0fv_sparse_csv);
+
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[0]/score==0.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv==''");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_default_csv+"'");
   }
 
 }

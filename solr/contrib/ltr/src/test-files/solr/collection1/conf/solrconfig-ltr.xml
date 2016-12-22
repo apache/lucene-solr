@@ -36,6 +36,7 @@
   enclosed between brackets (in this case [fv]). In order to get the feature
   vector you will have to specify that you want the field (e.g., fl="*,[fv]) -->
  <transformer name="fv" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
+   <str name="defaultFormat">${solr.ltr.transformer.fv.defaultFormat:dense}</str>
    <str name="fvCacheName">QUERY_DOC_FV</str>
  </transformer>
 
