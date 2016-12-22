@@ -279,6 +279,8 @@ Bug Fixes
 
 * SOLR-9760: Windows script doesn't need write permission (Alex Crome by Mikhail Khludnev)
 
+* SOLR-9699,SOLR-4668: fix exception from core status in parallel with core reload (Mikhail Khludnev)
+
 Other Changes
 ----------------------
 

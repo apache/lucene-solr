@@ -58,6 +58,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -577,7 +578,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
     indexInfo.add("segmentCount", reader.leaves().size());
-    indexInfo.add("current", reader.isCurrent() );
+    indexInfo.add("current", closeSafe( reader::isCurrent));
     indexInfo.add("hasDeletions", reader.hasDeletions() );
     indexInfo.add("directory", dir );
     IndexCommit indexCommit = reader.getIndexCommit();
@@ -592,6 +593,21 @@ public class LukeRequestHandler extends RequestHandlerBase
     }
     return indexInfo;
   }
+
+  @FunctionalInterface
+  interface IOSupplier {
+    boolean get() throws IOException;
+  }
+  
+  private static Object closeSafe(IOSupplier isCurrent) {
+    try {
+      return isCurrent.get();
+    }catch(AlreadyClosedException | IOException exception) {
+    }
+    return false;
+  }
+
+
 
   private static long getFileLength(Directory dir, String filename) {
     try {
