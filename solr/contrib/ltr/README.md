@@ -324,7 +324,7 @@ produce the features without doing the reranking:
 `fl=*,score,[features store=yourFeatureStore format=[dense|sparse] ]`
 
 This will return the values of the features in the given store. The format of the 
-extracted features will be based on the format parameter. The default is sparse.
+extracted features will be based on the format parameter. The default is dense.
 
 # Assemble training data
 In order to train a learning to rank model you need training data. Training data is

@@ -97,13 +97,13 @@ public class TestFilterSolrFeature extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=4 model=fqmodel efi.user_query=w2}");
     query.add("fl", "fv:[fv]");
 
-    final String docs0fv_sparse_csv= FeatureLoggerTestUtils.toFeatureVector(
+    final String docs0fv_csv= FeatureLoggerTestUtils.toFeatureVector(
         "matchedTitle","1.0", "popularity","3.0");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='2'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_sparse_csv+"'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_csv+"'");
   }
 
 }

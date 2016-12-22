@@ -94,8 +94,15 @@ public class TestExternalFeatures extends TestRerankBase {
     // Stopword only query passed in
     query.add("rq", "{!ltr reRankDocs=3 model=externalmodel efi.user_query='a'}");
 
+    final String docs0fv_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "matchedTitle","0.0",
+        "titlePhraseMatch","0.0");
+    final String docs0fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector();
+
+    final String docs0fv_default_csv = chooseDefaultFeatureVector(docs0fv_dense_csv, docs0fv_sparse_csv);
+
     // Features are query title matches, which remove stopwords, leaving blank query, so no matches
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv==''");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_default_csv+"'");
   }
 
   @Test
@@ -104,7 +111,7 @@ public class TestExternalFeatures extends TestRerankBase {
     query.setQuery("*:*");
     query.add("rows", "1");
 
-    final String docs0fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
+    final String docs0fv_csv = FeatureLoggerTestUtils.toFeatureVector(
         "confidence","2.3", "originalScore","1.0");
 
     // Features we're extracting depend on external feature info not passed in
@@ -114,13 +121,13 @@ public class TestExternalFeatures extends TestRerankBase {
     // Adding efi in features section should make it work
     query.remove("fl");
     query.add("fl", "score,fvalias:[fv store=fstore2 efi.myconf=2.3]");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+docs0fv_sparse_csv+"'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+docs0fv_csv+"'");
 
     // Adding efi in transformer + rq should still use the transformer's params for feature extraction
     query.remove("fl");
     query.add("fl", "score,fvalias:[fv store=fstore2 efi.myconf=2.3]");
     query.add("rq", "{!ltr reRankDocs=3 model=externalmodel efi.user_query=w3}");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+docs0fv_sparse_csv+"'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+docs0fv_csv+"'");
   }
 
   @Test
@@ -129,10 +136,18 @@ public class TestExternalFeatures extends TestRerankBase {
     query.setQuery("*:*");
     query.add("rows", "1");
 
+    final String docs0fvalias_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "confidence","0.0",
+        "originalScore","0.0");
+    final String docs0fvalias_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "originalScore","0.0");
+
+    final String docs0fvalias_default_csv = chooseDefaultFeatureVector(docs0fvalias_dense_csv, docs0fvalias_sparse_csv);
+
     // Efi is explicitly not required, so we do not score the feature
     query.remove("fl");
     query.add("fl", "fvalias:[fv store=fstore2]");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+FeatureLoggerTestUtils.toFeatureVector("originalScore","0.0")+"'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+docs0fvalias_default_csv+"'");
   }
 
   @Test
@@ -141,10 +156,18 @@ public class TestExternalFeatures extends TestRerankBase {
     query.setQuery("*:*");
     query.add("rows", "1");
 
+    final String docs0fvalias_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "occurrences","0.0",
+        "originalScore","0.0");
+    final String docs0fvalias_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "originalScore","0.0");
+
+    final String docs0fvalias_default_csv = chooseDefaultFeatureVector(docs0fvalias_dense_csv, docs0fvalias_sparse_csv);
+
     // Efi is explicitly not required, so we do not score the feature
     query.remove("fl");
     query.add("fl", "fvalias:[fv store=fstore3]");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+FeatureLoggerTestUtils.toFeatureVector("originalScore","0.0")+"'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+docs0fvalias_default_csv+"'");
   }
 
   @Test

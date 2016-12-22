@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -59,7 +60,7 @@ import org.slf4j.LoggerFactory;
  * will default to the features used by your reranking model.<br>
  * <code>efi.*</code> - External feature information variables required by the features
  * you are extracting.<br>
- * <code>format</code> - The format you want the features to be returned in.  Supports (dense|sparse). Defaults to sparse.<br>
+ * <code>format</code> - The format you want the features to be returned in.  Supports (dense|sparse). Defaults to dense.<br>
 */
 
 public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
@@ -77,7 +78,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   private String fvCacheName;
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
   private String defaultStore;
-  private String defaultFormat;
+  private FeatureLogger.FeatureFormat defaultFormat = FeatureLogger.FeatureFormat.DENSE;
   private char csvKeyValueDelimiter = CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
   private char csvFeatureSeparator = CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
 
@@ -96,7 +97,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   }
 
   public void setDefaultFormat(String defaultFormat) {
-    this.defaultFormat = defaultFormat;
+    this.defaultFormat = FeatureLogger.FeatureFormat.valueOf(defaultFormat.toUpperCase(Locale.ROOT));
   }
 
   public void setCsvKeyValueDelimiter(String csvKeyValueDelimiter) {
@@ -133,7 +134,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     // Create and supply the feature logger to be used
     SolrQueryRequestContextUtils.setFeatureLogger(req,
         createFeatureLogger(
-            localparams.get(FV_FORMAT, defaultFormat)));
+            localparams.get(FV_FORMAT)));
 
     return new FeatureTransformer(name, localparams, req);
   }
@@ -147,23 +148,17 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
    *
    * @return a feature logger for the format specified.
    */
-  private FeatureLogger createFeatureLogger(String featureFormat) {
-    final FeatureLogger.FeatureFormat f;
-    if (featureFormat == null || featureFormat.isEmpty() ||
-        featureFormat.equals("sparse")) {
-      f = FeatureLogger.FeatureFormat.SPARSE;
-    }
-    else if (featureFormat.equals("dense")) {
-      f = FeatureLogger.FeatureFormat.DENSE;
-    }
-    else {
-      f = FeatureLogger.FeatureFormat.SPARSE;
-      log.warn("unknown feature logger feature format {}", featureFormat);
+  private FeatureLogger createFeatureLogger(String formatStr) {
+    final FeatureLogger.FeatureFormat format;
+    if (formatStr != null) {
+      format = FeatureLogger.FeatureFormat.valueOf(formatStr.toUpperCase(Locale.ROOT));
+    } else {
+      format = this.defaultFormat;
     }
     if (fvCacheName == null) {
       throw new IllegalArgumentException("a fvCacheName must be configured");
     }
-    return new CSVFeatureLogger(fvCacheName, f, csvKeyValueDelimiter, csvFeatureSeparator);
+    return new CSVFeatureLogger(fvCacheName, format, csvKeyValueDelimiter, csvFeatureSeparator);
   }
 
   class FeatureTransformer extends DocTransformer {
