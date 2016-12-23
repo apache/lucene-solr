@@ -89,7 +89,7 @@ public class CacheConfig implements MapSerializable{
 
   public static CacheConfig getConfig(SolrConfig solrConfig, String xpath) {
     Node node = solrConfig.getNode(xpath, false);
-    if(node == null) {
+    if(node == null || !Boolean.parseBoolean(DOMUtil.toMap(node.getAttributes()).compute("enabled", (k,v) -> v == null? "true" : "false"))) {
       Map<String, String> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
       if(m==null) return null;
       List<String> parts = StrUtils.splitSmart(xpath, '/');
