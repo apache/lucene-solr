@@ -31,7 +31,7 @@ public class GroupingSpecification {
   private String[] queries = new String[]{};
   private String[] functions = new String[]{};
   private SortSpec groupSortSpec;
-  private SortSpec sortSpecWithinGroup;
+  private SortSpec withinGroupSortSpec;
   private boolean includeGroupCount;
   private boolean main;
   private Grouping.Format responseFormat;
@@ -76,7 +76,7 @@ public class GroupingSpecification {
 
   @Deprecated
   public int getWithinGroupOffset() {
-    return sortSpecWithinGroup.getOffset();
+    return withinGroupSortSpec.getOffset();
   }
   @Deprecated
   public int getGroupOffset() {
@@ -86,8 +86,9 @@ public class GroupingSpecification {
 
   @Deprecated
   public int getWithinGroupLimit() {
-    return sortSpecWithinGroup.getCount();
+    return withinGroupSortSpec.getCount();
   }
+
   @Deprecated
   public int getGroupLimit() {
     return getWithinGroupLimit();
@@ -114,9 +115,8 @@ public class GroupingSpecification {
 
   @Deprecated
   public Sort getSortWithinGroup() {
-    return sortSpecWithinGroup.getSort();
+    return withinGroupSortSpec.getSort();
   }
-
 
   public boolean isIncludeGroupCount() {
     return includeGroupCount;
@@ -166,12 +166,12 @@ public class GroupingSpecification {
     this.groupSortSpec = groupSortSpec;
   }
 
-  public SortSpec getSortSpecWithinGroup() {
-    return sortSpecWithinGroup;
+  public SortSpec getWithinGroupSortSpec() {
+    return withinGroupSortSpec;
   }
 
-  public void setSortSpecWithinGroup(SortSpec sortSpecWithinGroup) {
-    this.sortSpecWithinGroup = sortSpecWithinGroup;
+  public void setWithinGroupSortSpec(SortSpec withinGroupSortSpec) {
+    this.withinGroupSortSpec = withinGroupSortSpec;
   }
 
 }

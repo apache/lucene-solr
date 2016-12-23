@@ -465,10 +465,10 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         if (modGroupSortSpec != null) {
           groupingSpec.setGroupSortSpec(modGroupSortSpec);
         }
-        SortSpec withinGroupSortSpec = groupingSpec.getSortSpecWithinGroup();
+        SortSpec withinGroupSortSpec = groupingSpec.getWithinGroupSortSpec();
         SortSpec modWithinGroupSortSpec = this.modifySortSpec(withinGroupSortSpec, force, comparator);
         if (modWithinGroupSortSpec != null) {
-          groupingSpec.setSortSpecWithinGroup(modWithinGroupSortSpec);
+          groupingSpec.setWithinGroupSortSpec(modWithinGroupSortSpec);
         }
       }
     }
