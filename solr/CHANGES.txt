@@ -332,6 +332,8 @@ Other Changes
 
 * SOLR-9758: refactor preferLocalShards implementation (Christine Poerschke)
 
+* SOLR-9448: providing a test to workaround a differently named uniqueKey field (Mikhail Khludnev)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
