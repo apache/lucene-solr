@@ -51,6 +51,7 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
@@ -378,6 +379,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
   // by the cache itself, not cache entries, and we want to make sure that
   // memory usage is not grossly underestimated.
   public void testRamBytesUsedConstantEntryOverhead() throws IOException {
+    LuceneTestCase.assumeFalse("RamUsageTester does not fully work on Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
     final LRUQueryCache queryCache = new LRUQueryCache(1000000, 10000000, context -> true);
 
     final RamUsageTester.Accumulator acc = new RamUsageTester.Accumulator() {
@@ -958,6 +960,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
   }
 
   public void testDetectMutatedQueries() throws IOException {
+    LuceneTestCase.assumeFalse("LUCENE-7604: For some unknown reason the non-constant BadQuery#hashCode() does not trigger ConcurrentModificationException on Java 9 b150",
+        Constants.JRE_IS_MINIMUM_JAVA9);
     Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     w.addDocument(new Document());
