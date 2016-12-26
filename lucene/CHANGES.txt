@@ -172,6 +172,9 @@ Improvements
   is no longer needed. Support for older Java 9 builds was removed.
   (Uwe Schindler)
 
+* LUCENE-7401: Changed the way BKD trees pick the split dimension in order to
+  ensure all dimensions are indexed. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-7568: Optimize merging when index sorting is used but the
