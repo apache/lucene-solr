@@ -475,8 +475,6 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     return createFieldQuery(analyzer, occur, field, queryText, quoted || autoGeneratePhraseQueries, phraseSlop);
   }
 
-
-
   /**
    * Base implementation delegates to {@link #getFieldQuery(String,String,boolean)}.
    * This method may be overridden, for example, to return
@@ -489,24 +487,46 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     Query query = getFieldQuery(field, queryText, true);
 
     if (query instanceof PhraseQuery) {
-      PhraseQuery.Builder builder = new PhraseQuery.Builder();
-      builder.setSlop(slop);
-      PhraseQuery pq = (PhraseQuery) query;
-      org.apache.lucene.index.Term[] terms = pq.getTerms();
-      int[] positions = pq.getPositions();
-      for (int i = 0; i < terms.length; ++i) {
-        builder.add(terms[i], positions[i]);
-      }
-      query = builder.build();
+      query = addSlopToPhrase((PhraseQuery) query, slop);
     } else if (query instanceof MultiPhraseQuery) {
       MultiPhraseQuery mpq = (MultiPhraseQuery)query;
       
       if (slop != mpq.getSlop()) {
         query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
       }
+    } else if (query instanceof GraphQuery && ((GraphQuery) query).hasPhrase()) {
+      // we have a graph query that has at least one phrase sub-query
+      // re-build and set slop on all phrase queries
+      List<Query> oldQueries = ((GraphQuery) query).getQueries();
+      Query[] queries = new Query[oldQueries.size()];
+      for (int i = 0; i < queries.length; i++) {
+        Query oldQuery = oldQueries.get(i);
+        if (oldQuery instanceof PhraseQuery) {
+          queries[i] = addSlopToPhrase((PhraseQuery) oldQuery, slop);
+        } else {
+          queries[i] = oldQuery;
+        }
+      }
+
+      query = new GraphQuery(queries);
     }
 
     return query;
+  }
+
+  /**
+   * Rebuild a phrase query with a slop value
+   */
+  private PhraseQuery addSlopToPhrase(PhraseQuery query, int slop) {
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    builder.setSlop(slop);
+    org.apache.lucene.index.Term[] terms = query.getTerms();
+    int[] positions = query.getPositions();
+    for (int i = 0; i < terms.length; ++i) {
+      builder.add(terms[i], positions[i]);
+    }
+
+    return builder.build();
   }
 
   protected Query getRangeQuery(String field,
