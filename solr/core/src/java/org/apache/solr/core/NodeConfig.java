@@ -60,13 +60,16 @@ public class NodeConfig {
 
   private final PluginInfo[] backupRepositoryPlugins;
 
+  private final PluginInfo[] metricReporterPlugins;
+
   private NodeConfig(String nodeName, Path coreRootDirectory, Path configSetBaseDirectory, String sharedLibDirectory,
                      PluginInfo shardHandlerFactoryConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
                      String coreAdminHandlerClass, String collectionsAdminHandlerClass,
                      String infoHandlerClass, String configSetsHandlerClass,
                      LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, Integer coreLoadThreads,
                      int transientCacheSize, boolean useSchemaCache, String managementPath, SolrResourceLoader loader,
-                     Properties solrProperties, PluginInfo[] backupRepositoryPlugins) {
+                     Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
+                     PluginInfo[] metricReporterPlugins) {
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
     this.configSetBaseDirectory = configSetBaseDirectory;
@@ -86,6 +89,7 @@ public class NodeConfig {
     this.loader = loader;
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
+    this.metricReporterPlugins = metricReporterPlugins;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -174,6 +178,10 @@ public class NodeConfig {
     return backupRepositoryPlugins;
   }
 
+  public PluginInfo[] getMetricReporterPlugins() {
+    return metricReporterPlugins;
+  }
+
   public static class NodeConfigBuilder {
 
     private Path coreRootDirectory;
@@ -193,6 +201,7 @@ public class NodeConfig {
     private String managementPath;
     private Properties solrProperties = new Properties();
     private PluginInfo[] backupRepositoryPlugins;
+    private PluginInfo[] metricReporterPlugins;
 
     private final SolrResourceLoader loader;
     private final String nodeName;
@@ -300,11 +309,16 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setMetricReporterPlugins(PluginInfo[] metricReporterPlugins) {
+      this.metricReporterPlugins = metricReporterPlugins;
+      return this;
+    }
+
     public NodeConfig build() {
       return new NodeConfig(nodeName, coreRootDirectory, configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, infoHandlerClass, configSetsHandlerClass,
                             logWatcherConfig, cloudConfig, coreLoadThreads, transientCacheSize, useSchemaCache, managementPath, loader, solrProperties,
-                            backupRepositoryPlugins);
+                            backupRepositoryPlugins, metricReporterPlugins);
     }
   }
 }

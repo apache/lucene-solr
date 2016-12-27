@@ -53,6 +53,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Timer;
 import com.google.common.collect.MapMaker;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -94,6 +96,9 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.metrics.SolrCoreMetricManager;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.BinaryResponseWriter;
@@ -187,6 +192,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final PluginBag<SearchComponent> searchComponents = new PluginBag<>(SearchComponent.class, this);
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors = new PluginBag<>(UpdateRequestProcessorFactory.class, this, true);
   private final Map<String,UpdateRequestProcessorChain> updateProcessorChains;
+  private final SolrCoreMetricManager coreMetricManager;
   private final Map<String, SolrInfoMBean> infoRegistry;
   private final IndexDeletionPolicyWrapper solrDelPolicy;
   private final SolrSnapshotMetaDataManager snapshotMgr;
@@ -199,6 +205,12 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   private final ReentrantLock ruleExpiryLock;
   private final ReentrantLock snapshotDelLock; // A lock instance to guard against concurrent deletions.
+
+  private final Timer newSearcherTimer;
+  private final Timer newSearcherWarmupTimer;
+  private final Counter newSearcherCounter;
+  private final Counter newSearcherMaxReachedCounter;
+  private final Counter newSearcherOtherErrorsCounter;
 
   public Date getStartTimeStamp() { return startTime; }
 
@@ -386,14 +398,27 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   }
 
   public void setName(String v) {
+    String oldName = this.name;
     this.name = v;
     this.logid = (v==null)?"":("["+v+"] ");
     this.coreDescriptor = new CoreDescriptor(v, this.coreDescriptor);
+    if (coreMetricManager != null) {
+      coreMetricManager.afterCoreSetName();
+    }
   }
 
   public String getLogId()
   {
     return this.logid;
+  }
+
+  /**
+   * Returns the {@link SolrCoreMetricManager} for this core.
+   *
+   * @return the {@link SolrCoreMetricManager} for this core
+   */
+  public SolrCoreMetricManager getCoreMetricManager() {
+    return coreMetricManager;
   }
 
   /**
@@ -820,6 +845,18 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     checkVersionFieldExistsInSchema(schema, coreDescriptor);
 
+    // Initialize the metrics manager
+    this.coreMetricManager = initCoreMetricManager(config);
+
+    SolrMetricManager metricManager = this.coreDescriptor.getCoreContainer().getMetricManager();
+
+    // initialize searcher-related metrics
+    newSearcherCounter = metricManager.counter(coreMetricManager.getRegistryName(), "newSearcher");
+    newSearcherTimer = metricManager.timer(coreMetricManager.getRegistryName(), "newSearcherTime");
+    newSearcherWarmupTimer = metricManager.timer(coreMetricManager.getRegistryName(), "newSearcherWarmup");
+    newSearcherMaxReachedCounter = metricManager.counter(coreMetricManager.getRegistryName(), "newSearcherMaxReached");
+    newSearcherOtherErrorsCounter = metricManager.counter(coreMetricManager.getRegistryName(), "newSearcherErrors");
+
     // Initialize JMX
     this.infoRegistry = initInfoRegistry(name, config);
     infoRegistry.put("fieldCache", new SolrFieldCacheMBean());
@@ -1021,6 +1058,19 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       schema = IndexSchemaFactory.buildIndexSchema(IndexSchema.DEFAULT_SCHEMA_FILE, config);
     }
     setLatestSchema(schema);
+  }
+
+  /**
+   * Initializes the core's {@link SolrCoreMetricManager} with a given configuration.
+   * If metric reporters are configured, they are also initialized for this core.
+   *
+   * @param config the given configuration
+   * @return an instance of {@link SolrCoreMetricManager}
+   */
+  private SolrCoreMetricManager initCoreMetricManager(SolrConfig config) {
+    SolrCoreMetricManager coreMetricManager = new SolrCoreMetricManager(this);
+    coreMetricManager.loadReporters();
+    return coreMetricManager;
   }
 
   private Map<String,SolrInfoMBean> initInfoRegistry(String name, SolrConfig config) {
@@ -1339,6 +1389,15 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     } catch (Throwable e) {
       SolrException.log(log, e);
       if (e instanceof Error) {
+        throw (Error) e;
+      }
+    }
+
+    try {
+      coreMetricManager.close();
+    } catch (Throwable e) {
+      SolrException.log(log, e);
+      if (e instanceof  Error) {
         throw (Error) e;
       }
     }
@@ -1902,12 +1961,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         // first: increment count to signal other threads that we are
         //        opening a new searcher.
         onDeckSearchers++;
+        newSearcherCounter.inc();
         if (onDeckSearchers < 1) {
           // should never happen... just a sanity check
           log.error(logid + "ERROR!!! onDeckSearchers is " + onDeckSearchers);
           onDeckSearchers = 1;  // reset
         } else if (onDeckSearchers > maxWarmingSearchers) {
           onDeckSearchers--;
+          newSearcherMaxReachedCounter.inc();
           try {
             searcherLock.wait();
           } catch (InterruptedException e) {
@@ -1929,6 +1990,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     boolean success = false;
 
     openSearcherLock.lock();
+    Timer.Context timerContext = newSearcherTimer.time();
     try {
       searchHolder = openNewSearcher(updateHandlerReopens, false);
        // the searchHolder will be incremented once already (and it will eventually be assigned to _searcher when registered)
@@ -1971,6 +2033,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         // should this go before the other event handlers or after?
         if (currSearcher != null) {
           future = searcherExecutor.submit(() -> {
+            Timer.Context warmupContext = newSearcherWarmupTimer.time();
             try {
               newSearcher.warm(currSearcher);
             } catch (Throwable e) {
@@ -1978,6 +2041,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
               if (e instanceof Error) {
                 throw (Error) e;
               }
+            } finally {
+              warmupContext.close();
             }
             return null;
           });
@@ -2058,7 +2123,10 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
 
+      timerContext.close();
+
       if (!success) {
+        newSearcherOtherErrorsCounter.inc();;
         synchronized (searcherLock) {
           onDeckSearchers--;
 
@@ -2732,6 +2800,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   public void registerInfoBean(String name, SolrInfoMBean solrInfoMBean) {
     infoRegistry.put(name, solrInfoMBean);
+
+    if (solrInfoMBean instanceof SolrMetricProducer) {
+      SolrMetricProducer producer = (SolrMetricProducer) solrInfoMBean;
+      coreMetricManager.registerMetricProducer(name, producer);
+    }
   }
 
   private static boolean checkStale(SolrZkClient zkClient,  String zkPath, int currentVersion)  {
