@@ -206,6 +206,8 @@ New Features
 
 * SOLR-9891: Add mkroot command to bin/solr and bin/solr.cmd (Erick Erickson)
 
+* SOLR-9668,SOLR-7197: introduce cursorMark='true' in SolrEntityProcessor (Yegor Kozlov, Raveendra Yerraguntl via Mikhail Khludnev)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
