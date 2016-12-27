@@ -36,6 +36,9 @@
     <dependency org="io.dropwizard.metrics" name="metrics-core" rev="${/io.dropwizard.metrics/metrics-core}" conf="metrics" />
     <dependency org="io.dropwizard.metrics" name="metrics-jetty9" rev="${/io.dropwizard.metrics/metrics-jetty9}" conf="metrics" />
     <dependency org="io.dropwizard.metrics" name="metrics-jvm" rev="${/io.dropwizard.metrics/metrics-jvm}" conf="metrics" />
+    <dependency org="io.dropwizard.metrics" name="metrics-ganglia" rev="${/io.dropwizard.metrics/metrics-ganglia}" conf="metrics" />
+    <dependency org="info.ganglia.gmetric4j" name="gmetric4j" rev="${/info.ganglia.gmetric4j/gmetric4j}" conf="metrics" />
+    <dependency org="io.dropwizard.metrics" name="metrics-graphite" rev="${/io.dropwizard.metrics/metrics-graphite}" conf="metrics" />
 
     <dependency org="org.eclipse.jetty" name="jetty-continuation" rev="${/org.eclipse.jetty/jetty-continuation}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-deploy" rev="${/org.eclipse.jetty/jetty-deploy}" conf="jetty"/>

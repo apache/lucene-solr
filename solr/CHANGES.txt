@@ -197,6 +197,8 @@ New Features
 
 * SOLR-9877: Use instrumented http client and connection pool. (shalin)
 
+* SOLR-9880: Add Ganglia, Graphite and SLF4J metrics reporters. (ab)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
