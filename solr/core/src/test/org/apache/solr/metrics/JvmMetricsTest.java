@@ -48,7 +48,8 @@ public class JvmMetricsTest extends SolrJettyTestBase {
         continue;
       }
       double value = ((Number)gauge.getValue()).doubleValue();
-      assertTrue(value >= 0);
+      // SystemLoadAverage on Windows may be -1.0
+      assertTrue("unexpected value of " + metric + ": " + value, value >= 0 || value == -1.0);
     }
   }
 

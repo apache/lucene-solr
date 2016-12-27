@@ -17,11 +17,15 @@
 package org.apache.solr.metrics;
 
 import javax.management.JMException;
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import com.codahale.metrics.JmxAttributeGauge;
 import com.codahale.metrics.Metric;
@@ -67,9 +71,17 @@ public class OperatingSystemMetricSet implements MetricSet {
     try {
       final ObjectName on = new ObjectName("java.lang:type=OperatingSystem");
       // verify that it exists
-      mBeanServer.getMBeanInfo(on);
+      MBeanInfo info = mBeanServer.getMBeanInfo(on);
+      // collect valid attributes
+      Set<String> attributes = new HashSet<>();
+      for (MBeanAttributeInfo ai : info.getAttributes()) {
+        attributes.add(ai.getName());
+      }
       for (String metric : METRICS) {
-        metrics.put(metric, new JmxAttributeGauge(mBeanServer, on, metric));
+        // verify that an attribute exists before attempting to add it
+        if (attributes.contains(metric)) {
+          metrics.put(metric, new JmxAttributeGauge(mBeanServer, on, metric));
+        }
       }
     } catch (JMException ignored) {
       log.debug("Unable to load OperatingSystem MBean", ignored);
