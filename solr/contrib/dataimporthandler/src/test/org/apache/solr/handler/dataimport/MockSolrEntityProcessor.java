@@ -29,16 +29,28 @@ public class MockSolrEntityProcessor extends SolrEntityProcessor {
   private int queryCount = 0;
 
   private int rows;
+  
+  private int start = 0;
 
   public MockSolrEntityProcessor(List<SolrTestCaseJ4.Doc> docsData, int rows) {
     this.docsData = docsData;
     this.rows = rows;
   }
 
+  //@Override
+  //protected SolrDocumentList doQuery(int start) {
+  //  queryCount++;
+  //  return getDocs(start, rows);
+ // }
+  
   @Override
-  protected SolrDocumentList doQuery(int start) {
-    queryCount++;
-    return getDocs(start, rows);
+  protected void buildIterator() {
+    if (rowIterator==null || (!rowIterator.hasNext() && ((SolrDocumentListIterator)rowIterator).hasMoreRows())){
+      queryCount++;
+      SolrDocumentList docs = getDocs(start, rows);
+      rowIterator = new SolrDocumentListIterator(docs);
+      start += docs.size();
+    }
   }
 
   private SolrDocumentList getDocs(int start, int rows) {
