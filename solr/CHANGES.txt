@@ -287,6 +287,9 @@ Bug Fixes
 
 * SOLR-9699,SOLR-4668: fix exception from core status in parallel with core reload (Mikhail Khludnev)
 
+* SOLR-9859: replication.properties cannot be updated after being written and neither replication.properties or 
+  index.properties are durable in the face of a crash. (Pushkar Raste, Chris de Kok, Cao Manh Dat, Mark Miller)
+
 Other Changes
 ----------------------
 

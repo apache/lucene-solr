@@ -18,6 +18,11 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 
 import org.apache.commons.io.FileUtils;
@@ -150,6 +155,23 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     }
     
     return baseDir;
+  }
+  
+  // perform an atomic rename if possible
+  public void renameWithOverwrite(Directory dir, String fileName, String toName) throws IOException {
+    Directory baseDir = getBaseDir(dir);
+    if (baseDir instanceof FSDirectory) {
+      Path path = ((FSDirectory) baseDir).getDirectory().toAbsolutePath();
+      try {
+      Files.move(FileSystems.getDefault().getPath(path.toString(), fileName),
+          FileSystems.getDefault().getPath(path.toString(), toName), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+      } catch (AtomicMoveNotSupportedException e) {
+        Files.move(FileSystems.getDefault().getPath(path.toString(), fileName),
+            FileSystems.getDefault().getPath(path.toString(), toName), StandardCopyOption.REPLACE_EXISTING);
+      }
+    } else {
+      super.renameWithOverwrite(dir, fileName, toName);
+    }
   }
 
 }
