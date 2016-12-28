@@ -167,11 +167,7 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
 
   @Override
   public synchronized void doDeleteChild(BaseSolrResource endpoint, String childId) {
-    if (childId.equals("*")) {
-      store.clear();
-    } else {
-      store.delete(childId);
-    }
+    store.delete(childId);
     storeManagedData(applyUpdatesToManagedData(null));
   }
 

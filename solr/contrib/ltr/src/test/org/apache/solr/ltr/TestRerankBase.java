@@ -43,6 +43,7 @@ import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.model.ModelException;
+import org.apache.solr.ltr.store.FeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -311,6 +312,12 @@ public class TestRerankBase extends RestTestBase {
 
   public static LTRScoringModel createModelFromFiles(String modelFileName,
       String featureFileName) throws ModelException, Exception {
+    return createModelFromFiles(modelFileName, featureFileName,
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME);
+  }
+
+  public static LTRScoringModel createModelFromFiles(String modelFileName,
+      String featureFileName, String featureStoreName) throws ModelException, Exception {
     URL url = TestRerankBase.class.getResource("/modelExamples/"
         + modelFileName);
     final String modelJson = FileUtils.readFileToString(new File(url.toURI()),
@@ -331,7 +338,7 @@ public class TestRerankBase extends RestTestBase {
 
     final ManagedFeatureStore fs = getManagedFeatureStore();
     // fs.getFeatureStore(null).clear();
-    fs.doDeleteChild(null, "*"); // is this safe??
+    fs.doDeleteChild(null, featureStoreName); // is this safe??
     // based on my need to call this I dont think that
     // "getNewManagedFeatureStore()"
     // is actually returning a new feature store each time
