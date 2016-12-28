@@ -59,9 +59,9 @@ public class JSONResponseWriter implements QueryResponseWriter {
     final String namedListStyle = params.get(JSONWriter.JSON_NL_STYLE, JSONWriter.JSON_NL_FLAT).intern();
 
     final JSONWriter w;
-    if (namedListStyle.equals(JSONWriter.JSON_NL_ARROFNVP)) {
-      w = new ArrayOfNamedValuePairJSONWriter(
-          writer, req, rsp, wrapperFunction, namedListStyle);
+    if (namedListStyle.equals(JSONWriter.JSON_NL_ARROFNTV)) {
+      w = new ArrayOfNameTypeValueJSONWriter(
+          writer, req, rsp, wrapperFunction, namedListStyle, true);
     } else {
       w = new JSONWriter(
           writer, req, rsp, wrapperFunction, namedListStyle);
@@ -96,7 +96,7 @@ class JSONWriter extends TextResponseWriter {
   static final String JSON_NL_FLAT="flat";
   static final String JSON_NL_ARROFARR="arrarr";
   static final String JSON_NL_ARROFMAP="arrmap";
-  static final String JSON_NL_ARROFNVP="arrnvp";
+  static final String JSON_NL_ARROFNTV="arrntv";
 
   static final String JSON_WRAPPER_FUNCTION="json.wrf";
 
@@ -331,9 +331,9 @@ class JSONWriter extends TextResponseWriter {
       writeNamedListAsArrArr(name,val);
     } else if (namedListStyle==JSON_NL_ARROFMAP) {
       writeNamedListAsArrMap(name,val);
-    } else if (namedListStyle==JSON_NL_ARROFNVP) {
+    } else if (namedListStyle==JSON_NL_ARROFNTV) {
       throw new UnsupportedOperationException(namedListStyle
-          + " namedListStyle must only be used with "+ArrayOfNamedValuePairJSONWriter.class.getSimpleName());
+          + " namedListStyle must only be used with "+ArrayOfNameTypeValueJSONWriter.class.getSimpleName());
     }
   }
 
@@ -675,20 +675,25 @@ class JSONWriter extends TextResponseWriter {
 }
 
 /**
- * Writes NamedLists directly as an array of NamedValuePair JSON objects...
- * NamedList("a"=1,"b"=2,null=3,null=null) => [{"name":"a","int":1},{"name":"b","int":2},{"int":3},{"null":null}]
- * NamedList("a"=1,"bar"="foo",null=3.4f) => [{"name":"a","int":1},{"name":"bar","str":"foo"},{"float":3.4}]
+ * Writes NamedLists directly as an array of NameTypeValue JSON objects...
+ * NamedList("a"=1,"b"=null,null=3,null=null) =>
+ *      [{"name":"a","type":"int","value":1},
+ *       {"name":"b","type":"null","value":null},
+ *       {"name":null,"type":"int","value":3},
+ *       {"name":null,"type":"null","value":null}]
+ * NamedList("a"=1,"bar"="foo",null=3.4f) =>
+ *      [{"name":"a","type":"int","value":1},
+ *      {"name":"bar","type":"str","value":"foo"},
+ *      {"name":null,"type":"float","value":3.4}]
  */
-class ArrayOfNamedValuePairJSONWriter extends JSONWriter {
-  private boolean writeTypeAsKey = false;
+class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
+  protected boolean writeTypeAndValueKey = false;
+  private final boolean writeNullName;
 
-  public ArrayOfNamedValuePairJSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp,
-                                         String wrapperFunction, String namedListStyle) {
+  public ArrayOfNameTypeValueJSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp,
+                                        String wrapperFunction, String namedListStyle, boolean writeNullName) {
     super(writer, req, rsp, wrapperFunction, namedListStyle);
-    if (namedListStyle != JSON_NL_ARROFNVP) {
-      throw new UnsupportedOperationException(ArrayOfNamedValuePairJSONWriter.class.getSimpleName()+" must only be used with "
-          + JSON_NL_ARROFNVP + " style");
-    }
+    this.writeNullName = writeNullName;
   }
 
   @Override
@@ -720,24 +725,24 @@ class ArrayOfNamedValuePairJSONWriter extends JSONWriter {
 
       /*
        * JSONWriter's writeNamedListAsArrMap turns NamedList("bar"="foo") into [{"foo":"bar"}]
-       * but we here wish to turn it into [ {"name":"bar","str":"foo"} ] instead.
+       * but we here wish to turn it into [ {"name":"bar","type":"str","value":"foo"} ] instead.
        *
        * So first we write the <code>{"name":"bar",</code> portion ...
        */
       writeMapOpener(-1);
-      if (elementName != null) {
+      if (elementName != null || writeNullName) {
         writeKey("name", false);
         writeVal("name", elementName);
         writeMapSeparator();
       }
 
       /*
-       * ... and then we write the <code>"str":"foo"}</code> portion.
+       * ... and then we write the <code>"type":"str","value":"foo"}</code> portion.
        */
-      writeTypeAsKey = true;
+      writeTypeAndValueKey = true;
       writeVal(null, elementVal); // passing null since writeVal doesn't actually use name (and we already wrote elementName above)
-      if (writeTypeAsKey) {
-        throw new RuntimeException("writeTypeAsKey should have been reset to false by writeVal('"+elementName+"','"+elementVal+"')");
+      if (writeTypeAndValueKey) {
+        throw new RuntimeException("writeTypeAndValueKey should have been reset to false by writeVal('"+elementName+"','"+elementVal+"')");
       }
       writeMapCloser();
     }
@@ -746,82 +751,85 @@ class ArrayOfNamedValuePairJSONWriter extends JSONWriter {
     writeArrayCloser();
   }
 
-  private void ifNeededWriteTypeAsKey(String type) throws IOException {
-    if (writeTypeAsKey) {
-      writeTypeAsKey = false;
-      writeKey(type, false);
+  protected void ifNeededWriteTypeAndValueKey(String type) throws IOException {
+    if (writeTypeAndValueKey) {
+      writeTypeAndValueKey = false;
+      writeKey("type", false);
+      writeVal("type", type);
+      writeMapSeparator();
+      writeKey("value", false);
     }
   }
 
   @Override
   public void writeInt(String name, String val) throws IOException {
-    ifNeededWriteTypeAsKey("int");
+    ifNeededWriteTypeAndValueKey("int");
     super.writeInt(name, val);
   }
 
   @Override
   public void writeLong(String name, String val) throws IOException {
-    ifNeededWriteTypeAsKey("long");
+    ifNeededWriteTypeAndValueKey("long");
     super.writeLong(name, val);
   }
 
   @Override
   public void writeFloat(String name, String val) throws IOException {
-    ifNeededWriteTypeAsKey("float");
+    ifNeededWriteTypeAndValueKey("float");
     super.writeFloat(name, val);
   }
 
   @Override
   public void writeDouble(String name, String val) throws IOException {
-    ifNeededWriteTypeAsKey("double");
+    ifNeededWriteTypeAndValueKey("double");
     super.writeDouble(name, val);
   }
 
   @Override
   public void writeBool(String name, String val) throws IOException {
-    ifNeededWriteTypeAsKey("bool");
+    ifNeededWriteTypeAndValueKey("bool");
     super.writeBool(name, val);
   }
 
   @Override
   public void writeDate(String name, String val) throws IOException {
-    ifNeededWriteTypeAsKey("date");
+    ifNeededWriteTypeAndValueKey("date");
     super.writeDate(name, val);
   }
 
   @Override
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
-    ifNeededWriteTypeAsKey("str");
+    ifNeededWriteTypeAndValueKey("str");
     super.writeStr(name, val, needsEscaping);
   }
 
   @Override
   public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx) throws IOException {
-    ifNeededWriteTypeAsKey("doc");
+    ifNeededWriteTypeAndValueKey("doc");
     super.writeSolrDocument(name, doc, returnFields, idx);
   }
 
   @Override
   public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore) throws IOException {
-    ifNeededWriteTypeAsKey("doclist");
+    ifNeededWriteTypeAndValueKey("doclist");
     super.writeStartDocumentList(name, start, size, numFound, maxScore);
   }
 
   @Override
   public void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
-    ifNeededWriteTypeAsKey("map");
+    ifNeededWriteTypeAndValueKey("map");
     super.writeMap(name, val, excludeOuter, isFirstVal);
   }
 
   @Override
   public void writeArray(String name, Iterator val) throws IOException {
-    ifNeededWriteTypeAsKey("array");
+    ifNeededWriteTypeAndValueKey("array");
     super.writeArray(name, val);
   }
 
   @Override
   public void writeNull(String name) throws IOException {
-    ifNeededWriteTypeAsKey("null");
+    ifNeededWriteTypeAndValueKey("null");
     super.writeNull(name);
   }
 }
