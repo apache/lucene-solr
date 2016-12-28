@@ -234,6 +234,8 @@ Bug Fixes
 
 * SOLR-9900: fix false positives on range queries with ReversedWildcardFilterFactory (Yonik Seeley via Mikhail Khludnev)
 
+* SOLR-9620: fix cross core query-time join by numeric fields (Mikhail Khludnev)
+
 Other Changes
 ----------------------
 

@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -40,6 +41,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.JoinQParserPlugin;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
@@ -80,10 +82,9 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     private final long fromCoreOpenTime;
 
     public OtherCoreJoinQuery(Query fromQuery, String fromField,
-                              String fromIndex, FieldType.LegacyNumericType numericType,
-                              long fromCoreOpenTime, ScoreMode scoreMode,
+                              String fromIndex, long fromCoreOpenTime, ScoreMode scoreMode,
                               String toField) {
-      super(fromQuery, fromField, toField, numericType, scoreMode);
+      super(fromQuery, fromField, toField, scoreMode);
       this.fromIndex = fromIndex;
       this.fromCoreOpenTime = fromCoreOpenTime;
     }
@@ -103,7 +104,12 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       fromHolder = fromCore.getRegisteredSearcher();
       final Query joinQuery;
       try {
-        joinQuery = createJoinQuery(fromHolder.get());
+        SolrIndexSearcher searcher = fromHolder.get();
+        
+        FieldType.LegacyNumericType fromNumericType = getNumericType(searcher.getSchema(),
+                info.getReq().getSchema());
+        
+        joinQuery = createJoinQuery(searcher, fromNumericType);
       } finally {
         fromCore.close();
         fromHolder.decref();
@@ -148,26 +154,24 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     protected final ScoreMode scoreMode;
     protected final String fromField;
     protected final String toField;
-    protected final FieldType.LegacyNumericType numericType;
 
     SameCoreJoinQuery(Query fromQuery, String fromField, String toField,
-                      FieldType.LegacyNumericType numericType,
                       ScoreMode scoreMode) {
       this.fromQuery = fromQuery;
       this.scoreMode = scoreMode;
       this.fromField = fromField;
       this.toField = toField;
-      this.numericType = numericType;
     }
 
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
-      final Query jq = createJoinQuery(info.getReq().getSearcher());
+      IndexSchema schema = info.getReq().getSchema();
+      final Query jq = createJoinQuery(info.getReq().getSearcher(), getNumericType(schema, schema));
       return jq.rewrite(reader);
     }
 
-    protected Query createJoinQuery(IndexSearcher searcher) throws IOException {
+    protected Query createJoinQuery(IndexSearcher searcher, LegacyNumericType numericType) throws IOException {
       if (numericType != null) {
         return JoinUtil.createJoinQuery(fromField, true,
             toField,numericType, fromQuery, searcher, scoreMode);
@@ -177,6 +181,16 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       }
     }
 
+    protected FieldType.LegacyNumericType getNumericType(IndexSchema fromSchema, IndexSchema toSchema) {
+      FieldType.LegacyNumericType fromNumericType = fromSchema.getField(fromField).getType().getNumericType();
+      FieldType.LegacyNumericType toNumericType = toSchema.getField(toField).getType().getNumericType();
+      // Both will equals to null if they are not numeric type
+      if (fromNumericType != toNumericType) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "From and to field must have same numeric type. Found from=" +fromNumericType+" to=" + toNumericType);
+      }
+      return fromNumericType;
+    }
 
     @Override
     public String toString(String field) {
@@ -232,13 +246,6 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       private Query createQuery(final String fromField, final String fromQueryStr,
                                 String fromIndex, final String toField, final ScoreMode scoreMode,
                                 boolean byPassShortCircutCheck) throws SyntaxError {
-        FieldType.LegacyNumericType fromNumericType = req.getSchema().getField(fromField).getType().getNumericType();
-        FieldType.LegacyNumericType toNumericType = req.getSchema().getField(toField).getType().getNumericType();
-        // Both will equals to null if they are not numeric type
-        if (fromNumericType != toNumericType) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "From and to field must have same numeric type. Found from=" +fromNumericType+" to=" + toNumericType);
-        }
 
         final String myCore = req.getCore().getCoreDescriptor().getName();
 
@@ -262,9 +269,10 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
             fromHolder = fromCore.getRegisteredSearcher();
             if (fromHolder != null) {
-              fromCoreOpenTime = fromHolder.get().getOpenNanoTime();
+              SolrIndexSearcher solrIndexSearcher = fromHolder.get();
+              fromCoreOpenTime = solrIndexSearcher.getOpenNanoTime();
             }
-            return new OtherCoreJoinQuery(fromQuery, fromField, coreName, fromNumericType,
+            return new OtherCoreJoinQuery(fromQuery, fromField, coreName,
                 fromCoreOpenTime, scoreMode, toField);
           } finally {
             otherReq.close();
@@ -274,7 +282,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         } else {
           QParser fromQueryParser = subQuery(fromQueryStr, null);
           final Query fromQuery = fromQueryParser.getQuery();
-          return new SameCoreJoinQuery(fromQuery, fromField, toField, fromNumericType, scoreMode);
+          return new SameCoreJoinQuery(fromQuery, fromField, toField, scoreMode);
         }
       }
     };
