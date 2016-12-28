@@ -89,6 +89,11 @@ New features
   http://blog.mikemccandless.com/2012/04/lucenes-tokenstreams-are-actually.html
   for details. (Mike McCandless)
 
+* LUCENE-5325: Added LongValuesSource and DoubleValuesSource, intended as
+  type-safe replacements for ValueSource in the queries module.  These
+  expose per-segment LongValues or DoubleValues iterators, similar to the
+  existing DocValues iterator API. (Alan Woodward, Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7547: JapaneseTokenizerFactory was failing to close the
