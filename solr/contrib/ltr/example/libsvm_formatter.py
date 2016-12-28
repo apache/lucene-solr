@@ -10,12 +10,12 @@ class LibSvmFormatter:
         for each query in a tuple composed of: (query , docId , relevance , source , featureVector).
         The list of documents that are part of the same query will generate comparisons
         against each other for training. '''
-        curQueryAndSource = "";
         with open(trainingFile,"w") as output:
             self.featureNameToId  = {}
             self.featureIdToName = {}
             self.curFeatIndex = 1;
             curListOfFv = []
+            curQueryAndSource = ""
             for query,docId,relevance,source,featureVector in docClickInfo:
                 if curQueryAndSource != query + source:
                     #Time to flush out all the pairs
@@ -31,7 +31,7 @@ class LibSvmFormatter:
         this requirement.'''
         features = {}
         for keyValuePairStr in featureVector:
-            featName,featValue = keyValuePairStr.split(":");
+            featName,featValue = keyValuePairStr.split("=");
             features[self._getFeatureId(featName)] = float(featValue);
         return features
 
@@ -42,10 +42,12 @@ class LibSvmFormatter:
                 self.curFeatIndex += 1;
         return self.featureNameToId[key];
 
-    def convertLibSvmModelToLtrModel(self,libSvmModelLocation, outputFile, modelName):
+    def convertLibSvmModelToLtrModel(self,libSvmModelLocation,outputFile,modelName,featureStoreName):
         with open(libSvmModelLocation, 'r') as inFile:
             with open(outputFile,'w') as convertedOutFile:
+                # TODO: use json module instead of direct write
                 convertedOutFile.write('{\n\t"class":"org.apache.solr.ltr.model.LinearModel",\n')
+                convertedOutFile.write('\t"store": "' + str(featureStoreName) + '",\n')
                 convertedOutFile.write('\t"name": "' + str(modelName) + '",\n')
                 convertedOutFile.write('\t"features": [\n')
                 isFirst = True;
@@ -117,8 +119,8 @@ def outputLibSvmLine(sign,fvMap,outputFile):
         outputFile.write(" " + str(feat) + ":" + str(fvMap[feat]));
     outputFile.write("\n")
 
-def trainLibSvm(libraryLocation,trainingFileName):
+def trainLibSvm(libraryLocation,libraryOptions,trainingFileName,trainedModelFileName):
     if os.path.isfile(libraryLocation):
-        call([libraryLocation, trainingFileName])
+        call([libraryLocation, libraryOptions, trainingFileName, trainedModelFileName])
     else:
         raise Exception("NO LIBRARY FOUND: " + libraryLocation);

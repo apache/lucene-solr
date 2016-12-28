@@ -38,10 +38,6 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     assertU(adoc("id", "4", "title", "w4", "description", "w4", "popularity","4"));
     assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity","5"));
     assertU(commit());
-
-    loadFeatures("multipleadditivetreesmodel_features.json"); // currently needed to force
-    // scoring on all docs
-    loadModels("multipleadditivetreesmodel.json");
   }
 
   @AfterClass
@@ -52,6 +48,9 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
   @Test
   public void testMultipleAdditiveTreesScoringWithAndWithoutEfiFeatureMatches() throws Exception {
+    loadFeatures("multipleadditivetreesmodel_features.json");
+    loadModels("multipleadditivetreesmodel.json");
+
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
     query.add("rows", "3");
@@ -75,7 +74,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==-20.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==30.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==-120.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==-120.0");
   }
