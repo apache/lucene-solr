@@ -53,7 +53,6 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
 
   @Override
   public HttpResponse execute(HttpRequest request, HttpClientConnection conn, HttpContext context) throws IOException, HttpException {
-    assert metricsRegistry != null;
     final Timer.Context timerContext = timer(request).time();
     try {
       return super.execute(request, conn, context);
