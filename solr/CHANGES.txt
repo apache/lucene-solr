@@ -343,6 +343,9 @@ Other Changes
 
 * SOLR-9448: providing a test to workaround a differently named uniqueKey field (Mikhail Khludnev)
 
+* SOLR-9899: StandardDirectoryFactory should use optimizations for all FilterDirectorys not just NRTCachingDirectory.
+  (Mark Miller)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
