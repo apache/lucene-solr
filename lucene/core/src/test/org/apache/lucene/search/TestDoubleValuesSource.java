@@ -53,6 +53,8 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       document.add(new NumericDocValuesField("long", random().nextLong()));
       document.add(new FloatDocValuesField("float", random().nextFloat()));
       document.add(new DoubleDocValuesField("double", random().nextDouble()));
+      if (i == 545)
+        document.add(new DoubleDocValuesField("onefield", 45.72));
       iw.addDocument(document);
     }
     reader = iw.getReader();
@@ -65,6 +67,13 @@ public class TestDoubleValuesSource extends LuceneTestCase {
     reader.close();
     dir.close();
     super.tearDown();
+  }
+
+  public void testSortMissing() throws Exception {
+    DoubleValuesSource onefield = DoubleValuesSource.fromDoubleField("onefield");
+    TopDocs results = searcher.search(new MatchAllDocsQuery(), 1, new Sort(onefield.getSortField(true)));
+    FieldDoc first = (FieldDoc) results.scoreDocs[0];
+    assertEquals(45.72, first.fields[0]);
   }
 
   public void testSimpleFieldEquivalences() throws Exception {

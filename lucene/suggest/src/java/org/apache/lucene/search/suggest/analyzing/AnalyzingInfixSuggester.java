@@ -136,6 +136,9 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
   /** {@link IndexSearcher} used for lookups. */
   protected SearcherManager searcherMgr;
+  
+  /** Used to manage concurrent access to searcherMgr */
+  protected final Object searcherMgrLock = new Object();
 
   /** Default minimum number of leading characters before
    *  PrefixQuery is used (4). */
@@ -275,53 +278,55 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   @Override
   public void build(InputIterator iter) throws IOException {
     
-    if (searcherMgr != null) {
-      searcherMgr.close();
-      searcherMgr = null;
-    }
-
-    if (writer != null) {
-      writer.close();
-      writer = null;
-    }
-
-    boolean success = false;
-    try {
-      // First pass: build a temporary normal Lucene index,
-      // just indexing the suggestions as they iterate:
-      writer = new IndexWriter(dir,
-                               getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
-      //long t0 = System.nanoTime();
-
-      // TODO: use threads?
-      BytesRef text;
-      while ((text = iter.next()) != null) {
-        BytesRef payload;
-        if (iter.hasPayloads()) {
-          payload = iter.payload();
-        } else {
-          payload = null;
-        }
-
-        add(text, iter.contexts(), iter.weight(), payload);
+    synchronized (searcherMgrLock) {
+      if (searcherMgr != null) {
+        searcherMgr.close();
+        searcherMgr = null;
       }
 
-      //System.out.println("initial indexing time: " + ((System.nanoTime()-t0)/1000000) + " msec");
-      if (commitOnBuild || closeIndexWriterOnBuild) {
-        commit();
+      if (writer != null) {
+        writer.close();
+        writer = null;
       }
-      searcherMgr = new SearcherManager(writer, null);
-      success = true;
-    } finally {
-      if (success) {
-        if (closeIndexWriterOnBuild) {
-          writer.close();
-          writer = null;
+
+      boolean success = false;
+      try {
+        // First pass: build a temporary normal Lucene index,
+        // just indexing the suggestions as they iterate:
+        writer = new IndexWriter(dir,
+            getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
+        //long t0 = System.nanoTime();
+
+        // TODO: use threads?
+        BytesRef text;
+        while ((text = iter.next()) != null) {
+          BytesRef payload;
+          if (iter.hasPayloads()) {
+            payload = iter.payload();
+          } else {
+            payload = null;
+          }
+
+          add(text, iter.contexts(), iter.weight(), payload);
         }
-      } else {  // failure
-        if (writer != null) {
-          writer.rollback();
-          writer = null;
+
+        //System.out.println("initial indexing time: " + ((System.nanoTime()-t0)/1000000) + " msec");
+        if (commitOnBuild || closeIndexWriterOnBuild) {
+          commit();
+        }
+        searcherMgr = new SearcherManager(writer, null);
+        success = true;
+      } finally {
+        if (success) {
+          if (closeIndexWriterOnBuild) {
+            writer.close();
+            writer = null;
+          }
+        } else {  // failure
+          if (writer != null) {
+            writer.rollback();
+            writer = null;
+          }
         }
       }
     }
@@ -369,10 +374,12 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       } else {
         writer = new IndexWriter(dir, getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
       }
-      SearcherManager oldSearcherMgr = searcherMgr;
-      searcherMgr = new SearcherManager(writer, null);
-      if (oldSearcherMgr != null) {
-        oldSearcherMgr.close();
+      synchronized (searcherMgrLock) {
+        SearcherManager oldSearcherMgr = searcherMgr;
+        searcherMgr = new SearcherManager(writer, null);
+        if (oldSearcherMgr != null) {
+          oldSearcherMgr.close();
+        }
       }
     }
   }
@@ -642,7 +649,12 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     // only retrieve the first num hits now:
     Collector c2 = new EarlyTerminatingSortingCollector(c, SORT, num);
     List<LookupResult> results = null;
-    IndexSearcher searcher = searcherMgr.acquire();
+    SearcherManager mgr;
+    IndexSearcher searcher;
+    synchronized (searcherMgrLock) {
+      mgr = searcherMgr; // acquire & release on same SearcherManager, via local reference
+      searcher = mgr.acquire();
+    }
     try {
       //System.out.println("got searcher=" + searcher);
       searcher.search(finalQuery, c2);
@@ -653,7 +665,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       // hits = searcher.search(query, null, num, SORT);
       results = createResults(searcher, hits, num, key, doHighlight, matchedTokens, prefixToken);
     } finally {
-      searcherMgr.release(searcher);
+      mgr.release(searcher);
     }
 
     //System.out.println((System.currentTimeMillis() - t0) + " msec for infix suggest");
@@ -853,7 +865,12 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     long mem = RamUsageEstimator.shallowSizeOf(this);
     try {
       if (searcherMgr != null) {
-        IndexSearcher searcher = searcherMgr.acquire();
+        SearcherManager mgr;
+        IndexSearcher searcher;
+        synchronized (searcherMgrLock) {
+          mgr = searcherMgr; // acquire & release on same SearcherManager, via local reference
+          searcher = mgr.acquire();
+        }
         try {
           for (LeafReaderContext context : searcher.getIndexReader().leaves()) {
             LeafReader reader = FilterLeafReader.unwrap(context.reader());
@@ -862,7 +879,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
             }
           }
         } finally {
-          searcherMgr.release(searcher);
+          mgr.release(searcher);
         }
       }
       return mem;
@@ -876,7 +893,12 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     List<Accountable> resources = new ArrayList<>();
     try {
       if (searcherMgr != null) {
-        IndexSearcher searcher = searcherMgr.acquire();
+        SearcherManager mgr;
+        IndexSearcher searcher;
+        synchronized (searcherMgrLock) {
+          mgr = searcherMgr; // acquire & release on same SearcherManager, via local reference
+          searcher = mgr.acquire();
+        }
         try {
           for (LeafReaderContext context : searcher.getIndexReader().leaves()) {
             LeafReader reader = FilterLeafReader.unwrap(context.reader());
@@ -885,7 +907,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
             }
           }
         } finally {
-          searcherMgr.release(searcher);
+          mgr.release(searcher);
         }
       }
       return Collections.unmodifiableList(resources);
@@ -899,11 +921,16 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     if (searcherMgr == null) {
       return 0;
     }
-    IndexSearcher searcher = searcherMgr.acquire();
+    SearcherManager mgr;
+    IndexSearcher searcher;
+    synchronized (searcherMgrLock) {
+      mgr = searcherMgr; // acquire & release on same SearcherManager, via local reference
+      searcher = mgr.acquire();
+    }
     try {
       return searcher.getIndexReader().numDocs();
     } finally {
-      searcherMgr.release(searcher);
+      mgr.release(searcher);
     }
   }
-};
+}
