@@ -225,5 +225,15 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.encoder", "html"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em>&#32;one&#32;has&#32;a&#32;first&#32;&lt;i&gt;sentence&lt;&#x2F;i&gt;&#46;'");
   }
+
+  public void testRequireFieldMatch() {
+    // We highlight on field text3 (hl.fl), but our query only references the "text" field. Nonetheless, the query word
+    //  "document" is found in all fields here.
+
+    assertQ(req("q", "id:101", "hl", "true", "hl.q", "text:document", "hl.fl", "text3"), //hl.requireFieldMatch is false by default
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/*)=1");
+    assertQ(req("q", "id:101", "hl", "true", "hl.q", "text:document", "hl.fl", "text3", "hl.requireFieldMatch", "true"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/*)=0");
+  }
   
 }

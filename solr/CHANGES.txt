@@ -109,8 +109,8 @@ Upgrade Notes
 
 * SOLR-9708: You are encouraged to try out the UnifiedHighlighter by setting hl.method=unified and report feedback. It
   might become the default in 7.0. It's more efficient/faster than the other highlighters, especially compared to the
-  original Highlighter. That said, some options aren't supported yet, notably hl.fragsize and
-  hl.requireFieldMatch=false. It will get more features in time, especially with your input. See HighlightParams.java
+  original Highlighter. That said, some options aren't supported yet, notably hl.fragsize.
+  It will get more features in time, especially with your input. See HighlightParams.java
   for a listing of highlight parameters annotated with which highlighters use them.
   hl.useFastVectorHighlighter is now considered deprecated in lieu of hl.method=fastVector.
 
@@ -198,6 +198,9 @@ New Features
 * SOLR-9877: Use instrumented http client and connection pool. (shalin)
 
 * SOLR-9880: Add Ganglia, Graphite and SLF4J metrics reporters. (ab)
+
+* SOLR-9897: Add hl.requireFieldMatch toggle support when using the UnifiedHighlighter.  Defaults to false like the
+  other highlighters that support this. (David Smiley)
 
 Optimizations
 ----------------------
