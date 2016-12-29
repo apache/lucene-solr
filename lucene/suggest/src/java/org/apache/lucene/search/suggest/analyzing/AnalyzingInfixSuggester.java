@@ -137,6 +137,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   /** {@link IndexSearcher} used for lookups. */
   protected SearcherManager searcherMgr;
   
+  /** Used to manage concurrent access to searcherMgr */
   protected final Object searcherMgrLock = new Object();
 
   /** Default minimum number of leading characters before
