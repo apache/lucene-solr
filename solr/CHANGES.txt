@@ -202,6 +202,8 @@ New Features
 * SOLR-9897: Add hl.requireFieldMatch toggle support when using the UnifiedHighlighter.  Defaults to false like the
   other highlighters that support this. (David Smiley)
 
+* SOLR-9905: Add NullStream to isolate the performance of the ExportWriter (Joel Bernstein)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
