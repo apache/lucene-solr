@@ -298,6 +298,8 @@ Bug Fixes
 
 * SOLR-9901: Implement move in HdfsDirectoryFactory. (Mark Miller)
 
+* SOLR-9900: fix false positives on range queries with ReversedWildcardFilterFactory (Yonik Seeley via Mikhail Khludnev)
+
 Other Changes
 ----------------------
 
