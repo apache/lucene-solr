@@ -152,7 +152,7 @@ public final class RamUsageTester {
           }
           
           boolean needsReflection = true;
-          if (Constants.JRE_IS_MINIMUM_JAVA9) {
+          if (Constants.JRE_IS_MINIMUM_JAVA9 && obClazz.getName().startsWith("java.")) {
             // Java 9: Best guess for some known types, as we cannot precisely look into runtime classes:
             final ToLongFunction<Object> func = SIMPLE_TYPES.get(obClazz);
             if (func != null) { // some simple type like String where the size is easy to get from public properties
