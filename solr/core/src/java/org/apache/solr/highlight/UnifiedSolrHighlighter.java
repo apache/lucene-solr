@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -221,9 +222,10 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
    * From {@link #getHighlighter(org.apache.solr.request.SolrQueryRequest)}.
    */
   protected static class SolrExtendedUnifiedHighlighter extends UnifiedHighlighter {
+    protected final static Predicate<String> NOT_REQUIRED_FIELD_MATCH_PREDICATE = s -> true;
     protected final SolrParams params;
-    protected final IndexSchema schema;
 
+    protected final IndexSchema schema;
     protected final RTimerTree loadFieldValuesTimer;
 
     public SolrExtendedUnifiedHighlighter(SolrQueryRequest req) {
@@ -360,6 +362,17 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       return params.getFieldBool(field, HighlightParams.USE_PHRASE_HIGHLIGHTER, true);
     }
 
+    @Override
+    protected Predicate<String> getFieldMatcher(String field) {
+      // TODO define hl.queryFieldPattern as a more advanced alternative to hl.requireFieldMatch.
+
+      // note that the UH & PH at Lucene level default to effectively "true"
+      if (params.getFieldBool(field, HighlightParams.FIELD_MATCH, false)) {
+        return field::equals; // requireFieldMatch
+      } else {
+        return NOT_REQUIRED_FIELD_MATCH_PREDICATE;
+      }
+    }
   }
 
 }
