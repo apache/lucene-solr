@@ -255,23 +255,23 @@ public class QueryComponent extends SearchComponent
     final SortSpec groupSortSpec = searcher.weightSortSpec(sortSpec, Sort.RELEVANCE);
 
     // groupSort defaults to sort
-    String sortWithinGroupStr = params.get(GroupParams.GROUP_SORT);
+    String withinGroupSortStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
-    final SortSpec sortSpecWithinGroup;
-    if (sortWithinGroupStr != null) {
-      SortSpec parsedSortSpecWithinGroup = SortSpecParsing.parseSortSpec(sortWithinGroupStr, req);
-      sortSpecWithinGroup = searcher.weightSortSpec(parsedSortSpecWithinGroup, Sort.RELEVANCE);
+    final SortSpec withinGroupSortSpec;
+    if (withinGroupSortStr != null) {
+      SortSpec parsedWithinGroupSortSpec = SortSpecParsing.parseSortSpec(withinGroupSortStr, req);
+      withinGroupSortSpec = searcher.weightSortSpec(parsedWithinGroupSortSpec, Sort.RELEVANCE);
     } else {
-      sortSpecWithinGroup = new SortSpec(
+      withinGroupSortSpec = new SortSpec(
           groupSortSpec.getSort(),
           groupSortSpec.getSchemaFields(),
           groupSortSpec.getCount(),
           groupSortSpec.getOffset());
     }
-    sortSpecWithinGroup.setOffset(params.getInt(GroupParams.GROUP_OFFSET, 0));
-    sortSpecWithinGroup.setCount(params.getInt(GroupParams.GROUP_LIMIT, 1));
+    withinGroupSortSpec.setOffset(params.getInt(GroupParams.GROUP_OFFSET, 0));
+    withinGroupSortSpec.setCount(params.getInt(GroupParams.GROUP_LIMIT, 1));
 
-    groupingSpec.setSortSpecWithinGroup(sortSpecWithinGroup);
+    groupingSpec.setWithinGroupSortSpec(withinGroupSortSpec);
     groupingSpec.setGroupSortSpec(groupSortSpec);
 
     String formatStr = params.get(GroupParams.GROUP_FORMAT, Grouping.Format.grouped.name());

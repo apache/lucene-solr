@@ -601,7 +601,7 @@ public class GeoPolygonFactory {
         if (angleDelta > Math.PI) {
           angleDelta -= Math.PI * 2.0;
         }
-        if (Math.abs(angleDelta - Math.PI) < Vector.MINIMUM_RESOLUTION) {
+        if (Math.abs(angleDelta - Math.PI) < Vector.MINIMUM_ANGULAR_RESOLUTION) {
           return null;
         }
         //System.out.println(" angle delta = "+angleDelta);
@@ -624,7 +624,7 @@ public class GeoPolygonFactory {
       if (angleDelta > Math.PI) {
         angleDelta -= Math.PI * 2.0;
       }
-      if (Math.abs(angleDelta - Math.PI) < Vector.MINIMUM_RESOLUTION) {
+      if (Math.abs(angleDelta - Math.PI) < Vector.MINIMUM_ANGULAR_RESOLUTION) {
         return null;
       }
       //System.out.println(" angle delta = "+angleDelta);
@@ -634,7 +634,7 @@ public class GeoPolygonFactory {
 
     // Clockwise == inside == negative
     //System.out.println("Arcdistance = "+arcDistance);
-    if (Math.abs(arcDistance) < Vector.MINIMUM_RESOLUTION) {
+    if (Math.abs(arcDistance) < Vector.MINIMUM_ANGULAR_RESOLUTION) {
       // No idea what direction, so try another pole.
       return null;
     }

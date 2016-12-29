@@ -17,78 +17,62 @@
 
 package org.apache.solr.cloud;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
-
-import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class OverseerModifyCollectionTest extends AbstractFullDistribZkTestBase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
+
+public class OverseerModifyCollectionTest extends SolrCloudTestCase {
+
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(2)
+        .addConfig("conf1", configset("cloud-minimal"))
+        .addConfig("conf2", configset("cloud-minimal"))
+        .configure();
+  }
+
   @Test
   public void testModifyColl() throws Exception {
-    String collName = "modifyColl";
-    String newConfName = "conf" + random().nextInt();
-    String oldConfName = "conf1";
-    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
-      CollectionAdminResponse rsp;
-      CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collName, oldConfName, 1, 2);
-      rsp = create.process(client);
-      assertEquals(0, rsp.getStatus());
-      assertTrue(rsp.isSuccess());
-      
-      ConfigSetAdminRequest.Create createConfig = new ConfigSetAdminRequest.Create()
-        .setBaseConfigSetName(oldConfName)
-        .setConfigSetName(newConfName);
-      
-      ConfigSetAdminResponse configRsp = createConfig.process(client);
-      
-      assertEquals(0, configRsp.getStatus());
-      
-      ModifiableSolrParams p = new ModifiableSolrParams();
-      p.add("collection", collName);
-      p.add("action", "MODIFYCOLLECTION");
-      p.add("collection.configName", newConfName);
-      client.request(new GenericSolrRequest(POST, COLLECTIONS_HANDLER_PATH, p));
-    }
-    
-    assertEquals(newConfName, getConfigNameFromZk(collName));    
+
+    final String collName = "modifyColl";
+
+    CollectionAdminRequest.createCollection(collName, "conf1", 1, 2)
+        .process(cluster.getSolrClient());
+
+    // TODO create a modifyCollection() method on CollectionAdminRequest
+    ModifiableSolrParams p1 = new ModifiableSolrParams();
+    p1.add("collection", collName);
+    p1.add("action", "MODIFYCOLLECTION");
+    p1.add("collection.configName", "conf2");
+    cluster.getSolrClient().request(new GenericSolrRequest(POST, COLLECTIONS_HANDLER_PATH, p1));
+
+    assertEquals("conf2", getConfigNameFromZk(collName));
     
     //Try an invalid config name
-    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
-      ModifiableSolrParams p = new ModifiableSolrParams();
-      p.add("collection", collName);
-      p.add("action", "MODIFYCOLLECTION");
-      p.add("collection.configName", "notARealConfigName");
-      try{
-        client.request(new GenericSolrRequest(POST, COLLECTIONS_HANDLER_PATH, p));
-        fail("Exception should be thrown");
-      } catch(RemoteSolrException e) {
-        assertTrue(e.getMessage(), e.getMessage().contains("Can not find the specified config set"));
-      }
-    }
+    ModifiableSolrParams p2 = new ModifiableSolrParams();
+    p2.add("collection", collName);
+    p2.add("action", "MODIFYCOLLECTION");
+    p2.add("collection.configName", "notARealConfigName");
+    Exception e = expectThrows(Exception.class, () -> {
+      cluster.getSolrClient().request(new GenericSolrRequest(POST, COLLECTIONS_HANDLER_PATH, p2));
+    });
+
+    assertTrue(e.getMessage(), e.getMessage().contains("Can not find the specified config set"));
 
   }
   
   private String getConfigNameFromZk(String collName) throws KeeperException, InterruptedException {
-    byte[] b = cloudClient.getZkStateReader().getZkClient().getData(ZkStateReader.getCollectionPathRoot(collName), null, null, false);
+    byte[] b = zkClient().getData(ZkStateReader.getCollectionPathRoot(collName), null, null, false);
     Map confData = (Map) Utils.fromJSON(b);
     return (String) confData.get(ZkController.CONFIGNAME_PROP); 
   }

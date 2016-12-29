@@ -65,6 +65,9 @@ API Changes
 * LUCENE-7533: Classic query parser no longer allows autoGeneratePhraseQueries
   to be set to true when splitOnWhitespace is false (and vice-versa).
 
+* LUCENE-7607: LeafFieldComparator.setScorer and SimpleFieldComparator.setScorer
+  are declared as throwing IOException (Alan Woodward)
+
 New features
 
 * LUCENE-5867: Added BooleanSimilarity. (Robert Muir, Adrien Grand)
@@ -77,6 +80,19 @@ New features
 * LUCENE-7587: The new FacetQuery and MultiFacetQuery helper classes
   make it simpler to execute drill down when drill sideways counts are
   not needed (Emmanuel Keller via Mike McCandless)
+
+* LUCENE-6664: A new SynonymGraphFilter outputs a correct graph
+  structure for multi-token synonyms, separating out a
+  FlattenGraphFilter that is hardwired into the current
+  SynonymFilter.  This finally makes it possible to implement
+  correct multi-token synonyms at search time.  See
+  http://blog.mikemccandless.com/2012/04/lucenes-tokenstreams-are-actually.html
+  for details. (Mike McCandless)
+
+* LUCENE-5325: Added LongValuesSource and DoubleValuesSource, intended as
+  type-safe replacements for ValueSource in the queries module.  These
+  expose per-segment LongValues or DoubleValues iterators, similar to the
+  existing DocValues iterator API. (Alan Woodward, Adrien Grand)
 
 Bug Fixes
 
@@ -164,6 +180,9 @@ Improvements
   is no longer needed. Support for older Java 9 builds was removed.
   (Uwe Schindler)
 
+* LUCENE-7401: Changed the way BKD trees pick the split dimension in order to
+  ensure all dimensions are indexed. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-7568: Optimize merging when index sorting is used but the
@@ -196,6 +215,10 @@ Other
 
 * LUCENE-7599: Simplify TestRandomChains using Java's built-in Predicate and
   Function interfaces. (Ahmet Arslan via Adrien Grand)
+
+* LUCENE-7595: Improve RAMUsageTester in test-framework to estimate memory usage of
+  runtime classes and work with Java 9 EA (b148+). Disable static field heap usage
+  checker in LuceneTestCase.  (Uwe Schindler, Dawid Weiss)
 
 Build
 

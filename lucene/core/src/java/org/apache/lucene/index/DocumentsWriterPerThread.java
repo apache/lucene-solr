@@ -33,10 +33,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.MutableBits;
@@ -496,15 +496,15 @@ class DocumentsWriterPerThread {
     return filesToDelete;
   }
 
-  private MutableBits sortLiveDocs(MutableBits bits, Sorter.DocMap sortMap) {
-    assert bits != null && sortMap != null;
-    FixedBitSet bitSet = new FixedBitSet(bits.length());
-    for (int i = 0; i < bits.length(); i++) {
-      if (bits.get(i)) {
-        bitSet.set(sortMap.oldToNew(i));
+  private MutableBits sortLiveDocs(Bits liveDocs, Sorter.DocMap sortMap) throws IOException {
+    assert liveDocs != null && sortMap != null;
+    MutableBits sortedLiveDocs = codec.liveDocsFormat().newLiveDocs(liveDocs.length());
+    for (int i = 0; i < liveDocs.length(); i++) {
+      if (liveDocs.get(i) == false) {
+        sortedLiveDocs.clear(sortMap.oldToNew(i));
       }
     }
-    return bitSet;
+    return sortedLiveDocs;
   }
 
   /**

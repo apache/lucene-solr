@@ -35,14 +35,21 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
+import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -56,7 +63,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 
-public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized {
+public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String DEFAULT_SCHEME = "http";
   
@@ -74,7 +81,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       new DefaultSolrThreadFactory("httpShardExecutor")
   );
 
+  protected InstrumentedPoolingHttpClientConnectionManager clientConnectionManager;
   protected CloseableHttpClient defaultClient;
+  protected InstrumentedHttpRequestExecutor httpRequestExecutor;
   private LBHttpSolrClient loadbalancer;
   //default values:
   int soTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
@@ -169,12 +178,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     );
 
     ModifiableSolrParams clientParams = getClientParams();
-
-    this.defaultClient = HttpClientUtil.createClient(clientParams);
-    
+    httpRequestExecutor = new InstrumentedHttpRequestExecutor();
+    clientConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
+    this.defaultClient = HttpClientUtil.createClient(clientParams, clientConnectionManager, false, httpRequestExecutor);
     this.loadbalancer = createLoadbalancer(defaultClient);
   }
-  
+
   protected ModifiableSolrParams getClientParams() {
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost);
@@ -218,6 +227,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       } finally { 
         if (defaultClient != null) {
           HttpClientUtil.close(defaultClient);
+        }
+        if (clientConnectionManager != null)  {
+          clientConnectionManager.close();
         }
       }
     }
@@ -349,5 +361,48 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     }
     
     return url;
+  }
+
+  @Override
+  public String getName() {
+    return this.getClass().getName();
+  }
+
+  @Override
+  public String getVersion() {
+    return getClass().getPackage().getSpecificationVersion();
+  }
+
+  @Override
+  public Collection<String> initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    List<String> metricNames = new ArrayList<>(4);
+    metricNames.addAll(clientConnectionManager.initializeMetrics(manager, registry, scope));
+    metricNames.addAll(httpRequestExecutor.initializeMetrics(manager, registry, scope));
+    return metricNames;
+  }
+
+  @Override
+  public String getDescription() {
+    return "Metrics tracked by HttpShardHandlerFactory for distributed query requests";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.OTHER;
+  }
+
+  @Override
+  public String getSource() {
+    return null;
+  }
+
+  @Override
+  public URL[] getDocs() {
+    return new URL[0];
+  }
+
+  @Override
+  public NamedList getStatistics() {
+    return null;
   }
 }

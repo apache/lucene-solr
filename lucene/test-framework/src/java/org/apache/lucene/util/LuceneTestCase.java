@@ -94,6 +94,7 @@ import org.apache.lucene.store.FSLockFactory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -456,11 +457,24 @@ public abstract class LuceneTestCase extends Assert {
     LEAVE_TEMPORARY = defaultValue;
   }
 
+  /** Returns true, if MMapDirectory supports unmapping on this platform (required for Windows), or if we are not on Windows. */
+  public static boolean hasWorkingMMapOnWindows() {
+    return !Constants.WINDOWS || MMapDirectory.UNMAP_SUPPORTED;
+  }
+  
+  /** Assumes that the current MMapDirectory implementation supports unmapping, so the test will not fail on Windows.
+   * @see #hasWorkingMMapOnWindows()
+   * */
+  public static void assumeWorkingMMapOnWindows() {
+    assumeTrue(MMapDirectory.UNMAP_NOT_SUPPORTED_REASON, hasWorkingMMapOnWindows());
+  }
+
   /** Filesystem-based {@link Directory} implementations. */
   private static final List<String> FS_DIRECTORIES = Arrays.asList(
     "SimpleFSDirectory",
     "NIOFSDirectory",
-    "MMapDirectory"
+    // SimpleFSDirectory as replacement for MMapDirectory if unmapping is not supported on Windows (to make randomization stable):
+    hasWorkingMMapOnWindows() ? "MMapDirectory" : "SimpleFSDirectory"
   );
 
   /** All {@link Directory} implementations. */
@@ -469,7 +483,7 @@ public abstract class LuceneTestCase extends Assert {
     CORE_DIRECTORIES = new ArrayList<>(FS_DIRECTORIES);
     CORE_DIRECTORIES.add("RAMDirectory");
   }
-
+  
   /** A {@link org.apache.lucene.search.QueryCachingPolicy} that randomly caches. */
   public static final QueryCachingPolicy MAYBE_CACHE_POLICY = new QueryCachingPolicy() {
 
@@ -584,51 +598,55 @@ public abstract class LuceneTestCase extends Assert {
    * other.
    */
   @ClassRule
-  public static TestRule classRules = RuleChain
-    .outerRule(new TestRuleIgnoreTestSuites())
-    .around(ignoreAfterMaxFailures)
-    .around(suiteFailureMarker = new TestRuleMarkFailure())
-    .around(new TestRuleAssertionsRequired())
-    .around(new TestRuleLimitSysouts(suiteFailureMarker))
-    .around(tempFilesCleanupRule = new TestRuleTemporaryFilesCleanup(suiteFailureMarker))
-    .around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
-      @Override
-      protected boolean accept(java.lang.reflect.Field field) {
-        // Don't count known classes that consume memory once.
-        if (STATIC_LEAK_IGNORED_TYPES.contains(field.getType().getName())) {
-          return false;
+  public static TestRule classRules;
+  static {
+    RuleChain r = RuleChain.outerRule(new TestRuleIgnoreTestSuites())
+      .around(ignoreAfterMaxFailures)
+      .around(suiteFailureMarker = new TestRuleMarkFailure())
+      .around(new TestRuleAssertionsRequired())
+      .around(new TestRuleLimitSysouts(suiteFailureMarker))
+      .around(tempFilesCleanupRule = new TestRuleTemporaryFilesCleanup(suiteFailureMarker));
+    // TODO LUCENE-7595: Java 9 does not allow to look into runtime classes, so we have to fix the RAM usage checker!
+    if (!Constants.JRE_IS_MINIMUM_JAVA9) {
+      r = r.around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
+        @Override
+        protected boolean accept(java.lang.reflect.Field field) {
+          // Don't count known classes that consume memory once.
+          if (STATIC_LEAK_IGNORED_TYPES.contains(field.getType().getName())) {
+            return false;
+          }
+          // Don't count references from ourselves, we're top-level.
+          if (field.getDeclaringClass() == LuceneTestCase.class) {
+            return false;
+          }
+          return super.accept(field);
         }
-        // Don't count references from ourselves, we're top-level.
-        if (field.getDeclaringClass() == LuceneTestCase.class) {
-          return false;
+      });
+    }
+    classRules = r.around(new NoClassHooksShadowingRule())
+      .around(new NoInstanceHooksOverridesRule() {
+        @Override
+        protected boolean verify(Method key) {
+          String name = key.getName();
+          return !(name.equals("setUp") || name.equals("tearDown"));
         }
-        return super.accept(field);
-      }
-    })
-    .around(new NoClassHooksShadowingRule())
-    .around(new NoInstanceHooksOverridesRule() {
-      @Override
-      protected boolean verify(Method key) {
-        String name = key.getName();
-        return !(name.equals("setUp") || name.equals("tearDown"));
-      }
-    })
-    .around(classNameRule = new TestRuleStoreClassName())
-    .around(new TestRuleRestoreSystemProperties(
-        // Enlist all properties to which we have write access (security manager);
-        // these should be restored to previous state, no matter what the outcome of the test.
-
-        // We reset the default locale and timezone; these properties change as a side-effect
-        "user.language",
-        "user.timezone",
-        
-        // TODO: these should, ideally, be moved to Solr's base class.
-        "solr.directoryFactory",
-        "solr.solr.home",
-        "solr.data.dir"
-        ))
-    .around(classEnvRule = new TestRuleSetupAndRestoreClassEnv());
-
+      })
+      .around(classNameRule = new TestRuleStoreClassName())
+      .around(new TestRuleRestoreSystemProperties(
+          // Enlist all properties to which we have write access (security manager);
+          // these should be restored to previous state, no matter what the outcome of the test.
+  
+          // We reset the default locale and timezone; these properties change as a side-effect
+          "user.language",
+          "user.timezone",
+          
+          // TODO: these should, ideally, be moved to Solr's base class.
+          "solr.directoryFactory",
+          "solr.solr.home",
+          "solr.data.dir"
+          ))
+      .around(classEnvRule = new TestRuleSetupAndRestoreClassEnv());
+  }
 
   // -----------------------------------------------------------------
   // Test level rules.
@@ -853,7 +871,7 @@ public abstract class LuceneTestCase extends Assert {
   public static void assumeNoException(String msg, Exception e) {
     RandomizedTest.assumeNoException(msg, e);
   }
-
+  
   /**
    * Return <code>args</code> as a {@link Set} instance. The order of elements is not
    * preserved in iterators.

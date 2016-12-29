@@ -64,7 +64,9 @@ public abstract class DocIDMerger<T extends DocIDMerger.Sub> {
   /** Reuse API, currently only used by postings during merge */
   public abstract void reset() throws IOException;
 
-  /** Returns null when done */
+  /** Returns null when done.
+   *  <b>NOTE:</b> after the iterator has exhausted you should not call this
+   *  method, as it may result in unpredicted behavior. */
   public abstract T next() throws IOException;
 
   private DocIDMerger() {}
@@ -93,10 +95,6 @@ public abstract class DocIDMerger<T extends DocIDMerger.Sub> {
 
     @Override
     public T next() throws IOException {
-      if (current == null) {
-        // NOTE: it's annoying that caller is allowed to call us again even after we returned null before
-        return null;
-      }
       while (true) {
         int docID = current.nextDoc();
         if (docID == NO_MORE_DOCS) {
@@ -173,10 +171,6 @@ public abstract class DocIDMerger<T extends DocIDMerger.Sub> {
     @Override
     public T next() throws IOException {
       T top = queue.top();
-      if (top == null) {
-        // NOTE: it's annoying that caller is allowed to call us again even after we returned null before
-        return null;
-      }
 
       while (true) {
         int docID = top.nextDoc();
