@@ -49,6 +49,8 @@ public class TestLongValuesSource extends LuceneTestCase {
       document.add(newTextField("oddeven", (i % 2 == 0) ? "even" : "odd", Field.Store.NO));
       document.add(new NumericDocValuesField("int", random().nextInt()));
       document.add(new NumericDocValuesField("long", random().nextLong()));
+      if (i == 545)
+        document.add(new NumericDocValuesField("onefield", 45));
       iw.addDocument(document);
     }
     reader = iw.getReader();
@@ -61,6 +63,13 @@ public class TestLongValuesSource extends LuceneTestCase {
     reader.close();
     dir.close();
     super.tearDown();
+  }
+
+  public void testSortMissing() throws Exception {
+    LongValuesSource onefield = LongValuesSource.fromLongField("onefield");
+    TopDocs results = searcher.search(new MatchAllDocsQuery(), 1, new Sort(onefield.getSortField(true)));
+    FieldDoc first = (FieldDoc) results.scoreDocs[0];
+    assertEquals(45L, first.fields[0]);
   }
 
   public void testSimpleFieldEquivalences() throws Exception {
