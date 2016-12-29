@@ -71,6 +71,11 @@ import org.apache.solr.util.SolrPluginUtils;
    }
 }</pre>
  * <p>
+ * Training libraries:
+ * <ul>
+ * <li> <a href="http://sourceforge.net/p/lemur/wiki/RankLib/">RankLib</a>
+ * </ul>
+ * <p>
  * Background reading:
  * <ul>
  * <li> <a href="http://research.microsoft.com/pubs/132652/MSR-TR-2010-82.pdf">

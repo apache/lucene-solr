@@ -1631,11 +1631,7 @@ set JAVA_MAJOR_VERSION=0
 set JAVA_VERSION_INFO=
 set JAVA_BUILD=0
 
-"%JAVA%" -version 2>&1 | findstr /i "version" > javavers
-set /p JAVAVEROUT=<javavers
-del javavers
-
-for /f "tokens=3" %%a in ("!JAVAVEROUT!") do (
+FOR /f "usebackq tokens=3" %%a IN (`^""%JAVA%" -version 2^>^&1 ^| findstr "version"^"`) do (
   set JAVA_VERSION_INFO=%%a
   REM Remove surrounding quotes
   set JAVA_VERSION_INFO=!JAVA_VERSION_INFO:"=!
@@ -1656,13 +1652,8 @@ GOTO :eof
 
 REM Set which JVM vendor we have
 :resolve_java_vendor
-set "JAVA_VENDOR=Oracle"
-"%JAVA%" -version 2>&1 | findstr /i "IBM J9" > javares
-set /p JAVA_VENDOR_OUT=<javares
-del javares
-if NOT "%JAVA_VENDOR_OUT%" == "" (
-  set "JAVA_VENDOR=IBM J9"
-)
+"%JAVA%" -version 2>&1 | findstr /i "IBM J9" > nul
+if %ERRORLEVEL% == 1 ( set "JAVA_VENDOR=Oracle" ) else ( set "JAVA_VENDOR=IBM J9" )
 
 set JAVA_VENDOR_OUT=
 GOTO :eof

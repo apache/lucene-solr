@@ -62,16 +62,17 @@ public class JdbcTest extends SolrCloudTestCase {
 
     String collection;
     boolean useAlias = random().nextBoolean();
-    if(useAlias) {
+    if (useAlias) {
       collection = COLLECTIONORALIAS + "_collection";
-      CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
     } else {
       collection = COLLECTIONORALIAS;
     }
-
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
         false, true, DEFAULT_TIMEOUT);
+    if (useAlias) {
+      CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
+    }
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1", "testnull_i", null)

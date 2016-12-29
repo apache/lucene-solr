@@ -24,20 +24,34 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
+import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -49,7 +63,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 
-public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized {
+public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String DEFAULT_SCHEME = "http";
   
@@ -67,7 +81,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       new DefaultSolrThreadFactory("httpShardExecutor")
   );
 
+  protected InstrumentedPoolingHttpClientConnectionManager clientConnectionManager;
   protected CloseableHttpClient defaultClient;
+  protected InstrumentedHttpRequestExecutor httpRequestExecutor;
   private LBHttpSolrClient loadbalancer;
   //default values:
   int soTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
@@ -162,12 +178,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     );
 
     ModifiableSolrParams clientParams = getClientParams();
-
-    this.defaultClient = HttpClientUtil.createClient(clientParams);
-    
+    httpRequestExecutor = new InstrumentedHttpRequestExecutor();
+    clientConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
+    this.defaultClient = HttpClientUtil.createClient(clientParams, clientConnectionManager, false, httpRequestExecutor);
     this.loadbalancer = createLoadbalancer(defaultClient);
   }
-  
+
   protected ModifiableSolrParams getClientParams() {
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost);
@@ -212,6 +228,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         if (defaultClient != null) {
           HttpClientUtil.close(defaultClient);
         }
+        if (clientConnectionManager != null)  {
+          clientConnectionManager.close();
+        }
       }
     }
   }
@@ -245,8 +264,80 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     return urls;
   }
 
+  /**
+   * A distributed request is made via {@link LBHttpSolrClient} to the first live server in the URL list.
+   * This means it is just as likely to choose current host as any of the other hosts.
+   * This function makes sure that the cores of current host are always put first in the URL list.
+   * If all nodes prefer local-cores then a bad/heavily-loaded node will receive less requests from healthy nodes.
+   * This will help prevent a distributed deadlock or timeouts in all the healthy nodes due to one bad node.
+   */
+  private class IsOnPreferredHostComparator implements Comparator<Object> {
+    final private String preferredHostAddress;
+    public IsOnPreferredHostComparator(String preferredHostAddress) {
+      this.preferredHostAddress = preferredHostAddress;
+    }
+    @Override
+    public int compare(Object left, Object right) {
+      final boolean lhs = hasPrefix(objectToString(left));
+      final boolean rhs = hasPrefix(objectToString(right));
+      if (lhs != rhs) {
+        if (lhs) {
+          return -1;
+        } else {
+          return +1;
+        }
+      } else {
+        return 0;
+      }
+    }
+    private String objectToString(Object o) {
+      final String s;
+      if (o instanceof String) {
+        s = (String)o;
+      }
+      else if (o instanceof Replica) {
+        s = ((Replica)o).getCoreUrl();
+      } else {
+        s = null;
+      }
+      return s;
+    }
+    private boolean hasPrefix(String s) {
+      return s != null && s.startsWith(preferredHostAddress);
+    }
+  }
   ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req)
   {
+    final SolrParams params = req.getParams();
+
+    if (params.getBool(CommonParams.PREFER_LOCAL_SHARDS, false)) {
+      final CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
+      final ZkController zkController = coreDescriptor.getCoreContainer().getZkController();
+      final String preferredHostAddress = (zkController != null) ? zkController.getBaseUrl() : null;
+      if (preferredHostAddress == null) {
+        log.warn("Couldn't determine current host address to prefer local shards");
+      } else {
+        return new ShufflingReplicaListTransformer(r) {
+          @Override
+          public void transform(List<?> choices)
+          {
+            if (choices.size() > 1) {
+              super.transform(choices);
+              if (log.isDebugEnabled()) {
+                log.debug("Trying to prefer local shard on {} among the choices: {}",
+                    preferredHostAddress, Arrays.toString(choices.toArray()));
+              }
+              choices.sort(new IsOnPreferredHostComparator(preferredHostAddress));
+              if (log.isDebugEnabled()) {
+                log.debug("Applied local shard preference for choices: {}",
+                    Arrays.toString(choices.toArray()));
+              }
+            }
+          }
+        };
+      }
+    }
+
     return shufflingReplicaListTransformer;
   }
 
@@ -270,5 +361,48 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     }
     
     return url;
+  }
+
+  @Override
+  public String getName() {
+    return this.getClass().getName();
+  }
+
+  @Override
+  public String getVersion() {
+    return getClass().getPackage().getSpecificationVersion();
+  }
+
+  @Override
+  public Collection<String> initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    List<String> metricNames = new ArrayList<>(4);
+    metricNames.addAll(clientConnectionManager.initializeMetrics(manager, registry, scope));
+    metricNames.addAll(httpRequestExecutor.initializeMetrics(manager, registry, scope));
+    return metricNames;
+  }
+
+  @Override
+  public String getDescription() {
+    return "Metrics tracked by HttpShardHandlerFactory for distributed query requests";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.OTHER;
+  }
+
+  @Override
+  public String getSource() {
+    return null;
+  }
+
+  @Override
+  public URL[] getDocs() {
+    return new URL[0];
+  }
+
+  @Override
+  public NamedList getStatistics() {
+    return null;
   }
 }

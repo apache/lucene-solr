@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.SortedMap;
 import java.util.concurrent.Callable;
@@ -68,6 +69,7 @@ public class MiniSolrCloudCluster {
       "  <str name=\"shareSchema\">${shareSchema:false}</str>\n" +
       "  <str name=\"configSetBaseDir\">${configSetBaseDir:configsets}</str>\n" +
       "  <str name=\"coreRootDirectory\">${coreRootDirectory:.}</str>\n" +
+      "  <str name=\"collectionsHandler\">${collectionsHandler:solr.CollectionsHandler}</str>\n" +
       "\n" +
       "  <shardHandlerFactory name=\"shardHandlerFactory\" class=\"HttpShardHandlerFactory\">\n" +
       "    <str name=\"urlScheme\">${urlScheme:}</str>\n" +
@@ -180,8 +182,30 @@ public class MiniSolrCloudCluster {
    *
    * @throws Exception if there was an error starting the cluster
    */
-  public MiniSolrCloudCluster(int numServers, Path baseDir, String solrXml, JettyConfig jettyConfig, ZkTestServer zkTestServer) throws Exception {
+  public MiniSolrCloudCluster(int numServers, Path baseDir, String solrXml, JettyConfig jettyConfig,
+      ZkTestServer zkTestServer) throws Exception {
+    this(numServers, baseDir, solrXml, jettyConfig, zkTestServer, Optional.empty());
+  }
 
+  /**
+   * Create a MiniSolrCloudCluster.
+   * Note - this constructor visibility is changed to package protected so as to
+   * discourage its usage. Ideally *new* functionality should use {@linkplain SolrCloudTestCase}
+   * to configure any additional parameters.
+   *
+   * @param numServers number of Solr servers to start
+   * @param baseDir base directory that the mini cluster should be run from
+   * @param solrXml solr.xml file to be uploaded to ZooKeeper
+   * @param jettyConfig Jetty configuration
+   * @param zkTestServer ZkTestServer to use.  If null, one will be created
+   * @param securityJson A string representation of security.json file (optional).
+   *
+   * @throws Exception if there was an error starting the cluster
+   */
+   MiniSolrCloudCluster(int numServers, Path baseDir, String solrXml, JettyConfig jettyConfig,
+      ZkTestServer zkTestServer, Optional<String> securityJson) throws Exception {
+
+    Objects.requireNonNull(securityJson);
     this.baseDir = Objects.requireNonNull(baseDir);
     this.jettyConfig = Objects.requireNonNull(jettyConfig);
 
@@ -201,6 +225,9 @@ public class MiniSolrCloudCluster {
       zkClient.makePath("/solr/solr.xml", solrXml.getBytes(Charset.defaultCharset()), true);
       if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
         zkClient.makePath("/solr" + ZkStateReader.CLUSTER_PROPS, "{'urlScheme':'https'}".getBytes(StandardCharsets.UTF_8), true);
+      }
+      if (securityJson.isPresent()) { // configure Solr security
+        zkClient.makePath("/solr/security.json", securityJson.get().getBytes(Charset.defaultCharset()), true);
       }
     }
 

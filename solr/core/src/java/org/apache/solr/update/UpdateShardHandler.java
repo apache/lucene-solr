@@ -17,6 +17,10 @@
 package org.apache.solr.update;
 
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.http.client.HttpClient;
@@ -27,11 +31,16 @@ import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
+import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UpdateShardHandler {
+public class UpdateShardHandler implements SolrMetricProducer {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -50,10 +59,12 @@ public class UpdateShardHandler {
   
   private final CloseableHttpClient client;
 
-  private final PoolingHttpClientConnectionManager clientConnectionManager;
+  private final InstrumentedPoolingHttpClientConnectionManager clientConnectionManager;
+
+  private final InstrumentedHttpRequestExecutor httpRequestExecutor;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
-    clientConnectionManager = new PoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
+    clientConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
     if (cfg != null ) {
       clientConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
       clientConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
@@ -64,7 +75,8 @@ public class UpdateShardHandler {
       clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
       clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
     }
-    client = HttpClientUtil.createClient(clientParams, clientConnectionManager);
+    httpRequestExecutor = new InstrumentedHttpRequestExecutor();
+    client = HttpClientUtil.createClient(clientParams, clientConnectionManager, false, httpRequestExecutor);
 
     // following is done only for logging complete configuration.
     // The maxConnections and maxConnectionsPerHost have already been specified on the connection manager
@@ -74,7 +86,50 @@ public class UpdateShardHandler {
     }
     log.debug("Created UpdateShardHandler HTTP client with params: {}", clientParams);
   }
-  
+
+  @Override
+  public String getName() {
+    return this.getClass().getName();
+  }
+
+  @Override
+  public String getVersion() {
+    return getClass().getPackage().getSpecificationVersion();
+  }
+
+  @Override
+  public Collection<String> initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    List<String> metricNames = new ArrayList<>(4);
+    metricNames.addAll(clientConnectionManager.initializeMetrics(manager, registry, scope));
+    metricNames.addAll(httpRequestExecutor.initializeMetrics(manager, registry, scope));
+    return metricNames;
+  }
+
+  @Override
+  public String getDescription() {
+    return "Metrics tracked by UpdateShardHandler for ";
+  }
+
+  @Override
+  public Category getCategory() {
+    return null;
+  }
+
+  @Override
+  public String getSource() {
+    return null;
+  }
+
+  @Override
+  public URL[] getDocs() {
+    return new URL[0];
+  }
+
+  @Override
+  public NamedList getStatistics() {
+    return null;
+  }
+
   public HttpClient getHttpClient() {
     return client;
   }

@@ -38,7 +38,7 @@ public interface HighlightParams {
   // query interpretation
   public static final String Q           = HIGHLIGHT+".q"; // all
   public static final String QPARSER     = HIGHLIGHT+".qparser"; // all
-  public static final String FIELD_MATCH = HIGHLIGHT+".requireFieldMatch"; // OH, FVH
+  public static final String FIELD_MATCH = HIGHLIGHT+".requireFieldMatch"; // OH, FVH, UH
   public static final String USE_PHRASE_HIGHLIGHTER = HIGHLIGHT+".usePhraseHighlighter"; // OH, FVH, UH
   public static final String HIGHLIGHT_MULTI_TERM = HIGHLIGHT+".highlightMultiTerm"; // all
 

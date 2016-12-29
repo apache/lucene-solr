@@ -51,6 +51,7 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
@@ -264,6 +265,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
   // This test makes sure that by making the same assumptions as LRUQueryCache, RAMUsageTester
   // computes the same memory usage.
   public void testRamBytesUsedAgreesWithRamUsageTester() throws IOException {
+    assumeFalse("LUCENE-7595: RamUsageTester does not work exact in Java 9 (estimations for maps and lists)", Constants.JRE_IS_MINIMUM_JAVA9);
+    
     final LRUQueryCache queryCache = new LRUQueryCache(1 + random().nextInt(5), 1 + random().nextInt(10000), context -> random().nextBoolean());
     // an accumulator that only sums up memory usage of referenced filters and doc id sets
     final RamUsageTester.Accumulator acc = new RamUsageTester.Accumulator() {
@@ -958,6 +961,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
   }
 
   public void testDetectMutatedQueries() throws IOException {
+    LuceneTestCase.assumeFalse("LUCENE-7604: For some unknown reason the non-constant BadQuery#hashCode() does not trigger ConcurrentModificationException on Java 9 b150",
+        Constants.JRE_IS_MINIMUM_JAVA9);
     Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     w.addDocument(new Document());

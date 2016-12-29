@@ -505,7 +505,45 @@ public class TestBKD extends LuceneTestCase {
       }
     }
 
-    verify(docValues, null, numDims, numBytesPerDim);
+    // Use a small number of points in leaf blocks to trigger a lot of splitting
+    verify(docValues, null, numDims, numBytesPerDim, TestUtil.nextInt(random(), 20, 50));
+  }
+
+  // This triggers the logic that makes sure all dimensions get indexed
+  // by looking at how many times each dim has been split
+  public void testOneDimLowCard() throws Exception {
+    int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
+    int numDims = TestUtil.nextInt(random(), 2, 5);
+
+    int numDocs = atLeast(10000);
+    int theLowCardDim = random().nextInt(numDims);
+
+    byte[] value1 = new byte[numBytesPerDim];
+    random().nextBytes(value1);
+    byte[] value2 = value1.clone();
+    if (value2[numBytesPerDim-1] == 0 || random().nextBoolean()) {
+      value2[numBytesPerDim-1]++;
+    } else {
+      value2[numBytesPerDim-1]--;
+    }
+
+    byte[][][] docValues = new byte[numDocs][][];
+
+    for(int docID=0;docID<numDocs;docID++) {
+      byte[][] values = new byte[numDims][];
+      for(int dim=0;dim<numDims;dim++) {
+        if (dim == theLowCardDim) {
+          values[dim] = random().nextBoolean() ? value1 : value2;
+        } else {
+          values[dim] = new byte[numBytesPerDim];
+          random().nextBytes(values[dim]);
+        }
+      }
+      docValues[docID] = values;
+    }
+
+    // Use a small number of points in leaf blocks to trigger a lot of splitting
+    verify(docValues, null, numDims, numBytesPerDim, TestUtil.nextInt(random(), 20, 50));
   }
 
   // this should trigger run-length compression with lengths that are greater than 255
@@ -567,12 +605,14 @@ public class TestBKD extends LuceneTestCase {
     verify(docValuesArray, docIDsArray, numDims, numBytesPerDim);
   }
 
-
-
   /** docIDs can be null, for the single valued case, else it maps value to docID */
   private void verify(byte[][][] docValues, int[] docIDs, int numDims, int numBytesPerDim) throws Exception {
+    verify(docValues, docIDs, numDims, numBytesPerDim, TestUtil.nextInt(random(), 50, 1000));
+  }
+
+  private void verify(byte[][][] docValues, int[] docIDs, int numDims, int numBytesPerDim,
+      int maxPointsInLeafNode) throws Exception {
     try (Directory dir = getDirectory(docValues.length)) {
-      int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 1000);
       double maxMB = (float) 3.0 + (3*random().nextDouble());
       verify(dir, docValues, docIDs, numDims, numBytesPerDim, maxPointsInLeafNode, maxMB);
     }

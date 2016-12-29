@@ -47,6 +47,16 @@ import org.apache.solr.ltr.norm.Normalizer;
    }
 }</pre>
  * <p>
+ * Training libraries:
+ * <ul>
+ * <li> <a href="https://www.csie.ntu.edu.tw/~cjlin/liblinear/">
+ * LIBLINEAR -- A Library for Large Linear Classification</a>
+ * </ul>
+ * <ul>
+ * <li> <a href="https://www.csie.ntu.edu.tw/~cjlin/libsvm/">
+ * LIBSVM -- A Library for Support Vector Machines</a>
+ * </ul>
+ * <p>
  * Background reading:
  * <ul>
  * <li> <a href="http://www.cs.cornell.edu/people/tj/publications/joachims_02c.pdf">

@@ -16,30 +16,22 @@
  */
 package org.apache.solr.ltr;
 
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.solr.search.SolrIndexSearcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * FeatureLogger can be registered in a model and provide a strategy for logging
  * the feature values.
  */
-public abstract class FeatureLogger<FV_TYPE> {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+public abstract class FeatureLogger {
 
   /** the name of the cache using for storing the feature value **/
-  private static final String QUERY_FV_CACHE_NAME = "QUERY_DOC_FV";
+  private final String fvCacheName;
 
-  protected enum FeatureFormat {DENSE, SPARSE};
+  public enum FeatureFormat {DENSE, SPARSE};
   protected final FeatureFormat featureFormat;
 
-  protected FeatureLogger(FeatureFormat f) {
+  protected FeatureLogger(String fvCacheName, FeatureFormat f) {
+    this.fvCacheName = fvCacheName;
     this.featureFormat = f;
   }
 
@@ -58,56 +50,16 @@ public abstract class FeatureLogger<FV_TYPE> {
 
   public boolean log(int docid, LTRScoringQuery scoringQuery,
       SolrIndexSearcher searcher, LTRScoringQuery.FeatureInfo[] featuresInfo) {
-    final FV_TYPE featureVector = makeFeatureVector(featuresInfo);
+    final String featureVector = makeFeatureVector(featuresInfo);
     if (featureVector == null) {
       return false;
     }
 
-    return searcher.cacheInsert(QUERY_FV_CACHE_NAME,
+    return searcher.cacheInsert(fvCacheName,
         fvCacheKey(scoringQuery, docid), featureVector) != null;
   }
 
-  /**
-   * returns a FeatureLogger that logs the features in output, using the format
-   * specified in the 'stringFormat' param: 'csv' will log the features as a unique
-   * string in csv format 'json' will log the features in a map in a Map of
-   * featureName keys to featureValue values if format is null or empty, csv
-   * format will be selected.
-   * 'featureFormat' param: 'dense' will write features in dense format,
-   * 'sparse' will write the features in sparse format, null or empty will
-   * default to 'sparse'
-   *
-   *
-   * @return a feature logger for the format specified.
-   */
-  public static FeatureLogger<?> createFeatureLogger(String stringFormat, String featureFormat) {
-    final FeatureFormat f;
-    if (featureFormat == null || featureFormat.isEmpty() ||
-        featureFormat.equals("sparse")) {
-      f = FeatureFormat.SPARSE;
-    }
-    else if (featureFormat.equals("dense")) {
-      f = FeatureFormat.DENSE;
-    }
-    else {
-      f = FeatureFormat.SPARSE;
-      log.warn("unknown feature logger feature format {} | {}", stringFormat, featureFormat);
-    }
-    if ((stringFormat == null) || stringFormat.isEmpty()) {
-      return new CSVFeatureLogger(f);
-    }
-    if (stringFormat.equals("csv")) {
-      return new CSVFeatureLogger(f);
-    }
-    if (stringFormat.equals("json")) {
-      return new MapFeatureLogger(f);
-    }
-    log.warn("unknown feature logger string format {} | {}", stringFormat, featureFormat);
-    return null;
-
-  }
-
-  public abstract FV_TYPE makeFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo);
+  public abstract String makeFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo);
 
   private static int fvCacheKey(LTRScoringQuery scoringQuery, int docid) {
     return  scoringQuery.hashCode() + (31 * docid);
@@ -121,75 +73,9 @@ public abstract class FeatureLogger<FV_TYPE> {
    * @return String representation of the list of features calculated for docid
    */
 
-  public FV_TYPE getFeatureVector(int docid, LTRScoringQuery scoringQuery,
+  public String getFeatureVector(int docid, LTRScoringQuery scoringQuery,
       SolrIndexSearcher searcher) {
-    return (FV_TYPE) searcher.cacheLookup(QUERY_FV_CACHE_NAME, fvCacheKey(scoringQuery, docid));
-  }
-
-
-  public static class MapFeatureLogger extends FeatureLogger<Map<String,Float>> {
-
-    public MapFeatureLogger(FeatureFormat f) {
-      super(f);
-    }
-
-    @Override
-    public Map<String,Float> makeFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo) {
-      boolean isDense = featureFormat.equals(FeatureFormat.DENSE);
-      Map<String,Float> hashmap = Collections.emptyMap();
-      if (featuresInfo.length > 0) {
-        hashmap = new HashMap<String,Float>(featuresInfo.length);
-        for (LTRScoringQuery.FeatureInfo featInfo:featuresInfo){
-          if (featInfo.isUsed() || isDense){
-            hashmap.put(featInfo.getName(), featInfo.getValue());
-          }
-        }
-      }
-      return hashmap;
-    }
-
-  }
-
-  public static class CSVFeatureLogger extends FeatureLogger<String> {
-    char keyValueSep = ':';
-    char featureSep = ';';
-
-    public CSVFeatureLogger(FeatureFormat f) {
-      super(f);
-    }
-
-    public CSVFeatureLogger setKeyValueSep(char keyValueSep) {
-      this.keyValueSep = keyValueSep;
-      return this;
-    }
-
-    public CSVFeatureLogger setFeatureSep(char featureSep) {
-      this.featureSep = featureSep;
-      return this;
-    }
-
-    @Override
-    public String makeFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo) {
-      // Allocate the buffer to a size based on the number of features instead of the
-      // default 16.  You need space for the name, value, and two separators per feature,
-      // but not all the features are expected to fire, so this is just a naive estimate.
-      StringBuilder sb = new StringBuilder(featuresInfo.length * 3);
-      boolean isDense = featureFormat.equals(FeatureFormat.DENSE);
-      for (LTRScoringQuery.FeatureInfo featInfo:featuresInfo) {
-        if (featInfo.isUsed() || isDense){
-          sb.append(featInfo.getName())
-          .append(keyValueSep)
-          .append(featInfo.getValue())
-          .append(featureSep);
-        }
-      }
-
-      final String features = (sb.length() > 0 ?
-          sb.substring(0, sb.length() - 1) : "");
-
-      return features;
-    }
-
+    return (String) searcher.cacheLookup(fvCacheName, fvCacheKey(scoringQuery, docid));
   }
 
 }

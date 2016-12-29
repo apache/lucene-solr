@@ -1,0 +1,16 @@
+{
+    "authentication": {
+        "class": "org.apache.solr.security.ConfigurableInternodeAuthHadoopPlugin",
+        "sysPropPrefix": "solr.",
+        "type": "kerberos",
+        "clientBuilderFactory": "org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder",
+        "initKerberosZk": "true",
+        "authConfigs": [
+            "kerberos.principal",
+            "kerberos.keytab",
+            "kerberos.name.rules"
+        ],
+        "defaultConfigs": {
+        }
+    }
+}

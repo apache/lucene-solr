@@ -109,8 +109,8 @@ Upgrade Notes
 
 * SOLR-9708: You are encouraged to try out the UnifiedHighlighter by setting hl.method=unified and report feedback. It
   might become the default in 7.0. It's more efficient/faster than the other highlighters, especially compared to the
-  original Highlighter. That said, some options aren't supported yet, notably hl.fragsize and
-  hl.requireFieldMatch=false. It will get more features in time, especially with your input. See HighlightParams.java
+  original Highlighter. That said, some options aren't supported yet, notably hl.fragsize.
+  It will get more features in time, especially with your input. See HighlightParams.java
   for a listing of highlight parameters annotated with which highlighters use them.
   hl.useFastVectorHighlighter is now considered deprecated in lieu of hl.method=fastVector.
 
@@ -130,8 +130,8 @@ New Features
   Example:  { type:terms, field:category, filter:"user:yonik" } 
   (yonik)
 
-* SOLR-9442: Adds Array of NamedValuePair (json.nl=arrnvp) style to JSONResponseWriter.
-  (Jonny Marks, Christine Poerschke)
+* SOLR-9442, SOLR-9787: Adds Array of Name Type Value (json.nl=arrntv) style to JSONResponseWriter.
+  (Jonny Marks, Christine Poerschke, hossman)
 
 * SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
   SOLR_HOME on every node. Editing config through API is supported but affects only that one node. 
@@ -173,6 +173,35 @@ New Features
 * SOLR-9844: FieldCache information fetched via the mbeans handler or seen via the UI now displays the total size used.
   The individual cache entries in the response are now formatted better as well. (Varun Thacker)
 
+* SOLR-9513: Generic authentication plugins (GenericHadoopAuthPlugin and ConfigurableInternodeAuthHadoopPlugin) that delegate
+  all functionality to Hadoop authentication framework. (Hrishikesh Gadre via Ishan Chattopadhyaya)
+
+* SOLR-9860: Enable configuring invariantParams via HttpSolrClient.Builder (Hrishikesh Gadre, Ishan Chattopadhyaya)
+ 
+* SOLR-4735: Improve metrics reporting. This uses the dropwizard metric library, adding an internal API
+  for registering and reporting metrics from Solr components. Several new metrics and an improved JMX
+  reporter have been added (Alan Woodward, Jeff Wartes, Christine Poerschke, Kelvin Wong, shalin, ab)
+
+* SOLR-9788: Use instrumented jetty classes provided by the dropwizard metric library. (shalin)
+
+* SOLR-9805: Use metrics-jvm library to instrument jvm internals such as GC, memory usage and others. (shalin)
+
+* SOLR-9812: Added a new /admin/metrics API to return all metrics collected by Solr via API. API supports two
+  optional parameters 'group' (all,jvm,jetty,http,node,core) and 'type' (all,counter,timer,gauge,histogram) both
+  of which are multi-valued. Example: http://localhost:8983/solr/admin/metrics?group=jvm,jetty&type=counter
+  (shalin)
+
+* SOLR-9884: Add version to segments handler output (Steven Bower via Erick Erickson)
+
+* SOLR-9725: Substitute properties into JdbcDataSource configuration ( Jamie Jackson, Yuri Sashevsky via Mikhail Khludnev)
+
+* SOLR-9877: Use instrumented http client and connection pool. (shalin)
+
+* SOLR-9880: Add Ganglia, Graphite and SLF4J metrics reporters. (ab)
+
+* SOLR-9897: Add hl.requireFieldMatch toggle support when using the UnifiedHighlighter.  Defaults to false like the
+  other highlighters that support this. (David Smiley)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
@@ -193,6 +222,7 @@ Optimizations
   resulting in less produced garbage and 5-7% better performance.
   (yonik)
 
+* SOLR-9902: StandardDirectoryFactory should use Files API for it's move implementation. (Mark Miller)
 
 Bug Fixes
 ----------------------
@@ -253,6 +283,19 @@ Bug Fixes
 * SOLR-1953: It may be possible for temporary files to accumulate until the Solr process is shut down.
   (Karl Wright, Mark Miller)
 
+* SOLR-9847: Stop blocking further schema updates while waiting for a pending update to propagate to other replicas.
+  This reduces the likelihood of a (time-limited) distributed deadlock during concurrent schema updates.
+  (Mark Miller, Steve Rowe)
+
+* SOLR-9760: Windows script doesn't need write permission (Alex Crome by Mikhail Khludnev)
+
+* SOLR-9699,SOLR-4668: fix exception from core status in parallel with core reload (Mikhail Khludnev)
+
+* SOLR-9859: replication.properties cannot be updated after being written and neither replication.properties or 
+  index.properties are durable in the face of a crash. (Pushkar Raste, Chris de Kok, Cao Manh Dat, Mark Miller)
+
+* SOLR-9901: Implement move in HdfsDirectoryFactory. (Mark Miller)
+
 Other Changes
 ----------------------
 
@@ -298,6 +341,16 @@ Other Changes
 
 * SOLR-8959: Refactored TestSegmentSorting out of TestMiniSolrCloudCluster (hossman)
 
+* SOLR-9874: Solr will reject CREATEALIAS requests if target collections don't exist (Tomás Fernández Löbbe)
+
+* SOLR-9878: fixing lazy logic for retrieving ReversedWildcardFilterFactory in SolrQueryParserBase (Mikhail Khludnev)
+
+* SOLR-9758: refactor preferLocalShards implementation (Christine Poerschke)
+
+* SOLR-9448: providing a test to workaround a differently named uniqueKey field (Mikhail Khludnev)
+
+* SOLR-9899: StandardDirectoryFactory should use optimizations for all FilterDirectorys not just NRTCachingDirectory.
+  (Mark Miller)
 
 ==================  6.3.0 ==================
 

@@ -34,7 +34,7 @@ public class TestModelManager extends TestRerankBase {
 
   @BeforeClass
   public static void init() throws Exception {
-    setuptest();
+    setuptest(true);
   }
 
   @Before

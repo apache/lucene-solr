@@ -17,6 +17,7 @@
 package org.apache.solr.ltr.feature;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
@@ -27,7 +28,7 @@ import org.junit.Test;
 public class TestFilterSolrFeature extends TestRerankBase {
   @BeforeClass
   public static void before() throws Exception {
-    setuptest("solrconfig-ltr.xml", "schema.xml");
+    setuptest(false);
 
     assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
         "1"));
@@ -96,10 +97,13 @@ public class TestFilterSolrFeature extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=4 model=fqmodel efi.user_query=w2}");
     query.add("fl", "fv:[fv]");
 
+    final String docs0fv_csv= FeatureLoggerTestUtils.toFeatureVector(
+        "matchedTitle","1.0", "popularity","3.0");
+
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='2'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='matchedTitle:1.0;popularity:3.0'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_csv+"'");
   }
 
 }

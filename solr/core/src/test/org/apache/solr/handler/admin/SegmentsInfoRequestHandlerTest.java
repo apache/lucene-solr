@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import org.apache.lucene.util.Version;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -32,6 +33,7 @@ public class SegmentsInfoRequestHandlerTest extends AbstractSolrTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.tests.useMergePolicy", "false");
     initCore("solrconfig.xml", "schema12.xml");
   }
 
@@ -44,6 +46,10 @@ public class SegmentsInfoRequestHandlerTest extends AbstractSolrTestCase {
       assertU(delI("SOLR100" + i));
     }
     assertU(commit());
+    for (int i = 0; i < DOC_COUNT; i++) {
+      assertU(adoc("id","SOLR200" + i, "name","Apache Solr:" + i));
+    }
+    assertU(commit());
   }
 
   @Test
@@ -52,14 +58,21 @@ public class SegmentsInfoRequestHandlerTest extends AbstractSolrTestCase {
         req("qt","/admin/segments"),
           "0<count(//lst[@name='segments']/lst)");
   }
+
+  @Test
+  public void testSegmentInfosVersion() {
+    assertQ("No segments mentioned in result",
+        req("qt","/admin/segments"),
+        "2=count(//lst[@name='segments']/lst/str[@name='version'][.='"+Version.LATEST+"'])");
+  }
   
   @Test
   public void testSegmentInfosData() {   
     assertQ("No segments mentioned in result",
         req("qt","/admin/segments"),
           //#Document
-          DOC_COUNT+"=sum(//lst[@name='segments']/lst[*]/int[@name='size'])",
+          (DOC_COUNT*2)+"=sum(//lst[@name='segments']/lst/int[@name='size'])",
           //#Deletes
-          DEL_COUNT+"=sum(//lst[@name='segments']/lst[*]/int[@name='delCount'])");
+          DEL_COUNT+"=sum(//lst[@name='segments']/lst/int[@name='delCount'])");
   }
 }

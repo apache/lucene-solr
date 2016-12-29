@@ -138,6 +138,7 @@
         'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
         'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
         'properties', 'mdtext',
+        'template',
       ];
       def invalidPatterns = [
         (~$/@author\b/$) : '@author javadoc tag',
@@ -166,15 +167,34 @@
       }
       
       def javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$;
-      def commentPattern  = ~$/(?sm)^\Q/*\E(.*?)\Q*/\E/$;
+      def javaCommentPattern = ~$/(?sm)^\Q/*\E(.*?)\Q*/\E/$;
+      def xmlCommentPattern = ~$/(?sm)\Q<!--\E(.*?)\Q-->\E/$;
       def lineSplitter = ~$/[\r\n]+/$;
       def licenseMatcher = Defaults.createDefaultMatcher();
       def validLoggerPattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+\p{javaJavaIdentifierStart}+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$;
       def packagePattern = ~$/(?m)^\s*package\s+org\.apache.*;/$;
+      def xmlTagPattern = ~$/(?m)\s*<[a-zA-Z].*/$;
       
       def isLicense = { matcher, ratDocument ->
         licenseMatcher.reset();
         return lineSplitter.split(matcher.group(1)).any{ licenseMatcher.match(ratDocument, it) };
+      }
+
+      def checkLicenseHeaderPrecedes = { f, description, contentPattern, commentPattern, text, ratDocument ->
+          def contentMatcher = contentPattern.matcher(text);
+          if (contentMatcher.find()) {
+            def contentStartPos = contentMatcher.start();
+            def commentMatcher = commentPattern.matcher(text);
+            while (commentMatcher.find()) {
+              if (isLicense(commentMatcher, ratDocument)) {
+                if (commentMatcher.start() < contentStartPos) {
+                  break; // This file is all good, so break loop: license header precedes 'description' definition
+                } else {
+                  reportViolation(f, description+' declaration precedes license header');
+                }
+              }
+            }
+          }
       }
 
       ant.fileScanner{
@@ -219,20 +239,10 @@
               reportViolation(f, 'invalid logging pattern [not private static final, uses static class name]');
             }
           }
-          def packageMatcher = packagePattern.matcher(text);
-          if (packageMatcher.find()) {
-            def packageStartPos = packageMatcher.start();
-            def commentMatcher = commentPattern.matcher(text);
-            while (commentMatcher.find()) {
-              if (isLicense(commentMatcher, ratDocument)) {
-                if (commentMatcher.start() < packageStartPos) {
-                  break; // This file is all good, so break loop: license header precedes package definition
-                } else {
-                  reportViolation(f, 'package declaration precedes license header');
-                }
-              }
-            }
-          }
+          checkLicenseHeaderPrecedes(f, 'package', packagePattern, javaCommentPattern, text, ratDocument);
+        }
+        if (f.toString().endsWith('.xml') || f.toString().endsWith('.xml.template')) {
+          checkLicenseHeaderPrecedes(f, '<tag>', xmlTagPattern, xmlCommentPattern, text, ratDocument);
         }
       };
       

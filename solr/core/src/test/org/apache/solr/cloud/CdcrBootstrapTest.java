@@ -76,11 +76,11 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
             .process(source.getSolrClient());
 
-        // index 10000 docs with a hard commit every 1000 documents
         CloudSolrClient sourceSolrClient = source.getSolrClient();
         sourceSolrClient.setDefaultCollection("cdcr-source");
+        int docs = (TEST_NIGHTLY ? 100 : 10);
         int numDocs = 0;
-        for (int k = 0; k < 100; k++) {
+        for (int k = 0; k < docs; k++) {
           UpdateRequest req = new UpdateRequest();
           for (; numDocs < (k + 1) * 100; numDocs++) {
             SolrInputDocument doc = new SolrInputDocument();
@@ -89,7 +89,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             req.add(doc);
           }
           req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-          System.out.println("Adding 100 docs with commit=true, numDocs=" + numDocs);
+          System.out.println("Adding " + docs + " docs with commit=true, numDocs=" + numDocs);
           req.process(sourceSolrClient);
         }
 
@@ -170,11 +170,11 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
             .process(source.getSolrClient());
 
-        // index 10000 docs with a hard commit every 1000 documents
         CloudSolrClient sourceSolrClient = source.getSolrClient();
         sourceSolrClient.setDefaultCollection("cdcr-source");
+        int docs = (TEST_NIGHTLY ? 100 : 10);
         int numDocs = 0;
-        for (int k = 0; k < 100; k++) {
+        for (int k = 0; k < docs; k++) {
           UpdateRequest req = new UpdateRequest();
           for (; numDocs < (k + 1) * 100; numDocs++) {
             SolrInputDocument doc = new SolrInputDocument();
@@ -183,7 +183,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             req.add(doc);
           }
           req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-          System.out.println("Adding 100 docs with commit=true, numDocs=" + numDocs);
+          System.out.println("Adding " + docs + " docs with commit=true, numDocs=" + numDocs);
           req.process(sourceSolrClient);
         }
 
@@ -209,7 +209,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         cdcrDisableBuffer(sourceSolrClient);
 
         int c = 0;
-        for (int k = 0; k < 100; k++) {
+        for (int k = 0; k < 10; k++) {
           UpdateRequest req = new UpdateRequest();
           for (; c < (k + 1) * 100; c++, numDocs++) {
             SolrInputDocument doc = new SolrInputDocument();
@@ -256,11 +256,11 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
             .process(source.getSolrClient());
 
-        // index 10000 docs with a hard commit every 1000 documents
         CloudSolrClient sourceSolrClient = source.getSolrClient();
         sourceSolrClient.setDefaultCollection("cdcr-source");
+        int docs = (TEST_NIGHTLY ? 100 : 10);
         int numDocs = 0;
-        for (int k = 0; k < 100; k++) {
+        for (int k = 0; k < docs; k++) {
           UpdateRequest req = new UpdateRequest();
           for (; numDocs < (k + 1) * 100; numDocs++) {
             SolrInputDocument doc = new SolrInputDocument();
@@ -269,7 +269,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             req.add(doc);
           }
           req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-          System.out.println("Adding 100 docs with commit=true, numDocs=" + numDocs);
+          System.out.println("Adding " + docs + " docs with commit=true, numDocs=" + numDocs);
           req.process(sourceSolrClient);
         }
 
@@ -286,9 +286,8 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
 
         cdcrStart(targetSolrClient);
         cdcrStart(sourceSolrClient);
-
         int c = 0;
-        for (int k = 0; k < 100; k++) {
+        for (int k = 0; k < docs; k++) {
           UpdateRequest req = new UpdateRequest();
           for (; c < (k + 1) * 100; c++, numDocs++) {
             SolrInputDocument doc = new SolrInputDocument();
@@ -297,7 +296,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             req.add(doc);
           }
           req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-          System.out.println("Adding 100 docs with commit=true, numDocs=" + numDocs);
+          System.out.println("Adding " + docs + " docs with commit=true, numDocs=" + numDocs);
           req.process(sourceSolrClient);
         }
 

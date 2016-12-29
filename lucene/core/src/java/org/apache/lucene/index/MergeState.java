@@ -223,7 +223,10 @@ public class MergeState {
       return originalReaders;
     }
 
-    // If an incoming reader is not sorted, because it was flushed by IW, we sort it here:
+    /** If an incoming reader is not sorted, because it was flushed by IW older than {@link Version.LUCENE_7_0_0}
+     * or because we add unsorted segments from another index {@link IndexWriter#addIndexes(CodecReader...)} ,
+     * we sort it here:
+     */
     final Sorter sorter = new Sorter(indexSort);
     List<CodecReader> readers = new ArrayList<>(originalReaders.size());
 
@@ -231,9 +234,6 @@ public class MergeState {
       Sort segmentSort = leaf.getIndexSort();
 
       if (segmentSort == null) {
-        // TODO: fix IW to also sort when flushing?  It's somewhat tricky because of stored fields and term vectors, which write "live"
-        // to their index files on each indexed document:
-
         // This segment was written by flush, so documents are not yet sorted, so we sort them now:
         long t0 = System.nanoTime();
         Sorter.DocMap sortDocMap = sorter.sort(leaf);

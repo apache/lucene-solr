@@ -238,21 +238,37 @@ final class Sorter {
     }
   }
 
+  static DocComparator getDocComparator(LeafReader reader, SortField sortField) throws IOException {
+    return getDocComparator(reader.maxDoc(), sortField,
+        () -> getOrWrapSorted(reader, sortField),
+        () -> getOrWrapNumeric(reader, sortField));
+  }
+
+  interface NumericDocValuesSupplier {
+    NumericDocValues get() throws IOException;
+  }
+
+  interface SortedDocValuesSupplier {
+    SortedDocValues get() throws IOException;
+  }
+
   /** We cannot use the {@link FieldComparator} API because that API requires that you send it docIDs in order.  Note that this API
    *  allocates arrays[maxDoc] to hold the native values needed for comparison, but 1) they are transient (only alive while sorting this one
    *  segment), and 2) in the typical index sorting case, they are only used to sort newly flushed segments, which will be smaller than
    *  merged segments.  */
-  private static DocComparator getDocComparator(LeafReader reader, SortField sortField) throws IOException {
+  static DocComparator getDocComparator(int maxDoc,
+                                        SortField sortField,
+                                        SortedDocValuesSupplier sortedProvider,
+                                        NumericDocValuesSupplier numericProvider) throws IOException {
 
-    final int maxDoc = reader.maxDoc();
     final int reverseMul = sortField.getReverse() ? -1 : 1;
     final SortField.Type sortType = getSortFieldType(sortField);
 
     switch(sortType) {
 
-    case STRING:
+      case STRING:
       {
-        final SortedDocValues sorted = getOrWrapSorted(reader, sortField);
+        final SortedDocValues sorted = sortedProvider.get();
         final int missingOrd;
         if (sortField.getMissingValue() == SortField.STRING_LAST) {
           missingOrd = Integer.MAX_VALUE;
@@ -260,13 +276,13 @@ final class Sorter {
           missingOrd = Integer.MIN_VALUE;
         }
 
-        final int[] ords = new int[reader.maxDoc()];
+        final int[] ords = new int[maxDoc];
         Arrays.fill(ords, missingOrd);
         int docID;
         while ((docID = sorted.nextDoc()) != NO_MORE_DOCS) {
           ords[docID] = sorted.ordValue();
         }
-        
+
         return new DocComparator() {
           @Override
           public int compare(int docID1, int docID2) {
@@ -275,9 +291,9 @@ final class Sorter {
         };
       }
 
-    case LONG:
+      case LONG:
       {
-        final NumericDocValues dvs = getOrWrapNumeric(reader, sortField);
+        final NumericDocValues dvs = numericProvider.get();
         long[] values = new long[maxDoc];
         if (sortField.getMissingValue() != null) {
           Arrays.fill(values, (Long) sortField.getMissingValue());
@@ -298,9 +314,9 @@ final class Sorter {
         };
       }
 
-    case INT:
+      case INT:
       {
-        final NumericDocValues dvs = getOrWrapNumeric(reader, sortField);
+        final NumericDocValues dvs = numericProvider.get();
         int[] values = new int[maxDoc];
         if (sortField.getMissingValue() != null) {
           Arrays.fill(values, (Integer) sortField.getMissingValue());
@@ -322,9 +338,9 @@ final class Sorter {
         };
       }
 
-    case DOUBLE:
+      case DOUBLE:
       {
-        final NumericDocValues dvs = getOrWrapNumeric(reader, sortField);
+        final NumericDocValues dvs = numericProvider.get();
         double[] values = new double[maxDoc];
         if (sortField.getMissingValue() != null) {
           Arrays.fill(values, (Double) sortField.getMissingValue());
@@ -345,9 +361,9 @@ final class Sorter {
         };
       }
 
-    case FLOAT:
+      case FLOAT:
       {
-        final NumericDocValues dvs = getOrWrapNumeric(reader, sortField);
+        final NumericDocValues dvs = numericProvider.get();
         float[] values = new float[maxDoc];
         if (sortField.getMissingValue() != null) {
           Arrays.fill(values, (Float) sortField.getMissingValue());
@@ -368,10 +384,11 @@ final class Sorter {
         };
       }
 
-    default:
-      throw new IllegalArgumentException("unhandled SortField.getType()=" + sortField.getType());
+      default:
+        throw new IllegalArgumentException("unhandled SortField.getType()=" + sortField.getType());
     }
   }
+
 
   /**
    * Returns a mapping from the old document ID to its new location in the
@@ -388,11 +405,15 @@ final class Sorter {
   DocMap sort(LeafReader reader) throws IOException {
     SortField fields[] = sort.getSort();
     final DocComparator comparators[] = new DocComparator[fields.length];
-    
+
     for (int i = 0; i < fields.length; i++) {
       comparators[i] = getDocComparator(reader, fields[i]);
     }
+    return sort(reader.maxDoc(), comparators);
+  }
 
+
+  DocMap sort(int maxDoc, DocComparator[] comparators) throws IOException {
     final DocComparator comparator = new DocComparator() {
       @Override
       public int compare(int docID1, int docID2) {
@@ -406,7 +427,7 @@ final class Sorter {
       }
     };
 
-    return sort(reader.maxDoc(), comparator);
+    return sort(maxDoc, comparator);
   }
 
   /**

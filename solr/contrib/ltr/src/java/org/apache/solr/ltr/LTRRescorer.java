@@ -148,7 +148,7 @@ public class LTRRescorer extends Rescorer {
 
     LTRScoringQuery.ModelWeight.ModelScorer scorer = null;
     int hitUpto = 0;
-    final FeatureLogger<?> featureLogger = scoringQuery.getFeatureLogger();
+    final FeatureLogger featureLogger = scoringQuery.getFeatureLogger();
 
     while (hitUpto < hits.length) {
       final ScoreDoc hit = hits[hitUpto];

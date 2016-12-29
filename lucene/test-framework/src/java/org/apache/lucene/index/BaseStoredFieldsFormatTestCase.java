@@ -663,6 +663,8 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
 
   @Nightly
   public void testBigDocuments() throws IOException {
+    assumeWorkingMMapOnWindows();
+    
     // "big" as "much bigger than the chunk size"
     // for this test we force a FS dir
     // we can't just use newFSDirectory, because this test doesn't really index anything.

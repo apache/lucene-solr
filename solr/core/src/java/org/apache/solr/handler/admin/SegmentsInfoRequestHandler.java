@@ -84,6 +84,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
     segmentInfoMap.add("age", new Date(timestamp));
     segmentInfoMap.add("source",
         segmentCommitInfo.info.getDiagnostics().get("source"));
+    segmentInfoMap.add("version", segmentCommitInfo.info.getVersion().toString());
 
     return segmentInfoMap;
   }

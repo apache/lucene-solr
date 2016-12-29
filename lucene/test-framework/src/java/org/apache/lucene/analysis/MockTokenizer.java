@@ -103,6 +103,7 @@ public class MockTokenizer extends Tokenizer {
   public MockTokenizer(CharacterRunAutomaton runAutomaton, boolean lowerCase) {
     this(runAutomaton, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
   }
+
   /** Calls {@link #MockTokenizer(CharacterRunAutomaton, boolean) MockTokenizer(Reader, WHITESPACE, true)} */
   public MockTokenizer() {
     this(WHITESPACE, true);
@@ -316,7 +317,7 @@ public class MockTokenizer extends Tokenizer {
       // some tokenizers, such as limiting tokenizers, call end() before incrementToken() returns false.
       // these tests should disable this check (in general you should consume the entire stream)
       if (streamState != State.INCREMENT_FALSE) {
-        fail("end() called before incrementToken() returned false!");
+        fail("end() called in wrong state=" + streamState + "!");
       }
     } finally {
       streamState = State.END;

@@ -29,7 +29,7 @@ public class TestFeatureLtrScoringModel extends TestRerankBase {
 
   @BeforeClass
   public static void setup() throws Exception {
-    setuptest();
+    setuptest(true);
     store = getManagedFeatureStore();
   }
 
