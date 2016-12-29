@@ -19,13 +19,17 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -127,22 +131,25 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       waitForThingsToLevelOut(30);
 
       checkShardConsistency(false, true);
+      
+      // bring down the other node and index a few docs; so the leader and other node segments diverge
+      forceNodeFailures(singletonList(secondNode));
+      for (int i = 0; i < 10; i++) {
+        indexDoc(id, docId, i1, 50, tlong, 50, t1,
+            "document number " + docId++);
+        if(i % 2 == 0) {
+          commit();
+        }
+      }
+      commit();
+      restartNodes(singletonList(secondNode));
 
       // start the freshNode 
-      ChaosMonkey.start(freshNode.jetty);
-      nodesDown.remove(freshNode);
-      waitTillNodesActive();
+      restartNodes(singletonList(freshNode));
       
-      // check how to see if fresh node went into recovery (may be check count for replication handler on the new leader) 
-      // There should be a better way to do this
-      long numRequestsBefore = (Long) secondNode.jetty
-          .getCoreContainer()
-          .getCores()
-          .iterator()
-          .next()
-          .getRequestHandler(ReplicationHandler.PATH)
-          .getStatistics().get("requests");
-      
+      String replicationProperties = (String) freshNode.jetty.getSolrHome() + "/cores/" +  DEFAULT_TEST_COLLECTION_NAME + "/data/replication.properties";
+      String md5 = DigestUtils.md5Hex(Files.readAllBytes(Paths.get(replicationProperties)));
+        
       // shutdown the original leader
       log.info("Now shutting down initial leader");
       forceNodeFailures(singletonList(initialLeaderJetty));
@@ -150,21 +157,21 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       waitTillNodesActive();
       log.info("Updating mappings from zk");
       updateMappingsFromZk(jettys, clients, true);
-      
-      long numRequestsAfter = (Long) secondNode.jetty
-          .getCoreContainer()
-          .getCores()
-          .iterator()
-          .next()
-          .getRequestHandler(ReplicationHandler.PATH)
-          .getStatistics().get("requests");
-
-      assertEquals("Node went into replication", numRequestsBefore, numRequestsAfter);
+      assertEquals("Node went into replication", md5, DigestUtils.md5Hex(Files.readAllBytes(Paths.get(replicationProperties))));
       
       success = true;
     } finally {
       System.clearProperty("solr.disableFingerprint");
     }
+  }
+  
+  private void restartNodes(List<CloudJettyRunner> nodesToRestart) throws Exception {
+    for (CloudJettyRunner node : nodesToRestart) {
+      chaosMonkey.start(node.jetty);
+      nodesDown.remove(node);
+    }
+    waitTillNodesActive();
+    checkShardConsistency(false, true);
   }
 
 
