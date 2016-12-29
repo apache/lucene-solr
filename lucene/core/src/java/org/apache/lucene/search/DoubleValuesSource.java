@@ -25,6 +25,7 @@ import java.util.function.LongToDoubleFunction;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.util.Bits;
 
 /**
  * Base class for producing {@link DoubleValues}
@@ -194,7 +195,8 @@ public abstract class DoubleValuesSource {
     @Override
     public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
       final NumericDocValues values = DocValues.getNumeric(ctx.reader(), field);
-      return toDoubleValues(values, decoder::applyAsDouble);
+      final Bits matchingBits = DocValues.getDocsWithField(ctx.reader(), field);
+      return toDoubleValues(values, matchingBits, decoder::applyAsDouble);
     }
 
     @Override
@@ -261,7 +263,7 @@ public abstract class DoubleValuesSource {
     }
   }
 
-  private static DoubleValues toDoubleValues(NumericDocValues in, LongToDoubleFunction map) {
+  private static DoubleValues toDoubleValues(NumericDocValues in, Bits matchingBits, LongToDoubleFunction map) {
     return new DoubleValues() {
 
       int current = -1;
@@ -274,7 +276,7 @@ public abstract class DoubleValuesSource {
       @Override
       public boolean advanceExact(int target) throws IOException {
         current = target;
-        return true;
+        return matchingBits.get(target);
       }
 
     };

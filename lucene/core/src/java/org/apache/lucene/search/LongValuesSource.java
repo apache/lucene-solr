@@ -23,6 +23,7 @@ import java.util.Objects;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.util.Bits;
 
 /**
  * Base class for producing {@link LongValues}
@@ -98,7 +99,8 @@ public abstract class LongValuesSource {
     @Override
     public LongValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
       final NumericDocValues values = DocValues.getNumeric(ctx.reader(), field);
-      return toLongValues(values);
+      final Bits matchingBits = DocValues.getDocsWithField(ctx.reader(), field);
+      return toLongValues(values, matchingBits);
     }
 
     @Override
@@ -165,7 +167,7 @@ public abstract class LongValuesSource {
     }
   }
 
-  private static LongValues toLongValues(NumericDocValues in) {
+  private static LongValues toLongValues(NumericDocValues in, Bits matchingBits) {
     return new LongValues() {
 
       int current = -1;
@@ -178,7 +180,7 @@ public abstract class LongValuesSource {
       @Override
       public boolean advanceExact(int target) throws IOException {
         current = target;
-        return true;
+        return matchingBits.get(target);
       }
 
     };
