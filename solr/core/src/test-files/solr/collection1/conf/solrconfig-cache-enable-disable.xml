@@ -17,8 +17,6 @@
  limitations under the License.
 -->
 
-<!-- a basic solrconfig that tests can use when they want simple minimal solrconfig/schema
-     DO NOT ADD THINGS TO THIS CONFIG! -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <dataDir>${solr.data.dir:}</dataDir>
