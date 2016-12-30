@@ -364,6 +364,8 @@ public class SolrCLI {
       return new ZkCpTool();
     else if ("ls".equals(toolType))
       return new ZkLsTool();
+    else if ("mkroot".equals(toolType))
+      return new ZkMkrootTool();
     else if ("assert".equals(toolType))
       return new AssertTool();
     else if ("utils".equals(toolType))
@@ -1986,7 +1988,7 @@ public class SolrCLI {
 
       if (zkHost == null) {
         throw new IllegalStateException("Solr at " + cli.getOptionValue("zkHost") +
-            " is running in standalone server mode, 'zk rm' can only be used when running in SolrCloud mode.\n");
+            " is running in standalone server mode, 'zk ls' can only be used when running in SolrCloud mode.\n");
       }
 
 
@@ -1999,11 +2001,70 @@ public class SolrCLI {
             " recurse: " + Boolean.toString(recurse));
         stdout.print(zkClient.listZnode(znode, recurse));
       } catch (Exception e) {
-        log.error("Could not complete rm operation for reason: " + e.getMessage());
+        log.error("Could not complete ls operation for reason: " + e.getMessage());
         throw (e);
       }
     }
   } // End zkLsTool class
+
+
+  public static class ZkMkrootTool extends ToolBase {
+
+    public ZkMkrootTool() {
+      this(System.out);
+    }
+
+    public ZkMkrootTool(PrintStream stdout) {
+      super(stdout);
+    }
+
+    @SuppressWarnings("static-access")
+    public Option[] getOptions() {
+      return new Option[]{
+          OptionBuilder
+              .withArgName("path")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Path to create")
+              .create("path"),
+          OptionBuilder
+              .withArgName("HOST")
+              .hasArg()
+              .isRequired(true)
+              .withDescription("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .create("zkHost")
+      };
+    }
+
+    public String getName() {
+      return "mkroot";
+    }
+
+    protected void runImpl(CommandLine cli) throws Exception {
+
+      String zkHost = getZkHost(cli);
+
+      if (zkHost == null) {
+        throw new IllegalStateException("Solr at " + cli.getOptionValue("zkHost") +
+            " is running in standalone server mode, 'zk mkroot' can only be used when running in SolrCloud mode.\n");
+      }
+
+
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+        echo("\nConnecting to ZooKeeper at " + zkHost + " ...");
+
+        String znode = cli.getOptionValue("path");
+        echo("Creating Zookeeper path " + znode + " on ZooKeeper at " + zkHost);
+        zkClient.makePath(znode, true);
+      } catch (Exception e) {
+        log.error("Could not complete mkroot operation for reason: " + e.getMessage());
+        throw (e);
+      }
+    }
+  } // End zkMkrootTool class
+
+
+
 
   public static class ZkCpTool extends ToolBase {
 

@@ -493,6 +493,12 @@ function print_usage() {
     echo ""
     echo "             Only the node names are listed, not data"
     echo ""
+    echo "         mkroot makes a znode on Zookeeper with no data. Can be used to make a path of arbitrary"
+    echo "             depth but primarily intended to create a 'chroot'."
+    echo ""
+    echo "             <path>: The Zookeeper path to create. Leading slash is assumed if not present."
+    echo "                     Intermediate nodes are created as needed if not present."
+    echo ""
   fi
 } # end print_usage
 
@@ -507,6 +513,7 @@ function print_short_zk_usage() {
   echo "         solr zk rm [-r] <path> [-z zkHost]"
   echo "         solr zk mv <src> <dest> [-z zkHost]"
   echo "         solr zk ls [-r] <path> [-z zkHost]"
+  echo "         solr zk mkroot <path> [-z zkHost]"
   echo ""
 
   if [ "$1" == "" ]; then
@@ -1001,7 +1008,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
   if [ $# -gt 0 ]; then
     while true; do
       case "$1" in
-        -upconfig|upconfig|-downconfig|downconfig|cp|rm|mv|ls)
+        -upconfig|upconfig|-downconfig|downconfig|cp|rm|mv|ls|mkroot)
             if [ "${1:0:1}" == "-" ]; then
               ZK_OP=${1:1}
             else
@@ -1042,7 +1049,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
             shift
             break
         ;;
-        *)  # Pick up <src> <dst> or <path> params for rm, ls, cp, mv.
+        *)  # Pick up <src> <dst> or <path> params for rm, ls, cp, mv, mkroot.
             if [ "$1" == "" ]; then
               break # out-of-args, stop looping
             fi
@@ -1062,7 +1069,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
   fi
 
   if [ -z "$ZK_OP" ]; then
-    print_short_zk_usage "Zookeeper operation (one of 'upconfig', 'downconfig', 'rm', 'mv', 'cp', 'ls') is required!"
+    print_short_zk_usage "Zookeeper operation (one of 'upconfig', 'downconfig', 'rm', 'mv', 'cp', 'ls', 'mkroot') is required!"
   fi
 
   if [ -z "$ZK_HOST" ]; then
@@ -1088,6 +1095,13 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
     fi
   fi
 
+  if [[ "$ZK_OP" == "mkroot" ]]; then
+    if [[ -z "$ZK_SRC" ]]; then
+      print_short_zk_usage "<path> must be specified when using the 'mkroot' command."
+    fi
+  fi
+
+
   case "$ZK_OP" in
     upconfig)
       run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" -zkHost "$ZK_HOST" -configsetsDir "$SOLR_TIP/server/solr/configsets"
@@ -1112,6 +1126,12 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
         print_short_zk_usage "Zookeeper path to list must be specified when using the 'ls' command"
       fi
       run_tool "$ZK_OP" -path "$ZK_SRC" -recurse "$ZK_RECURSE" -zkHost "$ZK_HOST"
+    ;;
+    mkroot)
+      if [ -z "$ZK_SRC" ]; then
+        print_short_zk_usage "Zookeeper path to list must be specified when using the 'mkroot' command"
+      fi
+      run_tool "$ZK_OP" -path "$ZK_SRC" -zkHost "$ZK_HOST"
     ;;
     *)
       print_short_zk_usage "Unrecognized Zookeeper operation $ZK_OP"

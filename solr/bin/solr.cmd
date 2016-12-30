@@ -480,6 +480,13 @@ echo             ^<path^>: The Zookeeper path to use as the root.
 echo.
 echo             Only the node names are listed, not data
 echo.
+echo         mkroot makes a znode in Zookeeper with no data. Can be used to make a path of arbitrary
+echo                depth but primarily intended to create a 'chroot'."
+echo.
+echo             ^<path^>: The Zookeeper path to create. Leading slash is assumed if not present.
+echo                       Intermediate nodes are created as needed if not present.
+echo.
+
 goto done
 
 :zk_short_usage
@@ -492,6 +499,7 @@ echo         solr zk cp [-r] ^<src^> ^<dest^> [-z zkHost]
 echo         solr zk rm [-r] ^<path^> [-z zkHost]
 echo         solr zk mv ^<src^> ^<dest^> [-z zkHost]
 echo         solr zk ls [-r] ^<path^> [-z zkHost]
+echo         solr zk mkroot ^<path^> [-z zkHost]
 echo.
 IF "%ZK_FULL%"=="true" (
   goto zk_full_usage
@@ -1399,6 +1407,8 @@ IF "%1"=="-upconfig" (
   goto set_zk_op
 ) ELSE IF "%1"=="ls" (
   goto set_zk_op
+) ELSE IF "%1"=="mkroot" (
+  goto set_zk_op
 ) ELSE IF "%1"=="-n" (
   goto set_config_name
 ) ELSE IF "%1"=="-r" (
@@ -1561,13 +1571,22 @@ IF "!ZK_OP!"=="upconfig" (
   org.apache.solr.util.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -path !ZK_SRC! -recurse !ZK_RECURSE!
 ) ELSE IF "!ZK_OP!"=="ls" (
   IF "%ZK_SRC"=="" (
-    set ERROR_MSG="Zookeeper path to remove must be specified when using the 'rm' command"
+    set ERROR_MSG="Zookeeper path to remove must be specified when using the 'ls' command"
     goto zk_short_usage
   )
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.util.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -path !ZK_SRC! -recurse !ZK_RECURSE!
+) ELSE IF "!ZK_OP!"=="mkroot" (
+  IF "%ZK_SRC"=="" (
+    set ERROR_MSG="Zookeeper path to create must be specified when using the 'mkroot' command"
+    goto zk_short_usage
+  )
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -path !ZK_SRC!
 ) ELSE (
   set ERROR_MSG="Unknown zk option !ZK_OP!"
   goto zk_short_usage
