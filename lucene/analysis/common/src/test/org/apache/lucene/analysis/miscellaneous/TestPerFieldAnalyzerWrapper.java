@@ -68,10 +68,7 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
       assertFalse(tokenStream.incrementToken());
       tokenStream.end();
     }
-    // TODO: fix this about PFAW, this is crazy
     analyzer.close();
-    defaultAnalyzer.close();
-    IOUtils.close(analyzerPerField.values());    
   }
   
   public void testReuseWrapped() throws Exception {
@@ -127,7 +124,7 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
     ts4 = wrapper3.tokenStream("moreSpecial", text);
     assertSame(ts3, ts4);
     assertSame(ts2, ts3);
-    IOUtils.close(wrapper3, wrapper2, wrapper1, specialAnalyzer, defaultAnalyzer);
+    IOUtils.close(wrapper3, wrapper2, wrapper1);
   }
   
   public void testCharFilters() throws Exception {
@@ -157,6 +154,5 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
         new int[] { 2 }
     );
     p.close();
-    a.close(); // TODO: fix this about PFAW, its a trap
   }
 }
