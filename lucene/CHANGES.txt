@@ -141,6 +141,9 @@ Bug Fixes
 * LUCENE-7606: Normalization with CustomAnalyzer would only apply the last
   token filter. (Adrien Grand)
 
+* LUCENE-7612: Removed an unused dependency from the suggester to the misc
+  module. (Alan Woodward)
+
 Improvements
 
 * LUCENE-6824: TermAutomatonQuery now rewrites to TermQuery,
