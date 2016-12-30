@@ -73,6 +73,9 @@ Bug Fixes
   using helpers for exclusive bounds that are consistent with Double.compare.
   (Adrien Grand, Dawid Weiss)
 
+* LUCENE-7606: Normalization with CustomAnalyzer would only apply the last
+  token filter. (Adrien Grand)
+
 Improvements
 
 * LUCENE-7532: Add back lost codec file format documentation
