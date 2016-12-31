@@ -73,7 +73,8 @@ public class SolrGangliaReporterTest extends SolrTestCaseJ4 {
     gangliaReporter.start();
     Thread.sleep(5000);
     assertTrue(names.size() >= 3);
-    for (String name : names) {
+    String[] frozenNames = (String[])names.toArray(new String[names.size()]);
+    for (String name : frozenNames) {
       assertTrue(name, name.startsWith("test.solr.node.cores."));
     }
   }
