@@ -240,6 +240,8 @@ Bug Fixes
 
 * SOLR-9620: fix cross core query-time join by numeric fields (Mikhail Khludnev)
 
+* SOLR-9495: AIOBE with confusing message for incomplete sort spec in Streaming Expression (Gus Heck, Joel Bernstein)
+
 Other Changes
 ----------------------
 
