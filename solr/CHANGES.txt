@@ -306,6 +306,8 @@ Bug Fixes
 
 * SOLR-9900: fix false positives on range queries with ReversedWildcardFilterFactory (Yonik Seeley via Mikhail Khludnev)
 
+* SOLR-9495: AIOBE with confusing message for incomplete sort spec in Streaming Expression (Gus Heck, Joel Bernstein)
+
 Other Changes
 ----------------------
 
