@@ -332,6 +332,10 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
       String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
       
+      if (spec.length != 2) {
+        throw new IOException("Invalid sort spec:" + s);
+      }
+
       String fieldName = spec[0].trim();
       String order = spec[1].trim();
       

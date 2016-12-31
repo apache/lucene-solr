@@ -162,6 +162,16 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertTrue(e.getMessage().contains("fl param expected for search function"));
     }
 
+
+    try {
+      expression = StreamExpressionParser.parse("search(" + COLLECTIONORALIAS + ", q=\"blah\", fl=\"id, a_f\", sort=\"a_f\")");
+      stream = new CloudSolrStream(expression, factory);
+      tuples = getTuples(stream);
+      throw new Exception("Should be an exception here");
+    } catch(Exception e) {
+      assertTrue(e.getMessage().contains("Invalid sort spec"));
+    }
+
   }
 
   @Test
