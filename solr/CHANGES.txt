@@ -242,6 +242,8 @@ Bug Fixes
 
 * SOLR-9495: AIOBE with confusing message for incomplete sort spec in Streaming Expression (Gus Heck, Joel Bernstein)
 
+* SOLR-9154: Fix DirectSolrSpellChecker to work when added through the Config API. (Anshum Gupta)
+
 Other Changes
 ----------------------
 
