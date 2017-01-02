@@ -200,7 +200,6 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
   private void forceNodeFailures(List<CloudJettyRunner> replicasToShutDown) throws Exception {
     for (CloudJettyRunner replicaToShutDown : replicasToShutDown) {
       chaosMonkey.killJetty(replicaToShutDown);
-      Thread.sleep(3000);
     }
 
     int totalDown = 0;
@@ -219,8 +218,6 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     assertEquals(getShardCount() - totalDown, jetties.size());
 
     nodesDown.addAll(replicasToShutDown);
-
-    Thread.sleep(3000);
   }
   
   

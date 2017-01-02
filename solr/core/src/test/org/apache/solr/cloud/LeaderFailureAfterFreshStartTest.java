@@ -24,7 +24,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -46,6 +45,8 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 
 import static java.util.Collections.singletonList;
 
@@ -97,6 +98,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
   }
 
   @Test
+  @Repeat(iterations=20)
   public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
@@ -178,7 +180,6 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
   private void forceNodeFailures(List<CloudJettyRunner> replicasToShutDown) throws Exception {
     for (CloudJettyRunner replicaToShutDown : replicasToShutDown) {
       chaosMonkey.killJetty(replicaToShutDown);
-      waitForNoShardInconsistency();
     }
 
     int totalDown = 0;
