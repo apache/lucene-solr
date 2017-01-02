@@ -208,7 +208,7 @@ New Features
 
 * SOLR-9668,SOLR-7197: introduce cursorMark='true' in SolrEntityProcessor (Yegor Kozlov, Raveendra Yerraguntl via Mikhail Khludnev)
 
-* SOLR-9684: Add schedule Streaming Expression (Joel Bernstein)
+* SOLR-9684: Add priority Streaming Expression (Joel Bernstein, David Smiley)
 
 Optimizations
 ----------------------

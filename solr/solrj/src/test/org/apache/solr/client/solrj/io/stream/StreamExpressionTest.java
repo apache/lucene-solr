@@ -2826,7 +2826,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testSchedulerStream() throws Exception {
+  public void testPriorityStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
     new UpdateRequest()
@@ -2845,7 +2845,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
         .withFunctionName("topic", TopicStream.class)
-        .withFunctionName("schedule", SchedulerStream.class);
+        .withFunctionName("priority", PriorityStream.class);
 
     StreamExpression expression;
     TupleStream stream;
@@ -2856,7 +2856,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     try {
       FieldComparator comp = new FieldComparator("a_i", ComparatorOrder.ASCENDING);
 
-      expression = StreamExpressionParser.parse("schedule(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0)," +
+      expression = StreamExpressionParser.parse("priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0)," +
           "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0))");
       stream = factory.constructStream(expression);
       StreamContext context = new StreamContext();
@@ -2870,7 +2870,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertEquals(tuples.size(), 4);
       assertOrder(tuples, 5, 6, 7, 8);
 
-      expression = StreamExpressionParser.parse("schedule(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0)," +
+      expression = StreamExpressionParser.parse("priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0)," +
           "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0))");
       stream = factory.constructStream(expression);
       context = new StreamContext();
@@ -2883,7 +2883,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertEquals(tuples.size(), 6);
       assertOrder(tuples, 0, 1, 2, 3, 4, 9);
 
-      expression = StreamExpressionParser.parse("schedule(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0)," +
+      expression = StreamExpressionParser.parse("priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0)," +
           "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0))");
       stream = factory.constructStream(expression);
       context = new StreamContext();
@@ -2900,7 +2900,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testParallelSchedulerStream() throws Exception {
+  public void testParallelPriorityStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
     new UpdateRequest()
@@ -2920,7 +2920,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
         .withFunctionName("topic", TopicStream.class)
         .withFunctionName("parallel", ParallelStream.class)
-        .withFunctionName("schedule", SchedulerStream.class);
+        .withFunctionName("priority", PriorityStream.class);
 
     StreamExpression expression;
     TupleStream stream;
@@ -2931,7 +2931,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     try {
       FieldComparator comp = new FieldComparator("a_i", ComparatorOrder.ASCENDING);
 
-      expression = StreamExpressionParser.parse("parallel(collection1, workers=2, sort=\"_version_ asc\", schedule(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id)," +
+      expression = StreamExpressionParser.parse("parallel(collection1, workers=2, sort=\"_version_ asc\", priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id)," +
           "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0, partitionKeys=id)))");
       stream = factory.constructStream(expression);
       StreamContext context = new StreamContext();
@@ -2945,7 +2945,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertEquals(tuples.size(), 4);
       assertOrder(tuples, 5, 6, 7, 8);
 
-      expression = StreamExpressionParser.parse("parallel(collection1, workers=2, sort=\"_version_ asc\", schedule(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id)," +
+      expression = StreamExpressionParser.parse("parallel(collection1, workers=2, sort=\"_version_ asc\", priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id)," +
           "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0, partitionKeys=id)))");
       stream = factory.constructStream(expression);
       context = new StreamContext();
@@ -2958,7 +2958,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertEquals(tuples.size(), 6);
       assertOrder(tuples, 0, 1, 2, 3, 4, 9);
 
-      expression = StreamExpressionParser.parse("parallel(collection1, workers=2, sort=\"_version_ asc\", schedule(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id)," +
+      expression = StreamExpressionParser.parse("parallel(collection1, workers=2, sort=\"_version_ asc\", priority(topic(collection1, collection1, q=\"a_s:hello\", fl=\"id,a_i\", id=1000000, initialCheckpoint=0, partitionKeys=id)," +
           "topic(collection1, collection1, q=\"a_s:hello1\", fl=\"id,a_i\", id=2000000, initialCheckpoint=0, partitionKeys=id)))");
       stream = factory.constructStream(expression);
       context = new StreamContext();
