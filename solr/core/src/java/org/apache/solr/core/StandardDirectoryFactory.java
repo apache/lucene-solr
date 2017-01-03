@@ -129,13 +129,14 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     Directory baseToDir = getBaseDir(toDir);
     
     if (baseFromDir instanceof FSDirectory && baseToDir instanceof FSDirectory) {
-      File dir1 = ((FSDirectory) baseFromDir).getDirectory().toFile();
-      File dir2 = ((FSDirectory) baseToDir).getDirectory().toFile();
-      File indexFileInTmpDir = new File(dir1, fileName);
-      File indexFileInIndex = new File(dir2, fileName);
-      boolean success = indexFileInTmpDir.renameTo(indexFileInIndex);
-      if (success) {
-        return;
+  
+      Path path1 = ((FSDirectory) baseFromDir).getDirectory().toAbsolutePath();
+      Path path2 = ((FSDirectory) baseFromDir).getDirectory().toAbsolutePath();
+      
+      try {
+        Files.move(path1.resolve(fileName), path2.resolve(fileName), StandardCopyOption.ATOMIC_MOVE);
+      } catch (AtomicMoveNotSupportedException e) {
+        Files.move(path1.resolve(fileName), path2.resolve(fileName));
       }
     }
 
@@ -148,8 +149,9 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     if (baseDir instanceof FSDirectory) {
       Path path = ((FSDirectory) baseDir).getDirectory().toAbsolutePath();
       try {
-      Files.move(FileSystems.getDefault().getPath(path.toString(), fileName),
-          FileSystems.getDefault().getPath(path.toString(), toName), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        Files.move(path.resolve(fileName),
+            path.resolve(toName), StandardCopyOption.ATOMIC_MOVE,
+            StandardCopyOption.REPLACE_EXISTING);
       } catch (AtomicMoveNotSupportedException e) {
         Files.move(FileSystems.getDefault().getPath(path.toString(), fileName),
             FileSystems.getDefault().getPath(path.toString(), toName), StandardCopyOption.REPLACE_EXISTING);
