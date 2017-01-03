@@ -212,6 +212,8 @@ New Features
 
 * SOLR-9896: Instrument and collect metrics from query, update, core admin and core load thread pools. (shalin)
 
+* SOLR-9854: Collect metrics for index merges and index store IO (ab)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have

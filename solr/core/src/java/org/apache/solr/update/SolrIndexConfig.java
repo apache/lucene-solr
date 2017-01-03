@@ -18,6 +18,7 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -78,6 +79,7 @@ public class SolrIndexConfig implements MapSerializable {
   public final PluginInfo mergePolicyInfo;
   public final PluginInfo mergePolicyFactoryInfo;
   public final PluginInfo mergeSchedulerInfo;
+  public final PluginInfo metricsInfo;
   
   public final PluginInfo mergedSegmentWarmerInfo;
   
@@ -99,6 +101,8 @@ public class SolrIndexConfig implements MapSerializable {
     mergePolicyFactoryInfo = null;
     mergeSchedulerInfo = null;
     mergedSegmentWarmerInfo = null;
+    // enable coarse-grained metrics by default
+    metricsInfo = new PluginInfo("metrics", Collections.emptyMap(), null, null);
   }
   
   /**
@@ -144,6 +148,12 @@ public class SolrIndexConfig implements MapSerializable {
     writeLockTimeout=solrConfig.getInt(prefix+"/writeLockTimeout", def.writeLockTimeout);
     lockType=solrConfig.get(prefix+"/lockType", def.lockType);
 
+    List<PluginInfo> infos = solrConfig.readPluginInfos(prefix + "/metrics", false, false);
+    if (infos.isEmpty()) {
+      metricsInfo = def.metricsInfo;
+    } else {
+      metricsInfo = infos.get(0);
+    }
     mergeSchedulerInfo = getPluginInfo(prefix + "/mergeScheduler", solrConfig, def.mergeSchedulerInfo);
     mergePolicyInfo = getPluginInfo(prefix + "/mergePolicy", solrConfig, def.mergePolicyInfo);
     mergePolicyFactoryInfo = getPluginInfo(prefix + "/mergePolicyFactory", solrConfig, def.mergePolicyFactoryInfo);
@@ -197,6 +207,9 @@ public class SolrIndexConfig implements MapSerializable {
         "lockType", lockType,
         "infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
     if(mergeSchedulerInfo != null) m.put("mergeScheduler",mergeSchedulerInfo);
+    if (metricsInfo != null) {
+      m.put("metrics", metricsInfo);
+    }
     if (mergePolicyInfo != null) {
       m.put("mergePolicy", mergePolicyInfo);
     } else if (mergePolicyFactoryInfo != null) {
@@ -237,7 +250,8 @@ public class SolrIndexConfig implements MapSerializable {
     iwc.setSimilarity(schema.getSimilarity());
     MergePolicy mergePolicy = buildMergePolicy(schema);
     iwc.setMergePolicy(mergePolicy);
-    iwc.setMergeScheduler(buildMergeScheduler(schema));
+    MergeScheduler mergeScheduler = buildMergeScheduler(schema);
+    iwc.setMergeScheduler(mergeScheduler);
     iwc.setInfoStream(infoStream);
 
     if (mergePolicy instanceof SortingMergePolicy) {

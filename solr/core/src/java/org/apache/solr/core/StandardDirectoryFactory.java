@@ -142,7 +142,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
     super.move(fromDir, toDir, fileName, ioContext);
   }
-  
+
   // perform an atomic rename if possible
   public void renameWithOverwrite(Directory dir, String fileName, String toName) throws IOException {
     Directory baseDir = getBaseDir(dir);

@@ -128,6 +128,8 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     ++numDefaultsTested; assertEquals("default infoStream", InfoStream.NO_OUTPUT, sic.infoStream);
 
+    ++numDefaultsTested; assertNotNull("default metrics", sic.metricsInfo);
+
     // mergePolicyInfo and mergePolicyFactoryInfo are mutually exclusive
     // so ++ count them only once for both instead of individually
     ++numDefaultsTested; ++numNullDefaults;
