@@ -140,11 +140,13 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     super.move(fromDir, toDir, fileName, ioContext);
   }
 
-  // special hack to work with NRTCachingDirectory
+  // special hack to work with NRTCachingDirectory and MetricsDirectory
   private Directory getBaseDir(Directory dir) {
     Directory baseDir;
     if (dir instanceof NRTCachingDirectory) {
-      baseDir = ((NRTCachingDirectory)dir).getDelegate();
+      baseDir = ((NRTCachingDirectory) dir).getDelegate();
+    } else if (dir instanceof MetricsDirectoryFactory.MetricsDirectory) {
+      baseDir = ((MetricsDirectoryFactory.MetricsDirectory)dir).getDelegate();
     } else {
       baseDir = dir;
     }

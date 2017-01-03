@@ -642,7 +642,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       dirFactory = new NRTCachingDirectoryFactory();
       dirFactory.initCoreContainer(getCoreDescriptor().getCoreContainer());
     }
-    return dirFactory;
+    if (solrConfig.indexConfig.metricsInfo != null && solrConfig.indexConfig.metricsInfo.isEnabled()) {
+      final DirectoryFactory factory = new MetricsDirectoryFactory(coreDescriptor.getCoreContainer().getMetricManager(),
+          coreMetricManager.getRegistryName(), dirFactory);
+        factory.init(solrConfig.indexConfig.metricsInfo.initArgs);
+      return factory;
+    } else {
+      return dirFactory;
+    }
   }
 
   private void initIndexReaderFactory() {
@@ -828,6 +835,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     resourceLoader = config.getResourceLoader();
     this.solrConfig = config;
     this.configSetProperties = configSetProperties;
+    // Initialize the metrics manager
+    this.coreMetricManager = initCoreMetricManager(config);
 
     if (updateHandler == null) {
       directoryFactory = initDirectoryFactory();
@@ -845,17 +854,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     checkVersionFieldExistsInSchema(schema, coreDescriptor);
 
-    // Initialize the metrics manager
-    this.coreMetricManager = initCoreMetricManager(config);
-
     SolrMetricManager metricManager = this.coreDescriptor.getCoreContainer().getMetricManager();
 
     // initialize searcher-related metrics
-    newSearcherCounter = metricManager.counter(coreMetricManager.getRegistryName(), "newSearcher");
-    newSearcherTimer = metricManager.timer(coreMetricManager.getRegistryName(), "newSearcherTime");
-    newSearcherWarmupTimer = metricManager.timer(coreMetricManager.getRegistryName(), "newSearcherWarmup");
-    newSearcherMaxReachedCounter = metricManager.counter(coreMetricManager.getRegistryName(), "newSearcherMaxReached");
-    newSearcherOtherErrorsCounter = metricManager.counter(coreMetricManager.getRegistryName(), "newSearcherErrors");
+    newSearcherCounter = metricManager.counter(coreMetricManager.getRegistryName(), "new", Category.SEARCHER.toString());
+    newSearcherTimer = metricManager.timer(coreMetricManager.getRegistryName(), "time", Category.SEARCHER.toString(), "new");
+    newSearcherWarmupTimer = metricManager.timer(coreMetricManager.getRegistryName(), "warmup", Category.SEARCHER.toString(), "new");
+    newSearcherMaxReachedCounter = metricManager.counter(coreMetricManager.getRegistryName(), "maxReached", Category.SEARCHER.toString(), "new");
+    newSearcherOtherErrorsCounter = metricManager.counter(coreMetricManager.getRegistryName(), "errors", Category.SEARCHER.toString(), "new");
 
     // Initialize JMX
     this.infoRegistry = initInfoRegistry(name, config);

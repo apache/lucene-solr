@@ -197,6 +197,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     } else {
       assertNull(m.get("mergedSegmentWarmer"));
     }
+    ++mSizeExpected; assertNotNull(m.get("metrics"));
 
     assertEquals(mSizeExpected, m.size());
   }

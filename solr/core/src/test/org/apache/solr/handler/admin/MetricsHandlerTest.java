@@ -49,9 +49,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("solr.node"));
     NamedList nl = (NamedList) values.get("solr.core.collection1");
     assertNotNull(nl);
-    assertNotNull(nl.get("newSearcherErrors")); // counter type
-    assertNotNull(((NamedList) nl.get("newSearcherErrors")).get("requests"));
-    assertEquals(0L, ((NamedList) nl.get("newSearcherErrors")).get("requests"));
+    assertNotNull(nl.get("SEARCHER.new.errors")); // counter type
+    assertNotNull(((NamedList) nl.get("SEARCHER.new.errors")).get("count"));
+    assertEquals(0L, ((NamedList) nl.get("SEARCHER.new.errors")).get("count"));
     nl = (NamedList) values.get("solr.node");
     assertNotNull(nl.get("cores.loaded")); // int gauge
     assertEquals(1, ((NamedList) nl.get("cores.loaded")).get("value"));
