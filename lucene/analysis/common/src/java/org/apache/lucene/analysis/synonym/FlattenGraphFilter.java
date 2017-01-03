@@ -17,22 +17,6 @@
 
 package org.apache.lucene.analysis.synonym;
 
-/**
- * This filter "casts" token graphs down into a "flat" form,
- * for indexing.   This is an inherently lossy process: nodes (positions)
- * along side paths are forcefully merged.
- *
- * <p>In general this means the output graph will accept token sequences
- * that the input graph did not accept, and will also fail to accept
- * token sequences that the input graph did accept.
- *
- * <p>This is only necessary at indexing time because Lucene cannot yet index
- * an arbitrary token graph.  At search time there are better options, e.g.
- * the experimental <code>TermAutomatonQuery</code> in sandbox.
- *
- * @lucene.experimental
- */
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +33,12 @@ import org.apache.lucene.util.RollingBuffer;
  * Converts an incoming graph token stream, such as one from
  * {@link SynonymGraphFilter}, into a flat form so that
  * all nodes form a single linear chain with no side paths.  Every
- * path through the graph touches every node.
+ * path through the graph touches every node.  This is necessary
+ * when indexing a graph token stream, because the index does not
+ * save {@link PositionLengthAttribute} and so it cannot
+ * preserve the graph structure.  However, at search time,
+ * query parsers can correctly handle the graph and this token
+ * filter should <b>not</b> be used.
  *
  * <p>If the graph was not already flat to start, this
  * is likely a lossy process, i.e. it will often cause the 
@@ -234,7 +223,11 @@ public final class FlattenGraphFilter extends TokenFilter {
         // which would otherwise happen if the replacement has more tokens
         // than the input:
         int startOffset = Math.max(lastStartOffset, output.startOffset);
-        offsetAtt.setOffset(startOffset, outputEndNode.endOffset);
+
+        // We must do this in case the incoming tokens have broken offsets:
+        int endOffset = Math.max(startOffset, outputEndNode.endOffset);
+        
+        offsetAtt.setOffset(startOffset, endOffset);
         lastStartOffset = startOffset;
 
         if (inputNode.nextOut == inputNode.tokens.size()) {
@@ -382,7 +375,7 @@ public final class FlattenGraphFilter extends TokenFilter {
       // NOTE, shady: don't call super.end, because we did already from incrementToken
     }
 
-   clearAttributes();
+    clearAttributes();
     if (done) {
       // On exc, done is false, and we will not have set these:
       posIncAtt.setPositionIncrement(finalPosInc);
