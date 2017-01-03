@@ -16,14 +16,21 @@
  */
 package org.apache.lucene.search.grouping;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.*;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopScoreDocCollector;
 
 /**
  * SecondPassGroupingCollector is the second of two passes
@@ -37,22 +44,22 @@ import java.util.Objects;
  *
  * @lucene.experimental
  */
-public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> extends SimpleCollector {
+public abstract class SecondPassGroupingCollector<T> extends SimpleCollector {
 
-  private final Collection<SearchGroup<GROUP_VALUE_TYPE>> groups;
+  private final Collection<SearchGroup<T>> groups;
   private final Sort groupSort;
   private final Sort withinGroupSort;
   private final int maxDocsPerGroup;
   private final boolean needsScores;
-  protected final Map<GROUP_VALUE_TYPE, SearchGroupDocs<GROUP_VALUE_TYPE>> groupMap;
+  protected final Map<T, SearchGroupDocs<T>> groupMap;
 
-  protected SearchGroupDocs<GROUP_VALUE_TYPE>[] groupDocs;
+  protected SearchGroupDocs<T>[] groupDocs;
 
   private int totalHitCount;
   private int totalGroupedHitCount;
 
-  public AbstractSecondPassGroupingCollector(Collection<SearchGroup<GROUP_VALUE_TYPE>> groups, Sort groupSort, Sort withinGroupSort,
-                                             int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields)
+  public SecondPassGroupingCollector(Collection<SearchGroup<T>> groups, Sort groupSort, Sort withinGroupSort,
+                                     int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields)
     throws IOException {
 
     //System.out.println("SP init");
@@ -67,7 +74,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
     this.needsScores = getScores || getMaxScores || withinGroupSort.needsScores();
 
     this.groupMap = new HashMap<>(groups.size());
-    for (SearchGroup<GROUP_VALUE_TYPE> group : groups) {
+    for (SearchGroup<T> group : groups) {
       //System.out.println("  prep group=" + (group.groupValue == null ? "null" : group.groupValue.utf8ToString()));
       final TopDocsCollector<?> collector;
       if (withinGroupSort.equals(Sort.RELEVANCE)) { // optimize to use TopScoreDocCollector
@@ -88,7 +95,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
 
   @Override
   public void setScorer(Scorer scorer) throws IOException {
-    for (SearchGroupDocs<GROUP_VALUE_TYPE> group : groupMap.values()) {
+    for (SearchGroupDocs<T> group : groupMap.values()) {
       group.leafCollector.setScorer(scorer);
     }
   }
@@ -96,7 +103,7 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
   @Override
   public void collect(int doc) throws IOException {
     totalHitCount++;
-    SearchGroupDocs<GROUP_VALUE_TYPE> group = retrieveGroup(doc);
+    SearchGroupDocs<T> group = retrieveGroup(doc);
     if (group != null) {
       totalGroupedHitCount++;
       group.leafCollector.collect(doc);
@@ -110,24 +117,24 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
    * @return the group the specified doc belongs to or <code>null</code> if no group could be retrieved
    * @throws IOException If an I/O related error occurred
    */
-  protected abstract SearchGroupDocs<GROUP_VALUE_TYPE> retrieveGroup(int doc) throws IOException;
+  protected abstract SearchGroupDocs<T> retrieveGroup(int doc) throws IOException;
 
   @Override
   protected void doSetNextReader(LeafReaderContext readerContext) throws IOException {
     //System.out.println("SP.setNextReader");
-    for (SearchGroupDocs<GROUP_VALUE_TYPE> group : groupMap.values()) {
+    for (SearchGroupDocs<T> group : groupMap.values()) {
       group.leafCollector = group.collector.getLeafCollector(readerContext);
     }
   }
 
-  public TopGroups<GROUP_VALUE_TYPE> getTopGroups(int withinGroupOffset) {
+  public TopGroups<T> getTopGroups(int withinGroupOffset) {
     @SuppressWarnings({"unchecked","rawtypes"})
-    final GroupDocs<GROUP_VALUE_TYPE>[] groupDocsResult = (GroupDocs<GROUP_VALUE_TYPE>[]) new GroupDocs[groups.size()];
+    final GroupDocs<T>[] groupDocsResult = (GroupDocs<T>[]) new GroupDocs[groups.size()];
 
     int groupIDX = 0;
     float maxScore = Float.MIN_VALUE;
     for(SearchGroup<?> group : groups) {
-      final SearchGroupDocs<GROUP_VALUE_TYPE> groupDocs = groupMap.get(group.groupValue);
+      final SearchGroupDocs<T> groupDocs = groupMap.get(group.groupValue);
       final TopDocs topDocs = groupDocs.collector.topDocs(withinGroupOffset, maxDocsPerGroup);
       groupDocsResult[groupIDX++] = new GroupDocs<>(Float.NaN,
                                                                     topDocs.getMaxScore(),
@@ -148,13 +155,13 @@ public abstract class AbstractSecondPassGroupingCollector<GROUP_VALUE_TYPE> exte
   // TODO: merge with SearchGroup or not?
   // ad: don't need to build a new hashmap
   // disad: blows up the size of SearchGroup if we need many of them, and couples implementations
-  public class SearchGroupDocs<GROUP_VALUE_TYPE> {
+  public class SearchGroupDocs<T> {
 
-    public final GROUP_VALUE_TYPE groupValue;
+    public final T groupValue;
     public final TopDocsCollector<?> collector;
     public LeafCollector leafCollector;
 
-    public SearchGroupDocs(GROUP_VALUE_TYPE groupValue, TopDocsCollector<?> collector) {
+    public SearchGroupDocs(T groupValue, TopDocsCollector<?> collector) {
       this.groupValue = groupValue;
       this.collector = collector;
     }

@@ -68,6 +68,12 @@ API Changes
 * LUCENE-7607: LeafFieldComparator.setScorer and SimpleFieldComparator.setScorer
   are declared as throwing IOException (Alan Woodward)
 
+* LUCENE-7617: Collector construction for two-pass grouping queries is
+  abstracted into a new Grouper class, which can be passed as a constructor
+  parameter to GroupingSearch.  The abstract base classes for the different
+  grouping Collectors are renamed to remove the Abstract* prefix.
+  (Alan Woodward, Martijn van Groningen)
+
 New features
 
 * LUCENE-5867: Added BooleanSimilarity. (Robert Muir, Adrien Grand)
