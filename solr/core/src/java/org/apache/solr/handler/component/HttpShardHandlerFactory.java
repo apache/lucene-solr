@@ -42,6 +42,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
 import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,8 +59,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 
@@ -73,7 +74,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   //
   // Consider CallerRuns policy and a lower max threads to throttle
   // requests at some point (or should we simply return failure?)
-  private ThreadPoolExecutor commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
+  private ExecutorService commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
       0,
       Integer.MAX_VALUE,
       5, TimeUnit.SECONDS, // terminate idle threads after 5 sec
@@ -191,7 +192,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     return clientParams;
   }
 
-  protected ThreadPoolExecutor getThreadPoolExecutor(){
+  protected ExecutorService getThreadPoolExecutor(){
     return this.commExecutor;
   }
 
@@ -378,6 +379,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     List<String> metricNames = new ArrayList<>(4);
     metricNames.addAll(clientConnectionManager.initializeMetrics(manager, registry, scope));
     metricNames.addAll(httpRequestExecutor.initializeMetrics(manager, registry, scope));
+    commExecutor = MetricUtils.instrumentedExecutorService(commExecutor,
+        manager.registry(registry),
+        SolrMetricManager.mkName("httpShardExecutor", scope, "threadPool"));
     return metricNames;
   }
 

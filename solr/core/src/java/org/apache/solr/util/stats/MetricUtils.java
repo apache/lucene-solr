@@ -19,11 +19,13 @@ package org.apache.solr.util.stats;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
+import com.codahale.metrics.InstrumentedExecutorService;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
@@ -140,5 +142,12 @@ public class MetricUtils {
     NamedList response = new NamedList();
     response.add("requests", counter.getCount());
     return response;
+  }
+
+  /**
+   * Returns an instrumented wrapper over the given executor service.
+   */
+  public static ExecutorService instrumentedExecutorService(ExecutorService delegate, MetricRegistry metricRegistry, String scope)  {
+    return new InstrumentedExecutorService(delegate, metricRegistry, scope);
   }
 }

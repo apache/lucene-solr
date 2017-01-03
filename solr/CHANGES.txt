@@ -210,6 +210,8 @@ New Features
 
 * SOLR-9684: Add priority Streaming Expression (Joel Bernstein, David Smiley)
 
+* SOLR-9896: Instrument and collect metrics from query, update, core admin and core load thread pools. (shalin)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have

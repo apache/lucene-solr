@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
+import com.codahale.metrics.InstrumentedExecutorService;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -102,12 +103,18 @@ public class UpdateShardHandler implements SolrMetricProducer {
     List<String> metricNames = new ArrayList<>(4);
     metricNames.addAll(clientConnectionManager.initializeMetrics(manager, registry, scope));
     metricNames.addAll(httpRequestExecutor.initializeMetrics(manager, registry, scope));
+    updateExecutor = new InstrumentedExecutorService(updateExecutor,
+        manager.registry(registry),
+        SolrMetricManager.mkName("updateExecutor", scope, "threadPool"));
+    recoveryExecutor = new InstrumentedExecutorService(recoveryExecutor,
+        manager.registry(registry),
+        SolrMetricManager.mkName("recoveryExecutor", scope, "threadPool"));
     return metricNames;
   }
 
   @Override
   public String getDescription() {
-    return "Metrics tracked by UpdateShardHandler for ";
+    return "Metrics tracked by UpdateShardHandler related to distributed updates and recovery";
   }
 
   @Override
