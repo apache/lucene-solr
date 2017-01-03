@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.GraphQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -150,13 +151,17 @@ public class TestQueryBuilder extends LuceneTestCase {
     assertEquals(expectedBuilder.build(), builder.createPhraseQuery("field", "old dogs"));
   }
 
-  /** forms multiphrase query */
+  /** forms graph query */
   public void testMultiWordSynonymsPhrase() throws Exception {
-    MultiPhraseQuery.Builder expectedBuilder = new MultiPhraseQuery.Builder();
-    expectedBuilder.add(new Term[] { new Term("field", "guinea"), new Term("field", "cavy") });
-    expectedBuilder.add(new Term("field", "pig"));
+    PhraseQuery.Builder expectedPhrase = new PhraseQuery.Builder();
+    expectedPhrase.add(new Term("field", "guinea"));
+    expectedPhrase.add(new Term("field", "pig"));
+
+    TermQuery expectedTerm = new TermQuery(new Term("field", "cavy"));
+
     QueryBuilder queryBuilder = new QueryBuilder(new MockSynonymAnalyzer());
-    assertEquals(expectedBuilder.build(), queryBuilder.createPhraseQuery("field", "guinea pig"));
+    assertEquals(new GraphQuery(expectedPhrase.build(), expectedTerm),
+        queryBuilder.createPhraseQuery("field", "guinea pig"));
   }
 
   protected static class SimpleCJKTokenizer extends Tokenizer {

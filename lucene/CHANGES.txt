@@ -38,6 +38,10 @@ New features
   type-safe replacements for ValueSource in the queries module.  These
   expose per-segment LongValues or DoubleValues iterators. (Alan Woodward, Adrien Grand)
 
+* LUCENE-7603: Graph token streams are now handled accurately by query
+  parsers, by enumerating all paths and creating the corresponding
+  query/ies as sub-clauses (Matt Weber via Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-7547: JapaneseTokenizerFactory was failing to close the

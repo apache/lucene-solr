@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.queryparser.classic;
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockSynonymAnalyzer;
@@ -33,14 +35,13 @@ import org.apache.lucene.queryparser.util.QueryParserTestBase;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.GraphQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
-
-import java.io.IOException;
 
 /**
  * Tests QueryParser.
@@ -498,32 +499,34 @@ public class TestQueryParser extends QueryParserTestBase {
     QueryParser dumb = new QueryParser("field", new Analyzer1());
     dumb.setSplitOnWhitespace(false);
 
-    // A multi-word synonym source will form a synonym query for the same-starting-position tokens
-    BooleanQuery.Builder multiWordExpandedBqBuilder = new BooleanQuery.Builder();
-    Query multiWordSynonymQuery = new SynonymQuery(new Term("field", "guinea"), new Term("field", "cavy"));
-    multiWordExpandedBqBuilder.add(multiWordSynonymQuery, BooleanClause.Occur.SHOULD);
-    multiWordExpandedBqBuilder.add(new TermQuery(new Term("field", "pig")), BooleanClause.Occur.SHOULD);
-    Query multiWordExpandedBq = multiWordExpandedBqBuilder.build();
-    assertEquals(multiWordExpandedBq, dumb.parse("guinea pig"));
+    TermQuery guinea = new TermQuery(new Term("field", "guinea"));
+    TermQuery pig = new TermQuery(new Term("field", "pig"));
+    TermQuery cavy = new TermQuery(new Term("field", "cavy"));
 
-    // With the phrase operator, a multi-word synonym source will form a multiphrase query.
-    // When the number of expanded term(s) is different from that of the original term(s), this is not good.
-    MultiPhraseQuery.Builder multiWordExpandedMpqBuilder = new MultiPhraseQuery.Builder();
-    multiWordExpandedMpqBuilder.add(new Term[]{new Term("field", "guinea"), new Term("field", "cavy")});
-    multiWordExpandedMpqBuilder.add(new Term("field", "pig"));
-    Query multiWordExpandedMPQ = multiWordExpandedMpqBuilder.build();
-    assertEquals(multiWordExpandedMPQ, dumb.parse("\"guinea pig\""));
+    // A multi-word synonym source will form a graph query for synonyms that formed the graph token stream
+    BooleanQuery.Builder synonym = new BooleanQuery.Builder();
+    synonym.add(guinea, BooleanClause.Occur.SHOULD);
+    synonym.add(pig, BooleanClause.Occur.SHOULD);
+    BooleanQuery guineaPig = synonym.build();
+
+    GraphQuery graphQuery = new GraphQuery(guineaPig, cavy);
+    assertEquals(graphQuery, dumb.parse("guinea pig"));
+
+    // With the phrase operator, a multi-word synonym source will form a graph query with inner phrase queries.
+    PhraseQuery.Builder phraseSynonym = new PhraseQuery.Builder();
+    phraseSynonym.add(new Term("field", "guinea"));
+    phraseSynonym.add(new Term("field", "pig"));
+    PhraseQuery guineaPigPhrase = phraseSynonym.build();
+
+    graphQuery = new GraphQuery(guineaPigPhrase, cavy);
+    assertEquals(graphQuery, dumb.parse("\"guinea pig\""));
 
     // custom behavior, the synonyms are expanded, unless you use quote operator
     QueryParser smart = new SmartQueryParser();
     smart.setSplitOnWhitespace(false);
-    assertEquals(multiWordExpandedBq, smart.parse("guinea pig"));
-
-    PhraseQuery.Builder multiWordUnexpandedPqBuilder = new PhraseQuery.Builder();
-    multiWordUnexpandedPqBuilder.add(new Term("field", "guinea"));
-    multiWordUnexpandedPqBuilder.add(new Term("field", "pig"));
-    Query multiWordUnexpandedPq = multiWordUnexpandedPqBuilder.build();
-    assertEquals(multiWordUnexpandedPq, smart.parse("\"guinea pig\""));
+    graphQuery = new GraphQuery(guineaPig, cavy);
+    assertEquals(graphQuery, smart.parse("guinea pig"));
+    assertEquals(guineaPigPhrase, smart.parse("\"guinea pig\""));
   }
 
   // TODO: Move to QueryParserTestBase once standard flexible parser gets this capability
@@ -576,34 +579,34 @@ public class TestQueryParser extends QueryParserTestBase {
     assertQueryEquals("guinea /pig/", a, "guinea /pig/");
 
     // Operators should not interrupt multiword analysis if not don't associate
-    assertQueryEquals("(guinea pig)", a, "Synonym(cavy guinea) pig");
-    assertQueryEquals("+(guinea pig)", a, "+(Synonym(cavy guinea) pig)");
-    assertQueryEquals("-(guinea pig)", a, "-(Synonym(cavy guinea) pig)");
-    assertQueryEquals("!(guinea pig)", a, "-(Synonym(cavy guinea) pig)");
-    assertQueryEquals("NOT (guinea pig)", a, "-(Synonym(cavy guinea) pig)");
-    assertQueryEquals("(guinea pig)^2", a, "(Synonym(cavy guinea) pig)^2.0");
+    assertQueryEquals("(guinea pig)", a, "Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false)");
+    assertQueryEquals("+(guinea pig)", a, "+Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false)");
+    assertQueryEquals("-(guinea pig)", a, "-Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false)");
+    assertQueryEquals("!(guinea pig)", a, "-Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false)");
+    assertQueryEquals("NOT (guinea pig)", a, "-Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false)");
+    assertQueryEquals("(guinea pig)^2", a, "(Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false))^2.0");
 
-    assertQueryEquals("field:(guinea pig)", a, "Synonym(cavy guinea) pig");
+    assertQueryEquals("field:(guinea pig)", a, "Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false)");
 
-    assertQueryEquals("+small guinea pig", a, "+small Synonym(cavy guinea) pig");
-    assertQueryEquals("-small guinea pig", a, "-small Synonym(cavy guinea) pig");
-    assertQueryEquals("!small guinea pig", a, "-small Synonym(cavy guinea) pig");
-    assertQueryEquals("NOT small guinea pig", a, "-small Synonym(cavy guinea) pig");
-    assertQueryEquals("small* guinea pig", a, "small* Synonym(cavy guinea) pig");
-    assertQueryEquals("small? guinea pig", a, "small? Synonym(cavy guinea) pig");
-    assertQueryEquals("\"small\" guinea pig", a, "small Synonym(cavy guinea) pig");
+    assertQueryEquals("+small guinea pig", a, "+small Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false)");
+    assertQueryEquals("-small guinea pig", a, "-small Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false)");
+    assertQueryEquals("!small guinea pig", a, "-small Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false)");
+    assertQueryEquals("NOT small guinea pig", a, "-small Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false)");
+    assertQueryEquals("small* guinea pig", a, "small* Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false)");
+    assertQueryEquals("small? guinea pig", a, "small? Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false)");
+    assertQueryEquals("\"small\" guinea pig", a, "small Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false)");
 
-    assertQueryEquals("guinea pig +running", a, "Synonym(cavy guinea) pig +running");
-    assertQueryEquals("guinea pig -running", a, "Synonym(cavy guinea) pig -running");
-    assertQueryEquals("guinea pig !running", a, "Synonym(cavy guinea) pig -running");
-    assertQueryEquals("guinea pig NOT running", a, "Synonym(cavy guinea) pig -running");
-    assertQueryEquals("guinea pig running*", a, "Synonym(cavy guinea) pig running*");
-    assertQueryEquals("guinea pig running?", a, "Synonym(cavy guinea) pig running?");
-    assertQueryEquals("guinea pig \"running\"", a, "Synonym(cavy guinea) pig running");
+    assertQueryEquals("guinea pig +running", a, "Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false) +running");
+    assertQueryEquals("guinea pig -running", a, "Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false) -running");
+    assertQueryEquals("guinea pig !running", a, "Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false) -running");
+    assertQueryEquals("guinea pig NOT running", a, "Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false) -running");
+    assertQueryEquals("guinea pig running*", a, "Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false) running*");
+    assertQueryEquals("guinea pig running?", a, "Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false) running?");
+    assertQueryEquals("guinea pig \"running\"", a, "Graph(field:guinea field:pig, field:cavy, hasBoolean=true, hasPhrase=false) running");
 
-    assertQueryEquals("\"guinea pig\"~2", a, "\"(guinea cavy) pig\"~2");
+    assertQueryEquals("\"guinea pig\"~2", a, "Graph(field:\"guinea pig\"~2, field:cavy, hasBoolean=false, hasPhrase=true)");
 
-    assertQueryEquals("field:\"guinea pig\"", a, "\"(guinea cavy) pig\"");
+    assertQueryEquals("field:\"guinea pig\"", a, "Graph(field:\"guinea pig\", field:cavy, hasBoolean=false, hasPhrase=true)");
 
     splitOnWhitespace = oldSplitOnWhitespace;
   }
@@ -680,9 +683,9 @@ public class TestQueryParser extends QueryParserTestBase {
     assertQueryEquals("guinea pig running?", a, "guinea pig running?");
     assertQueryEquals("guinea pig \"running\"", a, "guinea pig running");
 
-    assertQueryEquals("\"guinea pig\"~2", a, "\"(guinea cavy) pig\"~2");
+    assertQueryEquals("\"guinea pig\"~2", a, "Graph(field:\"guinea pig\"~2, field:cavy, hasBoolean=false, hasPhrase=true)");
 
-    assertQueryEquals("field:\"guinea pig\"", a, "\"(guinea cavy) pig\"");
+    assertQueryEquals("field:\"guinea pig\"", a, "Graph(field:\"guinea pig\", field:cavy, hasBoolean=false, hasPhrase=true)");
 
     splitOnWhitespace = oldSplitOnWhitespace;
   }
