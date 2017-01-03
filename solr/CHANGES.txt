@@ -370,6 +370,10 @@ Other Changes
 * SOLR-9899: StandardDirectoryFactory should use optimizations for all FilterDirectorys not just NRTCachingDirectory.
   (Mark Miller)
 
+* SOLR-9915: PeerSync alreadyInSync check is not backwards compatible and results in full replication during a rolling restart
+  (Tim Owen via noble)
+
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
