@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -182,6 +183,20 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
     toDir.copyFrom(fromDir, fileName, fileName, ioContext);
     fromDir.deleteFile(fileName);
+  }
+  
+  // sub classes perform an atomic rename if possible, otherwise fall back to delete + rename
+  // this is important to support for index roll over durability after crashes
+  public void renameWithOverwrite(Directory dir, String fileName, String toName) throws IOException {
+    try {
+      dir.deleteFile(toName);
+    } catch (FileNotFoundException e) {
+
+    } catch (Exception e) {
+      log.error("Exception deleting file", e);
+    }
+
+    dir.rename(fileName, toName);
   }
   
   /**

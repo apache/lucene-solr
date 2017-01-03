@@ -246,6 +246,9 @@ Bug Fixes
 
 * SOLR-9154: Fix DirectSolrSpellChecker to work when added through the Config API. (Anshum Gupta)
 
+* SOLR-9859: replication.properties cannot be updated after being written and neither replication.properties or 
+  index.properties are durable in the face of a crash. (Pushkar Raste, Chris de Kok, Cao Manh Dat, Mark Miller)
+
 Other Changes
 ----------------------
 
