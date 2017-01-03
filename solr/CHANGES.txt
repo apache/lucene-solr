@@ -109,8 +109,8 @@ Upgrade Notes
 
 * SOLR-9708: You are encouraged to try out the UnifiedHighlighter by setting hl.method=unified and report feedback. It
   might become the default in 7.0. It's more efficient/faster than the other highlighters, especially compared to the
-  original Highlighter. That said, some options aren't supported yet, notably hl.fragsize and
-  hl.requireFieldMatch=false. It will get more features in time, especially with your input. See HighlightParams.java
+  original Highlighter. That said, some options aren't supported yet, notably hl.fragsize.
+  It will get more features in time, especially with your input. See HighlightParams.java
   for a listing of highlight parameters annotated with which highlighters use them.
   hl.useFastVectorHighlighter is now considered deprecated in lieu of hl.method=fastVector.
 
@@ -130,8 +130,8 @@ New Features
   Example:  { type:terms, field:category, filter:"user:yonik" } 
   (yonik)
 
-* SOLR-9442: Adds Array of NamedValuePair (json.nl=arrnvp) style to JSONResponseWriter.
-  (Jonny Marks, Christine Poerschke)
+* SOLR-9442, SOLR-9787: Adds Array of Name Type Value (json.nl=arrntv) style to JSONResponseWriter.
+  (Jonny Marks, Christine Poerschke, hossman)
 
 * SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
   SOLR_HOME on every node. Editing config through API is supported but affects only that one node. 
@@ -191,6 +191,29 @@ New Features
   of which are multi-valued. Example: http://localhost:8983/solr/admin/metrics?group=jvm,jetty&type=counter
   (shalin)
 
+* SOLR-9884: Add version to segments handler output (Steven Bower via Erick Erickson)
+
+* SOLR-9725: Substitute properties into JdbcDataSource configuration ( Jamie Jackson, Yuri Sashevsky via Mikhail Khludnev)
+
+* SOLR-9877: Use instrumented http client and connection pool. (shalin)
+
+* SOLR-9880: Add Ganglia, Graphite and SLF4J metrics reporters. (ab)
+
+* SOLR-9897: Add hl.requireFieldMatch toggle support when using the UnifiedHighlighter.  Defaults to false like the
+  other highlighters that support this. (David Smiley)
+
+* SOLR-9905: Add NullStream to isolate the performance of the ExportWriter (Joel Bernstein)
+
+* SOLR-9891: Add mkroot command to bin/solr and bin/solr.cmd (Erick Erickson)
+
+* SOLR-9668,SOLR-7197: introduce cursorMark='true' in SolrEntityProcessor (Yegor Kozlov, Raveendra Yerraguntl via Mikhail Khludnev)
+
+* SOLR-9684: Add priority Streaming Expression (Joel Bernstein, David Smiley)
+
+* SOLR-9896: Instrument and collect metrics from query, update, core admin and core load thread pools. (shalin)
+
+* SOLR-9854: Collect metrics for index merges and index store IO (ab)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
@@ -211,6 +234,7 @@ Optimizations
   resulting in less produced garbage and 5-7% better performance.
   (yonik)
 
+* SOLR-9902: StandardDirectoryFactory should use Files API for it's move implementation. (Mark Miller)
 
 Bug Fixes
 ----------------------
@@ -271,6 +295,25 @@ Bug Fixes
 * SOLR-1953: It may be possible for temporary files to accumulate until the Solr process is shut down.
   (Karl Wright, Mark Miller)
 
+* SOLR-9847: Stop blocking further schema updates while waiting for a pending update to propagate to other replicas.
+  This reduces the likelihood of a (time-limited) distributed deadlock during concurrent schema updates.
+  (Mark Miller, Steve Rowe)
+
+* SOLR-9760: Windows script doesn't need write permission (Alex Crome by Mikhail Khludnev)
+
+* SOLR-9699,SOLR-4668: fix exception from core status in parallel with core reload (Mikhail Khludnev)
+
+* SOLR-9859: replication.properties cannot be updated after being written and neither replication.properties or
+  index.properties are durable in the face of a crash. (Pushkar Raste, Chris de Kok, Cao Manh Dat, Mark Miller)
+
+* SOLR-9901: Implement move in HdfsDirectoryFactory. (Mark Miller)
+
+* SOLR-9900: fix false positives on range queries with ReversedWildcardFilterFactory (Yonik Seeley via Mikhail Khludnev)
+
+* SOLR-9495: AIOBE with confusing message for incomplete sort spec in Streaming Expression (Gus Heck, Joel Bernstein)
+
+* SOLR-9154: Fix DirectSolrSpellChecker to work when added through the Config API. (Anshum Gupta)
+
 Other Changes
 ----------------------
 
@@ -318,6 +361,14 @@ Other Changes
 
 * SOLR-9874: Solr will reject CREATEALIAS requests if target collections don't exist (Tomás Fernández Löbbe)
 
+* SOLR-9878: fixing lazy logic for retrieving ReversedWildcardFilterFactory in SolrQueryParserBase (Mikhail Khludnev)
+
+* SOLR-9758: refactor preferLocalShards implementation (Christine Poerschke)
+
+* SOLR-9448: providing a test to workaround a differently named uniqueKey field (Mikhail Khludnev)
+
+* SOLR-9899: StandardDirectoryFactory should use optimizations for all FilterDirectorys not just NRTCachingDirectory.
+  (Mark Miller)
 
 ==================  6.3.0 ==================
 

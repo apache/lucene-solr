@@ -1327,13 +1327,4 @@ public class TestGrouping extends LuceneTestCase {
       return "ShardSearcher(" + ctx.get(0).reader() + ")";
     }
   }
-
-  private static class ValueHolder<V> {
-
-    V value;
-
-    private ValueHolder(V value) {
-      this.value = value;
-    }
-  }
 }

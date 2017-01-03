@@ -29,6 +29,10 @@ public class Vector {
    */
   public static final double MINIMUM_RESOLUTION = 1.0e-12;
   /**
+   * Angular version of minimum resolution.
+   */
+  public static final double MINIMUM_ANGULAR_RESOLUTION = Math.PI * MINIMUM_RESOLUTION;
+  /**
    * For squared quantities, the bound is squared too.
    */
   public static final double MINIMUM_RESOLUTION_SQUARED = MINIMUM_RESOLUTION * MINIMUM_RESOLUTION;

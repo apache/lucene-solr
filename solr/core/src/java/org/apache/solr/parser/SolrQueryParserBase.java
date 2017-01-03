@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
@@ -787,7 +788,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   protected ReversedWildcardFilterFactory getReversedWildcardFilterFactory(FieldType fieldType) {
     if (leadingWildcards == null) leadingWildcards = new HashMap<>();
     ReversedWildcardFilterFactory fac = leadingWildcards.get(fieldType);
-    if (fac != null || leadingWildcards.containsKey(fac)) {
+    if (fac != null || leadingWildcards.containsKey(fieldType)) {
       return fac;
     }
 
@@ -894,6 +895,19 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   protected Query getRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) throws SyntaxError {
     checkNullField(field);
     SchemaField sf = schema.getField(field);
+
+    if (part1 == null) {
+      ReversedWildcardFilterFactory factory = getReversedWildcardFilterFactory(sf.getType());
+      if (factory != null) {
+        // There will be reversed tokens starting with u0001 that we want to exclude, so
+        // lets start at u0002 inclusive instead.
+        char[] buf = new char[1];
+        buf[0] = ReverseStringFilter.START_OF_HEADING_MARKER + 1;
+        part1 = new String(buf);
+        startInclusive = true;
+      }
+    }
+
     return sf.getType().getRangeQuery(parser, sf, part1, part2, startInclusive, endInclusive);
   }
 

@@ -27,7 +27,7 @@ public class TestExternalValueFeatures extends TestRerankBase {
 
   @BeforeClass
   public static void before() throws Exception {
-    setuptest("solrconfig-ltr.xml", "schema.xml");
+    setuptest(false);
 
     assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
         "1"));
@@ -58,9 +58,17 @@ public class TestExternalValueFeatures extends TestRerankBase {
     query.add("rows", "3");
     query.add("rq", "{!ltr reRankDocs=3 model=external_model_binary_feature efi.user_device_tablet=1}");
 
+    final String docs0features_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "user_device_smartphone","0.0",
+        "user_device_tablet","1.0");
+    final String docs0features_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "user_device_tablet","1.0");
+
+    final String docs0features_default_csv = chooseDefaultFeatureVector(docs0features_dense_csv, docs0features_sparse_csv);
+
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/features=='"+FeatureLoggerTestUtils.toFeatureVector("user_device_tablet","1.0")+"'");
+        "/response/docs/[0]/features=='"+docs0features_default_csv+"'");
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[0]/score==65.0");
   }
@@ -76,9 +84,16 @@ public class TestExternalValueFeatures extends TestRerankBase {
     query
         .add("rq", "{!ltr reRankDocs=3 model=external_model_binary_feature}");
 
+    final String docs0features_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "user_device_smartphone","0.0",
+        "user_device_tablet","0.0");
+    final String docs0features_sparse_csv = FeatureLoggerTestUtils.toFeatureVector();
+
+    final String docs0features_default_csv = chooseDefaultFeatureVector(docs0features_dense_csv, docs0features_sparse_csv);
+
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/features==''");
+        "/response/docs/[0]/features=='"+docs0features_default_csv+"'");
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[0]/score==0.0");
   }

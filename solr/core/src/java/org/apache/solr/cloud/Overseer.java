@@ -371,7 +371,7 @@ public class Overseer implements Closeable {
             return Collections.singletonList(new SliceMutator(getZkStateReader()).updateShardState(clusterState, message));
           case QUIT:
             if (myId.equals(message.get("id"))) {
-              log.info("Quit command received {}", LeaderElector.getNodeName(myId));
+              log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
               overseerCollectionConfigSetProcessor.close();
               close();
             } else {

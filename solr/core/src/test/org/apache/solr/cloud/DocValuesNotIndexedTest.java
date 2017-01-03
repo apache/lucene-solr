@@ -256,10 +256,6 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       solrQuery.addSort("id", SolrQuery.ORDER.asc);
       final QueryResponse rsp = client.query(COLLECTION, solrQuery);
       SolrDocumentList res = rsp.getResults();
-      //TODO remove after SOLR-9843
-      if (order.length != res.getNumFound()) {
-        log.error("(3) About to fail, response is: " + rsp.toString());
-      }
       assertEquals("Should have exactly " + order.length + " documents returned", order.length, res.getNumFound());
       String expected;
       for (int idx = 0; idx < res.size(); ++idx) {
@@ -305,10 +301,6 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       if (prop.getName().startsWith("bool")) expected = 3; //true, false and null
 
       List<Group> fieldCommandGroups = fieldCommand.getValues();
-      //TODO: remove me since this is excessive in the normal case, this is in for SOLR-9843
-      if (expected != fieldCommandGroups.size()) {
-        log.error("(1) About to fail assert, response is: " + rsp.toString());
-      }
       assertEquals("Did not find the expected number of groups for field " + prop.getName(), expected, fieldCommandGroups.size());
     }
   }
@@ -381,8 +373,6 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
               break;
             
             default:
-              //TODO remove me after SOLR-9843
-              log.error("(2) About to fail, response is: " + rsp.toString());
               fail("Unexpected number of elements in the group for " + prop.getName() + ": " + grp.getResult().size());
           }
         }

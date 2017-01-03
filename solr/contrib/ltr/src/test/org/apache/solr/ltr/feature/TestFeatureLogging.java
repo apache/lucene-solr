@@ -29,7 +29,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
   @BeforeClass
   public static void setup() throws Exception {
-    setuptest();
+    setuptest(true);
   }
 
   @AfterClass
@@ -56,12 +56,21 @@ public class TestFeatureLogging extends TestRerankBase {
         "c1", "c2", "c3"}, "test1",
         "{\"weights\":{\"c1\":1.0,\"c2\":1.0,\"c3\":1.0}}");
 
+    final String docs0fv_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
+        "c1","1.0",
+        "c2","2.0",
+        "c3","3.0",
+        "pop","2.0",
+        "nomatch","0.0",
+        "yesmatch","1.0");
     final String docs0fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
         "c1","1.0",
         "c2","2.0",
         "c3","3.0",
         "pop","2.0",
         "yesmatch","1.0");
+
+    final String docs0fv_default_csv  = chooseDefaultFeatureVector(docs0fv_dense_csv, docs0fv_sparse_csv);
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
@@ -73,7 +82,7 @@ public class TestFeatureLogging extends TestRerankBase {
     restTestHarness.query("/query" + query.toQueryString());
     assertJQ(
         "/query" + query.toQueryString(),
-        "/response/docs/[0]/=={'title':'bloomberg bloomberg ', 'description':'bloomberg','id':'7', 'popularity':2,  '[fv]':'"+docs0fv_sparse_csv+"'}");
+        "/response/docs/[0]/=={'title':'bloomberg bloomberg ', 'description':'bloomberg','id':'7', 'popularity':2,  '[fv]':'"+docs0fv_default_csv+"'}");
 
     query.remove("fl");
     query.add("fl", "[fv]");
@@ -82,7 +91,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     restTestHarness.query("/query" + query.toQueryString());
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/=={'[fv]':'"+docs0fv_sparse_csv+"'}");
+        "/response/docs/[0]/=={'[fv]':'"+docs0fv_default_csv+"'}");
   }
 
   @Test
@@ -157,7 +166,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     query.add("rq", "{!ltr reRankDocs=3 model=sumgroup}");
 
-    final String docs0fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
+    final String docs0fv_csv = FeatureLoggerTestUtils.toFeatureVector(
         "c1","1.0",
         "c2","2.0",
         "c3","3.0",
@@ -166,7 +175,7 @@ public class TestFeatureLogging extends TestRerankBase {
     restTestHarness.query("/query" + query.toQueryString());
     assertJQ(
         "/query" + query.toQueryString(),
-        "/grouped/title/groups/[0]/doclist/docs/[0]/=={'fv':'"+docs0fv_sparse_csv+"'}");
+        "/grouped/title/groups/[0]/doclist/docs/[0]/=={'fv':'"+docs0fv_csv+"'}");
   }
 
   @Test
@@ -181,25 +190,28 @@ public class TestFeatureLogging extends TestRerankBase {
         "{\"weights\":{\"match\":1.0}}");
 
     final String docs0fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector("match", "1.0", "c4", "1.0");
-    final String docs1fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector("c4", "1.0");
+    final String docs1fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(                "c4", "1.0");
 
     final String docs0fv_dense_csv  = FeatureLoggerTestUtils.toFeatureVector("match", "1.0", "c4", "1.0");
     final String docs1fv_dense_csv  = FeatureLoggerTestUtils.toFeatureVector("match", "0.0", "c4", "1.0");
+
+    final String docs0fv_default_csv  = chooseDefaultFeatureVector(docs0fv_dense_csv, docs0fv_sparse_csv);
+    final String docs1fv_default_csv  = chooseDefaultFeatureVector(docs1fv_dense_csv, docs1fv_sparse_csv);
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
     query.add("rows", "10");
     query.add("rq", "{!ltr reRankDocs=10 model=sum4}");
 
-    //csv - no feature format check (default to sparse)
+    //csv - no feature format specified i.e. use default
     query.remove("fl");
     query.add("fl", "*,score,fv:[fv store=test4]");
     assertJQ(
         "/query" + query.toQueryString(),
-        "/response/docs/[0]/fv/=='"+docs0fv_sparse_csv+"'");
+        "/response/docs/[0]/fv/=='"+docs0fv_default_csv+"'");
     assertJQ(
         "/query" + query.toQueryString(),
-        "/response/docs/[1]/fv/=='"+docs1fv_sparse_csv+"'");
+        "/response/docs/[1]/fv/=='"+docs1fv_default_csv+"'");
 
     //csv - sparse feature format check
     query.remove("fl");

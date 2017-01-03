@@ -16,58 +16,43 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.internal.matchers.StringContains.containsString;
 
 /**
  * Verify that remote (proxied) queries return proper error messages
  */
-@Slow
-public class RemoteQueryErrorTest extends AbstractFullDistribZkTestBase {
+public class RemoteQueryErrorTest extends SolrCloudTestCase {
 
-  public RemoteQueryErrorTest() {
-    super();
-    sliceCount = 1;
-    fixShardCount(random().nextBoolean() ? 3 : 4);
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(3)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
   }
+
+  // TODO add test for CloudSolrClient as well
 
   @Test
   public void test() throws Exception {
-    handle.clear();
-    handle.put("timestamp", SKIPVAL);
-    
-    waitForThingsToLevelOut(15);
 
-    del("*:*");
-    
-    createCollection("collection2", 2, 1, 10);
-    
-    List<Integer> numShardsNumReplicaList = new ArrayList<>(2);
-    numShardsNumReplicaList.add(2);
-    numShardsNumReplicaList.add(1);
-    checkForCollection("collection2", numShardsNumReplicaList, null);
-    waitForRecoveriesToFinish("collection2", true);
+    CollectionAdminRequest.createCollection("collection", "conf", 2, 1).process(cluster.getSolrClient());
 
-    for (SolrClient solrClient : clients) {
-      try {
-        SolrInputDocument emptyDoc = new SolrInputDocument();
-        solrClient.add(emptyDoc);
-        fail("Expected unique key exception");
-      } catch (SolrException ex) {
-        assertThat(ex.getMessage(), containsString("Document is missing mandatory uniqueKey field: id"));
-      } catch(Exception ex) {
-        fail("Expected a SolrException to occur, instead received: " + ex.getClass());
-      } finally {
-        solrClient.close();
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      try (SolrClient client = jetty.newClient()) {
+        SolrException e = expectThrows(SolrException.class, () -> {
+          client.add("collection", new SolrInputDocument());
+        });
+        assertThat(e.getMessage(), containsString("Document is missing mandatory uniqueKey field: id"));
       }
     }
+
   }
 }

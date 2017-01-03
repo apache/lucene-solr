@@ -2052,4 +2052,32 @@ public class TestPointQueries extends LuceneTestCase {
                                               });
     assertEquals("lowerPoint has length=4 but upperPoint has different length=8", e.getMessage());
   }
+
+  public void testNextUp() {
+    assertTrue(Double.compare(0d, DoublePoint.nextUp(-0d)) == 0);
+    assertTrue(Double.compare(Double.MIN_VALUE, DoublePoint.nextUp(0d)) == 0);
+    assertTrue(Double.compare(Double.POSITIVE_INFINITY, DoublePoint.nextUp(Double.MAX_VALUE)) == 0);
+    assertTrue(Double.compare(Double.POSITIVE_INFINITY, DoublePoint.nextUp(Double.POSITIVE_INFINITY)) == 0);
+    assertTrue(Double.compare(-Double.MAX_VALUE, DoublePoint.nextUp(Double.NEGATIVE_INFINITY)) == 0);
+
+    assertTrue(Float.compare(0f, FloatPoint.nextUp(-0f)) == 0);
+    assertTrue(Float.compare(Float.MIN_VALUE, FloatPoint.nextUp(0f)) == 0);
+    assertTrue(Float.compare(Float.POSITIVE_INFINITY, FloatPoint.nextUp(Float.MAX_VALUE)) == 0);
+    assertTrue(Float.compare(Float.POSITIVE_INFINITY, FloatPoint.nextUp(Float.POSITIVE_INFINITY)) == 0);
+    assertTrue(Float.compare(-Float.MAX_VALUE, FloatPoint.nextUp(Float.NEGATIVE_INFINITY)) == 0);
+  }
+
+  public void testNextDown() {
+    assertTrue(Double.compare(-0d, DoublePoint.nextDown(0d)) == 0);
+    assertTrue(Double.compare(-Double.MIN_VALUE, DoublePoint.nextDown(-0d)) == 0);
+    assertTrue(Double.compare(Double.NEGATIVE_INFINITY, DoublePoint.nextDown(-Double.MAX_VALUE)) == 0);
+    assertTrue(Double.compare(Double.NEGATIVE_INFINITY, DoublePoint.nextDown(Double.NEGATIVE_INFINITY)) == 0);
+    assertTrue(Double.compare(Double.MAX_VALUE, DoublePoint.nextDown(Double.POSITIVE_INFINITY)) == 0);
+
+    assertTrue(Float.compare(-0f, FloatPoint.nextDown(0f)) == 0);
+    assertTrue(Float.compare(-Float.MIN_VALUE, FloatPoint.nextDown(-0f)) == 0);
+    assertTrue(Float.compare(Float.NEGATIVE_INFINITY, FloatPoint.nextDown(-Float.MAX_VALUE)) == 0);
+    assertTrue(Float.compare(Float.NEGATIVE_INFINITY, FloatPoint.nextDown(Float.NEGATIVE_INFINITY)) == 0);
+    assertTrue(Float.compare(Float.MAX_VALUE, FloatPoint.nextDown(Float.POSITIVE_INFINITY)) == 0);
+  }
 }

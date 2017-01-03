@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -50,11 +51,13 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
   @Test
   public void testParallelReloadAndStats() throws Exception {
 
-    for (int i = 0; i < atLeast(2); i++) {
+    Random random = random();
+    
+    for (int i = 0; i < atLeast(random, 2); i++) {
 
       int asyncId = taskNum.incrementAndGet();
 
-      SolrQueryResponse rsp = new SolrQueryResponse();
+     
       h.getCoreContainer().getMultiCoreHandler().handleRequest(req(
           CommonParams.QT, "/admin/cores",
           CoreAdminParams.ACTION,
@@ -64,35 +67,60 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
 
       boolean isCompleted;
       do {
-        String stats = h.query(req(
-            CommonParams.QT, "/admin/mbeans",
-            "stats", "true"));
-
-        NamedList<NamedList<Object>> actualStats = SolrInfoMBeanHandler.fromXML(stats).get("CORE");
-        
-        for (Map.Entry<String, NamedList<Object>> tuple : actualStats) {
-          if (tuple.getKey().contains("earcher")) { // catches "searcher" and "Searcher@345345 blah"
-            NamedList<Object> searcherStats = tuple.getValue();
-            @SuppressWarnings("unchecked")
-            NamedList<Object> statsList = (NamedList<Object>)searcherStats.get("stats");
-            assertEquals("expect to have exactly one indexVersion at "+statsList, 1, statsList.getAll("indexVersion").size());
-            assertTrue(statsList.get("indexVersion") instanceof Long); 
-          }
+        if (random.nextBoolean()) {
+          requestMbeans();
+        } else {
+          requestCoreStatus();
         }
 
-        h.getCoreContainer().getMultiCoreHandler().handleRequest(req(
-            CoreAdminParams.ACTION,
-            CoreAdminParams.CoreAdminAction.REQUESTSTATUS.toString(),
-            CoreAdminParams.REQUESTID, "" + asyncId), rsp);
-        
-        @SuppressWarnings("unchecked")
-        List<Object> statusLog = rsp.getValues().getAll(CoreAdminAction.STATUS.name());
-
-        assertFalse("expect status check w/o error, got:" + statusLog,
-                                  statusLog.contains(CoreAdminHandler.FAILED));
-
-        isCompleted = statusLog.contains(CoreAdminHandler.COMPLETED);
+        isCompleted = checkReloadComlpetion(asyncId);
       } while (!isCompleted);
+    }
+  }
+
+  private void requestCoreStatus() throws Exception {
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    h.getCoreContainer().getMultiCoreHandler().handleRequest(req(
+        CoreAdminParams.ACTION,
+        CoreAdminParams.CoreAdminAction.STATUS.toString(),
+        "core", DEFAULT_TEST_CORENAME), rsp);
+    assertNull(""+rsp.getException(),rsp.getException());
+
+  }
+
+  private boolean checkReloadComlpetion(int asyncId) {
+    boolean isCompleted;
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    h.getCoreContainer().getMultiCoreHandler().handleRequest(req(
+        CoreAdminParams.ACTION,
+        CoreAdminParams.CoreAdminAction.REQUESTSTATUS.toString(),
+        CoreAdminParams.REQUESTID, "" + asyncId), rsp);
+    
+    @SuppressWarnings("unchecked")
+    List<Object> statusLog = rsp.getValues().getAll(CoreAdminAction.STATUS.name());
+
+    assertFalse("expect status check w/o error, got:" + statusLog,
+                              statusLog.contains(CoreAdminHandler.FAILED));
+
+    isCompleted = statusLog.contains(CoreAdminHandler.COMPLETED);
+    return isCompleted;
+  }
+
+  private void requestMbeans() throws Exception {
+    String stats = h.query(req(
+        CommonParams.QT, "/admin/mbeans",
+        "stats", "true"));
+
+    NamedList<NamedList<Object>> actualStats = SolrInfoMBeanHandler.fromXML(stats).get("CORE");
+    
+    for (Map.Entry<String, NamedList<Object>> tuple : actualStats) {
+      if (tuple.getKey().contains("earcher")) { // catches "searcher" and "Searcher@345345 blah"
+        NamedList<Object> searcherStats = tuple.getValue();
+        @SuppressWarnings("unchecked")
+        NamedList<Object> statsList = (NamedList<Object>)searcherStats.get("stats");
+        assertEquals("expect to have exactly one indexVersion at "+statsList, 1, statsList.getAll("indexVersion").size());
+        assertTrue(statsList.get("indexVersion") instanceof Long); 
+      }
     }
   }
 

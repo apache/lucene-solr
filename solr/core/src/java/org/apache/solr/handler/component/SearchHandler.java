@@ -383,7 +383,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
                   params.set(CommonParams.QT, reqPath);
                 } // else if path is /select, then the qt gets passed thru if set
               }
-              shardHandler1.submit(sreq, shard, params, rb.preferredHostAddress);
+              shardHandler1.submit(sreq, shard, params);
             }
           }
 

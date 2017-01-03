@@ -65,6 +65,9 @@ API Changes
 * LUCENE-7533: Classic query parser no longer allows autoGeneratePhraseQueries
   to be set to true when splitOnWhitespace is false (and vice-versa).
 
+* LUCENE-7607: LeafFieldComparator.setScorer and SimpleFieldComparator.setScorer
+  are declared as throwing IOException (Alan Woodward)
+
 New features
 
 * LUCENE-5867: Added BooleanSimilarity. (Robert Muir, Adrien Grand)
@@ -77,6 +80,28 @@ New features
 * LUCENE-7587: The new FacetQuery and MultiFacetQuery helper classes
   make it simpler to execute drill down when drill sideways counts are
   not needed (Emmanuel Keller via Mike McCandless)
+
+* LUCENE-6664: A new SynonymGraphFilter outputs a correct graph
+  structure for multi-token synonyms, separating out a
+  FlattenGraphFilter that is hardwired into the current
+  SynonymFilter.  This finally makes it possible to implement
+  correct multi-token synonyms at search time.  See
+  http://blog.mikemccandless.com/2012/04/lucenes-tokenstreams-are-actually.html
+  for details. (Mike McCandless)
+
+* LUCENE-5325: Added LongValuesSource and DoubleValuesSource, intended as
+  type-safe replacements for ValueSource in the queries module.  These
+  expose per-segment LongValues or DoubleValues iterators, similar to the
+  existing DocValues iterator API. (Alan Woodward, Adrien Grand)
+
+* LUCENE-7603: Graph token streams are now handled accurately by query
+  parsers, by enumerating all paths and creating the corresponding
+  query/ies as sub-clauses (Matt Weber via Mike McCandless)
+
+* LUCENE-7588: DrillSideways can now run queries concurrently, and
+  supports an IndexSearcher using an executor service to run each query
+  concurrently across all segments in the index (Emmanuel Keller via
+  Mike McCandless)
 
 Bug Fixes
 
@@ -108,6 +133,16 @@ Bug Fixes
 * LUCENE-7570: IndexWriter may deadlock if a commit is running while
   there are too many merges running and one of the merges hits a
   tragic exception (Joey Echeverria via Mike McCandless)
+
+* LUCENE-7594: Fixed point range queries on floating-point types to recommend
+  using helpers for exclusive bounds that are consistent with Double.compare.
+  (Adrien Grand, Dawid Weiss)
+
+* LUCENE-7606: Normalization with CustomAnalyzer would only apply the last
+  token filter. (Adrien Grand)
+
+* LUCENE-7612: Removed an unused dependency from the suggester to the misc
+  module. (Alan Woodward)
 
 Improvements
 
@@ -153,6 +188,16 @@ Improvements
   CorruptIndexException instead of the more confusing EOFException
   (Mike Drob via Mike McCandless)
 
+* LUCENE-6989: Make MMapDirectory's unmap hack work with Java 9 EA (b150+):
+  Unmapping uses new sun.misc.Unsafe#invokeCleaner(ByteBuffer).
+  Java 9 now needs same permissions like Java 8;
+  RuntimePermission("accessClassInPackage.jdk.internal.ref")
+  is no longer needed. Support for older Java 9 builds was removed.
+  (Uwe Schindler)
+
+* LUCENE-7401: Changed the way BKD trees pick the split dimension in order to
+  ensure all dimensions are indexed. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-7568: Optimize merging when index sorting is used but the
@@ -182,6 +227,13 @@ Other
 
 * LUCENE-7559: UnifiedHighlighter: Make Passage more exposed to allow passage creation to
   be customized. (David Smiley)
+
+* LUCENE-7599: Simplify TestRandomChains using Java's built-in Predicate and
+  Function interfaces. (Ahmet Arslan via Adrien Grand)
+
+* LUCENE-7595: Improve RAMUsageTester in test-framework to estimate memory usage of
+  runtime classes and work with Java 9 EA (b148+). Disable static field heap usage
+  checker in LuceneTestCase.  (Uwe Schindler, Dawid Weiss)
 
 Build
 

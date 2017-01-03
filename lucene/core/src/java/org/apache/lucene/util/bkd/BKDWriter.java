@@ -479,9 +479,12 @@ public class BKDWriter implements Closeable {
       docsSeen.set(values.getDocID(i));
     }
 
+    final int[] parentSplits = new int[numDims];
     build(1, numLeaves, values, 0, Math.toIntExact(pointCount), out,
-          minPackedValue, maxPackedValue, splitPackedValues, leafBlockFPs,
+          minPackedValue, maxPackedValue, parentSplits,
+          splitPackedValues, leafBlockFPs,
           new int[maxPointsInLeafNode]);
+    assert Arrays.equals(parentSplits, new int[numDims]);
 
     long indexFP = out.getFilePointer();
     writeIndex(out, leafBlockFPs, splitPackedValues);
@@ -544,7 +547,6 @@ public class BKDWriter implements Closeable {
       MergeReader reader = queue.top();
       // System.out.println("iter reader=" + reader);
 
-      // NOTE: doesn't work with subclasses (e.g. SimpleText!)
       oneDimWriter.add(reader.state.scratchPackedValue, reader.docID);
 
       if (reader.next()) {
@@ -1002,12 +1004,15 @@ public class BKDWriter implements Closeable {
         heapPointWriter = null;
       }
 
+      final int[] parentSplits = new int[numDims];
       build(1, numLeaves, sortedPointWriters,
             ordBitSet, out,
             minPackedValue, maxPackedValue,
+            parentSplits,
             splitPackedValues,
             leafBlockFPs,
             toCloseHeroically);
+      assert Arrays.equals(parentSplits, new int[numDims]);
 
       for(PathSlice slice : sortedPointWriters) {
         slice.writer.destroy();
@@ -1414,7 +1419,29 @@ public class BKDWriter implements Closeable {
     return true;
   }
 
-  protected int split(byte[] minPackedValue, byte[] maxPackedValue) {
+  /**
+   * Pick the next dimension to split.
+   * @param minPackedValue the min values for all dimensions
+   * @param maxPackedValue the max values for all dimensions
+   * @param parentSplits how many times each dim has been split on the parent levels
+   * @return the dimension to split
+   */
+  protected int split(byte[] minPackedValue, byte[] maxPackedValue, int[] parentSplits) {
+    // First look at whether there is a dimension that has split less than 2x less than
+    // the dim that has most splits, and return it if there is such a dimension and it
+    // does not only have equals values. This helps ensure all dimensions are indexed.
+    int maxNumSplits = 0;
+    for (int numSplits : parentSplits) {
+      maxNumSplits = Math.max(maxNumSplits, numSplits);
+    }
+    for (int dim = 0; dim < numDims; ++dim) {
+      final int offset = dim * bytesPerDim;
+      if (parentSplits[dim] < maxNumSplits / 2 &&
+          StringHelper.compare(bytesPerDim, minPackedValue, offset, maxPackedValue, offset) != 0) {
+        return dim;
+      }
+    }
+
     // Find which dim has the largest span so we can split on it:
     int splitDim = -1;
     for(int dim=0;dim<numDims;dim++) {
@@ -1455,6 +1482,7 @@ public class BKDWriter implements Closeable {
                      MutablePointValues reader, int from, int to,
                      IndexOutput out,
                      byte[] minPackedValue, byte[] maxPackedValue,
+                     int[] parentSplits,
                      byte[] splitPackedValues,
                      long[] leafBlockFPs,
                      int[] spareDocIds) throws IOException {
@@ -1548,7 +1576,7 @@ public class BKDWriter implements Closeable {
       // inner node
 
       // compute the split dimension and partition around it
-      final int splitDim = split(minPackedValue, maxPackedValue);
+      final int splitDim = split(minPackedValue, maxPackedValue, parentSplits);
       final int mid = (from + to + 1) >>> 1;
 
       int commonPrefixLen = bytesPerDim;
@@ -1576,10 +1604,14 @@ public class BKDWriter implements Closeable {
           maxSplitPackedValue, splitDim * bytesPerDim, bytesPerDim);
 
       // recurse
+      parentSplits[splitDim]++;
       build(nodeID * 2, leafNodeOffset, reader, from, mid, out,
-          minPackedValue, maxSplitPackedValue, splitPackedValues, leafBlockFPs, spareDocIds);
+          minPackedValue, maxSplitPackedValue, parentSplits,
+          splitPackedValues, leafBlockFPs, spareDocIds);
       build(nodeID * 2 + 1, leafNodeOffset, reader, mid, to, out,
-          minSplitPackedValue, maxPackedValue, splitPackedValues, leafBlockFPs, spareDocIds);
+          minSplitPackedValue, maxPackedValue, parentSplits,
+          splitPackedValues, leafBlockFPs, spareDocIds);
+      parentSplits[splitDim]--;
     }
   }
 
@@ -1590,6 +1622,7 @@ public class BKDWriter implements Closeable {
                      LongBitSet ordBitSet,
                      IndexOutput out,
                      byte[] minPackedValue, byte[] maxPackedValue,
+                     int[] parentSplits,
                      byte[] splitPackedValues,
                      long[] leafBlockFPs,
                      List<Closeable> toCloseHeroically) throws IOException {
@@ -1700,7 +1733,7 @@ public class BKDWriter implements Closeable {
 
       int splitDim;
       if (numDims > 1) {
-        splitDim = split(minPackedValue, maxPackedValue);
+        splitDim = split(minPackedValue, maxPackedValue, parentSplits);
       } else {
         splitDim = 0;
       }
@@ -1768,10 +1801,11 @@ public class BKDWriter implements Closeable {
         }
       }
 
+      parentSplits[splitDim]++;
       // Recurse on left tree:
       build(2*nodeID, leafNodeOffset, leftSlices,
             ordBitSet, out,
-            minPackedValue, maxSplitPackedValue,
+            minPackedValue, maxSplitPackedValue, parentSplits,
             splitPackedValues, leafBlockFPs, toCloseHeroically);
       for(int dim=0;dim<numDims;dim++) {
         // Don't destroy the dim we split on because we just re-used what our caller above gave us for that dim:
@@ -1784,7 +1818,7 @@ public class BKDWriter implements Closeable {
       // Recurse on right tree:
       build(2*nodeID+1, leafNodeOffset, rightSlices,
             ordBitSet, out,
-            minSplitPackedValue, maxPackedValue,
+            minSplitPackedValue, maxPackedValue, parentSplits,
             splitPackedValues, leafBlockFPs, toCloseHeroically);
       for(int dim=0;dim<numDims;dim++) {
         // Don't destroy the dim we split on because we just re-used what our caller above gave us for that dim:
@@ -1792,6 +1826,7 @@ public class BKDWriter implements Closeable {
           rightSlices[dim].writer.destroy();
         }
       }
+      parentSplits[splitDim]--;
     }
   }
 

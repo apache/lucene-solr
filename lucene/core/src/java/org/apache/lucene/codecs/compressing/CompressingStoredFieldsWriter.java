@@ -514,7 +514,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       }
 
       final DocIDMerger<CompressingStoredFieldsMergeSub> docIDMerger =
-          new DocIDMerger<>(subs, true);
+          DocIDMerger.of(subs, true);
       while (true) {
         CompressingStoredFieldsMergeSub sub = docIDMerger.next();
         if (sub == null) {

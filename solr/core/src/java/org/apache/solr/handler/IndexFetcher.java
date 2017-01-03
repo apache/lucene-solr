@@ -685,15 +685,19 @@ public class IndexFetcher {
         sb = readToStringBuilder(replicationTime, props.getProperty(REPLICATION_FAILED_AT_LIST));
         props.setProperty(REPLICATION_FAILED_AT_LIST, sb.toString());
       }
-
-      final IndexOutput out = dir.createOutput(REPLICATION_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
+      
+      
+      String tmpFileName = REPLICATION_PROPERTIES + "." + System.nanoTime();
+      final IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
       Writer outFile = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
       try {
         props.store(outFile, "Replication details");
-        dir.sync(Collections.singleton(REPLICATION_PROPERTIES));
+        dir.sync(Collections.singleton(tmpFileName));
       } finally {
         IOUtils.closeQuietly(outFile);
       }
+      
+      solrCore.getDirectoryFactory().renameWithOverwrite(dir, tmpFileName, REPLICATION_PROPERTIES);
     } catch (Exception e) {
       LOG.warn("Exception while updating statistics", e);
     } finally {
@@ -1206,24 +1210,23 @@ public class IndexFetcher {
           IOUtils.closeQuietly(is);
         }
       }
-      try {
-        dir.deleteFile(IndexFetcher.INDEX_PROPERTIES);
-      } catch (IOException e) {
-        // no problem
-      }
-      final IndexOutput out = dir.createOutput(IndexFetcher.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
+
+      String tmpFileName = IndexFetcher.INDEX_PROPERTIES + "." + System.nanoTime();
+      final IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
       p.put("index", tmpIdxDirName);
       Writer os = null;
       try {
         os = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
-        p.store(os, IndexFetcher.INDEX_PROPERTIES);
-        dir.sync(Collections.singleton(INDEX_PROPERTIES));
+        p.store(os, tmpFileName);
+        dir.sync(Collections.singleton(tmpFileName));
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Unable to write " + IndexFetcher.INDEX_PROPERTIES, e);
       } finally {
         IOUtils.closeQuietly(os);
       }
+      
+      solrCore.getDirectoryFactory().renameWithOverwrite(dir, tmpFileName, IndexFetcher.INDEX_PROPERTIES);
       return true;
 
     } catch (IOException e1) {

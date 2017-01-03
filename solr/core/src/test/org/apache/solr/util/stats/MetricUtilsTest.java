@@ -23,7 +23,6 @@ import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.Test;
 
 public class MetricUtilsTest extends SolrTestCaseJ4 {
@@ -34,24 +33,23 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     final Timer timer = new Timer();
     final int iterations = random().nextInt(100);
     for (int i = 0; i < iterations; ++i) {
-      timer.update(random().nextInt(), TimeUnit.NANOSECONDS);
+      timer.update(Math.abs(random().nextInt()) + 1, TimeUnit.NANOSECONDS);
     }
     // obtain timer metrics
-    final NamedList<Object> lst = new SimpleOrderedMap<>();
-    MetricUtils.addMetrics(lst, timer);
+    NamedList lst = MetricUtils.timerToNamedList(timer);
     // check that expected metrics were obtained
-    assertEquals(lst.size(), 9);
+    assertEquals(14, lst.size());
     final Snapshot snapshot = timer.getSnapshot();
     // cannot test avgRequestsPerMinute directly because mean rate changes as time increases!
     // assertEquals(lst.get("avgRequestsPerSecond"), timer.getMeanRate());
-    assertEquals(lst.get("5minRateRequestsPerSecond"), timer.getFiveMinuteRate());
-    assertEquals(lst.get("15minRateRequestsPerSecond"), timer.getFifteenMinuteRate());
-    assertEquals(lst.get("avgTimePerRequest"), MetricUtils.nsToMs(snapshot.getMean()));
-    assertEquals(lst.get("medianRequestTime"), MetricUtils.nsToMs(snapshot.getMedian()));
-    assertEquals(lst.get("75thPcRequestTime"), MetricUtils.nsToMs(snapshot.get75thPercentile()));
-    assertEquals(lst.get("95thPcRequestTime"), MetricUtils.nsToMs(snapshot.get95thPercentile()));
-    assertEquals(lst.get("99thPcRequestTime"), MetricUtils.nsToMs(snapshot.get99thPercentile()));
-    assertEquals(lst.get("999thPcRequestTime"), MetricUtils.nsToMs(snapshot.get999thPercentile()));
+    assertEquals(timer.getFiveMinuteRate(), lst.get("5minRate"));
+    assertEquals(timer.getFifteenMinuteRate(), lst.get("15minRate"));
+    assertEquals(MetricUtils.nsToMs(snapshot.getMean()), lst.get("mean_ms"));
+    assertEquals(MetricUtils.nsToMs(snapshot.getMedian()), lst.get("median_ms"));
+    assertEquals(MetricUtils.nsToMs(snapshot.get75thPercentile()), lst.get("p75_ms"));
+    assertEquals(MetricUtils.nsToMs(snapshot.get95thPercentile()), lst.get("p95_ms"));
+    assertEquals(MetricUtils.nsToMs(snapshot.get99thPercentile()), lst.get("p99_ms"));
+    assertEquals(MetricUtils.nsToMs(snapshot.get999thPercentile()), lst.get("p999_ms"));
   }
 
 }
