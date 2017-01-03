@@ -335,9 +335,15 @@ public class PeerSync  {
     for (;;) {
       ShardResponse srsp = shardHandler.takeCompletedOrError();
       if (srsp == null) break;
+
+      Object replicaFingerprint = srsp.getSolrResponse().getResponse().get("fingerprint");
+      if (replicaFingerprint == null) {
+        log.warn("Replica did not return a fingerprint - possibly an older Solr version");
+        continue;
+      }
       
       try {
-        IndexFingerprint otherFingerprint = IndexFingerprint.fromObject(srsp.getSolrResponse().getResponse().get("fingerprint"));
+        IndexFingerprint otherFingerprint = IndexFingerprint.fromObject(replicaFingerprint);
         IndexFingerprint ourFingerprint = IndexFingerprint.getFingerprint(core, Long.MAX_VALUE);
         if(IndexFingerprint.compare(otherFingerprint, ourFingerprint) == 0) {
           log.info("We are already in sync. No need to do a PeerSync ");
