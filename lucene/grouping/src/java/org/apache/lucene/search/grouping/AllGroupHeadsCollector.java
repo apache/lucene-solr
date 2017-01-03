@@ -29,13 +29,13 @@ import org.apache.lucene.util.FixedBitSet;
  * @lucene.experimental
  */
 @SuppressWarnings({"unchecked","rawtypes"})
-public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsCollector.GroupHead> extends SimpleCollector {
+public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
 
   protected final int[] reversed;
   protected final int compIDXEnd;
   protected final TemporalResult temporalResult;
 
-  protected AbstractAllGroupHeadsCollector(int numberOfSorts) {
+  protected AllGroupHeadsCollector(int numberOfSorts) {
     this.reversed = new int[numberOfSorts];
     this.compIDXEnd = numberOfSorts - 1;
     temporalResult = new TemporalResult();
@@ -48,7 +48,7 @@ public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroup
   public FixedBitSet retrieveGroupHeads(int maxDoc) {
     FixedBitSet bitSet = new FixedBitSet(maxDoc);
 
-    Collection<GH> groupHeads = getCollectedGroupHeads();
+    Collection<? extends GroupHead<T>> groupHeads = getCollectedGroupHeads();
     for (GroupHead groupHead : groupHeads) {
       bitSet.set(groupHead.doc);
     }
@@ -60,7 +60,7 @@ public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroup
    * @return an int array containing all group heads. The size of the array is equal to number of collected unique groups.
    */
   public int[] retrieveGroupHeads() {
-    Collection<GH> groupHeads = getCollectedGroupHeads();
+    Collection<? extends GroupHead<T>> groupHeads = getCollectedGroupHeads();
     int[] docHeads = new int[groupHeads.size()];
 
     int i = 0;
@@ -96,7 +96,7 @@ public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroup
    *
    * @return the collected group heads
    */
-  protected abstract Collection<GH> getCollectedGroupHeads();
+  protected abstract Collection<? extends GroupHead<T>> getCollectedGroupHeads();
 
   @Override
   public void collect(int doc) throws IOException {
@@ -104,7 +104,7 @@ public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroup
     if (temporalResult.stop) {
       return;
     }
-    GH groupHead = temporalResult.groupHead;
+    GroupHead<T> groupHead = temporalResult.groupHead;
 
     // Ok now we need to check if the current doc is more relevant then current doc for this group
     for (int compIDX = 0; ; compIDX++) {
@@ -131,7 +131,7 @@ public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroup
    */
   protected class TemporalResult {
 
-    public GH groupHead;
+    public GroupHead<T> groupHead;
     public boolean stop;
 
   }
@@ -142,12 +142,12 @@ public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroup
    *
    * The group head contains a group value with its associated most relevant document id.
    */
-  public static abstract class GroupHead<GROUP_VALUE_TYPE> {
+  public static abstract class GroupHead<T> {
 
-    public final GROUP_VALUE_TYPE groupValue;
+    public final T groupValue;
     public int doc;
 
-    protected GroupHead(GROUP_VALUE_TYPE groupValue, int doc) {
+    protected GroupHead(T groupValue, int doc) {
       this.groupValue = groupValue;
       this.doc = doc;
     }

@@ -126,10 +126,10 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     IndexSearcher indexSearcher = newSearcher(w.getReader());
     w.close();
 
-    Comparator<AbstractDistinctValuesCollector.GroupCount<Comparable<Object>>> cmp = new Comparator<AbstractDistinctValuesCollector.GroupCount<Comparable<Object>>>() {
+    Comparator<DistinctValuesCollector.GroupCount<Comparable<Object>>> cmp = new Comparator<DistinctValuesCollector.GroupCount<Comparable<Object>>>() {
 
       @Override
-      public int compare(AbstractDistinctValuesCollector.GroupCount<Comparable<Object>> groupCount1, AbstractDistinctValuesCollector.GroupCount<Comparable<Object>> groupCount2) {
+      public int compare(DistinctValuesCollector.GroupCount<Comparable<Object>> groupCount1, DistinctValuesCollector.GroupCount<Comparable<Object>> groupCount2) {
         if (groupCount1.groupValue == null) {
           if (groupCount2.groupValue == null) {
             return 0;
@@ -145,13 +145,13 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     };
 
     // === Search for content:random
-    AbstractFirstPassGroupingCollector<Comparable<Object>> firstCollector = createRandomFirstPassCollector(new Sort(), groupField, 10);
+    FirstPassGroupingCollector<Comparable<Object>> firstCollector = createRandomFirstPassCollector(new Sort(), groupField, 10);
     indexSearcher.search(new TermQuery(new Term("content", "random")), firstCollector);
-    AbstractDistinctValuesCollector<? extends AbstractDistinctValuesCollector.GroupCount<Comparable<Object>>> distinctValuesCollector
+    DistinctValuesCollector<Comparable<Object>> distinctValuesCollector
         = createDistinctCountCollector(firstCollector, groupField, countField);
     indexSearcher.search(new TermQuery(new Term("content", "random")), distinctValuesCollector);
 
-    List<? extends AbstractDistinctValuesCollector.GroupCount<Comparable<Object>>> gcs = distinctValuesCollector.getGroups();
+    List<DistinctValuesCollector.GroupCount<Comparable<Object>>> gcs = distinctValuesCollector.getGroups();
     Collections.sort(gcs, cmp);
     assertEquals(4, gcs.size());
 
@@ -240,15 +240,15 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
         Sort groupSort = new Sort(new SortField("id", SortField.Type.STRING));
         int topN = 1 + random.nextInt(10);
 
-        List<AbstractDistinctValuesCollector.GroupCount<Comparable<?>>> expectedResult = createExpectedResult(context, term, groupSort, topN);
+        List<DistinctValuesCollector.GroupCount<Comparable<?>>> expectedResult = createExpectedResult(context, term, groupSort, topN);
 
-        AbstractFirstPassGroupingCollector<Comparable<?>> firstCollector = createRandomFirstPassCollector(groupSort, groupField, topN);
+        FirstPassGroupingCollector<Comparable<?>> firstCollector = createRandomFirstPassCollector(groupSort, groupField, topN);
         searcher.search(new TermQuery(new Term("content", term)), firstCollector);
-        AbstractDistinctValuesCollector<? extends AbstractDistinctValuesCollector.GroupCount<Comparable<?>>> distinctValuesCollector
+        DistinctValuesCollector<Comparable<?>> distinctValuesCollector
             = createDistinctCountCollector(firstCollector, groupField, countField);
         searcher.search(new TermQuery(new Term("content", term)), distinctValuesCollector);
         @SuppressWarnings("unchecked")
-        List<AbstractDistinctValuesCollector.GroupCount<Comparable<?>>> actualResult = (List<AbstractDistinctValuesCollector.GroupCount<Comparable<?>>>) distinctValuesCollector.getGroups();
+        List<DistinctValuesCollector.GroupCount<Comparable<?>>> actualResult = distinctValuesCollector.getGroups();
 
         if (VERBOSE) {
           System.out.println("Index iter=" + indexIter);
@@ -265,8 +265,8 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
         assertEquals(expectedResult.size(), actualResult.size());
         for (int i = 0; i < expectedResult.size(); i++) {
-          AbstractDistinctValuesCollector.GroupCount<Comparable<?>> expected = expectedResult.get(i);
-          AbstractDistinctValuesCollector.GroupCount<Comparable<?>> actual = actualResult.get(i);
+          DistinctValuesCollector.GroupCount<Comparable<?>> expected = expectedResult.get(i);
+          DistinctValuesCollector.GroupCount<Comparable<?>> actual = actualResult.get(i);
           assertValues(expected.groupValue, actual.groupValue);
           assertEquals(expected.uniqueValues.size(), actual.uniqueValues.size());
           List<Comparable<?>> expectedUniqueValues = new ArrayList<>(expected.uniqueValues);
@@ -283,9 +283,9 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     }
   }
 
-  private void printGroups(List<AbstractDistinctValuesCollector.GroupCount<Comparable<?>>> results) {
+  private void printGroups(List<? extends DistinctValuesCollector.GroupCount<Comparable<?>>> results) {
     for(int i=0;i<results.size();i++) {
-      AbstractDistinctValuesCollector.GroupCount<Comparable<?>> group = results.get(i);
+      DistinctValuesCollector.GroupCount<Comparable<?>> group = results.get(i);
       Object gv = group.groupValue;
       if (gv instanceof BytesRef) {
         System.out.println(i + ": groupValue=" + ((BytesRef) gv).utf8ToString());
@@ -350,31 +350,31 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
   }
 
   @SuppressWarnings({"unchecked","rawtypes"})
-  private <T extends Comparable> AbstractDistinctValuesCollector<AbstractDistinctValuesCollector.GroupCount<T>> createDistinctCountCollector(AbstractFirstPassGroupingCollector<T> firstPassGroupingCollector,
-                                                                      String groupField,
-                                                                      String countField) {
+  private <T extends Comparable> DistinctValuesCollector<T> createDistinctCountCollector(FirstPassGroupingCollector<T> firstPassGroupingCollector,
+                                                                                                                             String groupField,
+                                                                                                                             String countField) throws IOException {
     Random random = random();
     Collection<SearchGroup<T>> searchGroups = firstPassGroupingCollector.getTopGroups(0, false);
     if (FunctionFirstPassGroupingCollector.class.isAssignableFrom(firstPassGroupingCollector.getClass())) {
-      return (AbstractDistinctValuesCollector) new FunctionDistinctValuesCollector(new HashMap<>(), new BytesRefFieldSource(groupField), new BytesRefFieldSource(countField), (Collection) searchGroups);
+      return (DistinctValuesCollector) new FunctionDistinctValuesCollector(new HashMap<>(), new BytesRefFieldSource(groupField), new BytesRefFieldSource(countField), (Collection) searchGroups);
     } else {
-      return (AbstractDistinctValuesCollector) new TermDistinctValuesCollector(groupField, countField, (Collection) searchGroups);
+      return (DistinctValuesCollector) new TermDistinctValuesCollector(groupField, countField, (Collection) searchGroups);
     }
   }
 
   @SuppressWarnings({"unchecked","rawtypes"})
-  private <T> AbstractFirstPassGroupingCollector<T> createRandomFirstPassCollector(Sort groupSort, String groupField, int topNGroups) throws IOException {
+  private <T> FirstPassGroupingCollector<T> createRandomFirstPassCollector(Sort groupSort, String groupField, int topNGroups) throws IOException {
     Random random = random();
     if (random.nextBoolean()) {
-      return (AbstractFirstPassGroupingCollector<T>) new FunctionFirstPassGroupingCollector(new BytesRefFieldSource(groupField), new HashMap<>(), groupSort, topNGroups);
+      return (FirstPassGroupingCollector<T>) new FunctionFirstPassGroupingCollector(new BytesRefFieldSource(groupField), new HashMap<>(), groupSort, topNGroups);
     } else {
-      return (AbstractFirstPassGroupingCollector<T>) new TermFirstPassGroupingCollector(groupField, groupSort, topNGroups);
+      return (FirstPassGroupingCollector<T>) new TermFirstPassGroupingCollector(groupField, groupSort, topNGroups);
     }
   }
 
   @SuppressWarnings({"unchecked","rawtypes"})
-  private List<AbstractDistinctValuesCollector.GroupCount<Comparable<?>>> createExpectedResult(IndexContext context,  String term, Sort groupSort, int topN) {
-    class GroupCount extends AbstractDistinctValuesCollector.GroupCount<BytesRef> {
+  private List<DistinctValuesCollector.GroupCount<Comparable<?>>> createExpectedResult(IndexContext context, String term, Sort groupSort, int topN) {
+    class GroupCount extends DistinctValuesCollector.GroupCount<BytesRef> {
       GroupCount(BytesRef groupValue, Collection<BytesRef> uniqueValues) {
         super(groupValue);
         this.uniqueValues.addAll(uniqueValues);

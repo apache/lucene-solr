@@ -27,25 +27,25 @@ import org.apache.lucene.search.SimpleCollector;
  *
  * @lucene.experimental
  */
-public abstract class AbstractDistinctValuesCollector<GC extends AbstractDistinctValuesCollector.GroupCount<?>> extends SimpleCollector {
+public abstract class DistinctValuesCollector<T> extends SimpleCollector {
 
   /**
    * Returns all unique values for each top N group.
    *
    * @return all unique values for each top N group
    */
-  public abstract List<GC> getGroups();
+  public abstract List<GroupCount<T>> getGroups();
 
   /**
-   * Returned by {@link AbstractDistinctValuesCollector#getGroups()},
+   * Returned by {@link DistinctValuesCollector#getGroups()},
    * representing the value and set of distinct values for the group.
    */
-  public abstract static class GroupCount<GROUP_VALUE_TYPE> {
+  public static class GroupCount<T> {
 
-    public final GROUP_VALUE_TYPE groupValue;
-    public final Set<GROUP_VALUE_TYPE> uniqueValues;
+    public final T groupValue;
+    public final Set<T> uniqueValues;
 
-    public GroupCount(GROUP_VALUE_TYPE groupValue) {
+    public GroupCount(T groupValue) {
       this.groupValue = groupValue;
       this.uniqueValues = new HashSet<>();
     }

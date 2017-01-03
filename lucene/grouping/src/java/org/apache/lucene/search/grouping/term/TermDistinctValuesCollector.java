@@ -19,7 +19,7 @@ package org.apache.lucene.search.grouping.term;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.grouping.AbstractDistinctValuesCollector;
+import org.apache.lucene.search.grouping.DistinctValuesCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SentinelIntSet;
@@ -31,18 +31,18 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * A term based implementation of {@link org.apache.lucene.search.grouping.AbstractDistinctValuesCollector} that relies
+ * A term based implementation of {@link DistinctValuesCollector} that relies
  * on {@link SortedDocValues} to count the distinct values per group.
  *
  * @lucene.experimental
  */
-public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector<TermDistinctValuesCollector.GroupCount> {
+public class TermDistinctValuesCollector extends DistinctValuesCollector<BytesRef> {
 
   private final String groupField;
   private final String countField;
-  private final List<GroupCount> groups;
+  private final List<TermGroupCount> groups;
   private final SentinelIntSet ordSet;
-  private final GroupCount groupCounts[];
+  private final TermGroupCount groupCounts[];
 
   private SortedDocValues groupFieldTermIndex;
   private SortedDocValues countFieldTermIndex;
@@ -59,10 +59,10 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
     this.countField = countField;
     this.groups = new ArrayList<>(groups.size());
     for (SearchGroup<BytesRef> group : groups) {
-      this.groups.add(new GroupCount(group.groupValue));
+      this.groups.add(new TermGroupCount(group.groupValue));
     }
     ordSet = new SentinelIntSet(groups.size(), -2);
-    groupCounts = new GroupCount[ordSet.keys.length];
+    groupCounts = new TermGroupCount[ordSet.keys.length];
   }
 
   @Override
@@ -72,8 +72,9 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
       return;
     }
 
-    GroupCount gc = groupCounts[slot];
+    TermGroupCount gc = groupCounts[slot];
     int countOrd = countFieldTermIndex.getOrd(doc);
+
     if (doesNotContainOrd(countOrd, gc.ords)) {
       if (countOrd == -1) {
         gc.uniqueValues.add(null);
@@ -100,8 +101,8 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
   }
 
   @Override
-  public List<GroupCount> getGroups() {
-    return groups;
+  public List<GroupCount<BytesRef>> getGroups() {
+    return new ArrayList<>(groups);
   }
 
   @Override
@@ -109,7 +110,7 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
     groupFieldTermIndex = DocValues.getSorted(context.reader(), groupField);
     countFieldTermIndex = DocValues.getSorted(context.reader(), countField);
     ordSet.clear();
-    for (GroupCount group : groups) {
+    for (TermGroupCount group : groups) {
       int groupOrd = group.groupValue == null ? -1 : groupFieldTermIndex.lookupTerm(group.groupValue);
       if (group.groupValue != null && groupOrd < 0) {
         continue;
@@ -131,11 +132,11 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
   /** Holds distinct values for a single group.
    *
    * @lucene.experimental */
-  public static class GroupCount extends AbstractDistinctValuesCollector.GroupCount<BytesRef> {
+  public static class TermGroupCount extends DistinctValuesCollector.GroupCount<BytesRef> {
 
     int[] ords;
 
-    GroupCount(BytesRef groupValue) {
+    TermGroupCount(BytesRef groupValue) {
       super(groupValue);
     }
   }

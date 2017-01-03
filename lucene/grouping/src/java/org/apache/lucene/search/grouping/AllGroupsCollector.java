@@ -34,7 +34,7 @@ import org.apache.lucene.util.BytesRef;
  *
  * @lucene.experimental
  */
-public abstract class AbstractAllGroupsCollector<GROUP_VALUE_TYPE> extends SimpleCollector {
+public abstract class AllGroupsCollector<T> extends SimpleCollector {
 
   /**
    * Returns the total number of groups for the executed search.
@@ -54,7 +54,7 @@ public abstract class AbstractAllGroupsCollector<GROUP_VALUE_TYPE> extends Simpl
    *
    * @return the group values
    */
-  public abstract Collection<GROUP_VALUE_TYPE> getGroups();
+  public abstract Collection<T> getGroups();
 
   // Empty not necessary
   @Override

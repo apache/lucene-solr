@@ -103,7 +103,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     IndexSearcher indexSearcher = newSearcher(w.getReader());
 
     List<TermGroupFacetCollector.FacetEntry> entries;
-    AbstractGroupFacetCollector groupedAirportFacetCollector;
+    GroupFacetCollector groupedAirportFacetCollector;
     TermGroupFacetCollector.GroupedFacetResult airportResult;
     
     for (int limit : new int[] { 2, 10, 100, Integer.MAX_VALUE }) {
@@ -136,7 +136,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
       assertEquals(1, entries.get(0).getCount());
     }
 
-    AbstractGroupFacetCollector groupedDurationFacetCollector = createRandomCollector(useDv ? "hotel_dv" : "hotel", useDv ? "duration_dv" : "duration", null, false);
+    GroupFacetCollector groupedDurationFacetCollector = createRandomCollector(useDv ? "hotel_dv" : "hotel", useDv ? "duration_dv" : "duration", null, false);
     indexSearcher.search(new MatchAllDocsQuery(), groupedDurationFacetCollector);
     TermGroupFacetCollector.GroupedFacetResult durationResult = groupedDurationFacetCollector.mergeSegmentResults(10, 0, false);
     assertEquals(4, durationResult.getTotalCount());
@@ -344,7 +344,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
     w.close();
     IndexSearcher indexSearcher = newSearcher(DirectoryReader.open(dir));
-    AbstractGroupFacetCollector groupedAirportFacetCollector = createRandomCollector(groupField + "_dv", "airport", null, true);
+    GroupFacetCollector groupedAirportFacetCollector = createRandomCollector(groupField + "_dv", "airport", null, true);
     indexSearcher.search(new MatchAllDocsQuery(), groupedAirportFacetCollector);
     TermGroupFacetCollector.GroupedFacetResult airportResult = groupedAirportFacetCollector.mergeSegmentResults(10, 0, false);
     assertEquals(3, airportResult.getTotalCount());
@@ -404,7 +404,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
         }
 
         GroupedFacetResult expectedFacetResult = createExpectedFacetResult(searchTerm, context, offset, limit, minCount, orderByCount, facetPrefix);
-        AbstractGroupFacetCollector groupFacetCollector = createRandomCollector("group", "facet", facetPrefix, multipleFacetsPerDocument);
+        GroupFacetCollector groupFacetCollector = createRandomCollector("group", "facet", facetPrefix, multipleFacetsPerDocument);
         searcher.search(new TermQuery(new Term("content", searchTerm)), groupFacetCollector);
         TermGroupFacetCollector.GroupedFacetResult actualFacetResult = groupFacetCollector.mergeSegmentResults(size, minCount, orderByCount);
 
@@ -704,7 +704,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     return new GroupedFacetResult(totalCount, totalMissCount, entriesResult);
   }
 
-  private AbstractGroupFacetCollector createRandomCollector(String groupField, String facetField, String facetPrefix, boolean multipleFacetsPerDocument) {
+  private GroupFacetCollector createRandomCollector(String groupField, String facetField, String facetPrefix, boolean multipleFacetsPerDocument) {
     BytesRef facetPrefixBR = facetPrefix == null ? null : new BytesRef(facetPrefix);
     return TermGroupFacetCollector.createTermGroupFacetCollector(groupField, facetField, multipleFacetsPerDocument, facetPrefixBR, random().nextInt(1024));
   }

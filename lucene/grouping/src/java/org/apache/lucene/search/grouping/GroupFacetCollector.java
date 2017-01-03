@@ -16,20 +16,25 @@
  */
 package org.apache.lucene.search.grouping;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.NavigableSet;
+import java.util.TreeSet;
+
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
-
-import java.io.IOException;
-import java.util.*;
 
 /**
  * Base class for computing grouped facets.
  *
  * @lucene.experimental
  */
-public abstract class AbstractGroupFacetCollector extends SimpleCollector {
+public abstract class GroupFacetCollector extends SimpleCollector {
 
   protected final String groupField;
   protected final String facetField;
@@ -41,7 +46,7 @@ public abstract class AbstractGroupFacetCollector extends SimpleCollector {
   protected int startFacetOrd;
   protected int endFacetOrd;
 
-  protected AbstractGroupFacetCollector(String groupField, String facetField, BytesRef facetPrefix) {
+  protected GroupFacetCollector(String groupField, String facetField, BytesRef facetPrefix) {
     this.groupField = groupField;
     this.facetField = facetField;
     this.facetPrefix = facetPrefix;
