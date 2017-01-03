@@ -98,6 +98,11 @@ New features
   parsers, by enumerating all paths and creating the corresponding
   query/ies as sub-clauses (Matt Weber via Mike McCandless)
 
+* LUCENE-7588: DrillSideways can now run queries concurrently, and
+  supports an IndexSearcher using an executor service to run each query
+  concurrently across all segments in the index (Emmanuel Keller via
+  Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-7547: JapaneseTokenizerFactory was failing to close the
