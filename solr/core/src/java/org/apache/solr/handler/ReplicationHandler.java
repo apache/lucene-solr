@@ -813,22 +813,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     numTimesReplicated++;
   }
 
-  long getIndexSize() {
-    Directory dir;
-    long size = 0;
-    try {
-      dir = core.getDirectoryFactory().get(core.getIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-      try {
-        size = core.getDirectoryFactory().size(dir);
-      } finally {
-        core.getDirectoryFactory().release(dir);
-      }
-    } catch (IOException e) {
-      SolrException.log(LOG, "IO error while trying to get the size of the Directory", e);
-    }
-    return size;
-  }
-
   @Override
   public String getDescription() {
     return "ReplicationHandler provides replication of index and configuration files from Master to Slaves";
@@ -855,7 +839,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public NamedList getStatistics() {
     NamedList list = super.getStatistics();
     if (core != null) {
-      list.add("indexSize", NumberUtils.readableSize(getIndexSize()));
+      list.add("indexSize", NumberUtils.readableSize(core.getIndexSize()));
       CommitVersionInfo vInfo = (core != null && !core.isClosed()) ? getIndexVersion(): null;
       list.add("indexVersion", null == vInfo ? 0 : vInfo.version);
       list.add(GENERATION, null == vInfo ? 0 : vInfo.generation);
@@ -907,7 +891,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     NamedList<Object> master = new SimpleOrderedMap<>();
     NamedList<Object> slave = new SimpleOrderedMap<>();
 
-    details.add("indexSize", NumberUtils.readableSize(getIndexSize()));
+    details.add("indexSize", NumberUtils.readableSize(core.getIndexSize()));
     details.add("indexPath", core.getIndexDir());
     details.add(CMD_SHOW_COMMITS, getCommits());
     details.add("isMaster", String.valueOf(isMaster));

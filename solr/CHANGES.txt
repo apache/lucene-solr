@@ -386,6 +386,7 @@ Other Changes
 * SOLR-9915: PeerSync alreadyInSync check is not backwards compatible and results in full replication during a rolling restart
   (Tim Owen via noble)
 
+* SOLR-3990: Moves getIndexSize() from ReplicationHandler to SolrCore (Shawn Heisey)
 
 ==================  6.3.0 ==================
 
