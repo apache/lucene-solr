@@ -325,6 +325,8 @@ Bug Fixes
 
 * SOLR-9154: Fix DirectSolrSpellChecker to work when added through the Config API. (Anshum Gupta)
 
+* SOLR-9919: random Streaming Expression is not registered in /stream or /graph handler (Joel Bernstein)
+
 Other Changes
 ----------------------
 
