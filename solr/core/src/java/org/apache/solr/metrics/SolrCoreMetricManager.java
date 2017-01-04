@@ -18,7 +18,6 @@ package org.apache.solr.metrics;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collection;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.core.NodeConfig;
@@ -88,15 +87,11 @@ public class SolrCoreMetricManager implements Closeable {
    * @param producer  producer of metrics to be registered
    */
   public void registerMetricProducer(String scope, SolrMetricProducer producer) {
-    if (scope == null || producer == null || producer.getCategory() == null) {
+    if (scope == null || producer == null) {
       throw new IllegalArgumentException("registerMetricProducer() called with illegal arguments: " +
           "scope = " + scope + ", producer = " + producer);
     }
-    Collection<String> registered = producer.initializeMetrics(metricManager, getRegistryName(), scope);
-    if (registered == null || registered.isEmpty()) {
-      throw new IllegalArgumentException("registerMetricProducer() did not register any metrics " +
-      "for scope = " + scope + ", producer = " + producer);
-    }
+    producer.initializeMetrics(metricManager, getRegistryName(), scope);
   }
 
   /**

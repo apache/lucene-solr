@@ -17,15 +17,10 @@
 
 package org.apache.solr.util.stats;
 
-import java.net.URL;
-import java.util.Arrays;
-import java.util.Collection;
-
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 
@@ -49,17 +44,7 @@ public class InstrumentedPoolingClientConnectionManager extends PoolingClientCon
   }
 
   @Override
-  public String getName() {
-    return this.getClass().getName();
-  }
-
-  @Override
-  public String getVersion() {
-    return getClass().getPackage().getSpecificationVersion();
-  }
-
-  @Override
-  public Collection<String> initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
     this.metricsRegistry = manager.registry(registry);
     metricsRegistry.register(SolrMetricManager.mkName("availableConnections", scope),
         (Gauge<Integer>) () -> {
@@ -81,31 +66,5 @@ public class InstrumentedPoolingClientConnectionManager extends PoolingClientCon
           // this acquires a lock on the connection pool; remove if contention sucks
           return getTotalStats().getPending();
         });
-    return Arrays.asList("availableConnections", "leasedConnections", "maxConnections", "pendingConnections");
-  }
-
-  @Override
-  public String getDescription() {
-    return "";
-  }
-
-  @Override
-  public Category getCategory() {
-    return Category.OTHER;
-  }
-
-  @Override
-  public String getSource() {
-    return null;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return null;
-  }
-
-  @Override
-  public NamedList getStatistics() {
-    return null;
   }
 }

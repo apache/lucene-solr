@@ -17,13 +17,9 @@
 
 package org.apache.solr.util.stats;
 
-import java.net.URL;
-import java.util.Collection;
-
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.protocol.HttpRequestExecutor;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 
@@ -42,42 +38,7 @@ public class InstrumentedHttpClient extends DefaultHttpClient implements SolrMet
   }
 
   @Override
-  public String getName() {
-    return this.getClass().getName();
-  }
-
-  @Override
-  public String getVersion() {
-    return getClass().getPackage().getSpecificationVersion();
-  }
-
-  @Override
-  public Collection<String> initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    return requestExecutor.initializeMetrics(manager, registry, scope);
-  }
-
-  @Override
-  public String getDescription() {
-    return "Metrics tracked by http client";
-  }
-
-  @Override
-  public Category getCategory() {
-    return Category.OTHER;
-  }
-
-  @Override
-  public String getSource() {
-    return null;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return new URL[0];
-  }
-
-  @Override
-  public NamedList getStatistics() {
-    return null;
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    requestExecutor.initializeMetrics(manager, registry, scope);
   }
 }

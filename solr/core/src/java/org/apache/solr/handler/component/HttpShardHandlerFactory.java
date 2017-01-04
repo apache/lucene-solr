@@ -18,10 +18,7 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
@@ -68,7 +65,6 @@ import org.apache.solr.util.stats.InstrumentedPoolingClientConnectionManager;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -409,51 +405,14 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   @Override
-  public String getName() {
-    return this.getClass().getName();
-  }
-
-  @Override
-  public String getVersion() {
-    return getClass().getPackage().getSpecificationVersion();
-  }
-
-  @Override
-  public Collection<String> initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    List<String> metricNames = new ArrayList<>(4);
-    metricNames.addAll(clientConnectionManager.initializeMetrics(manager, registry, scope));
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    clientConnectionManager.initializeMetrics(manager, registry, scope);
     if (defaultClient instanceof SolrMetricProducer) {
       SolrMetricProducer solrMetricProducer = (SolrMetricProducer) defaultClient;
-      metricNames.addAll(solrMetricProducer.initializeMetrics(manager, registry, scope));
+      solrMetricProducer.initializeMetrics(manager, registry, scope);
     }
     commExecutor = MetricUtils.instrumentedExecutorService(commExecutor,
         manager.registry(registry),
         SolrMetricManager.mkName("httpShardExecutor", scope, "threadPool"));
-    return metricNames;
-  }
-
-  @Override
-  public String getDescription() {
-    return "Metrics tracked by HttpShardHandlerFactory for distributed query requests";
-  }
-
-  @Override
-  public Category getCategory() {
-    return Category.OTHER;
-  }
-
-  @Override
-  public String getSource() {
-    return null;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return new URL[0];
-  }
-
-  @Override
-  public NamedList getStatistics() {
-    return null;
   }
 }
