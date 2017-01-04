@@ -15,6 +15,24 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.component;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -41,31 +59,15 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.stats.InstrumentedHttpClient;
 import org.apache.solr.util.stats.InstrumentedPoolingClientConnectionManager;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 
 public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
@@ -78,7 +80,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   //
   // Consider CallerRuns policy and a lower max threads to throttle
   // requests at some point (or should we simply return failure?)
-  private ThreadPoolExecutor commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
+  private ExecutorService commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
       0,
       Integer.MAX_VALUE,
       5, TimeUnit.SECONDS, // terminate idle threads after 5 sec
@@ -234,7 +236,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     configurer.configure((DefaultHttpClient)this.defaultClient, getClientParams());
   }
 
-  protected ThreadPoolExecutor getThreadPoolExecutor(){
+  protected ExecutorService getThreadPoolExecutor() {
     return this.commExecutor;
   }
 
@@ -424,6 +426,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       SolrMetricProducer solrMetricProducer = (SolrMetricProducer) defaultClient;
       metricNames.addAll(solrMetricProducer.initializeMetrics(manager, registry, scope));
     }
+    commExecutor = MetricUtils.instrumentedExecutorService(commExecutor,
+        manager.registry(registry),
+        SolrMetricManager.mkName("httpShardExecutor", scope, "threadPool"));
     return metricNames;
   }
 

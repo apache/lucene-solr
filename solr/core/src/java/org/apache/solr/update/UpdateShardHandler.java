@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.InstrumentedExecutorService;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -129,12 +130,18 @@ public class UpdateShardHandler implements SolrMetricProducer {
       SolrMetricProducer solrMetricProducer = (SolrMetricProducer) client;
       metricNames.addAll(solrMetricProducer.initializeMetrics(manager, registry, scope));
     }
+    updateExecutor = new InstrumentedExecutorService(updateExecutor,
+        manager.registry(registry),
+        SolrMetricManager.mkName("updateExecutor", scope, "threadPool"));
+    recoveryExecutor = new InstrumentedExecutorService(recoveryExecutor,
+        manager.registry(registry),
+        SolrMetricManager.mkName("recoveryExecutor", scope, "threadPool"));
     return metricNames;
   }
 
   @Override
   public String getDescription() {
-    return "Metrics tracked by UpdateShardHandler for distributed updates and recovery";
+    return "Metrics tracked by UpdateShardHandler related to distributed updates and recovery";
   }
 
   @Override

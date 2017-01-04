@@ -121,7 +121,7 @@ New Features
 * SOLR-9884: Add version to segments handler output (Steven Bower via Erick Erickson)
 
 * SOLR-9725: Substitute properties into JdbcDataSource configuration ( Jamie Jackson, Yuri Sashevsky via Mikhail Khludnev)
- 
+
 * SOLR-4735: Improve metrics reporting. This uses the dropwizard metric library, adding an internal API
   for registering and reporting metrics from Solr components. Several new metrics and an improved JMX
   reporter have been added (Alan Woodward, Jeff Wartes, Christine Poerschke, Kelvin Wong, shalin, ab)
@@ -153,6 +153,8 @@ New Features
 * SOLR-8530: Add HavingStream to Streaming API and StreamingExpressions (Joel Bernstein)
 
 * SOLR-9877: Use instrumented http client and connection pool. (shalin)
+
+* SOLR-9896: Instrument and collect metrics from query, update, core admin and core load thread pools. (shalin)
 
 Optimizations
 ----------------------

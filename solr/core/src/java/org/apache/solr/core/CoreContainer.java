@@ -72,6 +72,7 @@ import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -440,6 +441,11 @@ public class CoreContainer {
 
     metricManager = new SolrMetricManager();
 
+    coreContainerWorkExecutor = MetricUtils.instrumentedExecutorService(
+        coreContainerWorkExecutor,
+        metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node)),
+        SolrMetricManager.mkName("coreContainerWorkExecutor", "threadPool"));
+
     shardHandlerFactory = ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
     if (shardHandlerFactory instanceof SolrMetricProducer) {
       SolrMetricProducer metricProducer = (SolrMetricProducer) shardHandlerFactory;
@@ -502,9 +508,12 @@ public class CoreContainer {
         unloadedCores, true, "unloaded", "cores");
 
     // setup executor to load cores in parallel
-    ExecutorService coreLoadExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(
-        cfg.getCoreLoadThreadCount(isZooKeeperAware()),
-        new DefaultSolrThreadFactory("coreLoadExecutor") );
+    ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            cfg.getCoreLoadThreadCount(isZooKeeperAware()),
+            new DefaultSolrThreadFactory("coreLoadExecutor")),
+        metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node)),
+        SolrMetricManager.mkName("coreLoadExecutor", "threadPool"));
     final List<Future<SolrCore>> futures = new ArrayList<>();
     try {
       List<CoreDescriptor> cds = coresLocator.discover(this);
