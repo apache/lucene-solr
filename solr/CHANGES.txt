@@ -178,8 +178,8 @@ New Features
 
 * SOLR-9860: Enable configuring invariantParams via HttpSolrClient.Builder (Hrishikesh Gadre, Ishan Chattopadhyaya)
  
-* SOLR-4735: Improve metrics reporting. This uses the dropwizard metric library, adding an internal API
-  for registering and reporting metrics from Solr components. Several new metrics and an improved JMX
+* SOLR-4735, SOLR-9921: Improve metrics reporting. This uses the dropwizard metric library, adding an internal
+  API for registering and reporting metrics from Solr components. Several new metrics and an improved JMX
   reporter have been added (Alan Woodward, Jeff Wartes, Christine Poerschke, Kelvin Wong, shalin, ab)
 
 * SOLR-9788: Use instrumented jetty classes provided by the dropwizard metric library. (shalin)

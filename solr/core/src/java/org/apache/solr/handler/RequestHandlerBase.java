@@ -18,8 +18,6 @@ package org.apache.solr.handler;
 
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Collection;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
@@ -133,14 +131,13 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   }
 
   @Override
-  public Collection<String> initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
     numErrors = manager.meter(registryName, "errors", getCategory().toString(), scope);
     numServerErrors = manager.meter(registryName, "serverErrors", getCategory().toString(), scope);
     numClientErrors = manager.meter(registryName, "clientErrors", getCategory().toString(), scope);
     numTimeouts = manager.meter(registryName, "timeouts", getCategory().toString(), scope);
     requests = manager.counter(registryName, "requests", getCategory().toString(), scope);
     requestTimes = manager.timer(registryName, "requestTimes", getCategory().toString(), scope);
-    return Arrays.asList("errors", "serverErrors", "clientErrors", "timeouts", "requestTimes", "requests");
   }
 
   public static SolrParams getSolrParamsFromNamedList(NamedList args, String key) {

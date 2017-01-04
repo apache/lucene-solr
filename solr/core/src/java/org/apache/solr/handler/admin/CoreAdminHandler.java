@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -115,11 +114,10 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   @Override
-  public Collection<String> initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
-    Collection<String> metrics = super.initializeMetrics(manager, registryName, scope);
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+    super.initializeMetrics(manager, registryName, scope);
     parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, manager.registry(registryName),
         SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(),scope, "threadPool"));
-    return metrics;
   }
 
   /**

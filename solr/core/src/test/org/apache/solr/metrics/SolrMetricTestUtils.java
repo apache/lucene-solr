@@ -16,17 +16,13 @@
  */
 package org.apache.solr.metrics;
 
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
 import com.codahale.metrics.Counter;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoMBean;
 
 public final class SolrMetricTestUtils {
@@ -82,49 +78,16 @@ public final class SolrMetricTestUtils {
   public static SolrMetricProducer getProducerOf(SolrMetricManager metricManager, SolrInfoMBean.Category category, String scope, Map<String, Counter> metrics) {
     return new SolrMetricProducer() {
       @Override
-      public Collection<String> initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+      public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+        if (category == null) {
+          throw new IllegalArgumentException("null category");
+        }
         if (metrics == null || metrics.isEmpty()) {
-          return Collections.emptyList();
+          return;
         }
         for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
           manager.counter(registry, entry.getKey(), category.toString(), scope);
         }
-        return metrics.keySet();
-      }
-
-      @Override
-      public String getName() {
-        return scope;
-      }
-
-      @Override
-      public String getVersion() {
-        return "0.0";
-      }
-
-      @Override
-      public String getDescription() {
-        return "foo";
-      }
-
-      @Override
-      public Category getCategory() {
-        return category;
-      }
-
-      @Override
-      public String getSource() {
-        return null;
-      }
-
-      @Override
-      public URL[] getDocs() {
-        return new URL[0];
-      }
-
-      @Override
-      public NamedList getStatistics() {
-        return null;
       }
 
       @Override
