@@ -41,7 +41,7 @@ public class PostingsOffsetStrategy extends FieldOffsetStrategy {
 
   @Override
   public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
-    LeafReader leafReader;
+    final LeafReader leafReader;
     if (reader instanceof LeafReader) {
       leafReader = (LeafReader) reader;
     } else {
@@ -53,6 +53,7 @@ public class PostingsOffsetStrategy extends FieldOffsetStrategy {
 
     return createOffsetsEnumsFromReader(leafReader, docId);
   }
+
 
   @Override
   public UnifiedHighlighter.OffsetSource getOffsetSource() {

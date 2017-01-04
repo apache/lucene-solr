@@ -92,14 +92,16 @@
       "useParams":"_ADMIN_FILE"
     },
     "/export": {
-      "class": "solr.SearchHandler",
+      "class": "solr.ExportHandler",
       "useParams":"_EXPORT",
       "components": [
         "query"
       ],
+      "defaults": {
+        "wt": "json"
+      },
       "invariants": {
         "rq": "{!xport}",
-        "wt": "xsort",
         "distrib": false
       }
     },
@@ -114,16 +116,20 @@
     "/stream": {
       "class": "solr.StreamHandler",
       "useParams":"_STREAM",
+      "defaults": {
+        "wt": "json"
+      },
       "invariants": {
-        "wt": "json",
         "distrib": false
       }
     },
     "/sql": {
       "class": "solr.SQLHandler",
       "useParams":"_SQL",
+      "defaults": {
+        "wt": "json"
+      },
       "invariants": {
-        "wt": "json",
         "distrib": false
       }
     },

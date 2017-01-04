@@ -17,15 +17,17 @@
 package org.apache.solr.client.solrj.io.stream.expr;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.solr.common.MapSerializable;
 
 
 /**
  * Explanation containing details about a expression
  */
-public class Explanation {
+public class Explanation implements MapSerializable {
   
   private String expressionNodeId;
   private String expressionType;
@@ -124,24 +126,24 @@ public class Explanation {
     }
     helpers.add(helper);
   }
-  
-  public Map<String,Object> toMap(){
-    Map<String,Object> map = new HashMap<String,Object>();
+
+  @Override
+  public Map toMap(Map<String, Object> map) {
     if(null != expressionNodeId){ map.put("expressionNodeId",expressionNodeId); }
     if(null != expressionType){ map.put("expressionType",expressionType); }
     if(null != functionName){ map.put("functionName",functionName); }
     if(null != implementingClass){ map.put("implementingClass",implementingClass); }
     if(null != expression){ map.put("expression",expression); }
     if(null != note){ map.put("note",note); }
-    
+
     if(null != helpers && 0 != helpers.size()){
-      List<Map<String,Object>> helperMaps = new ArrayList<Map<String,Object>>();
+      List<Map<String,Object>> helperMaps = new ArrayList<>();
       for(Explanation helper : helpers){
-        helperMaps.add(helper.toMap());
+        helperMaps.add(helper.toMap(new LinkedHashMap<>()));
       }
       map.put("helpers", helperMaps);
     }
-    
+
     return map;
   }
   

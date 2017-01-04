@@ -21,6 +21,12 @@
 # affecting other Java applications on your server/workstation.
 #SOLR_JAVA_HOME=""
 
+# This controls the number of seconds that the solr script will wait for
+# Solr to stop gracefully or Solr to start.  If the graceful stop fails,
+# the script will forcibly stop Solr.  If the start fails, the script will
+# give up waiting and display the last few lines of the logfile.
+#SOLR_STOP_WAIT="180"
+
 # Increase Java Heap as needed to support your indexing / query needs
 #SOLR_HEAP="512m"
 
@@ -92,8 +98,10 @@
 # Be sure to update the paths to the correct keystore for your environment
 #SOLR_SSL_KEY_STORE=/home/shalin/work/oss/shalin-lusolr/solr/server/etc/solr-ssl.keystore.jks
 #SOLR_SSL_KEY_STORE_PASSWORD=secret
+#SOLR_SSL_KEY_STORE_TYPE=JKS
 #SOLR_SSL_TRUST_STORE=/home/shalin/work/oss/shalin-lusolr/solr/server/etc/solr-ssl.keystore.jks
 #SOLR_SSL_TRUST_STORE_PASSWORD=secret
+#SOLR_SSL_TRUST_STORE_TYPE=JKS
 #SOLR_SSL_NEED_CLIENT_AUTH=false
 #SOLR_SSL_WANT_CLIENT_AUTH=false
 
@@ -101,8 +109,10 @@
 # otherwise keep them commented and the above values will automatically be set for HTTP clients
 #SOLR_SSL_CLIENT_KEY_STORE=
 #SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
+#SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 #SOLR_SSL_CLIENT_TRUST_STORE=
 #SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
+#SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
 # Settings for authentication
 #SOLR_AUTHENTICATION_CLIENT_BUILDER=

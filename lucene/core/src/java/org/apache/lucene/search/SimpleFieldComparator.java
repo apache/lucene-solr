@@ -38,5 +38,5 @@ public abstract class SimpleFieldComparator<T> extends FieldComparator<T> implem
   }
 
   @Override
-  public void setScorer(Scorer scorer) {}
+  public void setScorer(Scorer scorer) throws IOException {}
 }

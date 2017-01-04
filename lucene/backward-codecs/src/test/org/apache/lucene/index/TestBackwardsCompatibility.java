@@ -25,13 +25,18 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,6 +67,8 @@ import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
@@ -157,12 +164,64 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for(int i=0;i<50;i++) {
       writer.addDocument(docs.nextDoc());
     }
+    docs.close();
     writer.close();
     dir.close();
 
     // Gives you time to copy the index out!: (there is also
     // a test option to not remove temp dir...):
     Thread.sleep(100000);
+  }
+
+  // ant test -Dtestcase=TestBackwardsCompatibility -Dtestmethod=testCreateSortedIndex -Dtests.codec=default -Dtests.useSecurityManager=false -Dtests.bwcdir=/tmp/sorted
+  public void testCreateSortedIndex() throws Exception {
+    
+    Path indexDir = getIndexDir().resolve("sorted");
+    Files.deleteIfExists(indexDir);
+    Directory dir = newFSDirectory(indexDir);
+
+    LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
+    mp.setNoCFSRatio(1.0);
+    mp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+
+    // TODO: remove randomness
+    IndexWriterConfig conf = new IndexWriterConfig(analyzer);
+    conf.setMergePolicy(mp);
+    conf.setUseCompoundFile(false);
+    conf.setIndexSort(new Sort(new SortField("dateDV", SortField.Type.LONG, true)));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    LineFileDocs docs = new LineFileDocs(random());
+    SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
+    parser.setTimeZone(TimeZone.getTimeZone("UTC"));
+    ParsePosition position = new ParsePosition(0);
+    Field dateDVField = null;
+    for(int i=0;i<50;i++) {
+      Document doc = docs.nextDoc();
+      String dateString = doc.get("date");
+      
+      position.setIndex(0);
+      Date date = parser.parse(dateString, position);
+      if (position.getErrorIndex() != -1) {
+        throw new AssertionError("failed to parse \"" + dateString + "\" as date");
+      }
+      if (position.getIndex() != dateString.length()) {
+        throw new AssertionError("failed to parse \"" + dateString + "\" as date");
+      }
+      if (dateDVField == null) {
+        dateDVField = new NumericDocValuesField("dateDV", 0l);
+        doc.add(dateDVField);
+      }
+      dateDVField.setLongValue(date.getTime());
+      if (i == 250) {
+        writer.commit();
+      }      
+      writer.addDocument(doc);
+    }
+    writer.forceMerge(1);
+    writer.close();
+    dir.close();
   }
   
   private void updateNumeric(IndexWriter writer, String id, String f, String cf, long value) throws IOException {
@@ -230,7 +289,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "6.2.0-cfs",
     "6.2.0-nocfs",
     "6.2.1-cfs",
-    "6.2.1-nocfs"
+    "6.2.1-nocfs",
+    "6.3.0-cfs",
+    "6.3.0-nocfs"
   };
   
   final String[] unsupportedNames = {
@@ -1477,6 +1538,30 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       writer.addDocument(new Document());
       writer.commit();
       writer.close();
+      dir.close();
+    }
+  }
+
+  public void testSortedIndex() throws Exception {
+    String[] versions = new String[] {"6.2.0", "6.2.1", "6.3.0"};
+    for(String version : versions) {
+      Path path = createTempDir("sorted");
+      InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream("sorted." + version + ".zip");
+      assertNotNull("Sorted index index " + version + " not found", resource);
+      TestUtil.unzip(resource, path);
+
+      // TODO: more tests
+      Directory dir = newFSDirectory(path);
+
+      DirectoryReader reader = DirectoryReader.open(dir);
+      assertEquals(1, reader.leaves().size());
+      Sort sort = reader.leaves().get(0).reader().getIndexSort();
+      assertNotNull(sort);
+      assertEquals("<long: \"dateDV\">!", sort.toString());
+      reader.close();
+
+      // this will confirm the docs really are sorted:
+      TestUtil.checkIndex(dir);
       dir.close();
     }
   }

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import com.google.common.base.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -34,6 +33,7 @@ import java.io.File;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Properties;
@@ -64,7 +64,7 @@ public class TestBinaryField extends SolrJettyTestBase {
     FileUtils.copyFile(new File(src_dir, "solrconfig.snippet.randomindexconfig.xml"), 
                        new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
 
-    try (Writer w = new OutputStreamWriter(Files.newOutputStream(collDir.toPath().resolve("core.properties")), Charsets.UTF_8)) {
+    try (Writer w = new OutputStreamWriter(Files.newOutputStream(collDir.toPath().resolve("core.properties")), StandardCharsets.UTF_8)) {
       Properties coreProps = new Properties();
       coreProps.put("name", "collection1");
       coreProps.store(w, "");

@@ -24,6 +24,8 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.MetricsDirectoryFactory;
 import org.apache.solr.core.MockFSDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
@@ -75,7 +77,13 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
     try (SolrCore core = cores.getCore("collection1")) {
-      FailingDirectoryFactory dirFactory = (FailingDirectoryFactory)core.getDirectoryFactory();
+      DirectoryFactory df = core.getDirectoryFactory();
+      FailingDirectoryFactory dirFactory;
+      if (df instanceof MetricsDirectoryFactory) {
+        dirFactory = (FailingDirectoryFactory)((MetricsDirectoryFactory)df).getDelegate();
+      } else {
+        dirFactory = (FailingDirectoryFactory)df;
+      }
 
       try {
         dirFactory.fail = true;

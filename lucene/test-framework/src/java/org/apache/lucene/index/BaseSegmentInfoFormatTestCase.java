@@ -28,6 +28,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSortField;
+import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -167,6 +169,78 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     return true;
   }
 
+  private SortField randomIndexSortField() {
+    boolean reversed = random().nextBoolean();
+    SortField sortField;
+    switch(random().nextInt(10)) {
+      case 0:
+        sortField = new SortField(TestUtil.randomSimpleString(random()), SortField.Type.INT, reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(random().nextInt());
+        }
+        break;
+      case 1:
+        sortField = new SortedNumericSortField(TestUtil.randomSimpleString(random()), SortField.Type.INT, reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(random().nextInt());
+        }
+        break;
+
+      case 2:
+        sortField = new SortField(TestUtil.randomSimpleString(random()), SortField.Type.LONG, reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(random().nextLong());
+        }
+        break;
+      case 3:
+        sortField = new SortedNumericSortField(TestUtil.randomSimpleString(random()), SortField.Type.LONG, reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(random().nextLong());
+        }
+        break;
+      case 4:
+        sortField = new SortField(TestUtil.randomSimpleString(random()), SortField.Type.FLOAT, reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(random().nextFloat());
+        }
+        break;
+      case 5:
+        sortField = new SortedNumericSortField(TestUtil.randomSimpleString(random()), SortField.Type.FLOAT, reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(random().nextFloat());
+        }
+        break;
+      case 6:
+        sortField = new SortField(TestUtil.randomSimpleString(random()), SortField.Type.DOUBLE, reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(random().nextDouble());
+        }
+        break;
+      case 7:
+        sortField = new SortedNumericSortField(TestUtil.randomSimpleString(random()), SortField.Type.DOUBLE, reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(random().nextDouble());
+        }
+        break;
+      case 8:
+        sortField = new SortField(TestUtil.randomSimpleString(random()), SortField.Type.STRING, reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(SortField.STRING_LAST);
+        }
+        break;
+      case 9:
+        sortField = new SortedSetSortField(TestUtil.randomSimpleString(random()), reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(SortField.STRING_LAST);
+        }
+        break;
+      default:
+        sortField = null;
+        fail();
+    }
+    return sortField;
+  }
+
   /** Test sort */
   public void testSort() throws IOException {
     assumeTrue("test requires a codec that can read/write index sort", supportsIndexSort());
@@ -180,22 +254,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
         final int numSortFields = TestUtil.nextInt(random(), 1, 3);
         SortField[] sortFields = new SortField[numSortFields];
         for (int j = 0; j < numSortFields; ++j) {
-          sortFields[j] = new SortField(
-              TestUtil.randomSimpleString(random()),
-              random().nextBoolean() ? SortField.Type.LONG : SortField.Type.STRING,
-              random().nextBoolean());
-          if (random().nextBoolean()) {
-            switch (sortFields[j].getType()) {
-              case LONG:
-                sortFields[j].setMissingValue(random().nextLong());
-                break;
-              case STRING:
-                sortFields[j].setMissingValue(random().nextBoolean() ? SortField.STRING_FIRST : SortField.STRING_LAST);
-                break;
-              default:
-                fail();
-            }
-          }
+          sortFields[j] = randomIndexSortField();
         }
         sort = new Sort(sortFields);
       }

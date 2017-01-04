@@ -21,8 +21,10 @@ import java.nio.charset.StandardCharsets;
 import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -30,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -57,7 +60,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
@@ -116,12 +118,14 @@ public class UnifiedHighlighter {
 
   private boolean defaultHighlightPhrasesStrictly = true; // AKA "accuracy" or "query debugging"
 
-  // private boolean defaultRequireFieldMatch = true; TODO
+  private boolean defaultPassageRelevancyOverSpeed = true; //For analysis, prefer MemoryIndexOffsetStrategy
 
   private int maxLength = DEFAULT_MAX_LENGTH;
 
   // BreakIterator is stateful so we use a Supplier factory method
   private Supplier<BreakIterator> defaultBreakIterator = () -> BreakIterator.getSentenceInstance(Locale.ROOT);
+
+  private Predicate<String> defaultFieldMatcher;
 
   private PassageScorer defaultScorer = new PassageScorer();
 
@@ -137,8 +141,8 @@ public class UnifiedHighlighter {
   /**
    * Calls {@link Weight#extractTerms(Set)} on an empty index for the query.
    */
-  protected static SortedSet<Term> extractTerms(Query query) throws IOException {
-    SortedSet<Term> queryTerms = new TreeSet<>();
+  protected static Set<Term> extractTerms(Query query) throws IOException {
+    Set<Term> queryTerms = new HashSet<>();
     EMPTY_INDEXSEARCHER.createNormalizedWeight(query, false).extractTerms(queryTerms);
     return queryTerms;
   }
@@ -194,6 +198,10 @@ public class UnifiedHighlighter {
     this.cacheFieldValCharsThreshold = cacheFieldValCharsThreshold;
   }
 
+  public void setFieldMatcher(Predicate<String> predicate) {
+    this.defaultFieldMatcher = predicate;
+  }
+
   /**
    * Returns whether {@link MultiTermQuery} derivatives will be highlighted.  By default it's enabled.  MTQ
    * highlighting can be expensive, particularly when using offsets in postings.
@@ -210,6 +218,24 @@ public class UnifiedHighlighter {
    */
   protected boolean shouldHighlightPhrasesStrictly(String field) {
     return defaultHighlightPhrasesStrictly;
+  }
+
+
+  protected boolean shouldPreferPassageRelevancyOverSpeed(String field) {
+    return defaultPassageRelevancyOverSpeed;
+  }
+
+  /**
+   * Returns the predicate to use for extracting the query part that must be highlighted.
+   * By default only queries that target the current field are kept. (AKA requireFieldMatch)
+   */
+  protected Predicate<String> getFieldMatcher(String field) {
+    if (defaultFieldMatcher != null) {
+      return defaultFieldMatcher;
+    } else {
+      // requireFieldMatch = true
+      return (qf) -> field.equals(qf);
+    }
   }
 
   /**
@@ -539,7 +565,7 @@ public class UnifiedHighlighter {
     copyAndSortFieldsWithMaxPassages(fieldsIn, maxPassagesIn, fields, maxPassages); // latter 2 are "out" params
 
     // Init field highlighters (where most of the highlight logic lives, and on a per field basis)
-    SortedSet<Term> queryTerms = extractTerms(query);
+    Set<Term> queryTerms = extractTerms(query);
     FieldHighlighter[] fieldHighlighters = new FieldHighlighter[fields.length];
     int numTermVectors = 0;
     int numPostings = 0;
@@ -709,14 +735,19 @@ public class UnifiedHighlighter {
           getClass().getSimpleName() + " without an IndexSearcher.");
     }
     Objects.requireNonNull(content, "content is required");
-    SortedSet<Term> queryTerms = extractTerms(query);
+    Set<Term> queryTerms = extractTerms(query);
     return getFieldHighlighter(field, query, queryTerms, maxPassages)
         .highlightFieldForDoc(null, -1, content);
   }
 
-  protected FieldHighlighter getFieldHighlighter(String field, Query query, SortedSet<Term> allTerms, int maxPassages) {
+  protected FieldHighlighter getFieldHighlighter(String field, Query query, Set<Term> allTerms, int maxPassages) {
+    BytesRef[] terms = filterExtractedTerms(getFieldMatcher(field), allTerms);
+    Set<HighlightFlag> highlightFlags = getFlags(field);
+    PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
+    CharacterRunAutomaton[] automata = getAutomata(field, query, highlightFlags);
+    OffsetSource offsetSource = getOptimizedOffsetSource(field, terms, phraseHelper, automata);
     return new FieldHighlighter(field,
-        getOffsetStrategy(field, query, allTerms),
+        getOffsetStrategy(offsetSource, field, terms, phraseHelper, automata, highlightFlags),
         new SplittingBreakIterator(getBreakIterator(field), UnifiedHighlighter.MULTIVAL_SEP_CHAR),
         getScorer(field),
         maxPassages,
@@ -724,74 +755,52 @@ public class UnifiedHighlighter {
         getFormatter(field));
   }
 
-  protected FieldOffsetStrategy getOffsetStrategy(String field, Query query, SortedSet<Term> allTerms) {
-    EnumSet<HighlightFlag> highlightFlags = getFlags(field);
-    BytesRef[] terms = filterExtractedTerms(field, allTerms);
-    PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
-    CharacterRunAutomaton[] automata = getAutomata(field, query, highlightFlags);
-    OffsetSource offsetSource = getOptimizedOffsetSource(field, terms, phraseHelper, automata);
-    switch (offsetSource) {
-      case ANALYSIS:
-        return new AnalysisOffsetStrategy(field, terms, phraseHelper, automata, getIndexAnalyzer());
-      case NONE_NEEDED:
-        return NoOpOffsetStrategy.INSTANCE;
-      case TERM_VECTORS:
-        return new TermVectorOffsetStrategy(field, terms, phraseHelper, automata);
-      case POSTINGS:
-        return new PostingsOffsetStrategy(field, terms, phraseHelper, automata);
-      case POSTINGS_WITH_TERM_VECTORS:
-        return new PostingsWithTermVectorsOffsetStrategy(field, terms, phraseHelper, automata);
-      default:
-        throw new IllegalArgumentException("Unrecognized offset source " + offsetSource);
+  protected static BytesRef[] filterExtractedTerms(Predicate<String> fieldMatcher, Set<Term> queryTerms) {
+    // Strip off the redundant field and sort the remaining terms
+    SortedSet<BytesRef> filteredTerms = new TreeSet<>();
+    for (Term term : queryTerms) {
+      if (fieldMatcher.test(term.field())) {
+        filteredTerms.add(term.bytes());
+      }
     }
+    return filteredTerms.toArray(new BytesRef[filteredTerms.size()]);
   }
 
-  protected EnumSet<HighlightFlag> getFlags(String field) {
-    EnumSet<HighlightFlag> highlightFlags = EnumSet.noneOf(HighlightFlag.class);
+  protected Set<HighlightFlag> getFlags(String field) {
+    Set<HighlightFlag> highlightFlags = EnumSet.noneOf(HighlightFlag.class);
     if (shouldHandleMultiTermQuery(field)) {
       highlightFlags.add(HighlightFlag.MULTI_TERM_QUERY);
     }
     if (shouldHighlightPhrasesStrictly(field)) {
       highlightFlags.add(HighlightFlag.PHRASES);
     }
+    if (shouldPreferPassageRelevancyOverSpeed(field)) {
+      highlightFlags.add(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED);
+    }
     return highlightFlags;
   }
 
-  protected BytesRef[] filterExtractedTerms(String field, SortedSet<Term> queryTerms) {
-    // TODO consider requireFieldMatch
-    Term floor = new Term(field, "");
-    Term ceiling = new Term(field, UnicodeUtil.BIG_TERM);
-    SortedSet<Term> fieldTerms = queryTerms.subSet(floor, ceiling);
-
-    // Strip off the redundant field:
-    BytesRef[] terms = new BytesRef[fieldTerms.size()];
-    int termUpto = 0;
-    for (Term term : fieldTerms) {
-      terms[termUpto++] = term.bytes();
-    }
-    return terms;
-  }
-
-  protected PhraseHelper getPhraseHelper(String field, Query query, EnumSet<HighlightFlag> highlightFlags) {
+  protected PhraseHelper getPhraseHelper(String field, Query query, Set<HighlightFlag> highlightFlags) {
     boolean highlightPhrasesStrictly = highlightFlags.contains(HighlightFlag.PHRASES);
     boolean handleMultiTermQuery = highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY);
     return highlightPhrasesStrictly ?
-        new PhraseHelper(query, field, this::requiresRewrite, !handleMultiTermQuery) :
-        PhraseHelper.NONE;
+        new PhraseHelper(query, field, getFieldMatcher(field),
+            this::requiresRewrite, this::preSpanQueryRewrite, !handleMultiTermQuery) : PhraseHelper.NONE;
   }
 
-  protected CharacterRunAutomaton[] getAutomata(String field, Query query, EnumSet<HighlightFlag> highlightFlags) {
+  protected CharacterRunAutomaton[] getAutomata(String field, Query query, Set<HighlightFlag> highlightFlags) {
     return highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)
-        ? MultiTermHighlighting.extractAutomata(query, field, !highlightFlags.contains(HighlightFlag.PHRASES))
+        ? MultiTermHighlighting.extractAutomata(query, getFieldMatcher(field), !highlightFlags.contains(HighlightFlag.PHRASES), this::preMultiTermQueryRewrite)
         : ZERO_LEN_AUTOMATA_ARRAY;
   }
 
   protected OffsetSource getOptimizedOffsetSource(String field, BytesRef[] terms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
+    OffsetSource offsetSource = getOffsetSource(field);
+
     if (terms.length == 0 && automata.length == 0 && !phraseHelper.willRewrite()) {
       return OffsetSource.NONE_NEEDED; //nothing to highlight
     }
 
-    OffsetSource offsetSource = getOffsetSource(field);
     switch (offsetSource) {
       case POSTINGS:
         if (phraseHelper.willRewrite()) {
@@ -819,6 +828,32 @@ public class UnifiedHighlighter {
     return offsetSource;
   }
 
+  protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, String field, BytesRef[] terms,
+                                                  PhraseHelper phraseHelper, CharacterRunAutomaton[] automata,
+                                                  Set<HighlightFlag> highlightFlags) {
+    switch (offsetSource) {
+      case ANALYSIS:
+        if (!phraseHelper.hasPositionSensitivity() &&
+            !highlightFlags.contains(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED)) {
+          //skip using a memory index since it's pure term filtering
+          return new TokenStreamOffsetStrategy(field, terms, phraseHelper, automata, getIndexAnalyzer());
+        } else {
+          return new MemoryIndexOffsetStrategy(field, getFieldMatcher(field), terms, phraseHelper, automata, getIndexAnalyzer(),
+              this::preMultiTermQueryRewrite);
+        }
+      case NONE_NEEDED:
+        return NoOpOffsetStrategy.INSTANCE;
+      case TERM_VECTORS:
+        return new TermVectorOffsetStrategy(field, terms, phraseHelper, automata);
+      case POSTINGS:
+        return new PostingsOffsetStrategy(field, terms, phraseHelper, automata);
+      case POSTINGS_WITH_TERM_VECTORS:
+        return new PostingsWithTermVectorsOffsetStrategy(field, terms, phraseHelper, automata);
+      default:
+        throw new IllegalArgumentException("Unrecognized offset source " + offsetSource);
+    }
+  }
+
   /**
    * When highlighting phrases accurately, we need to know which {@link SpanQuery}'s need to have
    * {@link Query#rewrite(IndexReader)} called on them.  It helps performance to avoid it if it's not needed.
@@ -827,6 +862,32 @@ public class UnifiedHighlighter {
    * return null to have the default rules apply, which govern the ones included in Lucene.
    */
   protected Boolean requiresRewrite(SpanQuery spanQuery) {
+    return null;
+  }
+
+  /**
+   * When highlighting phrases accurately, we may need to handle custom queries that aren't supported in the
+   * {@link org.apache.lucene.search.highlight.WeightedSpanTermExtractor} as called by the {@code PhraseHelper}.
+   * Should custom query types be needed, this method should be overriden to return a collection of queries if appropriate,
+   * or null if nothing to do. If the query is not custom, simply returning null will allow the default rules to apply.
+   *
+   * @param query Query to be highlighted
+   * @return A Collection of Query object(s) if needs to be rewritten, otherwise null.
+   */
+  protected Collection<Query> preSpanQueryRewrite(Query query) {
+    return null;
+  }
+
+  /**
+   * When dealing with multi term queries / span queries, we may need to handle custom queries that aren't supported
+   * by the default automata extraction in {@code MultiTermHighlighting}. This can be overridden to return a collection
+   * of queries if appropriate, or null if nothing to do. If query is not custom, simply returning null will allow the
+   * default rules to apply.
+   *
+   * @param query Query to be highlighted
+   * @return A Collection of Query object(s) if needst o be rewritten, otherwise null.
+   */
+  protected Collection<Query> preMultiTermQueryRewrite(Query query) {
     return null;
   }
 
@@ -1012,10 +1073,9 @@ public class UnifiedHighlighter {
    */
   public enum HighlightFlag {
     PHRASES,
-    MULTI_TERM_QUERY
+    MULTI_TERM_QUERY,
+    PASSAGE_RELEVANCY_OVER_SPEED
     // TODO: ignoreQueryFields
     // TODO: useQueryBoosts
-    // TODO: avoidMemoryIndexIfPossible
-    // TODO: preferMemoryIndexForStats
   }
 }

@@ -48,11 +48,9 @@ import org.junit.Test;
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class JdbcTest extends SolrCloudTestCase {
 
-  private static final String COLLECTION = "collection1";
+  private static final String COLLECTIONORALIAS = "collection1";
 
   private static final String id = "id";
-
-  private static final int TIMEOUT = 30;
 
   private static String zkHost;
 
@@ -62,9 +60,19 @@ public class JdbcTest extends SolrCloudTestCase {
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
 
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
+    String collection;
+    boolean useAlias = random().nextBoolean();
+    if (useAlias) {
+      collection = COLLECTIONORALIAS + "_collection";
+    } else {
+      collection = COLLECTIONORALIAS;
+    }
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
+        false, true, DEFAULT_TIMEOUT);
+    if (useAlias) {
+      CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
+    }
 
     new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1", "testnull_i", null)
@@ -77,7 +85,7 @@ public class JdbcTest extends SolrCloudTestCase {
         .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8", "testnull_i", "8")
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9", "testnull_i", null)
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10", "testnull_i", "10")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), collection);
 
     zkHost = cluster.getZkServer().getZkAddress();
   }
@@ -87,9 +95,9 @@ public class JdbcTest extends SolrCloudTestCase {
 
     Properties props = new Properties();
 
-    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1", props)) {
+    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i desc limit 2")) {
+        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i desc limit 2")) {
           assertTrue(rs.next());
 
           assertEquals(14, rs.getLong("a_i"));
@@ -112,7 +120,7 @@ public class JdbcTest extends SolrCloudTestCase {
         }
 
         //Test statement reuse
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc limit 2")) {
+        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i asc limit 2")) {
           assertTrue(rs.next());
 
           assertEquals(0, rs.getLong("a_i"));
@@ -137,7 +145,7 @@ public class JdbcTest extends SolrCloudTestCase {
 
       //Test connection reuse
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i desc limit 2")) {
+        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i desc limit 2")) {
           assertTrue(rs.next());
 
           assertEquals(14, rs.getLong("a_i"));
@@ -153,7 +161,7 @@ public class JdbcTest extends SolrCloudTestCase {
 
         //Test statement reuse
         stmt.setMaxRows(2);
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc")) {
+        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i asc")) {
           assertTrue(rs.next());
 
           assertEquals(0, rs.getLong("a_i"));
@@ -168,7 +176,7 @@ public class JdbcTest extends SolrCloudTestCase {
         }
 
         //Test simple loop. Since limit is set it will override the statement maxRows.
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc    LIMIT   100")) {
+        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i asc    LIMIT   100")) {
           int count = 0;
           while (rs.next()) {
             ++count;
@@ -186,9 +194,9 @@ public class JdbcTest extends SolrCloudTestCase {
     //Test facet aggregation
     Properties props = new Properties();
     props.put("aggregationMode", "facet");
-    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1", props)) {
+    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from collection1 group by a_s " +
+        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from " + COLLECTIONORALIAS + " group by a_s " +
             "order by sum(a_f) desc")) {
 
           assertTrue(rs.next());
@@ -226,9 +234,9 @@ public class JdbcTest extends SolrCloudTestCase {
     Properties props = new Properties();
     props.put("aggregationMode", "map_reduce");
     props.put("numWorkers", "2");
-    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1", props)) {
+    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from collection1 group by a_s " +
+        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from " + COLLECTIONORALIAS + " group by a_s " +
             "order by sum(a_f) desc")) {
 
           assertTrue(rs.next());
@@ -264,7 +272,7 @@ public class JdbcTest extends SolrCloudTestCase {
 
     //Test params on the url
     try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost +
-        "?collection=collection1&aggregationMode=map_reduce&numWorkers=2")) {
+        "?collection=" + COLLECTIONORALIAS + "&aggregationMode=map_reduce&numWorkers=2")) {
 
       Properties p = ((ConnectionImpl) con).getProperties();
 
@@ -272,7 +280,7 @@ public class JdbcTest extends SolrCloudTestCase {
       assert (p.getProperty("numWorkers").equals("2"));
 
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from collection1 group by a_s " +
+        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from " + COLLECTIONORALIAS + " group by a_s " +
             "order by sum(a_f) desc")) {
 
           assertTrue(rs.next());
@@ -308,7 +316,7 @@ public class JdbcTest extends SolrCloudTestCase {
 
     // Test JDBC paramters in URL
     try (Connection con = DriverManager.getConnection(
-        "jdbc:solr://" + zkHost + "?collection=collection1&username=&password=&testKey1=testValue&testKey2")) {
+        "jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS + "&username=&password=&testKey1=testValue&testKey2")) {
 
       Properties p = ((ConnectionImpl) con).getProperties();
       assertEquals("", p.getProperty("username"));
@@ -317,7 +325,7 @@ public class JdbcTest extends SolrCloudTestCase {
       assertEquals("", p.getProperty("testKey2"));
 
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from collection1 group by a_s " +
+        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from " + COLLECTIONORALIAS + " group by a_s " +
             "order by sum(a_f) desc")) {
 
           assertTrue(rs.next());
@@ -353,7 +361,7 @@ public class JdbcTest extends SolrCloudTestCase {
 
     // Test JDBC paramters in properties
     Properties providedProperties = new Properties();
-    providedProperties.put("collection", "collection1");
+    providedProperties.put("collection", COLLECTIONORALIAS);
     providedProperties.put("username", "");
     providedProperties.put("password", "");
     providedProperties.put("testKey1", "testValue");
@@ -367,7 +375,7 @@ public class JdbcTest extends SolrCloudTestCase {
       assert (p.getProperty("testKey2").equals(""));
 
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from collection1 group by a_s " +
+        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from " + COLLECTIONORALIAS + " group by a_s " +
             "order by sum(a_f) desc")) {
 
           assertTrue(rs.next());
@@ -402,9 +410,9 @@ public class JdbcTest extends SolrCloudTestCase {
     //Test error propagation
     Properties props = new Properties();
     props.put("aggregationMode", "facet");
-    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1", props)) {
+    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select crap from collection1 group by a_s " +
+        try (ResultSet rs = stmt.executeQuery("select crap from " + COLLECTIONORALIAS + " group by a_s " +
             "order by sum(a_f) desc")) {
         } catch (Exception e) {
           String errorMessage = e.getMessage();
@@ -416,7 +424,7 @@ public class JdbcTest extends SolrCloudTestCase {
 
   @Test
   public void testSQLExceptionThrownWhenQueryAndConnUseDiffCollections() throws Exception  {
-    String badCollection = COLLECTION + "bad";
+    String badCollection = COLLECTIONORALIAS + "bad";
     String connectionString = "jdbc:solr://" + zkHost + "?collection=" + badCollection;
     String sql = "select id, a_i, a_s, a_f from " + badCollection + " order by a_i desc limit 2";
 
@@ -434,7 +442,7 @@ public class JdbcTest extends SolrCloudTestCase {
 
   @Test
   public void testDriverMetadata() throws Exception {
-    String collection = COLLECTION;
+    String collection = COLLECTIONORALIAS;
 
     String connectionString1 = "jdbc:solr://" + zkHost + "?collection=" + collection +
         "&username=&password=&testKey1=testValue&testKey2";

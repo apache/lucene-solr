@@ -42,9 +42,9 @@ public class KerberosFilter extends AuthenticationFilter {
     super.initializeAuthHandler(authHandlerClassName, filterConfig);
     AuthenticationHandler authHandler = getAuthenticationHandler();
     super.initializeAuthHandler(
-        KerberosPlugin.RequestContinuesRecorderAuthenticationHandler.class.getName(), filterConfig);
-    KerberosPlugin.RequestContinuesRecorderAuthenticationHandler newAuthHandler =
-        (KerberosPlugin.RequestContinuesRecorderAuthenticationHandler)getAuthenticationHandler();
+        RequestContinuesRecorderAuthenticationHandler.class.getName(), filterConfig);
+    RequestContinuesRecorderAuthenticationHandler newAuthHandler =
+        (RequestContinuesRecorderAuthenticationHandler)getAuthenticationHandler();
     newAuthHandler.setAuthHandler(authHandler);
   }
 

@@ -45,12 +45,72 @@ set "SOLR_SSL_OPTS= "
 IF DEFINED SOLR_SSL_KEY_STORE (
   set "SOLR_JETTY_CONFIG=--module=https"
   set SOLR_URL_SCHEME=https
-  set "SCRIPT_ERROR=Solr server directory %SOLR_SERVER_DIR% not found!"
-  set "SOLR_SSL_OPTS=-Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE% -Dsolr.jetty.keystore.password=%SOLR_SSL_KEY_STORE_PASSWORD% -Dsolr.jetty.truststore=%SOLR_SSL_TRUST_STORE% -Dsolr.jetty.truststore.password=%SOLR_SSL_TRUST_STORE_PASSWORD% -Dsolr.jetty.ssl.needClientAuth=%SOLR_SSL_NEED_CLIENT_AUTH% -Dsolr.jetty.ssl.wantClientAuth=%SOLR_SSL_WANT_CLIENT_AUTH%"
-  IF DEFINED SOLR_SSL_CLIENT_KEY_STORE  (
-    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStore=%SOLR_SSL_CLIENT_KEY_STORE% -Djavax.net.ssl.keyStorePassword=%SOLR_SSL_CLIENT_KEY_STORE_PASSWORD% -Djavax.net.ssl.trustStore=%SOLR_SSL_CLIENT_TRUST_STORE% -Djavax.net.ssl.trustStorePassword=%SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD%"
+  set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE%"
+  IF DEFINED SOLR_SSL_KEY_STORE_PASSWORD (
+    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.keystore.password=%SOLR_SSL_KEY_STORE_PASSWORD%"
+  )
+  IF DEFINED SOLR_SSL_KEY_STORE_TYPE (
+    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.keystore.type=%SOLR_SSL_KEY_STORE_TYPE%"
+  )
+
+  IF DEFINED SOLR_SSL_TRUST_STORE (
+    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.truststore=%SOLR_SSL_TRUST_STORE%"
+  )
+  IF DEFINED SOLR_SSL_TRUST_STORE_PASSWORD (
+    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.truststore.password=%SOLR_SSL_TRUST_STORE_PASSWORD%"
+  )
+  IF DEFINED SOLR_SSL_TRUST_STORE_TYPE (
+    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.truststore.type=%SOLR_SSL_TRUST_STORE_TYPE%"
+  )
+
+  IF DEFINED SOLR_SSL_NEED_CLIENT_AUTH (
+    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.ssl.needClientAuth=%SOLR_SSL_NEED_CLIENT_AUTH%"
+  )
+  IF DEFINED SOLR_SSL_WANT_CLIENT_AUTH (
+    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.ssl.wantClientAuth=%SOLR_SSL_WANT_CLIENT_AUTH%"
+  )
+
+  IF DEFINED SOLR_SSL_CLIENT_KEY_STORE (
+    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStore=%SOLR_SSL_CLIENT_KEY_STORE%"
+
+    IF DEFINED SOLR_SSL_CLIENT_KEY_STORE_PASSWORD (
+      set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStorePassword=%SOLR_SSL_CLIENT_KEY_STORE_PASSWORD%"
+    )
+    IF DEFINED SOLR_SSL_CLIENT_KEY_STORE_TYPE (
+      set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStoreType=%SOLR_SSL_CLIENT_KEY_STORE_TYPE%"
+    )
   ) ELSE (
-    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStore=%SOLR_SSL_KEY_STORE% -Djavax.net.ssl.keyStorePassword=%SOLR_SSL_KEY_STORE_PASSWORD% -Djavax.net.ssl.trustStore=%SOLR_SSL_TRUST_STORE% -Djavax.net.ssl.trustStorePassword=%SOLR_SSL_TRUST_STORE_PASSWORD%"
+    IF DEFINED SOLR_SSL_KEY_STORE (
+      set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStore=%SOLR_SSL_KEY_STORE%"
+    )
+    IF DEFINED SOLR_SSL_KEY_STORE_PASSWORD (
+      set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStorePassword=%SOLR_SSL_KEY_STORE_PASSWORD%"
+    )
+    IF DEFINED SOLR_SSL_KEY_STORE_TYPE (
+      set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStoreType=%SOLR_SSL_KEY_STORE_TYPE%"
+    )
+  )
+
+  IF DEFINED SOLR_SSL_CLIENT_TRUST_STORE (
+    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.trustStore=%SOLR_SSL_CLIENT_TRUST_STORE%"
+
+    IF DEFINED SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD (
+      set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.trustStorePassword=%SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD%"
+    )
+
+    IF DEFINED SOLR_SSL_CLIENT_TRUST_STORE_TYPE (
+      set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.trustStoreType=%SOLR_SSL_CLIENT_TRUST_STORE_TYPE%"
+    )
+  ) ELSE (
+    IF DEFINED SOLR_SSL_TRUST_STORE (
+     set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.trustStore=%SOLR_SSL_TRUST_STORE%"
+    )
+    IF DEFINED SOLR_SSL_TRUST_STORE_PASSWORD (
+     set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.trustStorePassword=%SOLR_SSL_TRUST_STORE_PASSWORD%"
+    )
+    IF DEFINED SOLR_SSL_TRUST_STORE_TYPE (
+     set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.trustStoreType=%SOLR_SSL_TRUST_STORE_TYPE%"
+    )
   )
 ) ELSE (
   set SOLR_SSL_OPTS=
@@ -208,7 +268,7 @@ goto done
 @echo.
 @echo   -p port       Specify the port to start the Solr HTTP listener on; default is 8983
 @echo.
-@echo   -d dir        Specify the Solr server directory; defaults to example
+@echo   -d dir        Specify the Solr server directory; defaults to server
 @echo.
 @echo   -z zkHost     Zookeeper connection string; only used when running in SolrCloud mode using -c
 @echo                   To launch an embedded Zookeeper instance, don't pass this parameter.
@@ -420,6 +480,13 @@ echo             ^<path^>: The Zookeeper path to use as the root.
 echo.
 echo             Only the node names are listed, not data
 echo.
+echo         mkroot makes a znode in Zookeeper with no data. Can be used to make a path of arbitrary
+echo                depth but primarily intended to create a 'chroot'."
+echo.
+echo             ^<path^>: The Zookeeper path to create. Leading slash is assumed if not present.
+echo                       Intermediate nodes are created as needed if not present.
+echo.
+
 goto done
 
 :zk_short_usage
@@ -432,6 +499,7 @@ echo         solr zk cp [-r] ^<src^> ^<dest^> [-z zkHost]
 echo         solr zk rm [-r] ^<path^> [-z zkHost]
 echo         solr zk mv ^<src^> ^<dest^> [-z zkHost]
 echo         solr zk ls [-r] ^<path^> [-z zkHost]
+echo         solr zk mkroot ^<path^> [-z zkHost]
 echo.
 IF "%ZK_FULL%"=="true" (
   goto zk_full_usage
@@ -1339,6 +1407,8 @@ IF "%1"=="-upconfig" (
   goto set_zk_op
 ) ELSE IF "%1"=="ls" (
   goto set_zk_op
+) ELSE IF "%1"=="mkroot" (
+  goto set_zk_op
 ) ELSE IF "%1"=="-n" (
   goto set_config_name
 ) ELSE IF "%1"=="-r" (
@@ -1361,7 +1431,6 @@ IF "%1"=="-upconfig" (
   if not "%~1"=="" (
     goto set_zk_src
   )
-  goto zk_usage
 ) ELSE IF "!ZK_DST!"=="" (
   IF "%ZK_OP%"=="cp" (
     goto set_zk_dst
@@ -1502,13 +1571,22 @@ IF "!ZK_OP!"=="upconfig" (
   org.apache.solr.util.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -path !ZK_SRC! -recurse !ZK_RECURSE!
 ) ELSE IF "!ZK_OP!"=="ls" (
   IF "%ZK_SRC"=="" (
-    set ERROR_MSG="Zookeeper path to remove must be specified when using the 'rm' command"
+    set ERROR_MSG="Zookeeper path to remove must be specified when using the 'ls' command"
     goto zk_short_usage
   )
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.util.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -path !ZK_SRC! -recurse !ZK_RECURSE!
+) ELSE IF "!ZK_OP!"=="mkroot" (
+  IF "%ZK_SRC"=="" (
+    set ERROR_MSG="Zookeeper path to create must be specified when using the 'mkroot' command"
+    goto zk_short_usage
+  )
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -path !ZK_SRC!
 ) ELSE (
   set ERROR_MSG="Unknown zk option !ZK_OP!"
   goto zk_short_usage
@@ -1572,11 +1650,7 @@ set JAVA_MAJOR_VERSION=0
 set JAVA_VERSION_INFO=
 set JAVA_BUILD=0
 
-"%JAVA%" -version 2>&1 | findstr /i "version" > javavers
-set /p JAVAVEROUT=<javavers
-del javavers
-
-for /f "tokens=3" %%a in ("!JAVAVEROUT!") do (
+FOR /f "usebackq tokens=3" %%a IN (`^""%JAVA%" -version 2^>^&1 ^| findstr "version"^"`) do (
   set JAVA_VERSION_INFO=%%a
   REM Remove surrounding quotes
   set JAVA_VERSION_INFO=!JAVA_VERSION_INFO:"=!
@@ -1597,13 +1671,8 @@ GOTO :eof
 
 REM Set which JVM vendor we have
 :resolve_java_vendor
-set "JAVA_VENDOR=Oracle"
-"%JAVA%" -version 2>&1 | findstr /i "IBM J9" > javares
-set /p JAVA_VENDOR_OUT=<javares
-del javares
-if NOT "%JAVA_VENDOR_OUT%" == "" (
-  set "JAVA_VENDOR=IBM J9"
-)
+"%JAVA%" -version 2>&1 | findstr /i "IBM J9" > nul
+if %ERRORLEVEL% == 1 ( set "JAVA_VENDOR=Oracle" ) else ( set "JAVA_VENDOR=IBM J9" )
 
 set JAVA_VENDOR_OUT=
 GOTO :eof

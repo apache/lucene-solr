@@ -66,9 +66,8 @@ public class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable {
   }
 
   BytesRef getTerm() throws IOException {
-    // the dp.getPayload thing is a hack -- see MultiTermHighlighting
-    return term != null ? term : postingsEnum.getPayload();
-    // We don't deepcopy() because in this hack we know we don't have to.
+    // TODO TokenStreamOffsetStrategy could override OffsetsEnum; then remove this hack here
+    return term != null ? term : postingsEnum.getPayload(); // abusing payload like this is a total hack!
   }
 
   boolean hasMorePositions() throws IOException {
@@ -76,6 +75,7 @@ public class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable {
   }
 
   void nextPosition() throws IOException {
+    assert hasMorePositions();
     pos++;
     postingsEnum.nextPosition();
   }
@@ -90,7 +90,8 @@ public class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable {
 
   @Override
   public void close() throws IOException {
-    if (postingsEnum instanceof Closeable) { // the one in MultiTermHighlighting is.
+    // TODO TokenStreamOffsetStrategy could override OffsetsEnum; then this base impl would be no-op.
+    if (postingsEnum instanceof Closeable) {
       ((Closeable) postingsEnum).close();
     }
   }

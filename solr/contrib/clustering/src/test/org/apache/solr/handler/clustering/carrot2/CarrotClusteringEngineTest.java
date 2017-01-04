@@ -17,6 +17,9 @@
 package org.apache.solr.handler.clustering.carrot2;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,9 +47,6 @@ import org.carrot2.clustering.lingo.LingoClusteringAlgorithm;
 import org.carrot2.core.LanguageCode;
 import org.carrot2.util.attribute.AttributeUtils;
 import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 /**
  *
@@ -211,7 +211,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     // stoplabels.mt, so we're expecting only one cluster with label "online".
     final List<NamedList<Object>> clusters = checkEngine(
         getClusteringEngine(engineName), 1, params);
-    assertEquals(getLabels(clusters.get(0)), ImmutableList.of("online"));
+    assertEquals(getLabels(clusters.get(0)), Collections.singletonList("online"));
   }
 
   @Test
@@ -226,7 +226,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     // only one cluster with label "online".
     final List<NamedList<Object>> clusters = checkEngine(
         getClusteringEngine("lexical-resource-check"), 1, params);
-    assertEquals(getLabels(clusters.get(0)), ImmutableList.of("online"));
+    assertEquals(getLabels(clusters.get(0)), Collections.singletonList("online"));
   }
 
   @Test
@@ -243,9 +243,8 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
     final List<NamedList<Object>> clusters = checkEngine(
         getClusteringEngine("lexical-resource-check"), 2, params);
-    assertEquals(ImmutableList.of("online"), getLabels(clusters.get(0)));
-    assertEquals(ImmutableList.of("solrownstopword"),
-        getLabels(clusters.get(1)));
+    assertEquals(Collections.singletonList("online"), getLabels(clusters.get(0)));
+    assertEquals(Collections.singletonList("solrownstopword"), getLabels(clusters.get(1)));
   }
   
   @Test
@@ -395,8 +394,8 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     ClusteringComponent comp = (ClusteringComponent) h.getCore().getSearchComponent("clustering-name-default");
     Map<String,SearchClusteringEngine> engines = getSearchClusteringEngines(comp);
     assertEquals(
-        Lists.newArrayList("stc", "default", "mock"),
-        Lists.newArrayList(engines.keySet()));
+        Arrays.asList("stc", "default", "mock"),
+        new ArrayList<>(engines.keySet()));
     assertEquals(
         LingoClusteringAlgorithm.class,
         ((CarrotClusteringEngine) engines.get(ClusteringEngine.DEFAULT_ENGINE_NAME)).getClusteringAlgorithmClass());
@@ -407,8 +406,8 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     ClusteringComponent comp = (ClusteringComponent) h.getCore().getSearchComponent("clustering-name-decl-order");
     Map<String,SearchClusteringEngine> engines = getSearchClusteringEngines(comp);
     assertEquals(
-        Lists.newArrayList("unavailable", "lingo", "stc", "mock", "default"),
-        Lists.newArrayList(engines.keySet()));
+        Arrays.asList("unavailable", "lingo", "stc", "mock", "default"),
+        new ArrayList<>(engines.keySet()));
     assertEquals(
         LingoClusteringAlgorithm.class,
         ((CarrotClusteringEngine) engines.get(ClusteringEngine.DEFAULT_ENGINE_NAME)).getClusteringAlgorithmClass());
@@ -419,8 +418,8 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     ClusteringComponent comp = (ClusteringComponent) h.getCore().getSearchComponent("clustering-name-dups");
     Map<String,SearchClusteringEngine> engines = getSearchClusteringEngines(comp);
     assertEquals(
-        Lists.newArrayList("", "default"),
-        Lists.newArrayList(engines.keySet()));
+        Arrays.asList("", "default"),
+        new ArrayList<>(engines.keySet()));
     assertEquals(
         MockClusteringAlgorithm.class,
         ((CarrotClusteringEngine) engines.get(ClusteringEngine.DEFAULT_ENGINE_NAME)).getClusteringAlgorithmClass());

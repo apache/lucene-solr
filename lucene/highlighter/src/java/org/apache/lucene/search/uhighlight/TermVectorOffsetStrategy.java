@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Terms;
@@ -51,18 +50,10 @@ public class TermVectorOffsetStrategy extends FieldOffsetStrategy {
       return Collections.emptyList();
     }
 
-    LeafReader leafReader = null;
-    if ((terms.length > 0) || strictPhrases.willRewrite()) {
-      leafReader = new TermVectorLeafReader(field, tvTerms);
-      docId = 0;
-    }
+    LeafReader leafReader = new TermVectorLeafReader(field, tvTerms);
+    docId = 0;
 
-    TokenStream tokenStream = null;
-    if (automata.length > 0) {
-      tokenStream = MultiTermHighlighting.uninvertAndFilterTerms(tvTerms, 0, automata, content.length());
-    }
-
-    return createOffsetsEnums(leafReader, docId, tokenStream);
+    return createOffsetsEnumsFromReader(leafReader, docId);
   }
 
 }

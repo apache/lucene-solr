@@ -411,13 +411,13 @@ public class SolrZkClient implements Closeable {
 
   public void makePath(String path, boolean failOnExists, boolean retryOnConnLoss) throws KeeperException,
       InterruptedException {
-    makePath(path, null, CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss);
+    makePath(path, null, CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss, 0);
   }
 
   public void makePath(String path, File file, boolean failOnExists, boolean retryOnConnLoss)
       throws IOException, KeeperException, InterruptedException {
     makePath(path, FileUtils.readFileToByteArray(file),
-        CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss);
+        CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss, 0);
   }
 
   public void makePath(String path, File file, boolean retryOnConnLoss) throws IOException,
@@ -463,21 +463,35 @@ public class SolrZkClient implements Closeable {
    */
   public void makePath(String path, byte[] data, CreateMode createMode,
       Watcher watcher, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
-    makePath(path, data, createMode, watcher, true, retryOnConnLoss);
+    makePath(path, data, createMode, watcher, true, retryOnConnLoss, 0);
   }
-
-
+  
   /**
    * Creates the path in ZooKeeper, creating each node as necessary.
    *
    * e.g. If <code>path=/solr/group/node</code> and none of the nodes, solr,
    * group, node exist, each will be created.
    *
+   * @param data to set on the last zkNode
+   */
+  public void makePath(String path, byte[] data, CreateMode createMode,
+      Watcher watcher, boolean failOnExists, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
+    makePath(path, data, createMode, watcher, failOnExists, retryOnConnLoss, 0);
+  }
+
+  /**
+   * Creates the path in ZooKeeper, creating each node as necessary.
+   *
+   * e.g. If <code>path=/solr/group/node</code> and none of the nodes, solr,
+   * group, node exist, each will be created.
+   * 
+   * skipPathParts will force the call to fail if the first skipPathParts do not exist already.
+   *
    * Note: retryOnConnLoss is only respected for the final node - nodes
    * before that are always retried on connection loss.
    */
   public void makePath(String path, byte[] data, CreateMode createMode,
-      Watcher watcher, boolean failOnExists, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
+      Watcher watcher, boolean failOnExists, boolean retryOnConnLoss, int skipPathParts) throws KeeperException, InterruptedException {
     log.debug("makePath: {}", path);
     boolean retry = true;
 
@@ -487,9 +501,12 @@ public class SolrZkClient implements Closeable {
     String[] paths = path.split("/");
     StringBuilder sbPath = new StringBuilder();
     for (int i = 0; i < paths.length; i++) {
-      byte[] bytes = null;
       String pathPiece = paths[i];
       sbPath.append("/" + pathPiece);
+      if (i < skipPathParts) {
+        continue;
+      }
+      byte[] bytes = null;
       final String currentPath = sbPath.toString();
       Object exists = exists(currentPath, watcher, retryOnConnLoss);
       if (exists == null || ((i == paths.length -1) && failOnExists)) {

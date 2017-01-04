@@ -61,18 +61,16 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
     String[] fields = rb.getGroupingSpec().getFields();
     String[] queries = rb.getGroupingSpec().getQueries();
     Sort sortWithinGroup = rb.getGroupingSpec().getSortWithinGroup();
-    if (sortWithinGroup == null) { // TODO prevent it from being null in the first place
-      sortWithinGroup = Sort.RELEVANCE;
-    }
+    assert sortWithinGroup != null;
 
     // If group.format=simple group.offset doesn't make sense
     int groupOffsetDefault;
     if (rb.getGroupingSpec().getResponseFormat() == Grouping.Format.simple || rb.getGroupingSpec().isMain()) {
       groupOffsetDefault = 0;
     } else {
-      groupOffsetDefault = rb.getGroupingSpec().getGroupOffset();
+      groupOffsetDefault = rb.getGroupingSpec().getWithinGroupOffset();
     }
-    int docsPerGroupDefault = rb.getGroupingSpec().getGroupLimit();
+    int docsPerGroupDefault = rb.getGroupingSpec().getWithinGroupLimit();
 
     Map<String, List<TopGroups<BytesRef>>> commandTopGroups = new HashMap<>();
     for (String field : fields) {

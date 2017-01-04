@@ -27,10 +27,10 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import com.google.common.base.Preconditions;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.common.SolrException;
@@ -84,8 +84,8 @@ public class SnapShooter {
   }
 
   private void initialize(BackupRepository backupRepo, SolrCore core, URI location, String snapshotName, String commitName) {
-    this.solrCore = Preconditions.checkNotNull(core);
-    this.backupRepo = Preconditions.checkNotNull(backupRepo);
+    this.solrCore = Objects.requireNonNull(core);
+    this.backupRepo = Objects.requireNonNull(backupRepo);
     this.baseSnapDirPath = location;
     this.snapshotName = snapshotName;
     if (snapshotName != null) {
@@ -111,7 +111,7 @@ public class SnapShooter {
   }
 
   public void validateDeleteSnapshot() {
-    Preconditions.checkNotNull(this.snapshotName);
+    Objects.requireNonNull(this.snapshotName);
 
     boolean dirFound = false;
     String[] paths;

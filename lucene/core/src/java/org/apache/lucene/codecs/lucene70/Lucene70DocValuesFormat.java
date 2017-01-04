@@ -146,9 +146,10 @@ public final class Lucene70DocValuesFormat extends DocValuesFormat {
   static final byte SORTED_SET = 3;
   static final byte SORTED_NUMERIC = 4;
 
-  // addressing uses 16k blocks
-  static final int MONOTONIC_BLOCK_SIZE = 16384;
   static final int DIRECT_MONOTONIC_BLOCK_SHIFT = 16;
+
+  static final int NUMERIC_BLOCK_SHIFT = 14;
+  static final int NUMERIC_BLOCK_SIZE = 1 << NUMERIC_BLOCK_SHIFT;
 
   static final int TERMS_DICT_BLOCK_SHIFT = 4;
   static final int TERMS_DICT_BLOCK_SIZE = 1 << TERMS_DICT_BLOCK_SHIFT;

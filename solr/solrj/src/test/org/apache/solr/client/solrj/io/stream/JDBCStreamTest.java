@@ -50,7 +50,7 @@ import org.junit.Test;
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
 public class JDBCStreamTest extends SolrCloudTestCase {
 
-  private static final String COLLECTION = "jdbc";
+  private static final String COLLECTIONORALIAS = "jdbc";
 
   private static final int TIMEOUT = 30;
 
@@ -62,9 +62,19 @@ public class JDBCStreamTest extends SolrCloudTestCase {
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
 
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
+    boolean useAlias = random().nextBoolean();
+    String collection;
+    if (useAlias) {
+      collection = COLLECTIONORALIAS + "_collection";
+    } else {
+      collection = COLLECTIONORALIAS;
+    }
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
         false, true, TIMEOUT);
+    if (useAlias) {
+      CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
+    }
   }
 
   @BeforeClass
@@ -99,7 +109,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
   public void cleanIndex() throws Exception {
     new UpdateRequest()
         .deleteByQuery("*:*")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
   }
 
   @Before
@@ -200,10 +210,10 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     new UpdateRequest()
         .add(id, "0", "code_s", "GB", "name_s", "Great Britian")
         .add(id, "1", "code_s", "CA", "name_s", "Canada")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
+      .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class);
     
     List<Tuple> tuples;
@@ -211,7 +221,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     // Simple 1
     TupleStream jdbcStream = new JDBCStream("jdbc:hsqldb:mem:.", "select CODE,COUNTRY_NAME from COUNTRIES order by CODE", new FieldComparator("CODE", ComparatorOrder.ASCENDING));
     TupleStream selectStream = new SelectStream(jdbcStream, new HashMap<String, String>(){{ put("CODE", "code_s"); put("COUNTRY_NAME", "name_s"); }});
-    TupleStream searchStream = factory.constructStream("search(" + COLLECTION + ", fl=\"code_s,name_s\",q=\"*:*\",sort=\"code_s asc\")");
+    TupleStream searchStream = factory.constructStream("search(" + COLLECTIONORALIAS + ", fl=\"code_s,name_s\",q=\"*:*\",sort=\"code_s asc\")");
     TupleStream mergeStream = new MergeStream(new FieldComparator("code_s", ComparatorOrder.ASCENDING), new TupleStream[]{selectStream,searchStream});
     
     tuples = getTuples(mergeStream);
@@ -225,7 +235,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
   public void testJDBCSolrInnerJoinExpression() throws Exception{
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
+      .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("select", SelectStream.class)
       .withFunctionName("innerJoin", InnerJoinStream.class)
@@ -262,7 +272,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
         .add(id, "8", "rating_f", "4", "personId_i", "18")
         .add(id, "9", "rating_f", "4.1", "personId_i", "19")
         .add(id, "10", "rating_f", "4.8", "personId_i", "20")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     String expression;
     TupleStream stream;
@@ -272,7 +282,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     expression =   
               "innerJoin("
             + "  select("
-            + "    search(" + COLLECTION + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
+            + "    search(" + COLLECTIONORALIAS + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
             + "    personId_i as personId,"
             + "    rating_f as rating"
             + "  ),"
@@ -299,7 +309,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
   public void testJDBCSolrInnerJoinExpressionWithProperties() throws Exception{
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
+      .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("select", SelectStream.class)
       .withFunctionName("innerJoin", InnerJoinStream.class)
@@ -336,25 +346,22 @@ public class JDBCStreamTest extends SolrCloudTestCase {
         .add(id, "8", "rating_f", "4", "personId_i", "18")
         .add(id, "9", "rating_f", "4.1", "personId_i", "19")
         .add(id, "10", "rating_f", "4.8", "personId_i", "20")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     String expression;
     TupleStream stream;
     List<Tuple> tuples;
     
-    // Basic test
-    // the test here is the setting of the property get_column_name=true. In hsqldb if this value is set to true then the use of an 
-    // as clause in a select will have no effect. As such even though we have PEOPLE.ID as PERSONID we will still expect the column
-    // name to come out as ID and not PERSONID
-    expression =   
+    // Basic test for no alias
+    expression =
               "innerJoin("
             + "  select("
-            + "    search(" + COLLECTION + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
+            + "    search(" + COLLECTIONORALIAS + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
             + "    personId_i as personId,"
             + "    rating_f as rating"
             + "  ),"
             + "  select("
-            + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID as PERSONID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\", get_column_name=true),"
+            + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"ID asc\"),"
             + "    ID as personId,"
             + "    NAME as personName,"
             + "    COUNTRY_NAME as country"
@@ -371,19 +378,16 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     assertOrderOf(tuples, "personName", "Emma","Grace","Hailey","Isabella","Lily","Madison","Mia","Natalie","Olivia","Samantha");
     assertOrderOf(tuples, "country", "Netherlands","United States","Netherlands","Netherlands","Netherlands","United States","United States","Netherlands","Netherlands","United States");
     
-    // Basic test
-    // the test here is the setting of the property get_column_name=false. In hsqldb if this value is set to false then the use of an 
-    // as clause in a select will have effect. As such we have PEOPLE.ID as PERSONID we will still expect the column name to come out 
-    // PERSONID and not ID
+    // Basic test for alias
     expression =   
               "innerJoin("
             + "  select("
-            + "    search(" + COLLECTION + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
+            + "    search(" + COLLECTIONORALIAS + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
             + "    personId_i as personId,"
             + "    rating_f as rating"
             + "  ),"
             + "  select("
-            + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID as PERSONID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"PERSONID asc\", get_column_name=false),"
+            + "    jdbc(connection=\"jdbc:hsqldb:mem:.\", sql=\"select PEOPLE.ID as PERSONID, PEOPLE.NAME, COUNTRIES.COUNTRY_NAME from PEOPLE inner join COUNTRIES on PEOPLE.COUNTRY_CODE = COUNTRIES.CODE order by PEOPLE.ID\", sort=\"PERSONID asc\"),"
             + "    PERSONID as personId,"
             + "    NAME as personName,"
             + "    COUNTRY_NAME as country"
@@ -405,7 +409,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
   public void testJDBCSolrInnerJoinRollupExpression() throws Exception{
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
+      .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("select", SelectStream.class)
       .withFunctionName("hashJoin", HashJoinStream.class)
@@ -448,7 +452,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
         .add(id, "6", "rating_f", "3", "personId_i", "16")
         .add(id, "7", "rating_f", "3", "personId_i", "17")
         .add(id, "10", "rating_f", "4.8", "personId_i", "20")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     String expression;
     TupleStream stream;
@@ -459,7 +463,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
               "rollup("
             + "  hashJoin("
             + "    hashed=select("
-            + "      search(" + COLLECTION + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
+            + "      search(" + COLLECTIONORALIAS + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
             + "      personId_i as personId,"
             + "      rating_f as rating"
             + "    ),"

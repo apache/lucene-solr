@@ -998,4 +998,22 @@ public class TestTermsEnum extends LuceneTestCase {
     }
     dir.close();
   }
+
+  // LUCENE-7576
+  public void testIntersectRegexp() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    doc.add(newStringField("field", "foobar", Field.Store.NO));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    Fields fields = MultiFields.getFields(r);
+    CompiledAutomaton automaton = new CompiledAutomaton(new RegExp("do_not_match_anything").toAutomaton());
+    Terms terms = fields.terms("field");
+    String message = expectThrows(IllegalArgumentException.class, () -> {terms.intersect(automaton, null);}).getMessage();
+    assertEquals("please use CompiledAutomaton.getTermsEnum instead", message);
+    r.close();
+    w.close();
+    d.close();
+  }
 }

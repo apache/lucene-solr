@@ -50,6 +50,9 @@ public interface MoreLikeThisParams
 
   // Do you want to include the original document in the results or not
   public final static String INTERESTING_TERMS = PREFIX + "interestingTerms";  // false,details,(list or true)
+
+  // the default doc count
+  public final static int DEFAULT_DOC_COUNT = 5;
   
   public enum TermStyle {
     NONE,

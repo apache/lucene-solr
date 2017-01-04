@@ -26,12 +26,14 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 
-/** Writes points to disk in a fixed-with format. */
-final class OfflinePointWriter implements PointWriter {
+/** Writes points to disk in a fixed-with format.
+ *
+ * @lucene.internal */
+public final class OfflinePointWriter implements PointWriter {
 
   final Directory tempDir;
-  final IndexOutput out;
-  final String name;
+  public final IndexOutput out;
+  public final String name;
   final int packedBytesLength;
   final boolean singleValuePerDoc;
   long count;

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Path;
@@ -30,12 +31,24 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.NamedList.NamedListEntry;
-import org.apache.solr.core.*;
+import org.apache.solr.core.CloudConfig;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.CorePropertiesLocator;
+import org.apache.solr.core.CoresLocator;
+import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
+import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -178,10 +191,17 @@ public class TestHarness extends BaseTestHarness {
         = new UpdateShardHandlerConfig(UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONS,
                                        UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONSPERHOST,
                                        30000, 30000);
+    // universal default metric reporter
+    Map<String,String> attributes = new HashMap<>();
+    attributes.put("name", "default");
+    attributes.put("class", SolrJmxReporter.class.getName());
+    PluginInfo defaultPlugin = new PluginInfo("reporter", attributes, null, null);
+
     return new NodeConfig.NodeConfigBuilder("testNode", loader)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
         .setCloudConfig(cloudConfig)
         .setUpdateShardHandlerConfig(updateShardHandlerConfig)
+        .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
         .build();
   }
 
@@ -311,10 +331,18 @@ public class TestHarness extends BaseTestHarness {
       if (rsp.getException() != null) {
         throw rsp.getException();
       }
-      StringWriter sw = new StringWriter(32000);
       QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-      responseWriter.write(sw,req,rsp);
-      return sw.toString();
+      if (responseWriter instanceof BinaryQueryResponseWriter) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(32000);
+        BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) responseWriter;
+        writer.write(byteArrayOutputStream, req, rsp);
+        return new String(byteArrayOutputStream.toByteArray(), "UTF-8");
+      } else {
+        StringWriter sw = new StringWriter(32000);
+        responseWriter.write(sw,req,rsp);
+        return sw.toString();
+      }
+
     } finally {
       req.close();
       SolrRequestInfo.clearRequestInfo();

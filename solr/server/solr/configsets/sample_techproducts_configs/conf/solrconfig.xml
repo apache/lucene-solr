@@ -81,6 +81,9 @@
   <lib dir="${solr.install.dir:../../../..}/contrib/langid/lib/" regex=".*\.jar" />
   <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-langid-\d.*\.jar" />
 
+  <lib dir="${solr.install.dir:../../../..}/contrib/ltr/lib/" regex=".*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" />
+
   <lib dir="${solr.install.dir:../../../..}/contrib/velocity/lib" regex=".*\.jar" />
   <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-velocity-\d.*\.jar" />
 
@@ -449,7 +452,10 @@
            initialSize - the initial capacity (number of entries) of
                the cache.  (see java.util.HashMap)
            autowarmCount - the number of entries to prepopulate from
-               and old cache.  
+               and old cache.
+           maxRamMB - the maximum amount of RAM (in MB) that this cache is allowed
+                      to occupy. Note that when this option is specified, the size
+                      and initialSize parameters are ignored.
       -->
     <filterCache class="solr.FastLRUCache"
                  size="512"
@@ -500,6 +506,23 @@
                         autowarmCount="128"
                         showItems="32" />
       -->
+
+    <!-- Feature Values Cache
+
+         Cache used by the Learning To Rank (LTR) contrib module.
+
+         You will need to set the solr.ltr.enabled system property
+         when running solr to run with ltr enabled:
+           -Dsolr.ltr.enabled=true
+
+         https://cwiki.apache.org/confluence/display/solr/Result+Reranking
+      -->
+    <cache enable="${solr.ltr.enabled:false}" name="QUERY_DOC_FV"
+           class="solr.search.LRUCache"
+           size="4096"
+           initialSize="2048"
+           autowarmCount="4096"
+           regenerator="solr.search.NoOpRegenerator" />
 
     <!-- Custom Cache
 
@@ -607,17 +630,6 @@
          will block until the first searcher is done warming.
       -->
     <useColdSearcher>false</useColdSearcher>
-
-    <!-- Max Warming Searchers
-         
-         Maximum number of searchers that may be warming in the
-         background concurrently.  An error is returned if this limit
-         is exceeded.
-
-         Recommend values of 1-2 for read-only slaves, higher for
-         masters w/o cache warming.
-      -->
-    <maxWarmingSearchers>2</maxWarmingSearchers>
 
   </query>
 
@@ -1594,8 +1606,19 @@
      <valueSourceParser name="myfunc" 
                         class="com.mycompany.MyValueSourceParser" />
     -->
-    
-  
+
+  <!--  LTR query parser
+
+        You will need to set the solr.ltr.enabled system property
+        when running solr to run with ltr enabled:
+          -Dsolr.ltr.enabled=true
+
+        https://cwiki.apache.org/confluence/display/solr/Result+Reranking
+
+        Query parser is used to rerank top docs with a provided model
+    -->
+  <queryParser enable="${solr.ltr.enabled:false}" name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin"/>
+
   <!-- Document Transformers
        http://wiki.apache.org/solr/DocTransformers
     -->
@@ -1619,5 +1642,22 @@
       EditorialMarkerFactory will do exactly that:
      <transformer name="qecBooster" class="org.apache.solr.response.transform.EditorialMarkerFactory" />
     -->
-    
+
+    <!--
+      LTR Transformer will encode the document features in the response. For each document the transformer
+      will add the features as an extra field in the response. The name of the field will be the
+      name of the transformer enclosed between brackets (in this case [features]).
+      In order to get the feature vector you will have to specify that you
+      want the field (e.g., fl="*,[features])
+
+      You will need to set the solr.ltr.enabled system property
+      when running solr to run with ltr enabled:
+        -Dsolr.ltr.enabled=true
+
+      https://cwiki.apache.org/confluence/display/solr/Result+Reranking
+      -->
+    <transformer enable="${solr.ltr.enabled:false}" name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
+      <str name="fvCacheName">QUERY_DOC_FV</str>
+    </transformer>
+
 </config>

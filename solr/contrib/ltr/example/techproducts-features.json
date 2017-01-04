@@ -1,0 +1,26 @@
+[
+{
+    "name":  "isInStock",
+    "class": "org.apache.solr.ltr.feature.FieldValueFeature",
+    "params": {
+        "field": "inStock"
+    }
+},
+{
+    "name":  "price",
+    "class": "org.apache.solr.ltr.feature.FieldValueFeature",
+    "params": {
+        "field": "price"
+    }
+},
+{
+    "name":"originalScore",
+    "class":"org.apache.solr.ltr.feature.OriginalScoreFeature",
+    "params":{}
+},
+{
+    "name" : "productNameMatchQuery",
+    "class" : "org.apache.solr.ltr.feature.SolrFeature",
+    "params" : { "q" : "{!field f=name}${user_query}" }
+}
+]

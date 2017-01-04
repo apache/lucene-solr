@@ -20,6 +20,8 @@ package org.apache.lucene.search.uhighlight;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.analysis.Analyzer;
@@ -56,6 +58,7 @@ import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -694,13 +697,13 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
             int pos = 0;
             for (Passage passage : passages) {
               // don't add ellipsis if its the first one, or if its connected.
-              if (passage.startOffset > pos && pos > 0) {
+              if (passage.getStartOffset() > pos && pos > 0) {
                 sb.append("... ");
               }
-              pos = passage.startOffset;
-              for (int i = 0; i < passage.numMatches; i++) {
-                int start = passage.matchStarts[i];
-                int end = passage.matchEnds[i];
+              pos = passage.getStartOffset();
+              for (int i = 0; i < passage.getNumMatches(); i++) {
+                int start = passage.getMatchStarts()[i];
+                int end = passage.getMatchEnds()[i];
                 // its possible to have overlapping terms
                 if (start > pos) {
                   sb.append(content, pos, start);
@@ -716,8 +719,8 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
                 }
               }
               // its possible a "term" from the analyzer could span a sentence boundary.
-              sb.append(content, pos, Math.max(pos, passage.endOffset));
-              pos = passage.endOffset;
+              sb.append(content, pos, Math.max(pos, passage.getEndOffset()));
+              pos = passage.getEndOffset();
             }
             return sb.toString();
           }
@@ -770,7 +773,40 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     ir.close();
   }
 
-  public void testTokenStreamIsClosed() throws IOException {
+  public void testWithMaxLenAndMultipleWildcardMatches() throws IOException {
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
+
+    Field body = new Field("body", "", fieldType);
+    Document doc = new Document();
+    doc.add(body);
+
+    //tests interleaving of multiple wildcard matches with the CompositePostingsEnum
+    //In this case the CompositePostingsEnum will have an underlying PostingsEnum that jumps form pos 1 to 9 for bravo
+    //and a second with position 2 for Bravado
+    body.setStringValue("Alpha Bravo Bravado foo foo foo. Foo foo Alpha Bravo");
+    iw.addDocument(doc);
+
+    IndexReader ir = iw.getReader();
+    iw.close();
+
+    IndexSearcher searcher = newSearcher(ir);
+    UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer);
+    highlighter.setMaxLength(32);//a little past first sentence
+
+    BooleanQuery query = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("body", "alpha")), BooleanClause.Occur.MUST)
+        .add(new PrefixQuery(new Term("body", "bra")), BooleanClause.Occur.MUST)
+        .build();
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+    String snippets[] = highlighter.highlight("body", query, topDocs, 2);//ask for 2 but we'll only get 1
+    assertArrayEquals(
+        new String[]{"<b>Alpha</b> <b>Bravo</b> <b>Bravado</b> foo foo foo."}, snippets
+    );
+
+    ir.close();
+  }
+
+  public void testTokenStreamIsClosed() throws Exception {
     // note: test is a derivative of testWithMaxLen()
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
 
@@ -825,8 +861,8 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
       if (fieldType == UHTestHelper.reanalysisType) {
         fail("Expecting EXPECTED IOException");
       }
-    } catch (IOException e) {
-      if (!e.getMessage().equals("EXPECTED")) {
+    } catch (Exception e) {
+      if (!e.getMessage().contains("EXPECTED")) {
         throw e;
       }
     }
@@ -931,6 +967,91 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     assertEquals(1, snippets.length);
     assertEquals("iterate insect ipswitch illinois indirect", snippets[0]);
     ir.close();
+  }
+
+  public void testCustomSpanQueryHighlighting() throws Exception {
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
+    Document doc = new Document();
+    doc.add(new Field("body", "alpha bravo charlie delta echo foxtrot golf hotel india juliet", fieldType));
+    doc.add(newTextField("id", "id", Field.Store.YES));
+
+    iw.addDocument(doc);
+    IndexReader ir = iw.getReader();
+    iw.close();
+
+    IndexSearcher searcher = newSearcher(ir);
+    UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer) {
+      @Override
+      protected List<Query> preMultiTermQueryRewrite(Query query) {
+        if (query instanceof MyWrapperSpanQuery) {
+          return Collections.singletonList(((MyWrapperSpanQuery) query).originalQuery);
+        }
+        return null;
+      }
+    };
+
+    int docId = searcher.search(new TermQuery(new Term("id", "id")), 1).scoreDocs[0].doc;
+
+    WildcardQuery wildcardQuery = new WildcardQuery(new Term("body", "foxtr*"));
+    SpanMultiTermQueryWrapper wildcardQueryWrapper = new SpanMultiTermQueryWrapper<>(wildcardQuery);
+
+    SpanQuery wrappedQuery = new MyWrapperSpanQuery(wildcardQueryWrapper);
+
+    BooleanQuery query = new BooleanQuery.Builder()
+        .add(wrappedQuery, BooleanClause.Occur.SHOULD)
+        .build();
+
+    int[] docIds = new int[]{docId};
+
+    String snippets[] = highlighter.highlightFields(new String[]{"body"}, query, docIds, new int[]{2}).get("body");
+    assertEquals(1, snippets.length);
+    assertEquals("alpha bravo charlie delta echo <b>foxtrot</b> golf hotel india juliet", snippets[0]);
+    ir.close();
+  }
+
+  private static class MyWrapperSpanQuery extends SpanQuery {
+
+    private final SpanQuery originalQuery;
+
+    private MyWrapperSpanQuery(SpanQuery originalQuery) {
+      this.originalQuery = Objects.requireNonNull(originalQuery);
+    }
+
+    @Override
+    public String getField() {
+      return originalQuery.getField();
+    }
+
+    @Override
+    public String toString(String field) {
+      return "(Wrapper[" + originalQuery.toString(field)+"])";
+    }
+
+    @Override
+    public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      return originalQuery.createWeight(searcher, needsScores, boost);
+    }
+
+    @Override
+    public Query rewrite(IndexReader reader) throws IOException {
+      Query newOriginalQuery = originalQuery.rewrite(reader);
+      if (newOriginalQuery != originalQuery) {
+        return new MyWrapperSpanQuery((SpanQuery)newOriginalQuery);
+      }
+      return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      return originalQuery.equals(((MyWrapperSpanQuery)o).originalQuery);
+    }
+
+    @Override
+    public int hashCode() {
+      return originalQuery.hashCode();
+    }
   }
 
 }

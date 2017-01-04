@@ -23,8 +23,10 @@ import java.util.List;
 
 /** Appends many points, and then at the end provides a {@link PointReader} to iterate
  *  those points.  This abstracts away whether we write to disk, or use simple arrays
- *  in heap. */
-interface PointWriter extends Closeable {
+ *  in heap.
+ *
+ *  @lucene.internal */
+public interface PointWriter extends Closeable {
   /** Add a new point */
   void append(byte[] packedValue, long ord, int docID) throws IOException;
 

@@ -59,7 +59,7 @@
     </target>
 
     <target name="get-enwiki" unless="enwiki.exists">
-        <get src="http://people.apache.org/~gsingers/wikipedia/enwiki-20070527-pages-articles.xml.bz2"
+        <get src="http://home.apache.org/~dsmiley/data/enwiki-20070527-pages-articles.xml.bz2"
              dest="temp/enwiki-20070527-pages-articles.xml.bz2"/>
     </target>
 
@@ -77,7 +77,7 @@
         <!-- note: latest data is at: http://download.geonames.org/export/dump/allCountries.zip
          and then randomize with: gsort -R -S 1500M file.txt > file_random.txt
          and then compress with: bzip2 -9 -k file_random.txt -->
-        <get src="http://people.apache.org/~dsmiley/data/geonames_20130921_randomOrder_allCountries.txt.bz2"
+      <get src="http://home.apache.org/~dsmiley/data/geonames_20130921_randomOrder_allCountries.txt.bz2"
              dest="temp/allCountries.txt.bz2"/>
     </target>
 
@@ -140,7 +140,7 @@
   <property name="top.100k.words.archive.filename" 
             value="top.100k.words.de.en.fr.uk.wikipedia.2009-11.tar.bz2"/>
   <property name="top.100k.words.archive.base.url"
-            value="http://people.apache.org/~rmuir/wikipedia"/>
+            value="http://home.apache.org/~rmuir/wikipedia"/>
   <target name="get-top-100k-words-archive" unless="top.100k.words.archive.present">
     <mkdir dir="temp"/>
       <get src="${top.100k.words.archive.base.url}/${top.100k.words.archive.filename}"

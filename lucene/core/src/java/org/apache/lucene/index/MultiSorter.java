@@ -33,7 +33,9 @@ import org.apache.lucene.util.packed.PackedLongValues;
 final class MultiSorter {
   
   /** Does a merge sort of the leaves of the incoming reader, returning {@link DocMap} to map each leaf's
-   *  documents into the merged segment.  The documents for each incoming leaf reader must already be sorted by the same sort! */
+   *  documents into the merged segment.  The documents for each incoming leaf reader must already be sorted by the same sort!
+   *  Returns null if the merge sort is not needed (segments are already in index sort order).
+   **/
   static MergeState.DocMap[] sort(Sort sort, List<CodecReader> readers) throws IOException {
 
     // TODO: optimize if only 1 reader is incoming, though that's a rare case
@@ -80,8 +82,15 @@ final class MultiSorter {
 
     // merge sort:
     int mappedDocID = 0;
+    int lastReaderIndex = 0;
+    boolean isSorted = true;
     while (queue.size() != 0) {
       LeafAndDocID top = queue.top();
+      if (lastReaderIndex > top.readerIndex) {
+        // merge sort is needed
+        isSorted = false;
+      }
+      lastReaderIndex = top.readerIndex;
       builders[top.readerIndex].add(mappedDocID);
       if (top.liveDocs == null || top.liveDocs.get(top.docID)) {
         mappedDocID++;
@@ -96,6 +105,9 @@ final class MultiSorter {
       } else {
         queue.pop();
       }
+    }
+    if (isSorted) {
+      return null;
     }
 
     MergeState.DocMap[] docMaps = new MergeState.DocMap[leafCount];
@@ -141,33 +153,25 @@ final class MultiSorter {
   private static ComparableProvider[] getComparableProviders(List<CodecReader> readers, SortField sortField) throws IOException {
 
     ComparableProvider[] providers = new ComparableProvider[readers.size()];
+    final int reverseMul = sortField.getReverse() ? -1 : 1;
+    final SortField.Type sortType = Sorter.getSortFieldType(sortField);
 
-    switch(sortField.getType()) {
+    switch(sortType) {
 
     case STRING:
       {
         // this uses the efficient segment-local ordinal map:
         final SortedDocValues[] values = new SortedDocValues[readers.size()];
         for(int i=0;i<readers.size();i++) {
-          SortedDocValues v = readers.get(i).getSortedDocValues(sortField.getField());
-          if (v == null) {
-            v = DocValues.emptySorted();
-          }
-          values[i] = v;
+          final SortedDocValues sorted = Sorter.getOrWrapSorted(readers.get(i), sortField);
+          values[i] = sorted;
         }
         MultiDocValues.OrdinalMap ordinalMap = MultiDocValues.OrdinalMap.build(null, values, PackedInts.DEFAULT);
         final int missingOrd;
         if (sortField.getMissingValue() == SortField.STRING_LAST) {
-          missingOrd = Integer.MAX_VALUE;
+          missingOrd = sortField.getReverse() ? Integer.MIN_VALUE : Integer.MAX_VALUE;
         } else {
-          missingOrd = Integer.MIN_VALUE;
-        }
-
-        final int reverseMul;
-        if (sortField.getReverse()) {
-          reverseMul = -1;
-        } else {
-          reverseMul = 1;
+          missingOrd = sortField.getReverse() ? Integer.MAX_VALUE : Integer.MIN_VALUE;
         }
 
         for(int readerIndex=0;readerIndex<readers.size();readerIndex++) {
@@ -205,13 +209,6 @@ final class MultiSorter {
 
     case LONG:
       {
-        final int reverseMul;
-        if (sortField.getReverse()) {
-          reverseMul = -1;
-        } else {
-          reverseMul = 1;
-        }
-
         final Long missingValue;
         if (sortField.getMissingValue() != null) {
           missingValue = (Long) sortField.getMissingValue();
@@ -220,8 +217,8 @@ final class MultiSorter {
         }
 
         for(int readerIndex=0;readerIndex<readers.size();readerIndex++) {
-          final NumericDocValues values = DocValues.getNumeric(readers.get(readerIndex), sortField.getField());
-          
+          final NumericDocValues values = Sorter.getOrWrapNumeric(readers.get(readerIndex), sortField);
+
           providers[readerIndex] = new ComparableProvider() {
               // used only by assert:
               int lastDocID = -1;
@@ -243,7 +240,7 @@ final class MultiSorter {
                 if (readerDocID == docID) {
                   return reverseMul * values.longValue();
                 } else {
-                  return missingValue;
+                  return reverseMul * missingValue;
                 }
               }
             };
@@ -253,13 +250,6 @@ final class MultiSorter {
 
     case INT:
       {
-        final int reverseMul;
-        if (sortField.getReverse()) {
-          reverseMul = -1;
-        } else {
-          reverseMul = 1;
-        }
-
         final Integer missingValue;
         if (sortField.getMissingValue() != null) {
           missingValue = (Integer) sortField.getMissingValue();
@@ -268,7 +258,7 @@ final class MultiSorter {
         }
 
         for(int readerIndex=0;readerIndex<readers.size();readerIndex++) {
-          final NumericDocValues values = DocValues.getNumeric(readers.get(readerIndex), sortField.getField());
+          final NumericDocValues values = Sorter.getOrWrapNumeric(readers.get(readerIndex), sortField);
 
           providers[readerIndex] = new ComparableProvider() {
               // used only by assert:
@@ -291,7 +281,7 @@ final class MultiSorter {
                 if (readerDocID == docID) {
                   return reverseMul * (int) values.longValue();
                 } else {
-                  return missingValue;
+                  return reverseMul * missingValue;
                 }
               }
             };
@@ -301,13 +291,6 @@ final class MultiSorter {
 
     case DOUBLE:
       {
-        final int reverseMul;
-        if (sortField.getReverse()) {
-          reverseMul = -1;
-        } else {
-          reverseMul = 1;
-        }
-
         final Double missingValue;
         if (sortField.getMissingValue() != null) {
           missingValue = (Double) sortField.getMissingValue();
@@ -316,7 +299,7 @@ final class MultiSorter {
         }
 
         for(int readerIndex=0;readerIndex<readers.size();readerIndex++) {
-          final NumericDocValues values = DocValues.getNumeric(readers.get(readerIndex), sortField.getField());
+          final NumericDocValues values = Sorter.getOrWrapNumeric(readers.get(readerIndex), sortField);
 
           providers[readerIndex] = new ComparableProvider() {
               // used only by assert:
@@ -339,7 +322,7 @@ final class MultiSorter {
                 if (readerDocID == docID) {
                   return reverseMul * Double.longBitsToDouble(values.longValue());
                 } else {
-                  return missingValue;
+                  return reverseMul * missingValue;
                 }
               }
             };
@@ -349,13 +332,6 @@ final class MultiSorter {
 
     case FLOAT:
       {
-        final int reverseMul;
-        if (sortField.getReverse()) {
-          reverseMul = -1;
-        } else {
-          reverseMul = 1;
-        }
-
         final Float missingValue;
         if (sortField.getMissingValue() != null) {
           missingValue = (Float) sortField.getMissingValue();
@@ -364,7 +340,7 @@ final class MultiSorter {
         }
 
         for(int readerIndex=0;readerIndex<readers.size();readerIndex++) {
-          final NumericDocValues values = DocValues.getNumeric(readers.get(readerIndex), sortField.getField());
+          final NumericDocValues values = Sorter.getOrWrapNumeric(readers.get(readerIndex), sortField);
 
           providers[readerIndex] = new ComparableProvider() {
               // used only by assert:
@@ -387,7 +363,7 @@ final class MultiSorter {
                 if (readerDocID == docID) {
                   return reverseMul * Float.intBitsToFloat((int) values.longValue());
                 } else {
-                  return missingValue;
+                  return reverseMul * missingValue;
                 }
               }
             };

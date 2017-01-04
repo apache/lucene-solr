@@ -18,11 +18,10 @@ package org.apache.solr.analytics.plugin;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.codahale.metrics.Timer;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.util.stats.Snapshot;
-import org.apache.solr.util.stats.Timer;
-import org.apache.solr.util.stats.TimerContext;
+import org.apache.solr.util.stats.MetricUtils;
 
 public class AnalyticsStatisticsCollector {
   private final AtomicLong numRequests;
@@ -35,7 +34,7 @@ public class AnalyticsStatisticsCollector {
   private final AtomicLong numQueries;
   private final Timer requestTimes;
   
-  public TimerContext currentTimer;
+  public Timer.Context currentTimer;
   
   public AnalyticsStatisticsCollector() {
     numRequests = new AtomicLong();
@@ -88,7 +87,6 @@ public class AnalyticsStatisticsCollector {
 
   public NamedList<Object> getStatistics() {
     NamedList<Object> lst = new SimpleOrderedMap<>();
-    Snapshot snapshot = requestTimes.getSnapshot();
     lst.add("requests", numRequests.longValue());
     lst.add("analyticsRequests", numAnalyticsRequests.longValue());
     lst.add("statsRequests", numStatsRequests.longValue());
@@ -97,17 +95,7 @@ public class AnalyticsStatisticsCollector {
     lst.add("rangeFacets", numRangeFacets.longValue());
     lst.add("queryFacets", numQueryFacets.longValue());
     lst.add("queriesInQueryFacets", numQueries.longValue());
-    lst.add("totalTime", requestTimes.getSum());
-    lst.add("avgRequestsPerSecond", requestTimes.getMeanRate());
-    lst.add("5minRateReqsPerSecond", requestTimes.getFiveMinuteRate());
-    lst.add("15minRateReqsPerSecond", requestTimes.getFifteenMinuteRate());
-    lst.add("avgTimePerRequest", requestTimes.getMean());
-    lst.add("medianRequestTime", snapshot.getMedian());
-    lst.add("75thPcRequestTime", snapshot.get75thPercentile());
-    lst.add("95thPcRequestTime", snapshot.get95thPercentile());
-    lst.add("99thPcRequestTime", snapshot.get99thPercentile());
-    lst.add("999thPcRequestTime", snapshot.get999thPercentile());
+    MetricUtils.addMetrics(lst, requestTimes);
     return lst;
   }
-  
 }

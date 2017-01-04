@@ -29,7 +29,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util.packed.PackedInts;
 import org.junit.Ignore;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
@@ -41,22 +40,22 @@ public class Test2BFST extends LuceneTestCase {
   private static long LIMIT = 3L*1024*1024*1024;
 
   public void test() throws Exception {
+    assumeWorkingMMapOnWindows();
+    
     int[] ints = new int[7];
     IntsRef input = new IntsRef(ints, 0, ints.length);
     long seed = random().nextLong();
 
     Directory dir = new MMapDirectory(createTempDir("2BFST"));
 
-    for(int doPackIter=0;doPackIter<2;doPackIter++) {
-      boolean doPack = doPackIter == 1;
-
+    for(int iter=0;iter<1;iter++) {
       // Build FST w/ NoOutputs and stop when nodeCount > 2.2B
-      if (!doPack) {
+      {
         System.out.println("\nTEST: 3B nodes; doPack=false output=NO_OUTPUTS");
         Outputs<Object> outputs = NoOutputs.getSingleton();
         Object NO_OUTPUT = outputs.getNoOutput();
         final Builder<Object> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
-                                                doPack, PackedInts.COMPACT, true, 15);
+                                                true, 15);
 
         int count = 0;
         Random r = new Random(seed);
@@ -135,10 +134,10 @@ public class Test2BFST extends LuceneTestCase {
       // Build FST w/ ByteSequenceOutputs and stop when FST
       // size = 3GB
       {
-        System.out.println("\nTEST: 3 GB size; doPack=" + doPack + " outputs=bytes");
+        System.out.println("\nTEST: 3 GB size; outputs=bytes");
         Outputs<BytesRef> outputs = ByteSequenceOutputs.getSingleton();
         final Builder<BytesRef> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
-                                                  doPack, PackedInts.COMPACT, true, 15);
+                                                  true, 15);
 
         byte[] outputBytes = new byte[20];
         BytesRef output = new BytesRef(outputBytes);
@@ -212,10 +211,10 @@ public class Test2BFST extends LuceneTestCase {
       // Build FST w/ PositiveIntOutputs and stop when FST
       // size = 3GB
       {
-        System.out.println("\nTEST: 3 GB size; doPack=" + doPack + " outputs=long");
+        System.out.println("\nTEST: 3 GB size; outputs=long");
         Outputs<Long> outputs = PositiveIntOutputs.getSingleton();
         final Builder<Long> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
-                                              doPack, PackedInts.COMPACT, true, 15);
+                                              true, 15);
 
         long output = 1;
 

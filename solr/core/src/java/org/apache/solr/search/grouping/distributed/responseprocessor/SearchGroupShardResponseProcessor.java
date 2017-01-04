@@ -52,9 +52,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
     Sort groupSort = rb.getGroupingSpec().getGroupSort();
     final String[] fields = rb.getGroupingSpec().getFields();
     Sort sortWithinGroup = rb.getGroupingSpec().getSortWithinGroup();
-    if (sortWithinGroup == null) { // TODO prevent it from being null in the first place
-      sortWithinGroup = Sort.RELEVANCE;
-    }
+    assert sortWithinGroup != null;
 
     final Map<String, List<Collection<SearchGroup<BytesRef>>>> commandSearchGroups = new HashMap<>(fields.length, 1.0f);
     final Map<String, Map<SearchGroup<BytesRef>, Set<String>>> tempSearchGroupToShards = new HashMap<>(fields.length, 1.0f);

@@ -111,6 +111,7 @@ public class PluginInfo implements MapSerializable {
     if (type != null) sb.append("type = " + type + ",");
     if (name != null) sb.append("name = " + name + ",");
     if (className != null) sb.append("class = " + className + ",");
+    if (attributes != null && attributes.size() > 0) sb.append("attributes = " + attributes + ",");
     if (initArgs != null && initArgs.size() > 0) sb.append("args = " + initArgs);
     sb.append("}");
     return sb.toString();
@@ -181,7 +182,8 @@ public class PluginInfo implements MapSerializable {
 
   }
   public PluginInfo copy() {
-    PluginInfo result = new PluginInfo(type, attributes, initArgs.clone(), children);
+    PluginInfo result = new PluginInfo(type, attributes,
+        initArgs != null ? initArgs.clone() : null, children);
     result.isFromSolrConfig = isFromSolrConfig;
     return result;
   }

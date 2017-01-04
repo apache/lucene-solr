@@ -23,9 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -34,6 +35,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Transition;
@@ -183,6 +185,10 @@ public class TermAutomatonQuery extends Query {
 
     det = Operations.removeDeadStates(Operations.determinize(automaton,
       maxDeterminizedStates));
+
+    if (det.isAccept(0)) {
+      throw new IllegalStateException("cannot accept the empty string");
+    }
   }
 
   @Override
@@ -395,5 +401,83 @@ public class TermAutomatonQuery extends Query {
       // TODO
       return null;
     }
+  }
+
+  public Query rewrite(IndexReader reader) throws IOException {
+    if (Operations.isEmpty(det)) {
+      return new MatchNoDocsQuery();
+    }
+
+    IntsRef single = Operations.getSingleton(det);
+    if (single != null && single.length == 1) {
+      return new TermQuery(new Term(field, idToTerm.get(single.ints[single.offset])));
+    }
+
+    // TODO: can PhraseQuery really handle multiple terms at the same position?  If so, why do we even have MultiPhraseQuery?
+    
+    // Try for either PhraseQuery or MultiPhraseQuery, which only works when the automaton is a sausage:
+    MultiPhraseQuery.Builder mpq = new MultiPhraseQuery.Builder();
+    PhraseQuery.Builder pq = new PhraseQuery.Builder();
+
+    Transition t = new Transition();
+    int state = 0;
+    int pos = 0;
+    query:
+    while (true) {
+      int count = det.initTransition(state, t);
+      if (count == 0) {
+        if (det.isAccept(state) == false) {
+          mpq = null;
+          pq = null;
+        }
+        break;
+      } else if (det.isAccept(state)) {
+        mpq = null;
+        pq = null;
+        break;
+      }
+      int dest = -1;
+      List<Term> terms = new ArrayList<>();
+      boolean matchesAny = false;
+      for(int i=0;i<count;i++) {
+        det.getNextTransition(t);
+        if (i == 0) {
+          dest = t.dest;
+        } else if (dest != t.dest) {
+          mpq = null;
+          pq = null;
+          break query;
+        }
+
+        matchesAny |= anyTermID >= t.min && anyTermID <= t.max;
+
+        if (matchesAny == false) {
+          for(int termID=t.min;termID<=t.max;termID++) {
+            terms.add(new Term(field, idToTerm.get(termID)));
+          }
+        }
+      }
+      if (matchesAny == false) {
+        mpq.add(terms.toArray(new Term[terms.size()]), pos);
+        if (pq != null) {
+          if (terms.size() == 1) {
+            pq.add(terms.get(0), pos);
+          } else {
+            pq = null;
+          }
+        }
+      }
+      state = dest;
+      pos++;
+    }
+
+    if (pq != null) {
+      return pq.build();
+    } else if (mpq != null) {
+      return mpq.build();
+    }
+    
+    // TODO: we could maybe also rewrite to union of PhraseQuery (pull all finite strings) if it's "worth it"?
+    return this;
   }
 }

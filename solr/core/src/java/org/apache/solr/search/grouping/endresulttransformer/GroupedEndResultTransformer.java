@@ -79,7 +79,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
           if (!Float.isNaN(group.maxScore)) {
             docList.setMaxScore(group.maxScore);
           }
-          docList.setStart(rb.getGroupingSpec().getGroupOffset());
+          docList.setStart(rb.getGroupingSpec().getWithinGroupOffset());
           for (ScoreDoc scoreDoc : group.scoreDocs) {
             docList.add(solrDocumentSource.retrieve(scoreDoc));
           }
@@ -97,7 +97,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
         if (!Float.isNaN(queryCommandResult.getTopDocs().getMaxScore())) {
           docList.setMaxScore(queryCommandResult.getTopDocs().getMaxScore());
         }
-        docList.setStart(rb.getGroupingSpec().getGroupOffset());
+        docList.setStart(rb.getGroupingSpec().getWithinGroupOffset());
         for (ScoreDoc scoreDoc :queryCommandResult.getTopDocs().scoreDocs){
           docList.add(solrDocumentSource.retrieve(scoreDoc));
         }

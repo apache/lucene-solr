@@ -45,6 +45,32 @@ import org.apache.lucene.util.NumericUtils;
  */
 public final class FloatPoint extends Field {
 
+  /**
+   * Return the least float that compares greater than {@code f} consistently
+   * with {@link Float#compare}. The only difference with
+   * {@link Math#nextUp(float)} is that this method returns {@code +0f} when
+   * the argument is {@code -0f}.
+   */
+  public static float nextUp(float f) {
+    if (Float.floatToIntBits(f) == 0x8000_0000) { // -0f
+      return +0f;
+    }
+    return Math.nextUp(f);
+  }
+
+  /**
+   * Return the greatest float that compares less than {@code f} consistently
+   * with {@link Float#compare}. The only difference with
+   * {@link Math#nextDown(float)} is that this method returns {@code -0f} when
+   * the argument is {@code +0f}.
+   */
+  public static float nextDown(float f) {
+    if (Float.floatToIntBits(f) == 0) { // +0f
+      return -0f;
+    }
+    return Math.nextDown(f);
+  }
+
   private static FieldType getType(int numDims) {
     FieldType type = new FieldType();
     type.setDimensions(numDims, Float.BYTES);
@@ -164,8 +190,8 @@ public final class FloatPoint extends Field {
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting {@code lowerValue = Float.NEGATIVE_INFINITY} or {@code upperValue = Float.POSITIVE_INFINITY}.
-   * <p> Ranges are inclusive. For exclusive ranges, pass {@code Math#nextUp(lowerValue)}
-   * or {@code Math.nextDown(upperValue)}.
+   * <p> Ranges are inclusive. For exclusive ranges, pass {@link #nextUp(float) nextUp(lowerValue)}
+   * or {@link #nextUp(float) nextDown(upperValue)}.
    * <p>
    * Range comparisons are consistent with {@link Float#compareTo(Float)}.
    *

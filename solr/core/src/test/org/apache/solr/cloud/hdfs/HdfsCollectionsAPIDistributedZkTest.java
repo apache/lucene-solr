@@ -16,18 +16,15 @@
  */
 package org.apache.solr.cloud.hdfs;
 
-import java.io.IOException;
-
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.CollectionsAPIDistributedZkTest;
-import org.apache.solr.update.HdfsUpdateLog;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import com.carrotsearch.randomizedtesting.annotations.Nightly;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @Slow
 @Nightly
@@ -35,29 +32,25 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistributedZkTest {
+
   private static MiniDFSCluster dfsCluster;
-  private static long initialFailLogsCount;
-  
+
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
-    System.setProperty("solr.hdfs.blockcache.enabled", "false");
-    initialFailLogsCount = HdfsUpdateLog.INIT_FAILED_LOGS_COUNT.get();
-  }
-  
-  @AfterClass
-  public static void teardownClass() throws Exception {
-    // there should be no new fails from this test
-    assertEquals(0, HdfsUpdateLog.INIT_FAILED_LOGS_COUNT.get() - initialFailLogsCount);
-    HdfsTestUtil.teardownClass(dfsCluster);
-    System.clearProperty("solr.hdfs.blockcache.enabled");
-    dfsCluster = null;
+    System.setProperty("solr.hdfs.blockcache.blocksperbank", "2048");
+
+    ZkConfigManager configManager = new ZkConfigManager(zkClient());
+    configManager.uploadConfigDir(configset("cloud-hdfs"), "conf");
+
+    System.setProperty("solr.hdfs.home", HdfsTestUtil.getDataDir(dfsCluster, "data"));
   }
 
-  
-  @Override
-  protected String getDataDir(String dataDir) throws IOException {
-    return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
+  @AfterClass
+  public static void teardownClass() throws Exception {
+    cluster.shutdown(); // need to close before the MiniDFSCluster
+    HdfsTestUtil.teardownClass(dfsCluster);
+    dfsCluster = null;
   }
 
 }

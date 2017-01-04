@@ -21,6 +21,7 @@ import java.security.Principal;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.security.auth.login.AppConfigurationEntry;
@@ -46,7 +47,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Kerberos-enabled SolrHttpClientBuilder
  */
-public class Krb5HttpClientBuilder  {
+public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
   
   public static final String LOGIN_CONFIG_PROP = "java.security.auth.login.config";
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -73,7 +74,12 @@ public class Krb5HttpClientBuilder  {
   public void close() {
     HttpClientUtil.removeRequestInterceptor(bufferedEntityInterceptor);
   }
-  
+
+  @Override
+  public SolrHttpClientBuilder getHttpClientBuilder(Optional<SolrHttpClientBuilder> builder) {
+    return builder.isPresent() ? getBuilder(builder.get()) : getBuilder();
+  }
+
   public SolrHttpClientBuilder getBuilder(SolrHttpClientBuilder builder) {
     if (System.getProperty(LOGIN_CONFIG_PROP) != null) {
       String configValue = System.getProperty(LOGIN_CONFIG_PROP);

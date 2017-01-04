@@ -42,6 +42,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -71,8 +72,8 @@ public class BasicAuthStandaloneTest extends AbstractSolrTestCase {
     instance = new SolrInstance("inst", null);
     instance.setUp();
     jetty = createJetty(instance);
-    initCore("solrconfig.xml", "schema.xml", instance.getHomeDir().toString());
     securityConfHandler = new SecurityConfHandlerLocalForTesting(jetty.getCoreContainer());
+    HttpClientUtil.clearRequestInterceptors(); // Clear out any old Authorization headers
   }
 
   @Override
@@ -83,6 +84,7 @@ public class BasicAuthStandaloneTest extends AbstractSolrTestCase {
   }
 
   @Test
+  @LogLevel("org.apache.solr=DEBUG")
   public void testBasicAuth() throws Exception {
 
     String authcPrefix = "/admin/authentication";

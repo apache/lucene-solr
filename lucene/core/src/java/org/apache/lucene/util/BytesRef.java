@@ -84,7 +84,7 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    * unicode text, with no unpaired surrogates.
    */
   public BytesRef(CharSequence text) {
-    this(new byte[UnicodeUtil.MAX_UTF8_BYTES_PER_CHAR * text.length()]);
+    this(new byte[UnicodeUtil.maxUTF8Length(text.length())]);
     length = UnicodeUtil.UTF16toUTF8(text, 0, text.length(), bytes);
   }
   

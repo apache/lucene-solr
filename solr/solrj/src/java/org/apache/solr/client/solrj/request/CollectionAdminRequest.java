@@ -191,6 +191,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     @Deprecated
     public abstract AsyncCollectionSpecificAdminRequest setCollectionName(String collection);
 
+    public String getCollectionName() {
+      return collection;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
@@ -276,6 +280,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public CollectionAdminRoleRequest(CollectionAction action, String node, String role) {
       super(action);
+      this.node = node;
+      this.role = role;
     }
 
     @Override
@@ -709,10 +715,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Optional<String> repositoryName = Optional.empty();
     protected String location;
     protected Optional<String> commitName = Optional.empty();
+    protected Optional<String> indexBackupStrategy = Optional.empty();
 
     public Backup(String collection, String name) {
       super(CollectionAction.BACKUP, collection);
       this.name = name;
+      this.repositoryName = Optional.empty();
     }
 
     @Override
@@ -756,6 +764,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public Optional<String> getIndexBackupStrategy() {
+      return indexBackupStrategy;
+    }
+
+    public Backup setIndexBackupStrategy(String indexBackupStrategy) {
+      this.indexBackupStrategy = Optional.ofNullable(indexBackupStrategy);
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -767,6 +784,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (commitName.isPresent()) {
         params.set(CoreAdminParams.COMMIT_NAME, commitName.get());
+      }
+      if (indexBackupStrategy.isPresent()) {
+        params.set(CollectionAdminParams.INDEX_BACKUP_STRATEGY, indexBackupStrategy.get());
       }
       return params;
     }
@@ -1601,6 +1621,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public AddReplica withProperty(String key, String value) {
+      if (this.properties == null)
+        this.properties = new Properties();
+      this.properties.setProperty(key, value);
+      return this;
+    }
+
     public String getNode() {
       return node;
     }
@@ -2178,8 +2205,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   /**
    * Returns a SolrRequest to get a list of collections in the cluster
    */
-  public static List listCollections() {
-    return new List();
+  public static java.util.List<String> listCollections(SolrClient client) throws IOException, SolrServerException {
+    CollectionAdminResponse resp = new List().process(client);
+    return (java.util.List<String>) resp.getResponse().get("collections");
   }
 
   // LIST request

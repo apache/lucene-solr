@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,7 +39,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.legacy.LegacyNumericType;
+import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.DocValuesRewriteMethod;
 import org.apache.lucene.search.MultiTermQuery;
@@ -56,8 +60,8 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -743,7 +747,27 @@ public abstract class FieldType extends FieldProperties {
       return new TermQuery(new Term(field.getName(), br));
     }
   }
-  
+
+  /** @lucene.experimental  */
+  public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+    if (!field.indexed()) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      for (String externalVal : externalVals) {
+        Query subq = getFieldQuery(parser, field, externalVal);
+        builder.add(subq, BooleanClause.Occur.SHOULD);
+      }
+      return builder.build();
+    }
+
+    List<BytesRef> lst = new ArrayList<>(externalVals.size());
+    BytesRefBuilder br = new BytesRefBuilder();
+    for (String externalVal : externalVals) {
+      readableToIndexed(externalVal, br);
+      lst.add( br.toBytesRef() );
+    }
+    return new TermsQuery(field.getName() , lst);
+  }
+
   /**
    * Expert: Returns the rewrite method for multiterm queries such as wildcards.
    * @param parser The {@link org.apache.solr.search.QParser} calling the method
@@ -864,13 +888,19 @@ public abstract class FieldType extends FieldProperties {
       namedPropertyValues.add(SIMILARITY, getSimilarityFactory().getNamedPropertyValues());
     }
     
-    if (isExplicitAnalyzer()) {
-      String analyzerProperty = isExplicitQueryAnalyzer() ? INDEX_ANALYZER : ANALYZER;
-      namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getIndexAnalyzer()));
-    } 
-    if (isExplicitQueryAnalyzer()) {
-      String analyzerProperty = isExplicitAnalyzer() ? QUERY_ANALYZER : ANALYZER;
-      namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getQueryAnalyzer()));
+    if (this instanceof HasImplicitIndexAnalyzer) {
+      if (isExplicitQueryAnalyzer()) {
+        namedPropertyValues.add(QUERY_ANALYZER, getAnalyzerProperties(getQueryAnalyzer()));
+      }
+    } else {
+      if (isExplicitAnalyzer()) {
+        String analyzerProperty = isExplicitQueryAnalyzer() ? INDEX_ANALYZER : ANALYZER;
+        namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getIndexAnalyzer()));
+      }
+      if (isExplicitQueryAnalyzer()) {
+        String analyzerProperty = isExplicitAnalyzer() ? QUERY_ANALYZER : ANALYZER;
+        namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getQueryAnalyzer()));
+      }
     }
     if (this instanceof TextField) {
       if (((TextField)this).isExplicitMultiTermAnalyzer()) {

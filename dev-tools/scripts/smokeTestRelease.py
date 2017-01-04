@@ -431,6 +431,7 @@ reChangesSectionHREF = re.compile('<a id="(.*?)".*?>(.*?)</a>', re.IGNORECASE)
 reUnderbarNotDashHTML = re.compile(r'<li>(\s*(LUCENE|SOLR)_\d\d\d\d+)')
 reUnderbarNotDashTXT = re.compile(r'\s+((LUCENE|SOLR)_\d\d\d\d+)', re.MULTILINE)
 def checkChangesContent(s, version, name, project, isHTML):
+  currentVersionTuple = versionToTuple(version, name)
 
   if isHTML and s.find('Release %s' % version) == -1:
     raise RuntimeError('did not see "Release %s" in %s' % (version, name))
@@ -459,7 +460,8 @@ def checkChangesContent(s, version, name, project, isHTML):
         raise RuntimeError('did not see "%s" in %s' % (sub, name))
 
   if isHTML:
-    # Make sure a section only appears once under each release:
+    # Make sure that a section only appears once under each release,
+    # and that each release is not greater than the current version
     seenIDs = set()
     seenText = set()
 
@@ -468,12 +470,35 @@ def checkChangesContent(s, version, name, project, isHTML):
       if text.lower().startswith('release '):
         release = text[8:].strip()
         seenText.clear()
+        releaseTuple = versionToTuple(release, name)
+        if releaseTuple > currentVersionTuple:
+          raise RuntimeError('Future release %s is greater than %s in %s' % (release, version, name))
       if id in seenIDs:
         raise RuntimeError('%s has duplicate section "%s" under release "%s"' % (name, text, release))
       seenIDs.add(id)
       if text in seenText:
         raise RuntimeError('%s has duplicate section "%s" under release "%s"' % (name, text, release))
       seenText.add(text)
+
+
+reVersion = re.compile(r'(\d+)\.(\d+)(?:\.(\d+))?\s*(-alpha|-beta|final|RC\d+)?\s*(?:\[.*\])?', re.IGNORECASE)
+def versionToTuple(version, name):
+  versionMatch = reVersion.match(version)
+  if versionMatch is None:
+    raise RuntimeError('Version %s in %s cannot be parsed' % (version, name))
+  versionTuple = versionMatch.groups()
+  while versionTuple[-1] is None or versionTuple[-1] == '':
+    versionTuple = versionTuple[:-1]
+  if versionTuple[-1].lower() == '-alpha':
+    versionTuple = versionTuple[:-1] + ('0',)
+  elif versionTuple[-1].lower() == '-beta':
+    versionTuple = versionTuple[:-1] + ('1',)
+  elif versionTuple[-1].lower() == 'final':
+    versionTuple = versionTuple[:-2] + ('100',)
+  elif versionTuple[-1].lower()[:2] == 'rc':
+    versionTuple = versionTuple[:-2] + (versionTuple[-1][2:],)
+  return versionTuple
+
 
 reUnixPath = re.compile(r'\b[a-zA-Z_]+=(?:"(?:\\"|[^"])*"' + '|(?:\\\\.|[^"\'\\s])*' + r"|'(?:\\'|[^'])*')" \
                         + r'|(/(?:\\.|[^"\'\s])*)' \
@@ -793,7 +818,7 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   logFile = '%s/solr-example.log' % unpackPath
   if isSrc:
     os.chdir(unpackPath+'/solr')
-    subprocess.call(['chmod','+x',unpackPath+'/solr/bin/solr'])
+    subprocess.call(['chmod','+x',unpackPath+'/solr/bin/solr', unpackPath+'/solr/bin/solr.cmd', unpackPath+'/solr/bin/solr.in.cmd'])
   else:
     os.chdir(unpackPath)
 
@@ -805,13 +830,20 @@ def testSolrExample(unpackPath, javaPath, isSrc):
 
   # Stop Solr running on port 8983 (in case a previous run didn't shutdown cleanly)
   try:
-      subprocess.call(['bin/solr','stop','-p','8983'])
+      if not cygwin:
+        subprocess.call(['bin/solr','stop','-p','8983'])
+      else:
+        subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True) 
   except:
       print('      Stop failed due to: '+sys.exc_info()[0])
 
   print('      Running techproducts example on port 8983 from %s' % unpackPath)
   try:
-    runExampleStatus = subprocess.call(['bin/solr','-e','techproducts'])
+    if not cygwin:
+      runExampleStatus = subprocess.call(['bin/solr','-e','techproducts'])
+    else:
+      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True) 
+      
     if runExampleStatus != 0:
       raise RuntimeError('Failed to run the techproducts example, check log for previous errors.')
 
@@ -830,7 +862,11 @@ def testSolrExample(unpackPath, javaPath, isSrc):
       os.chdir(unpackPath+'/solr')
     else:
       os.chdir(unpackPath)
-    subprocess.call(['bin/solr','stop','-p','8983'])
+    
+    if not cygwin:
+      subprocess.call(['bin/solr','stop','-p','8983'])
+    else:
+      subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True) 
 
   if isSrc:
     os.chdir(unpackPath+'/solr')
@@ -1176,7 +1212,7 @@ def make_java_config(parser, java8_home):
   def _make_runner(java_home, version):
     print('Java %s JAVA_HOME=%s' % (version, java_home))
     if cygwin:
-      java_home = subprocess.check_output('cygpath -u "%s"' % java_home).read().decode('utf-8').strip()
+      java_home = subprocess.check_output('cygpath -u "%s"' % java_home, shell=True).decode('utf-8').strip()
     cmd_prefix = 'export JAVA_HOME="%s" PATH="%s/bin:$PATH" JAVACMD="%s/bin/java"' % \
                  (java_home, java_home, java_home)
     s = subprocess.check_output('%s; java -version' % cmd_prefix,
@@ -1290,7 +1326,7 @@ def confirmAllReleasesAreTestedForBackCompat(smokeVersion, unpackPath):
   if p.returncode is not 0:
     # Not good: the test failed!
     raise RuntimeError('%s failed:\n%s' % (command, stdout))
-  stdout = stdout.decode('utf-8')
+  stdout = stdout.decode('utf-8',errors='replace').replace('\r\n','\n')
 
   if stderr is not None:
     # Should not happen since we redirected stderr to stdout:

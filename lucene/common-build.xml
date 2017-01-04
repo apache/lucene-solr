@@ -2305,12 +2305,12 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <macrodef name="copy-to-stage-macro">
     <attribute name="artifacts.dir"/>
     <sequential>
-      <sshexec host="people.apache.org"
+      <sshexec host="home.apache.org"
                username="${scp.user}"
                keyfile="${keyfile}"
                command="mkdir -p ${remote.staging.dir}"/>
-      <echo>Uploading artifacts to ${scp.user}@people.apache.org:${remote.staging.dir}</echo>
-      <scp todir="${scp.user}@people.apache.org:${remote.staging.dir}"
+      <echo>Uploading artifacts to ${scp.user}@home.apache.org:${remote.staging.dir}</echo>
+      <scp todir="${scp.user}@home.apache.org:${remote.staging.dir}"
            username="${scp.user}"
            keyfile="${keyfile}"
            verbose="true">
@@ -2503,22 +2503,26 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
    -->
   <macrodef name="build-changes">
     <attribute name="changes.product"/>
+    <attribute name="doap.property.prefix" default="doap.@{changes.product}"/>
     <attribute name="changes.src.file" default="CHANGES.txt"/>
+    <attribute name="changes.src.doap" default="${dev-tools.dir}/doap/@{changes.product}.rdf"/>
+    <attribute name="changes.version.dates" default="build/@{doap.property.prefix}.version.dates.csv"/>
     <attribute name="changes.target.dir" default="${changes.target.dir}"/>
     <attribute name="lucene.javadoc.url" default="${lucene.javadoc.url}"/>
     <sequential>
       <mkdir dir="@{changes.target.dir}"/>
-      <get src="https://issues.apache.org/jira/rest/api/2/project/@{changes.product}"
-        dest="@{changes.target.dir}/jiraVersionList.json" httpusecaches="false"/>
+      <xmlproperty keeproot="false" file="@{changes.src.doap}" collapseAttributes="false" prefix="@{doap.property.prefix}"/>
+      <echo file="@{changes.version.dates}" append="false">${@{doap.property.prefix}.Project.release.Version.revision}&#xA;</echo>
+      <echo file="@{changes.version.dates}" append="true">${@{doap.property.prefix}.Project.release.Version.created}&#xA;</echo>
       <exec executable="${perl.exe}" input="@{changes.src.file}" output="@{changes.target.dir}/Changes.html"
             failonerror="true" logError="true">
         <arg value="-CSD"/>
         <arg value="${changes.src.dir}/changes2html.pl"/>
         <arg value="@{changes.product}"/>
-        <arg value="@{changes.target.dir}/jiraVersionList.json"/>
+        <arg value="@{changes.version.dates}"/>
         <arg value="@{lucene.javadoc.url}"/>
       </exec>
-      <delete file="@{changes.target.dir}/jiraVersionList.json"/>
+      <delete file="@{changes.version.dates}"/>
       <copy todir="@{changes.target.dir}">
         <fileset dir="${changes.src.dir}" includes="*.css"/>
       </copy>

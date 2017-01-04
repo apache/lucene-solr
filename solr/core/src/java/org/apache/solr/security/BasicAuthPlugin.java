@@ -119,6 +119,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
               final String username = credentials.substring(0, p).trim();
               String pwd = credentials.substring(p + 1).trim();
               if (!authenticate(username, pwd)) {
+                log.debug("Bad auth credentials supplied in Authorization header");
                 authenticationFailure(response, "Bad credentials");
               } else {
                 HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {

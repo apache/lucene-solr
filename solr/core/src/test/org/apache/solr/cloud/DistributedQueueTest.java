@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -30,9 +31,6 @@ import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static com.google.common.base.Predicates.alwaysFalse;
-import static com.google.common.base.Predicates.alwaysTrue;
 
 public class DistributedQueueTest extends SolrTestCaseJ4 {
 
@@ -151,17 +149,20 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     dq.offer(data);
     dq.offer(data);
 
+    Predicate<String> alwaysTrue = s -> true;
+    Predicate<String> alwaysFalse = s -> false;
+
     // Should be able to get 0, 1, 2, or 3 instantly
     for (int i = 0; i <= 3; ++i) {
-      assertEquals(i, dq.peekElements(i, 0, alwaysTrue()).size());
+      assertEquals(i, dq.peekElements(i, 0, alwaysTrue).size());
     }
 
     // Asking for more should return only 3.
-    assertEquals(3, dq.peekElements(4, 0, alwaysTrue()).size());
+    assertEquals(3, dq.peekElements(4, 0, alwaysTrue).size());
 
     // If we filter everything out, we should block for the full time.
     long start = System.nanoTime();
-    assertEquals(0, dq.peekElements(4, 1000, alwaysFalse()).size());
+    assertEquals(0, dq.peekElements(4, 1000, alwaysFalse).size());
     assertTrue(System.nanoTime() - start >= TimeUnit.MILLISECONDS.toNanos(500));
 
     // If someone adds a new matching element while we're waiting, we should return immediately.

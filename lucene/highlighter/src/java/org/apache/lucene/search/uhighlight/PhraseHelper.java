@@ -16,16 +16,49 @@
  */
 package org.apache.lucene.search.uhighlight;
 
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.highlight.WeightedSpanTerm;
 import org.apache.lucene.search.highlight.WeightedSpanTermExtractor;
-import org.apache.lucene.search.spans.*;
+import org.apache.lucene.search.spans.SpanCollector;
+import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanWeight;
+import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.function.Function;
 
 /**
  * Helps the {@link FieldOffsetStrategy} with strict position highlighting (e.g. highlight phrases correctly).
@@ -40,7 +73,7 @@ import java.util.function.Function;
 public class PhraseHelper {
 
   public static final PhraseHelper NONE = new PhraseHelper(new MatchAllDocsQuery(), "_ignored_",
-      spanQuery -> null, true);
+      (s) -> false, spanQuery -> null, query -> null, true);
 
   //TODO it seems this ought to be a general thing on Spans?
   private static final Comparator<? super Spans> SPANS_COMPARATOR = (o1, o2) -> {
@@ -59,25 +92,30 @@ public class PhraseHelper {
     }
   };
 
-  private final String fieldName; // if non-null, only look at queries/terms for this field
+  private final String fieldName;
   private final Set<Term> positionInsensitiveTerms; // (TermQuery terms)
   private final Set<SpanQuery> spanQueries;
   private final boolean willRewrite;
+  private final Predicate<String> fieldMatcher;
 
   /**
    * Constructor.
    * {@code rewriteQueryPred} is an extension hook to override the default choice of
    * {@link WeightedSpanTermExtractor#mustRewriteQuery(SpanQuery)}. By default unknown query types are rewritten,
    * so use this to return {@link Boolean#FALSE} if you know the query doesn't need to be rewritten.
+   * Similarly, {@code preExtractRewriteFunction} is also an extension hook for extract to allow different queries
+   * to be set before the {@link WeightedSpanTermExtractor}'s extraction is invoked.
    * {@code ignoreQueriesNeedingRewrite} effectively ignores any query clause that needs to be "rewritten", which is
    * usually limited to just a {@link SpanMultiTermQueryWrapper} but could be other custom ones.
+   * {@code fieldMatcher} The field name predicate to use for extracting the query part that must be highlighted.
    */
-  public PhraseHelper(Query query, String field, Function<SpanQuery, Boolean> rewriteQueryPred,
-               boolean ignoreQueriesNeedingRewrite) {
-    this.fieldName = field; // if null then don't require field match
+  public PhraseHelper(Query query, String field, Predicate<String> fieldMatcher, Function<SpanQuery, Boolean> rewriteQueryPred,
+                      Function<Query, Collection<Query>> preExtractRewriteFunction,
+                      boolean ignoreQueriesNeedingRewrite) {
+    this.fieldName = field;
+    this.fieldMatcher = fieldMatcher;
     // filter terms to those we want
-    positionInsensitiveTerms = field != null ? new FieldFilteringTermHashSet(field) : new HashSet<>();
-    // requireFieldMatch optional
+    positionInsensitiveTerms = new FieldFilteringTermSet();
     spanQueries = new HashSet<>();
 
     // TODO Have toSpanQuery(query) Function as an extension point for those with custom Query impls
@@ -99,6 +137,18 @@ public class PhraseHelper {
       }
 
       @Override
+      protected void extract(Query query, float boost, Map<String, WeightedSpanTerm> terms) throws IOException {
+        Collection<Query> newQueriesToExtract = preExtractRewriteFunction.apply(query);
+        if (newQueriesToExtract != null) {
+          for (Query newQuery : newQueriesToExtract) {
+            extract(newQuery, boost, terms);
+          }
+        } else {
+          super.extract(query, boost, terms);
+        }
+      }
+
+      @Override
       protected boolean isQueryUnsupported(Class<? extends Query> clazz) {
         if (clazz.isAssignableFrom(MultiTermQuery.class)) {
           return true; //We do MTQ processing separately in MultiTermHighlighting.java
@@ -116,11 +166,11 @@ public class PhraseHelper {
       @Override
       protected void extractWeightedSpanTerms(Map<String, WeightedSpanTerm> terms, SpanQuery spanQuery,
                                               float boost) throws IOException {
-        if (field != null) {
-          // if this span query isn't for this field, skip it.
-          Set<String> fieldNameSet = new HashSet<>();//TODO reuse.  note: almost always size 1
-          collectSpanQueryFields(spanQuery, fieldNameSet);
-          if (!fieldNameSet.contains(field)) {
+        // if this span query isn't for this field, skip it.
+        Set<String> fieldNameSet = new HashSet<>();//TODO reuse.  note: almost always size 1
+        collectSpanQueryFields(spanQuery, fieldNameSet);
+        for (String spanField : fieldNameSet) {
+          if (!fieldMatcher.test(spanField)) {
             return;
           }
         }
@@ -175,10 +225,11 @@ public class PhraseHelper {
     if (spanQueries.isEmpty()) {
       return Collections.emptyMap();
     }
+    final LeafReader filteredReader = new SingleFieldFilterLeafReader(leafReader, fieldName);
     // for each SpanQuery, collect the member spans into a map.
     Map<BytesRef, Spans> result = new HashMap<>();
     for (SpanQuery spanQuery : spanQueries) {
-      getTermToSpans(spanQuery, leafReader.getContext(), doc, result);
+      getTermToSpans(spanQuery, filteredReader.getContext(), doc, result);
     }
     return result;
   }
@@ -188,15 +239,14 @@ public class PhraseHelper {
                               int doc, Map<BytesRef, Spans> result)
       throws IOException {
     // note: in WSTE there was some field specific looping that seemed pointless so that isn't here.
-    final IndexSearcher searcher = new IndexSearcher(readerContext);
+    final IndexSearcher searcher = new IndexSearcher(readerContext.reader());
     searcher.setQueryCache(null);
     if (willRewrite) {
       spanQuery = (SpanQuery) searcher.rewrite(spanQuery); // searcher.rewrite loops till done
     }
 
     // Get the underlying query terms
-
-    TreeSet<Term> termSet = new TreeSet<>(); // sorted so we can loop over results in order shortly...
+    TreeSet<Term> termSet = new FieldFilteringTermSet(); // sorted so we can loop over results in order shortly...
     searcher.createWeight(spanQuery, false, 1.0f).extractTerms(termSet);//needsScores==false
 
     // Get Spans by running the query against the reader
@@ -225,9 +275,6 @@ public class PhraseHelper {
     for (final Term queryTerm : termSet) {
       // note: we expect that at least one query term will pass these filters. This is because the collected
       //   spanQuery list were already filtered by these conditions.
-      if (fieldName != null && fieldName.equals(queryTerm.field()) == false) {
-        continue;
-      }
       if (positionInsensitiveTerms.contains(queryTerm)) {
         continue;
       }
@@ -251,7 +298,7 @@ public class PhraseHelper {
   }
 
   /**
-   * Returns terms as a List, but expanded to any terms in strictPhrases' keySet if present.  That can only
+   * Returns terms as a List, but expanded to any terms in phraseHelper' keySet if present.  That can only
    * happen if willRewrite() is true.
    */
   List<BytesRef> expandTermsIfRewrite(BytesRef[] terms, Map<BytesRef, Spans> strictPhrasesTermToSpans) {
@@ -360,19 +407,17 @@ public class PhraseHelper {
   }
 
   /**
-   * Simple HashSet that filters out Terms not matching a desired field on {@code add()}.
+   * Simple TreeSet that filters out Terms not matching the provided predicate on {@code add()}.
    */
-  private static class FieldFilteringTermHashSet extends HashSet<Term> {
-    private final String field;
-
-    FieldFilteringTermHashSet(String field) {
-      this.field = field;
-    }
-
+  private class FieldFilteringTermSet extends TreeSet<Term> {
     @Override
     public boolean add(Term term) {
-      if (term.field().equals(field)) {
-        return super.add(term);
+      if (fieldMatcher.test(term.field())) {
+        if (term.field().equals(fieldName)) {
+          return super.add(term);
+        } else {
+          return super.add(new Term(fieldName, term.bytes()));
+        }
       } else {
         return false;
       }
@@ -483,6 +528,64 @@ public class PhraseHelper {
       return 100f;// no idea; and we can't delegate due to not allowing to call it dependent on TwoPhaseIterator
     }
   }
+
+  /**
+   * This reader will just delegate every call to a single field in the wrapped
+   * LeafReader. This way we ensure that all queries going through this reader target the same field.
+  */
+  static final class SingleFieldFilterLeafReader extends FilterLeafReader {
+    final String fieldName;
+    SingleFieldFilterLeafReader(LeafReader in, String fieldName) {
+      super(in);
+      this.fieldName = fieldName;
+    }
+
+    @Override
+    public FieldInfos getFieldInfos() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Fields fields() throws IOException {
+      return new FilterFields(super.fields()) {
+        @Override
+        public Terms terms(String field) throws IOException {
+          return super.terms(fieldName);
+        }
+
+        @Override
+        public Iterator<String> iterator() {
+          return Collections.singletonList(fieldName).iterator();
+        }
+
+        @Override
+        public int size() {
+          return 1;
+        }
+      };
+    }
+
+    @Override
+    public NumericDocValues getNumericDocValues(String field) throws IOException {
+      return super.getNumericDocValues(fieldName);
+    }
+
+    @Override
+    public BinaryDocValues getBinaryDocValues(String field) throws IOException {
+      return super.getBinaryDocValues(fieldName);
+    }
+
+    @Override
+    public SortedDocValues getSortedDocValues(String field) throws IOException {
+      return super.getSortedDocValues(fieldName);
+    }
+
+    @Override
+    public NumericDocValues getNormValues(String field) throws IOException {
+      return super.getNormValues(fieldName);
+    }
+  }
+
 
   /**
    * A Spans based on a list of cached spans for one doc.  It is pre-positioned to this doc.

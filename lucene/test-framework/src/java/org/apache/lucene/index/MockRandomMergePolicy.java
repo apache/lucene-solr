@@ -156,7 +156,7 @@ public class MockRandomMergePolicy extends MergePolicy {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("NOTE: MockRandomMergePolicy now swaps in a SlowCodecReaderWrapper for merging reader=" + reader);
         }
-        return SlowCodecReaderWrapper.wrap(new FilterLeafReader(reader) {});
+        return SlowCodecReaderWrapper.wrap(new FilterLeafReader(new MergeReaderWrapper(reader)) {});
       } else if (thingToDo == 1) {
         // renumber fields
         // NOTE: currently this only "blocks" bulk merges just by
@@ -165,7 +165,7 @@ public class MockRandomMergePolicy extends MergePolicy {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("NOTE: MockRandomMergePolicy now swaps in a MismatchedLeafReader for merging reader=" + reader);
         }
-        return SlowCodecReaderWrapper.wrap(new MismatchedLeafReader(reader, r));
+        return SlowCodecReaderWrapper.wrap(new MismatchedLeafReader(new MergeReaderWrapper(reader), r));
       } else {
         // otherwise, reader is unchanged
         return reader;
