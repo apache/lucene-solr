@@ -47,6 +47,9 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 
 
+/**
+ * A class which performs per-segment field faceting for single-valued string fields.
+ */
 class PerSegmentSingleValuedFaceting {
 
   // input params
@@ -59,8 +62,9 @@ class PerSegmentSingleValuedFaceting {
   boolean missing;
   String sort;
   String prefix;
-  String contains;
-  boolean ignoreCase;
+
+  private String contains;
+  private boolean ignoreCase;
 
   Filter baseSet;
 
