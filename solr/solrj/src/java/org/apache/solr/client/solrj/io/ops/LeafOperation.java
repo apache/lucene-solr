@@ -45,6 +45,7 @@ public abstract class LeafOperation implements BooleanOperation {
 
   public LeafOperation(StreamExpression expression, StreamFactory factory) throws IOException {
     this.field = factory.getValueOperand(expression, 0);
+    this.field = this.field.replace("'","");
     this.val = Double.parseDouble(factory.getValueOperand(expression, 1));
   }
 
@@ -55,5 +56,13 @@ public abstract class LeafOperation implements BooleanOperation {
         .withFunctionName(factory.getFunctionName(getClass()))
         .withImplementingClass(getClass().getName())
         .withExpression(toExpression(factory).toString());
+  }
+
+  protected String quote(String s) {
+    if(s.contains("(")) {
+      return "'"+s+"'";
+    }
+
+    return s;
   }
 }
