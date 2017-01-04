@@ -328,6 +328,8 @@ Other Changes
 * SOLR-9899: StandardDirectoryFactory should use optimizations for all FilterDirectorys not just NRTCachingDirectory.
   (Mark Miller)
 
+* SOLR-3990: Moves getIndexSize() from ReplicationHandler to SolrCore (Shawn Heisey)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
