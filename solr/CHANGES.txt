@@ -186,9 +186,13 @@ New Features
 
 * SOLR-9805: Use metrics-jvm library to instrument jvm internals such as GC, memory usage and others. (shalin)
 
-* SOLR-9812: Added a new /admin/metrics API to return all metrics collected by Solr via API. API supports two
-  optional parameters 'group' (all,jvm,jetty,http,node,core) and 'type' (all,counter,timer,gauge,histogram) both
-  of which are multi-valued. Example: http://localhost:8983/solr/admin/metrics?group=jvm,jetty&type=counter
+* SOLR-9812: SOLR-9911: Added a new /admin/metrics API to return all metrics collected by Solr via API.
+  API supports three optional parameters:
+  * 'group' (all,jvm,jetty,http,node,core),
+  * 'type' (all,counter,timer,gauge,histogram) both of which are multi-valued
+  * 'prefix' that filters the return metrics
+  Example: http://localhost:8983/solr/admin/metrics?group=jvm,jetty&type=counter
+  Example: http://localhost:8983/solr/admin/metrics?group=jvm&prefix=buffers
   (shalin)
 
 * SOLR-9884: Add version to segments handler output (Steven Bower via Erick Erickson)
