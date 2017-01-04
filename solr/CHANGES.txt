@@ -54,6 +54,7 @@ Bug Fixes
   numeric fields.  (yonik)
 * SOLR-9644: SimpleMLTQParser and CloudMLTQParser did not handle field boosts properly
   and CloudMLTQParser included extra strings from the field definitions in the query.
+  (Ere Maijala)
 
 Optimizations
 ----------------------
