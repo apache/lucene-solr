@@ -91,7 +91,40 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
     assertEquals(1, values.size());
-    assertNotNull(values.get("solr.node"));
+    values = (NamedList) values.get("solr.node");
+    assertNotNull(values);
     assertNull(values.get("QUERYHANDLER./admin/authorization.errors")); // this is a timer node
+
+    resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "prefix", "cores"), resp);
+    values = resp.getValues();
+    assertNotNull(values.get("metrics"));
+    values = (NamedList) values.get("metrics");
+    assertEquals(5, values.size());
+    assertEquals(0, ((NamedList)values.get("solr.jvm")).size());
+    assertEquals(0, ((NamedList)values.get("solr.http")).size());
+    assertEquals(0, ((NamedList)values.get("solr.jetty")).size());
+    assertEquals(0, ((NamedList)values.get("solr.core.collection1")).size());
+    assertEquals(3, ((NamedList)values.get("solr.node")).size());
+    assertNotNull(values.get("solr.node"));
+    values = (NamedList) values.get("solr.node");
+    assertNotNull(values.get("cores.lazy")); // this is a gauge node
+
+    resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "jvm", "prefix", "cores"), resp);
+    values = resp.getValues();
+    assertNotNull(values.get("metrics"));
+    values = (NamedList) values.get("metrics");
+    assertEquals(1, values.size());
+    assertEquals(0, ((NamedList)values.get("solr.jvm")).size());
+    assertNull(values.get("solr.node"));
+
+    resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "node", "type", "timer", "prefix", "cores"), resp);
+    values = resp.getValues();
+    assertNotNull(values.get("metrics"));
+    values = (NamedList) values.get("metrics");
+    assertEquals(1, values.size());
+    assertEquals(0, ((NamedList)values.get("solr.node")).size());
   }
 }

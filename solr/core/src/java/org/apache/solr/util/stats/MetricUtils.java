@@ -72,14 +72,21 @@ public class MetricUtils {
    * are converted to NamedList which match at least one of the given MetricFilter instances.
    *
    * @param registry      the {@link MetricRegistry} to be converted to NamedList
-   * @param metricFilters a list of {@link MetricFilter} instances
+   * @param shouldMatchFilters a list of {@link MetricFilter} instances.
+   *                           A metric must match <em>any one</em> of the filters from this list to be
+   *                           included in the output
+   * @param mustMatchFilter a {@link MetricFilter}.
+   *                        A metric <em>must</em> match this filter to be included in the output.
    * @return a {@link NamedList}
    */
-  public static NamedList toNamedList(MetricRegistry registry, List<MetricFilter> metricFilters) {
+  public static NamedList toNamedList(MetricRegistry registry, List<MetricFilter> shouldMatchFilters, MetricFilter mustMatchFilter) {
     NamedList response = new NamedList();
     Map<String, Metric> metrics = registry.getMetrics();
     SortedSet<String> names = registry.getNames();
-    names.stream().filter(s -> metricFilters.stream().anyMatch(metricFilter -> metricFilter.matches(s, metrics.get(s)))).forEach(n -> {
+    names.stream()
+        .filter(s -> shouldMatchFilters.stream().anyMatch(metricFilter -> metricFilter.matches(s, metrics.get(s))))
+        .filter(s -> mustMatchFilter.matches(s, metrics.get(s)))
+        .forEach(n -> {
       Metric metric = metrics.get(n);
       if (metric instanceof Counter) {
         Counter counter = (Counter) metric;
