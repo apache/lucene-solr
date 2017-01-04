@@ -20,7 +20,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.SchemeRegistryFactory;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
@@ -40,15 +39,22 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.stats.InstrumentedHttpClient;
+import org.apache.solr.util.stats.InstrumentedPoolingClientConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -62,7 +68,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 
-public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized {
+public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String DEFAULT_SCHEME = "http";
   
@@ -80,7 +86,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       new DefaultSolrThreadFactory("httpShardExecutor")
   );
 
-  protected PoolingClientConnectionManager clientConnectionManager;
+  protected InstrumentedPoolingClientConnectionManager clientConnectionManager;
   protected CloseableHttpClient defaultClient;
   private LBHttpSolrClient loadbalancer;
   //default values:
@@ -189,11 +195,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     );
 
     ModifiableSolrParams clientParams = getClientParams();
-
-    this.clientConnectionManager = new PoolingClientConnectionManager(SchemeRegistryFactory.createSystemDefault());
+    clientConnectionManager = new InstrumentedPoolingClientConnectionManager(SchemeRegistryFactory.createSystemDefault());
     clientConnectionManager.setDefaultMaxPerRoute(maxConnectionsPerHost);
     clientConnectionManager.setMaxTotal(maxConnections);
-    this.defaultClient = HttpClientUtil.createClient(clientParams, clientConnectionManager);
+    InstrumentedHttpClient httpClient = new InstrumentedHttpClient(clientConnectionManager);
+    HttpClientUtil.configureClient(httpClient, clientParams);
+    this.defaultClient = httpClient;
     this.idleConnectionsEvictor = new UpdateShardHandler.IdleConnectionsEvictor(clientConnectionManager,
         connectionsEvictorSleepDelay, TimeUnit.MILLISECONDS, maxConnectionIdleTime, TimeUnit.MILLISECONDS);
     idleConnectionsEvictor.start();
@@ -204,10 +211,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       // but for these read only requests we can use the standard DefaultHttpRequestRetryHandler rules
       ((DefaultHttpClient) this.defaultClient).setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler());
     }
-    
     this.loadbalancer = createLoadbalancer(defaultClient);
   }
-  
+
   protected ModifiableSolrParams getClientParams() {
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, soTimeout);
@@ -398,5 +404,51 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     }
     
     return url;
+  }
+
+  @Override
+  public String getName() {
+    return this.getClass().getName();
+  }
+
+  @Override
+  public String getVersion() {
+    return getClass().getPackage().getSpecificationVersion();
+  }
+
+  @Override
+  public Collection<String> initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    List<String> metricNames = new ArrayList<>(4);
+    metricNames.addAll(clientConnectionManager.initializeMetrics(manager, registry, scope));
+    if (defaultClient instanceof SolrMetricProducer) {
+      SolrMetricProducer solrMetricProducer = (SolrMetricProducer) defaultClient;
+      metricNames.addAll(solrMetricProducer.initializeMetrics(manager, registry, scope));
+    }
+    return metricNames;
+  }
+
+  @Override
+  public String getDescription() {
+    return "Metrics tracked by HttpShardHandlerFactory for distributed query requests";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.OTHER;
+  }
+
+  @Override
+  public String getSource() {
+    return null;
+  }
+
+  @Override
+  public URL[] getDocs() {
+    return new URL[0];
+  }
+
+  @Override
+  public NamedList getStatistics() {
+    return null;
   }
 }

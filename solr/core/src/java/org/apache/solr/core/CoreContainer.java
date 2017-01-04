@@ -438,10 +438,16 @@ public class CoreContainer {
       }
     }
 
+    metricManager = new SolrMetricManager();
 
     shardHandlerFactory = ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
+    if (shardHandlerFactory instanceof SolrMetricProducer) {
+      SolrMetricProducer metricProducer = (SolrMetricProducer) shardHandlerFactory;
+      metricProducer.initializeMetrics(metricManager, SolrInfoMBean.Group.http.toString(), "httpShardHandler");
+    }
 
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
+    updateShardHandler.initializeMetrics(metricManager, SolrInfoMBean.Group.http.toString(), "updateShardHandler");
 
     solrCores.allocateLazyCores(cfg.getTransientCacheSize(), loader);
 
@@ -453,8 +459,6 @@ public class CoreContainer {
     if(isZooKeeperAware())  pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName());
 
     MDCLoggingContext.setNode(this);
-
-    metricManager = new SolrMetricManager();
 
     ZkStateReader.ConfigData securityConfig = isZooKeeperAware() ? getZkController().getZkStateReader().getSecurityProps(false) : new ZkStateReader.ConfigData(EMPTY_MAP, -1);
     initializeAuthorizationPlugin((Map<String, Object>) securityConfig.data.get("authorization"));

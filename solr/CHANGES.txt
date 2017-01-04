@@ -152,6 +152,8 @@ New Features
 
 * SOLR-8530: Add HavingStream to Streaming API and StreamingExpressions (Joel Bernstein)
 
+* SOLR-9877: Use instrumented http client and connection pool. (shalin)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
@@ -249,7 +251,7 @@ Bug Fixes
 
 * SOLR-9154: Fix DirectSolrSpellChecker to work when added through the Config API. (Anshum Gupta)
 
-* SOLR-9859: replication.properties cannot be updated after being written and neither replication.properties or 
+* SOLR-9859: replication.properties cannot be updated after being written and neither replication.properties or
   index.properties are durable in the face of a crash. (Pushkar Raste, Chris de Kok, Cao Manh Dat, Mark Miller)
 
 * SOLR-9901: Implement move in HdfsDirectoryFactory. (Mark Miller)

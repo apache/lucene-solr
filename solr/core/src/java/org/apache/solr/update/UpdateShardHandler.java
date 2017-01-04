@@ -17,6 +17,10 @@
 package org.apache.solr.update;
 
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +29,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.SchemeRegistryFactory;
 import org.apache.http.util.Args;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
@@ -35,11 +38,16 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.util.stats.InstrumentedHttpClient;
+import org.apache.solr.util.stats.InstrumentedPoolingClientConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UpdateShardHandler {
+public class UpdateShardHandler implements SolrMetricProducer {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -56,9 +64,9 @@ public class UpdateShardHandler {
   private ExecutorService recoveryExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
       new SolrjNamedThreadFactory("recoveryExecutor"));
   
-  private PoolingClientConnectionManager clientConnectionManager;
-
   private final CloseableHttpClient client;
+
+  private final InstrumentedPoolingClientConnectionManager clientConnectionManager;
 
   private final UpdateShardHandlerConfig cfg;
 
@@ -66,7 +74,7 @@ public class UpdateShardHandler {
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
     this.cfg = cfg;
-    clientConnectionManager = new PoolingClientConnectionManager(SchemeRegistryFactory.createSystemDefault());
+    clientConnectionManager = new InstrumentedPoolingClientConnectionManager(SchemeRegistryFactory.createSystemDefault());
     if (cfg != null ) {
       clientConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
       clientConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
@@ -74,8 +82,9 @@ public class UpdateShardHandler {
 
     ModifiableSolrParams clientParams = getClientParams();
     log.info("Creating UpdateShardHandler HTTP client with params: {}", clientParams);
-    client = HttpClientUtil.createClient(clientParams, clientConnectionManager);
-
+    InstrumentedHttpClient httpClient = new InstrumentedHttpClient(clientConnectionManager);
+    HttpClientUtil.configureClient(httpClient, clientParams);
+    client = httpClient;
     if (cfg != null)  {
       idleConnectionsEvictor = new IdleConnectionsEvictor(clientConnectionManager,
           cfg.getUpdateConnectionsEvictorSleepDelay(), TimeUnit.MILLISECONDS,
@@ -100,6 +109,53 @@ public class UpdateShardHandler {
     return clientParams;
   }
 
+
+
+  @Override
+  public String getName() {
+    return this.getClass().getName();
+  }
+
+  @Override
+  public String getVersion() {
+    return getClass().getPackage().getSpecificationVersion();
+  }
+
+  @Override
+  public Collection<String> initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    List<String> metricNames = new ArrayList<>(4);
+    metricNames.addAll(clientConnectionManager.initializeMetrics(manager, registry, scope));
+    if (client instanceof SolrMetricProducer) {
+      SolrMetricProducer solrMetricProducer = (SolrMetricProducer) client;
+      metricNames.addAll(solrMetricProducer.initializeMetrics(manager, registry, scope));
+    }
+    return metricNames;
+  }
+
+  @Override
+  public String getDescription() {
+    return "Metrics tracked by UpdateShardHandler for distributed updates and recovery";
+  }
+
+  @Override
+  public Category getCategory() {
+    return null;
+  }
+
+  @Override
+  public String getSource() {
+    return null;
+  }
+
+  @Override
+  public URL[] getDocs() {
+    return new URL[0];
+  }
+
+  @Override
+  public NamedList getStatistics() {
+    return null;
+  }
 
   public HttpClient getHttpClient() {
     return client;
