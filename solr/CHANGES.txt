@@ -190,7 +190,7 @@ New Features
   API supports three optional parameters:
   * 'group' (all,jvm,jetty,http,node,core),
   * 'type' (all,counter,timer,gauge,histogram) both of which are multi-valued
-  * 'prefix' that filters the return metrics
+  * 'prefix' that filters the returned metrics
   Example: http://localhost:8983/solr/admin/metrics?group=jvm,jetty&type=counter
   Example: http://localhost:8983/solr/admin/metrics?group=jvm&prefix=buffers
   (shalin)
