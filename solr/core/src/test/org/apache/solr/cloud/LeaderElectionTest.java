@@ -80,6 +80,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
     zkStateReader = new ZkStateReader(zkClient);
     seqToThread = Collections.synchronizedMap(new HashMap<Integer,Thread>());
+    zkClient.makePath("/collections/collection1", true);
+    zkClient.makePath("/collections/collection2", true);
   }
   
   class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
@@ -118,6 +120,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       if (!zkClient.isClosed()) {
         zkClient.close();
       }
+      zkStateReader.close();
     }
   }
 
@@ -145,13 +148,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
       this.es = es;
       if (this.es == null) {
-        this.es = new ElectorSetup(new OnReconnect() {
-          @Override
-          public void command() {
-            try {
-              setupOnConnect();
-            } catch (Throwable t) {
-            }
+        this.es = new ElectorSetup(() -> {
+          try {
+            setupOnConnect();
+          } catch (Throwable t) {
           }
         });
       }

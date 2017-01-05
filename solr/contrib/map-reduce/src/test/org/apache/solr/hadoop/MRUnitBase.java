@@ -23,6 +23,7 @@ import java.util.Locale;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.hadoop.morphline.MorphlineMapRunner;
 import org.apache.solr.morphlines.solr.AbstractSolrMorphlineTestBase;
@@ -37,6 +38,7 @@ public abstract class MRUnitBase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    assumeFalse("This test fails on Java 9 (https://issues.apache.org/jira/browse/SOLR-8876)", Constants.JRE_IS_MINIMUM_JAVA9);
     assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
         new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
     solrHomeZip = SolrOutputFormat.createSolrHomeZip(new File(RESOURCES_DIR + "/solr/mrunit"));

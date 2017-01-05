@@ -52,14 +52,14 @@
  * <li>FuzzyQueryNode - fuzzy node</li>
  * <li>TermRangeQueryNode - used for parametric field:[low_value TO high_value]</li>
  * <li>ProximityQueryNode - used for proximity search</li>
- * <li>NumericRangeQueryNode - used for numeric range search</li>
+ * <li>LegacyNumericRangeQueryNode - used for numeric range search</li>
  * <li>TokenizedPhraseQueryNode - used by tokenizers/lemmatizers/analyzers for phrases/autophrases</li>
  * </ul>
  * <p>
  * Leaf Nodes:
  * <ul>
  * <li>FieldQueryNode - field/value node</li>
- * <li>NumericQueryNode - used for numeric search</li>
+ * <li>LegacyNumericQueryNode - used for numeric search</li>
  * <li>PathQueryNode - {@link org.apache.lucene.queryparser.flexible.core.nodes.QueryNode} object used with path-like queries</li>
  * <li>OpaqueQueryNode - Used as for part of the query that can be parsed by other parsers. schema/value</li> 
  * <li>PrefixWildcardQueryNode - non-phrase wildcard query</li>

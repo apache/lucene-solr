@@ -17,7 +17,6 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.JmxConfiguration;
 import org.junit.After;
@@ -33,8 +32,6 @@ import javax.management.Query;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
-import javax.management.remote.rmi.RMIConnectorServer;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
@@ -180,4 +177,41 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
 
   }
 
+  @Test
+  public void testJmxAugmentedSolrInfoMBean() throws Exception {
+    final MockInfoMBean mock = new MockInfoMBean();
+    final String jmxKey = "jmx";
+    final String jmxValue = "jmxValue";
+
+    MockJmxAugmentedSolrInfoMBean mbean = new MockJmxAugmentedSolrInfoMBean(mock) {
+      @Override
+      public NamedList getStatisticsForJmx() {
+        NamedList stats = getStatistics();
+        stats.add(jmxKey, jmxValue);
+        return stats;
+      }
+    };
+    monitoredMap.put("mock", mbean);
+
+    // assert getStatistics called when used as a map.  Note can't use equals here to compare
+    // because getStatistics returns a new Object each time.
+    assertNull(monitoredMap.get("mock").getStatistics().get(jmxKey));
+
+    //  assert getStatisticsForJmx called when used as jmx server
+    Set<ObjectInstance> objects = mbeanServer.queryMBeans(null, Query.match(
+        Query.attr("name"), Query.value("mock")));
+    ObjectName name = objects.iterator().next().getObjectName();
+    assertMBeanTypeAndValue(name, jmxKey, jmxValue.getClass(), jmxValue);
+  }
+
+  private static abstract class MockJmxAugmentedSolrInfoMBean
+      extends SolrInfoMBeanWrapper implements JmxMonitoredMap.JmxAugmentedSolrInfoMBean {
+
+    public MockJmxAugmentedSolrInfoMBean(SolrInfoMBean mbean) {
+      super(mbean);
+    }
+
+    @Override
+    public abstract NamedList getStatisticsForJmx();
+  }
 }

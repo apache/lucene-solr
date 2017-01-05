@@ -25,7 +25,6 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.analytics.util.AnalyticsParams;
-import org.apache.solr.util.DateFormatUtil;
 
 /**
  * <code>DefaultIsMissingFieldSource</code> wraps a field source to return missing values 
@@ -49,7 +48,7 @@ public class FilterFieldSource extends ValueSource {
   @Override
   public String description() {
     if (missValue.getClass().equals(Date.class)) {
-      return name()+"("+source.description()+","+DateFormatUtil.formatExternal((Date)missValue)+")";
+      return name()+"("+source.description()+","+ ((Date)missValue).toInstant() +")";
     } else {
       return name()+"("+source.description()+","+missValue.toString()+")";
     }
@@ -61,53 +60,53 @@ public class FilterFieldSource extends ValueSource {
     return new FunctionValues() {
 
       @Override
-      public byte byteVal(int doc) {
+      public byte byteVal(int doc) throws IOException {
         return vals.byteVal(doc);
       }
 
       @Override
-      public short shortVal(int doc) {
+      public short shortVal(int doc) throws IOException {
         return vals.shortVal(doc);
       }
 
       @Override
-      public float floatVal(int doc) {
+      public float floatVal(int doc) throws IOException {
         return vals.floatVal(doc);
       }
 
       @Override
-      public int intVal(int doc) {
+      public int intVal(int doc) throws IOException {
         return vals.intVal(doc);
       }
 
       @Override
-      public long longVal(int doc) {
+      public long longVal(int doc) throws IOException {
         return vals.longVal(doc);
       }
 
       @Override
-      public double doubleVal(int doc) {
+      public double doubleVal(int doc) throws IOException {
         return vals.doubleVal(doc);
       }
 
       @Override
-      public String strVal(int doc) {
+      public String strVal(int doc) throws IOException {
         return vals.strVal(doc);
       }
 
       @Override
-      public Object objectVal(int doc) {
+      public Object objectVal(int doc) throws IOException {
         return exists(doc)? vals.objectVal(doc) : null;
       }
 
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         Object other = vals.objectVal(doc);
         return other!=null&&!missValue.equals(other);
       }
 
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return NAME + '(' + vals.toString(doc) + ')';
       }
 
@@ -123,7 +122,7 @@ public class FilterFieldSource extends ValueSource {
           }
 
           @Override
-          public void fillValue(int doc) {
+          public void fillValue(int doc) throws IOException {
             delegateFiller.fillValue(doc);
             mval.exists = exists(doc);
           }

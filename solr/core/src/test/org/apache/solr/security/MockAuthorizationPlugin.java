@@ -26,7 +26,7 @@ import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MockAuthorizationPlugin implements AuthorizationPlugin{
+public class MockAuthorizationPlugin implements AuthorizationPlugin {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final HashSet<String> denyUsers = new HashSet<>();
@@ -34,8 +34,8 @@ public class MockAuthorizationPlugin implements AuthorizationPlugin{
 
   @Override
   public AuthorizationResponse authorize(AuthorizationContext context) {
-    String uname = context.getUserPrincipal()== null? null : context.getUserPrincipal().getName();
-    if(predicate != null){
+    String uname = context.getUserPrincipal() == null ? null : context.getUserPrincipal().getName();
+    if (predicate != null) {
       try {
         predicate.test(context);
         return new AuthorizationResponse(200);
@@ -45,9 +45,9 @@ public class MockAuthorizationPlugin implements AuthorizationPlugin{
     }
 
 
-    if(uname == null) uname = context.getParams().get("uname");
+    if (uname == null) uname = context.getParams().get("uname");
     log.info("User request: " + uname);
-    if(denyUsers.contains(uname))
+    if (denyUsers.contains(uname))
       return new AuthorizationResponse(403);
     else
       return new AuthorizationResponse(200);

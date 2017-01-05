@@ -24,7 +24,7 @@ import java.io.IOException;
  *
  * @lucene.experimental
  */
-public class FilterLeafCollector implements LeafCollector {
+public abstract class FilterLeafCollector implements LeafCollector {
 
   protected final LeafCollector in;
 
@@ -45,7 +45,12 @@ public class FilterLeafCollector implements LeafCollector {
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "(" + in + ")";
+    String name = getClass().getSimpleName();
+    if (name.length() == 0) {
+      // an anonoymous subclass will have empty name?
+      name = "FilterLeafCollector";
+    }
+    return name + "(" + in + ")";
   }
 
 }

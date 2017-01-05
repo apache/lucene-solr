@@ -54,7 +54,7 @@ import java.util.concurrent.TimeUnit;
 public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
   protected String getSolrXml() {
-    return "solr-no-core.xml";
+    return "solr.xml";
   }
   
   public UnloadDistributedZkTest() {
@@ -68,10 +68,6 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     testUnloadLotsOfCores(); // long
     
     testUnloadShardAndCollection();
-    
-    if (DEBUG) {
-      super.printLayout();
-    }
   }
 
   private void checkCoreNamePresenceAndSliceCount(String collectionName, String coreName,
@@ -123,7 +119,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     SolrClient client = clients.get(0);
     String url1 = getBaseUrl(client);
 
-    try (HttpSolrClient adminClient = new HttpSolrClient(url1)) {
+    try (HttpSolrClient adminClient = getHttpSolrClient(url1)) {
       adminClient.setConnectionTimeout(15000);
       adminClient.setSoTimeout(60000);
       adminClient.request(createCmd);
@@ -174,7 +170,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     // create a new collection collection
     SolrClient client = clients.get(0);
     String url1 = getBaseUrl(client);
-    try (HttpSolrClient adminClient = new HttpSolrClient(url1)) {
+    try (HttpSolrClient adminClient = getHttpSolrClient(url1)) {
       adminClient.setConnectionTimeout(15000);
       adminClient.setSoTimeout(60000);
 
@@ -187,14 +183,14 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     }
     ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
     
-    zkStateReader.updateClusterState();
+    zkStateReader.forceUpdateCollection("unloadcollection");
 
     int slices = zkStateReader.getClusterState().getCollection("unloadcollection").getSlices().size();
     assertEquals(1, slices);
     
     client = clients.get(1);
     String url2 = getBaseUrl(client);
-    try (HttpSolrClient adminClient = new HttpSolrClient(url2)) {
+    try (HttpSolrClient adminClient = getHttpSolrClient(url2)) {
 
       Create createCmd = new Create();
       createCmd.setCoreName("unloadcollection2");
@@ -203,7 +199,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       createCmd.setDataDir(getDataDir(core2dataDir));
       adminClient.request(createCmd);
     }
-    zkStateReader.updateClusterState();
+    zkStateReader.forceUpdateCollection("unloadcollection");
     slices = zkStateReader.getClusterState().getCollection("unloadcollection").getSlices().size();
     assertEquals(1, slices);
     
@@ -213,7 +209,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     
     Random random = random();
     if (random.nextBoolean()) {
-      try (HttpSolrClient collectionClient = new HttpSolrClient(leaderProps.getCoreUrl())) {
+      try (HttpSolrClient collectionClient = getHttpSolrClient(leaderProps.getCoreUrl())) {
         // lets try and use the solrj client to index and retrieve a couple
         // documents
         SolrInputDocument doc1 = getDoc(id, 6, i1, -600, tlong, 600, t1,
@@ -232,7 +228,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     // create another replica for our collection
     client = clients.get(2);
     String url3 = getBaseUrl(client);
-    try (HttpSolrClient adminClient = new HttpSolrClient(url3)) {
+    try (HttpSolrClient adminClient = getHttpSolrClient(url3)) {
       Create createCmd = new Create();
       createCmd.setCoreName("unloadcollection3");
       createCmd.setCollection("unloadcollection");
@@ -246,7 +242,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     // so that we start with some versions when we reload...
     DirectUpdateHandler2.commitOnClose = false;
     
-    try (HttpSolrClient addClient = new HttpSolrClient(url3 + "/unloadcollection3")) {
+    try (HttpSolrClient addClient = getHttpSolrClient(url3 + "/unloadcollection3")) {
       addClient.setConnectionTimeout(30000);
 
       // add a few docs
@@ -260,7 +256,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     //collectionClient.commit();
     
     // unload the leader
-    try (HttpSolrClient collectionClient = new HttpSolrClient(leaderProps.getBaseUrl())) {
+    try (HttpSolrClient collectionClient = getHttpSolrClient(leaderProps.getBaseUrl())) {
       collectionClient.setConnectionTimeout(15000);
       collectionClient.setSoTimeout(30000);
 
@@ -284,7 +280,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     // ensure there is a leader
     zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
     
-    try (HttpSolrClient addClient = new HttpSolrClient(url2 + "/unloadcollection2")) {
+    try (HttpSolrClient addClient = getHttpSolrClient(url2 + "/unloadcollection2")) {
       addClient.setConnectionTimeout(30000);
       addClient.setSoTimeout(90000);
 
@@ -299,7 +295,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     // create another replica for our collection
     client = clients.get(3);
     String url4 = getBaseUrl(client);
-    try (HttpSolrClient adminClient = new HttpSolrClient(url4)) {
+    try (HttpSolrClient adminClient = getHttpSolrClient(url4)) {
       adminClient.setConnectionTimeout(15000);
       adminClient.setSoTimeout(30000);
 
@@ -314,7 +310,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     
     // unload the leader again
     leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
-    try (HttpSolrClient collectionClient = new HttpSolrClient(leaderProps.getBaseUrl())) {
+    try (HttpSolrClient collectionClient = getHttpSolrClient(leaderProps.getBaseUrl())) {
       collectionClient.setConnectionTimeout(15000);
       collectionClient.setSoTimeout(30000);
 
@@ -338,7 +334,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     DirectUpdateHandler2.commitOnClose = true;
     
     // bring the downed leader back as replica
-    try (HttpSolrClient adminClient = new HttpSolrClient(leaderProps.getBaseUrl())) {
+    try (HttpSolrClient adminClient = getHttpSolrClient(leaderProps.getBaseUrl())) {
       adminClient.setConnectionTimeout(15000);
       adminClient.setSoTimeout(30000);
 
@@ -352,7 +348,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
     long found1, found3;
     
-    try (HttpSolrClient adminClient = new HttpSolrClient(url2 + "/unloadcollection")) {
+    try (HttpSolrClient adminClient = getHttpSolrClient(url2 + "/unloadcollection")) {
       adminClient.setConnectionTimeout(15000);
       adminClient.setSoTimeout(30000);
       adminClient.commit();
@@ -360,7 +356,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       q.set("distrib", false);
       found1 = adminClient.query(q).getResults().getNumFound();
     }
-    try (HttpSolrClient adminClient = new HttpSolrClient(url3 + "/unloadcollection")) {
+    try (HttpSolrClient adminClient = getHttpSolrClient(url3 + "/unloadcollection")) {
       adminClient.setConnectionTimeout(15000);
       adminClient.setSoTimeout(30000);
       adminClient.commit();
@@ -369,7 +365,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       found3 = adminClient.query(q).getResults().getNumFound();
     }
 
-    try (HttpSolrClient adminClient = new HttpSolrClient(url4 + "/unloadcollection")) {
+    try (HttpSolrClient adminClient = getHttpSolrClient(url4 + "/unloadcollection")) {
       adminClient.setConnectionTimeout(15000);
       adminClient.setSoTimeout(30000);
       adminClient.commit();
@@ -387,7 +383,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
   private void testUnloadLotsOfCores() throws Exception {
     SolrClient client = clients.get(2);
     String url3 = getBaseUrl(client);
-    try (final HttpSolrClient adminClient = new HttpSolrClient(url3)) {
+    try (final HttpSolrClient adminClient = getHttpSolrClient(url3)) {
       adminClient.setConnectionTimeout(15000);
       adminClient.setSoTimeout(60000);
       int cnt = atLeast(3);
@@ -407,16 +403,13 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       try {
         for (int j = 0; j < cnt; j++) {
           final int freezeJ = j;
-          executor.execute(new Runnable() {
-            @Override
-            public void run() {
-              Unload unloadCmd = new Unload(true);
-              unloadCmd.setCoreName("multiunload" + freezeJ);
-              try {
-                adminClient.request(unloadCmd);
-              } catch (SolrServerException | IOException e) {
-                throw new RuntimeException(e);
-              }
+          executor.execute(() -> {
+            Unload unloadCmd = new Unload(true);
+            unloadCmd.setCoreName("multiunload" + freezeJ);
+            try {
+              adminClient.request(unloadCmd);
+            } catch (SolrServerException | IOException e) {
+              throw new RuntimeException(e);
             }
           });
           Thread.sleep(random().nextInt(50));

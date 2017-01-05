@@ -109,8 +109,8 @@ public class TestRankQueryPlugin extends QParserPlugin {
       return false;
     }
 
-    public Weight createWeight(IndexSearcher indexSearcher, boolean needsScores) throws IOException{
-      return q.createWeight(indexSearcher, needsScores);
+    public Weight createWeight(IndexSearcher indexSearcher, boolean needsScores, float boost) throws IOException{
+      return q.createWeight(indexSearcher, needsScores, boost);
     }
 
     @Override
@@ -270,16 +270,13 @@ public class TestRankQueryPlugin extends QParserPlugin {
         } // end for-each-doc-in-response
       } // end for-each-response
 
-      Collections.sort(shardDocs, new Comparator<ShardDoc>() {
-        @Override
-        public int compare(ShardDoc o1, ShardDoc o2) {
-          if(o1.score < o2.score) {
-            return 1;
-          } else if (o1.score > o2.score) {
-            return -1;
-          } else {
-            return 0;  //To change body of implemented methods use File | Settings | File Templates.
-          }
+      Collections.sort(shardDocs, (o1, o2) -> {
+        if (o1.score < o2.score) {
+          return 1;
+        } else if (o1.score > o2.score) {
+          return -1;
+        } else {
+          return 0;  //To change body of implemented methods use File | Settings | File Templates.
         }
       });
 
@@ -591,16 +588,13 @@ public class TestRankQueryPlugin extends QParserPlugin {
         } // end for-each-doc-in-response
       } // end for-each-response
 
-      Collections.sort(shardDocs, new Comparator<ShardDoc>() {
-        @Override
-        public int compare(ShardDoc o1, ShardDoc o2) {
-          if(o1.score < o2.score) {
-            return 1;
-          } else if (o1.score > o2.score) {
-            return -1;
-          } else {
-            return 0;  //To change body of implemented methods use File | Settings | File Templates.
-          }
+      Collections.sort(shardDocs, (o1, o2) -> {
+        if (o1.score < o2.score) {
+          return 1;
+        } else if (o1.score > o2.score) {
+          return -1;
+        } else {
+          return 0;  //To change body of implemented methods use File | Settings | File Templates.
         }
       });
 
@@ -697,12 +691,18 @@ public class TestRankQueryPlugin extends QParserPlugin {
         @Override
         public void setScorer(Scorer scorer) throws IOException {}
         
-        public boolean acceptsDocsOutOfOrder() {
-          return false;
-        }
-
-        public void collect(int doc) {
-          list.add(new ScoreDoc(doc+base, (float)values.get(doc)));
+        public void collect(int doc) throws IOException {
+          int valuesDocID = values.docID();
+          if (valuesDocID < doc) {
+            valuesDocID = values.advance(doc);
+          }
+          long value;
+          if (valuesDocID == doc) {
+            value = values.longValue();
+          } else {
+            value = 0;
+          }
+          list.add(new ScoreDoc(doc+base, (float) value));
         }
       };
     }

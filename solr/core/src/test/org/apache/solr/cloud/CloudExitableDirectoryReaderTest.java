@@ -16,55 +16,62 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
 * Distributed test for {@link org.apache.lucene.index.ExitableDirectoryReader} 
 */
-@Slow
-public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestBase {
+public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
+
   private static final int NUM_DOCS_PER_TYPE = 20;
   private static final String sleep = "2";
-  
-  public CloudExitableDirectoryReaderTest() {
-    configString = "solrconfig-tlog-with-delayingcomponent.xml";
-    schemaString = "schema.xml";
-  }
 
-  @Override
-  protected String getCloudSolrConfig() {
-    return configString;
+  private static final String COLLECTION = "exitable";
+  
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(2)
+        .addConfig("conf", TEST_PATH().resolve("configsets").resolve("exitable-directory").resolve("conf"))
+        .configure();
+
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+        (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
   }
 
   @Test
   public void test() throws Exception {
-    handle.clear();
-    handle.put("timestamp", SKIPVAL);
-    waitForRecoveriesToFinish(false);
     indexDocs();
     doTimeoutTests();
   }
 
   public void indexDocs() throws Exception {
     int counter = 1;
+    UpdateRequest req = new UpdateRequest();
 
     for(; (counter % NUM_DOCS_PER_TYPE) != 0; counter++ )
-      indexDoc(sdoc("id", Integer.toString(counter), "name", "a" + counter));
+      req.add(sdoc("id", Integer.toString(counter), "name", "a" + counter));
 
     counter++;
     for(; (counter % NUM_DOCS_PER_TYPE) != 0; counter++ )
-      indexDoc(sdoc("id", Integer.toString(counter), "name", "b" + counter));
+      req.add(sdoc("id", Integer.toString(counter), "name", "b" + counter));
 
     counter++;
     for(; counter % NUM_DOCS_PER_TYPE != 0; counter++ )
-      indexDoc(sdoc("id", Integer.toString(counter), "name", "dummy term doc" + counter));
+      req.add(sdoc("id", Integer.toString(counter), "name", "dummy term doc" + counter));
 
-    commit();
+    req.commit(cluster.getSolrClient(), COLLECTION);
   }
 
   public void doTimeoutTests() throws Exception {
@@ -96,13 +103,13 @@ public class CloudExitableDirectoryReaderTest extends AbstractFullDistribZkTestB
    * execute a request, verify that we get an expected error
    */
   public void assertPartialResults(ModifiableSolrParams p) throws Exception {
-      QueryResponse rsp = queryServer(p);
+      QueryResponse rsp = cluster.getSolrClient().query(COLLECTION, p);
       assertEquals(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" were expected",
           true, rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
   }
   
   public void assertSuccess(ModifiableSolrParams p) throws Exception {
-    QueryResponse response = queryServer(p);
+    QueryResponse response = cluster.getSolrClient().query(COLLECTION, p);
     assertEquals("Wrong #docs in response", NUM_DOCS_PER_TYPE - 1, response.getResults().getNumFound());
   }
 }

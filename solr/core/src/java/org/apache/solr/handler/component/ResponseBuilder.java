@@ -136,7 +136,6 @@ public class ResponseBuilder
   public int shards_start = -1;
   public List<ShardRequest> outgoing;  // requests to be sent
   public List<ShardRequest> finished;  // requests that have received responses from all shards
-  public String preferredHostAddress = null;
   public String shortCircuitedURL;
 
   public int getShardNum(String shard) {
@@ -383,8 +382,8 @@ public class ResponseBuilder
     return sortSpec;
   }
 
-  public void setSortSpec(SortSpec sort) {
-    this.sortSpec = sort;
+  public void setSortSpec(SortSpec sortSpec) {
+    this.sortSpec = sortSpec;
   }
 
   public GroupingSpecification getGroupingSpec() {

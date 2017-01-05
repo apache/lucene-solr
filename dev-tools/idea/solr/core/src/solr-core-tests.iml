@@ -21,6 +21,7 @@
     <orderEntry type="module" scope="TEST" module-name="solr-core" />
     <orderEntry type="module" scope="TEST" module-name="solrj" />
     <orderEntry type="module" scope="TEST" module-name="lucene-core" />
+    <orderEntry type="module" scope="TEST" module-name="classification" />
     <orderEntry type="module" scope="TEST" module-name="analysis-common" />
     <orderEntry type="module" scope="TEST" module-name="queryparser" />
     <orderEntry type="module" scope="TEST" module-name="queries" />
@@ -31,5 +32,6 @@
     <orderEntry type="module" scope="TEST" module-name="expressions" />
     <orderEntry type="module" scope="TEST" module-name="icu" />
     <orderEntry type="module" scope="TEST" module-name="analysis-extras" />
+    <orderEntry type="module" scope="TEST" module-name="backward-codecs" />
   </component>
 </module>

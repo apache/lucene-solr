@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,7 +28,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -425,7 +425,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       };
       
       // with SOLR-6279 UNLOAD will wait for the core's reference count to have reached zero
-      // hence cN.close() need to preceed or run in parallel with unloadViaAdmin(...)
+      // hence cN.close() need to proceed or run in parallel with unloadViaAdmin(...)
       final TestThread cThread = new TestThread();
       cThread.start();
       
@@ -537,13 +537,13 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     // Write the file for core discovery
     FileUtils.writeStringToFile(new File(coreRoot, "core.properties"), "name=" + coreName +
         System.getProperty("line.separator") + "transient=true" +
-        System.getProperty("line.separator") + "loadOnStartup=true", Charsets.UTF_8.toString());
+        System.getProperty("line.separator") + "loadOnStartup=true", StandardCharsets.UTF_8);
 
-    FileUtils.writeStringToFile(new File(subHome, "solrconfig.snippet.randomindexconfig.xml"), rand_snip, Charsets.UTF_8.toString());
+    FileUtils.writeStringToFile(new File(subHome, "solrconfig.snippet.randomindexconfig.xml"), rand_snip, StandardCharsets.UTF_8);
 
-    FileUtils.writeStringToFile(new File(subHome, "solrconfig.xml"), config, Charsets.UTF_8.toString());
+    FileUtils.writeStringToFile(new File(subHome, "solrconfig.xml"), config, StandardCharsets.UTF_8);
 
-    FileUtils.writeStringToFile(new File(subHome, "schema.xml"), schema, Charsets.UTF_8.toString());
+    FileUtils.writeStringToFile(new File(subHome, "schema.xml"), schema, StandardCharsets.UTF_8);
   }
 
   // Write out the cores' config files, both bad schema files, bad config files as well as some good cores.
@@ -565,11 +565,11 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     // Collect the files that we'll write to the config directories.
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
     String min_schema = FileUtils.readFileToString(new File(top, "schema-tiny.xml"),
-        Charsets.UTF_8.toString());
+        StandardCharsets.UTF_8);
     String min_config = FileUtils.readFileToString(new File(top, "solrconfig-minimal.xml"),
-        Charsets.UTF_8.toString());
+        StandardCharsets.UTF_8);
     String rand_snip = FileUtils.readFileToString(new File(top, "solrconfig.snippet.randomindexconfig.xml"),
-        Charsets.UTF_8.toString());
+        StandardCharsets.UTF_8);
 
     // Now purposely mess up the config files, introducing stupid syntax errors.
     String bad_config = min_config.replace("<requestHandler", "<reqsthalr");
@@ -668,7 +668,9 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   @Test
   public void testMidUseUnload() throws Exception {
-    final int maximumSleepMillis = random().nextInt(10000); // sleep for up to 10 s
+    final int maximumSleepMillis = random().nextInt(9999) + 1; // sleep for up to 10 s Must add 1 because using
+                                                               // this as a seed will rea few lines down will
+                                                               // throw an exception if this is zero
     if (VERBOSE) {
       System.out.println("TestLazyCores.testMidUseUnload maximumSleepMillis="+maximumSleepMillis);
     }

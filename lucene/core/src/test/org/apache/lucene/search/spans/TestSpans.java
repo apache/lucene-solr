@@ -70,9 +70,10 @@ public class TestSpans extends LuceneTestCase {
       doc.add(newTextField(field, docFields[i], Field.Store.YES));
       writer.addDocument(doc);
     }
+    writer.forceMerge(1);
     reader = writer.getReader();
     writer.close();
-    searcher = newSearcher(reader);
+    searcher = newSearcher(getOnlyLeafReader(reader));
   }
   
   @Override
@@ -98,7 +99,6 @@ public class TestSpans extends LuceneTestCase {
     "s2 s1 s1 xx xx s2 xx s2 xx s1 xx xx xx xx xx s2 xx",
     "r1 s11",
     "r1 s21"
-
   };
   
   private void checkHits(Query query, int[] results) throws IOException {
@@ -201,7 +201,7 @@ public class TestSpans extends LuceneTestCase {
   public void testSpanNearOrderedOverlap() throws Exception {
     final SpanQuery query = spanNearOrderedQuery(field, 1, "t1", "t2", "t3");
     
-    Spans spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), query);
+    Spans spans = query.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
 
     assertEquals("first doc", 11, spans.nextDoc());
     assertEquals("first start", 0, spans.nextStartPosition());
@@ -216,7 +216,7 @@ public class TestSpans extends LuceneTestCase {
   public void testSpanNearUnOrdered() throws Exception {
     //See http://www.gossamer-threads.com/lists/lucene/java-dev/52270 for discussion about this test
     SpanQuery senq = spanNearUnorderedQuery(field, 0, "u1", "u2");
-    Spans spans = MultiSpansWrapper.wrap(reader, senq);
+    Spans spans = senq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(spans, 4, 1, 3);
     assertNext(spans, 5, 2, 4);
     assertNext(spans, 8, 2, 4);
@@ -225,7 +225,7 @@ public class TestSpans extends LuceneTestCase {
     assertFinished(spans);
 
     senq = spanNearUnorderedQuery(1, senq, spanTermQuery(field, "u2")); 
-    spans = MultiSpansWrapper.wrap(reader, senq);
+    spans = senq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(spans, 4, 0, 3);
     assertNext(spans, 4, 1, 3); // unordered spans can be subsets
     assertNext(spans, 5, 0, 4);
@@ -239,7 +239,7 @@ public class TestSpans extends LuceneTestCase {
   }
 
   private Spans orSpans(String[] terms) throws Exception {
-    return MultiSpansWrapper.wrap(searcher.getIndexReader(), spanOrQuery(field, terms));
+    return spanOrQuery(field, terms).createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
   }
 
   public void testSpanOrEmpty() throws Exception {
@@ -405,45 +405,57 @@ public class TestSpans extends LuceneTestCase {
 
 
   }
-  
-  public void testSpanNots() throws Throwable{
-     assertEquals("SpanNotIncludeExcludeSame1", 0, spanCount("s2", "s2", 0, 0), 0);
-     assertEquals("SpanNotIncludeExcludeSame2", 0, spanCount("s2", "s2", 10, 10), 0);
-     
-     //focus on behind
-     assertEquals("SpanNotS2NotS1_6_0", 1, spanCount("s2", "s1", 6, 0));
-     assertEquals("SpanNotS2NotS1_5_0", 2, spanCount("s2", "s1", 5, 0));
-     assertEquals("SpanNotS2NotS1_3_0", 3, spanCount("s2", "s1", 3, 0));
-     assertEquals("SpanNotS2NotS1_2_0", 4, spanCount("s2", "s1", 2, 0));
-     assertEquals("SpanNotS2NotS1_0_0", 4, spanCount("s2", "s1", 0, 0));
-     
-     //focus on both
-     assertEquals("SpanNotS2NotS1_3_1", 2, spanCount("s2", "s1", 3, 1));
-     assertEquals("SpanNotS2NotS1_2_1", 3, spanCount("s2", "s1", 2, 1));
-     assertEquals("SpanNotS2NotS1_1_1", 3, spanCount("s2", "s1", 1, 1));
-     assertEquals("SpanNotS2NotS1_10_10", 0, spanCount("s2", "s1", 10, 10));
-     
-     //focus on ahead
-     assertEquals("SpanNotS1NotS2_10_10", 0, spanCount("s1", "s2", 10, 10));  
-     assertEquals("SpanNotS1NotS2_0_1", 3, spanCount("s1", "s2", 0, 1));  
-     assertEquals("SpanNotS1NotS2_0_2", 3, spanCount("s1", "s2", 0, 2));  
-     assertEquals("SpanNotS1NotS2_0_3", 2, spanCount("s1", "s2", 0, 3));  
-     assertEquals("SpanNotS1NotS2_0_4", 1, spanCount("s1", "s2", 0, 4));
-     assertEquals("SpanNotS1NotS2_0_8", 0, spanCount("s1", "s2", 0, 8));
-     
-     //exclude doesn't exist
-     assertEquals("SpanNotS1NotS3_8_8", 3, spanCount("s1", "s3", 8, 8));
 
-     //include doesn't exist
-     assertEquals("SpanNotS3NotS1_8_8", 0, spanCount("s3", "s1", 8, 8));
+  public void testSpanNots() throws Throwable {
 
+    assertEquals("SpanNotIncludeExcludeSame1", 0, spanCount("s2", 0, "s2", 0, 0), 0);
+    assertEquals("SpanNotIncludeExcludeSame2", 0, spanCount("s2", 0, "s2", 10, 10), 0);
+
+    //focus on behind
+    assertEquals("SpanNotS2NotS1_6_0", 1, spanCount("s2", 0, "s1", 6, 0));
+    assertEquals("SpanNotS2NotS1_5_0", 2, spanCount("s2", 0, "s1", 5, 0));
+    assertEquals("SpanNotS2NotS1_3_0", 3, spanCount("s2", 0, "s1", 3, 0));
+    assertEquals("SpanNotS2NotS1_2_0", 4, spanCount("s2", 0, "s1", 2, 0));
+    assertEquals("SpanNotS2NotS1_0_0", 4, spanCount("s2", 0, "s1", 0, 0));
+
+    //focus on both
+    assertEquals("SpanNotS2NotS1_3_1", 2, spanCount("s2", 0, "s1", 3, 1));
+    assertEquals("SpanNotS2NotS1_2_1", 3, spanCount("s2", 0, "s1", 2, 1));
+    assertEquals("SpanNotS2NotS1_1_1", 3, spanCount("s2", 0, "s1", 1, 1));
+    assertEquals("SpanNotS2NotS1_10_10", 0, spanCount("s2", 0, "s1", 10, 10));
+
+    //focus on ahead
+    assertEquals("SpanNotS1NotS2_10_10", 0, spanCount("s1", 0, "s2", 10, 10));
+    assertEquals("SpanNotS1NotS2_0_1", 3, spanCount("s1", 0, "s2", 0, 1));
+    assertEquals("SpanNotS1NotS2_0_2", 3, spanCount("s1", 0, "s2", 0, 2));
+    assertEquals("SpanNotS1NotS2_0_3", 2, spanCount("s1", 0, "s2", 0, 3));
+    assertEquals("SpanNotS1NotS2_0_4", 1, spanCount("s1", 0, "s2", 0, 4));
+    assertEquals("SpanNotS1NotS2_0_8", 0, spanCount("s1", 0, "s2", 0, 8));
+
+    //exclude doesn't exist
+    assertEquals("SpanNotS1NotS3_8_8", 3, spanCount("s1", 0, "s3", 8, 8));
+
+    //include doesn't exist
+    assertEquals("SpanNotS3NotS1_8_8", 0, spanCount("s3", 0, "s1", 8, 8));
+
+    // Negative values
+    assertEquals("SpanNotS2S1NotXXNeg_0_0", 1, spanCount("s2 s1", 10, "xx", 0, 0));
+    assertEquals("SpanNotS2S1NotXXNeg_1_1", 1, spanCount("s2 s1", 10, "xx", -1, -1));
+    assertEquals("SpanNotS2S1NotXXNeg_0_2", 2, spanCount("s2 s1", 10, "xx",  0, -2));
+    assertEquals("SpanNotS2S1NotXXNeg_1_2", 2, spanCount("s2 s1", 10, "xx", -1, -2));
+    assertEquals("SpanNotS2S1NotXXNeg_2_1", 2, spanCount("s2 s1", 10, "xx", -2, -1));
+    assertEquals("SpanNotS2S1NotXXNeg_3_1", 2, spanCount("s2 s1", 10, "xx", -3, -1));
+    assertEquals("SpanNotS2S1NotXXNeg_1_3", 2, spanCount("s2 s1", 10, "xx", -1, -3));
+    assertEquals("SpanNotS2S1NotXXNeg_2_2", 3, spanCount("s2 s1", 10, "xx", -2, -2));
   }
-  
-  private int spanCount(String include, String exclude, int pre, int post) throws IOException{
-     SpanQuery iq = spanTermQuery(field, include);
+
+
+  private int spanCount(String include, int slop, String exclude, int pre, int post) throws IOException{
+     String[] includeTerms = include.split(" +");
+     SpanQuery iq = includeTerms.length == 1 ? spanTermQuery(field, include) : spanNearOrderedQuery(field, slop, includeTerms);
      SpanQuery eq = spanTermQuery(field, exclude);
      SpanQuery snq = spanNotQuery(iq, eq, pre, post);
-     Spans spans = MultiSpansWrapper.wrap(searcher.getIndexReader(), snq);
+     Spans spans = snq.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
 
      int i = 0;
      if (spans != null) {

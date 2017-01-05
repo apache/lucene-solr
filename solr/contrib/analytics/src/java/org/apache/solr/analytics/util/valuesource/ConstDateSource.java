@@ -17,7 +17,7 @@
 package org.apache.solr.analytics.util.valuesource;
 
 import java.io.IOException;
-import java.text.ParseException;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 
@@ -27,7 +27,6 @@ import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDate;
 import org.apache.solr.analytics.util.AnalyticsParams;
-import org.apache.solr.util.DateFormatUtil;
 
 /**
  * <code>ConstDateSource</code> returns a constant date for all documents
@@ -35,7 +34,7 @@ import org.apache.solr.util.DateFormatUtil;
 public class ConstDateSource extends ConstDoubleSource {
   public final static String NAME = AnalyticsParams.CONSTANT_DATE;
 
-  public ConstDateSource(Date constant) throws ParseException {
+  public ConstDateSource(Date constant) {
     super(constant.getTime());
   }
 
@@ -46,7 +45,7 @@ public class ConstDateSource extends ConstDoubleSource {
   @SuppressWarnings("deprecation")
   @Override
   public String description() {
-    return name()+"(" + DateFormatUtil.formatExternal(new Date(getLong())) + ")";
+    return name()+"(" + Instant.ofEpochMilli(getLong()) + ")";
   }
 
   protected String name() {
@@ -83,7 +82,7 @@ public class ConstDateSource extends ConstDoubleSource {
       @SuppressWarnings("deprecation")
       @Override
       public String strVal(int doc) {
-        return DateFormatUtil.formatExternal(new Date(longVal(doc)));
+        return Instant.ofEpochMilli(longVal(doc)).toString();
       }
       @Override
       public boolean boolVal(int doc) {

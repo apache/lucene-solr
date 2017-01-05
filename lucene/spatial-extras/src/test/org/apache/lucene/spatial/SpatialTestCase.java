@@ -18,34 +18,26 @@ package org.apache.lucene.spatial;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import java.util.logging.Logger;
-
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Rectangle;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.uninverting.UninvertingReader;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
-import org.apache.lucene.util.TestUtil;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomDouble;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomGaussian;
@@ -66,34 +58,14 @@ public abstract class SpatialTestCase extends LuceneTestCase {
 
   protected SpatialContext ctx;//subclass must initialize
 
-  protected Map<String,Type> uninvertMap = new HashMap<>();
-
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    // TODO: change this module to index docvalues instead of uninverting
-    uninvertMap.clear();
-    uninvertMap.put("pointvector__x", Type.DOUBLE);
-    uninvertMap.put("pointvector__y", Type.DOUBLE);
-
     directory = newDirectory();
-    final Random random = random();
-    analyzer = new MockAnalyzer(random);
-    indexWriter = new RandomIndexWriter(random,directory, newIWConfig(random, analyzer));
-    indexReader = UninvertingReader.wrap(indexWriter.getReader(), uninvertMap);
+    analyzer = new MockAnalyzer(random());
+    indexWriter = new RandomIndexWriter(random(), directory, LuceneTestCase.newIndexWriterConfig(random(), analyzer));
+    indexReader = indexWriter.getReader();
     indexSearcher = newSearcher(indexReader);
-  }
-
-  protected IndexWriterConfig newIWConfig(Random random, Analyzer analyzer) {
-    final IndexWriterConfig indexWriterConfig = LuceneTestCase.newIndexWriterConfig(random, analyzer);
-    //TODO can we randomly choose a doc-values supported format?
-    if (needsDocValues())
-      indexWriterConfig.setCodec( TestUtil.getDefaultCodec());
-    return indexWriterConfig;
-  }
-
-  protected boolean needsDocValues() {
-    return false;
   }
 
   @Override

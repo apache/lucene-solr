@@ -36,10 +36,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.TimeZoneUtils;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -386,7 +384,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         "*[count(//doc)=5]"
     );
     assertQ(
-        "Return two facet counts for field airport_a",
+        "Return two facet counts for field airport_a and duration_i1",
          req(
              "q", "*:*",
              "fq", "id:[2000 TO 2004]",
@@ -395,12 +393,18 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
              "group.field", "hotel_s1",
              "facet", "true",
              "facet.limit", facetLimit,
-             "facet.field", "airport_s1"
+             "facet.field", "airport_s1",
+             "facet.field", "duration_i1"
          ),
         "//lst[@name='facet_fields']/lst[@name='airport_s1']",
         "*[count(//lst[@name='airport_s1']/int)=2]",
         "//lst[@name='airport_s1']/int[@name='ams'][.='2']",
-        "//lst[@name='airport_s1']/int[@name='dus'][.='1']"
+        "//lst[@name='airport_s1']/int[@name='dus'][.='1']",
+
+        "//lst[@name='facet_fields']/lst[@name='duration_i1']",
+        "*[count(//lst[@name='duration_i1']/int)=2]",
+        "//lst[@name='duration_i1']/int[@name='5'][.='2']",
+        "//lst[@name='duration_i1']/int[@name='10'][.='2']"
     );
     assertQ(
         "Return one facet count for field airport_a using facet.offset",
@@ -495,11 +499,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
     ModifiableSolrParams params = params("q","*:*", "rows","0", "facet","true", "facet.field","{!key=myalias}"+field);
     
-    String[] methods = {null, "fc","enum","fcs", "uif"
-        };
+    String[] methods = {null, "fc","enum","fcs", "uif"};
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
-      methods = new String[]{null, "fc","enum", "uif"
-          };
+      methods = new String[]{null, "fc","enum", "uif"};
     }
 
     prefixes = prefixes==null ? new String[]{null} : prefixes;
@@ -512,7 +514,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         params.set("facet.method", method);
       }
       for (String prefix : prefixes) {
-        if (prefix == null || "uif".equals(method)) {// there is no support 
+        if (prefix == null) {
           params.remove("facet.prefix");
         } else {
           params.set("facet.prefix", prefix);
@@ -790,8 +792,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     //note: add_doc duplicates bday to bday_drf and a_tdt to a_drf (date range field)
     add_doc(i, "201",  f, "1976-07-04T12:08:56.235Z", ff, "1900-01-01T"+ooo);
     add_doc(i, "202",  f, "1976-07-05T00:00:00.000Z", ff, "1976-07-01T"+ooo);
-    add_doc(i, "203",  f, "1976-07-15T00:07:67.890Z", ff, "1976-07-04T"+ooo);
-    add_doc(i, "204",  f, "1976-07-21T00:07:67.890Z", ff, "1976-07-05T"+ooo);
+    add_doc(i, "203",  f, "1976-07-15T00:07:57.890Z", ff, "1976-07-04T"+ooo);
+    add_doc(i, "204",  f, "1976-07-21T00:07:57.890Z", ff, "1976-07-05T"+ooo);
     add_doc(i, "205",  f, "1976-07-13T12:12:25.255Z", ff, "1976-07-05T"+xxx);
     add_doc(i, "206",  f, "1976-07-03T17:01:23.456Z", ff, "1976-07-07T"+ooo);
     add_doc(i, "207",  f, "1976-07-12T12:12:25.255Z", ff, "1976-07-13T"+ooo);
@@ -805,45 +807,32 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testTrieDateFacets() {
-    helpTestDateFacets("bday", false, FacetRangeMethod.FILTER);
-  }
-
-  @Test
   public void testTrieDateRangeFacets() {
-    helpTestDateFacets("bday", true, FacetRangeMethod.FILTER);
+    helpTestDateFacets("bday", FacetRangeMethod.FILTER);
   }
   
   @Test
-  public void testTrieDateFacetsDocValues() {
-    helpTestDateFacets("bday", false, FacetRangeMethod.DV);
-  }
-
-  @Test
   public void testTrieDateRangeFacetsDocValues() {
-    helpTestDateFacets("bday", true, FacetRangeMethod.DV);
+    helpTestDateFacets("bday", FacetRangeMethod.DV);
   }
 
   @Test
   public void testDateRangeFieldFacets() {
-    helpTestDateFacets("bday_drf", true, FacetRangeMethod.FILTER);
+    helpTestDateFacets("bday_drf", FacetRangeMethod.FILTER);
   }
 
-  private void helpTestDateFacets(final String fieldName, 
-                                  final boolean rangeMode, 
-                                  final FacetRangeMethod rangeFacetMethod) {
-    final String p = rangeMode ? "facet.range" : "facet.date";
-    final String b = rangeMode ? "facet_ranges" : "facet_dates";
+  private void helpTestDateFacets(final String fieldName, final FacetRangeMethod rangeFacetMethod) {
+    final String p = "facet.range";
+    final String b = "facet_ranges";
     final String f = fieldName;
-    final String c = (rangeMode ? "/lst[@name='counts']" : "");
+    final String c = "/lst[@name='counts']";
     final String pre = "//lst[@name='"+b+"']/lst[@name='"+f+"']" + c;
-    final String meta = pre + (rangeMode ? "/../" : "");
+    final String meta = pre + "/../";
 
     
-    // date faceting defaults to include both endpoints, 
-    // range faceting defaults to including only lower
+    // range faceting defaults to including only lower endpoint
     // doc exists with value @ 00:00:00.000 on July5
-    final String jul4 = rangeMode ? "[.='1'  ]" : "[.='2'  ]";
+    final String jul4 = "[.='1'  ]";
 
     assertQ("check counts for month of facet by day",
             req( "q", "*:*"
@@ -856,7 +845,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".other", "all"
                 ,p+".method", rangeFacetMethod.toString()  //This only applies to range faceting, won't be use for date faceting
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 31 : 34)+"]"
+            ,"*[count("+pre+"/int)=31]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
@@ -905,7 +894,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".other", "all"
                 ,"facet.mincount", "1"
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 8 : 11)+"]"
+            ,"*[count("+pre+"/int)=8]"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
             ,pre+"/int[@name='1976-07-04T00:00:00Z']" + jul4
             ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
@@ -930,9 +919,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".other", "all"
                 ,"f." + f + ".facet.mincount", "2"
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 3 : 7)+"]"
+            ,"*[count("+pre+"/int)=3]"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
-            ,pre+(rangeMode ? "" : "/int[@name='1976-07-04T00:00:00Z']" +jul4)
+            ,pre
             ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
             ,pre+"/int[@name='1976-07-15T00:00:00Z'][.='2'  ]"
             ,meta+"/int[@name='before' ][.='2']"
@@ -950,10 +939,10 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".gap",    "+1DAY"
                 ,p+".other",  "all"
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 2 : 5)+"]"
+            ,"*[count("+pre+"/int)=2]"
             ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
             ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
-            
+
             ,meta+"/int[@name='before' ][.='5']"
             );
     assertQ("check after is not inclusive of lower bound by default (for dates)",
@@ -966,13 +955,13 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".gap",    "+1DAY"
                 ,p+".other",  "all"
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 2 : 5)+"]"
+            ,"*[count("+pre+"/int)=2]"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
             ,pre+"/int[@name='1976-07-04T00:00:00Z']" + jul4
-            
-            ,meta+"/int[@name='after' ][.='"+(rangeMode ? 9 : 8)+"']"
+
+            ,meta+"/int[@name='after' ][.='9']"
             );
-            
+
 
     assertQ("check hardend=false",
             req( "q", "*:*"
@@ -985,11 +974,11 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".other",  "all"
                 ,p+".hardend","false"
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 3 : 6)+"]"
+            ,"*[count("+pre+"/int)=3]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='5'  ]"
             ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0'  ]"
             ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='4'  ]"
-            
+
             ,meta+"/int[@name='before' ][.='2']"
             ,meta+"/int[@name='after'  ][.='3']"
             ,meta+"/int[@name='between'][.='9']"
@@ -1006,43 +995,58 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".other",  "all"
                 ,p+".hardend","true"
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 3 : 6)+"]"
+            ,"*[count("+pre+"/int)=3]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='5'  ]"
             ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0'  ]"
             ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='1'  ]"
-            
+
             ,meta+"/int[@name='before' ][.='2']"
             ,meta+"/int[@name='after'  ][.='6']"
             ,meta+"/int[@name='between'][.='6']"
             );
-    
-  }
 
-  @Test
-  public void testTrieDateFacetsWithIncludeOption() {
-    helpTestDateFacetsWithIncludeOption("a_tdt", false);
+    //Fixed by SOLR-9080 related to the Gregorian Change Date
+    assertQ("check BC era",
+        req( "q", "*:*"
+            ,"rows", "0"
+            ,"facet", "true"
+            ,p, f
+            ,p+".start", "-0200-01-01T00:00:00Z" // BC
+            ,p+".end",   "+0200-01-01T00:00:00Z" // AD
+            ,p+".gap",   "+100YEARS"
+            ,p+".other", "all"
+        )
+        ,pre+"/int[@name='-0200-01-01T00:00:00Z'][.='0']"
+        ,pre+"/int[@name='-0100-01-01T00:00:00Z'][.='0']"
+        ,pre+"/int[@name='0000-01-01T00:00:00Z'][.='0']"
+        ,pre+"/int[@name='0100-01-01T00:00:00Z'][.='0']"
+        ,meta+"/int[@name='before' ][.='0']"
+        ,meta+"/int[@name='after'  ][.='14']"
+        ,meta+"/int[@name='between'][.='0']"
+
+    );
+
   }
 
   @Test
   public void testTrieDateRangeFacetsWithIncludeOption() {
-    helpTestDateFacetsWithIncludeOption("a_tdt", true);
+    helpTestDateRangeFacetsWithIncludeOption("a_tdt");
   }
 
   @Test
   public void testDateRangeFieldDateRangeFacetsWithIncludeOption() {
-    helpTestDateFacetsWithIncludeOption("a_drf", true);
+    helpTestDateRangeFacetsWithIncludeOption("a_drf");
   }
 
   /** Similar to helpTestDateFacets, but for different fields with test data
       exactly on boundary marks */
-  private void helpTestDateFacetsWithIncludeOption(final String fieldName,
-                                                   final boolean rangeMode) {
-    final String p = rangeMode ? "facet.range" : "facet.date";
-    final String b = rangeMode ? "facet_ranges" : "facet_dates";
+  private void helpTestDateRangeFacetsWithIncludeOption(final String fieldName) {
+    final String p = "facet.range";
+    final String b = "facet_ranges";
     final String f = fieldName;
-    final String c = (rangeMode ? "/lst[@name='counts']" : "");
+    final String c = "/lst[@name='counts']";
     final String pre = "//lst[@name='"+b+"']/lst[@name='"+f+"']" + c;
-    final String meta = pre + (rangeMode ? "/../" : "");
+    final String meta = pre + "/../";
 
     assertQ("checking counts for lower",
             req( "q", "*:*"
@@ -1056,7 +1060,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "lower"
                 )
             // 15 days + pre+post+inner = 18
-            ,"*[count("+pre+"/int)="+(rangeMode ? 15 : 18)+"]"
+            ,"*[count("+pre+"/int)=15]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='0']"
@@ -1090,7 +1094,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "upper"
                 )
             // 15 days + pre+post+inner = 18
-            ,"*[count("+pre+"/int)="+(rangeMode ? 15 : 18)+"]"
+            ,"*[count("+pre+"/int)=15]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
@@ -1125,7 +1129,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "upper"
                 )
             // 15 days + pre+post+inner = 18
-            ,"*[count("+pre+"/int)="+(rangeMode ? 15 : 18)+"]"
+            ,"*[count("+pre+"/int)=15]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
@@ -1160,7 +1164,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "edge"
                 )
             // 15 days + pre+post+inner = 18
-            ,"*[count("+pre+"/int)="+(rangeMode ? 15 : 18)+"]"
+            ,"*[count("+pre+"/int)=15]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
@@ -1195,7 +1199,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "outer"
                 )
             // 12 days + pre+post+inner = 15
-            ,"*[count("+pre+"/int)="+(rangeMode ? 12 : 15)+"]"
+            ,"*[count("+pre+"/int)=12]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
@@ -1227,7 +1231,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "edge"
                 )
             // 12 days + pre+post+inner = 15
-            ,"*[count("+pre+"/int)="+(rangeMode ? 12 : 15)+"]"
+            ,"*[count("+pre+"/int)=12]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='0']"
@@ -1259,7 +1263,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "outer"
                 )
             // 12 days + pre+post+inner = 15
-            ,"*[count("+pre+"/int)="+(rangeMode ? 12 : 15)+"]"
+            ,"*[count("+pre+"/int)=12]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='0']"
@@ -1292,7 +1296,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "outer"
                 )
             // 12 days + pre+post+inner = 15
-            ,"*[count("+pre+"/int)="+(rangeMode ? 12 : 15)+"]"
+            ,"*[count("+pre+"/int)=12]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='0']"
@@ -1323,7 +1327,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "all"
                 )
             // 12 days + pre+post+inner = 15
-            ,"*[count("+pre+"/int)="+(rangeMode ? 12 : 15)+"]"
+            ,"*[count("+pre+"/int)=12]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
@@ -1344,20 +1348,17 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDateFacetsWithTz() {
-    for (boolean rangeType : new boolean[] { true, false }) {
-      helpTestDateFacetsWithTz("a_tdt", rangeType);
-    }
+  public void testDateRangeFacetsWithTz() {
+    helpTestDateRangeFacetsWithTz("a_tdt");
   }
 
-  private void helpTestDateFacetsWithTz(final String fieldName,
-                                        final boolean rangeMode) {
-    final String p = rangeMode ? "facet.range" : "facet.date";
-    final String b = rangeMode ? "facet_ranges" : "facet_dates";
+  private void helpTestDateRangeFacetsWithTz(final String fieldName) {
+    final String p = "facet.range";
+    final String b = "facet_ranges";
     final String f = fieldName;
-    final String c = (rangeMode ? "/lst[@name='counts']" : "");
+    final String c = "/lst[@name='counts']";
     final String pre = "//lst[@name='"+b+"']/lst[@name='"+f+"']" + c;
-    final String meta = pre + (rangeMode ? "/../" : "");
+    final String meta = pre + "/../";
 
     final String TZ = "America/Los_Angeles";
     assumeTrue("Test requires JVM to know about about TZ: " + TZ,
@@ -1377,7 +1378,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "lower"
                 )
             // 15 days + pre+post+inner = 18
-            ,"*[count("+pre+"/int)="+(rangeMode ? 15 : 18)+"]"
+            ,"*[count("+pre+"/int)=15]"
             ,pre+"/int[@name='1976-07-01T07:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-02T07:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T07:00:00Z'][.='1'  ]"
@@ -1415,7 +1416,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "lower"
                 )
             // 15 days + pre+post+inner = 18
-            ,"*[count("+pre+"/int)="+(rangeMode ? 15 : 18)+"]"
+            ,"*[count("+pre+"/int)=15]"
             ,pre+"/int[@name='2010-11-01T07:00:00Z'][.='0']"
             ,pre+"/int[@name='2010-11-02T07:00:00Z'][.='0']"
             ,pre+"/int[@name='2010-11-03T07:00:00Z'][.='0']"
@@ -2019,6 +2020,49 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     doFacetPrefix("t_s", null, "", "facet.method", "enum", "facet.enum.cache.minDf", "3");
     doFacetPrefix("t_s", null, "", "facet.method", "enum", "facet.enum.cache.minDf", "100");
     doFacetPrefix("t_s", null, "", "facet.method", "fc");
+    doFacetExistsPrefix("t_s", null, "");
+    doFacetExistsPrefix("t_s", null, "", "facet.enum.cache.minDf", "3");
+    doFacetExistsPrefix("t_s", null, "", "facet.enum.cache.minDf", "100");
+  }
+
+  @Test
+  public void testFacetExistsShouldThrowExceptionForMincountGreaterThanOne () throws Exception {
+    final String f = "t_s";
+    final List<String> msg = Arrays.asList("facet.mincount", "facet.exists", f);
+    Collections.shuffle(msg, random());
+    assertQEx("checking global method or per field", msg.get(0), 
+        req("q", "id:[* TO *]"
+            ,"indent","on"
+            ,"facet","true"
+            , random().nextBoolean() ? "facet.exists": "f."+f+".facet.exists", "true"
+            ,"facet.field", f
+            , random().nextBoolean() ? "facet.mincount" : "f."+f+".facet.mincount" ,
+                 "" + (2+random().nextInt(Integer.MAX_VALUE-2))
+        )
+        , ErrorCode.BAD_REQUEST);
+    
+    assertQ("overriding per field",
+        req("q", "id:[* TO *]"
+            ,"indent","on"
+            ,"facet","true"
+            ,"facet.exists", "true"
+            ,"f."+f+".facet.exists", "false"
+            ,"facet.field", f
+            ,"facet.mincount",""+(2+random().nextInt(Integer.MAX_VALUE-2))
+        ),
+        "//lst[@name='facet_fields']/lst[@name='"+f+"']");
+    
+    assertQ("overriding per field",
+        req("q", "id:[* TO *]"
+            ,"indent","on"
+            ,"facet","true"
+            ,"facet.exists", "true"
+            ,"facet.field", f
+            ,"facet.mincount",""+(2+random().nextInt(Integer.MAX_VALUE-2))
+            ,"f."+f+".facet.mincount", random().nextBoolean() ? "0":"1"
+        ),
+        "//lst[@name='facet_fields']/lst[@name='"+f+"']");
+    
   }
 
   static void indexFacetPrefixSingleValued() {
@@ -2038,18 +2082,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     doFacetPrefix("tt_s1", "{!threads=2}", "", "facet.method","fcs");   // specific number of threads
   }
   
-  /** no prefix for uif */
-  @Test(expected=RuntimeException.class)
-  public void testNOFacetPrefixForUif() {
-    if (random().nextBoolean()) {
-      doFacetPrefix("tt_s1", null, "", "facet.method", "uif");
-    } else {
-      doFacetPrefix("t_s", null, "", "facet.method", "uif");
-    }
-  }
-  
   @Test
-  @Ignore("SOLR-8466 - facet.method=uif ignores facet.contains")
+  //@Ignore("SOLR-8466 - facet.method=uif ignores facet.contains")
   public void testFacetContainsUif() {
     doFacetContains("contains_s1", "contains_group_s1", "Astra", "BAst", "Ast", "facet.method", "uif");
     doFacetPrefix("contains_s1", null, "Astra", "facet.method", "uif", "facet.contains", "Ast");
@@ -2075,6 +2109,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     doFacetPrefix("contains_s1", null, "Astra", "facet.method", "enum", "facet.contains", "aSt", "facet.contains.ignoreCase", "true");
     doFacetPrefix("contains_s1", null, "Astra", "facet.method", "fcs", "facet.contains", "asT", "facet.contains.ignoreCase", "true");
     doFacetPrefix("contains_s1", null, "Astra", "facet.method", "fc", "facet.contains", "aST", "facet.contains.ignoreCase", "true");
+    doFacetExistsPrefix("contains_s1", null, "Astra", "facet.contains", "Ast");
   }
 
   static void indexFacetPrefix(String idPrefix, String f, String termSuffix, String g) {
@@ -2325,6 +2360,239 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     );
   }
 
+  public void doFacetExistsPrefix(String f, String local, String termSuffix, String... params) {
+    String indent="on";
+    String pre = "//lst[@name='"+f+"']";
+    String lf = local==null ? f : local+f;
+
+    assertQ("test field facet.method",
+        req(params, "q", "id:[* TO *]"
+            ,"indent", indent
+            ,"facet", "true"
+            ,"f."+lf+".facet.exists", "true"
+            ,"facet.field", lf
+            ,"facet.mincount", "0"
+            ,"facet.offset", "0"
+            ,"facet.limit", "100"
+            ,"facet.sort", "count"
+            ,"facet.prefix", "B"
+        )
+        ,"*[count(//lst[@name='facet_fields']/lst/int)=3]"
+        ,pre+"/int[1][@name='B"+termSuffix+"'][.='1']"
+        ,pre+"/int[2][@name='BB"+termSuffix+"'][.='1']"
+        ,pre+"/int[3][@name='BBB"+termSuffix+"'][.='1']"
+    );
+
+    assertQ("test facet.prefix middle, exact match first term",
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.exists", "true"
+                    ,"facet.field", lf
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","count"
+                    ,"facet.prefix","B"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=3]"
+            ,pre+"/int[1][@name='B"+termSuffix+"'][.='1']"
+            ,pre+"/int[2][@name='BB"+termSuffix+"'][.='1']"
+            ,pre+"/int[3][@name='BBB"+termSuffix+"'][.='1']"
+    );
+
+    assertQ("test facet.prefix middle, exact match first term, unsorted",
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.exists", "true"
+                    ,"facet.field", lf
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","index"
+                    ,"facet.prefix","B"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=3]"
+            ,pre+"/int[1][@name='B"+termSuffix+"'][.='1']"
+            ,pre+"/int[2][@name='BB"+termSuffix+"'][.='1']"
+            ,pre+"/int[3][@name='BBB"+termSuffix+"'][.='1']"
+    );
+
+    assertQ("test facet.prefix middle, paging",
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.exists", "true"
+                    ,"facet.field", lf
+                    ,"facet.mincount","0"
+                    ,"facet.offset","1"
+                    ,"facet.limit","100"
+                    ,"facet.sort","count"
+                    ,"facet.prefix","B"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=2]"
+            ,pre+"/int[1][@name='BB"+termSuffix+"'][.='1']"
+            ,pre+"/int[2][@name='BBB"+termSuffix+"'][.='1']"
+    );
+
+    assertQ("test facet.prefix middle, paging",
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.exists", "true"
+                    ,"facet.field", lf
+                    ,"facet.mincount","0"
+                    ,"facet.offset","1"
+                    ,"facet.limit","1"
+                    ,"facet.sort","count"
+                    ,"facet.prefix","B"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
+            ,pre+"/int[1][@name='BB"+termSuffix+"'][.='1']"
+    );
+
+    assertQ("test facet.prefix end, not exact match",
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.exists", "true"
+                    ,"facet.field", lf
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","count"
+                    ,"facet.prefix","C"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=2]"
+            ,pre+"/int[1][@name='CC"+termSuffix+"'][.='1']"
+            ,pre+"/int[2][@name='CCC"+termSuffix+"'][.='1']"
+    );
+
+    assertQ("test facet.prefix end, exact match",
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.exists", "true"
+                    ,"facet.field", lf
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","count"
+                    ,"facet.prefix","CC"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=2]"
+            ,pre+"/int[1][@name='CC"+termSuffix+"'][.='1']"
+            ,pre+"/int[2][@name='CCC"+termSuffix+"'][.='1']"
+    );
+
+    assertQ("test facet.prefix past end",
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.exists", "true"
+                    ,"facet.field", lf
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","count"
+                    ,"facet.prefix","X"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=0]"
+    );
+
+    assertQ("test facet.prefix past end",
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.exists", "true"
+                    ,"facet.field", lf
+                    ,"facet.mincount","0"
+                    ,"facet.offset","1"
+                    ,"facet.limit","-1"
+                    ,"facet.sort","count"
+                    ,"facet.prefix","X"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=0]"
+    );
+
+    assertQ("test facet.prefix at start, exact match",
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.exists", "true"
+                    ,"facet.field", lf
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","count"
+                    ,"facet.prefix","AAA"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
+            ,pre+"/int[1][@name='AAA"+termSuffix+"'][.='1']"
+    );
+    assertQ("test facet.prefix at Start, not exact match",
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.exists", "true"
+                    ,"facet.field", lf
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","count"
+                    ,"facet.prefix","AA"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
+            ,pre+"/int[1][@name='AAA"+termSuffix+"'][.='1']"
+    );
+    assertQ("test facet.prefix before start",
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.exists", "true"
+                    ,"facet.field", lf
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","count"
+                    ,"facet.prefix","999"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=0]"
+    );
+
+    assertQ("test facet.prefix before start",
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.exists", "true"
+                    ,"facet.field", lf
+                    ,"facet.mincount","0"
+                    ,"facet.offset","2"
+                    ,"facet.limit","100"
+                    ,"facet.sort","count"
+                    ,"facet.prefix","999"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=0]"
+    );
+
+    // test offset beyond what is collected internally in queue
+    assertQ(
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.exists", "true"
+                    ,"facet.field", lf
+                    ,"facet.mincount","1"
+                    ,"facet.offset","5"
+                    ,"facet.limit","10"
+                    ,"facet.sort","count"
+                    ,"facet.prefix","CC"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=0]"
+    );
+  }
+
   public void doFacetContains(String f, String g, String termSuffix, String contains, String groupContains, String... params) {
     String indent="on";
     String pre = "//lst[@name='"+f+"']";
@@ -2388,16 +2656,14 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 400);
     }
     String field = "foo_dt";
-    for (String type : new String[]{"date", "range"}) {
-      assertQEx("no zero gap error for facet." + type + ": " + field,
+    assertQEx("no zero gap error for facet.range: " + field,
                 req("q", "*:*",
                     "facet", "true",
-                    "facet." + type, field,
-                    "facet."+type+".start", "NOW",
-                    "facet."+type+".gap", "+0DAYS",
-                    "facet."+type+".end", "NOW+10DAY"),
+                    "facet.range", field,
+                    "facet.range.start", "NOW",
+                    "facet.range.gap", "+0DAYS",
+                    "facet.range.end", "NOW+10DAY"),
                 400);
-    }
     field = "foo_f";
     assertQEx("no float underflow error: " + field,
               req("q", "*:*",
@@ -3040,8 +3306,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     }
     int gapNum = random().nextInt(100) + 1;
     
-    params.add(FacetParams.FACET_RANGE_START, DateFormatUtil.formatExternal(dates[0]));
-    params.add(FacetParams.FACET_RANGE_END, DateFormatUtil.formatExternal(dates[1]));
+    params.add(FacetParams.FACET_RANGE_START, dates[0].toInstant().toString());
+    params.add(FacetParams.FACET_RANGE_END, dates[1].toInstant().toString());
     params.add(FacetParams.FACET_RANGE_GAP, String.format(Locale.ROOT, "+%d%s", gapNum, gapUnit));
     addCommonRandomRangeParams(params);
     params.add(FacetParams.FACET_RANGE, field);

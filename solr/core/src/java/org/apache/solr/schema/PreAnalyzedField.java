@@ -33,14 +33,14 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.State;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.Sorting;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +50,7 @@ import static org.apache.solr.common.params.CommonParams.JSON;
  * Pre-analyzed field type provides a way to index a serialized token stream,
  * optionally with an independent stored value of a field.
  */
-public class PreAnalyzedField extends TextField {
+public class PreAnalyzedField extends TextField implements HasImplicitIndexAnalyzer {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** Init argument name. Value is a fully-qualified class name of the parser
@@ -263,8 +263,8 @@ public class PreAnalyzedField extends TextField {
         }
       } else {
         if (f != null) {
-          f.fieldType().setIndexOptions(IndexOptions.NONE);
-          f.fieldType().setTokenized(false);
+          type.setIndexOptions(IndexOptions.NONE);
+          type.setTokenized(false);
         }
       }
     }

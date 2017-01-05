@@ -151,9 +151,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
      int bottomVal;
 
      @Override
-    public LeafFieldComparator getLeafComparator(LeafReaderContext context)
-        throws IOException {
-      final SortedDocValues idIndex = DocValues.getSorted(context.reader(), fieldname);
+     public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
       return new LeafFieldComparator() {
 
         @Override
@@ -166,24 +164,24 @@ class ElevationComparatorSource extends FieldComparatorSource {
           throw new UnsupportedOperationException();
         }
 
-        private int docVal(int doc) {
-          int ord = idIndex.getOrd(doc);
-          if (ord == -1) {
-            return 0;
-          } else {
-            final BytesRef term = idIndex.lookupOrd(ord);
+        private int docVal(int doc) throws IOException {
+          SortedDocValues idIndex = DocValues.getSorted(context.reader(), fieldname);
+          if (idIndex.advance(doc) == doc) {
+            final BytesRef term = idIndex.binaryValue();
             Integer prio = priority.get(term);
             return prio == null ? 0 : prio.intValue();
+          } else {
+            return 0;
           }
         }
 
         @Override
-        public int compareBottom(int doc) {
+        public int compareBottom(int doc) throws IOException {
           return docVal(doc) - bottomVal;
         }
 
         @Override
-        public void copy(int slot, int doc) {
+        public void copy(int slot, int doc) throws IOException {
           values[slot] = docVal(doc);
         }
 

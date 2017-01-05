@@ -42,6 +42,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.handler.CheckBackupStatus;
+import org.apache.solr.handler.ReplicationHandler;
 import org.junit.Test;
 
 /**
@@ -147,7 +148,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   
   private void testNodeWithoutCollectionForwarding() throws Exception {
     final String baseUrl = getBaseUrl((HttpSolrClient) clients.get(0));
-    try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
+    try (HttpSolrClient client = getHttpSolrClient(baseUrl)) {
       client.setConnectionTimeout(30000);
       Create createCmd = new Create();
       createCmd.setRoles("none");
@@ -180,7 +181,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
     SolrQuery query = new SolrQuery("*:*");
 
-    try (HttpSolrClient qclient = new HttpSolrClient(baseUrl + "/onenodecollection" + "core")) {
+    try (HttpSolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection" + "core")) {
 
       // it might take a moment for the proxy node to see us in their cloud state
       waitForNon403or404or503(qclient);
@@ -196,7 +197,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       assertEquals(docs - 1, results.getResults().getNumFound());
     }
     
-    try (HttpSolrClient qclient = new HttpSolrClient(baseUrl + "/onenodecollection")) {
+    try (HttpSolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection")) {
       QueryResponse results = qclient.query(query);
       assertEquals(docs - 1, results.getResults().getNumFound());
 
@@ -398,22 +399,25 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     checkShardConsistency(true, false);
     
     // try a backup command
-    final HttpSolrClient client = (HttpSolrClient) shardToJetty.get(SHARD2).get(0).client.solrClient;
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/replication");
-    params.set("command", "backup");
-    Path location = createTempDir();
-    location = FilterPath.unwrap(location).toRealPath();
-    params.set("location", location.toString());
+    try(final HttpSolrClient client = getHttpSolrClient((String) shardToJetty.get(SHARD2).get(0).info.get("base_url"))) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("qt", ReplicationHandler.PATH);
+      params.set("command", "backup");
+      Path location = createTempDir();
+      location = FilterPath.unwrap(location).toRealPath();
+      params.set("location", location.toString());
 
-    QueryRequest request = new QueryRequest(params);
-    client.request(request);
-    
-    checkForBackupSuccess(client, location);
+      QueryRequest request = new QueryRequest(params);
+      client.request(request, DEFAULT_TEST_COLLECTION_NAME);
+
+      checkForBackupSuccess(client, location);
+      client.close();
+    }
+
   }
 
   private void checkForBackupSuccess(HttpSolrClient client, Path location) throws InterruptedException, IOException {
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus(client);
+    CheckBackupStatus checkBackupStatus = new CheckBackupStatus(client, DEFAULT_TEST_COLLECTION_NAME);
     while (!checkBackupStatus.success) {
       checkBackupStatus.fetchStatus();
       Thread.sleep(1000);

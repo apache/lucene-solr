@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,8 +45,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 public class Assign {
   private static Pattern COUNT = Pattern.compile("core_node(\\d+)");
 
-  public static String assignNode(String collection, ClusterState state) {
-    Map<String, Slice> sliceMap = state.getSlicesMap(collection);
+  public static String assignNode(DocCollection collection) {
+    Map<String, Slice> sliceMap = collection != null ? collection.getSlicesMap() : null;
     if (sliceMap == null) {
       return "core_node1";
     }
@@ -70,12 +69,12 @@ public class Assign {
    *
    * @return the assigned shard id
    */
-  public static String assignShard(String collection, ClusterState state, Integer numShards) {
+  public static String assignShard(DocCollection collection, Integer numShards) {
     if (numShards == null) {
       numShards = 1;
     }
     String returnShardId = null;
-    Map<String, Slice> sliceMap = state.getActiveSlicesMap(collection);
+    Map<String, Slice> sliceMap = collection != null ? collection.getActiveSlicesMap() : null;
 
 
     // TODO: now that we create shards ahead of time, is this code needed?  Esp since hash ranges aren't assigned when creating via this method?
@@ -99,14 +98,10 @@ public class Assign {
       map.put(shardId, cnt);
     }
 
-    Collections.sort(shardIdNames, new Comparator<String>() {
-
-      @Override
-      public int compare(String o1, String o2) {
-        Integer one = map.get(o1);
-        Integer two = map.get(o2);
-        return one.compareTo(two);
-      }
+    Collections.sort(shardIdNames, (o1, o2) -> {
+      Integer one = map.get(o1);
+      Integer two = map.get(o2);
+      return one.compareTo(two);
     });
 
     returnShardId = shardIdNames.get(0);
@@ -161,7 +156,7 @@ public class Assign {
     if (createNodeList == null) { // We only care if we haven't been told to put new replicas on specific nodes.
       int availableSlots = 0;
       for (Map.Entry<String, ReplicaCount> ent : nodeNameVsShardCount.entrySet()) {
-        //ADDREPLICA can put more than maxShardsPerNode on an instnace, so this test is necessary.
+        //ADDREPLICA can put more than maxShardsPerNode on an instance, so this test is necessary.
         if (maxShardsPerNode > ent.getValue().thisCollectionNodes) {
           availableSlots += (maxShardsPerNode - ent.getValue().thisCollectionNodes);
         }
@@ -179,12 +174,7 @@ public class Assign {
     }
 
     ArrayList<ReplicaCount> sortedNodeList = new ArrayList<>(nodeNameVsShardCount.values());
-    Collections.sort(sortedNodeList, new Comparator<ReplicaCount>() {
-      @Override
-      public int compare(ReplicaCount x, ReplicaCount y) {
-        return (x.weight() < y.weight()) ? -1 : ((x.weight() == y.weight()) ? 0 : 1);
-      }
-    });
+    Collections.sort(sortedNodeList, (x, y) -> (x.weight() < y.weight()) ? -1 : ((x.weight() == y.weight()) ? 0 : 1));
     return sortedNodeList;
 
   }
@@ -242,8 +232,9 @@ public class Assign {
     }
     DocCollection coll = clusterState.getCollection(collectionName);
     Integer maxShardsPerNode = coll.getInt(MAX_SHARDS_PER_NODE, 1);
-    for (String s : clusterState.getCollections()) {
-      DocCollection c = clusterState.getCollection(s);
+    Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+    for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+      DocCollection c = entry.getValue();
       //identify suitable nodes  by checking the no:of cores in each of them
       for (Slice slice : c.getSlices()) {
         Collection<Replica> replicas = slice.getReplicas();
@@ -251,7 +242,7 @@ public class Assign {
           ReplicaCount count = nodeNameVsShardCount.get(replica.getNodeName());
           if (count != null) {
             count.totalNodes++; // Used ot "weigh" whether this node should be used later.
-            if (s.equals(collectionName)) {
+            if (entry.getKey().equals(collectionName)) {
               count.thisCollectionNodes++;
               if (count.thisCollectionNodes >= maxShardsPerNode) nodeNameVsShardCount.remove(replica.getNodeName());
             }

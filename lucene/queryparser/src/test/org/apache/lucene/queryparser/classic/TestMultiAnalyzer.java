@@ -17,7 +17,7 @@
 package org.apache.lucene.queryparser.classic;
 
 import java.io.IOException;
-import java.io.Reader;
+import java.util.Objects;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Version;
 
 /**
  * Test QueryParser's ability to deal with Analyzers that return more
@@ -38,7 +37,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
   private static int multiToken = 0;
 
   public void testMultiAnalyzer() throws ParseException {
-    
+
     QueryParser qp = new QueryParser("", new MultiAnalyzer());
 
     // trivial, no multiple tokens:
@@ -91,7 +90,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     assertEquals("+Synonym(multi multi2) +foo", qp.parse("multi foo").toString());
 
   }
-    
+
   public void testMultiAnalyzerWithSubclassOfQueryParser() throws ParseException {
 
     DumbQueryParser qp = new DumbQueryParser("", new MultiAnalyzer());
@@ -104,22 +103,22 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     assertEquals("\"(multi multi2) bar\"~99",
                  qp.getSuperFieldQuery("","multi bar", true).toString());
 
-    
+
     // ask sublcass to parse phrase with modified default slop
     assertEquals("\"(multi multi2) foo\"~99 bar",
                  qp.parse("\"multi foo\" bar").toString());
-    
+
   }
-    
+
   public void testPosIncrementAnalyzer() throws ParseException {
     QueryParser qp = new QueryParser("", new PosIncrementAnalyzer());
     assertEquals("quick brown", qp.parse("the quick brown").toString());
     assertEquals("quick brown fox", qp.parse("the quick brown fox").toString());
   }
-  
+
   /**
    * Expands "multi" to "multi" and "multi2", both at the same position,
-   * and expands "triplemulti" to "triplemulti", "multi3", and "multi2".  
+   * and expands "triplemulti" to "triplemulti", "multi3", and "multi2".
    */
   private class MultiAnalyzer extends Analyzer {
 
@@ -131,16 +130,16 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
   }
 
   private final class TestFilter extends TokenFilter {
-    
+
     private String prevType;
     private int prevStartOffset;
     private int prevEndOffset;
-    
+
     private final CharTermAttribute termAtt;
     private final PositionIncrementAttribute posIncrAtt;
     private final OffsetAttribute offsetAtt;
     private final TypeAttribute typeAtt;
-    
+
     public TestFilter(TokenStream in) {
       super(in);
       termAtt = addAttribute(CharTermAttribute.class);
@@ -202,10 +201,10 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
   }
 
   private final class TestPosIncrementFilter extends TokenFilter {
-    
+
     CharTermAttribute termAtt;
     PositionIncrementAttribute posIncrAtt;
-    
+
     public TestPosIncrementFilter(TokenStream in) {
       super(in);
       termAtt = addAttribute(CharTermAttribute.class);
@@ -231,13 +230,13 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
 
     /** a very simple subclass of QueryParser */
     private final static class DumbQueryParser extends QueryParser {
-        
+
         public DumbQueryParser(String f, Analyzer a) {
             super(f, a);
         }
 
         /** expose super's version */
-        public Query getSuperFieldQuery(String f, String t, boolean quoted) 
+        public Query getSuperFieldQuery(String f, String t, boolean quoted)
             throws ParseException {
             return super.getFieldQuery(f,t,quoted);
         }
@@ -248,22 +247,32 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
             return new DumbQueryWrapper(getSuperFieldQuery(f,t,quoted));
         }
     }
-    
+
     /**
      * A very simple wrapper to prevent instanceof checks but uses
      * the toString of the query it wraps.
      */
     private final static class DumbQueryWrapper extends Query {
-
         private Query q;
+
         public DumbQueryWrapper(Query q) {
-            super();
-            this.q = q;
+            this.q = Objects.requireNonNull(q);
         }
         @Override
         public String toString(String f) {
             return q.toString(f);
         }
+
+        @Override
+        public boolean equals(Object other) {
+            return sameClassAs(other) &&
+                   Objects.equals(q, ((DumbQueryWrapper) other).q);
+        }
+
+        @Override
+        public int hashCode() {
+            return classHash() & q.hashCode();
+        }
     }
-    
+
 }

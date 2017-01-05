@@ -55,7 +55,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.util.SolrPluginUtils;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
@@ -71,26 +70,6 @@ public class ExtendedDismaxQParser extends QParser {
    * map aliases from it to any field in our schema.
    */
   private static String IMPOSSIBLE_FIELD_NAME = "\uFFFC\uFFFC\uFFFC";
-
-  /**
-   * Helper function which returns the specified {@link FieldParams}' {@link FieldParams#getWordGrams()} value.
-   */
-  private static final Function<FieldParams, Integer> WORD_GRAM_EXTRACTOR = new Function<FieldParams, Integer>() {
-    @Override
-    public Integer apply(FieldParams input) {
-      return input.getWordGrams();
-    }
-  };
-
-  /**
-   * Helper function which returns the specified {@link FieldParams}' {@link FieldParams#getSlop()} value.
-   */
-  private static final Function<FieldParams, Integer> PHRASE_SLOP_EXTRACTOR = new Function<FieldParams, Integer>() {
-    @Override
-    public Integer apply(FieldParams input) {
-      return input.getSlop();
-    }
-  };
 
   /** shorten the class references for utilities */
   private static class U extends SolrPluginUtils {
@@ -143,7 +122,6 @@ public class ExtendedDismaxQParser extends QParser {
      * this query is an artificial construct
      */
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.setDisableCoord(true);
     
     /* * * Main User Query * * */
     parsedUserQuery = null;
@@ -247,7 +225,7 @@ public class ExtendedDismaxQParser extends QParser {
       }
 
       // create a map of {wordGram, [phraseField]}
-      Multimap<Integer, FieldParams> phraseFieldsByWordGram = Multimaps.index(allPhraseFields, WORD_GRAM_EXTRACTOR);
+      Multimap<Integer, FieldParams> phraseFieldsByWordGram = Multimaps.index(allPhraseFields, FieldParams::getWordGrams);
 
       // for each {wordGram, [phraseField]} entry, create and add shingled field queries to the main user query
       for (Map.Entry<Integer, Collection<FieldParams>> phraseFieldsByWordGramEntry : phraseFieldsByWordGram.asMap().entrySet()) {
@@ -255,7 +233,7 @@ public class ExtendedDismaxQParser extends QParser {
         // group the fields within this wordGram collection by their associated slop (it's possible that the same
         // field appears multiple times for the same wordGram count but with different slop values. In this case, we
         // should take the *sum* of those phrase queries, rather than the max across them).
-        Multimap<Integer, FieldParams> phraseFieldsBySlop = Multimaps.index(phraseFieldsByWordGramEntry.getValue(), PHRASE_SLOP_EXTRACTOR);
+        Multimap<Integer, FieldParams> phraseFieldsBySlop = Multimaps.index(phraseFieldsByWordGramEntry.getValue(), FieldParams::getSlop);
         for (Map.Entry<Integer, Collection<FieldParams>> phraseFieldsBySlopEntry : phraseFieldsBySlop.asMap().entrySet()) {
           addShingledPhraseQueries(query, normalClauses, phraseFieldsBySlopEntry.getValue(),
               phraseFieldsByWordGramEntry.getKey(), config.tiebreaker, phraseFieldsBySlopEntry.getKey());
@@ -337,11 +315,17 @@ public class ExtendedDismaxQParser extends QParser {
     if(query == null) {
       return null;
     }
-
-    // For correct lucene queries, turn off mm processing if there
-    // were explicit operators (except for AND).
+    // For correct lucene queries, turn off mm processing if no explicit mm spec was provided
+    // and there were explicit operators (except for AND).
     if (query instanceof BooleanQuery) {
-      query = SolrPluginUtils.setMinShouldMatch((BooleanQuery)query, config.minShouldMatch, config.mmAutoRelax);
+      // config.minShouldMatch holds the value of mm which MIGHT have come from the user,
+      // but could also have been derived from q.op.
+      String mmSpec = config.minShouldMatch;
+
+      if (foundOperators(clauses, config.lowercaseOperators)) {
+        mmSpec = params.get(DisMaxParams.MM, "0%"); // Use provided mm spec if present, otherwise turn off mm processing
+      }
+      query = SolrPluginUtils.setMinShouldMatch((BooleanQuery)query, mmSpec, config.mmAutoRelax);
     }
     return query;
   }
@@ -391,7 +375,28 @@ public class ExtendedDismaxQParser extends QParser {
     }
     return sb.toString();
   }
-  
+
+  /**
+   * Returns true if at least one of the clauses is/has an explicit operator (except for AND)
+   */
+  private boolean foundOperators(List<Clause> clauses, boolean lowercaseOperators) {
+    for (Clause clause : clauses) {
+      if (clause.must == '+') return true;
+      if (clause.must == '-') return true;
+      if (clause.isBareWord()) {
+        String s = clause.val;
+        if ("OR".equals(s)) {
+          return true;
+        } else if ("NOT".equals(s)) {
+          return true;
+        } else if (lowercaseOperators && "or".equals(s)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   /**
    * Generates a query string from the raw clauses, uppercasing 
    * 'and' and 'or' as needed.
@@ -951,7 +956,6 @@ public class ExtendedDismaxQParser extends QParser {
     }
     
     boolean makeDismax=true;
-    boolean disableCoord=true;
     boolean allowWildcard=true;
     int minClauseSize = 0;    // minimum number of clauses per phrase query...
     // used when constructing boosting part of query via sloppy phrases
@@ -1028,8 +1032,8 @@ public class ExtendedDismaxQParser extends QParser {
     }
     
     @Override
-    protected Query getFieldQuery(String field, String val, boolean quoted) throws SyntaxError {
-      this.type = QType.FIELD;
+    protected Query getFieldQuery(String field, String val, boolean quoted, boolean raw) throws SyntaxError {
+      this.type = quoted ? QType.PHRASE : QType.FIELD;
       this.field = field;
       this.val = val;
       this.slop = getPhraseSlop(); // unspecified
@@ -1132,9 +1136,7 @@ public class ExtendedDismaxQParser extends QParser {
           DisjunctionMaxQuery q = new DisjunctionMaxQuery(lst, a.tie);
           return q;
         } else {
-          // should we disable coord?
           BooleanQuery.Builder q = new BooleanQuery.Builder();
-          q.setDisableCoord(disableCoord);
           for (Query sub : lst) {
             q.add(sub, BooleanClause.Occur.SHOULD);
           }
@@ -1210,18 +1212,12 @@ public class ExtendedDismaxQParser extends QParser {
         switch (type) {
           case FIELD:  // fallthrough
           case PHRASE:
-            Query query = super.getFieldQuery(field, val, type == QType.PHRASE);
-            // A BooleanQuery is only possible from getFieldQuery if it came from
-            // a single whitespace separated term. In this case, check the coordination
-            // factor on the query: if it's enabled, that means we aren't a set of synonyms
-            // but instead multiple terms from one whitespace-separated term, we must
-            // apply minShouldMatch here so that it works correctly with other things
-            // like aliasing.
+            Query query = super.getFieldQuery(field, val, type == QType.PHRASE, false);
+            // Boolean query on a whitespace-separated string
+            // If these were synonyms we would have a SynonymQuery
             if (query instanceof BooleanQuery) {
               BooleanQuery bq = (BooleanQuery) query;
-              if (!bq.isCoordDisabled()) {
-                query = SolrPluginUtils.setMinShouldMatch(bq, minShouldMatch, false);
-              }
+              query = SolrPluginUtils.setMinShouldMatch(bq, minShouldMatch, false);
             }
             if (query instanceof PhraseQuery) {
               PhraseQuery pq = (PhraseQuery)query;
@@ -1235,9 +1231,11 @@ public class ExtendedDismaxQParser extends QParser {
               builder.setSlop(slop);
               query = builder.build();
             } else if (query instanceof MultiPhraseQuery) {
-              MultiPhraseQuery pq = (MultiPhraseQuery)query;
-              if (minClauseSize > 1 && pq.getTermArrays().size() < minClauseSize) return null;
-              ((MultiPhraseQuery)query).setSlop(slop);
+              MultiPhraseQuery mpq = (MultiPhraseQuery)query;
+              if (minClauseSize > 1 && mpq.getTermArrays().length < minClauseSize) return null;
+              if (slop != mpq.getSlop()) {
+                query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
+              }
             } else if (minClauseSize > 1) {
               // if it's not a type of phrase query, it doesn't meet the minClauseSize requirements
               return null;

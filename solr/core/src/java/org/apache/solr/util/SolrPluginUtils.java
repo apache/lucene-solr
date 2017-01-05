@@ -16,6 +16,10 @@
  */
 package org.apache.solr.util;
 
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.MethodDescriptor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
@@ -49,7 +53,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -81,6 +84,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
+import static java.util.Collections.singletonList;
 import static org.apache.solr.core.PluginInfo.APPENDS;
 import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.PluginInfo.INVARIANTS;
@@ -179,8 +183,10 @@ public class SolrPluginUtils {
   private static SolrParams applyParamSet(RequestParams requestParams,
                                           SolrParams defaults, String paramSets, String type) {
     if (paramSets == null) return defaults;
-    for (String name : StrUtils.splitSmart(paramSets, ',')) {
+    List<String> paramSetList = paramSets.indexOf(',') == -1 ? singletonList(paramSets) : StrUtils.splitSmart(paramSets, ',');
+    for (String name : paramSetList) {
       RequestParams.VersionedParams params = requestParams.getParams(name, type);
+      if (params == null) return defaults;
       if (type.equals(DEFAULTS)) {
         defaults = SolrParams.wrapDefaults(params, defaults);
       } else if (type.equals(INVARIANTS)) {
@@ -483,7 +489,7 @@ public class SolrPluginUtils {
 
     String qs = commands.size() >= 1 ? commands.get(0) : "";
     try {
-    Query query = QParser.getParser(qs, null, req).getQuery();
+    Query query = QParser.getParser(qs, req).getQuery();
 
     // If the first non-query, non-filter command is a simple sort on an indexed field, then
     // we can use the Lucene sort ability.
@@ -661,7 +667,6 @@ public class SolrPluginUtils {
 
   public static BooleanQuery setMinShouldMatch(BooleanQuery q, String spec, boolean mmAutoRelax) {
     BooleanQuery.Builder builder = new BooleanQuery.Builder();
-    builder.setDisableCoord(q.isCoordDisabled());
     for (BooleanClause clause : q) {
       builder.add(clause);
     }
@@ -902,7 +907,7 @@ public class SolrPluginUtils {
      * aliases should work)
      */
     @Override
-    protected Query getFieldQuery(String field, String queryText, boolean quoted)
+    protected Query getFieldQuery(String field, String queryText, boolean quoted, boolean raw)
         throws SyntaxError {
 
       if (aliases.containsKey(field)) {
@@ -912,7 +917,7 @@ public class SolrPluginUtils {
         List<Query> disjuncts = new ArrayList<>();
         for (String f : a.fields.keySet()) {
 
-          Query sub = getFieldQuery(f,queryText,quoted);
+          Query sub = getFieldQuery(f,queryText,quoted, false);
           if (null != sub) {
             if (null != a.fields.get(f)) {
               sub = new BoostQuery(sub, a.fields.get(f));
@@ -926,7 +931,7 @@ public class SolrPluginUtils {
 
       } else {
         try {
-          return super.getFieldQuery(field, queryText, quoted);
+          return super.getFieldQuery(field, queryText, quoted, raw);
         } catch (Exception e) {
           return null;
         }
@@ -976,7 +981,7 @@ public class SolrPluginUtils {
     List<Query> out = new ArrayList<>(queries.length);
     for (String q : queries) {
       if (null != q && 0 != q.trim().length()) {
-        out.add(QParser.getParser(q, null, req).getQuery());
+        out.add(QParser.getParser(q, req).getQuery());
       }
     }
     return out;
@@ -1066,8 +1071,8 @@ public class SolrPluginUtils {
       String key = entry.getKey();
       String setterName = "set" + String.valueOf(Character.toUpperCase(key.charAt(0))) + key.substring(1);
       try {
-        final Method method = findSetter(clazz, setterName, key);
         final Object val = entry.getValue();
+        final Method method = findSetter(clazz, setterName, key, val.getClass());
         method.invoke(bean, val);
       } catch (InvocationTargetException | IllegalAccessException e1) {
         throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName(), e1);
@@ -1075,10 +1080,21 @@ public class SolrPluginUtils {
     }
   }
 
-  private static Method findSetter(Class<?> clazz, String setterName, String key) {
-    for (Method m : clazz.getMethods()) {
-      if (m.getName().equals(setterName) && m.getParameterTypes().length == 1) {
-        return m;
+  private static Method findSetter(Class<?> clazz, String setterName, String key, Class<?> paramClazz) {
+    BeanInfo beanInfo;
+    try {
+      beanInfo = Introspector.getBeanInfo(clazz);
+    } catch (IntrospectionException ie) {
+      throw new RuntimeException("Error getting bean info for class : " + clazz.getName(), ie);
+    }
+    for (final boolean matchParamClazz: new boolean[]{true, false}) {
+      for (final MethodDescriptor desc : beanInfo.getMethodDescriptors()) {
+        final Method m = desc.getMethod();
+        final Class<?> p[] = m.getParameterTypes();
+        if (m.getName().equals(setterName) && p.length == 1 &&
+            (!matchParamClazz || paramClazz.equals(p[0]))) {
+          return m;
+        }
       }
     }
     throw new RuntimeException("No setter corrresponding to '" + key + "' in " + clazz.getName());

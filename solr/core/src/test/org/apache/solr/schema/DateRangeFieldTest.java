@@ -55,6 +55,35 @@ public class DateRangeFieldTest extends SolrTestCaseJ4 {
     assertQ(req("q", "dateRange:[1999 TO 2001]"), xpathMatches(0, 2));
   }
 
+  public void testBeforeGregorianChangeDate() { // GCD is the year 1582
+    assertU(delQ("*:*"));
+    assertU(adoc("id", "0", "dateRange", "1500-01-01T00:00:00Z"));
+    assertU(adoc("id", "1", "dateRange", "-1500-01-01T00:00:00Z")); // BC
+    assertU(adoc("id", "2", "dateRange", "1400-01-01T00:00:00Z/YEAR")); // date math of month or year can cause issues
+    assertU(adoc("id", "3", "dateRange", "1300")); // the whole year of 1300
+    assertU(commit());
+
+    //ensure round-trip toString
+    assertQ(req("q", "id:0", "fl", "dateRange"), "//result/doc/arr[@name='dateRange']/str[.='1500-01-01T00:00:00Z']");
+    assertQ(req("q", "id:1", "fl", "dateRange"), "//result/doc/arr[@name='dateRange']/str[.='-1500-01-01T00:00:00Z']");
+    //    note: fixed by SOLR-9080, would instead find "1399-01-09T00:00:00Z"
+    assertQ(req("q", "id:2", "fl", "dateRange"), "//result/doc/arr[@name='dateRange']/str[.='1400-01-01T00:00:00Z']");
+    assertQ(req("q", "id:3", "fl", "dateRange"), "//result/doc/arr[@name='dateRange']/str[.='1300']");
+
+    //ensure range syntax works
+    assertQ(req("q", "dateRange:[1450-01-01T00:00:00Z TO 1499-12-31T23:59:59Z]"), xpathMatches());// before
+    assertQ(req("q", "dateRange:[1500-01-01T00:00:00Z TO 1500-01-01T00:00:00Z]"), xpathMatches(0));// spot on
+    assertQ(req("q", "dateRange:[1500-01-01T00:00:01Z TO 1550-01-01T00:00:00Z]"), xpathMatches());// after
+
+    assertQ(req("q", "dateRange:[-1500-01-01T00:00:00Z TO -1500-01-01T00:00:00Z]"), xpathMatches(1));
+
+    // do range queries in the vicinity of docId=3 val:"1300"
+    assertQ(req("q", "dateRange:[1299 TO 1299-12-31T23:59:59Z]"), xpathMatches());//adjacent
+    assertQ(req("q", "dateRange:[1299 TO 1300-01-01T00:00:00Z]"), xpathMatches(3));// expand + 1 sec
+    assertQ(req("q", "dateRange:1301"), xpathMatches()); // adjacent
+    assertQ(req("q", "dateRange:[1300-12-31T23:59:59Z TO 1301]"), xpathMatches(3)); // expand + 1 sec
+  }
+
   @Test
   public void testMultiValuedDateRanges() {
     assertU(delQ("*:*"));

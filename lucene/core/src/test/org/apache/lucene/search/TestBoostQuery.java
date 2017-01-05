@@ -55,8 +55,8 @@ public class TestBoostQuery extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(new MultiReader());
 
     // inner queries are rewritten
-    Query q = new BoostQuery(new MatchNoDocsQuery(), 2);
-    assertEquals(new BoostQuery(new BooleanQuery.Builder().build(), 2), searcher.rewrite(q));
+    Query q = new BoostQuery(new BooleanQuery.Builder().build(), 2);
+    assertEquals(new BoostQuery(new MatchNoDocsQuery(), 2), searcher.rewrite(q));
 
     // boosts are merged
     q = new BoostQuery(new BoostQuery(new MatchAllDocsQuery(), 3), 2);

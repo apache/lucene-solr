@@ -23,20 +23,19 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
 import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
@@ -56,7 +55,7 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
     ft.setStoreTermVectors(true);
     doc.add(new Field("foo", "this is a test", ft));
     iw.addDocument(doc);
-    LeafReader ir = getOnlySegmentReader(iw.getReader());
+    LeafReader ir = getOnlyLeafReader(iw.getReader());
     Terms terms = ir.getTermVector(0, "foo");
     assertNotNull(terms);
     TermsEnum termsEnum = terms.iterator();
@@ -118,7 +117,7 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
     assertNotNull(ir2);
     ir.close();
     ir = ir2;
-    CodecReader sr = getOnlySegmentReader(ir);
+    CodecReader sr = (CodecReader) getOnlyLeafReader(ir);
     CompressingTermVectorsReader reader = (CompressingTermVectorsReader)sr.getTermVectorsReader();
     // we could get lucky, and have zero, but typically one.
     assertTrue(reader.getNumDirtyChunks() <= 1);

@@ -16,22 +16,26 @@
  */
 package org.apache.lucene.index;
 
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
-
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
+
+import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 /** Buffers up pending byte[]s per doc, deref and sorting via
  *  int ord, then flushes when segment flushes. */
@@ -39,13 +43,20 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
   final BytesRefHash hash;
   private PackedLongValues.Builder pending; // stream of all termIDs
   private PackedLongValues.Builder pendingCounts; // termIDs per doc
+  private DocsWithFieldSet docsWithField;
   private final Counter iwBytesUsed;
   private long bytesUsed; // this only tracks differences in 'pending' and 'pendingCounts'
   private final FieldInfo fieldInfo;
-  private int currentDoc;
+  private int currentDoc = -1;
   private int currentValues[] = new int[8];
-  private int currentUpto = 0;
-  private int maxCount = 0;
+  private int currentUpto;
+  private int maxCount;
+
+  private PackedLongValues finalOrds;
+  private PackedLongValues finalOrdCounts;
+  private int[] finalSortedValues;
+  private int[] finalOrdMap;
+
 
   public SortedSetDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
@@ -57,26 +68,23 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
             new DirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, iwBytesUsed));
     pending = PackedLongValues.packedBuilder(PackedInts.COMPACT);
     pendingCounts = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
+    docsWithField = new DocsWithFieldSet();
     bytesUsed = pending.ramBytesUsed() + pendingCounts.ramBytesUsed();
     iwBytesUsed.addAndGet(bytesUsed);
   }
 
   public void addValue(int docID, BytesRef value) {
+    assert docID >= currentDoc;
     if (value == null) {
       throw new IllegalArgumentException("field \"" + fieldInfo.name + "\": null value not allowed");
     }
     if (value.length > (BYTE_BLOCK_SIZE - 2)) {
       throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" is too large, must be <= " + (BYTE_BLOCK_SIZE - 2));
     }
-    
+
     if (docID != currentDoc) {
       finishCurrentDoc();
-    }
-
-    // Fill in any holes:
-    while(currentDoc < docID) {
-      pendingCounts.add(0); // no values
-      currentDoc++;
+      currentDoc = docID;
     }
 
     addOneValue(value);
@@ -85,6 +93,9 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
   
   // finalize currentDoc: this deduplicates the current term ids
   private void finishCurrentDoc() {
+    if (currentDoc == -1) {
+      return;
+    }
     Arrays.sort(currentValues, 0, currentUpto);
     int lastValue = -1;
     int count = 0;
@@ -101,17 +112,12 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
     pendingCounts.add(count);
     maxCount = Math.max(maxCount, count);
     currentUpto = 0;
-    currentDoc++;
+    docsWithField.add(currentDoc);
   }
 
   @Override
   public void finish(int maxDoc) {
     finishCurrentDoc();
-    
-    // fill in any holes
-    for (int i = currentDoc; i < maxDoc; i++) {
-      pendingCounts.add(0); // no values
-    }
   }
 
   private void addOneValue(BytesRef value) {
@@ -128,9 +134,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
     
     if (currentUpto == currentValues.length) {
       currentValues = ArrayUtil.grow(currentValues, currentValues.length+1);
-      // reserve additional space for max # values per-doc
-      // when flushing, we need an int[] to sort the mapped-ords within the doc
-      iwBytesUsed.addAndGet((currentValues.length - currentUpto) * 2 * Integer.BYTES);
+      iwBytesUsed.addAndGet((currentValues.length - currentUpto) * Integer.BYTES);
     }
     
     currentValues[currentUpto] = termID;
@@ -143,165 +147,172 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
     bytesUsed = newBytesUsed;
   }
 
-  @Override
-  public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
-    final int maxDoc = state.segmentInfo.maxDoc();
-    final int maxCountPerDoc = maxCount;
-    assert pendingCounts.size() == maxDoc;
-    final int valueCount = hash.size();
-    final PackedLongValues ords = pending.build();
-    final PackedLongValues ordCounts = pendingCounts.build();
-
-    final int[] sortedValues = hash.sort();
-    final int[] ordMap = new int[valueCount];
-
-    for(int ord=0;ord<valueCount;ord++) {
-      ordMap[sortedValues[ord]] = ord;
+  private long[][] sortDocValues(int maxDoc, Sorter.DocMap sortMap, SortedSetDocValues oldValues) throws IOException {
+    long[][] ords = new long[maxDoc][];
+    int docID;
+    while ((docID = oldValues.nextDoc()) != NO_MORE_DOCS) {
+      int newDocID = sortMap.oldToNew(docID);
+      long[] docOrds = new long[1];
+      int upto = 0;
+      while (true) {
+        long ord = oldValues.nextOrd();
+        if (ord == NO_MORE_ORDS) {
+          break;
+        }
+        if (upto == docOrds.length) {
+          docOrds = ArrayUtil.grow(docOrds);
+        }
+        docOrds[upto++] = ord;
+      }
+      ords[newDocID] = Arrays.copyOfRange(docOrds, 0, upto);
     }
-
-    dvConsumer.addSortedSetField(fieldInfo,
-
-                              // ord -> value
-                              new Iterable<BytesRef>() {
-                                @Override
-                                public Iterator<BytesRef> iterator() {
-                                  return new ValuesIterator(sortedValues, valueCount, hash);
-                                }
-                              },
-                              
-                              // doc -> ordCount
-                              new Iterable<Number>() {
-                                @Override
-                                public Iterator<Number> iterator() {
-                                  return new OrdCountIterator(maxDoc, ordCounts);
-                                }
-                              },
-
-                              // ords
-                              new Iterable<Number>() {
-                                @Override
-                                public Iterator<Number> iterator() {
-                                  return new OrdsIterator(ordMap, maxCountPerDoc, ords, ordCounts);
-                                }
-                              });
+    return ords;
   }
 
-  // iterates over the unique values we have in ram
-  private static class ValuesIterator implements Iterator<BytesRef> {
-    final int sortedValues[];
+  @Override
+  Sorter.DocComparator getDocComparator(int maxDoc, SortField sortField) throws IOException {
+    assert sortField instanceof SortedSetSortField;
+    assert finalOrds == null && finalOrdCounts == null && finalSortedValues == null && finalOrdMap == null;
+    int valueCount = hash.size();
+    finalOrds = pending.build();
+    finalOrdCounts = pendingCounts.build();
+    finalSortedValues = hash.sort();
+    finalOrdMap = new int[valueCount];
+    for (int ord = 0; ord < valueCount; ord++) {
+      finalOrdMap[finalSortedValues[ord]] = ord;
+    }
+
+    SortedSetSortField sf = (SortedSetSortField) sortField;
+    final SortedSetDocValues dvs =
+        new BufferedSortedSetDocValues(finalSortedValues, finalOrdMap, hash, finalOrds, finalOrdCounts, maxCount, docsWithField.iterator());
+    return Sorter.getDocComparator(maxDoc, sf, () -> SortedSetSelector.wrap(dvs, sf.getSelector()), () -> null);
+  }
+
+  @Override
+  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer dvConsumer) throws IOException {
+    final int valueCount = hash.size();
+    final PackedLongValues ords;
+    final PackedLongValues ordCounts;
+    final int[] sortedValues;
+    final int[] ordMap;
+
+    if (finalOrdCounts == null) {
+      ords = pending.build();
+      ordCounts = pendingCounts.build();
+      sortedValues = hash.sort();
+      ordMap = new int[valueCount];
+      for(int ord=0;ord<valueCount;ord++) {
+        ordMap[sortedValues[ord]] = ord;
+      }
+    } else {
+      ords = finalOrds;
+      ordCounts = finalOrdCounts;
+      sortedValues = finalSortedValues;
+      ordMap = finalOrdMap;
+    }
+
+    final long[][] sorted;
+    if (sortMap != null) {
+      sorted = sortDocValues(state.segmentInfo.maxDoc(), sortMap,
+          new BufferedSortedSetDocValues(sortedValues, ordMap, hash, ords, ordCounts, maxCount, docsWithField.iterator()));
+    } else {
+      sorted = null;
+    }
+    dvConsumer.addSortedSetField(fieldInfo,
+                                 new EmptyDocValuesProducer() {
+                                   @Override
+                                   public SortedSetDocValues getSortedSet(FieldInfo fieldInfoIn) {
+                                     if (fieldInfoIn != fieldInfo) {
+                                       throw new IllegalArgumentException("wrong fieldInfo");
+                                     }
+                                     final SortedSetDocValues buf =
+                                         new BufferedSortedSetDocValues(sortedValues, ordMap, hash, ords, ordCounts, maxCount, docsWithField.iterator());
+                                     if (sorted == null) {
+                                       return buf;
+                                     } else {
+                                       return new SortingLeafReader.SortingSortedSetDocValues(buf, sorted);
+                                     }
+                                   }
+                                 });
+  }
+
+  private static class BufferedSortedSetDocValues extends SortedSetDocValues {
+    final int[] sortedValues;
+    final int[] ordMap;
     final BytesRefHash hash;
     final BytesRef scratch = new BytesRef();
-    final int valueCount;
-    int ordUpto;
-    
-    ValuesIterator(int sortedValues[], int valueCount, BytesRefHash hash) {
-      this.sortedValues = sortedValues;
-      this.valueCount = valueCount;
-      this.hash = hash;
-    }
-
-    @Override
-    public boolean hasNext() {
-      return ordUpto < valueCount;
-    }
-
-    @Override
-    public BytesRef next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
-      }
-      hash.get(sortedValues[ordUpto], scratch);
-      ordUpto++;
-      return scratch;
-    }
-
-    @Override
-    public void remove() {
-      throw new UnsupportedOperationException();
-    }
-  }
-  
-  // iterates over the ords for each doc we have in ram
-  private static class OrdsIterator implements Iterator<Number> {
-    final PackedLongValues.Iterator iter;
-    final PackedLongValues.Iterator counts;
-    final int ordMap[];
-    final long numOrds;
-    long ordUpto;
-    
+    final PackedLongValues.Iterator ordsIter;
+    final PackedLongValues.Iterator ordCountsIter;
+    final DocIdSetIterator docsWithField;
     final int currentDoc[];
-    int currentUpto;
-    int currentLength;
     
-    OrdsIterator(int ordMap[], int maxCount, PackedLongValues ords, PackedLongValues ordCounts) {
+    private int ordCount;
+    private int ordUpto;
+
+    public BufferedSortedSetDocValues(int[] sortedValues, int[] ordMap, BytesRefHash hash, PackedLongValues ords, PackedLongValues ordCounts, int maxCount, DocIdSetIterator docsWithField) {
       this.currentDoc = new int[maxCount];
+      this.sortedValues = sortedValues;
       this.ordMap = ordMap;
-      this.numOrds = ords.size();
-      this.iter = ords.iterator();
-      this.counts = ordCounts.iterator();
-    }
-    
-    @Override
-    public boolean hasNext() {
-      return ordUpto < numOrds;
+      this.hash = hash;
+      this.ordsIter = ords.iterator();
+      this.ordCountsIter = ordCounts.iterator();
+      this.docsWithField = docsWithField;
     }
 
     @Override
-    public Number next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
-      }
-      while (currentUpto == currentLength) {
-        // refill next doc, and sort remapped ords within the doc.
-        currentUpto = 0;
-        currentLength = (int) counts.next();
-        for (int i = 0; i < currentLength; i++) {
-          currentDoc[i] = ordMap[(int) iter.next()];
+    public int docID() {
+      return docsWithField.docID();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      int docID = docsWithField.nextDoc();
+      if (docID != NO_MORE_DOCS) {
+        ordCount = (int) ordCountsIter.next();
+        assert ordCount > 0;
+        for (int i = 0; i < ordCount; i++) {
+          currentDoc[i] = ordMap[Math.toIntExact(ordsIter.next())];
         }
-        Arrays.sort(currentDoc, 0, currentLength);
+        Arrays.sort(currentDoc, 0, ordCount);          
+        ordUpto = 0;
       }
-      int ord = currentDoc[currentUpto];
-      currentUpto++;
-      ordUpto++;
-      // TODO: make reusable Number
-      return ord;
+      return docID;
     }
 
     @Override
-    public void remove() {
+    public long nextOrd() {
+      if (ordUpto == ordCount) {
+        return NO_MORE_ORDS;
+      } else {
+        return currentDoc[ordUpto++];
+      }
+    }
+
+    @Override
+    public long cost() {
+      return docsWithField.cost();
+    }
+
+    @Override
+    public int advance(int target) {
       throw new UnsupportedOperationException();
     }
-  }
-  
-  private static class OrdCountIterator implements Iterator<Number> {
-    final PackedLongValues.Iterator iter;
-    final int maxDoc;
-    int docUpto;
-    
-    OrdCountIterator(int maxDoc, PackedLongValues ordCounts) {
-      this.maxDoc = maxDoc;
-      assert ordCounts.size() == maxDoc;
-      this.iter = ordCounts.iterator();
-    }
-    
-    @Override
-    public boolean hasNext() {
-      return docUpto < maxDoc;
-    }
 
     @Override
-    public Number next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
-      }
-      docUpto++;
-      // TODO: make reusable Number
-      return iter.next();
-    }
-
-    @Override
-    public void remove() {
+    public boolean advanceExact(int target) throws IOException {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long getValueCount() {
+      return ordMap.length;
+    }
+
+    @Override
+    public BytesRef lookupOrd(long ord) {
+      assert ord >= 0 && ord < ordMap.length: "ord=" + ord + " is out of bounds 0 .. " + (ordMap.length-1);
+      hash.get(sortedValues[Math.toIntExact(ord)], scratch);
+      return scratch;
     }
   }
 }

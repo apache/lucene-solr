@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -53,14 +54,14 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
-import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.BytesReader;
-import org.apache.lucene.util.fst.PairOutputs;
+import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
+import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
-import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.fst.Util.Result;
 import org.apache.lucene.util.fst.Util.TopResults;
+import org.apache.lucene.util.fst.Util;
 
 import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
 
@@ -480,6 +481,7 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
 
         maxAnalyzedPathsForOneInput = Math.max(maxAnalyzedPathsForOneInput, finiteStrings.size());
       }
+      CodecUtil.writeFooter(tempInput);
       writer.close();
 
       // Sort all input/output pairs (required by FST.Builder):
@@ -488,7 +490,7 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
       // Free disk space:
       tempDir.deleteFile(tempInput.getName());
 
-      reader = new OfflineSorter.ByteSequencesReader(tempDir.openInput(tempSortedFileName, IOContext.READONCE));
+      reader = new OfflineSorter.ByteSequencesReader(tempDir.openChecksumInput(tempSortedFileName, IOContext.READONCE), tempSortedFileName);
      
       PairOutputs<Long,BytesRef> outputs = new PairOutputs<>(PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton());
       Builder<Pair<Long,BytesRef>> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
@@ -507,8 +509,12 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
       Set<BytesRef> seenSurfaceForms = new HashSet<>();
 
       int dedup = 0;
-      while (reader.read(scratch)) {
-        input.reset(scratch.bytes(), 0, scratch.length());
+      while (true) {
+        BytesRef bytes = reader.next();
+        if (bytes == null) {
+          break;
+        }
+        input.reset(bytes.bytes, bytes.offset, bytes.length);
         short analyzedLength = input.readShort();
         analyzed.grow(analyzedLength+2);
         input.readBytes(analyzed.bytes(), 0, analyzedLength);
@@ -516,13 +522,13 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
 
         long cost = input.readInt();
 
-        surface.bytes = scratch.bytes();
+        surface.bytes = bytes.bytes;
         if (hasPayloads) {
           surface.length = input.readShort();
           surface.offset = input.getPosition();
         } else {
           surface.offset = input.getPosition();
-          surface.length = scratch.length() - surface.offset;
+          surface.length = bytes.length - surface.offset;
         }
         
         if (previousAnalyzed == null) {
@@ -564,11 +570,11 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
           builder.add(scratchInts.get(), outputs.newPair(cost, BytesRef.deepCopyOf(surface)));
         } else {
           int payloadOffset = input.getPosition() + surface.length;
-          int payloadLength = scratch.length() - payloadOffset;
+          int payloadLength = bytes.length - payloadOffset;
           BytesRef br = new BytesRef(surface.length + 1 + payloadLength);
           System.arraycopy(surface.bytes, surface.offset, br.bytes, 0, surface.length);
           br.bytes[surface.length] = PAYLOAD_SEP;
-          System.arraycopy(scratch.bytes(), payloadOffset, br.bytes, surface.length+1, payloadLength);
+          System.arraycopy(bytes.bytes, payloadOffset, br.bytes, surface.length+1, payloadLength);
           br.length = br.bytes.length;
           builder.add(scratchInts.get(), outputs.newPair(cost, br));
         }

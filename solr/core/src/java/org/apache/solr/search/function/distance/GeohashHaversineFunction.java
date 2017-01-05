@@ -65,11 +65,11 @@ public class GeohashHaversineFunction extends ValueSource {
 
     return new DoubleDocValues(this) {
       @Override
-      public double doubleVal(int doc) {
+      public double doubleVal(int doc) throws IOException {
         return distance(doc, gh1DV, gh2DV);
       }
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append(name()).append('(');
         sb.append(gh1DV.toString(doc)).append(',').append(gh2DV.toString(doc));
@@ -79,7 +79,7 @@ public class GeohashHaversineFunction extends ValueSource {
     };
   }
 
-  protected double distance(int doc, FunctionValues gh1DV, FunctionValues gh2DV) {
+  protected double distance(int doc, FunctionValues gh1DV, FunctionValues gh2DV) throws IOException {
     double result = 0;
     String h1 = gh1DV.strVal(doc);
     String h2 = gh2DV.strVal(doc);

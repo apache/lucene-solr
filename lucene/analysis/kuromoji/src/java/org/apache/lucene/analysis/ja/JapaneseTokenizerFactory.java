@@ -127,16 +127,17 @@ public class JapaneseTokenizerFactory extends TokenizerFactory implements Resour
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (userDictionaryPath != null) {
-      InputStream stream = loader.openResource(userDictionaryPath);
-      String encoding = userDictionaryEncoding;
-      if (encoding == null) {
-        encoding = IOUtils.UTF_8;
-      }
-      CharsetDecoder decoder = Charset.forName(encoding).newDecoder()
+      try (InputStream stream = loader.openResource(userDictionaryPath)) {
+        String encoding = userDictionaryEncoding;
+        if (encoding == null) {
+          encoding = IOUtils.UTF_8;
+        }
+        CharsetDecoder decoder = Charset.forName(encoding).newDecoder()
           .onMalformedInput(CodingErrorAction.REPORT)
           .onUnmappableCharacter(CodingErrorAction.REPORT);
-      Reader reader = new InputStreamReader(stream, decoder);
-      userDictionary = UserDictionary.open(reader);
+        Reader reader = new InputStreamReader(stream, decoder);
+        userDictionary = UserDictionary.open(reader);
+      }
     } else {
       userDictionary = null;
     }

@@ -154,7 +154,7 @@ public final class JavascriptCompiler {
    * use the FunctionValues class.
    */
   @SuppressWarnings({"unused", "null"})
-  private static void unusedTestCompile() {
+  private static void unusedTestCompile() throws IOException {
     FunctionValues f = null;
     double ret = f.doubleVal(2);
   }

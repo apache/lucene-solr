@@ -64,7 +64,7 @@ public class SpanTermQuery extends SpanQuery {
   public String getField() { return term.field(); }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     final TermContext context;
     final IndexReaderContext topContext = searcher.getTopReaderContext();
     if (termContext == null || termContext.topReaderContext != topContext) {
@@ -73,15 +73,15 @@ public class SpanTermQuery extends SpanQuery {
     else {
       context = termContext;
     }
-    return new SpanTermWeight(context, searcher, needsScores ? Collections.singletonMap(term, context) : null);
+    return new SpanTermWeight(context, searcher, needsScores ? Collections.singletonMap(term, context) : null, boost);
   }
 
   public class SpanTermWeight extends SpanWeight {
 
     final TermContext termContext;
 
-    public SpanTermWeight(TermContext termContext, IndexSearcher searcher, Map<Term, TermContext> terms) throws IOException {
-      super(SpanTermQuery.this, searcher, terms);
+    public SpanTermWeight(TermContext termContext, IndexSearcher searcher, Map<Term, TermContext> terms, float boost) throws IOException {
+      super(SpanTermQuery.this, searcher, terms, boost);
       this.termContext = termContext;
       assert termContext != null : "TermContext must not be null";
     }
@@ -163,19 +163,13 @@ public class SpanTermQuery extends SpanQuery {
 
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + term.hashCode();
-    return result;
+    return classHash() ^ term.hashCode();
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (! super.equals(obj)) {
-      return false;
-    }
-    SpanTermQuery other = (SpanTermQuery) obj;
-    return term.equals(other.term);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           term.equals(((SpanTermQuery) other).term);
   }
 
 }

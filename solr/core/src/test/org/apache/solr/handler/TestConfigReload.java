@@ -42,7 +42,6 @@ import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -60,12 +59,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
 
   private void setupHarnesses() {
     for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(new RESTfulServerProvider() {
-        @Override
-        public String getBaseURL() {
-          return ((HttpSolrClient)client).getBaseURL();
-        }
-      });
+      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient)client).getBaseURL());
       restTestHarnesses.add(harness);
     }
   }

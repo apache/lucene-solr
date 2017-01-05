@@ -67,11 +67,4 @@ public class TestDynamicFieldResource extends SolrRestletTestBase {
              "/dynamicField/required==false",
              "/dynamicField/tokenized==false");
   }
-
-  @Test
-  public void testJsonPutFieldToNonMutableIndexSchema() throws Exception {
-    assertJPut("/schema/dynamicfields/newfield_*",
-        "{\"type\":\"text_general\", \"stored\":\"false\"}",
-        "/error/msg=='This IndexSchema is not mutable.'");
-  }
 }

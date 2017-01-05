@@ -17,7 +17,7 @@
 package org.apache.lucene.spatial.prefix.tree;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -58,65 +58,106 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
   */
 
   private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
-  private static Calendar CAL_TMP;//template
+
+  /**
+   * The Java platform default {@link Calendar} with UTC &amp; ROOT Locale.  Generally a {@link GregorianCalendar}.
+   * Do <em>not</em> modify this!
+   */
+  public static final Calendar DEFAULT_CAL;//template
   static {
-    CAL_TMP = Calendar.getInstance(UTC, Locale.ROOT);
-    CAL_TMP.clear();
+    DEFAULT_CAL = Calendar.getInstance(UTC, Locale.ROOT);
+    DEFAULT_CAL.clear();
   }
 
-  private static final Calendar MINCAL = (Calendar) CAL_TMP.clone();
-  private static final Calendar MAXCAL = (Calendar) CAL_TMP.clone();
+  /**
+   * A Calendar instance compatible with {@link java.time.ZonedDateTime} as seen from
+   * {@link GregorianCalendar#from(ZonedDateTime)}.
+   * Do <em>not</em> modify this!
+   */
+  public static final Calendar JAVA_UTIL_TIME_COMPAT_CAL;
   static {
-    MINCAL.setTimeInMillis(Long.MIN_VALUE);
-    MAXCAL.setTimeInMillis(Long.MAX_VALUE);
-  }
-  //BC years are decreasing, remember.  Yet ActualMaximum is the numerically high value, ActualMinimum is 1.
-  private static final int BC_FIRSTYEAR = MINCAL.getActualMaximum(Calendar.YEAR);
-  private static final int BC_LASTYEAR = MINCAL.getActualMinimum(Calendar.YEAR);//1
-  private static final int BC_YEARS = BC_FIRSTYEAR - BC_LASTYEAR + 1;
-  private static final int AD_FIRSTYEAR = MAXCAL.getActualMinimum(Calendar.YEAR);//1
-  private static final int AD_LASTYEAR = MAXCAL.getActualMaximum(Calendar.YEAR);
-  private static final int AD_YEAR_BASE =  (((BC_YEARS-1) / 1000_000)+1) * 1000_000;
-  static { assert BC_LASTYEAR == 1 && AD_FIRSTYEAR == 1; }
-
-  //how many million years are there?
-  private static final int NUM_MYEARS = (AD_YEAR_BASE + AD_LASTYEAR) / 1000_000;
-
-  private static int calFieldLen(int field) {
-    return CAL_TMP.getMaximum(field) - CAL_TMP.getMinimum(field) + 1;
+    // see source of GregorianCalendar.from(ZonedDateTime)
+    GregorianCalendar cal = new GregorianCalendar(UTC, Locale.ROOT);
+    cal.setGregorianChange(new Date(Long.MIN_VALUE));
+    cal.setFirstDayOfWeek(Calendar.MONDAY);// might not matter?
+    cal.setMinimalDaysInFirstWeek(4);// might not matter
+    cal.clear();
+    JAVA_UTIL_TIME_COMPAT_CAL = cal;
   }
 
   private static final int[] FIELD_BY_LEVEL = {
       -1/*unused*/, -1, -1, Calendar.YEAR, Calendar.MONTH, Calendar.DAY_OF_MONTH,
       Calendar.HOUR_OF_DAY, Calendar.MINUTE, Calendar.SECOND, Calendar.MILLISECOND};
-  private static final int yearLevel = 3;
 
-  public static final DateRangePrefixTree INSTANCE = new DateRangePrefixTree();
+  private static final int YEAR_LEVEL = 3;
+
+  //how many million years are there?
+  private static final int NUM_MYEARS = 585;// we assert how this was computed in the constructor
+
+  /** An instanced based on {@link Calendar#getInstance(TimeZone, Locale)} with UTC and Locale.Root. This
+   * will (always?) be a {@link GregorianCalendar} with a so-called "Gregorian Change Date" of 1582.
+   */
+  @Deprecated
+  public static final DateRangePrefixTree INSTANCE = new DateRangePrefixTree(DEFAULT_CAL);
+
+  // Instance fields: (all are final)
+
+  private final Calendar CAL_TMP;//template
+
+  private final Calendar MINCAL;
+  private final Calendar MAXCAL;
+
+  private final int BC_FIRSTYEAR;
+  private final int BC_LASTYEAR;
+  private final int BC_YEARS;
+  private final int AD_FIRSTYEAR;
+  private final int AD_LASTYEAR;
+  private final int AD_YEAR_BASE;
 
   private final UnitNRShape minLV, maxLV;
   private final UnitNRShape gregorianChangeDateLV;
 
-  protected DateRangePrefixTree() {
+  /** Constructs with the specified calendar used as a template to be cloned whenever a new
+   * Calendar needs to be created.  See {@link #DEFAULT_CAL} and {@link #JAVA_UTIL_TIME_COMPAT_CAL}. */
+  public DateRangePrefixTree(Calendar templateCal) {
     super(new int[]{//sublevels by level
         NUM_MYEARS,
         1000,//1 thousand thousand-years in a million years
         1000,//1 thousand years in a thousand-year
-        calFieldLen(Calendar.MONTH),
-        calFieldLen(Calendar.DAY_OF_MONTH),
-        calFieldLen(Calendar.HOUR_OF_DAY),
-        calFieldLen(Calendar.MINUTE),
-        calFieldLen(Calendar.SECOND),
-        calFieldLen(Calendar.MILLISECOND),
+        calFieldLen(templateCal, Calendar.MONTH),
+        calFieldLen(templateCal, Calendar.DAY_OF_MONTH),
+        calFieldLen(templateCal, Calendar.HOUR_OF_DAY),
+        calFieldLen(templateCal, Calendar.MINUTE),
+        calFieldLen(templateCal, Calendar.SECOND),
+        calFieldLen(templateCal, Calendar.MILLISECOND),
     });
+    CAL_TMP = (Calendar) templateCal.clone();// defensive copy
+    MINCAL = (Calendar) CAL_TMP.clone();
+    MINCAL.setTimeInMillis(Long.MIN_VALUE);
+    MAXCAL = (Calendar) CAL_TMP.clone();
+    MAXCAL.setTimeInMillis(Long.MAX_VALUE);
+    //BC years are decreasing, remember.  Yet ActualMaximum is the numerically high value, ActualMinimum is 1.
+    BC_FIRSTYEAR = MINCAL.getActualMaximum(Calendar.YEAR);
+    BC_LASTYEAR = MINCAL.getActualMinimum(Calendar.YEAR); // 1
+    BC_YEARS = BC_FIRSTYEAR - BC_LASTYEAR + 1;
+    AD_FIRSTYEAR = MAXCAL.getActualMinimum(Calendar.YEAR); // 1
+    AD_LASTYEAR = MAXCAL.getActualMaximum(Calendar.YEAR);
+    AD_YEAR_BASE = (((BC_YEARS-1) / 1000_000)+1) * 1000_000;
+    assert BC_LASTYEAR == 1 && AD_FIRSTYEAR == 1;
+    assert NUM_MYEARS == (AD_YEAR_BASE + AD_LASTYEAR) / 1000_000;
+
     maxLV = toShape((Calendar)MAXCAL.clone());
     minLV = toShape((Calendar)MINCAL.clone());
     if (MAXCAL instanceof GregorianCalendar) {
-      //TODO this should be a configurable param by passing a Calendar serving as a template.
       GregorianCalendar gCal = (GregorianCalendar)MAXCAL;
       gregorianChangeDateLV = toUnitShape(gCal.getGregorianChange());
     } else {
       gregorianChangeDateLV = null;
     }
+  }
+
+  private static int calFieldLen(Calendar cal, int field) {
+    return cal.getMaximum(field) - cal.getMinimum(field) + 1;
   }
 
   @Override
@@ -140,7 +181,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
   }
 
   private int fastSubCells(UnitNRShape lv) {
-    if (lv.getLevel() == yearLevel+1) {//month
+    if (lv.getLevel() == YEAR_LEVEL + 1) {//month
       switch (lv.getValAtLevel(lv.getLevel())) {
         case Calendar.SEPTEMBER:
         case Calendar.APRIL:
@@ -175,7 +216,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
   }
 
   /** Calendar utility method:
-   * Returns a new {@link Calendar} in UTC TimeZone, ROOT Locale, with all fields cleared. */
+   * Returns a clone of the {@link Calendar} passed to the constructor with all fields cleared. */
   public Calendar newCal() {
     return (Calendar) CAL_TMP.clone();
   }
@@ -185,7 +226,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
    * {@link java.util.Calendar#YEAR}.  If there's no match, the next greatest level is returned as a negative value.
    */
   public int getTreeLevelForCalendarField(int calField) {
-    for (int i = yearLevel; i < FIELD_BY_LEVEL.length; i++) {
+    for (int i = YEAR_LEVEL; i < FIELD_BY_LEVEL.length; i++) {
       if (FIELD_BY_LEVEL[i] == calField) {
         return i;
       } else if (FIELD_BY_LEVEL[i] > calField) {
@@ -200,7 +241,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
    * examines fields relevant to the prefix tree. If no fields are set, it returns -1. */
   public int getCalPrecisionField(Calendar cal) {
     int lastField = -1;
-    for (int level = yearLevel; level < FIELD_BY_LEVEL.length; level++) {
+    for (int level = YEAR_LEVEL; level < FIELD_BY_LEVEL.length; level++) {
       int field = FIELD_BY_LEVEL[level];
       if (!cal.isSet(field))
         break;
@@ -212,20 +253,18 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
   /** Calendar utility method:
    * Calls {@link Calendar#clear(int)} for every field after {@code field}. Beware of Calendar underflow. */
   public void clearFieldsAfter(Calendar cal, int field) {
-    if (field == -1) {
-      cal.clear();
-      return;
-    }
     int assertEra = -1;
     assert (assertEra = (((Calendar)cal.clone()).get(Calendar.ERA))) >= 0;//a trick to only get this if assert enabled
-    for (int f = field+1; f < Calendar.FIELD_COUNT; f++) {
+    //note: Calendar.ERA == 0;
+    for (int f = field + 1; f <= Calendar.MILLISECOND; f++) {
       cal.clear(f);
     }
-    assert ((Calendar)cal.clone()).get(Calendar.ERA) == assertEra : "Calendar underflow";
+    assert field + 1 == Calendar.ERA || ((Calendar)cal.clone()).get(Calendar.ERA) == assertEra : "Calendar underflow";
   }
 
   /** Converts {@code value} from a {@link Calendar} or {@link Date} to a {@link Shape}. Other arguments
    * result in a {@link java.lang.IllegalArgumentException}.
+   * If a Calendar is passed in, there might be problems if it is not created via {@link #newCal()}.
    */
   @Override
   public UnitNRShape toUnitShape(Object value) {
@@ -240,7 +279,9 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
   }
 
   /** Converts the Calendar into a Shape.
-   * The isSet() state of the Calendar is re-instated when done. */
+   * The isSet() state of the Calendar is re-instated when done.
+   * If a Calendar is passed in, there might be problems if it is not created via {@link #newCal()}.
+   */
   public UnitNRShape toShape(Calendar cal) {
     // Convert a Calendar into a stack of cell numbers
     final int calPrecField = getCalPrecisionField(cal);//must call first; getters set all fields
@@ -256,7 +297,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
         valStack[len++] = yearAdj / 1000;
         yearAdj -= valStack[len-1] * 1000;
         valStack[len++] = yearAdj;
-        for (int level = yearLevel+1; level < FIELD_BY_LEVEL.length; level++) {
+        for (int level = YEAR_LEVEL +1; level < FIELD_BY_LEVEL.length; level++) {
           int field = FIELD_BY_LEVEL[level];
           if (field > calPrecField)
             break;
@@ -301,7 +342,7 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
       cal.set(Calendar.ERA, 0);//we assert this "sticks" at the end
       cal.set(Calendar.YEAR, (AD_YEAR_BASE - yearAdj) + 1);
     }
-    for (int level = yearLevel+1; level <= lv.getLevel(); level++) {
+    for (int level = YEAR_LEVEL + 1; level <= lv.getLevel(); level++) {
       int field = FIELD_BY_LEVEL[level];
       cal.set(field, lv.getValAtLevel(level) + cal.getActualMinimum(field));
     }
@@ -314,57 +355,75 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
     return toString(toCalendar(lv));
   }
 
-  /** Calendar utility method:
-   * Formats the calendar to ISO-8601 format, to include proper BC handling (1BC is "0000", 2BC is "-0001", etc.);
-   * and WITHOUT a trailing 'Z'.
+  /** Calendar utility method consistent with {@link java.time.format.DateTimeFormatter#ISO_INSTANT} except
+   * has no trailing 'Z', and will be truncated to the units given according to
+   * {@link Calendar#isSet(int)}.
    * A fully cleared calendar will yield the string "*".
    * The isSet() state of the Calendar is re-instated when done. */
-   @SuppressWarnings("fallthrough")
   public String toString(Calendar cal) {
     final int calPrecField = getCalPrecisionField(cal);//must call first; getters set all fields
     if (calPrecField == -1)
       return "*";
     try {
-      //TODO not fully optimized; but it's at least not used in 'search'.
-      //TODO maybe borrow code from Solr DateUtil (put in Lucene util somewhere), and have it reference this back?
-      String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS";
-      int ptnLen = 0;
-      switch (calPrecField) {//switch fall-through is deliberate
-        case Calendar.MILLISECOND: ptnLen += 4;
-        case Calendar.SECOND: ptnLen += 3;
-        case Calendar.MINUTE: ptnLen += 3;
-        case Calendar.HOUR_OF_DAY: ptnLen += 5;
-        case Calendar.DAY_OF_MONTH: ptnLen += 3;
-        case Calendar.MONTH: ptnLen += 3;
-        case Calendar.YEAR: ptnLen += 4;
-        break;
-        default: throw new IllegalStateException(""+calPrecField);
-      }
-      pattern = pattern.substring(0, ptnLen);
-      SimpleDateFormat format = new SimpleDateFormat(pattern, Locale.ROOT);
-      format.setTimeZone(cal.getTimeZone());
-      if (cal.get(Calendar.ERA) == 0) {//BC
-        //SDF doesn't do this properly according to ISO-8601
-        // Example: 1BC == "0000" (actually 0 AD), 2BC == "-0001", 3BC == "-0002", ...
-        final int yearOrig = cal.get(Calendar.YEAR);
-        cal.set(Calendar.YEAR, yearOrig-1);
-        String str;
-        try {
-          str = format.format(cal.getTime());
-        } finally {
-          //reset to what it was
-          cal.set(Calendar.ERA, 0);//necessary!
-          cal.set(Calendar.YEAR, yearOrig);
+      StringBuilder builder = new StringBuilder("yyyy-MM-dd'T'HH:mm:ss.SSS".length());//typical
+      int year = cal.get(Calendar.YEAR); // within the era (thus always positve).  >= 1.
+      if (cal.get(Calendar.ERA) == 0) { // BC
+        year -= 1; // 1BC should be "0000", so shift by one
+        if (year > 0) {
+          builder.append('-');
         }
-        if (yearOrig > 1)
-          return "-" + str;
-        else
-          return "0000" + str.substring(4);
+      } else if (year > 9999) {
+        builder.append('+');
       }
-      return format.format(cal.getTime());
+      appendPadded(builder, year, (short) 4);
+      if (calPrecField >= Calendar.MONTH) {
+        builder.append('-');
+        appendPadded(builder, cal.get(Calendar.MONTH) + 1, (short) 2); // +1 since first is 0
+      }
+      if (calPrecField >= Calendar.DAY_OF_MONTH) {
+        builder.append('-');
+        appendPadded(builder, cal.get(Calendar.DAY_OF_MONTH), (short) 2);
+      }
+      if (calPrecField >= Calendar.HOUR_OF_DAY) {
+        builder.append('T');
+        appendPadded(builder, cal.get(Calendar.HOUR_OF_DAY), (short) 2);
+      }
+      if (calPrecField >= Calendar.MINUTE) {
+        builder.append(':');
+        appendPadded(builder, cal.get(Calendar.MINUTE), (short) 2);
+      }
+      if (calPrecField >= Calendar.SECOND) {
+        builder.append(':');
+        appendPadded(builder, cal.get(Calendar.SECOND), (short) 2);
+      }
+      if (calPrecField >= Calendar.MILLISECOND && cal.get(Calendar.MILLISECOND) > 0) { // only if non-zero
+        builder.append('.');
+        appendPadded(builder,  cal.get(Calendar.MILLISECOND), (short) 3);
+      }
+
+      return builder.toString();
     } finally {
       clearFieldsAfter(cal, calPrecField);//restore precision state modified by get()
     }
+  }
+
+  private void appendPadded(StringBuilder builder, int integer, short positions) {
+    assert integer >= 0 && positions >= 1 && positions <= 4;
+    int preBuilderLen = builder.length();
+    int intStrLen;
+    if (integer > 999) {
+      intStrLen = 4;
+    } else if (integer > 99) {
+      intStrLen = 3;
+    } else if (integer > 9) {
+      intStrLen = 2;
+    } else {
+      intStrLen = 1;
+    }
+    for (int i = 0; i < positions - intStrLen; i++) {
+      builder.append('0');
+    }
+    builder.append(integer);
   }
 
   @Override

@@ -126,10 +126,11 @@ public class PayloadHelper {
       doc.add(new TextField(NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES));
       writer.addDocument(doc);
     }
+    writer.forceMerge(1);
     reader = DirectoryReader.open(writer);
     writer.close();
 
-    IndexSearcher searcher = LuceneTestCase.newSearcher(reader);
+    IndexSearcher searcher = LuceneTestCase.newSearcher(LuceneTestCase.getOnlyLeafReader(reader));
     searcher.setSimilarity(similarity);
     return searcher;
   }

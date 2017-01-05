@@ -21,8 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
+import java.util.Objects;
 
-import com.google.common.base.Preconditions;
 import com.google.common.io.Files;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -30,6 +30,7 @@ import com.typesafe.config.ConfigRenderOptions;
 import com.typesafe.config.ConfigUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -63,8 +64,7 @@ public class SolrLocator {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected SolrLocator(MorphlineContext context) {
-    Preconditions.checkNotNull(context);
-    this.context = context;
+    this.context = Objects.requireNonNull(context);
   }
 
   public SolrLocator(Config config, MorphlineContext context) {
@@ -92,7 +92,9 @@ public class SolrLocator {
       if (collectionName == null || collectionName.length() == 0) {
         throw new MorphlineCompilationException("Parameter 'zkHost' requires that you also pass parameter 'collection'", config);
       }
-      CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost);
+      CloudSolrClient cloudSolrClient = new Builder()
+          .withZkHost(zkHost)
+          .build();
       cloudSolrClient.setDefaultCollection(collectionName);
       cloudSolrClient.connect();
       return new SolrClientDocumentLoader(cloudSolrClient, batchSize);

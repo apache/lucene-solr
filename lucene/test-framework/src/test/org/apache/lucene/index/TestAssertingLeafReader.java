@@ -18,17 +18,9 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 public class TestAssertingLeafReader extends LuceneTestCase {
   public void testAssertBits() throws Exception {
@@ -54,9 +46,8 @@ public class TestAssertingLeafReader extends LuceneTestCase {
     assertEquals(1, r.numDocs());
 
     r = new AssertingDirectoryReader((DirectoryReader) r);
+    final IndexReader r2 = r;
 
-    final IndexReader r2 = SlowCompositeReaderWrapper.wrap(r);
-   
     Thread thread = new Thread() {
       @Override
       public void run() {
@@ -68,6 +59,6 @@ public class TestAssertingLeafReader extends LuceneTestCase {
     thread.start();
     thread.join();
 
-    IOUtils.close(r2, dir);
+    IOUtils.close(r, dir);
   }
 }

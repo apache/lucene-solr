@@ -39,7 +39,6 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FsStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.solr.SolrTestCaseJ4;
@@ -153,23 +152,15 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
-      UpdateLog.testing_logReplayHook = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
         }
       };
 
-      UpdateLog.testing_logReplayFinishHook = new Runnable() {
-        @Override
-        public void run() {
-          logReplayFinish.release();
-        }
-      };
+      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
 
       clearIndex();
@@ -257,23 +248,15 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
-    UpdateLog.testing_logReplayHook = new Runnable() {
-      @Override
-      public void run() {
-        try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
+    UpdateLog.testing_logReplayHook = () -> {
+      try {
+        assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       }
     };
 
-    UpdateLog.testing_logReplayFinishHook = new Runnable() {
-      @Override
-      public void run() {
-        logReplayFinish.release();
-      }
-    };
+    UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
 
     SolrQueryRequest req = req();
@@ -420,23 +403,15 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
-    UpdateLog.testing_logReplayHook = new Runnable() {
-      @Override
-      public void run() {
-        try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
+    UpdateLog.testing_logReplayHook = () -> {
+      try {
+        assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       }
     };
 
-    UpdateLog.testing_logReplayFinishHook = new Runnable() {
-      @Override
-      public void run() {
-        logReplayFinish.release();
-      }
-    };
+    UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
 
     SolrQueryRequest req = req();
@@ -556,12 +531,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     DirectUpdateHandler2.commitOnClose = false;
     final Semaphore logReplayFinish = new Semaphore(0);
 
-    UpdateLog.testing_logReplayFinishHook = new Runnable() {
-      @Override
-      public void run() {
-        logReplayFinish.release();
-      }
-    };
+    UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
 
     SolrQueryRequest req = req();
@@ -686,23 +656,15 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
-    UpdateLog.testing_logReplayHook = new Runnable() {
-      @Override
-      public void run() {
-        try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
+    UpdateLog.testing_logReplayHook = () -> {
+      try {
+        assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       }
     };
 
-    UpdateLog.testing_logReplayFinishHook = new Runnable() {
-      @Override
-      public void run() {
-        logReplayFinish.release();
-      }
-    };
+    UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
 
     SolrQueryRequest req = req();
@@ -751,23 +713,15 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
-      UpdateLog.testing_logReplayHook = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
         }
       };
 
-      UpdateLog.testing_logReplayFinishHook = new Runnable() {
-        @Override
-        public void run() {
-          logReplayFinish.release();
-        }
-      };
+      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
 
       clearIndex();
@@ -867,23 +821,15 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
-      UpdateLog.testing_logReplayHook = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
         }
       };
 
-      UpdateLog.testing_logReplayFinishHook = new Runnable() {
-        @Override
-        public void run() {
-          logReplayFinish.release();
-        }
-      };
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
       String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
 
@@ -1006,23 +952,15 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
-      UpdateLog.testing_logReplayHook = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
         }
       };
 
-      UpdateLog.testing_logReplayFinishHook = new Runnable() {
-        @Override
-        public void run() {
-          logReplayFinish.release();
-        }
-      };
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
       String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
 

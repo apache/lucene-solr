@@ -57,4 +57,6 @@ public abstract class AuthorizationContext {
 
   public enum RequestType {READ, WRITE, ADMIN, UNKNOWN}
 
+  public abstract Object getHandler();
+
 }

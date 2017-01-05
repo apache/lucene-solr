@@ -34,8 +34,6 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -330,24 +328,12 @@ public class TermsQueryTest extends LuceneTestCase {
   }
 
   public void testIsConsideredCostlyByQueryCache() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig();
-    IndexWriter w = new IndexWriter(dir, iwc);
-    Document doc = new Document();
-    for (int i = 0; i < 10000; ++i) {
-      w.addDocument(doc);
-    }
-    w.forceMerge(1);
-    DirectoryReader reader = DirectoryReader.open(w);
-    w.close();
     TermsQuery query = new TermsQuery(new Term("foo", "bar"), new Term("foo", "baz"));
     UsageTrackingQueryCachingPolicy policy = new UsageTrackingQueryCachingPolicy();
-    assertFalse(policy.shouldCache(query, getOnlySegmentReader(reader).getContext()));
+    assertFalse(policy.shouldCache(query));
     policy.onUse(query);
     policy.onUse(query);
     // cached after two uses
-    assertTrue(policy.shouldCache(query, getOnlySegmentReader(reader).getContext()));
-    reader.close();
-    dir.close();
+    assertTrue(policy.shouldCache(query));
   }
 }

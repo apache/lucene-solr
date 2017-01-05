@@ -20,12 +20,12 @@ import java.io.IOException;
 import java.util.Calendar;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.spatial.prefix.tree.DateRangePrefixTree;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Before;
 import org.junit.Test;
+import org.locationtech.spatial4j.shape.Shape;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
@@ -54,7 +54,7 @@ public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
       };
     }
     Calendar tmpCal = tree.newCal();
-    int randomCalWindowField = randomIntBetween(1, Calendar.ZONE_OFFSET - 1);//we're not allowed to add zone offset
+    int randomCalWindowField = randomIntBetween(Calendar.YEAR, Calendar.MILLISECOND);
     tmpCal.add(randomCalWindowField, 2_000);
     randomCalWindowMs = Math.max(2000L, tmpCal.getTimeInMillis());
   }

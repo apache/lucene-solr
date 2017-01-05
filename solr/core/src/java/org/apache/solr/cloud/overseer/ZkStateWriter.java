@@ -16,17 +16,17 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.Timer;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -34,8 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
-
-import java.lang.invoke.MethodHandles;
 
 /**
  * ZkStateWriter is responsible for writing updates to the cluster state stored in ZooKeeper for
@@ -84,6 +82,7 @@ public class ZkStateWriter {
 
     this.reader = zkStateReader;
     this.stats = stats;
+    this.clusterState = zkStateReader.getClusterState();
   }
 
   /**
@@ -211,7 +210,7 @@ public class ZkStateWriter {
       throw new IllegalStateException("ZkStateWriter has seen a tragic error, this instance can no longer be used");
     }
     if (!hasPendingUpdates()) return clusterState;
-    TimerContext timerContext = stats.time("update_state");
+    Timer.Context timerContext = stats.time("update_state");
     boolean success = false;
     try {
       if (!updates.isEmpty()) {
@@ -222,18 +221,17 @@ public class ZkStateWriter {
 
           if (c == null) {
             // let's clean up the collections path for this collection
-            log.info("going to delete_collection {}", path);
+            log.debug("going to delete_collection {}", path);
             reader.getZkClient().clean("/collections/" + name);
           } else if (c.getStateFormat() > 1) {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
             if (reader.getZkClient().exists(path, true)) {
-              assert c.getZNodeVersion() >= 0;
-              log.info("going to update_collection {} version: {}", path, c.getZNodeVersion());
+              log.debug("going to update_collection {} version: {}", path, c.getZNodeVersion());
               Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
               DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion(), path);
               clusterState = clusterState.copyWith(name, newCollection);
             } else {
-              log.info("going to create_collection {}", path);
+              log.debug("going to create_collection {}", path);
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
               DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0, path);
               clusterState = clusterState.copyWith(name, newCollection);
@@ -250,13 +248,9 @@ public class ZkStateWriter {
         assert clusterState.getZkClusterStateVersion() >= 0;
         byte[] data = Utils.toJSON(clusterState);
         Stat stat = reader.getZkClient().setData(ZkStateReader.CLUSTER_STATE, data, clusterState.getZkClusterStateVersion(), true);
-        Set<String> collectionNames = clusterState.getCollections();
-        Map<String, DocCollection> collectionStates = new HashMap<>(collectionNames.size());
-        for (String c : collectionNames) {
-          collectionStates.put(c, clusterState.getCollection(c));
-        }
+        Map<String, DocCollection> collections = clusterState.getCollectionsMap();
         // use the reader's live nodes because our cluster state's live nodes may be stale
-        clusterState = new ClusterState(stat.getVersion(), reader.getClusterState().getLiveNodes(), collectionStates);
+        clusterState = new ClusterState(stat.getVersion(), reader.getClusterState().getLiveNodes(), collections);
         isClusterStateModified = false;
       }
       lastUpdatedTime = System.nanoTime();

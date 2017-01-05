@@ -17,19 +17,23 @@
 package org.apache.solr.morphlines.solr;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
-import org.apache.avro.Schema.Field;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.file.FileReader;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.util.BadHdfsThreadsFilter;
@@ -37,16 +41,6 @@ import org.junit.Test;
 import org.kitesdk.morphline.api.Record;
 import org.kitesdk.morphline.base.Fields;
 import org.kitesdk.morphline.base.Notifications;
-
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
-import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
-import com.google.common.io.Files;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
@@ -57,49 +51,39 @@ public class SolrMorphlineZkAvroTest extends AbstractSolrMorphlineZkTestBase {
 
   @Test
   public void test() throws Exception {
-    Joiner joiner = Joiner.on(File.separator);
-    File file = new File(joiner.join(RESOURCES_DIR, "test-documents", "sample-statuses-20120906-141433-medium.avro"));
-    
-    waitForRecoveriesToFinish(false);
-    
+
+    Path avro = Paths.get(RESOURCES_DIR).resolve("test-documents").resolve("sample-statuses-20120906-141433-medium.avro");
+
     // load avro records via morphline and zk into solr
     morphline = parse("test-morphlines" + File.separator + "tutorialReadAvroContainer");    
     Record record = new Record();
-    byte[] body = Files.toByteArray(file);    
+    byte[] body = Files.readAllBytes(avro);
     record.put(Fields.ATTACHMENT_BODY, body);
     startSession();
     Notifications.notifyBeginTransaction(morphline);
     assertTrue(morphline.process(record));
     assertEquals(1, collector.getNumStartEvents());
     
-    commit();
+    Notifications.notifyCommitTransaction(morphline);
+    new UpdateRequest().commit(cluster.getSolrClient(), COLLECTION);
     
     // fetch sorted result set from solr
-    QueryResponse rsp = cloudClient.query(new SolrQuery("*:*").setRows(100000).addSort("id", SolrQuery.ORDER.asc));   
+    QueryResponse rsp = cluster.getSolrClient()
+        .query(COLLECTION, new SolrQuery("*:*").setRows(100000).addSort("id", SolrQuery.ORDER.asc));
     assertEquals(2104, collector.getRecords().size());
     assertEquals(collector.getRecords().size(), rsp.getResults().size());
     
-    Collections.sort(collector.getRecords(), new Comparator<Record>() {
-      @Override
-      public int compare(Record r1, Record r2) {
-        return r1.get("id").toString().compareTo(r2.get("id").toString());
-      }      
-    });   
+    Collections.sort(collector.getRecords(), (r1, r2) -> r1.get("id").toString().compareTo(r2.get("id").toString()));
 
     // fetch test input data and sort like solr result set
-    List<GenericData.Record> records = new ArrayList();
-    FileReader<GenericData.Record> reader = new DataFileReader(file, new GenericDatumReader());
+    List<GenericData.Record> records = new ArrayList<>();
+    FileReader<GenericData.Record> reader = new DataFileReader(avro.toFile(), new GenericDatumReader());
     while (reader.hasNext()) {
       GenericData.Record expected = reader.next();
       records.add(expected);
     }
     assertEquals(collector.getRecords().size(), records.size());    
-    Collections.sort(records, new Comparator<GenericData.Record>() {
-      @Override
-      public int compare(GenericData.Record r1, GenericData.Record r2) {
-        return r1.get("id").toString().compareTo(r2.get("id").toString());
-      }      
-    });   
+    Collections.sort(records, (r1, r2) -> r1.get("id").toString().compareTo(r2.get("id").toString()));
     
     Object lastId = null;
     for (int i = 0; i < records.size(); i++) {  
@@ -119,8 +103,7 @@ public class SolrMorphlineZkAvroTest extends AbstractSolrMorphlineZkTestBase {
     for (int i = 0; i < records.size(); i++) {  
       // verify morphline spat out expected data
       Record actual = collector.getRecords().get(i);
-      GenericData.Record expected = records.get(i);
-      Preconditions.checkNotNull(expected);
+      GenericData.Record expected = Objects.requireNonNull(records.get(i));
       assertTweetEquals(expected, actual, i);
       
       // verify Solr result set contains expected data
@@ -131,12 +114,12 @@ public class SolrMorphlineZkAvroTest extends AbstractSolrMorphlineZkTestBase {
     
     Notifications.notifyRollbackTransaction(morphline);
     Notifications.notifyShutdown(morphline);
-    cloudClient.close();
+
   }
   
   private void assertTweetEquals(GenericData.Record expected, Record actual, int i) {
-    Preconditions.checkNotNull(expected);
-    Preconditions.checkNotNull(actual);
+    Objects.requireNonNull(expected);
+    Objects.requireNonNull(actual);
 //    System.out.println("\n\nexpected: " + toString(expected));
 //    System.out.println("actual:   " + actual);
     String[] fieldNames = new String[] { 
@@ -152,14 +135,6 @@ public class SolrMorphlineZkAvroTest extends AbstractSolrMorphlineZkTestBase {
           expected.get(fieldName).toString(), 
           actual.getFirstValue(fieldName).toString());
     }
-  }
-
-  private String toString(GenericData.Record avroRecord) {
-    Record record = new Record();
-    for (Field field : avroRecord.getSchema().getFields()) {
-      record.put(field.name(), avroRecord.get(field.pos()));
-    }
-    return record.toString(); // prints sorted by key for human readability
   }
 
 }

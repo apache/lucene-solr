@@ -21,7 +21,6 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -37,9 +36,7 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
-
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
 
@@ -55,7 +52,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
   public void testDeletePartiallyWrittenFilesIfAbort() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
-    iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
+    iwConf.setMaxBufferedDocs(RandomNumbers.randomIntBetween(random(), 2, 30));
     iwConf.setCodec(CompressingCodec.randomInstance(random()));
     // disable CFS because this test checks file names
     iwConf.setMergePolicy(newLogMergePolicy(false));
@@ -306,7 +303,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     assertNotNull(ir2);
     ir.close();
     ir = ir2;
-    CodecReader sr = getOnlySegmentReader(ir);
+    CodecReader sr = (CodecReader) getOnlyLeafReader(ir);
     CompressingStoredFieldsReader reader = (CompressingStoredFieldsReader)sr.getFieldsReader();
     // we could get lucky, and have zero, but typically one.
     assertTrue(reader.getNumDirtyChunks() <= 1);

@@ -26,23 +26,15 @@
   -->
 
 <schema name="test" version="1.2">
-  <types>
 
-    <fieldType name="integer" class="solr.TrieIntField" precisionStep="0"/>
-    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  <fieldType name="integer" class="solr.TrieIntField" precisionStep="0"/>
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
-  </types>
+  <field name="id" type="integer" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="name" type="string" indexed="true" stored="true"/>
 
-
-  <fields>
-    <field name="id" type="integer" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="name" type="string" indexed="true" stored="true"/>
-
-    <!--adding new field newname in replication test.-->
-    <field name="newname" type="string" indexed="true" stored="true"/>
-
-
-  </fields>
+  <!--adding new field newname in replication test.-->
+  <field name="newname" type="string" indexed="true" stored="true"/>
 
   <uniqueKey>id</uniqueKey>
 

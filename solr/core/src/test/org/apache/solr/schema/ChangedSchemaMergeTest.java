@@ -19,8 +19,8 @@ package org.apache.solr.schema;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 
 import org.apache.lucene.search.similarities.Similarity;
@@ -90,11 +90,11 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     copyMinConf(changed, "name=changed");
     // Overlay with my local schema
     schemaFile = new File(new File(changed, "conf"), "schema.xml");
-    FileUtils.writeStringToFile(schemaFile, withWhich, Charsets.UTF_8.toString());
+    FileUtils.writeStringToFile(schemaFile, withWhich, StandardCharsets.UTF_8);
 
     String discoveryXml = "<solr></solr>";
     File solrXml = new File(solrHomeDirectory, "solr.xml");
-    FileUtils.write(solrXml, discoveryXml, Charsets.UTF_8.toString());
+    FileUtils.write(solrXml, discoveryXml, StandardCharsets.UTF_8);
 
     final CoreContainer cores = new CoreContainer(solrHomeDirectory.getAbsolutePath());
     cores.load();
@@ -133,7 +133,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
 
       // write the new schema out and make it current
-      FileUtils.writeStringToFile(schemaFile, withoutWhich, Charsets.UTF_8.toString());
+      FileUtils.writeStringToFile(schemaFile, withoutWhich, StandardCharsets.UTF_8);
 
       IndexSchema iSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", changed.getSolrConfig());
       changed.setLatestSchema(iSchema);
@@ -164,14 +164,11 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   }
 
   private static String withWhich = "<schema name=\"tiny\" version=\"1.1\">\n" +
-      "  <fields>\n" +
       "    <field name=\"id\" type=\"string\" indexed=\"true\" stored=\"true\" required=\"true\"/>\n" +
       "    <field name=\"text\" type=\"text\" indexed=\"true\" stored=\"true\"/>\n" +
       "    <field name=\"which\" type=\"int\" indexed=\"true\" stored=\"true\"/>\n" +
-      "  </fields>\n" +
       "  <uniqueKey>id</uniqueKey>\n" +
       "\n" +
-      "  <types>\n" +
       "    <fieldtype name=\"text\" class=\"solr.TextField\">\n" +
       "      <analyzer>\n" +
       "        <tokenizer class=\"solr.WhitespaceTokenizerFactory\"/>\n" +
@@ -181,18 +178,14 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       "    </fieldtype>\n" +
       "    <fieldType name=\"string\" class=\"solr.StrField\"/>\n" +
       "    <fieldType name=\"int\" class=\"solr.TrieIntField\" precisionStep=\"0\" positionIncrementGap=\"0\"/>" +
-      "  </types>\n" +
       "  <similarity class=\"${solr.test.simfac1}\"/> " +
       "</schema>";
 
   private static String withoutWhich = "<schema name=\"tiny\" version=\"1.1\">\n" +
-      "  <fields>\n" +
       "    <field name=\"id\" type=\"string\" indexed=\"true\" stored=\"true\" required=\"true\"/>\n" +
       "    <field name=\"text\" type=\"text\" indexed=\"true\" stored=\"true\"/>\n" +
-      "  </fields>\n" +
       "  <uniqueKey>id</uniqueKey>\n" +
       "\n" +
-      "  <types>\n" +
       "    <fieldtype name=\"text\" class=\"solr.TextField\">\n" +
       "      <analyzer>\n" +
       "        <tokenizer class=\"solr.WhitespaceTokenizerFactory\"/>\n" +
@@ -201,7 +194,6 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       "    </fieldtype>\n" +
       "    <fieldType name=\"string\" class=\"solr.StrField\"/>\n" +
       "    <fieldType name=\"int\" class=\"solr.TrieIntField\" precisionStep=\"0\" positionIncrementGap=\"0\"/>" +
-      "  </types>\n" +
       "  <similarity class=\"${solr.test.simfac2}\"/> " +
       "</schema>";
 

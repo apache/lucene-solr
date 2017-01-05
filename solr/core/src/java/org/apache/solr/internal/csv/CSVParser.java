@@ -18,8 +18,6 @@ package org.apache.solr.internal.csv;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.InputStreamReader;
-import java.io.InputStream;
 import java.util.ArrayList;
 
 
@@ -268,7 +266,7 @@ public class CSVParser {
     int lastChar = in.readAgain();
     
     //  read the next char and set eol
-    /* note: unfourtunately isEndOfLine may consumes a character silently.
+    /* note: unfortunately isEndOfLine may consumes a character silently.
      *       this has no effect outside of the method. so a simple workaround
      *       is to call 'readAgain' on the stream...
      *       uh: might using objects instead of base-types (jdk1.5 autoboxing!)

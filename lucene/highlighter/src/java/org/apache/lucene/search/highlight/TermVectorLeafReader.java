@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -29,11 +28,13 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -128,11 +129,6 @@ public class TermVectorLeafReader extends LeafReader {
   }
 
   @Override
-  public Bits getDocsWithField(String field) throws IOException {
-    return null;
-  }
-
-  @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     return null;//Is this needed?  See MemoryIndex for a way to do it.
   }
@@ -148,7 +144,7 @@ public class TermVectorLeafReader extends LeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
+  public PointValues getPointValues(String fieldName) {
     return null;
   }
 
@@ -178,4 +174,8 @@ public class TermVectorLeafReader extends LeafReader {
   public void document(int docID, StoredFieldVisitor visitor) throws IOException {
   }
 
+  @Override
+  public Sort getIndexSort() {
+    return null;
+  }
 }

@@ -32,38 +32,20 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.LazyDocument;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.ExitableDirectoryReader;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiPostingsEnum;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.*;
 import org.apache.lucene.index.StoredFieldVisitor.Status;
-import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Collector;
@@ -94,26 +76,26 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrDocumentBase;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.EnumField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -123,12 +105,12 @@ import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.search.facet.UnInvertedField;
 import org.apache.solr.search.stats.StatsSource;
+import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 
 /**
@@ -141,6 +123,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String STATS_SOURCE = "org.apache.solr.stats_source";
+  public static final String STATISTICS_KEY = "searcher";
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
@@ -183,6 +166,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /** Contains the names/patterns of all docValues=true,stored=false,useDocValuesAsStored=true fields in the schema. */
   private final Set<String> nonStoredDVsUsedAsStored;
 
+  /** Contains the names/patterns of all docValues=true,stored=false fields, excluding those that are copyField targets in the schema. */
+  private final Set<String> nonStoredDVsWithoutCopyTargets;
+
   private Collection<String> storedHighlightFieldNames;
   private DirectoryFactory directoryFactory;
 
@@ -193,8 +179,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final String path;
   private boolean releaseDirectory;
 
-  private volatile IndexFingerprint fingerprint;
-  private final Object fingerprintLock = new Object();
+  private final NamedList<Object> readerStats;
 
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory,
       String path) throws IOException {
@@ -219,7 +204,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /**
    * Builds the necessary collector chain (via delegate wrapping) and executes the query against it. This method takes
    * into consideration both the explicitly provided collector and postFilter as well as any needed collector wrappers
-   * for dealing with options specified in the QueryCOmmand.
+   * for dealing with options specified in the QueryCommand.
    */
   private void buildAndRunCollectorChain(QueryResult qr, Query query, Collector collector, QueryCommand cmd,
       DelegatingCollector postFilter) throws IOException {
@@ -234,7 +219,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           !EarlyTerminatingSortingCollector.canEarlyTerminate(cmdSort, mergeSort)) {
         log.warn("unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} mergeSort={}", cmdSort, cmdLen, mergeSort);
       } else {
-        collector = earlyTerminatingSortingCollector = new EarlyTerminatingSortingCollector(collector, cmdSort, cmd.getLen(), mergeSort);
+        collector = earlyTerminatingSortingCollector = new EarlyTerminatingSortingCollector(collector, cmdSort, cmd.getLen());
       }
     }
 
@@ -333,13 +318,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       documentCache = solrConfig.documentCacheConfig == null ? null : solrConfig.documentCacheConfig.newInstance();
       if (documentCache != null) clist.add(documentCache);
 
-      if (solrConfig.userCacheConfigs == null) {
+      if (solrConfig.userCacheConfigs.isEmpty()) {
         cacheMap = NO_GENERIC_CACHES;
       } else {
-        cacheMap = new HashMap<>(solrConfig.userCacheConfigs.length);
-        for (CacheConfig userCacheConfig : solrConfig.userCacheConfigs) {
-          SolrCache cache = null;
-          if (userCacheConfig != null) cache = userCacheConfig.newInstance();
+        cacheMap = new HashMap<>(solrConfig.userCacheConfigs.size());
+        for (Map.Entry<String,CacheConfig> e : solrConfig.userCacheConfigs.entrySet()) {
+          SolrCache cache = e.getValue().newInstance();
           if (cache != null) {
             cacheMap.put(cache.name(), cache);
             clist.add(cache);
@@ -359,6 +343,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     final Set<String> nonStoredDVsUsedAsStored = new HashSet<>();
     final Set<String> allNonStoredDVs = new HashSet<>();
+    final Set<String> nonStoredDVsWithoutCopyTargets = new HashSet<>();
+
     this.fieldInfos = leafReader.getFieldInfos();
     for (FieldInfo fieldInfo : fieldInfos) {
       final SchemaField schemaField = schema.getFieldOrNull(fieldInfo.name);
@@ -367,15 +353,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           nonStoredDVsUsedAsStored.add(fieldInfo.name);
         }
         allNonStoredDVs.add(fieldInfo.name);
+        if (!schema.isCopyFieldTarget(schemaField)) {
+          nonStoredDVsWithoutCopyTargets.add(fieldInfo.name);
+        }
       }
     }
 
     this.nonStoredDVsUsedAsStored = Collections.unmodifiableSet(nonStoredDVsUsedAsStored);
     this.allNonStoredDVs = Collections.unmodifiableSet(allNonStoredDVs);
+    this.nonStoredDVsWithoutCopyTargets = Collections.unmodifiableSet(nonStoredDVsWithoutCopyTargets);
 
     // We already have our own filter cache
     setQueryCache(null);
 
+    readerStats = snapStatistics(reader);
     // do this at the end since an exception in the constructor means we won't close
     numOpens.incrementAndGet();
   }
@@ -440,7 +431,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return reader.docFreq(term);
   }
 
-  public final LeafReader getLeafReader() {
+  /**
+   * Not recommended to call this method unless there is some particular reason due to internally calling {@link SlowCompositeReaderWrapper}.
+   * Use {@link IndexSearcher#leafContexts} to get the sub readers instead of using this method.
+   */
+  public final LeafReader getSlowAtomicReader() {
     return leafReader;
   }
 
@@ -461,7 +456,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public void register() {
     final Map<String,SolrInfoMBean> infoRegistry = core.getInfoRegistry();
     // register self
-    infoRegistry.put("searcher", this);
+    infoRegistry.put(STATISTICS_KEY, this);
     infoRegistry.put(name, this);
     for (SolrCache cache : cacheList) {
       cache.setState(SolrCache.State.LIVE);
@@ -529,12 +524,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Returns a collection of all field names the index reader knows about.
    */
   public Iterable<String> getFieldNames() {
-    return Iterables.transform(fieldInfos, new Function<FieldInfo,String>() {
-      @Override
-      public String apply(FieldInfo fieldInfo) {
-        return fieldInfo.name;
-      }
-    });
+    return Iterables.transform(fieldInfos, fieldInfo -> fieldInfo.name);
   }
 
   public SolrCache<Query,DocSet> getFilterCache() {
@@ -756,12 +746,22 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     final DirectoryReader reader = getIndexReader();
-    if (!enableLazyFieldLoading || fields == null) {
-      d = reader.document(i);
+    if (fields != null) {
+      if (enableLazyFieldLoading) {
+        final SetNonLazyFieldSelector visitor = new SetNonLazyFieldSelector(fields, reader, i);
+        reader.document(i, visitor);
+        d = visitor.doc;
+      } else if (documentCache == null) {
+        d = reader.document(i, fields);
+      } else {
+        // we do not pass the fields in this case because that would return an incomplete document which would
+        // be eventually cached. The alternative would be to read the stored fields twice; once with the fields
+        // and then without for caching leading to a performance hit
+        // see SOLR-8858 for related discussion
+        d = reader.document(i);
+      }
     } else {
-      final SetNonLazyFieldSelector visitor = new SetNonLazyFieldSelector(fields, reader, i);
-      reader.document(i, visitor);
-      d = visitor.doc;
+      d = reader.document(i);
     }
 
     if (documentCache != null) {
@@ -783,7 +783,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   public void decorateDocValueFields(@SuppressWarnings("rawtypes") SolrDocumentBase doc, int docid, Set<String> fields)
       throws IOException {
-    final LeafReader reader = getLeafReader();
+    final int subIndex = ReaderUtil.subIndex(docid, leafContexts);
+    final int localId = docid - leafContexts.get(subIndex).docBase;
+    final LeafReader leafReader = leafContexts.get(subIndex).reader();
     for (String fieldName : fields) {
       final SchemaField schemaField = schema.getFieldOrNull(fieldName);
       if (schemaField == null || !schemaField.hasDocValues() || doc.containsKey(fieldName)) {
@@ -791,34 +793,40 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         continue;
       }
 
-      if (!DocValues.getDocsWithField(leafReader, fieldName).get(docid)) {
-        continue;
-      }
-
       if (schemaField.multiValued()) {
-        final SortedSetDocValues values = reader.getSortedSetDocValues(fieldName);
+        final SortedSetDocValues values = leafReader.getSortedSetDocValues(fieldName);
         if (values != null && values.getValueCount() > 0) {
-          values.setDocument(docid);
-          final List<Object> outValues = new LinkedList<Object>();
-          for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
-            final BytesRef value = values.lookupOrd(ord);
-            outValues.add(schemaField.getType().toObject(schemaField, value));
+          if (values.advance(localId) == localId) {
+            final List<Object> outValues = new LinkedList<Object>();
+            for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
+              final BytesRef value = values.lookupOrd(ord);
+              outValues.add(schemaField.getType().toObject(schemaField, value));
+            }
+            assert outValues.size() > 0;
+            doc.addField(fieldName, outValues);
           }
-          if (outValues.size() > 0) doc.addField(fieldName, outValues);
         }
       } else {
         final DocValuesType dvType = fieldInfos.fieldInfo(fieldName).getDocValuesType();
         switch (dvType) {
           case NUMERIC:
             final NumericDocValues ndv = leafReader.getNumericDocValues(fieldName);
-            Long val = ndv.get(docid);
+            if (ndv == null) {
+              continue;
+            }
+            Long val;
+            if (ndv.advanceExact(localId)) {
+              val = ndv.longValue();
+            } else {
+              continue;
+            }
             Object newVal = val;
             if (schemaField.getType() instanceof TrieIntField) {
               newVal = val.intValue();
             } else if (schemaField.getType() instanceof TrieFloatField) {
-              newVal = NumericUtils.sortableIntToFloat(val.intValue());
+              newVal = Float.intBitsToFloat(val.intValue());
             } else if (schemaField.getType() instanceof TrieDoubleField) {
-              newVal = NumericUtils.sortableLongToDouble(val);
+              newVal = Double.longBitsToDouble(val);
             } else if (schemaField.getType() instanceof TrieDateField) {
               newVal = new Date(val);
             } else if (schemaField.getType() instanceof EnumField) {
@@ -828,12 +836,30 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             break;
           case BINARY:
             BinaryDocValues bdv = leafReader.getBinaryDocValues(fieldName);
-            doc.addField(fieldName, bdv.get(docid));
+            if (bdv == null) {
+              continue;
+            }
+            BytesRef value;
+            if (bdv.advanceExact(localId)) {
+              value = BytesRef.deepCopyOf(bdv.binaryValue());
+            } else {
+              continue;
+            }
+            doc.addField(fieldName, value);
             break;
           case SORTED:
             SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
-            if (sdv.getOrd(docid) >= 0) {
-              doc.addField(fieldName, sdv.get(docid).utf8ToString());
+            if (sdv == null) {
+              continue;
+            }
+            if (sdv.advanceExact(localId)) {
+              final BytesRef bRef = sdv.binaryValue();
+              // Special handling for Boolean fields since they're stored as 'T' and 'F'.
+              if (schemaField.getType() instanceof BoolField) {
+                doc.addField(fieldName, schemaField.getType().toObject(schemaField, bRef));
+              } else {
+                doc.addField(fieldName, bRef.utf8ToString());
+              }
             }
             break;
           case SORTED_NUMERIC:
@@ -841,8 +867,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           case SORTED_SET:
             throw new AssertionError("SORTED_SET fields should be multi-valued!");
           case NONE:
-            // Shouldn't happen since we check that the document has a DocValues field.
-            throw new AssertionError("Document does not have a DocValues field with the name '" + fieldName + "'!");
+            break;
         }
       }
     }
@@ -876,6 +901,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return onlyUseDocValuesAsStored ? nonStoredDVsUsedAsStored : allNonStoredDVs;
   }
 
+  /**
+   * Returns an unmodifiable set of names of non-stored docValues fields, except those that are targets of a copy field.
+   */
+  public Set<String> getNonStoredDVsWithoutCopyTargets() {
+    return nonStoredDVsWithoutCopyTargets;
+  }
+
   /* ********************** end document retrieval *************************/
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -890,6 +922,32 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /** Returns a weighted sort according to this searcher */
   public Sort weightSort(Sort sort) throws IOException {
     return (sort != null) ? sort.rewrite(this) : null;
+  }
+
+  /** Returns a weighted sort spec according to this searcher */
+  public SortSpec weightSortSpec(SortSpec originalSortSpec, Sort nullEquivalent) throws IOException {
+    return implWeightSortSpec(
+        originalSortSpec.getSort(),
+        originalSortSpec.getCount(),
+        originalSortSpec.getOffset(),
+        nullEquivalent);
+  }
+
+  /** Returns a weighted sort spec according to this searcher */
+  private SortSpec implWeightSortSpec(Sort originalSort, int num, int offset, Sort nullEquivalent) throws IOException {
+    Sort rewrittenSort = weightSort(originalSort);
+    if (rewrittenSort == null) {
+      rewrittenSort = nullEquivalent;
+    }
+
+    final SortField[] rewrittenSortFields = rewrittenSort.getSort();
+    final SchemaField[] rewrittenSchemaFields = new SchemaField[rewrittenSortFields.length];
+    for (int ii = 0; ii < rewrittenSortFields.length; ++ii) {
+      final String fieldName = rewrittenSortFields[ii].getField();
+      rewrittenSchemaFields[ii] = (fieldName == null ? null : schema.getFieldOrNull(fieldName));
+    }
+
+    return new SortSpec(rewrittenSort, rewrittenSchemaFields, num, offset);
   }
 
   /**
@@ -1068,12 +1126,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     public boolean hasDeletedDocs;  // true if it's possible that filter may match deleted docs
   }
 
-  private static Comparator<Query> sortByCost = new Comparator<Query>() {
-    @Override
-    public int compare(Query q1, Query q2) {
-      return ((ExtendedQuery) q1).getCost() - ((ExtendedQuery) q2).getCost();
-    }
-  };
+  private static Comparator<Query> sortByCost = (q1, q2) -> ((ExtendedQuery) q1).getCost() - ((ExtendedQuery) q2).getCost();
 
   private DocSet getDocSetScore(List<Query> queries) throws IOException {
     Query main = queries.remove(0);
@@ -2307,6 +2360,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return all.andNotSize(positiveA.union(positiveB));
   }
 
+  /** @lucene.internal */
+  public boolean intersects(DocSet a, DocsEnumState deState) throws IOException {
+    return a.intersects(getDocSet(deState));
+  }
+
   /**
    * Takes a list of document IDs, and returns an array of Documents containing all of the stored fields.
    */
@@ -2401,15 +2459,26 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * gets a cached version of the IndexFingerprint for this searcher
    **/
   public IndexFingerprint getIndexFingerprint(long maxVersion) throws IOException {
-    // possibly expensive, so prevent more than one thread from calculating it for this searcher
-    synchronized (fingerprintLock) {
-      if (fingerprint == null) {
-        fingerprint = IndexFingerprint.getFingerprint(this, maxVersion);
-      }
-    }
+    final SolrIndexSearcher searcher = this;
+    final AtomicReference<IOException> exception = new AtomicReference<>();
+    try {
+      return searcher.getTopReaderContext().leaves().stream()
+          .map(ctx -> {
+            try {
+              return searcher.getCore().getIndexFingerprint(searcher, ctx, maxVersion);
+            } catch (IOException e) {
+              exception.set(e);
+              return null;
+            }
+          })
+          .filter(java.util.Objects::nonNull)
+          .reduce(new IndexFingerprint(maxVersion), IndexFingerprint::reduce);
 
-    return fingerprint;
+    } finally {
+      if (exception.get() != null) throw exception.get();
+    }
   }
+
 
   /////////////////////////////////////////////////////////////////////
   // SolrInfoMBean stuff: Statistics and Module Info
@@ -2450,15 +2519,23 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     final NamedList<Object> lst = new SimpleOrderedMap<>();
     lst.add("searcherName", name);
     lst.add("caching", cachingEnabled);
+
+    lst.addAll(readerStats);
+
+    lst.add("openedAt", openTime);
+    if (registerTime != null) lst.add("registeredAt", registerTime);
+    lst.add("warmupTime", warmupTime);
+    return lst;
+  }
+
+  static private NamedList<Object> snapStatistics(DirectoryReader reader) {
+    final NamedList<Object> lst = new SimpleOrderedMap<>();
     lst.add("numDocs", reader.numDocs());
     lst.add("maxDoc", reader.maxDoc());
     lst.add("deletedDocs", reader.maxDoc() - reader.numDocs());
     lst.add("reader", reader.toString());
     lst.add("readerDir", reader.directory());
     lst.add("indexVersion", reader.getVersion());
-    lst.add("openedAt", openTime);
-    if (registerTime != null) lst.add("registeredAt", registerTime);
-    lst.add("warmupTime", warmupTime);
     return lst;
   }
 
@@ -2610,6 +2687,23 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     }
 
+    @Override
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+
+    private boolean equalsTo(FilterImpl other) {
+      return Objects.equals(this.topFilter, other.topFilter) &&
+             Objects.equals(this.weights, other.weights);
+    }
+
+    @Override
+    public int hashCode() {
+      return classHash() 
+          + 31 * Objects.hashCode(topFilter)
+          + 31 * Objects.hashCode(weights);
+    }
   }
 
 }

@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
-
 import java.util.HashSet;
 import java.util.Set;
 

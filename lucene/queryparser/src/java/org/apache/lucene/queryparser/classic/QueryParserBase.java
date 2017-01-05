@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.queryparser.classic;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.text.DateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser.Operator;
@@ -32,6 +31,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery.TooManyClauses;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.RegExp;
 
@@ -41,9 +41,6 @@ import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZ
  * and acts to separate the majority of the Java code from the .jj grammar file. 
  */
 public abstract class QueryParserBase extends QueryBuilder implements CommonQueryParserConfiguration {
-  
-  /** Do not catch this exception in your code, it means you are using methods that you should no longer use. */
-  public static class MethodRemovedUseAnother extends Throwable {}
 
   static final int CONJ_NONE   = 0;
   static final int CONJ_AND    = 1;
@@ -63,7 +60,6 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   /** The actual operator that parser uses to combine query terms */
   Operator operator = OR_OPERATOR;
 
-  boolean lowercaseExpandedTerms = true;
   MultiTermQuery.RewriteMethod multiTermRewriteMethod = MultiTermQuery.CONSTANT_SCORE_REWRITE;
   boolean allowLeadingWildcard = false;
 
@@ -78,10 +74,6 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   DateTools.Resolution dateResolution = null;
   // maps field names to date resolutions
   Map<String,DateTools.Resolution> fieldToDateResolution = null;
-
-  //Whether or not to analyze range terms when constructing RangeQuerys
-  // (For example, analyzing terms into collation keys for locale-sensitive RangeQuery)
-  boolean analyzeRangeTerms = false;
 
   boolean autoGeneratePhraseQueries;
   int maxDeterminizedStates = DEFAULT_MAX_DETERMINIZED_STATES;
@@ -152,7 +144,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    * Set to false if phrase queries should only be generated when
    * surrounded by double quotes.
    */
-  public final void setAutoGeneratePhraseQueries(boolean value) {
+  public void setAutoGeneratePhraseQueries(boolean value) {
     this.autoGeneratePhraseQueries = value;
   }
 
@@ -253,24 +245,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     return operator;
   }
 
-
-  /**
-   * Whether terms of wildcard, prefix, fuzzy and range queries are to be automatically
-   * lower-cased or not.  Default is <code>true</code>.
-   */
-  @Override
-  public void setLowercaseExpandedTerms(boolean lowercaseExpandedTerms) {
-    this.lowercaseExpandedTerms = lowercaseExpandedTerms;
-  }
-
-  /**
-   * @see #setLowercaseExpandedTerms(boolean)
-   */
-  @Override
-  public boolean getLowercaseExpandedTerms() {
-    return lowercaseExpandedTerms;
-  }
-
+  
   /**
    * By default QueryParser uses {@link org.apache.lucene.search.MultiTermQuery#CONSTANT_SCORE_REWRITE}
    * when creating a {@link PrefixQuery}, {@link WildcardQuery} or {@link TermRangeQuery}. This implementation is generally preferable because it
@@ -342,7 +317,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    */
   public void setDateResolution(String fieldName, DateTools.Resolution dateResolution) {
     if (fieldName == null) {
-      throw new IllegalArgumentException("Field cannot be null.");
+      throw new IllegalArgumentException("Field must not be null.");
     }
 
     if (fieldToDateResolution == null) {
@@ -361,7 +336,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    */
   public DateTools.Resolution getDateResolution(String fieldName) {
     if (fieldName == null) {
-      throw new IllegalArgumentException("Field cannot be null.");
+      throw new IllegalArgumentException("Field must not be null.");
     }
 
     if (fieldToDateResolution == null) {
@@ -376,24 +351,6 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     }
 
     return resolution;
-  }
-
-  /**
-   * Set whether or not to analyze range terms when constructing {@link TermRangeQuery}s.
-   * For example, setting this to true can enable analyzing terms into 
-   * collation keys for locale-sensitive {@link TermRangeQuery}.
-   * 
-   * @param analyzeRangeTerms whether or not terms should be analyzed for RangeQuerys
-   */
-  public void setAnalyzeRangeTerms(boolean analyzeRangeTerms) {
-    this.analyzeRangeTerms = analyzeRangeTerms;
-  }
-
-  /**
-   * @return whether or not to analyze range terms when constructing {@link TermRangeQuery}s.
-   */
-  public boolean getAnalyzeRangeTerms() {
-    return analyzeRangeTerms;
   }
 
   /**
@@ -465,6 +422,45 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   }
 
   /**
+   * Adds clauses generated from analysis over text containing whitespace.
+   * There are no operators, so the query's clauses can either be MUST (if the
+   * default operator is AND) or SHOULD (default OR).
+   *
+   * If all of the clauses in the given Query are TermQuery-s, this method flattens the result
+   * by adding the TermQuery-s individually to the output clause list; otherwise, the given Query
+   * is added as a single clause including its nested clauses.
+   */
+  protected void addMultiTermClauses(List<BooleanClause> clauses, Query q) {
+    // We might have been passed a null query; the term might have been
+    // filtered away by the analyzer.
+    if (q == null) {
+      return;
+    }
+    boolean allNestedTermQueries = false;
+    if (q instanceof BooleanQuery) {
+      allNestedTermQueries = true;
+      for (BooleanClause clause : ((BooleanQuery)q).clauses()) {
+        if ( ! (clause.getQuery() instanceof TermQuery)) {
+          allNestedTermQueries = false;
+          break;
+        }
+      }
+    }
+    if (allNestedTermQueries) {
+      clauses.addAll(((BooleanQuery)q).clauses());
+    } else {
+      BooleanClause.Occur occur = operator == OR_OPERATOR ? BooleanClause.Occur.SHOULD : BooleanClause.Occur.MUST;
+      if (q instanceof BooleanQuery) {
+        for (BooleanClause clause : ((BooleanQuery)q).clauses()) {
+          clauses.add(newBooleanClause(clause.getQuery(), occur));
+        }
+      } else {
+        clauses.add(newBooleanClause(q, occur));
+      }
+    }
+  }
+
+  /**
    * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
   protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {
@@ -479,8 +475,6 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     return createFieldQuery(analyzer, occur, field, queryText, quoted || autoGeneratePhraseQueries, phraseSlop);
   }
 
-
-
   /**
    * Base implementation delegates to {@link #getFieldQuery(String,String,boolean)}.
    * This method may be overridden, for example, to return
@@ -493,21 +487,46 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     Query query = getFieldQuery(field, queryText, true);
 
     if (query instanceof PhraseQuery) {
-      PhraseQuery.Builder builder = new PhraseQuery.Builder();
-      builder.setSlop(slop);
-      PhraseQuery pq = (PhraseQuery) query;
-      org.apache.lucene.index.Term[] terms = pq.getTerms();
-      int[] positions = pq.getPositions();
-      for (int i = 0; i < terms.length; ++i) {
-        builder.add(terms[i], positions[i]);
+      query = addSlopToPhrase((PhraseQuery) query, slop);
+    } else if (query instanceof MultiPhraseQuery) {
+      MultiPhraseQuery mpq = (MultiPhraseQuery)query;
+      
+      if (slop != mpq.getSlop()) {
+        query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
       }
-      query = builder.build();
-    }
-    if (query instanceof MultiPhraseQuery) {
-      ((MultiPhraseQuery) query).setSlop(slop);
+    } else if (query instanceof GraphQuery && ((GraphQuery) query).hasPhrase()) {
+      // we have a graph query that has at least one phrase sub-query
+      // re-build and set slop on all phrase queries
+      List<Query> oldQueries = ((GraphQuery) query).getQueries();
+      Query[] queries = new Query[oldQueries.size()];
+      for (int i = 0; i < queries.length; i++) {
+        Query oldQuery = oldQueries.get(i);
+        if (oldQuery instanceof PhraseQuery) {
+          queries[i] = addSlopToPhrase((PhraseQuery) oldQuery, slop);
+        } else {
+          queries[i] = oldQuery;
+        }
+      }
+
+      query = new GraphQuery(queries);
     }
 
     return query;
+  }
+
+  /**
+   * Rebuild a phrase query with a slop value
+   */
+  private PhraseQuery addSlopToPhrase(PhraseQuery query, int slop) {
+    PhraseQuery.Builder builder = new PhraseQuery.Builder();
+    builder.setSlop(slop);
+    org.apache.lucene.index.Term[] terms = query.getTerms();
+    int[] positions = query.getPositions();
+    for (int i = 0; i < terms.length; ++i) {
+      builder.add(terms[i], positions[i]);
+    }
+
+    return builder.build();
   }
 
   protected Query getRangeQuery(String field,
@@ -516,12 +535,6 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
                                 boolean startInclusive,
                                 boolean endInclusive) throws ParseException
   {
-    if (lowercaseExpandedTerms) {
-      part1 = part1==null ? null : part1.toLowerCase(locale);
-      part2 = part2==null ? null : part2.toLowerCase(locale);
-    }
-
-
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, locale);
     df.setLenient(true);
     DateTools.Resolution resolution = getDateResolution(field);
@@ -598,31 +611,6 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     return new FuzzyQuery(term,numEdits,prefixLength);
   }
 
-  // TODO: Should this be protected instead?
-  private BytesRef analyzeMultitermTerm(String field, String part) {
-    return analyzeMultitermTerm(field, part, getAnalyzer());
-  }
-
-  protected BytesRef analyzeMultitermTerm(String field, String part, Analyzer analyzerIn) {
-    if (analyzerIn == null) analyzerIn = getAnalyzer();
-
-    try (TokenStream source = analyzerIn.tokenStream(field, part)) {
-      source.reset();
-      
-      TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
-
-      if (!source.incrementToken())
-        throw new IllegalArgumentException("analyzer returned no terms for multiTerm term: " + part);
-      BytesRef bytes = BytesRef.deepCopyOf(termAtt.getBytesRef());
-      if (source.incrementToken())
-        throw new IllegalArgumentException("analyzer returned too many terms for multiTerm term: " + part);
-      source.end();
-      return bytes;
-    } catch (IOException e) {
-      throw new RuntimeException("Error analyzing multiTerm term: " + part, e);
-    }
-  }
-
   /**
    * Builds a new {@link TermRangeQuery} instance
    * @param field Field
@@ -639,13 +627,13 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     if (part1 == null) {
       start = null;
     } else {
-      start = analyzeRangeTerms ? analyzeMultitermTerm(field, part1) : new BytesRef(part1);
+      start = getAnalyzer().normalize(field, part1);
     }
      
     if (part2 == null) {
       end = null;
     } else {
-      end = analyzeRangeTerms ? analyzeMultitermTerm(field, part2) : new BytesRef(part2);
+      end = getAnalyzer().normalize(field, part2);
     }
       
     final TermRangeQuery query = new TermRangeQuery(field, start, end, startInclusive, endInclusive);
@@ -725,11 +713,36 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     }
     if (!allowLeadingWildcard && (termStr.startsWith("*") || termStr.startsWith("?")))
       throw new ParseException("'*' or '?' not allowed as first character in WildcardQuery");
-    if (lowercaseExpandedTerms) {
-      termStr = termStr.toLowerCase(locale);
-    }
-    Term t = new Term(field, termStr);
+
+    Term t = new Term(field, analyzeWildcard(field, termStr));
     return newWildcardQuery(t);
+  }
+
+  private static final Pattern WILDCARD_PATTERN = Pattern.compile("(\\\\.)|([?*]+)");
+
+  private BytesRef analyzeWildcard(String field, String termStr) {
+    // best effort to not pass the wildcard characters and escaped characters through #normalize
+    Matcher wildcardMatcher = WILDCARD_PATTERN.matcher(termStr);
+    BytesRefBuilder sb = new BytesRefBuilder();
+    int last = 0;
+
+    while (wildcardMatcher.find()){
+      if (wildcardMatcher.start() > 0) {
+        String chunk = termStr.substring(last, wildcardMatcher.start());
+        BytesRef normalized = getAnalyzer().normalize(field, chunk);
+        sb.append(normalized);
+      }
+      //append the matched group - without normalizing
+      sb.append(new BytesRef(wildcardMatcher.group()));
+
+      last = wildcardMatcher.end();
+    }
+    if (last < termStr.length()){
+      String chunk = termStr.substring(last);
+      BytesRef normalized = getAnalyzer().normalize(field, chunk);
+      sb.append(normalized);
+    }
+    return sb.toBytesRef();
   }
 
   /**
@@ -754,10 +767,11 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    */
   protected Query getRegexpQuery(String field, String termStr) throws ParseException
   {
-    if (lowercaseExpandedTerms) {
-      termStr = termStr.toLowerCase(locale);
-    }
-    Term t = new Term(field, termStr);
+    // We need to pass the whole string to #normalize, which will not work with
+    // custom attribute factories for the binary term impl, and may not work
+    // with some analyzers
+    BytesRef term = getAnalyzer().normalize(field, termStr);
+    Term t = new Term(field, term);
     return newRegexpQuery(t);
   }
 
@@ -788,10 +802,8 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   {
     if (!allowLeadingWildcard && termStr.startsWith("*"))
       throw new ParseException("'*' not allowed as first character in PrefixQuery");
-    if (lowercaseExpandedTerms) {
-      termStr = termStr.toLowerCase(locale);
-    }
-    Term t = new Term(field, termStr);
+    BytesRef term = getAnalyzer().normalize(field, termStr);
+    Term t = new Term(field, term);
     return newPrefixQuery(t);
   }
 
@@ -808,10 +820,8 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    */
   protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException
   {
-    if (lowercaseExpandedTerms) {
-      termStr = termStr.toLowerCase(locale);
-    }
-    Term t = new Term(field, termStr);
+    BytesRef term = getAnalyzer().normalize(field, termStr);
+    Term t = new Term(field, term);
     return newFuzzyQuery(t, minSimilarity, fuzzyPrefixLength);
   }
 

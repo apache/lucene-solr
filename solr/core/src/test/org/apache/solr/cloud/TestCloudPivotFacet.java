@@ -16,6 +16,16 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -29,21 +39,10 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.DateFormatUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static org.apache.solr.common.params.FacetParams.FACET;
 import static org.apache.solr.common.params.FacetParams.FACET_LIMIT;
@@ -54,6 +53,7 @@ import static org.apache.solr.common.params.FacetParams.FACET_OVERREQUEST_RATIO;
 import static org.apache.solr.common.params.FacetParams.FACET_PIVOT;
 import static org.apache.solr.common.params.FacetParams.FACET_PIVOT_MINCOUNT;
 import static org.apache.solr.common.params.FacetParams.FACET_SORT;
+import static org.apache.solr.common.params.FacetParams.FACET_DISTRIB_MCO;
 
 /**
  * <p>
@@ -84,6 +84,8 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
   // param used by test purely for tracing & validation
   private static String TRACE_MIN = "_test_min";
+  // param used by test purely for tracing & validation
+  private static String TRACE_DISTRIB_MIN = "_test_distrib_min";
   // param used by test purely for tracing & validation
   private static String TRACE_MISS = "_test_miss";
   // param used by test purely for tracing & validation
@@ -190,6 +192,12 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
         pivotP.add(FACET_PIVOT_MINCOUNT, min);
         // trace param for validation
         baseP.add(TRACE_MIN, min);
+      }
+      
+      if (random().nextBoolean()) {
+        pivotP.add(FACET_DISTRIB_MCO, "true");
+        // trace param for validation
+        baseP.add(TRACE_DISTRIB_MIN, "true");
       }
 
       if (random().nextBoolean()) {
@@ -474,7 +482,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     // otherwise, build up a term filter...
     String prefix = "{!term f=" + constraint.getField() + "}";
     if (value instanceof Date) {
-      return prefix + DateFormatUtil.formatExternal((Date)value);
+      return prefix + ((Date) value).toInstant();
     } else {
       return prefix + value;
     }
@@ -517,7 +525,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     // randomly decide which stat tag to use
 
     // if this is 0, or stats aren't enabled, we'll be asking for a tag that doesn't exist
-    // ...which should be fine (just like excluding a taged fq that doesn't exist)
+    // ...which should be fine (just like excluding a tagged fq that doesn't exist)
     final int statTag = TestUtil.nextInt(random(), -1, 4);
       
     if (0 <= statTag) {

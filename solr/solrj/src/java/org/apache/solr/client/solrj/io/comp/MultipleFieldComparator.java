@@ -17,14 +17,16 @@
 package org.apache.solr.client.solrj.io.comp;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 
 
 /**
@@ -34,6 +36,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class MultipleFieldComparator implements StreamComparator {
 
   private static final long serialVersionUID = 1;
+  private UUID comparatorNodeId = UUID.randomUUID();
 
   private StreamComparator[] comps;
 
@@ -90,6 +93,14 @@ public class MultipleFieldComparator implements StreamComparator {
     }
     
     return false;
+  }
+
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+    return new Explanation(comparatorNodeId.toString())
+      .withExpressionType(ExpressionType.SORTER)
+      .withImplementingClass(getClass().getName())
+      .withExpression(toExpression(factory).toString());
   }
   
   @Override

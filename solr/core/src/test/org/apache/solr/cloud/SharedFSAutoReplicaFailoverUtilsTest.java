@@ -68,7 +68,7 @@ public class SharedFSAutoReplicaFailoverUtilsTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    results = new ArrayList<Result>();
+    results = new ArrayList<>();
   }
   
   @After
@@ -82,27 +82,27 @@ public class SharedFSAutoReplicaFailoverUtilsTest extends SolrTestCaseJ4 {
   @Test
   public void testGetBestCreateUrlBasics() {
     Result result = buildClusterState("csr1R*r2", NODE1);
-    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
+    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
     assertNull("Should be no live node to failover to", createUrl);
     
     result = buildClusterState("csr1R*r2", NODE1, NODE2);
-    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
     assertNull("Only failover candidate node already has a replica", createUrl);
     
     result = buildClusterState("csr1R*r2sr3", NODE1, NODE2, NODE3);
-    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
     assertEquals("Node3 does not have a replica from the bad slice and should be the best choice", NODE3_URL, createUrl);
-    
-    result = buildClusterState("csr1R*r2-4sr3r4r5", NODE1, NODE2, NODE3);
-    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
-    assertTrue(createUrl.equals(NODE2_URL) || createUrl.equals(NODE3_URL));
-    
+
+    result = buildClusterState("csr1R*r2Fsr3r4r5", NODE1, NODE2, NODE3);
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
+    assertTrue(createUrl.equals(NODE3_URL));
+
     result = buildClusterState("csr1*r2r3sr3r3sr4", NODE1, NODE2, NODE3, NODE4);
-    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
     assertEquals(NODE4_URL, createUrl);
     
     result = buildClusterState("csr1*r2sr3r3sr4sr4", NODE1, NODE2, NODE3, NODE4);
-    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
     assertTrue(createUrl.equals(NODE3_URL) || createUrl.equals(NODE4_URL));
   }
   
@@ -121,27 +121,27 @@ public class SharedFSAutoReplicaFailoverUtilsTest extends SolrTestCaseJ4 {
   public void testGetBestCreateUrlMultipleCollections() throws Exception {
 
     Result result = buildClusterState("csr*r2csr2", NODE1);
-    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
-    assertEquals(null, createUrl);
-    
+    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
+    assertNull(createUrl);
+
     result = buildClusterState("csr*r2csr2", NODE1);
-    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
-    assertEquals(null, createUrl);
-    
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
+    assertNull(createUrl);
+
     result = buildClusterState("csr*r2csr2", NODE1, NODE2);
-    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
-    assertEquals(null, createUrl);
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
+    assertNull(createUrl);
   }
-  
+
   @Test
   public void testGetBestCreateUrlMultipleCollections2() {
     
     Result result = buildClusterState("csr*r2sr3cr2", NODE1);
-    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
-    assertEquals(null, createUrl);
-    
+    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
+    assertNull(createUrl);
+
     result = buildClusterState("csr*r2sr3cr2", NODE1, NODE2, NODE3);
-    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
     assertEquals(NODE3_URL, createUrl);
   }
   
@@ -149,48 +149,73 @@ public class SharedFSAutoReplicaFailoverUtilsTest extends SolrTestCaseJ4 {
   @Test
   public void testGetBestCreateUrlMultipleCollections3() {
     Result result = buildClusterState("csr5r1sr4r2sr3r6csr2*r6sr5r3sr4r3", NODE1, NODE4, NODE5, NODE6);
-    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
+    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
     assertEquals(NODE1_URL, createUrl);
   }
   
   @Test
   public void testGetBestCreateUrlMultipleCollections4() {
     Result result = buildClusterState("csr1r4sr3r5sr2r6csr5r6sr4r6sr5*r4", NODE6);
-    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
+    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
     assertEquals(NODE6_URL, createUrl);
   }
   
   @Test
   public void testFailOverToEmptySolrInstance() {
     Result result = buildClusterState("csr1*r1sr1csr1", NODE2);
-    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
+    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
     assertEquals(NODE2_URL, createUrl);
   }
   
   @Test
   public void testFavorForeignSlices() {
     Result result = buildClusterState("csr*sr2csr3r3", NODE2, NODE3);
-    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
+    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
     assertEquals(NODE3_URL, createUrl);
     
     result = buildClusterState("csr*sr2csr3r3r3r3r3r3r3", NODE2, NODE3);
-    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
     assertEquals(NODE2_URL, createUrl);
   }
-  
+
   @Test
   public void testCollectionMaxNodesPerShard() {
     Result result = buildClusterState("csr*sr2", 1, 1, NODE2);
-    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
-    assertEquals(null, createUrl);
-    
+    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
+    assertNull(createUrl);
+
     result = buildClusterState("csr*sr2", 1, 2, NODE2);
-    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
     assertEquals(NODE2_URL, createUrl);
-    
+
     result = buildClusterState("csr*csr2r2", 1, 1, NODE2);
-    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica);
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, null);
     assertEquals(NODE2_URL, createUrl);
+  }
+
+  @Test
+  public void testMaxCoresPerNode() {
+    Result result = buildClusterState("csr*sr2", 1, 1, NODE2);
+    String createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, 1);
+    assertNull(createUrl);
+
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, 2);
+    assertNull(createUrl);
+
+    result = buildClusterState("csr*sr2", 1, 2, NODE2);
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, 2);
+    assertEquals(NODE2_URL, createUrl);
+
+    result = buildClusterState("csr*sr2sr3sr4", 1, 1, NODE2, NODE3, NODE4);
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, 1);
+    assertNull(createUrl);
+
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, 2);
+    assertNull(createUrl);
+
+    result = buildClusterState("csr*sr2sr3sr4", 1, 2, NODE2, NODE3, NODE4);
+    createUrl = OverseerAutoReplicaFailoverThread.getBestCreateUrl(result.reader, result.badReplica, 2);
+    assertTrue(createUrl.equals(NODE3_URL) || createUrl.equals(NODE4_URL));
   }
   
   private Result buildClusterState(String string, String ... liveNodes) {
@@ -351,7 +376,7 @@ public class SharedFSAutoReplicaFailoverUtilsTest extends SolrTestCaseJ4 {
     // trunk briefly had clusterstate taking a zkreader :( this was required to work around that - leaving
     // until that issue is resolved.
     MockZkStateReader reader = new MockZkStateReader(null, collectionStates.keySet());
-    ClusterState clusterState = new ClusterState(1, new HashSet<String>(Arrays.asList(liveNodes)), collectionStates);
+    ClusterState clusterState = new ClusterState(1, new HashSet<>(Arrays.asList(liveNodes)), collectionStates);
     reader = new MockZkStateReader(clusterState, collectionStates.keySet());
     
     String json;

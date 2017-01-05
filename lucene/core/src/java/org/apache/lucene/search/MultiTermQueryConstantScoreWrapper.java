@@ -91,25 +91,25 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
   }
 
   @Override
-  public final boolean equals(final Object o) {
-    if (super.equals(o) == false) {
-      return false;
-    }
-    final MultiTermQueryConstantScoreWrapper<?> that = (MultiTermQueryConstantScoreWrapper<?>) o;
-    return this.query.equals(that.query);
+  public final boolean equals(final Object other) {
+    return sameClassAs(other) &&
+           query.equals(((MultiTermQueryConstantScoreWrapper<?>) other).query);
   }
 
   @Override
   public final int hashCode() {
-    return 31 * super.hashCode() + query.hashCode();
+    return 31 * classHash() + query.hashCode();
   }
 
+  /** Returns the encapsulated query */
+  public Q getQuery() { return query; }
+  
   /** Returns the field name for this query */
   public final String getField() { return query.getField(); }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new ConstantScoreWeight(this) {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new ConstantScoreWeight(this, boost) {
 
       /** Try to collect terms from the given terms enum and return true iff all
        *  terms could be collected. If {@code false} is returned, the enum is
@@ -122,10 +122,6 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
             return true;
           }
           TermState state = termsEnum.termState();
-          if (state.isRealTerm() == false) {
-            // TermQuery does not accept fake terms for now
-            return false;
-          }
           terms.add(new TermAndState(BytesRef.deepCopyOf(term), state, termsEnum.docFreq(), termsEnum.totalTermFreq()));
         }
         return termsEnum.next() == null;
@@ -157,13 +153,12 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
             bq.add(new TermQuery(new Term(query.field, t.term), termContext), Occur.SHOULD);
           }
           Query q = new ConstantScoreQuery(bq.build());
-          final Weight weight = searcher.rewrite(q).createWeight(searcher, needsScores);
-          weight.normalize(1f, score());
+          final Weight weight = searcher.rewrite(q).createWeight(searcher, needsScores, score());
           return new WeightOrDocIdSet(weight);
         }
 
         // Too many terms: go back to the terms we already collected and start building the bit set
-        DocIdSetBuilder builder = new DocIdSetBuilder(context.reader().maxDoc());
+        DocIdSetBuilder builder = new DocIdSetBuilder(context.reader().maxDoc(), terms);
         if (collectedTerms.isEmpty() == false) {
           TermsEnum termsEnum2 = terms.iterator();
           for (TermAndState t : collectedTerms) {

@@ -23,10 +23,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -46,16 +46,15 @@ public class NodeMutator {
     List<ZkWriteCommand> zkWriteCommands = new ArrayList<ZkWriteCommand>();
     String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
 
-    log.info("DownNode state invoked for node: " + nodeName);
+    log.debug("DownNode state invoked for node: " + nodeName);
 
-    Set<String> collections = clusterState.getCollections();
-    for (String collection : collections) {
+    Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+    for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+      DocCollection docCollection = entry.getValue();
+      Map<String,Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
 
-      Map<String,Slice> slicesCopy = new LinkedHashMap<>(clusterState.getSlicesMap(collection));
-
-      Set<Entry<String,Slice>> entries = slicesCopy.entrySet();
-      for (Entry<String,Slice> entry : entries) {
-        Slice slice = clusterState.getSlice(collection, entry.getKey());
+      for (Entry<String,Slice> sliceEntry : slicesCopy.entrySet()) {
+        Slice slice = docCollection.getSlice(sliceEntry.getKey());
         Map<String,Replica> newReplicas = new HashMap<String,Replica>();
 
         Collection<Replica> replicas = slice.getReplicas();
@@ -63,7 +62,7 @@ public class NodeMutator {
           Map<String,Object> props = replica.shallowCopy();
           String rNodeName = replica.getNodeName();
           if (rNodeName.equals(nodeName)) {
-            log.info("Update replica state for " + replica + " to " + Replica.State.DOWN.toString());
+            log.debug("Update replica state for " + replica + " to " + Replica.State.DOWN.toString());
             props.put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
           }
 
@@ -76,7 +75,7 @@ public class NodeMutator {
 
       }
 
-      zkWriteCommands.add(new ZkWriteCommand(collection, clusterState.getCollection(collection).copyWithSlices(slicesCopy)));
+      zkWriteCommands.add(new ZkWriteCommand(entry.getKey(), docCollection.copyWithSlices(slicesCopy)));
     }
 
     return zkWriteCommands;

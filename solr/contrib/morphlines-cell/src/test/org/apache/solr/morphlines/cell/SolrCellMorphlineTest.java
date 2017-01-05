@@ -25,7 +25,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.util.DateUtil;
+import org.apache.solr.handler.extraction.ExtractionDateUtil;
 import org.apache.solr.handler.extraction.SolrContentHandler;
 import org.apache.solr.morphlines.solr.AbstractSolrMorphlineTestBase;
 import org.apache.solr.schema.IndexSchema;
@@ -42,7 +42,8 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
   @BeforeClass
   public static void beforeClass2() {
     assumeFalse("FIXME: Morphlines currently has issues with Windows paths", Constants.WINDOWS);
-    assumeFalse("This test fails with Java 9 (https://issues.apache.org/jira/browse/PDFBOX-3155)", Constants.JRE_IS_MINIMUM_JAVA9);
+    assumeFalse("This test fails with Java 9 (https://issues.apache.org/jira/browse/SOLR-8876)",
+        Constants.JRE_IS_MINIMUM_JAVA9);
   }
 
   @Before
@@ -195,6 +196,7 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
   }
   
   @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9220")
   public void testSolrCellDocumentTypes2() throws Exception {
 
     AbstractSolrMorphlineTestBase.setupMorphline(tempDir, "test-morphlines/solrCellDocumentTypes", false);
@@ -269,7 +271,7 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
     // which will cause the ContentHandler to be invoked.
     metadata.set(fieldName, getFoobarWithNonChars());
     StripNonCharSolrContentHandlerFactory contentHandlerFactory =
-      new StripNonCharSolrContentHandlerFactory(DateUtil.DEFAULT_DATE_FORMATS);
+      new StripNonCharSolrContentHandlerFactory(ExtractionDateUtil.DEFAULT_DATE_FORMATS);
     IndexSchema schema = h.getCore().getLatestSchema();
     SolrContentHandler contentHandler =
       contentHandlerFactory.createSolrContentHandler(metadata, new MapSolrParams(new HashMap()), schema);

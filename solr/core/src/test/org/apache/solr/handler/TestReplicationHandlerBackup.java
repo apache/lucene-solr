@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -41,15 +42,15 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SolrTestCaseJ4.SuppressSSL     // Currently unknown why SSL does not work with this test
 public class TestReplicationHandlerBackup extends SolrJettyTestBase {
@@ -65,6 +66,8 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   boolean addNumberToKeepInRequest = true;
   String backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM;
+  private static long docsSeed; // see indexDocs()
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static JettySolrRunner createJetty(TestReplicationHandler.SolrInstance instance) throws Exception {
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
@@ -79,11 +82,10 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   private static SolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
-      HttpSolrClient client = new HttpSolrClient(buildUrl(port, context) + "/" + DEFAULT_TEST_CORENAME);
+      final String baseUrl = buildUrl(port, context);
+      HttpSolrClient client = getHttpSolrClient(baseUrl);
       client.setConnectionTimeout(15000);
       client.setSoTimeout(60000);
-      client.setDefaultMaxConnectionsPerHost(100);
-      client.setMaxTotalConnections(100);
       return client;
     }
     catch (Exception ex) {
@@ -108,6 +110,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
     masterJetty = createJetty(master);
     masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    docsSeed = random().nextLong();
   }
 
   @Override
@@ -124,10 +127,10 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   @Test
   public void testBackupOnCommit() throws Exception {
     //Index
-    int nDocs = indexDocs(masterClient);
+    int nDocs = BackupRestoreUtils.indexDocs(masterClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
 
     //Confirm if completed
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient);
+    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME);
     while (!checkBackupStatus.success) {
       checkBackupStatus.fetchStatus();
       Thread.sleep(1000);
@@ -149,25 +152,18 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
   }
 
-  protected static int indexDocs(SolrClient masterClient) throws IOException, SolrServerException {
-    int nDocs = TestUtil.nextInt(random(), 1, 100);
-    masterClient.deleteByQuery("*:*");
-    for (int i = 0; i < nDocs; i++) {
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", i);
-      doc.addField("name", "name = " + i);
-      masterClient.add(doc);
-    }
-
-    masterClient.commit();
-    return nDocs;
-  }
-
 
   @Test
   public void doTestBackup() throws Exception {
 
-    int nDocs = indexDocs(masterClient);
+    int nDocs = BackupRestoreUtils.indexDocs(masterClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
+
+    //Confirm if completed
+    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME);
+    while (!checkBackupStatus.success) {
+      checkBackupStatus.fetchStatus();
+      Thread.sleep(1000);
+    }
 
     Path[] snapDir = new Path[5]; //One extra for the backup on commit
     //First snapshot location
@@ -195,7 +191,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         backupNames[i] = backupName;
       }
 
-      CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, firstBackupTimestamp);
+     checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME, firstBackupTimestamp);
       while (!checkBackupStatus.success) {
         checkBackupStatus.fetchStatus();
         Thread.sleep(1000);
@@ -273,7 +269,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   public static void runBackupCommand(JettySolrRunner masterJetty, String cmd, String params) throws IOException {
     String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME
-        + "/replication?command=" + cmd + params;
+        + ReplicationHandler.PATH+"?command=" + cmd + params;
     InputStream stream = null;
     try {
       URL url = new URL(masterUrl);
@@ -296,7 +292,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
 
     public boolean fetchStatus() throws IOException {
-      String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=" + ReplicationHandler.CMD_DETAILS;
+      String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH + "?command=" + ReplicationHandler.CMD_DETAILS;
       URL url;
       InputStream stream = null;
       try {

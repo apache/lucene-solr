@@ -25,7 +25,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
-import static org.apache.solr.cloud.rule.ImplicitSnitch.CORES;
+import static org.apache.solr.common.cloud.rule.ImplicitSnitch.CORES;
 import static org.apache.solr.cloud.rule.Rule.MatchStatus.CANNOT_ASSIGN_FAIL;
 import static org.apache.solr.cloud.rule.Rule.MatchStatus.NODE_CAN_BE_ASSIGNED;
 import static org.apache.solr.cloud.rule.Rule.MatchStatus.NOT_APPLICABLE;
@@ -137,7 +137,8 @@ public class Rule {
       if (replica.isWildCard()) {
         //this means for each replica, the value must match
         //shard match is already tested
-        if (tag.canMatch(nodeVsTags.get(testNode).get(tag.name), phase)) return NODE_CAN_BE_ASSIGNED;
+        Map<String, Object> tags = nodeVsTags.get(testNode);
+        if (tag.canMatch(tags == null ? null : tags.get(tag.name), phase)) return NODE_CAN_BE_ASSIGNED;
         else return CANNOT_ASSIGN_FAIL;
       } else {
         int v = getNumberOfNodesWithSameTagVal(shard, nodeVsTags, shardVsNodeSet, shardName, tag, phase);
@@ -163,7 +164,9 @@ public class Rule {
         Map<String,Integer> nodesInThisShard = shardVsNodeSet.get(shardCondition.val.equals(WILD_WILD_CARD) ? entry.getKey() : shardName);
         if (nodesInThisShard != null) {
           for (Map.Entry<String,Integer> aNode : nodesInThisShard.entrySet()) {
-            Object obj = nodeVsTags.get(aNode.getKey()).get(tag.name);
+            Map<String, Object> tagValues = nodeVsTags.get(aNode.getKey());
+            if(tagValues == null) continue;
+            Object obj = tagValues.get(tag.name);
             if (tagCondition.canMatch(obj, phase)) countMatchingThisTagValue += aNode.getValue();
           }
         }
@@ -365,7 +368,12 @@ public class Rule {
     }
 
     public int compare(String n1, String n2, Map<String, Map<String, Object>> nodeVsTags) {
-      return isWildCard() ? 0 : operand.compare(nodeVsTags.get(n1).get(name), nodeVsTags.get(n2).get(name));
+      Map<String, Object> tags = nodeVsTags.get(n1);
+      Object n1Val = tags == null ? null : tags.get(name);
+      tags = nodeVsTags.get(n2);
+      Object n2Val = tags == null ? null : tags.get(name);
+      if (n1Val == null || n2Val == null) return -1;
+      return isWildCard() ? 0 : operand.compare(n1Val, n2Val);
     }
 
   }

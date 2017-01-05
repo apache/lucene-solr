@@ -17,17 +17,11 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.apache.solr.util.hll.HLL;
 import org.apache.solr.util.hll.HLLType;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.util.Bits;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
@@ -104,7 +98,7 @@ public class HLLAgg extends StrAggValueSource {
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetField.SortDirection direction) {
+    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
       return Long.compare( getLong(), ((Merger)other).getLong() );
     }
   }
@@ -117,7 +111,6 @@ public class HLLAgg extends StrAggValueSource {
     SchemaField sf;
     HLL[] sets;
     NumericDocValues values;
-    Bits exists;
 
     public NumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
       super(fcontext);
@@ -138,15 +131,20 @@ public class HLLAgg extends StrAggValueSource {
     @Override
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
       values = DocValues.getNumeric(readerContext.reader(),  sf.getName());
-      exists = DocValues.getDocsWithField(readerContext.reader(), sf.getName());
     }
 
     @Override
     public void collect(int doc, int slot) throws IOException {
-      long val = values.get(doc);
-      if (val == 0 && !exists.get(doc)) {
+      int valuesDocID = values.docID();
+      if (valuesDocID < doc) {
+        valuesDocID = values.advance(doc);
+      }
+      if (valuesDocID > doc) {
         return;
       }
+      assert valuesDocID == doc;
+
+      long val = values.longValue();
 
       long hash = Hash.fmix64(val);
 

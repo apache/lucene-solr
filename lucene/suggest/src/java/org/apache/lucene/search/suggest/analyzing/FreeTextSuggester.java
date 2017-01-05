@@ -54,7 +54,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
@@ -218,50 +217,6 @@ public class FreeTextSuggester extends Lookup implements Accountable {
       return Collections.emptyList();
     } else {
       return Collections.singletonList(Accountables.namedAccountable("fst", fst));
-    }
-  }
-
-  private static class AnalyzingComparator implements Comparator<BytesRef> {
-
-    private final ByteArrayDataInput readerA = new ByteArrayDataInput();
-    private final ByteArrayDataInput readerB = new ByteArrayDataInput();
-    private final BytesRef scratchA = new BytesRef();
-    private final BytesRef scratchB = new BytesRef();
-
-    @Override
-    public int compare(BytesRef a, BytesRef b) {
-      readerA.reset(a.bytes, a.offset, a.length);
-      readerB.reset(b.bytes, b.offset, b.length);
-
-      // By token:
-      scratchA.length = readerA.readShort();
-      scratchA.bytes = a.bytes;
-      scratchA.offset = readerA.getPosition();
-
-      scratchB.bytes = b.bytes;
-      scratchB.length = readerB.readShort();
-      scratchB.offset = readerB.getPosition();
-
-      int cmp = scratchA.compareTo(scratchB);
-      if (cmp != 0) {
-        return cmp;
-      }
-      readerA.skipBytes(scratchA.length);
-      readerB.skipBytes(scratchB.length);
-
-      // By length (smaller surface forms sorted first):
-      cmp = a.length - b.length;
-      if (cmp != 0) {
-        return cmp;
-      }
-
-      // By surface form:
-      scratchA.offset = readerA.getPosition();
-      scratchA.length = a.length - scratchA.offset;
-      scratchB.offset = readerB.getPosition();
-      scratchB.length = b.length - scratchB.offset;
-
-      return scratchA.compareTo(scratchB);
     }
   }
 

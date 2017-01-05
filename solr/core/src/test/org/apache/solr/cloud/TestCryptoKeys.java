@@ -33,7 +33,6 @@ import org.apache.solr.core.TestDynamicLoading;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.util.CryptoKeys;
-import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.zookeeper.CreateMode;
 import org.junit.Test;
@@ -46,12 +45,7 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
 
   private void setupHarnesses() {
     for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(new RESTfulServerProvider() {
-        @Override
-        public String getBaseURL() {
-          return ((HttpSolrClient) client).getBaseURL();
-        }
-      });
+      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient) client).getBaseURL());
       restTestHarnesses.add(harness);
     }
   }
@@ -119,7 +113,7 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     String baseURL = randomClient.getBaseURL();
     baseURL = baseURL.substring(0, baseURL.lastIndexOf('/'));
 
-    TestBlobHandler.createSystemCollection(new HttpSolrClient(baseURL, randomClient.getHttpClient()));
+    TestBlobHandler.createSystemCollection(getHttpSolrClient(baseURL, randomClient.getHttpClient()));
     waitForRecoveriesToFinish(".system", true);
 
     ByteBuffer jar = TestDynamicLoading.getFileContent("runtimecode/runtimelibs.jar.bin");

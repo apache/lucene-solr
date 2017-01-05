@@ -40,7 +40,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     Random random = new Random(random().nextLong());
     final BaseDirectoryWrapper dir = newDirectory();
     
-    final LineFileDocs docs = new LineFileDocs(random, true);
+    final LineFileDocs docs = new LineFileDocs(random);
 
     //provider.register(new MemoryCodec());
     if (random().nextBoolean()) {
@@ -80,7 +80,7 @@ public class TestRollingUpdates extends LuceneTestCase {
       if (s != null && updateCount < SIZE) {
         TopDocs hits = s.search(new TermQuery(idTerm), 1);
         assertEquals(1, hits.totalHits);
-        doUpdate = !w.tryDeleteDocument(r, hits.scoreDocs[0].doc);
+        doUpdate = w.tryDeleteDocument(r, hits.scoreDocs[0].doc) == -1;
         if (VERBOSE) {
           if (doUpdate) {
             System.out.println("  tryDeleteDocument failed");

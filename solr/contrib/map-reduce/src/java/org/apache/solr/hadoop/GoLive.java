@@ -87,22 +87,19 @@ class GoLive {
           baseUrl = baseUrl.substring(0, lastPathIndex);
           final String mergeUrl = baseUrl;
           
-          Callable<Request> task = new Callable<Request>() {
-            @Override
-            public Request call() {
-              Request req = new Request();
-              LOG.info("Live merge " + dir.getPath() + " into " + mergeUrl);
-              try (final HttpSolrClient client = new HttpSolrClient(mergeUrl)) {
-                CoreAdminRequest.MergeIndexes mergeRequest = new CoreAdminRequest.MergeIndexes();
-                mergeRequest.setCoreName(name);
-                mergeRequest.setIndexDirs(Arrays.asList(dir.getPath().toString() + "/data/index"));
-                mergeRequest.process(client);
-                req.success = true;
-              } catch (SolrServerException | IOException e) {
-                req.e = e;
-              }
-              return req;
+          Callable<Request> task = () -> {
+            Request req = new Request();
+            LOG.info("Live merge " + dir.getPath() + " into " + mergeUrl);
+            try (final HttpSolrClient client = new HttpSolrClient.Builder(mergeUrl).build()) {
+              CoreAdminRequest.MergeIndexes mergeRequest = new CoreAdminRequest.MergeIndexes();
+              mergeRequest.setCoreName(name);
+              mergeRequest.setIndexDirs(Arrays.asList(dir.getPath().toString() + "/data/index"));
+              mergeRequest.process(client);
+              req.success = true;
+            } catch (SolrServerException | IOException e) {
+              req.e = e;
             }
+            return req;
           };
           pending.add(completionService.submit(task));
         }
@@ -141,7 +138,7 @@ class GoLive {
       try {
         LOG.info("Committing live merge...");
         if (options.zkHost != null) {
-          try (CloudSolrClient server = new CloudSolrClient(options.zkHost)) {
+          try (CloudSolrClient server = new CloudSolrClient.Builder().withZkHost(options.zkHost).build()) {
             server.setDefaultCollection(options.collection);
             server.commit();
           }
@@ -149,7 +146,7 @@ class GoLive {
           for (List<String> urls : options.shardUrls) {
             for (String url : urls) {
               // TODO: we should do these concurrently
-              try (HttpSolrClient server = new HttpSolrClient(url)) {
+              try (HttpSolrClient server = new HttpSolrClient.Builder(url).build()) {
                 server.commit();
               }
             }

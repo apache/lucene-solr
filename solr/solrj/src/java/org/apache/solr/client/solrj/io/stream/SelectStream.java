@@ -26,7 +26,10 @@ import java.util.Map;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.ops.StreamOperation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
@@ -110,16 +113,25 @@ public class SelectStream extends TupleStream implements Expressible {
   }
     
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException {    
+  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+    return toExpression(factory, true);
+  }
+  
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     
-    // stream
-    if(stream instanceof Expressible){
-      expression.addParameter(((Expressible)stream).toExpression(factory));
+    if(includeStreams){
+      // stream
+      if(stream instanceof Expressible){
+        expression.addParameter(((Expressible)stream).toExpression(factory));
+      }
+      else{
+        throw new IOException("This SelectStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      }
     }
     else{
-      throw new IOException("This SelectStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      expression.addParameter("<stream>");
     }
     
     // selects
@@ -137,6 +149,25 @@ public class SelectStream extends TupleStream implements Expressible {
     }
     
     return expression;   
+  }
+  
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    Explanation explanation = new StreamExplanation(getStreamNodeId().toString())
+      .withChildren(new Explanation[]{
+        stream.toExplanation(factory)
+      })
+      .withFunctionName(factory.getFunctionName(this.getClass()))
+      .withImplementingClass(this.getClass().getName())
+      .withExpressionType(ExpressionType.STREAM_DECORATOR)
+      .withExpression(toExpression(factory, false).toString());   
+    
+    for(StreamOperation operation : operations){
+      explanation.addHelper(operation.toExplanation(factory));
+    }
+    
+    return explanation;
   }
 
   public void setStreamContext(StreamContext context) {

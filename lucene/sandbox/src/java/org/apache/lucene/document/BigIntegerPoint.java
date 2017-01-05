@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.math.BigInteger;
 import java.util.Arrays;
 
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
@@ -39,6 +40,7 @@ import org.apache.lucene.util.NumericUtils;
  *   <li>{@link #newRangeQuery(String, BigInteger, BigInteger)} for matching a 1D range.
  *   <li>{@link #newRangeQuery(String, BigInteger[], BigInteger[])} for matching points/ranges in n-dimensional space.
  * </ul>
+ * @see PointValues
  */
 public class BigIntegerPoint extends Field {
 
@@ -83,10 +85,10 @@ public class BigIntegerPoint extends Field {
 
   private static BytesRef pack(BigInteger... point) {
     if (point == null) {
-      throw new IllegalArgumentException("point cannot be null");
+      throw new IllegalArgumentException("point must not be null");
     }
     if (point.length == 0) {
-      throw new IllegalArgumentException("point cannot be 0 dimensions");
+      throw new IllegalArgumentException("point must not be 0 dimensions");
     }
     byte[] packed = new byte[point.length * BYTES];
     
@@ -127,27 +129,17 @@ public class BigIntegerPoint extends Field {
     result.append('>');
     return result.toString();
   }
-  
-  /** sugar: Encode n-dimensional BigInteger values into binary encoding */
-  private static byte[][] encode(BigInteger value[]) {
-    byte[][] encoded = new byte[value.length][];
-    for (int i = 0; i < value.length; i++) {
-      encoded[i] = new byte[BYTES];
-      encodeDimension(value[i], encoded[i], 0);
-    }
-    return encoded;
-  }
 
   // public helper methods (e.g. for queries)
   
   /** Encode single BigInteger dimension */
   public static void encodeDimension(BigInteger value, byte dest[], int offset) {
-    NumericUtils.bigIntToBytes(value, BYTES, dest, offset);
+    NumericUtils.bigIntToSortableBytes(value, BYTES, dest, offset);
   }
   
   /** Decode single BigInteger dimension */
   public static BigInteger decodeDimension(byte value[], int offset) {
-    return NumericUtils.bytesToBigInt(value, offset, BYTES);
+    return NumericUtils.sortableBytesToBigInt(value, offset, BYTES);
   }
 
   // static methods for generating queries
@@ -210,7 +202,7 @@ public class BigIntegerPoint extends Field {
    */
   public static Query newRangeQuery(String field, BigInteger[] lowerValue, BigInteger[] upperValue) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, BigIntegerPoint.encode(lowerValue), BigIntegerPoint.encode(upperValue)) {
+    return new PointRangeQuery(field, pack(lowerValue).bytes, pack(upperValue).bytes, lowerValue.length) {
       @Override
       protected String toString(int dimension, byte[] value) {
         return BigIntegerPoint.decodeDimension(value, 0).toString();

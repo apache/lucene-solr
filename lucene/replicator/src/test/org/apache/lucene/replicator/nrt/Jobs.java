@@ -1,5 +1,3 @@
-package org.apache.lucene.replicator.nrt;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,10 +15,10 @@ package org.apache.lucene.replicator.nrt;
  * limitations under the License.
  */
 
+package org.apache.lucene.replicator.nrt;
+
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.PriorityQueue;
 
 import org.apache.lucene.store.AlreadyClosedException;

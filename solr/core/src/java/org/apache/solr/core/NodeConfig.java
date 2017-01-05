@@ -50,7 +50,7 @@ public class NodeConfig {
 
   private final CloudConfig cloudConfig;
 
-  private final int coreLoadThreads;
+  private final Integer coreLoadThreads;
 
   private final int transientCacheSize;
 
@@ -58,13 +58,18 @@ public class NodeConfig {
 
   private final String managementPath;
 
+  private final PluginInfo[] backupRepositoryPlugins;
+
+  private final PluginInfo[] metricReporterPlugins;
+
   private NodeConfig(String nodeName, Path coreRootDirectory, Path configSetBaseDirectory, String sharedLibDirectory,
                      PluginInfo shardHandlerFactoryConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
                      String coreAdminHandlerClass, String collectionsAdminHandlerClass,
                      String infoHandlerClass, String configSetsHandlerClass,
-                     LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, int coreLoadThreads,
-                     int transientCacheSize, boolean useSchemaCache, String managementPath,
-                     SolrResourceLoader loader, Properties solrProperties) {
+                     LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, Integer coreLoadThreads,
+                     int transientCacheSize, boolean useSchemaCache, String managementPath, SolrResourceLoader loader,
+                     Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
+                     PluginInfo[] metricReporterPlugins) {
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
     this.configSetBaseDirectory = configSetBaseDirectory;
@@ -83,8 +88,10 @@ public class NodeConfig {
     this.managementPath = managementPath;
     this.loader = loader;
     this.solrProperties = solrProperties;
+    this.backupRepositoryPlugins = backupRepositoryPlugins;
+    this.metricReporterPlugins = metricReporterPlugins;
 
-    if (this.cloudConfig != null && this.coreLoadThreads < 2) {
+    if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "SolrCloud requires a value of at least 2 for coreLoadThreads (configured value = " + this.coreLoadThreads + ")");
     }
@@ -106,8 +113,10 @@ public class NodeConfig {
     return updateShardHandlerConfig;
   }
 
-  public int getCoreLoadThreadCount() {
-    return coreLoadThreads;
+  public int getCoreLoadThreadCount(boolean zkAware) {
+    return coreLoadThreads == null ?
+        (zkAware ? NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS_IN_CLOUD : NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS)
+        : coreLoadThreads;
   }
 
   public String getSharedLibDirectory() {
@@ -165,6 +174,14 @@ public class NodeConfig {
     return loader;
   }
 
+  public PluginInfo[] getBackupRepositoryPlugins() {
+    return backupRepositoryPlugins;
+  }
+
+  public PluginInfo[] getMetricReporterPlugins() {
+    return metricReporterPlugins;
+  }
+
   public static class NodeConfigBuilder {
 
     private Path coreRootDirectory;
@@ -178,16 +195,20 @@ public class NodeConfig {
     private String configSetsHandlerClass = DEFAULT_CONFIGSETSHANDLERCLASS;
     private LogWatcherConfig logWatcherConfig = new LogWatcherConfig(true, null, null, 50);
     private CloudConfig cloudConfig;
-    private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
+    private Integer coreLoadThreads;
     private int transientCacheSize = DEFAULT_TRANSIENT_CACHE_SIZE;
     private boolean useSchemaCache = false;
     private String managementPath;
     private Properties solrProperties = new Properties();
+    private PluginInfo[] backupRepositoryPlugins;
+    private PluginInfo[] metricReporterPlugins;
 
     private final SolrResourceLoader loader;
     private final String nodeName;
 
-    private static final int DEFAULT_CORE_LOAD_THREADS = 3;
+    public static final int DEFAULT_CORE_LOAD_THREADS = 3;
+    //No:of core load threads in cloud mode is set to a default of 8
+    public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
 
     private static final int DEFAULT_TRANSIENT_CACHE_SIZE = Integer.MAX_VALUE;
 
@@ -283,10 +304,21 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setBackupRepositoryPlugins(PluginInfo[] backupRepositoryPlugins) {
+      this.backupRepositoryPlugins = backupRepositoryPlugins;
+      return this;
+    }
+
+    public NodeConfigBuilder setMetricReporterPlugins(PluginInfo[] metricReporterPlugins) {
+      this.metricReporterPlugins = metricReporterPlugins;
+      return this;
+    }
+
     public NodeConfig build() {
       return new NodeConfig(nodeName, coreRootDirectory, configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, infoHandlerClass, configSetsHandlerClass,
-                            logWatcherConfig, cloudConfig, coreLoadThreads, transientCacheSize, useSchemaCache, managementPath, loader, solrProperties);
+                            logWatcherConfig, cloudConfig, coreLoadThreads, transientCacheSize, useSchemaCache, managementPath, loader, solrProperties,
+                            backupRepositoryPlugins, metricReporterPlugins);
     }
   }
 }

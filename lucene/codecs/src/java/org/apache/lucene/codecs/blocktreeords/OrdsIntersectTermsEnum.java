@@ -21,12 +21,10 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
@@ -94,7 +92,7 @@ final class OrdsIntersectTermsEnum extends TermsEnum {
     final OrdsIntersectTermsEnumFrame f = stack[0];
     f.fp = f.fpOrig = fr.rootBlockFP;
     f.prefix = 0;
-    f.setState(runAutomaton.getInitialState());
+    f.setState(0);
     f.arc = arc;
     f.outputPrefix = arc.output;
     f.load(fr.rootCode);

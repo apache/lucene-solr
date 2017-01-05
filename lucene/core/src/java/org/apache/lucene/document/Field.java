@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.LegacyNumericTokenStream;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -33,11 +32,20 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * Expert: directly create a field for a document.  Most
- * users should use one of the sugar subclasses: {@link
- * LegacyIntField}, {@link LegacyLongField}, {@link LegacyFloatField}, {@link
- * LegacyDoubleField}, {@link BinaryDocValuesField}, {@link
- * NumericDocValuesField}, {@link SortedDocValuesField}, {@link
- * StringField}, {@link TextField}, {@link StoredField}.
+ * users should use one of the sugar subclasses: 
+ * <ul>
+ *    <li>{@link TextField}: {@link Reader} or {@link String} indexed for full-text search
+ *    <li>{@link StringField}: {@link String} indexed verbatim as a single token
+ *    <li>{@link IntPoint}: {@code int} indexed for exact/range queries.
+ *    <li>{@link LongPoint}: {@code long} indexed for exact/range queries.
+ *    <li>{@link FloatPoint}: {@code float} indexed for exact/range queries.
+ *    <li>{@link DoublePoint}: {@code double} indexed for exact/range queries.
+ *    <li>{@link SortedDocValuesField}: {@code byte[]} indexed column-wise for sorting/faceting
+ *    <li>{@link SortedSetDocValuesField}: {@code SortedSet<byte[]>} indexed column-wise for sorting/faceting
+ *    <li>{@link NumericDocValuesField}: {@code long} indexed column-wise for sorting/faceting
+ *    <li>{@link SortedNumericDocValuesField}: {@code SortedSet<long>} indexed column-wise for sorting/faceting
+ *    <li>{@link StoredField}: Stored-only value for retrieving in summary results
+ * </ul>
  *
  * <p> A field is a section of a Document. Each field has three
  * parts: name, type and value. Values may be text
@@ -56,7 +64,7 @@ public class Field implements IndexableField {
   /**
    * Field's type
    */
-  protected final FieldType type;
+  protected final IndexableFieldType type;
 
   /**
    * Field's name
@@ -86,13 +94,13 @@ public class Field implements IndexableField {
    * @throws IllegalArgumentException if either the name or type
    *         is null.
    */
-  protected Field(String name, FieldType type) {
+  protected Field(String name, IndexableFieldType type) {
     if (name == null) {
-      throw new IllegalArgumentException("name cannot be null");
+      throw new IllegalArgumentException("name must not be null");
     }
     this.name = name;
     if (type == null) {
-      throw new IllegalArgumentException("type cannot be null");
+      throw new IllegalArgumentException("type must not be null");
     }
     this.type = type;
   }
@@ -107,15 +115,15 @@ public class Field implements IndexableField {
    *         if tokenized() is false.
    * @throws NullPointerException if the reader is null
    */
-  public Field(String name, Reader reader, FieldType type) {
+  public Field(String name, Reader reader, IndexableFieldType type) {
     if (name == null) {
-      throw new IllegalArgumentException("name cannot be null");
+      throw new IllegalArgumentException("name must not be null");
     }
     if (type == null) {
-      throw new IllegalArgumentException("type cannot be null");
+      throw new IllegalArgumentException("type must not be null");
     }
     if (reader == null) {
-      throw new NullPointerException("reader cannot be null");
+      throw new NullPointerException("reader must not be null");
     }
     if (type.stored()) {
       throw new IllegalArgumentException("fields with a Reader value cannot be stored");
@@ -139,12 +147,12 @@ public class Field implements IndexableField {
    *         if tokenized() is false, or if indexed() is false.
    * @throws NullPointerException if the tokenStream is null
    */
-  public Field(String name, TokenStream tokenStream, FieldType type) {
+  public Field(String name, TokenStream tokenStream, IndexableFieldType type) {
     if (name == null) {
-      throw new IllegalArgumentException("name cannot be null");
+      throw new IllegalArgumentException("name must not be null");
     }
     if (tokenStream == null) {
-      throw new NullPointerException("tokenStream cannot be null");
+      throw new NullPointerException("tokenStream must not be null");
     }
     if (type.indexOptions() == IndexOptions.NONE || !type.tokenized()) {
       throw new IllegalArgumentException("TokenStream fields must be indexed and tokenized");
@@ -171,7 +179,7 @@ public class Field implements IndexableField {
    *         or the field's type is indexed()
    * @throws NullPointerException if the type is null
    */
-  public Field(String name, byte[] value, FieldType type) {
+  public Field(String name, byte[] value, IndexableFieldType type) {
     this(name, value, 0, value.length, type);
   }
 
@@ -189,7 +197,7 @@ public class Field implements IndexableField {
    *         or the field's type is indexed()
    * @throws NullPointerException if the type is null
    */
-  public Field(String name, byte[] value, int offset, int length, FieldType type) {
+  public Field(String name, byte[] value, int offset, int length, IndexableFieldType type) {
     this(name, new BytesRef(value, offset, length), type);
   }
 
@@ -205,12 +213,12 @@ public class Field implements IndexableField {
    *         or the field's type is indexed()
    * @throws NullPointerException if the type is null
    */
-  public Field(String name, BytesRef bytes, FieldType type) {
+  public Field(String name, BytesRef bytes, IndexableFieldType type) {
     if (name == null) {
-      throw new IllegalArgumentException("name cannot be null");
+      throw new IllegalArgumentException("name must not be null");
     }
     if (bytes == null) {
-      throw new IllegalArgumentException("bytes cannot be null");
+      throw new IllegalArgumentException("bytes must not be null");
     }
     this.fieldsData = bytes;
     this.type = type;
@@ -229,12 +237,12 @@ public class Field implements IndexableField {
    *         or if indexed() is false but storeTermVectors() is true.
    * @throws NullPointerException if the type is null
    */
-  public Field(String name, String value, FieldType type) {
+  public Field(String name, String value, IndexableFieldType type) {
     if (name == null) {
-      throw new IllegalArgumentException("name cannot be null");
+      throw new IllegalArgumentException("name must not be null");
     }
     if (value == null) {
-      throw new IllegalArgumentException("value cannot be null");
+      throw new IllegalArgumentException("value must not be null");
     }
     if (!type.stored() && type.indexOptions() == IndexOptions.NONE) {
       throw new IllegalArgumentException("it doesn't make sense to have a field that "
@@ -248,7 +256,7 @@ public class Field implements IndexableField {
   /**
    * The value of the field as a String, or null. If null, the Reader value or
    * binary value is used. Exactly one of stringValue(), readerValue(), and
-   * getBinaryValue() must be set.
+   * binaryValue() must be set.
    */
   @Override
   public String stringValue() {
@@ -262,7 +270,7 @@ public class Field implements IndexableField {
   /**
    * The value of the field as a Reader, or null. If null, the String value or
    * binary value is used. Exactly one of stringValue(), readerValue(), and
-   * getBinaryValue() must be set.
+   * binaryValue() must be set.
    */
   @Override
   public Reader readerValue() {
@@ -298,7 +306,7 @@ public class Field implements IndexableField {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to String");
     }
     if (value == null) {
-      throw new IllegalArgumentException("value cannot be null");
+      throw new IllegalArgumentException("value must not be null");
     }
     fieldsData = value;
   }
@@ -337,7 +345,7 @@ public class Field implements IndexableField {
       throw new IllegalArgumentException("cannot set a BytesRef value on an indexed field");
     }
     if (value == null) {
-      throw new IllegalArgumentException("value cannot be null");
+      throw new IllegalArgumentException("value must not be null");
     }
     fieldsData = value;
   }
@@ -411,14 +419,11 @@ public class Field implements IndexableField {
   /**
    * Expert: sets the token stream to be used for indexing and causes
    * isIndexed() and isTokenized() to return true. May be combined with stored
-   * values from stringValue() or getBinaryValue()
+   * values from stringValue() or binaryValue()
    */
   public void setTokenStream(TokenStream tokenStream) {
     if (type.indexOptions() == IndexOptions.NONE || !type.tokenized()) {
       throw new IllegalArgumentException("TokenStream fields must be indexed and tokenized");
-    }
-    if (type.numericType() != null) {
-      throw new IllegalArgumentException("cannot set private TokenStream on numeric fields");
     }
     this.tokenStream = tokenStream;
   }
@@ -491,7 +496,7 @@ public class Field implements IndexableField {
   
   /** Returns the {@link FieldType} for this field. */
   @Override
-  public FieldType fieldType() {
+  public IndexableFieldType fieldType() {
     return type;
   }
 
@@ -500,35 +505,6 @@ public class Field implements IndexableField {
     if (fieldType().indexOptions() == IndexOptions.NONE) {
       // Not indexed
       return null;
-    }
-
-    final FieldType.LegacyNumericType numericType = fieldType().numericType();
-    if (numericType != null) {
-      if (!(reuse instanceof LegacyNumericTokenStream && ((LegacyNumericTokenStream)reuse).getPrecisionStep() == type.numericPrecisionStep())) {
-        // lazy init the TokenStream as it is heavy to instantiate
-        // (attributes,...) if not needed (stored field loading)
-        reuse = new LegacyNumericTokenStream(type.numericPrecisionStep());
-      }
-      final LegacyNumericTokenStream nts = (LegacyNumericTokenStream) reuse;
-      // initialize value in TokenStream
-      final Number val = (Number) fieldsData;
-      switch (numericType) {
-      case INT:
-        nts.setIntValue(val.intValue());
-        break;
-      case LONG:
-        nts.setLongValue(val.longValue());
-        break;
-      case FLOAT:
-        nts.setFloatValue(val.floatValue());
-        break;
-      case DOUBLE:
-        nts.setDoubleValue(val.doubleValue());
-        break;
-      default:
-        throw new AssertionError("Should never get here");
-      }
-      return reuse;
     }
 
     if (!fieldType().tokenized()) {

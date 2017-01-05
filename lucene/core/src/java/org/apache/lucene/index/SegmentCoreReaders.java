@@ -24,9 +24,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
@@ -54,8 +54,9 @@ final class SegmentCoreReaders {
 
   final StoredFieldsReader fieldsReaderOrig;
   final TermVectorsReader termVectorsReaderOrig;
-  final PointReader pointReader;
+  final PointsReader pointsReader;
   final Directory cfsReader;
+  final String segment;
   /** 
    * fieldinfos for this core: means gen=-1.
    * this is the exact fieldinfos these codec components saw at write.
@@ -98,6 +99,8 @@ final class SegmentCoreReaders {
         cfsDir = dir;
       }
 
+      segment = si.info.name;
+
       coreFieldInfos = codec.fieldInfosFormat().read(cfsDir, si.info, "", context);
       
       final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, coreFieldInfos, context);
@@ -125,9 +128,9 @@ final class SegmentCoreReaders {
       }
 
       if (coreFieldInfos.hasPointValues()) {
-        pointReader = codec.pointFormat().fieldsReader(segmentReadState);
+        pointsReader = codec.pointsFormat().fieldsReader(segmentReadState);
       } else {
-        pointReader = null;
+        pointsReader = null;
       }
       success = true;
     } finally {
@@ -157,7 +160,7 @@ final class SegmentCoreReaders {
       Throwable th = null;
       try {
         IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, termVectorsReaderOrig, fieldsReaderOrig,
-                      cfsReader, normsProducer, pointReader);
+                      cfsReader, normsProducer, pointsReader);
       } catch (Throwable throwable) {
         th = throwable;
       } finally {
@@ -191,5 +194,10 @@ final class SegmentCoreReaders {
   
   void removeCoreClosedListener(CoreClosedListener listener) {
     coreClosedListeners.remove(listener);
+  }
+
+  @Override
+  public String toString() {
+    return "SegmentCoreReader(" + segment + ")";
   }
 }

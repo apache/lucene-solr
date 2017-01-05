@@ -48,7 +48,7 @@ import java.util.concurrent.ExecutorService;
  * source of data, possibly transforming the data along the 
  * way or providing additional functionality. 
  */
-public class FilterFileSystemProvider extends FileSystemProvider {
+public abstract class FilterFileSystemProvider extends FileSystemProvider {
   
   /** 
    * The underlying {@code FileSystemProvider}. 

@@ -52,7 +52,7 @@ public class CachingDoubleValueSource extends ValueSource {
     return new FunctionValues() {
 
       @Override
-      public double doubleVal(int doc) {
+      public double doubleVal(int doc) throws IOException {
         Integer key = Integer.valueOf( base+doc );
         Double v = cache.get( key );
         if( v == null ) {
@@ -63,12 +63,12 @@ public class CachingDoubleValueSource extends ValueSource {
       }
 
       @Override
-      public float floatVal(int doc) {
+      public float floatVal(int doc) throws IOException {
         return (float)doubleVal(doc);
       }
 
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return doubleVal(doc)+"";
       }
     };

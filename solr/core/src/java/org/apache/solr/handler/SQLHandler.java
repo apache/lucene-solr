@@ -49,9 +49,13 @@ import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.UniqueStream;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -59,6 +63,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.util.List;
@@ -70,27 +76,30 @@ import org.slf4j.LoggerFactory;
 
 import com.facebook.presto.sql.parser.SqlParser;
 
-public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
-
-  private static String defaultZkhost = null;
-  private static String defaultWorkerCollection = null;
-  private static List<String> remove;
-
-  static {
-    remove = new ArrayList();
-    remove.add("count(*)");
-  }
+public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , PermissionNameProvider {
 
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public void inform(SolrCore core) {
+  private static String defaultZkhost = null;
+  private static String defaultWorkerCollection = null;
 
+  static final String sqlNonCloudErrorMsg = "/sql handler only works in Solr Cloud mode";
+
+  private boolean isCloud = false;
+
+  public void inform(SolrCore core) {
     CoreContainer coreContainer = core.getCoreDescriptor().getCoreContainer();
 
     if(coreContainer.isZooKeeperAware()) {
       defaultZkhost = core.getCoreDescriptor().getCoreContainer().getZkController().getZkServerAddress();
       defaultWorkerCollection = core.getCoreDescriptor().getCollectionName();
+      isCloud = true;
     }
+  }
+
+  @Override
+  public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
+    return PermissionNameProvider.Name.READ_PERM;
   }
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
@@ -100,7 +109,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     String sql = params.get("stmt");
     int numWorkers = params.getInt("numWorkers", 1);
     String workerCollection = params.get("workerCollection", defaultWorkerCollection);
-    String workerZkhost = params.get("workerZkhost",defaultZkhost);
+    String workerZkhost = params.get("workerZkhost", defaultZkhost);
     String mode = params.get("aggregationMode", "map_reduce");
     StreamContext context = new StreamContext();
 
@@ -108,6 +117,10 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     boolean includeMetadata = params.getBool("includeMetadata", false);
 
     try {
+
+      if(!isCloud) {
+        throw new IllegalStateException(sqlNonCloudErrorMsg);
+      }
 
       if(sql == null) {
         throw new Exception("stmt parameter cannot be null");
@@ -132,9 +145,8 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
   }
 
   private SolrParams adjustParams(SolrParams params) {
-    ModifiableSolrParams adjustedParams = new ModifiableSolrParams();
-    adjustedParams.add(params);
-    adjustedParams.add(CommonParams.OMIT_HEADER, "true");
+    ModifiableSolrParams adjustedParams = new ModifiableSolrParams(params);
+    adjustedParams.set(CommonParams.OMIT_HEADER, "true");
     return adjustedParams;
   }
 
@@ -166,17 +178,11 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       TupleStream sqlStream = null;
 
       if(sqlVistor.table.toUpperCase(Locale.ROOT).contains("_CATALOGS_")) {
-        if (!sqlVistor.fields.contains("TABLE_CAT")) {
-          throw new IOException("When querying _CATALOGS_, fields must contain column TABLE_CAT");
-        }
-
-        sqlStream = new CatalogsStream(defaultZkhost);
+        sqlStream = new SelectStream(new CatalogsStream(defaultZkhost), sqlVistor.columnAliases);
       } else if(sqlVistor.table.toUpperCase(Locale.ROOT).contains("_SCHEMAS_")) {
-        if (!sqlVistor.fields.contains("TABLE_SCHEM") || !sqlVistor.fields.contains("TABLE_CATALOG")) {
-          throw new IOException("When querying _SCHEMAS_, fields must contain both TABLE_SCHEM and TABLE_CATALOG");
-        }
-
-        sqlStream = new SchemasStream(defaultZkhost);
+        sqlStream = new SelectStream(new SchemasStream(defaultZkhost), sqlVistor.columnAliases);
+      } else if(sqlVistor.table.toUpperCase(Locale.ROOT).contains("_TABLES_")) {
+        sqlStream = new SelectStream(new TableStream(defaultZkhost), sqlVistor.columnAliases);
       } else if(sqlVistor.groupByQuery) {
         if(aggregationMode == AggregationMode.FACET) {
           sqlStream = doGroupByWithAggregatesFacets(sqlVistor);
@@ -224,18 +230,18 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
     String zkHost = tableSpec.zkHost;
     String collection = tableSpec.collection;
-    Map<String, String> params = new HashMap();
+    ModifiableSolrParams params = new ModifiableSolrParams();
 
-    params.put(CommonParams.FL, fl);
-    params.put(CommonParams.Q, sqlVisitor.query);
+    params.set(CommonParams.FL, fl);
+    params.set(CommonParams.Q, sqlVisitor.query);
     //Always use the /export handler for Group By Queries because it requires exporting full result sets.
-    params.put(CommonParams.QT, "/export");
+    params.set(CommonParams.QT, "/export");
 
     if(numWorkers > 1) {
-      params.put("partitionKeys", getPartitionKeys(buckets));
+      params.set("partitionKeys", getPartitionKeys(buckets));
     }
 
-    params.put("sort", sort);
+    params.set("sort", sort);
 
     TupleStream tupleStream = null;
 
@@ -364,18 +370,18 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
     String zkHost = tableSpec.zkHost;
     String collection = tableSpec.collection;
-    Map<String, String> params = new HashMap();
+    ModifiableSolrParams params = new ModifiableSolrParams();
 
-    params.put(CommonParams.FL, fl);
-    params.put(CommonParams.Q, sqlVisitor.query);
+    params.set(CommonParams.FL, fl);
+    params.set(CommonParams.Q, sqlVisitor.query);
     //Always use the /export handler for Distinct Queries because it requires exporting full result sets.
-    params.put(CommonParams.QT, "/export");
+    params.set(CommonParams.QT, "/export");
 
     if(numWorkers > 1) {
-      params.put("partitionKeys", getPartitionKeys(buckets));
+      params.set("partitionKeys", getPartitionKeys(buckets));
     }
 
-    params.put("sort", sort);
+    params.set("sort", sort);
 
     TupleStream tupleStream = null;
 
@@ -457,9 +463,9 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
     String zkHost = tableSpec.zkHost;
     String collection = tableSpec.collection;
-    Map<String, String> params = new HashMap();
+    ModifiableSolrParams params = new ModifiableSolrParams();
 
-    params.put(CommonParams.Q, sqlVisitor.query);
+    params.set(CommonParams.Q, sqlVisitor.query);
 
     int limit = sqlVisitor.limit > 0 ? sqlVisitor.limit : 100;
 
@@ -499,16 +505,16 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     Bucket[] buckets = getBuckets(sqlVisitor.groupBy, fieldSet);
     Metric[] metrics = getMetrics(sqlVisitor.fields, fieldSet);
     if(metrics.length == 0) {
-      throw new IOException("Group by queries must include atleast one aggregate function.");
+      throw new IOException("Group by queries must include at least one aggregate function.");
     }
 
     TableSpec tableSpec = new TableSpec(sqlVisitor.table, defaultZkhost);
 
     String zkHost = tableSpec.zkHost;
     String collection = tableSpec.collection;
-    Map<String, String> params = new HashMap();
+    ModifiableSolrParams params = new ModifiableSolrParams();
 
-    params.put(CommonParams.Q, sqlVisitor.query);
+    params.set(CommonParams.Q, sqlVisitor.query);
 
     int limit = sqlVisitor.limit > 0 ? sqlVisitor.limit : 100;
 
@@ -622,22 +628,22 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       }
     }
 
-    Map<String, String> params = new HashMap();
-    params.put("fl", fl.toString());
-    params.put("q", sqlVisitor.query);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("fl", fl.toString());
+    params.set("q", sqlVisitor.query);
 
     if(siBuf.length() > 0) {
-      params.put("sort", siBuf.toString());
+      params.set("sort", siBuf.toString());
     }
 
     TupleStream tupleStream;
 
     if(sqlVisitor.limit > -1) {
-      params.put("rows", Integer.toString(sqlVisitor.limit));
+      params.set("rows", Integer.toString(sqlVisitor.limit));
       tupleStream = new LimitStream(new CloudSolrStream(zkHost, collection, params), sqlVisitor.limit);
     } else {
       //Only use the export handler when no limit is specified.
-      params.put(CommonParams.QT, "/export");
+      params.set(CommonParams.QT, "/export");
       tupleStream = new CloudSolrStream(zkHost, collection, params);
     }
 
@@ -675,9 +681,9 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
     String zkHost = tableSpec.zkHost;
     String collection = tableSpec.collection;
-    Map<String, String> params = new HashMap();
+    ModifiableSolrParams params = new ModifiableSolrParams();
 
-    params.put(CommonParams.Q, sqlVisitor.query);
+    params.set(CommonParams.Q, sqlVisitor.query);
 
     TupleStream tupleStream = new StatsStream(zkHost,
                                               collection,
@@ -912,6 +918,10 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     }
 
     protected Void visitComparisonExpression(ComparisonExpression node, StringBuilder buf) {
+      if (!(node.getLeft() instanceof StringLiteral || node.getLeft() instanceof QualifiedNameReference)) {
+        throw new RuntimeException("Left side of comparison must be a literal.");
+      }
+
       String field = getPredicateField(node.getLeft());
       String value = node.getRight().toString();
       value = stripSingleQuotes(value);
@@ -921,7 +931,49 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
         value = '"'+value+'"';
       }
 
-      buf.append('(').append(field + ":" + value).append(')');
+      String lowerBound;
+      String upperBound;
+      String lowerValue;
+      String upperValue;
+
+      ComparisonExpression.Type t = node.getType();
+      switch(t) {
+        case NOT_EQUAL:
+          buf.append('(').append('-').append(field).append(":").append(value).append(')');
+          return null;
+        case EQUAL:
+          buf.append('(').append(field).append(":").append(value).append(')');
+          return null;
+        case LESS_THAN:
+          lowerBound = "[";
+          upperBound = "}";
+          lowerValue = "*";
+          upperValue = value;
+          buf.append('(').append(field).append(":").append(lowerBound).append(lowerValue).append(" TO ").append(upperValue).append(upperBound).append(')');
+          return null;
+        case LESS_THAN_OR_EQUAL:
+          lowerBound = "[";
+          upperBound = "]";
+          lowerValue = "*";
+          upperValue = value;
+          buf.append('(').append(field).append(":").append(lowerBound).append(lowerValue).append(" TO ").append(upperValue).append(upperBound).append(')');
+          return null;
+        case GREATER_THAN:
+          lowerBound = "{";
+          upperBound = "]";
+          lowerValue = value;
+          upperValue = "*";
+          buf.append('(').append(field).append(":").append(lowerBound).append(lowerValue).append(" TO ").append(upperValue).append(upperBound).append(')');
+          return null;
+        case GREATER_THAN_OR_EQUAL:
+          lowerBound = "[";
+          upperBound = "]";
+          lowerValue = value;
+          upperValue = "*";
+          buf.append('(').append(field).append(":").append(lowerBound).append(lowerValue).append(" TO ").append(upperValue).append(upperBound).append(')');
+          return null;
+      }
+
       return null;
     }
   }
@@ -1287,6 +1339,19 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     public void setStreamContext(StreamContext context) {
       stream.setStreamContext(context);
     }
+    
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+      return new StreamExplanation(getStreamNodeId().toString())
+        .withChildren(new Explanation[]{
+          stream.toExplanation(factory)
+        })
+        .withFunctionName("SQL LIMIT")
+        .withExpression("--non-expressible--")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_DECORATOR);
+    }
 
     public Tuple read() throws IOException {
       ++count;
@@ -1346,6 +1411,19 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       children.add(stream);
       return children;
     }
+    
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+      return new StreamExplanation(getStreamNodeId().toString())
+        .withChildren(new Explanation[]{
+          stream.toExplanation(factory)
+        })
+        .withFunctionName("SQL HAVING")
+        .withExpression("--non-expressible--")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_DECORATOR);
+    }
 
     public void setStreamContext(StreamContext context) {
       stream.setStreamContext(context);
@@ -1371,7 +1449,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     private int currentIndex = 0;
     private List<String> catalogs;
 
-    public CatalogsStream(String zkHost) {
+    CatalogsStream(String zkHost) {
       this.zkHost = zkHost;
     }
 
@@ -1383,9 +1461,19 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       this.catalogs = new ArrayList<>();
       this.catalogs.add(this.zkHost);
     }
+    
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+      return new StreamExplanation(getStreamNodeId().toString())
+        .withFunctionName("SQL CATALOG")
+        .withExpression("--non-expressible--")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_DECORATOR);
+    }
 
     public Tuple read() throws IOException {
-      Map fields = new HashMap<>();
+      Map<String, String> fields = new HashMap<>();
       if (this.currentIndex < this.catalogs.size()) {
         fields.put("TABLE_CAT", this.catalogs.get(this.currentIndex));
         this.currentIndex += 1;
@@ -1411,10 +1499,8 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
   private static class SchemasStream extends TupleStream {
     private final String zkHost;
     private StreamContext context;
-    private int currentIndex = 0;
-    private List<String> schemas;
 
-    public SchemasStream(String zkHost) {
+    SchemasStream(String zkHost) {
       this.zkHost = zkHost;
     }
 
@@ -1423,18 +1509,83 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     }
 
     public void open() throws IOException {
-      this.schemas = new ArrayList<>();
 
-      CloudSolrClient cloudSolrClient = this.context.getSolrClientCache().getCloudSolrClient(this.zkHost);
-      this.schemas.addAll(cloudSolrClient.getZkStateReader().getClusterState().getCollections());
-      Collections.sort(this.schemas);
+    }
+    
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+      return new StreamExplanation(getStreamNodeId().toString())
+        .withFunctionName("SQL SCHEMA")
+        .withExpression("--non-expressible--")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_DECORATOR);
     }
 
     public Tuple read() throws IOException {
-      Map fields = new HashMap<>();
-      if (this.currentIndex < this.schemas.size()) {
-        fields.put("TABLE_SCHEM", this.schemas.get(this.currentIndex));
-        fields.put("TABLE_CATALOG", this.zkHost);
+      Map<String, String> fields = new HashMap<>();
+      fields.put("EOF", "true");
+      return new Tuple(fields);
+    }
+
+    public StreamComparator getStreamSort() {
+      return null;
+    }
+
+    public void close() throws IOException {
+
+    }
+
+    public void setStreamContext(StreamContext context) {
+      this.context = context;
+    }
+  }
+
+  private static class TableStream extends TupleStream {
+    private final String zkHost;
+    private StreamContext context;
+    private int currentIndex = 0;
+    private List<String> tables;
+
+    TableStream(String zkHost) {
+      this.zkHost = zkHost;
+    }
+
+    public List<TupleStream> children() {
+      return new ArrayList<>();
+    }
+
+    public void open() throws IOException {
+      this.tables = new ArrayList<>();
+
+      CloudSolrClient cloudSolrClient = this.context.getSolrClientCache().getCloudSolrClient(this.zkHost);
+      cloudSolrClient.connect();
+      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+      Set<String> collections = zkStateReader.getClusterState().getCollectionStates().keySet();
+      if (collections.size() != 0) {
+        this.tables.addAll(collections);
+      }
+      Collections.sort(this.tables);
+    }
+    
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+      return new StreamExplanation(getStreamNodeId().toString())
+        .withFunctionName("SQL TABLE")
+        .withExpression("--non-expressible--")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_DECORATOR);
+    }
+
+    public Tuple read() throws IOException {
+      Map<String, String> fields = new HashMap<>();
+      if (this.currentIndex < this.tables.size()) {
+        fields.put("TABLE_CAT", this.zkHost);
+        fields.put("TABLE_SCHEM", null);
+        fields.put("TABLE_NAME", this.tables.get(this.currentIndex));
+        fields.put("TABLE_TYPE", "TABLE");
+        fields.put("REMARKS", null);
         this.currentIndex += 1;
       } else {
         fields.put("EOF", "true");
@@ -1472,6 +1623,19 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
     public void open() throws IOException {
       this.stream.open();
+    }
+    
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+      return new StreamExplanation(getStreamNodeId().toString())
+        .withChildren(new Explanation[]{
+          stream.toExplanation(factory)
+        })
+        .withFunctionName("SQL METADATA")
+        .withExpression("--non-expressible--")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_DECORATOR);
     }
 
     // Return a metadata tuple as the first tuple and then pass through to the underlying stream.

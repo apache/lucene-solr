@@ -17,21 +17,38 @@
 package org.apache.lucene.search.join;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map;
+import java.util.TreeSet;
+import java.util.function.BiConsumer;
+import java.util.function.LongFunction;
 
-import org.apache.lucene.document.FieldType.LegacyNumericType;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.join.DocValuesTermsCollector.Function;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Utility for query time joining.
@@ -85,16 +102,14 @@ public final class JoinUtil {
       termsWithScoreCollector = GenericTermsCollector.createCollectorMV(mvFunction, scoreMode);
     } else {
       Function<BinaryDocValues> svFunction = DocValuesTermsCollector.binaryDocValues(fromField);
-      termsWithScoreCollector =  GenericTermsCollector.createCollectorSV(svFunction, scoreMode);
+      termsWithScoreCollector = GenericTermsCollector.createCollectorSV(svFunction, scoreMode);
     }
     
-    return createJoinQuery(multipleValuesPerDocument, toField, fromQuery, fromSearcher, scoreMode,
-        termsWithScoreCollector);
-    
+    return createJoinQuery(multipleValuesPerDocument, toField, fromQuery, fromSearcher, scoreMode, termsWithScoreCollector);
   }
   
   /**
-   * Method for query time joining for numeric fields. It supports multi- and single- values longs and ints. 
+   * Method for query time joining for numeric fields. It supports multi- and single- values longs, ints, floats and longs.
    * All considerations from {@link JoinUtil#createJoinQuery(String, boolean, String, Query, IndexSearcher, ScoreMode)} are applicable here too,
    * though memory consumption might be higher.
    * <p>
@@ -103,8 +118,10 @@ public final class JoinUtil {
    * @param multipleValuesPerDocument Whether the from field has multiple terms per document
    *                                  when true fromField might be {@link DocValuesType#SORTED_NUMERIC},
    *                                  otherwise fromField should be {@link DocValuesType#NUMERIC}
-   * @param toField                   The to field to join to, should be {@link org.apache.lucene.document.LegacyIntField} or {@link org.apache.lucene.document.LegacyLongField}
-   * @param numericType               either {@link org.apache.lucene.document.FieldType.LegacyNumericType#INT} or {@link org.apache.lucene.document.FieldType.LegacyNumericType#LONG}, it should correspond to fromField and toField types
+   * @param toField                   The to field to join to, should be {@link IntPoint}, {@link LongPoint}, {@link FloatPoint}
+   *                                  or {@link DoublePoint}.
+   * @param numericType               either {@link java.lang.Integer}, {@link java.lang.Long}, {@link java.lang.Float}
+   *                                  or {@link java.lang.Double} it should correspond to toField types
    * @param fromQuery                 The query to match documents on the from side
    * @param fromSearcher              The searcher that executed the specified fromQuery
    * @param scoreMode                 Instructs how scores from the fromQuery are mapped to the returned query
@@ -112,29 +129,257 @@ public final class JoinUtil {
    *         terms in the from and to field
    * @throws IOException If I/O related errors occur
    */
-  
   public static Query createJoinQuery(String fromField,
-      boolean multipleValuesPerDocument,
-      String toField, LegacyNumericType numericType,
-      Query fromQuery,
-      IndexSearcher fromSearcher,
-      ScoreMode scoreMode) throws IOException {
-    
-    final GenericTermsCollector termsCollector;
-     
-    if (multipleValuesPerDocument) {
-      Function<SortedSetDocValues> mvFunction = DocValuesTermsCollector.sortedNumericAsSortedSetDocValues(fromField,numericType);
-      termsCollector = GenericTermsCollector.createCollectorMV(mvFunction, scoreMode);
+                                      boolean multipleValuesPerDocument,
+                                      String toField,
+                                      Class<? extends Number> numericType,
+                                      Query fromQuery,
+                                      IndexSearcher fromSearcher,
+                                      ScoreMode scoreMode) throws IOException {
+    TreeSet<Long> joinValues = new TreeSet<>();
+    Map<Long, Float> aggregatedScores = new HashMap<>();
+    Map<Long, Integer> occurrences = new HashMap<>();
+    boolean needsScore = scoreMode != ScoreMode.None;
+    BiConsumer<Long, Float> scoreAggregator;
+    if (scoreMode == ScoreMode.Max) {
+      scoreAggregator = (key, score) -> {
+        Float currentValue = aggregatedScores.putIfAbsent(key, score);
+        if (currentValue != null) {
+          aggregatedScores.put(key, Math.max(currentValue, score));
+        }
+      };
+    } else if (scoreMode == ScoreMode.Min) {
+      scoreAggregator = (key, score) -> {
+        Float currentValue = aggregatedScores.putIfAbsent(key, score);
+        if (currentValue != null) {
+          aggregatedScores.put(key, Math.min(currentValue, score));
+        }
+      };
+    } else if (scoreMode == ScoreMode.Total) {
+      scoreAggregator = (key, score) -> {
+        Float currentValue = aggregatedScores.putIfAbsent(key, score);
+        if (currentValue != null) {
+          aggregatedScores.put(key, currentValue + score);
+        }
+      };
+    } else if (scoreMode == ScoreMode.Avg) {
+      scoreAggregator = (key, score) -> {
+        Float currentSore = aggregatedScores.putIfAbsent(key, score);
+        if (currentSore != null) {
+          aggregatedScores.put(key, currentSore + score);
+        }
+        Integer currentOccurrence = occurrences.putIfAbsent(key, 1);
+        if (currentOccurrence != null) {
+          occurrences.put(key, ++currentOccurrence);
+        }
+
+      };
     } else {
-      Function<BinaryDocValues> svFunction = DocValuesTermsCollector.numericAsBinaryDocValues(fromField,numericType);
-      termsCollector =  GenericTermsCollector.createCollectorSV(svFunction, scoreMode);
+      scoreAggregator = (key, score) -> {
+        throw new UnsupportedOperationException();
+      };
     }
-    
-    return createJoinQuery(multipleValuesPerDocument, toField, fromQuery, fromSearcher, scoreMode,
-        termsCollector);
-    
+
+    LongFunction<Float> joinScorer;
+    if (scoreMode == ScoreMode.Avg) {
+      joinScorer = (joinValue) -> {
+        Float aggregatedScore = aggregatedScores.get(joinValue);
+        Integer occurrence = occurrences.get(joinValue);
+        return aggregatedScore / occurrence;
+      };
+    } else {
+      joinScorer = aggregatedScores::get;
+    }
+
+    Collector collector;
+    if (multipleValuesPerDocument) {
+      collector = new SimpleCollector() {
+
+        SortedNumericDocValues sortedNumericDocValues;
+        Scorer scorer;
+
+        @Override
+        public void collect(int doc) throws IOException {
+          if (doc > sortedNumericDocValues.docID()) {
+            sortedNumericDocValues.advance(doc);
+          }
+          if (doc == sortedNumericDocValues.docID()) {
+            for (int i = 0; i < sortedNumericDocValues.docValueCount(); i++) {
+              long value = sortedNumericDocValues.nextValue();
+              joinValues.add(value);
+              if (needsScore) {
+                scoreAggregator.accept(value, scorer.score());
+              }
+            }
+          }
+        }
+
+        @Override
+        protected void doSetNextReader(LeafReaderContext context) throws IOException {
+          sortedNumericDocValues = DocValues.getSortedNumeric(context.reader(), fromField);
+        }
+
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          this.scorer = scorer;
+        }
+
+        @Override
+        public boolean needsScores() {
+          return needsScore;
+        }
+      };
+    } else {
+      collector = new SimpleCollector() {
+
+        NumericDocValues numericDocValues;
+        Scorer scorer;
+        private int lastDocID = -1;
+
+        private boolean docsInOrder(int docID) {
+          if (docID < lastDocID) {
+            throw new AssertionError("docs out of order: lastDocID=" + lastDocID + " vs docID=" + docID);
+          }
+          lastDocID = docID;
+          return true;
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {
+          assert docsInOrder(doc);
+          int dvDocID = numericDocValues.docID();
+          if (dvDocID < doc) {
+            dvDocID = numericDocValues.advance(doc);
+          }
+          long value;
+          if (dvDocID == doc) {
+            value = numericDocValues.longValue();
+          } else {
+            value = 0;
+          }
+          joinValues.add(value);
+          if (needsScore) {
+            scoreAggregator.accept(value, scorer.score());
+          }
+        }
+
+        @Override
+        protected void doSetNextReader(LeafReaderContext context) throws IOException {
+          numericDocValues = DocValues.getNumeric(context.reader(), fromField);
+          lastDocID = -1;
+        }
+
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          this.scorer = scorer;
+        }
+
+        @Override
+        public boolean needsScores() {
+          return needsScore;
+        }
+      };
+    }
+    fromSearcher.search(fromQuery, collector);
+
+    Iterator<Long> iterator = joinValues.iterator();
+
+    final int bytesPerDim;
+    final BytesRef encoded = new BytesRef();
+    final PointInSetIncludingScoreQuery.Stream stream;
+    if (Integer.class.equals(numericType)) {
+      bytesPerDim = Integer.BYTES;
+      stream = new PointInSetIncludingScoreQuery.Stream() {
+        @Override
+        public BytesRef next() {
+          if (iterator.hasNext()) {
+            long value = iterator.next();
+            IntPoint.encodeDimension((int) value, encoded.bytes, 0);
+            if (needsScore) {
+              score = joinScorer.apply(value);
+            }
+            return encoded;
+          } else {
+            return null;
+          }
+        }
+      };
+    } else if (Long.class.equals(numericType)) {
+      bytesPerDim = Long.BYTES;
+      stream = new PointInSetIncludingScoreQuery.Stream() {
+        @Override
+        public BytesRef next() {
+          if (iterator.hasNext()) {
+            long value = iterator.next();
+            LongPoint.encodeDimension(value, encoded.bytes, 0);
+            if (needsScore) {
+              score = joinScorer.apply(value);
+            }
+            return encoded;
+          } else {
+            return null;
+          }
+        }
+      };
+    } else if (Float.class.equals(numericType)) {
+      bytesPerDim = Float.BYTES;
+      stream = new PointInSetIncludingScoreQuery.Stream() {
+        @Override
+        public BytesRef next() {
+          if (iterator.hasNext()) {
+            long value = iterator.next();
+            FloatPoint.encodeDimension(Float.intBitsToFloat((int) value), encoded.bytes, 0);
+            if (needsScore) {
+              score = joinScorer.apply(value);
+            }
+            return encoded;
+          } else {
+            return null;
+          }
+        }
+      };
+    } else if (Double.class.equals(numericType)) {
+      bytesPerDim = Double.BYTES;
+      stream = new PointInSetIncludingScoreQuery.Stream() {
+        @Override
+        public BytesRef next() {
+          if (iterator.hasNext()) {
+            long value = iterator.next();
+            DoublePoint.encodeDimension(Double.longBitsToDouble(value), encoded.bytes, 0);
+            if (needsScore) {
+              score = joinScorer.apply(value);
+            }
+            return encoded;
+          } else {
+            return null;
+          }
+        }
+      };
+    } else {
+      throw new IllegalArgumentException("unsupported numeric type, only Integer, Long, Float and Double are supported");
+    }
+
+    encoded.bytes = new byte[bytesPerDim];
+    encoded.length = bytesPerDim;
+
+    if (needsScore) {
+      return new PointInSetIncludingScoreQuery(fromQuery, multipleValuesPerDocument, toField, bytesPerDim, stream) {
+
+        @Override
+        protected String toString(byte[] value) {
+          return toString.apply(value, numericType);
+        }
+      };
+    } else {
+      return new PointInSetQuery(toField, 1, bytesPerDim, stream) {
+        @Override
+        protected String toString(byte[] value) {
+          return PointInSetIncludingScoreQuery.toString.apply(value, numericType);
+        }
+      };
+    }
   }
-  
+
   private static Query createJoinQuery(boolean multipleValuesPerDocument, String toField, Query fromQuery,
       IndexSearcher fromSearcher, ScoreMode scoreMode, final GenericTermsCollector collector)
           throws IOException {
@@ -226,7 +471,7 @@ public final class JoinUtil {
     int numSegments = indexReader.leaves().size();
     final long valueCount;
     if (numSegments == 0) {
-      return new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("JoinUtil.createJoinQuery with no segments");
     } else if (numSegments == 1) {
       // No need to use the ordinal map, because there is just one segment.
       ordinalMap = null;
@@ -235,7 +480,7 @@ public final class JoinUtil {
       if (joinSortedDocValues != null) {
         valueCount = joinSortedDocValues.getValueCount();
       } else {
-        return new MatchNoDocsQuery();
+        return new MatchNoDocsQuery("JoinUtil.createJoinQuery: no join values");
       }
     } else {
       if (ordinalMap == null) {

@@ -38,8 +38,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-import static org.apache.lucene.index.TestIndexWriter.assertNoUnreferencedFiles;
-
 /**
  * Tests for IndexWriter when the disk runs out of space
  */
@@ -255,7 +253,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         
         // Make a new dir that will enforce disk usage:
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(startDir));
-        dir.setPreventDoubleWrite(false);
         IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
           .setOpenMode(OpenMode.APPEND)
           .setMergePolicy(newLogMergePolicy(false));

@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.FilesystemResourceLoader;
+import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -118,15 +119,38 @@ public final class CustomAnalyzer extends Analyzer {
   }
 
   @Override
+  protected Reader initReaderForNormalization(String fieldName, Reader reader) {
+    for (CharFilterFactory charFilter : charFilters) {
+      if (charFilter instanceof MultiTermAwareComponent) {
+        charFilter = (CharFilterFactory) ((MultiTermAwareComponent) charFilter).getMultiTermComponent();
+        reader = charFilter.create(reader);
+      }
+    }
+    return reader;
+  }
+
+  @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer tk = tokenizer.create();
+    final Tokenizer tk = tokenizer.create(attributeFactory(fieldName));
     TokenStream ts = tk;
     for (final TokenFilterFactory filter : tokenFilters) {
       ts = filter.create(ts);
     }
     return new TokenStreamComponents(tk, ts);
   }
-  
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = in;
+    for (TokenFilterFactory filter : tokenFilters) {
+      if (filter instanceof MultiTermAwareComponent) {
+        filter = (TokenFilterFactory) ((MultiTermAwareComponent) filter).getMultiTermComponent();
+        result = filter.create(result);
+      }
+    }
+    return result;
+  }
+
   @Override
   public int getPositionIncrementGap(String fieldName) {
     // use default from Analyzer base class if null

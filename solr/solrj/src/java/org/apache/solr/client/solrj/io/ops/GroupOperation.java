@@ -16,29 +16,34 @@
  */
 package org.apache.solr.client.solrj.io.ops;
 
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.UUID;
+
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Comparator;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Locale;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.PriorityQueue;
-
 public class GroupOperation implements ReduceOperation {
 
+  private static final long serialVersionUID = 1L;
+  private UUID operationNodeId = UUID.randomUUID();
+  
   private PriorityQueue<Tuple> priorityQueue;
   private Comparator comp;
   private StreamComparator streamComparator;
@@ -86,6 +91,18 @@ public class GroupOperation implements ReduceOperation {
     return expression;
   }
 
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+    return new Explanation(operationNodeId.toString())
+      .withExpressionType(ExpressionType.OPERATION)
+      .withFunctionName(factory.getFunctionName(getClass()))
+      .withImplementingClass(getClass().getName())
+      .withExpression(toExpression(factory).toString())
+      .withHelpers(new Explanation[]{
+          streamComparator.toExplanation(factory)
+      });
+  }
+
   public Tuple reduce() {
     Map map = new HashMap();
     List<Map> list = new ArrayList();
@@ -122,6 +139,7 @@ public class GroupOperation implements ReduceOperation {
     }
 
     public int compare(Tuple t1, Tuple t2) {
+      // Couldn't this be comp.compare(t2,t1) ?
       return comp.compare(t1, t2)*(-1);
     }
   }

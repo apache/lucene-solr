@@ -265,13 +265,13 @@ public class PhraseQuery extends Query {
    * Returns the relative positions of terms in this phrase.
    */
   public int[] getPositions() {
-      return positions;
+    return positions;
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (terms.length == 0) {
-      return   new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("empty PhraseQuery");
     } else if (terms.length == 1) {
       return new TermQuery(terms[0]);
     } else if (positions[0] != 0) {
@@ -356,7 +356,7 @@ public class PhraseQuery extends Query {
     private final boolean needsScores;
     private transient TermContext states[];
 
-    public PhraseWeight(IndexSearcher searcher, boolean needsScores)
+    public PhraseWeight(IndexSearcher searcher, boolean needsScores, float boost)
       throws IOException {
       super(PhraseQuery.this);
       final int[] positions = PhraseQuery.this.getPositions();
@@ -375,7 +375,7 @@ public class PhraseQuery extends Query {
         states[i] = TermContext.build(context, term);
         termStats[i] = searcher.termStatistics(term, states[i]);
       }
-      stats = similarity.computeWeight(searcher.collectionStatistics(field), termStats);
+      stats = similarity.computeWeight(boost, searcher.collectionStatistics(field), termStats);
     }
 
     @Override
@@ -385,16 +385,6 @@ public class PhraseQuery extends Query {
 
     @Override
     public String toString() { return "weight(" + PhraseQuery.this + ")"; }
-
-    @Override
-    public float getValueForNormalization() {
-      return stats.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float queryNorm, float boost) {
-      stats.normalize(queryNorm, boost);
-    }
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -507,8 +497,8 @@ public class PhraseQuery extends Query {
 
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new PhraseWeight(searcher, needsScores);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new PhraseWeight(searcher, needsScores, boost);
   }
 
   /** Prints a user-readable version of this query. */
@@ -561,20 +551,21 @@ public class PhraseQuery extends Query {
 
   /** Returns true iff <code>o</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (super.equals(o) == false) {
-      return false;
-    }
-    PhraseQuery that = (PhraseQuery) o;
-    return slop == that.slop
-        && Arrays.equals(terms, that.terms)
-        && Arrays.equals(positions, that.positions);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(PhraseQuery other) {
+    return slop == other.slop && 
+           Arrays.equals(terms, other.terms) && 
+           Arrays.equals(positions, other.positions);
   }
 
   /** Returns a hash code value for this object.*/
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = classHash();
     h = 31 * h + slop;
     h = 31 * h + Arrays.hashCode(terms);
     h = 31 * h + Arrays.hashCode(positions);

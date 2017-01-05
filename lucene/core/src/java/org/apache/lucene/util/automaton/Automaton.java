@@ -357,13 +357,13 @@ public class Automaton implements Accountable {
   }
 
   private void growStates() {
-    if (nextState+2 >= states.length) {
+    if (nextState+2 > states.length) {
       states = ArrayUtil.grow(states, nextState+2);
     }
   }
 
   private void growTransitions() {
-    if (nextTransition+3 >= transitions.length) {
+    if (nextTransition+3 > transitions.length) {
       transitions = ArrayUtil.grow(transitions, nextTransition+3);
     }
   }
@@ -579,14 +579,15 @@ public class Automaton implements Accountable {
   /** Returns the dot (graphviz) representation of this automaton.
    *  This is extremely useful for visualizing the automaton. */
   public String toDot() {
-    // TODO: breadth first search so we can see get layered output...
+    // TODO: breadth first search so we can get layered output...
 
     StringBuilder b = new StringBuilder();
     b.append("digraph Automaton {\n");
     b.append("  rankdir = LR\n");
+    b.append("  node [width=0.2, height=0.2, fontsize=8]\n");
     final int numStates = getNumStates();
     if (numStates > 0) {
-      b.append("  initial [shape=plaintext,label=\"0\"]\n");
+      b.append("  initial [shape=plaintext,label=\"\"]\n");
       b.append("  initial -> 0\n");
     }
 

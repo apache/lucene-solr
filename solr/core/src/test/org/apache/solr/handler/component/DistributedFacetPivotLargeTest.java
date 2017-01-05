@@ -180,7 +180,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     //   ... but there's no refinement since mincount==0
     // - would it even matter
     //
-    // should we remove the refinement short circut?
+    // should we remove the refinement short circuit?
     //
     // rsp = query( params( "q", "*:*",
     //                      "rows", "0",
@@ -834,6 +834,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
 
       rfc = pf.getFacetRanges().get(0).getCounts();
       for (RangeFacet.Count c : rfc) {
+
         assertEquals(0, c.getCount()); // no docs in our ranges for this pivot drill down
       }
 
@@ -927,7 +928,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft polecat","pay_i",5824,"hiredate_dt", "2012-11-01T12:30:00Z");
     addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft ","pay_i",6539,"hiredate_dt", "2012-11-01T12:30:00Z"); 
     addPivotDoc(oneShard, "id", getDocNum(), "place_s", "medical staffing network holdings, inc.", "company_t", "microsoft ","pay_i",6539,"hiredate_dt", "2012-11-01T12:30:00Z", "special_s", "xxx");
-    addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "polecat","pay_i",4352,"hiredate_dt", "2012-1-01T12:30:00Z", "special_s", "xxx"); 
+    addPivotDoc(oneShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "polecat","pay_i",4352,"hiredate_dt", "2012-01-01T12:30:00Z", "special_s", "xxx");
     addPivotDoc(oneShard, "id", getDocNum(), "place_s", "krakaw", "company_t", "polecat","pay_i",4352,"hiredate_dt", "2012-11-01T12:30:00Z", "special_s", SPECIAL); 
     
     addPivotDoc(twoShard, "id", getDocNum(), "place_s", "cardiff", "company_t", "microsoft","pay_i",12,"hiredate_dt", "2012-11-01T12:30:00Z", "special_s", SPECIAL);

@@ -108,7 +108,6 @@ public final class DrillDownQuery extends Query {
     if (drillDownDims.containsKey(dim) == false) {
       drillDownDims.put(dim, drillDownDims.size());
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      builder.setDisableCoord(true);
       dimQueries.add(builder);
     }
     final int index = drillDownDims.get(dim);
@@ -122,19 +121,20 @@ public final class DrillDownQuery extends Query {
   
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + Objects.hash(baseQuery, dimQueries);
+    return classHash() + Objects.hash(baseQuery, dimQueries);
   }
-  
+
   @Override
-  public boolean equals(Object obj) {
-    if (super.equals(obj) == false) {
-      return false;
-    }
-    DrillDownQuery other = (DrillDownQuery) obj;
-    return Objects.equals(baseQuery, other.baseQuery)
-        && dimQueries.equals(other.dimQueries);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
   }
-  
+
+  private boolean equalsTo(DrillDownQuery other) {
+    return Objects.equals(baseQuery, other.baseQuery) && 
+           dimQueries.equals(other.dimQueries);
+  }
+
   @Override
   public Query rewrite(IndexReader r) throws IOException {
     BooleanQuery rewritten = getBooleanQuery();

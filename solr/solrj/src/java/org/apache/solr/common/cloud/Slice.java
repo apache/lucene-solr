@@ -16,28 +16,54 @@
  */
 package org.apache.solr.common.cloud;
 
-import org.noggit.JSONUtil;
-import org.noggit.JSONWriter;
-
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import org.noggit.JSONUtil;
+import org.noggit.JSONWriter;
 
 /**
  * A Slice contains immutable information about a logical shard (all replicas that share the same shard id).
  */
-public class Slice extends ZkNodeProps {
-  
+public class Slice extends ZkNodeProps implements Iterable<Replica> {
+
+  /** Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON. */
+  public static Map<String,Slice> loadAllFromMap(Map<String, Object> genericSlices) {
+    if (genericSlices == null) return Collections.emptyMap();
+    Map<String, Slice> result = new LinkedHashMap<>(genericSlices.size());
+    for (Map.Entry<String, Object> entry : genericSlices.entrySet()) {
+      String name = entry.getKey();
+      Object val = entry.getValue();
+      if (val instanceof Slice) {
+        result.put(name, (Slice) val);
+      } else if (val instanceof Map) {
+        result.put(name, new Slice(name, null, (Map<String, Object>) val));
+      }
+    }
+    return result;
+  }
+
+  @Override
+  public Iterator<Replica> iterator() {
+    return replicas.values().iterator();
+  }
+
   /** The slice's state. */
   public enum State {
     
-    /** The default state of a slice. */
+    /** The normal/default state of a shard. */
     ACTIVE,
     
     /**
-     * A slice is put in that state after it has been successfully split. See
+     * A shard is put in that state after it has been successfully split. See
      * <a href="https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-api3">
      * the reference guide</a> for more details.
      */
@@ -45,7 +71,8 @@ public class Slice extends ZkNodeProps {
     
     /**
      * When a shard is split, the new sub-shards are put in that state while the
-     * split operation is in progress. A shard in that state still receives
+     * split operation is in progress. It's also used when the shard is undergoing data restoration.
+     * A shard in this state still receives
      * update requests from the parent shard leader, however does not participate
      * in distributed search.
      */
@@ -57,7 +84,16 @@ public class Slice extends ZkNodeProps {
      * shard in that state still receives update requests from the parent shard
      * leader, however does not participate in distributed search.
      */
-    RECOVERY;
+    RECOVERY,
+
+    /**
+     * Sub-shards of a split shard are put in that state when the split is deemed failed
+     * by the overseer even though all replicas are active because either the leader node is
+     * no longer live or has a different ephemeral owner (zk session id). Such conditions can potentially
+     * lead to data loss. See SOLR-9438 for details. A shard in that state will neither receive
+     * update requests from the parent shard leader, nor participate in distributed search.
+     */
+    RECOVERY_FAILED;
     
     @Override
     public String toString() {
@@ -183,6 +219,13 @@ public class Slice extends ZkNodeProps {
    */
   public Collection<Replica> getReplicas() {
     return replicas.values();
+  }
+
+  /**
+   * Gets all replicas that match a predicate
+   */
+  public List<Replica> getReplicas(Predicate<Replica> pred) {
+    return replicas.values().stream().filter(pred).collect(Collectors.toList());
   }
 
   /**

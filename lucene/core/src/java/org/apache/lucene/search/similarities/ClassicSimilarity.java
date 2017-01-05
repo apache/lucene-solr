@@ -18,6 +18,9 @@ package org.apache.lucene.search.similarities;
 
 
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.search.CollectionStatistics;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SmallFloat;
 
@@ -55,18 +58,6 @@ public class ClassicSimilarity extends TFIDFSimilarity {
 
   /** Sole constructor: parameter-free */
   public ClassicSimilarity() {}
-  
-  /** Implemented as <code>overlap / maxOverlap</code>. */
-  @Override
-  public float coord(int overlap, int maxOverlap) {
-    return overlap / (float)maxOverlap;
-  }
-
-  /** Implemented as <code>1/sqrt(sumOfSquaredWeights)</code>. */
-  @Override
-  public float queryNorm(float sumOfSquaredWeights) {
-    return (float)(1.0 / Math.sqrt(sumOfSquaredWeights));
-  }
   
   /**
    * Encodes a normalization factor for storage in an index.
@@ -131,6 +122,16 @@ public class ClassicSimilarity extends TFIDFSimilarity {
   @Override
   public float scorePayload(int doc, int start, int end, BytesRef payload) {
     return 1;
+  }
+
+  @Override
+  public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
+    final long df = termStats.docFreq();
+    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
+    final float idf = idf(df, docCount);
+    return Explanation.match(idf, "idf, computed as log((docCount+1)/(docFreq+1)) + 1 from:",
+        Explanation.match(df, "docFreq"),
+        Explanation.match(docCount, "docCount"));
   }
 
   /** Implemented as <code>log((docCount+1)/(docFreq+1)) + 1</code>. */

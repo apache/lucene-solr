@@ -18,7 +18,6 @@ package org.apache.solr.update;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.SolrTestCaseJ4;
 
 import java.util.Locale;

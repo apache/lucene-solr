@@ -48,33 +48,24 @@ public abstract class DocRouter {
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown document router '"+ routerName + "'");
   }
 
-  protected String getRouteField(DocCollection coll){
-    if(coll == null) return null;
-    Object o = coll.get(DOC_ROUTER);
-    if (o instanceof String) {
-      return null;
-      //old format. cannot have a routefield. Ignore it
-    }
-    Map m = (Map) o;
-    if(m == null) return null;
+  protected String getRouteField(DocCollection coll) {
+    if (coll == null) return null;
+    Map m = (Map) coll.get(DOC_ROUTER);
+    if (m == null) return null;
     return (String) m.get("field");
-
   }
 
-  public static Map<String,Object> getRouterSpec(ZkNodeProps props){
-    Map<String,Object> map =  new LinkedHashMap<>();
+  public static Map<String, Object> getRouterSpec(ZkNodeProps props) {
+    Map<String, Object> map = new LinkedHashMap<>();
     for (String s : props.keySet()) {
-      if(s.startsWith("router.")){
+      if (s.startsWith("router.")) {
         map.put(s.substring(7), props.get(s));
       }
     }
-    Object o = props.get("router");
-    if (o instanceof String) {
-      map.put("name", o);
-    } else if (map.get("name") == null) {
+    if (map.get("name") == null)  {
       map.put("name", DEFAULT_NAME);
     }
-    return  map;
+    return map;
   }
 
   // currently just an implementation detail...

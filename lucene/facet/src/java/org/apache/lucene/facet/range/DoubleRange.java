@@ -32,7 +32,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.LegacyNumericUtils;
+import org.apache.lucene.util.NumericUtils;
 
 /** Represents a range over double values.
  *
@@ -49,7 +49,7 @@ public final class DoubleRange extends Range {
     super(label);
 
     // TODO: if DoubleDocValuesField used
-    // LegacyNumericUtils.doubleToSortableLong format (instead of
+    // NumericUtils.doubleToSortableLong format (instead of
     // Double.doubleToRawLongBits) we could do comparisons
     // in long space 
 
@@ -83,8 +83,8 @@ public final class DoubleRange extends Range {
 
   LongRange toLongRange() {
     return new LongRange(label,
-                         LegacyNumericUtils.doubleToSortableLong(min), true,
-                         LegacyNumericUtils.doubleToSortableLong(max), true);
+                         NumericUtils.doubleToSortableLong(min), true,
+                         NumericUtils.doubleToSortableLong(max), true);
   }
 
   @Override
@@ -104,19 +104,20 @@ public final class DoubleRange extends Range {
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
-        return false;
-      }
-      ValueSourceQuery other = (ValueSourceQuery) obj;
-      return range.equals(other.range)
-          && Objects.equals(fastMatchQuery, other.fastMatchQuery)
-          && valueSource.equals(other.valueSource);
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+
+    private boolean equalsTo(ValueSourceQuery other) {
+      return range.equals(other.range) && 
+             Objects.equals(fastMatchQuery, other.fastMatchQuery) && 
+             valueSource.equals(other.valueSource);
     }
 
     @Override
     public int hashCode() {
-      return 31 * Objects.hash(range, fastMatchQuery, valueSource) + super.hashCode();
+      return classHash() + 31 * Objects.hash(range, fastMatchQuery, valueSource);
     }
 
     @Override
@@ -136,12 +137,12 @@ public final class DoubleRange extends Range {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
       final Weight fastMatchWeight = fastMatchQuery == null
           ? null
-          : searcher.createWeight(fastMatchQuery, false);
+          : searcher.createWeight(fastMatchQuery, false, 1f);
 
-      return new ConstantScoreWeight(this) {
+      return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           final int maxDoc = context.reader().maxDoc();

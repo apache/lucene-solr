@@ -25,6 +25,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
@@ -43,6 +44,11 @@ import org.junit.Test;
 @Slow
 @SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
+  
+  //if adding documents to this test, adjust me.
+  private static final int MAX_DOC_ID=16;
+  private static final int MIN_DOC_ID_WITH_EVERYOTHER=0;
+  private static final int MAX_DOC_ID_WITH_EVERYOTHER=15;
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-spellcheckcomponent.xml", "schema.xml");
@@ -558,11 +564,13 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     // (we have to be kind of flexible with our definition of "decent"
     // since we're dealing with a fairly small index here)
     for (int val = 5; val <= 20; val++) {
+      int max = MAX_DOC_ID * val / (val + MIN_DOC_ID_WITH_EVERYOTHER + 1);
+      int min = MAX_DOC_ID * val / (val + MAX_DOC_ID_WITH_EVERYOTHER + 1);
       assertQ(req(reusedParams,
                   CommonParams.Q, "teststop:everother",
                   SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, ""+val)
               , xpathPrefix + "str[@name='collationQuery']='teststop:everyother'"
-              , xpathPrefix + "int[@name='hits' and 6 <= . and . <= 10]"        
+              , xpathPrefix + "int[@name='hits' and " + min + " <= . and . <= " + max + "]"
               );
     }
 
@@ -593,6 +601,35 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     NamedList collationList = (NamedList) spellCheck.get("collations");
     List<?> collations = (List<?>) collationList.getAll("collation");
     assertTrue(collations.size() == 2);
+  }
+  @Test
+  public void testWithCursorMark() throws Exception
+  {
+    SolrCore core = h.getCore();
+    SearchComponent speller = core.getSearchComponent("spellcheck");
+    assertTrue("speller is null and it shouldn't be", speller != null);
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();   
+    params.add(SpellCheckComponent.COMPONENT_NAME, "true");
+    params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
+    params.add(SpellCheckComponent.SPELLCHECK_COUNT, "10");   
+    params.add(SpellCheckComponent.SPELLCHECK_COLLATE, "true");
+    params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "2");
+    params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1");
+    params.add(CommonParams.Q, "lowerfilt:(+fauth)");
+    params.add(CommonParams.SORT, "id asc");
+    params.add(CursorMarkParams.CURSOR_MARK_PARAM, CursorMarkParams.CURSOR_MARK_START);
+    SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.addResponseHeader(new SimpleOrderedMap());
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+    handler.handleRequest(req, rsp);
+    req.close();
+    NamedList values = rsp.getValues();
+    NamedList spellCheck = (NamedList) values.get("spellcheck");
+    NamedList collationList = (NamedList) spellCheck.get("collations");
+    List<?> collations = (List<?>) collationList.getAll("collation");
+    assertTrue(collations.size() == 1);
   }
   
 }

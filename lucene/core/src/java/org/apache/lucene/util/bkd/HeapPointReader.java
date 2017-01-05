@@ -16,25 +16,29 @@
  */
 package org.apache.lucene.util.bkd;
 
-
 import java.util.List;
 
-import org.apache.lucene.util.PagedBytes;
-
-final class HeapPointReader implements PointReader {
+/** Utility class to read buffered points from in-heap arrays.
+ *
+ * @lucene.internal */
+public final class HeapPointReader extends PointReader {
   private int curRead;
   final List<byte[]> blocks;
   final int valuesPerBlock;
   final int packedBytesLength;
-  final long[] ords;
+  final long[] ordsLong;
+  final int[] ords;
   final int[] docIDs;
   final int end;
   final byte[] scratch;
+  final boolean singleValuePerDoc;
 
-  HeapPointReader(List<byte[]> blocks, int valuesPerBlock, int packedBytesLength, long[] ords, int[] docIDs, int start, int end) {
+  public HeapPointReader(List<byte[]> blocks, int valuesPerBlock, int packedBytesLength, int[] ords, long[] ordsLong, int[] docIDs, int start, int end, boolean singleValuePerDoc) {
     this.blocks = blocks;
     this.valuesPerBlock = valuesPerBlock;
+    this.singleValuePerDoc = singleValuePerDoc;
     this.ords = ords;
+    this.ordsLong = ordsLong;
     this.docIDs = docIDs;
     curRead = start-1;
     this.end = end;
@@ -76,7 +80,13 @@ final class HeapPointReader implements PointReader {
 
   @Override
   public long ord() {
-    return ords[curRead];
+    if (singleValuePerDoc) {
+      return docIDs[curRead];
+    } else if (ordsLong != null) {
+      return ordsLong[curRead];
+    } else {
+      return ords[curRead];
+    }
   }
 
   @Override

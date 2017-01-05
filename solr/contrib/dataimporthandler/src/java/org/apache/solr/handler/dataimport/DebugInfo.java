@@ -17,7 +17,6 @@
 package org.apache.solr.handler.dataimport;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 

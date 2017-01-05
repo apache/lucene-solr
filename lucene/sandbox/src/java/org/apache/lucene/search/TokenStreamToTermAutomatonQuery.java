@@ -24,8 +24,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.RollingBuffer;
-import org.apache.lucene.util.automaton.Automaton;
 
 /** Consumes a TokenStream and creates an {@link TermAutomatonQuery}
  *  where the transition labels are tokens from the {@link

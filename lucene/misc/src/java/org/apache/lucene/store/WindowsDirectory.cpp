@@ -67,7 +67,7 @@ JNIEXPORT jlong JNICALL Java_org_apache_lucene_store_WindowsDirectory_open
   HANDLE handle;
   
   if (filename == NULL) {
-    throwException(env, "java/lang/NullPointerException", "filename cannot be null");
+    throwException(env, "java/lang/NullPointerException", "filename must not be null");
     return -1;
   }
   
@@ -109,7 +109,7 @@ JNIEXPORT jint JNICALL Java_org_apache_lucene_store_WindowsDirectory_read
   io.OffsetHigh = (DWORD) ((pos >> 0x20) & 0x7FFFFFFF);
   
   if (bytes == NULL) {
-    throwException(env, "java/lang/NullPointerException", "bytes cannot be null");
+    throwException(env, "java/lang/NullPointerException", "bytes must not be null");
     return -1;
   }
   

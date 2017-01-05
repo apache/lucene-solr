@@ -20,31 +20,23 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
-import com.google.common.collect.ImmutableSet;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.CommandOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singleton;
-import static org.apache.solr.common.util.Utils.fromJSONResource;
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
 import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
 import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.util.Utils.getDeepCopy;
 
 
 public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, ConfigEditablePlugin {
@@ -120,21 +112,27 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
     loopPermissions:
     for (int i = 0; i < permissions.size(); i++) {
       Permission permission = permissions.get(i);
-      if (permission.method != null && !permission.method.contains(context.getHttpMethod())) {
-        //this permissions HTTP method does not match this rule. try other rules
-        continue;
-      }
-      if(permission.predicate != null){
-        if(!permission.predicate.test(context)) continue ;
-      }
-
-      if (permission.params != null) {
-        for (Map.Entry<String, Object> e : permission.params.entrySet()) {
-          String paramVal = context.getParams().get(e.getKey());
-          Object val = e.getValue();
-          if (val instanceof List) {
-            if (!((List) val).contains(paramVal)) continue loopPermissions;
-          } else if (!Objects.equals(val, paramVal)) continue loopPermissions;
+      if (PermissionNameProvider.values.containsKey(permission.name)) {
+        if (context.getHandler() instanceof PermissionNameProvider) {
+          PermissionNameProvider handler = (PermissionNameProvider) context.getHandler();
+          PermissionNameProvider.Name permissionName = handler.getPermissionName(context);
+          if (permissionName == null || !permission.name.equals(permissionName.name)) {
+            continue;
+          }
+        } else {
+          //all is special. it can match any
+          if(permission.wellknownName != PermissionNameProvider.Name.ALL) continue;
+        }
+      } else {
+        if (permission.method != null && !permission.method.contains(context.getHttpMethod())) {
+          //this permissions HTTP method does not match this rule. try other rules
+          continue;
+        }
+        if (permission.params != null) {
+          for (Map.Entry<String, Function<String[], Boolean>> e : permission.params.entrySet()) {
+            String[] paramVal = context.getParams().getParams(e.getKey());
+            if(!e.getValue().apply(paramVal)) continue loopPermissions;
+          }
         }
       }
 
@@ -169,7 +167,7 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
     for (Object o : map.entrySet()) {
       Map.Entry e = (Map.Entry) o;
       String roleName = (String) e.getKey();
-      usersVsRoles.put(roleName, readValueAsSet(map, roleName));
+      usersVsRoles.put(roleName, Permission.readValueAsSet(map, roleName));
     }
     List<Map> perms = getListValue(initInfo, "permissions");
     for (Map o : perms) {
@@ -198,73 +196,9 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
     }
   }
 
-  /**
-   * read a key value as a set. if the value is a single string ,
-   * return a singleton set
-   *
-   * @param m   the map from which to lookup
-   * @param key the key with which to do lookup
-   */
-  static Set<String> readValueAsSet(Map m, String key) {
-    Set<String> result = new HashSet<>();
-    Object val = m.get(key);
-    if (val == null) {
-      if("collection".equals(key)){
-        //for collection collection: null means a core admin/ collection admin request
-        // otherwise it means a request where collection name is ignored
-        return m.containsKey(key) ? singleton(null) : singleton("*");
-      }
-      return null;
-    }
-    if (val instanceof Collection) {
-      Collection list = (Collection) val;
-      for (Object o : list) result.add(String.valueOf(o));
-    } else if (val instanceof String) {
-      result.add((String) val);
-    } else {
-      throw new RuntimeException("Bad value for : " + key);
-    }
-    return result.isEmpty() ? null : Collections.unmodifiableSet(result);
-  }
 
   @Override
   public void close() throws IOException { }
-
-  static class Permission {
-    String name;
-    Set<String> path, role, collections, method;
-    Map<String, Object> params;
-    Predicate<AuthorizationContext> predicate;
-
-    private Permission() {
-    }
-
-    static Permission load(Map m) {
-      Permission p = new Permission();
-      String name = (String) m.get(NAME);
-      if (!m.containsKey("role")) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "role not specified");
-      p.role = readValueAsSet(m, "role");
-      if (well_known_permissions.containsKey(name)) {
-        HashSet<String> disAllowed = new HashSet<>(knownKeys);
-        disAllowed.remove("role");//these are the only
-        disAllowed.remove(NAME);//allowed keys for well-known permissions
-        for (String s : disAllowed) {
-          if (m.containsKey(s))
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, s + " is not a valid key for the permission : " + name);
-        }
-        p.predicate = (Predicate<AuthorizationContext>) ((Map) well_known_permissions.get(name)).get(Predicate.class.getName());
-        m = well_known_permissions.get(name);
-      }
-      p.name = name;
-      p.path = readSetSmart(name, m, "path");
-      p.collections = readSetSmart(name, m, "collection");
-      p.method = readSetSmart(name, m, "method");
-      p.params = (Map<String, Object>) m.get("params");
-      return p;
-    }
-
-    static final Set<String> knownKeys = ImmutableSet.of("collection", "role", "params", "path", "method", NAME);
-  }
 
   enum MatchStatus {
     USER_REQUIRED(AuthorizationResponse.PROMPT),
@@ -279,33 +213,12 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
     }
   }
 
-  /**
-   * This checks for the defaults available other rules for the keys
-   */
-  private static Set<String> readSetSmart(String permissionName, Map m, String key) {
-    Set<String> set = readValueAsSet(m, key);
-    if (set == null && well_known_permissions.containsKey(permissionName)) {
-      set = readValueAsSet((Map) well_known_permissions.get(permissionName), key);
-    }
-    if ("method".equals(key)) {
-      if (set != null) {
-        for (String s : set) if (!HTTP_METHODS.contains(s)) return null;
-      }
-      return set;
-    }
-    return set == null ? singleton(null) : set;
-  }
+
 
   @Override
   public Map<String, Object> edit(Map<String, Object> latestConf, List<CommandOperation> commands) {
     for (CommandOperation op : commands) {
-      OPERATION operation = null;
-      for (OPERATION o : OPERATION.values()) {
-        if (o.name.equals(op.name)) {
-          operation = o;
-          break;
-        }
-      }
+      AutorizationEditOperation operation = ops.get(op.name);
       if (operation == null) {
         op.unknownOperation();
         return null;
@@ -317,152 +230,6 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
     return latestConf;
   }
 
-  enum OPERATION {
-    SET_USER_ROLE("set-user-role") {
-      @Override
-      public Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op) {
-        Map<String, Object> roleMap = getMapValue(latestConf, "user-role");
-        Map<String, Object> map = op.getDataMap();
-        if (op.hasError()) return null;
-        for (Map.Entry<String, Object> e : map.entrySet()) {
-          if (e.getValue() == null) {
-            roleMap.remove(e.getKey());
-            continue;
-          }
-          if (e.getValue() instanceof String || e.getValue() instanceof List) {
-            roleMap.put(e.getKey(), e.getValue());
-          } else {
-            op.addError("Unexpected value ");
-            return null;
-          }
-        }
-        return latestConf;
-      }
-    },
-    SET_PERMISSION("set-permission") {
-      @Override
-      public Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op) {
-        String name = op.getStr(NAME);
-        Map<String, Object> dataMap = op.getDataMap();
-        if (op.hasError()) return null;
-        dataMap = getDeepCopy(dataMap, 3);
-        String before = (String) dataMap.remove("before");
-        for (String key : dataMap.keySet()) {
-          if (!Permission.knownKeys.contains(key)) op.addError("Unknown key, " + key);
-        }
-        try {
-          Permission.load(dataMap);
-        } catch (Exception e) {
-          op.addError(e.getMessage());
-          return null;
-        }
-        List<Map> permissions = getListValue(latestConf, "permissions");
-        List<Map> permissionsCopy = new ArrayList<>();
-        boolean added = false;
-        for (Map e : permissions) {
-          Object n = e.get(NAME);
-          if (n.equals(before) || n.equals(name)) {
-            added = true;
-            permissionsCopy.add(dataMap);
-          }
-          if (!n.equals(name)) permissionsCopy.add(e);
-        }
-        if (!added && before != null) {
-          op.addError("Invalid 'before' :" + before);
-          return null;
-        }
-        if (!added) permissionsCopy.add(dataMap);
-        latestConf.put("permissions", permissionsCopy);
-        return latestConf;
-      }
-    },
-    UPDATE_PERMISSION("update-permission") {
-      @Override
-      public Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op) {
-        String name = op.getStr(NAME);
-        if (op.hasError()) return null;
-        for (Map permission : (List<Map>) getListValue(latestConf, "permissions")) {
-          if (name.equals(permission.get(NAME))) {
-            LinkedHashMap copy = new LinkedHashMap<>(permission);
-            copy.putAll(op.getDataMap());
-            op.setCommandData(copy);
-            return SET_PERMISSION.edit(latestConf, op);
-          }
-        }
-        op.addError("No such permission " + name);
-        return null;
-      }
-    },
-    DELETE_PERMISSION("delete-permission") {
-      @Override
-      public Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op) {
-        List<String> names = op.getStrs("");
-        if (names == null || names.isEmpty()) {
-          op.addError("Invalid command");
-          return null;
-        }
-        names = new ArrayList<>(names);
-        List<Map> copy = new ArrayList<>();
-        List<Map> p = getListValue(latestConf, "permissions");
-        for (Map map : p) {
-          Object n = map.get(NAME);
-          if (names.contains(n)) {
-            names.remove(n);
-            continue;
-          } else {
-            copy.add(map);
-          }
-        }
-        if (!names.isEmpty()) {
-          op.addError("Unknown permission name(s) " + names);
-          return null;
-        }
-        latestConf.put("permissions", copy);
-        return latestConf;
-      }
-    };
-
-    public abstract Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op);
-
-    public final String name;
-
-    OPERATION(String s) {
-      this.name = s;
-    }
-
-    public static OPERATION get(String name) {
-      for (OPERATION o : values()) if (o.name.equals(name)) return o;
-      return null;
-    }
-  }
-
-  public static final Set<String> HTTP_METHODS = ImmutableSet.of("GET", "POST", "DELETE", "PUT", "HEAD");
-
-  private static final Map<String, Map<String,Object>>  well_known_permissions =
-      (Map<String, Map<String, Object>>) fromJSONResource("WellKnownPermissions.json");
-
-  static {
-    ((Map) well_known_permissions.get("collection-admin-edit")).put(Predicate.class.getName(), getCollectionActionPredicate(true));
-    ((Map) well_known_permissions.get("collection-admin-read")).put(Predicate.class.getName(), getCollectionActionPredicate(false));
-  }
-
-  private static Predicate<AuthorizationContext> getCollectionActionPredicate(final boolean isEdit) {
-    return new Predicate<AuthorizationContext>() {
-      @Override
-      public boolean test(AuthorizationContext context) {
-        String action = context.getParams().get("action");
-        if (action == null) return false;
-        CollectionParams.CollectionAction collectionAction = CollectionParams.CollectionAction.get(action);
-        if (collectionAction == null) return false;
-        return isEdit ? collectionAction.isWrite : !collectionAction.isWrite;
-      }
-    };
-  }
-
-
-  public static void main(String[] args) {
-    System.out.println(Utils.toJSONString(well_known_permissions));
-
-  }
+  private static final Map<String, AutorizationEditOperation> ops = unmodifiableMap(asList(AutorizationEditOperation.values()).stream().collect(toMap(AutorizationEditOperation::getOperationName, identity())));
 
 }

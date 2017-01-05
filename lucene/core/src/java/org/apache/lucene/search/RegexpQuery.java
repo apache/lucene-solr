@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.AutomatonProvider;
 import org.apache.lucene.util.automaton.Operations;
@@ -109,7 +108,12 @@ public class RegexpQuery extends AutomatonQuery {
           new RegExp(term.text(), flags).toAutomaton(
                        provider, maxDeterminizedStates), maxDeterminizedStates);
   }
-  
+
+  /** Returns the regexp of this query wrapped in a Term. */
+  public Term getRegexp() {
+    return term;
+  }
+
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {

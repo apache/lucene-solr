@@ -15,11 +15,18 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+import java.io.ByteArrayInputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.core.CloseHook;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -28,23 +35,40 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 
-import java.io.ByteArrayInputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.TimeUnit;
-
 /** Keeps a ManagedIndexSchema up-to-date when changes are made to the serialized managed schema in ZooKeeper */
 public class ZkIndexSchemaReader implements OnReconnect {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final ManagedIndexSchemaFactory managedIndexSchemaFactory;
   private SolrZkClient zkClient;
   private String managedSchemaPath;
+  private final String uniqueCoreId; // used in equals impl to uniquely identify the core that we're dependent on
+  private boolean isRemoved = false;
 
-  public ZkIndexSchemaReader(ManagedIndexSchemaFactory managedIndexSchemaFactory) {
+  public ZkIndexSchemaReader(ManagedIndexSchemaFactory managedIndexSchemaFactory, SolrCore solrCore) {
     this.managedIndexSchemaFactory = managedIndexSchemaFactory;
     ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)managedIndexSchemaFactory.getResourceLoader();
     this.zkClient = zkLoader.getZkController().getZkClient();
-    managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedIndexSchemaFactory.getManagedSchemaResourceName();
+    this.managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedIndexSchemaFactory.getManagedSchemaResourceName();
+    this.uniqueCoreId = solrCore.getName()+":"+solrCore.getStartNanoTime();
+
+    // register a CloseHook for the core this reader is linked to, so that we can de-register the listener
+    solrCore.addCloseHook(new CloseHook() {
+      @Override
+      public void preClose(SolrCore core) {
+        CoreContainer cc = core.getCoreDescriptor().getCoreContainer();
+        if (cc.isZooKeeperAware()) {
+          log.debug("Removing ZkIndexSchemaReader OnReconnect listener as core "+core.getName()+" is shutting down.");
+          ZkIndexSchemaReader.this.isRemoved = true;
+          cc.getZkController().removeOnReconnectListener(ZkIndexSchemaReader.this);
+        }
+      }
+
+      @Override
+      public void postClose(SolrCore core) {}
+    });
+
     createSchemaWatcher();
+
     zkLoader.getZkController().addOnReconnectListener(this);
   }
 
@@ -59,6 +83,11 @@ public class ZkIndexSchemaReader implements OnReconnect {
       zkClient.exists(managedSchemaPath, new Watcher() {
         @Override
         public void process(WatchedEvent event) {
+
+          if (ZkIndexSchemaReader.this.isRemoved) {
+            return; // the core for this reader has already been removed, don't process this event
+          }
+
           // session events are not change events, and do not remove the watcher
           if (Event.EventType.None.equals(event.getType())) {
             return;
@@ -134,5 +163,28 @@ public class ZkIndexSchemaReader implements OnReconnect {
     } catch (Exception exc) {
       log.error("Failed to update managed-schema watcher after session expiration due to: "+exc, exc);
     }
+  }
+
+  public String getUniqueCoreId() {
+    return uniqueCoreId;
+  }
+
+  public String toString() {
+    return "ZkIndexSchemaReader: "+managedSchemaPath+", uniqueCoreId: "+uniqueCoreId;
+  }
+
+  public int hashCode() {
+    return managedSchemaPath.hashCode()+uniqueCoreId.hashCode();
+  }
+
+  // We need the uniqueCoreId which is core name + start time nanos to be the tie breaker
+  // as there can be multiple ZkIndexSchemaReader instances active for the same core after
+  // a reload (one is initializing and the other is being shutdown)
+  public boolean equals(Object other) {
+    if (other == null) return false;
+    if (other == this) return true;
+    if (!(other instanceof ZkIndexSchemaReader)) return false;
+    ZkIndexSchemaReader that = (ZkIndexSchemaReader)other;
+    return this.managedSchemaPath.equals(that.managedSchemaPath) && this.uniqueCoreId.equals(that.uniqueCoreId);
   }
 }

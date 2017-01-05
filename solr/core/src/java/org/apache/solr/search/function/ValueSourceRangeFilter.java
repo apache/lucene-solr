@@ -48,8 +48,10 @@ public class ValueSourceRangeFilter extends SolrFilter {
     this.valueSource = valueSource;
     this.lowerVal = lowerVal;
     this.upperVal = upperVal;
-    this.includeLower = lowerVal != null && includeLower;
-    this.includeUpper = upperVal != null && includeUpper;
+    this.includeLower = includeLower;
+    this.includeUpper = includeUpper;
+//    this.includeLower = lowerVal != null && includeLower;
+//    this.includeUpper = upperVal != null && includeUpper;
   }
 
   public ValueSource getValueSource() {
@@ -78,7 +80,7 @@ public class ValueSourceRangeFilter extends SolrFilter {
      return BitsFilteredDocIdSet.wrap(new DocIdSet() {
        @Override
        public DocIdSetIterator iterator() throws IOException {
-         Scorer scorer = valueSource.getValues(context, readerContext).getRangeScorer(readerContext.reader(), lowerVal, upperVal, includeLower, includeUpper);
+         Scorer scorer = valueSource.getValues(context, readerContext).getRangeScorer(readerContext, lowerVal, upperVal, includeLower, includeUpper);
          return scorer == null ? null : scorer.iterator();
        }
        @Override

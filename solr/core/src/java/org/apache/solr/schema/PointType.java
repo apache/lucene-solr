@@ -21,8 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
@@ -30,13 +29,14 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SpatialOptions;
+import org.apache.solr.uninverting.UninvertingReader.Type;
+import org.locationtech.spatial4j.distance.DistanceUtils;
 
 /**
  * A point type that indexes a point in an n-dimensional space as separate fields and supports range queries.
@@ -82,9 +82,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
 
     if (field.stored()) {
       String storedVal = externalVal;  // normalize or not?
-      FieldType customType = new FieldType();
-      customType.setStored(true);
-      f.add(createField(field.getName(), storedVal, customType, 1f));
+      f.add(createField(field.getName(), storedVal, StoredField.TYPE, 1f));
     }
     
     return f;
@@ -137,7 +135,6 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     String[] p2 = parseCommaSeparatedList(part2, dimension);
 
     BooleanQuery.Builder result = new BooleanQuery.Builder();
-    result.setDisableCoord(true);
     for (int i = 0; i < dimension; i++) {
       SchemaField subSF = subField(field, i, schema);
       // points must currently be ordered... should we support specifying any two opposite corner points?
@@ -151,7 +148,6 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     String[] p1 = parseCommaSeparatedList(externalVal, dimension);
     //TODO: should we assert that p1.length == dimension?
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
     for (int i = 0; i < dimension; i++) {
       SchemaField sf = subField(field, i, schema);
       Query tq = sf.getType().getFieldQuery(parser, sf, p1[i]);

@@ -16,7 +16,9 @@
  */
 package org.apache.lucene.queries.function.docvalues;
 
-import org.apache.lucene.index.IndexReader;
+import java.io.IOException;
+
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
@@ -35,50 +37,50 @@ public abstract class IntDocValues extends FunctionValues {
   }
 
   @Override
-  public byte byteVal(int doc) {
+  public byte byteVal(int doc) throws IOException {
     return (byte)intVal(doc);
   }
 
   @Override
-  public short shortVal(int doc) {
+  public short shortVal(int doc) throws IOException {
     return (short)intVal(doc);
   }
 
   @Override
-  public float floatVal(int doc) {
+  public float floatVal(int doc) throws IOException {
     return (float)intVal(doc);
   }
 
   @Override
-  public abstract int intVal(int doc);
+  public abstract int intVal(int doc) throws IOException;
 
   @Override
-  public long longVal(int doc) {
+  public long longVal(int doc) throws IOException {
     return (long)intVal(doc);
   }
 
   @Override
-  public double doubleVal(int doc) {
+  public double doubleVal(int doc) throws IOException {
     return (double)intVal(doc);
   }
 
   @Override
-  public String strVal(int doc) {
+  public String strVal(int doc) throws IOException {
     return Integer.toString(intVal(doc));
   }
 
   @Override
-  public Object objectVal(int doc) {
+  public Object objectVal(int doc) throws IOException {
     return exists(doc) ? intVal(doc) : null;
   }
 
   @Override
-  public String toString(int doc) {
+  public String toString(int doc) throws IOException {
     return vs.description() + '=' + strVal(doc);
   }
   
   @Override
-  public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
+  public ValueSourceScorer getRangeScorer(LeafReaderContext readerContext, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
     int lower,upper;
 
     // instead of using separate comparison functions, adjust the endpoints.
@@ -100,12 +102,11 @@ public abstract class IntDocValues extends FunctionValues {
     final int ll = lower;
     final int uu = upper;
 
-    return new ValueSourceScorer(reader, this) {
+    return new ValueSourceScorer(readerContext, this) {
       @Override
-      public boolean matches(int doc) {
+      public boolean matches(int doc) throws IOException {
+        if (!exists(doc)) return false;
         int val = intVal(doc);
-        // only check for deleted if it's the default value
-        // if (val==0 && reader.isDeleted(doc)) return false;
         return val >= ll && val <= uu;
       }
     };
@@ -122,7 +123,7 @@ public abstract class IntDocValues extends FunctionValues {
       }
 
       @Override
-      public void fillValue(int doc) {
+      public void fillValue(int doc) throws IOException {
         mval.value = intVal(doc);
         mval.exists = exists(doc);
       }

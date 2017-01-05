@@ -57,9 +57,6 @@ public class ClusterStatus {
   @SuppressWarnings("unchecked")
   public  void getClusterStatus(NamedList results)
       throws KeeperException, InterruptedException {
-    zkStateReader.updateClusterState();
-
-
     // read aliases
     Aliases aliases = zkStateReader.getAliases();
     Map<String, List<String>> collectionVsAliases = new HashMap<>();
@@ -92,20 +89,30 @@ public class ClusterStatus {
     byte[] bytes = Utils.toJSON(clusterState);
     Map<String, Object> stateMap = (Map<String,Object>) Utils.fromJSON(bytes);
 
-    Set<String> collections = new HashSet<>();
     String routeKey = message.getStr(ShardParams._ROUTE_);
     String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
+
+    Map<String, DocCollection> collectionsMap = null;
     if (collection == null) {
-      collections = new HashSet<>(clusterState.getCollections());
+      collectionsMap = clusterState.getCollectionsMap();
     } else  {
-      collections = Collections.singleton(collection);
+      collectionsMap = Collections.singletonMap(collection, clusterState.getCollectionOrNull(collection));
     }
 
-    NamedList<Object> collectionProps = new SimpleOrderedMap<Object>();
+    NamedList<Object> collectionProps = new SimpleOrderedMap<>();
 
-    for (String name : collections) {
-      Map<String, Object> collectionStatus = null;
-      DocCollection clusterStateCollection = clusterState.getCollection(name);
+    for (Map.Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
+      Map<String, Object> collectionStatus;
+      String name = entry.getKey();
+      DocCollection clusterStateCollection = entry.getValue();
+      if (clusterStateCollection == null) {
+        if (collection != null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
+        } else {
+          //collection might have got deleted at the same time
+          continue;
+        }
+      }
 
       Set<String> requestedShards = new HashSet<>();
       if (routeKey != null) {
@@ -145,7 +152,7 @@ public class ClusterStatus {
     clusterStatus.add("collections", collectionProps);
 
     // read cluster properties
-    Map clusterProps = zkStateReader.getClusterProps();
+    Map clusterProps = zkStateReader.getClusterProperties();
     if (clusterProps != null && !clusterProps.isEmpty())  {
       clusterStatus.add("properties", clusterProps);
     }

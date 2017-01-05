@@ -20,13 +20,11 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
 
@@ -97,29 +95,47 @@ public class EnumFieldSource extends FieldCacheSource {
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
-    final Bits valid = DocValues.getDocsWithField(readerContext.reader(), field);
 
     return new IntDocValues(this) {
       final MutableValueInt val = new MutableValueInt();
 
-      @Override
-      public int intVal(int doc) {
-        return (int) arr.get(doc);
+      int lastDocID;
+
+      private int getValueForDoc(int doc) throws IOException {
+        if (doc < lastDocID) {
+          throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + doc);
+        }
+        lastDocID = doc;
+        int curDocID = arr.docID();
+        if (doc > curDocID) {
+          curDocID = arr.advance(doc);
+        }
+        if (doc == curDocID) {
+          return (int) arr.longValue();
+        } else {
+          return 0;
+        }
       }
 
       @Override
-      public String strVal(int doc) {
+      public int intVal(int doc) throws IOException {
+        return getValueForDoc(doc);
+      }
+
+      @Override
+      public String strVal(int doc) throws IOException {
         Integer intValue = intVal(doc);
         return intValueToStringValue(intValue);
       }
 
       @Override
-      public boolean exists(int doc) {
-        return valid.get(doc);
+      public boolean exists(int doc) throws IOException {
+        getValueForDoc(doc);
+        return arr.docID() == doc;
       }
 
       @Override
-      public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
+      public ValueSourceScorer getRangeScorer(LeafReaderContext readerContext, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
         Integer lower = stringValueToIntValue(lowerVal);
         Integer upper = stringValueToIntValue(upperVal);
 
@@ -140,12 +156,11 @@ public class EnumFieldSource extends FieldCacheSource {
         final int ll = lower;
         final int uu = upper;
 
-        return new ValueSourceScorer(reader, this) {
+        return new ValueSourceScorer(readerContext, this) {
           @Override
-          public boolean matches(int doc) {
+          public boolean matches(int doc) throws IOException {
+            if (!exists(doc)) return false;
             int val = intVal(doc);
-            // only check for deleted if it's the default value
-            // if (val==0 && reader.isDeleted(doc)) return false;
             return val >= ll && val <= uu;
           }
         };
@@ -162,9 +177,9 @@ public class EnumFieldSource extends FieldCacheSource {
           }
 
           @Override
-          public void fillValue(int doc) {
+          public void fillValue(int doc) throws IOException {
             mval.value = intVal(doc);
-            mval.exists = valid.get(doc);
+            mval.exists = arr.docID() == doc;
           }
         };
       }

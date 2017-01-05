@@ -22,7 +22,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 public class TestNoMergePolicy extends BaseMergePolicyTestCase {

@@ -42,7 +42,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -85,7 +84,7 @@ public class TestPayloads extends LuceneTestCase {
     // flush
     writer.close();
 
-    SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
+    LeafReader reader = getOnlyLeafReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
     assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").hasPayloads());
     assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").hasPayloads());
@@ -112,7 +111,7 @@ public class TestPayloads extends LuceneTestCase {
     // flush
     writer.close();
 
-    reader = getOnlySegmentReader(DirectoryReader.open(ram));
+    reader = getOnlyLeafReader(DirectoryReader.open(ram));
     fi = reader.getFieldInfos();
     assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").hasPayloads());
     assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").hasPayloads());
@@ -603,8 +602,9 @@ public class TestPayloads extends LuceneTestCase {
     field.setTokenStream(ts);
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
-    LeafReader sr = SlowCompositeReaderWrapper.wrap(reader);
-    PostingsEnum de = sr.postings(new Term("field", "withPayload"), PostingsEnum.PAYLOADS);
+    TermsEnum te = MultiFields.getFields(reader).terms("field").iterator();
+    assertTrue(te.seekExact(new BytesRef("withPayload")));
+    PostingsEnum de = te.postings(null, PostingsEnum.PAYLOADS);
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());
@@ -637,7 +637,7 @@ public class TestPayloads extends LuceneTestCase {
     doc.add(field3);
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
-    SegmentReader sr = getOnlySegmentReader(reader);
+    LeafReader sr = getOnlyLeafReader(reader);
     PostingsEnum de = sr.postings(new Term("field", "withPayload"), PostingsEnum.PAYLOADS);
     de.nextDoc();
     de.nextPosition();

@@ -117,7 +117,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   }
 
   @Override
-  public SearchGroupsFieldCommandResult result() {
+  public SearchGroupsFieldCommandResult result() throws IOException {
     final Collection<SearchGroup<BytesRef>> topGroups;
     if (firstPassGroupingCollector != null) {
       if (field.getType().getNumericType() != null) {

@@ -33,6 +33,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.Counter;
@@ -171,14 +172,13 @@ class DocumentsWriterPerThread {
     this.pendingNumDocs = pendingNumDocs;
     bytesUsed = Counter.newCounter();
     byteBlockAllocator = new DirectTrackingAllocator(bytesUsed);
-    pendingUpdates = new BufferedUpdates();
+    pendingUpdates = new BufferedUpdates(segmentName);
     intBlockAllocator = new IntBlockAllocator(bytesUsed);
     this.deleteQueue = deleteQueue;
     assert numDocsInRAM == 0 : "num docs " + numDocsInRAM;
-    pendingUpdates.clear();
     deleteSlice = deleteQueue.newSlice();
    
-    segmentInfo = new SegmentInfo(directoryOrig, Version.LATEST, segmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
+    segmentInfo = new SegmentInfo(directoryOrig, Version.LATEST, segmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), indexWriterConfig.getIndexSort());
     assert numDocsInRAM == 0;
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segmentName + " delQueue=" + deleteQueue);  
@@ -210,7 +210,7 @@ class DocumentsWriterPerThread {
     }
   }
 
-  public void updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, Term delTerm) throws IOException, AbortingException {
+  public long updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, Term delTerm) throws IOException, AbortingException {
     testPoint("DocumentsWriterPerThread addDocument start");
     assert deleteQueue != null;
     reserveOneDoc();
@@ -241,10 +241,11 @@ class DocumentsWriterPerThread {
         numDocsInRAM++;
       }
     }
-    finishDocument(delTerm);
+
+    return finishDocument(delTerm);
   }
 
-  public int updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, Term delTerm) throws IOException, AbortingException {
+  public long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, Term delTerm) throws IOException, AbortingException {
     testPoint("DocumentsWriterPerThread addDocuments start");
     assert deleteQueue != null;
     docState.analyzer = analyzer;
@@ -278,18 +279,31 @@ class DocumentsWriterPerThread {
             numDocsInRAM++;
           }
         }
-        finishDocument(null);
+
+        numDocsInRAM++;
       }
       allDocsIndexed = true;
 
       // Apply delTerm only after all indexing has
       // succeeded, but apply it only to docs prior to when
       // this batch started:
+      long seqNo;
       if (delTerm != null) {
-        deleteQueue.add(delTerm, deleteSlice);
+        seqNo = deleteQueue.add(delTerm, deleteSlice);
         assert deleteSlice.isTailItem(delTerm) : "expected the delete term as the tail item";
         deleteSlice.apply(pendingUpdates, numDocsInRAM-docCount);
+        return seqNo;
+      } else {
+        seqNo = deleteQueue.updateSlice(deleteSlice);
+        if (seqNo < 0) {
+          seqNo = -seqNo;
+          deleteSlice.apply(pendingUpdates, numDocsInRAM-docCount);
+        } else {
+          deleteSlice.reset();
+        }
       }
+
+      return seqNo;
 
     } finally {
       if (!allDocsIndexed && !aborted) {
@@ -304,11 +318,9 @@ class DocumentsWriterPerThread {
       }
       docState.clear();
     }
-
-    return docCount;
   }
   
-  private void finishDocument(Term delTerm) {
+  private long finishDocument(Term delTerm) {
     /*
      * here we actually finish the document in two steps 1. push the delete into
      * the queue and update our slice. 2. increment the DWPT private document
@@ -318,11 +330,18 @@ class DocumentsWriterPerThread {
      * since we updated the slice the last time.
      */
     boolean applySlice = numDocsInRAM != 0;
+    long seqNo;
     if (delTerm != null) {
-      deleteQueue.add(delTerm, deleteSlice);
+      seqNo = deleteQueue.add(delTerm, deleteSlice);
       assert deleteSlice.isTailItem(delTerm) : "expected the delete term as the tail item";
     } else  {
-      applySlice &= deleteQueue.updateSlice(deleteSlice);
+      seqNo = deleteQueue.updateSlice(deleteSlice);
+      
+      if (seqNo < 0) {
+        seqNo = -seqNo;
+      } else {
+        applySlice = false;
+      }
     }
     
     if (applySlice) {
@@ -331,6 +350,8 @@ class DocumentsWriterPerThread {
       deleteSlice.reset();
     }
     ++numDocsInRAM;
+
+    return seqNo;
   }
 
   // Buffer a specific docID for deletion. Currently only
@@ -418,9 +439,9 @@ class DocumentsWriterPerThread {
     if (infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", "flush postings as segment " + flushState.segmentInfo.name + " numDocs=" + numDocsInRAM);
     }
-
+    final Sorter.DocMap sortMap;
     try {
-      consumer.flush(flushState);
+      sortMap = consumer.flush(flushState);
       pendingUpdates.terms.clear();
       segmentInfo.setFiles(new HashSet<>(directory.getCreatedFiles()));
 
@@ -457,7 +478,7 @@ class DocumentsWriterPerThread {
 
       FlushedSegment fs = new FlushedSegment(segmentInfoPerCommit, flushState.fieldInfos,
                                              segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush);
-      sealFlushedSegment(fs);
+      sealFlushedSegment(fs, sortMap);
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "flush time " + ((System.nanoTime() - t0)/1000000.0) + " msec");
       }
@@ -474,11 +495,23 @@ class DocumentsWriterPerThread {
   public Set<String> pendingFilesToDelete() {
     return filesToDelete;
   }
+
+  private MutableBits sortLiveDocs(Bits liveDocs, Sorter.DocMap sortMap) throws IOException {
+    assert liveDocs != null && sortMap != null;
+    MutableBits sortedLiveDocs = codec.liveDocsFormat().newLiveDocs(liveDocs.length());
+    for (int i = 0; i < liveDocs.length(); i++) {
+      if (liveDocs.get(i) == false) {
+        sortedLiveDocs.clear(sortMap.oldToNew(i));
+      }
+    }
+    return sortedLiveDocs;
+  }
+
   /**
    * Seals the {@link SegmentInfo} for the new flushed segment and persists
    * the deleted documents {@link MutableBits}.
    */
-  void sealFlushedSegment(FlushedSegment flushedSegment) throws IOException {
+  void sealFlushedSegment(FlushedSegment flushedSegment, Sorter.DocMap sortMap) throws IOException {
     assert flushedSegment != null;
 
     SegmentCommitInfo newSegment = flushedSegment.segmentInfo;
@@ -528,7 +561,13 @@ class DocumentsWriterPerThread {
           
         SegmentCommitInfo info = flushedSegment.segmentInfo;
         Codec codec = info.info.getCodec();
-        codec.liveDocsFormat().writeLiveDocs(flushedSegment.liveDocs, directory, info, delCount, context);
+        final MutableBits bits;
+        if (sortMap == null) {
+          bits = flushedSegment.liveDocs;
+        } else {
+          bits = sortLiveDocs(flushedSegment.liveDocs, sortMap);
+        }
+        codec.liveDocsFormat().writeLiveDocs(bits, directory, info, delCount, context);
         newSegment.setDelCount(delCount);
         newSegment.advanceDelGen();
       }

@@ -16,18 +16,18 @@
  */
 package org.apache.lucene.search;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
 
 /**
  * Like {@link DocValuesTermsQuery}, but this query only
@@ -46,11 +46,16 @@ import java.util.Set;
 public class DocValuesNumbersQuery extends Query {
 
   private final String field;
-  private final Set<Long> numbers;
+  private final LongHashSet numbers;
 
-  public DocValuesNumbersQuery(String field, Set<Long> numbers) {
+  public DocValuesNumbersQuery(String field, long[] numbers) {
     this.field = Objects.requireNonNull(field);
-    this.numbers = Objects.requireNonNull(numbers, "Set of numbers must not be null");
+    this.numbers = new LongHashSet(numbers);
+  }
+
+  public DocValuesNumbersQuery(String field, Collection<Long> numbers) {
+    this.field = Objects.requireNonNull(field);
+    this.numbers = new LongHashSet(numbers.stream().mapToLong(Long::longValue).toArray());
   }
 
   public DocValuesNumbersQuery(String field, Long... numbers) {
@@ -58,63 +63,63 @@ public class DocValuesNumbersQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (!super.equals(obj)) {
-      return false;
-    }
-    // super.equals ensures we are the same class:
-    DocValuesNumbersQuery that = (DocValuesNumbersQuery) obj;
-    if (!field.equals(that.field)) {
-      return false;
-    }
-    return numbers.equals(that.numbers);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(DocValuesNumbersQuery other) {
+    return field.equals(other.field) &&
+           numbers.equals(other.numbers);
   }
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + Objects.hash(field, numbers);
+    return 31 * classHash() + Objects.hash(field, numbers);
+  }
+
+  public String getField() {
+    return field;
+  }
+
+  public Set<Long> getNumbers() {
+    return numbers;
   }
 
   @Override
   public String toString(String defaultField) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(field).append(": [");
-    for (Long number : numbers) {
-      sb.append(number).append(", ");
-    }
-    if (numbers.size() > 0) {
-      sb.setLength(sb.length() - 2);
-    }
-    return sb.append(']').toString();
+    return new StringBuilder()
+        .append(field)
+        .append(": ")
+        .append(numbers.toString())
+        .toString();
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new RandomAccessWeight(this) {
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new ConstantScoreWeight(this, boost) {
 
       @Override
-      protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
-         final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
-         return new Bits() {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
+        return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(values) {
 
-           @Override
-           public boolean get(int doc) {
-             values.setDocument(doc);
-             int count = values.count();
-             for(int i=0;i<count;i++) {
-               if (numbers.contains(values.valueAt(i))) {
-                 return true;
-               }
-             }
-
-             return false;
+          @Override
+          public boolean matches() throws IOException {
+            int count = values.docValueCount();
+            for(int i=0;i<count;i++) {
+              if (numbers.contains(values.nextValue())) {
+                return true;
+              }
+            }
+            return false;
           }
 
           @Override
-          public int length() {
-            return context.reader().maxDoc();
+          public float matchCost() {
+            return 5; // lookup in the set
           }
-        };
+        });
       }
     };
   }

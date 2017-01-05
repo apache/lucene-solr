@@ -131,6 +131,19 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
     assertFalse(filter.incrementToken());
   }
 
+  // Test that we do not emit duplicated tokens when preserve original is on
+  public void testUnmodifiedLetters() throws Exception {
+    TokenStream stream = whitespaceMockTokenizer("§ ¦ ¤ END");
+    ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream, true);
+
+    CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
+    filter.reset();
+    assertNextTerms("§", "§", filter, termAtt);
+    assertNextTerms("¦", "¦", filter, termAtt);
+    assertNextTerms("¤", "¤", filter, termAtt);
+    assertNextTerms("END", "END", filter, termAtt);
+    assertFalse(filter.incrementToken());
+  }
 
   // The following Perl script generated the foldings[] array automatically
   // from ASCIIFoldingFilter.java:

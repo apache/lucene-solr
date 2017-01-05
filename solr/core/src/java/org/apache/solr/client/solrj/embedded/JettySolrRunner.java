@@ -35,16 +35,16 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
-import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.LowResourceMonitor;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -71,6 +71,10 @@ public class JettySolrRunner {
 
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final int THREAD_POOL_MAX_THREADS = 10000;
+  // NOTE: needs to be larger than SolrHttpClient.threadPoolSweeperMaxIdleTime
+  private static final int THREAD_POOL_MAX_IDLE_TIME_MS = 120000;
+  
   Server server;
 
   FilterHolder dispatchFilter;
@@ -161,8 +165,8 @@ public class JettySolrRunner {
   private void init(int port) {
 
     QueuedThreadPool qtp = new QueuedThreadPool();
-    qtp.setMaxThreads(10000);
-    qtp.setIdleTimeout((int) TimeUnit.SECONDS.toMillis(5));
+    qtp.setMaxThreads(THREAD_POOL_MAX_THREADS);
+    qtp.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
     qtp.setStopTimeout((int) TimeUnit.MINUTES.toMillis(1));
     server = new Server(qtp);
     server.manage(qtp);
@@ -179,7 +183,7 @@ public class JettySolrRunner {
       // talking to that server, but for the purposes of testing that should 
       // be good enough
       final SslContextFactory sslcontext = SSLConfig.createContextFactory(config.sslConfig);
-
+      
       ServerConnector connector;
       if (sslcontext != null) {
         HttpConfiguration configuration = new HttpConfiguration();
@@ -192,21 +196,18 @@ public class JettySolrRunner {
       }
 
       connector.setReuseAddress(true);
-      connector.setSoLingerTime(0);
+      connector.setSoLingerTime(-1);
       connector.setPort(port);
       connector.setHost("127.0.0.1");
-
-      // Enable Low Resources Management
-      LowResourceMonitor lowResources = new LowResourceMonitor(server);
-      lowResources.setLowResourcesIdleTimeout(1500);
-      lowResources.setMaxConnections(10000);
-      server.addBean(lowResources);
-
+      connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
+      
       server.setConnectors(new Connector[] {connector});
       server.setSessionIdManager(new HashSessionIdManager(new Random()));
     } else {
       ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
       connector.setPort(port);
+      connector.setSoLingerTime(-1);
+      connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
       server.setConnectors(new Connector[] {connector});
     }
 
@@ -294,6 +295,10 @@ public class JettySolrRunner {
     return getSolrDispatchFilter().getCores();
   }
 
+  public String getNodeName() {
+    return getCoreContainer().getZkController().getNodeName();
+  }
+
   public boolean isRunning() {
     return server.isRunning();
   }
@@ -308,9 +313,24 @@ public class JettySolrRunner {
   /**
    * Start the Jetty server
    *
+   * If the server has been started before, it will restart using the same port
+   *
    * @throws Exception if an error occurs on startup
    */
   public void start() throws Exception {
+    start(true);
+  }
+
+  /**
+   * Start the Jetty server
+   *
+   * @param reusePort when true, will start up on the same port as used by any
+   *                  previous runs of this JettySolrRunner.  If false, will use
+   *                  the port specified by the server's JettyConfig.
+   *
+   * @throws Exception if an error occurs on startup
+   */
+  public void start(boolean reusePort) throws Exception {
     // Do not let Jetty/Solr pollute the MDC for this thread
     Map<String, String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
@@ -318,7 +338,8 @@ public class JettySolrRunner {
       // if started before, make a new server
       if (startedBefore) {
         waitOnSolr = false;
-        init(lastPort);
+        int port = reusePort ? lastPort : this.config.port;
+        init(port);
       } else {
         startedBefore = true;
       }
@@ -436,6 +457,10 @@ public class JettySolrRunner {
       throw new  IllegalStateException
         ("Java could not make sense of protocol: " + protocol, e);
     }
+  }
+
+  public SolrClient newClient() {
+    return new HttpSolrClient.Builder(getBaseUrl().toString()).build();
   }
 
   public DebugFilter getDebugFilter() {

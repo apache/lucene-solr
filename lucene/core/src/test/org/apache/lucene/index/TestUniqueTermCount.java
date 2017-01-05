@@ -72,7 +72,8 @@ public class TestUniqueTermCount extends LuceneTestCase {
     NumericDocValues fooNorms = MultiDocValues.getNormValues(reader, "foo");
     assertNotNull(fooNorms);
     for (int i = 0; i < reader.maxDoc(); i++) {
-      assertEquals(expected.get(i).longValue(), fooNorms.get(i));
+      assertEquals(i, fooNorms.nextDoc());
+      assertEquals(expected.get(i).longValue(), fooNorms.longValue());
     }
   }
 
@@ -105,7 +106,7 @@ public class TestUniqueTermCount extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
+    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       throw new UnsupportedOperationException();
     }
 

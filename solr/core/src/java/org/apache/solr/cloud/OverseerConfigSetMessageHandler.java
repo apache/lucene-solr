@@ -30,6 +30,7 @@ import java.util.Set;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -44,8 +45,6 @@ import org.noggit.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.OverseerMessageHandler.ExclusiveMarking.NONEXCLUSIVE;
-import static org.apache.solr.cloud.OverseerMessageHandler.ExclusiveMarking.NOTDETERMINED;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.CREATE;
 
@@ -146,12 +145,22 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   }
 
   @Override
+  public Lock lockTask(ZkNodeProps message, OverseerTaskProcessor.TaskBatch taskBatch) {
+    String configSetName = getTaskKey(message);
+    if (canExecute(configSetName, message)) {
+      markExclusiveTask(configSetName, message);
+      return () -> unmarkExclusiveTask(configSetName, message);
+    }
+    return null;
+  }
+
+  @Override
   public String getTaskKey(ZkNodeProps message) {
     return message.getStr(NAME);
   }
 
-  @Override
-  public void markExclusiveTask(String configSetName, ZkNodeProps message) {
+
+  private void markExclusiveTask(String configSetName, ZkNodeProps message) {
     String baseConfigSet = getBaseConfigSetIfCreate(message);
     markExclusive(configSetName, baseConfigSet);
   }
@@ -163,8 +172,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     }
   }
 
-  @Override
-  public void unmarkExclusiveTask(String configSetName, String operation, ZkNodeProps message) {
+  private void unmarkExclusiveTask(String configSetName, ZkNodeProps message) {
     String baseConfigSet = getBaseConfigSetIfCreate(message);
     unmarkExclusiveConfigSet(configSetName, baseConfigSet);
   }
@@ -176,27 +184,25 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     }
   }
 
-  @Override
-  public ExclusiveMarking checkExclusiveMarking(String configSetName, ZkNodeProps message) {
-    String baseConfigSet = getBaseConfigSetIfCreate(message);
-    return checkExclusiveMarking(configSetName, baseConfigSet);
-  }
 
-  private ExclusiveMarking checkExclusiveMarking(String configSetName, String baseConfigSetName) {
+  private boolean canExecute(String configSetName, ZkNodeProps message) {
+    String baseConfigSetName = getBaseConfigSetIfCreate(message);
+
     synchronized (configSetWriteWip) {
       // need to acquire:
       // 1) write lock on ConfigSet
       // 2) read lock on Base ConfigSet
       if (configSetWriteWip.contains(configSetName) || configSetReadWip.contains(configSetName)) {
-        return NONEXCLUSIVE;
+        return false;
       }
       if (baseConfigSetName != null && configSetWriteWip.contains(baseConfigSetName)) {
-        return NONEXCLUSIVE;
+        return false;
       }
     }
 
-    return NOTDETERMINED;
+    return true;
   }
+
 
   private String getBaseConfigSetIfCreate(ZkNodeProps message) {
     String operation = message.getStr(Overseer.QUEUE_OPERATION);
@@ -349,10 +355,10 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
       throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet does not exist to delete: " + configSetName);
     }
 
-    for (String s : zkStateReader.getClusterState().getCollections()) {
-      if (configSetName.equals(zkStateReader.readConfigName(s)))
+    for (Map.Entry<String, DocCollection> entry : zkStateReader.getClusterState().getCollectionsMap().entrySet()) {
+      if (configSetName.equals(zkStateReader.readConfigName(entry.getKey())))
         throw new SolrException(ErrorCode.BAD_REQUEST,
-            "Can not delete ConfigSet as it is currently being used by collection [" + s + "]");
+            "Can not delete ConfigSet as it is currently being used by collection [" + entry.getKey() + "]");
     }
 
     String propertyPath = ConfigSetProperties.DEFAULT_FILENAME;

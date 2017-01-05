@@ -19,8 +19,6 @@ package org.apache.solr.core;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -31,9 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.regex.Pattern;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -45,7 +43,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
@@ -57,6 +54,7 @@ import org.slf4j.LoggerFactory;
 public class BlobRepository {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final Random RANDOM;
+  static final Pattern BLOB_KEY_PATTERN_CHECKER = Pattern.compile(".*/\\d+");
 
   static {
     // We try to make things reproducible in the context of our tests by initializing the random instance
@@ -70,81 +68,113 @@ public class BlobRepository {
   }
 
   private final CoreContainer coreContainer;
-  private Map<String, BlobContent> blobs = new ConcurrentHashMap<>();
+  private Map<String, BlobContent> blobs = createMap();
+
+  // for unit tests to override
+  ConcurrentHashMap<String, BlobContent> createMap() {
+    return new ConcurrentHashMap<>();
+  }
 
   public BlobRepository(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
   }
 
-  public static ByteBuffer getFileContent(BlobContent blobContent, String entryName) throws IOException {
-    ByteArrayInputStream zipContents = new ByteArrayInputStream(blobContent.buffer.array(), blobContent.buffer.arrayOffset(), blobContent.buffer.limit());
-    ZipInputStream zis = new ZipInputStream(zipContents);
-    try {
-      ZipEntry entry;
-      while ((entry = zis.getNextEntry()) != null) {
-        if (entryName == null || entryName.equals(entry.getName())) {
-          SimplePostTool.BAOS out = new SimplePostTool.BAOS();
-          byte[] buffer = new byte[2048];
-          int size;
-          while ((size = zis.read(buffer, 0, buffer.length)) != -1) {
-            out.write(buffer, 0, size);
-          }
-          out.close();
-          return out.getByteBuffer();
-        }
-      }
-    } finally {
-      zis.closeEntry();
-    }
-    return null;
-  }
-
+  // I wanted to {@link SolrCore#loadDecodeAndCacheBlob(String, Decoder)} below but precommit complains
   /**
-   * Returns the contents of a jar and increments a reference count. Please return the same object to decrease the refcount
+   * Returns the contents of a blob containing a ByteBuffer and increments a reference count. Please return the 
+   * same object to decrease the refcount. This is normally used for storing jar files, and binary raw data.
+   * If you are caching Java Objects you want to use {@code SolrCore#loadDecodeAndCacheBlob(String, Decoder)}
    *
    * @param key it is a combination of blobname and version like blobName/version
-   * @return The reference of a jar
+   * @return The reference of a blob
    */
-  public BlobContentRef getBlobIncRef(String key) {
-    BlobContent aBlob = blobs.get(key);
-    if (aBlob == null) {
-      if (this.coreContainer.isZooKeeperAware()) {
-        Replica replica = getSystemCollReplica();
-        String url = replica.getStr(BASE_URL_PROP) + "/.system/blob/" + key + "?wt=filestream";
+  public BlobContentRef<ByteBuffer> getBlobIncRef(String key) {
+   return getBlobIncRef(key, () -> addBlob(key));
+  }
+  
+  /**
+   * Internal method that returns the contents of a blob and increments a reference count. Please return the same 
+   * object to decrease the refcount. Only the decoded content will be cached when this method is used. Component 
+   * authors attempting to share objects across cores should use 
+   * {@code SolrCore#loadDecodeAndCacheBlob(String, Decoder)} which ensures that a proper close hook is also created.
+   *
+   * @param key it is a combination of blob name and version like blobName/version
+   * @param decoder a decoder that knows how to interpret the bytes from the blob
+   * @return The reference of a blob
+   */
+  BlobContentRef<Object> getBlobIncRef(String key, Decoder<Object> decoder) {
+    return getBlobIncRef(key.concat(decoder.getName()), () -> addBlob(key,decoder));
+  }
 
-        HttpClient httpClient = coreContainer.getUpdateShardHandler().getHttpClient();
-        HttpGet httpGet = new HttpGet(url);
-        ByteBuffer b;
-        try {
-          HttpResponse entity = httpClient.execute(httpGet);
-          int statusCode = entity.getStatusLine().getStatusCode();
-          if (statusCode != 200) {
-            throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no such blob or version available: " + key);
+  // do the actual work returning the appropriate type...
+  private <T> BlobContentRef<T> getBlobIncRef(String key, Callable<BlobContent<T>> blobCreator) {
+    BlobContent<T> aBlob;
+    if (this.coreContainer.isZooKeeperAware()) {
+      synchronized (blobs) {
+        aBlob = blobs.get(key);
+        if (aBlob == null) {
+          try {
+            aBlob = blobCreator.call();
+          } catch (Exception e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Blob loading failed: "+e.getMessage(), e);
           }
-          b = SimplePostTool.inputStreamToByteArray(entity.getEntity().getContent());
-        } catch (Exception e) {
-          if (e instanceof SolrException) {
-            throw (SolrException) e;
-          } else {
-            throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "could not load : " + key, e);
-          }
-        } finally {
-          httpGet.releaseConnection();
         }
-        blobs.put(key, aBlob = new BlobContent(key, b));
-      } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Jar loading is not supported in non-cloud mode");
-        // todo
       }
-
+    } else {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Blob loading is not supported in non-cloud mode");
+      // todo
     }
-
-    BlobContentRef ref = new BlobContentRef(aBlob);
+    BlobContentRef<T> ref = new BlobContentRef<>(aBlob);
     synchronized (aBlob.references) {
       aBlob.references.add(ref);
     }
     return ref;
+  }
 
+  // For use cases sharing raw bytes
+  private BlobContent<ByteBuffer> addBlob(String key) {
+    ByteBuffer b = fetchBlob(key);
+    BlobContent<ByteBuffer> aBlob  = new BlobContent<>(key, b);
+    blobs.put(key, aBlob);
+    return aBlob;
+  }
+
+  // for use cases sharing java objects
+  private BlobContent<Object> addBlob(String key, Decoder<Object> decoder) {
+    ByteBuffer b = fetchBlob(key);
+    String  keyPlusName = key + decoder.getName();
+    BlobContent<Object> aBlob = new BlobContent<>(keyPlusName, b, decoder);
+    blobs.put(keyPlusName, aBlob);
+    return aBlob;
+  }
+  
+  /**
+   *  Package local for unit tests only please do not use elsewhere
+   */
+  ByteBuffer fetchBlob(String key) {
+    Replica replica = getSystemCollReplica();
+    String url = replica.getStr(BASE_URL_PROP) + "/.system/blob/" + key + "?wt=filestream";
+
+    HttpClient httpClient = coreContainer.getUpdateShardHandler().getHttpClient();
+    HttpGet httpGet = new HttpGet(url);
+    ByteBuffer b;
+    try {
+      HttpResponse entity = httpClient.execute(httpGet);
+      int statusCode = entity.getStatusLine().getStatusCode();
+      if (statusCode != 200) {
+        throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no such blob or version available: " + key);
+      }
+      b = SimplePostTool.inputStreamToByteArray(entity.getEntity().getContent());
+    } catch (Exception e) {
+      if (e instanceof SolrException) {
+        throw (SolrException) e;
+      } else {
+        throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "could not load : " + key, e);
+      }
+    } finally {
+      httpGet.releaseConnection();
+    }
+    return b;
   }
 
   private Replica getSystemCollReplica() {
@@ -192,61 +222,60 @@ public class BlobRepository {
         blobs.remove(ref.blob.key);
       }
     }
-
   }
 
-  public static class BlobContent {
-    private final String key;
-    private Map<String, Object> decodedObjects = null;
-    // TODO move this off-heap
-    private final ByteBuffer buffer;
+  public static class BlobContent<T> {
+    public final String key;
+    private final T content; // holds byte buffer or cached object, holding both is a waste of memory
     // ref counting mechanism
     private final Set<BlobContentRef> references = new HashSet<>();
 
+    public BlobContent(String key, ByteBuffer buffer, Decoder<T> decoder) {
+      this.key = key;
+      this.content = decoder.decode(new ByteBufferInputStream(buffer));
+    }
 
+    @SuppressWarnings("unchecked")
     public BlobContent(String key, ByteBuffer buffer) {
       this.key = key;
-      this.buffer = buffer;
+      this.content = (T) buffer; 
     }
 
     /**
-     * This method decodes the byte[] to a custom Object
-     *
-     * @param key     The key is used to store the decoded Object. it is possible to have multiple
-     *                decoders for the same blob (may be unusual).
-     * @param decoder A decoder instance
-     * @return the decoded Object . If it was already decoded, then return from the cache
+     * Get the cached object. 
+     * 
+     * @return the object representing the content that is cached.
      */
-    public <T> T decodeAndCache(String key, Decoder<T> decoder) {
-      if (decodedObjects == null) {
-        synchronized (this) {
-          if (decodedObjects == null) decodedObjects = new ConcurrentHashMap<>();
-        }
-      }
-
-      Object t = decodedObjects.get(key);
-      if (t != null) return (T) t;
-      t = decoder.decode(new ByteBufferInputStream(buffer));
-      decodedObjects.put(key, t);
-      return (T) t;
-
-    }
-
-    public String checkSignature(String base64Sig, CryptoKeys keys) {
-      return keys.verify(base64Sig, buffer);
+    public T get() {
+      return this.content;
     }
 
   }
 
   public interface Decoder<T> {
 
+    /**
+     * A name by which to distinguish this decoding. This only needs to be implemented if you want to support
+     * decoding the same blob content with more than one decoder.
+     * 
+     * @return The name of the decoding, defaults to empty string.
+     */
+    default String getName() { return ""; }
+
+    /**
+     * A routine that knows how to convert the stream of bytes from the blob into a Java object.
+     * 
+     * @param inputStream the bytes from a blob
+     * @return A Java object of the specified type.
+     */
     T decode(InputStream inputStream);
   }
 
-  public static class BlobContentRef {
-    public final BlobContent blob;
 
-    private BlobContentRef(BlobContent blob) {
+  public static class BlobContentRef<T> {
+    public final BlobContent<T> blob;
+
+    private BlobContentRef(BlobContent<T> blob) {
       this.blob = blob;
     }
   }

@@ -16,7 +16,9 @@
  */
 package org.apache.lucene.queries.function.docvalues;
 
-import org.apache.lucene.index.IndexReader;
+import java.io.IOException;
+
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
@@ -35,50 +37,50 @@ public abstract class LongDocValues extends FunctionValues {
   }
 
   @Override
-  public byte byteVal(int doc) {
+  public byte byteVal(int doc) throws IOException {
     return (byte)longVal(doc);
   }
 
   @Override
-  public short shortVal(int doc) {
+  public short shortVal(int doc) throws IOException {
     return (short)longVal(doc);
   }
 
   @Override
-  public float floatVal(int doc) {
+  public float floatVal(int doc) throws IOException {
     return (float)longVal(doc);
   }
 
   @Override
-  public int intVal(int doc) {
+  public int intVal(int doc) throws IOException {
     return (int)longVal(doc);
   }
 
   @Override
-  public abstract long longVal(int doc);
+  public abstract long longVal(int doc) throws IOException;
 
   @Override
-  public double doubleVal(int doc) {
+  public double doubleVal(int doc) throws IOException {
     return (double)longVal(doc);
   }
 
   @Override
-  public boolean boolVal(int doc) {
+  public boolean boolVal(int doc) throws IOException {
     return longVal(doc) != 0;
   }
 
   @Override
-  public String strVal(int doc) {
+  public String strVal(int doc) throws IOException {
     return Long.toString(longVal(doc));
   }
 
   @Override
-  public Object objectVal(int doc) {
+  public Object objectVal(int doc) throws IOException {
     return exists(doc) ? longVal(doc) : null;
   }
 
   @Override
-  public String toString(int doc) {
+  public String toString(int doc) throws IOException {
     return vs.description() + '=' + strVal(doc);
   }
   
@@ -87,7 +89,7 @@ public abstract class LongDocValues extends FunctionValues {
   }
   
   @Override
-  public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
+  public ValueSourceScorer getRangeScorer(LeafReaderContext readerContext, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
     long lower,upper;
 
     // instead of using separate comparison functions, adjust the endpoints.
@@ -109,12 +111,11 @@ public abstract class LongDocValues extends FunctionValues {
     final long ll = lower;
     final long uu = upper;
 
-    return new ValueSourceScorer(reader, this) {
+    return new ValueSourceScorer(readerContext, this) {
       @Override
-      public boolean matches(int doc) {
+      public boolean matches(int doc) throws IOException {
+        if (!exists(doc)) return false;
         long val = longVal(doc);
-        // only check for deleted if it's the default value
-        // if (val==0 && reader.isDeleted(doc)) return false;
         return val >= ll && val <= uu;
       }
     };
@@ -131,7 +132,7 @@ public abstract class LongDocValues extends FunctionValues {
       }
 
       @Override
-      public void fillValue(int doc) {
+      public void fillValue(int doc) throws IOException {
         mval.value = longVal(doc);
         mval.exists = exists(doc);
       }

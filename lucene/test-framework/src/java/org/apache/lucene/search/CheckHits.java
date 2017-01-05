@@ -346,23 +346,31 @@ public class CheckHits {
     if (expl.getDescription().endsWith("computed from:")) {
       return; // something more complicated.
     }
+    String descr = expl.getDescription().toLowerCase(Locale.ROOT);
+    if (descr.startsWith("score based on ") && descr.contains("child docs in range")) {
+      Assert.assertTrue("Child doc explanations are missing", detail.length > 0);
+    }
     if (detail.length > 0) {
       if (detail.length==1) {
         // simple containment, unless it's a freq of: (which lets a query explain how the freq is calculated), 
         // just verify contained expl has same score
-        if (!expl.getDescription().endsWith("with freq of:"))
+        if (expl.getDescription().endsWith("with freq of:") == false
+            // with dismax, even if there is a single sub explanation, its
+            // score might be different if the score is negative
+            && (score >= 0 || expl.getDescription().endsWith("times others of:") == false)) {
           verifyExplanation(q,doc,score,deep,detail[0]);
+        }
       } else {
         // explanation must either:
         // - end with one of: "product of:", "sum of:", "max of:", or
         // - have "max plus <x> times others" (where <x> is float).
         float x = 0;
-        String descr = expl.getDescription().toLowerCase(Locale.ROOT);
         boolean productOf = descr.endsWith("product of:");
         boolean sumOf = descr.endsWith("sum of:");
         boolean maxOf = descr.endsWith("max of:");
+        boolean computedOf = descr.matches(".*, computed as .* from:");
         boolean maxTimesOthers = false;
-        if (!(productOf || sumOf || maxOf)) {
+        if (!(productOf || sumOf || maxOf || computedOf)) {
           // maybe 'max plus x times others'
           int k1 = descr.indexOf("max plus ");
           if (k1>=0) {
@@ -380,9 +388,9 @@ public class CheckHits {
         // TODO: this is a TERRIBLE assertion!!!!
         Assert.assertTrue(
             q+": multi valued explanation description=\""+descr
-            +"\" must be 'max of plus x times others' or end with 'product of'"
+            +"\" must be 'max of plus x times others', 'computed as x from:' or end with 'product of'"
             +" or 'sum of:' or 'max of:' - "+expl,
-            productOf || sumOf || maxOf || maxTimesOthers);
+            productOf || sumOf || maxOf || computedOf || maxTimesOthers);
         float sum = 0;
         float product = 1;
         float max = 0;
@@ -403,7 +411,8 @@ public class CheckHits {
         } else if (maxTimesOthers) {
           combined = max + x * (sum - max);
         } else {
-            Assert.assertTrue("should never get here!",false);
+          Assert.assertTrue("should never get here!", computedOf);
+          combined = value;
         }
         Assert.assertEquals(q+": actual subDetails combined=="+combined+
             " != value="+value+" Explanation: "+expl,

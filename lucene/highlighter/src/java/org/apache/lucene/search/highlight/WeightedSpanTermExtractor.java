@@ -53,6 +53,7 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
@@ -62,9 +63,9 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
+import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 
@@ -115,25 +116,29 @@ public class WeightedSpanTermExtractor {
     } else if (query instanceof PhraseQuery) {
       PhraseQuery phraseQuery = ((PhraseQuery) query);
       Term[] phraseQueryTerms = phraseQuery.getTerms();
-      SpanQuery[] clauses = new SpanQuery[phraseQueryTerms.length];
-      for (int i = 0; i < phraseQueryTerms.length; i++) {
-        clauses[i] = new SpanTermQuery(phraseQueryTerms[i]);
+      if (phraseQueryTerms.length == 1) {
+        extractWeightedSpanTerms(terms, new SpanTermQuery(phraseQueryTerms[0]), boost);
+      } else {
+        SpanQuery[] clauses = new SpanQuery[phraseQueryTerms.length];
+        for (int i = 0; i < phraseQueryTerms.length; i++) {
+          clauses[i] = new SpanTermQuery(phraseQueryTerms[i]);
+        }
+
+        // sum position increments beyond 1
+        int positionGaps = 0;
+        int[] positions = phraseQuery.getPositions();
+        if (positions.length >= 2) {
+          // positions are in increasing order.   max(0,...) is just a safeguard.
+          positionGaps = Math.max(0, positions[positions.length - 1] - positions[0] - positions.length + 1);
+        }
+
+        //if original slop is 0 then require inOrder
+        boolean inorder = (phraseQuery.getSlop() == 0);
+
+        SpanNearQuery sp = new SpanNearQuery(clauses, phraseQuery.getSlop() + positionGaps, inorder);
+        extractWeightedSpanTerms(terms, sp, boost);
       }
-
-      // sum position increments beyond 1
-      int positionGaps = 0;
-      int[] positions = phraseQuery.getPositions();
-      if (positions.length >= 2) {
-        // positions are in increasing order.   max(0,...) is just a safeguard.
-        positionGaps = Math.max(0, positions[positions.length-1] - positions[0] - positions.length + 1);
-      }
-
-      //if original slop is 0 then require inOrder
-      boolean inorder = (phraseQuery.getSlop() == 0);
-
-      SpanNearQuery sp = new SpanNearQuery(clauses, phraseQuery.getSlop() + positionGaps, inorder);
-      extractWeightedSpanTerms(terms, sp, boost);
-    } else if (query instanceof TermQuery) {
+    } else if (query instanceof TermQuery || query instanceof SynonymQuery) {
       extractWeightedTerms(terms, query, boost);
     } else if (query instanceof SpanQuery) {
       extractWeightedSpanTerms(terms, (SpanQuery) query, boost);
@@ -147,8 +152,8 @@ public class WeightedSpanTermExtractor {
       // this query is TermContext sensitive.
       extractWeightedTerms(terms, query, boost);
     } else if (query instanceof DisjunctionMaxQuery) {
-      for (Iterator<Query> iterator = ((DisjunctionMaxQuery) query).iterator(); iterator.hasNext();) {
-        extract(iterator.next(), boost, terms);
+      for (Query clause : ((DisjunctionMaxQuery) query)) {
+        extract(clause, boost, terms);
       }
     } else if (query instanceof ToParentBlockJoinQuery) {
       extract(((ToParentBlockJoinQuery) query).getChildQuery(), boost, terms);
@@ -156,7 +161,7 @@ public class WeightedSpanTermExtractor {
       extract(((ToChildBlockJoinQuery) query).getParentQuery(), boost, terms);
     } else if (query instanceof MultiPhraseQuery) {
       final MultiPhraseQuery mpq = (MultiPhraseQuery) query;
-      final List<Term[]> termArrays = mpq.getTermArrays();
+      final Term[][] termArrays = mpq.getTermArrays();
       final int[] positions = mpq.getPositions();
       if (positions.length > 0) {
 
@@ -171,23 +176,22 @@ public class WeightedSpanTermExtractor {
         final List<SpanQuery>[] disjunctLists = new List[maxPosition + 1];
         int distinctPositions = 0;
 
-        for (int i = 0; i < termArrays.size(); ++i) {
-          final Term[] termArray = termArrays.get(i);
+        for (int i = 0; i < termArrays.length; ++i) {
+          final Term[] termArray = termArrays[i];
           List<SpanQuery> disjuncts = disjunctLists[positions[i]];
           if (disjuncts == null) {
             disjuncts = (disjunctLists[positions[i]] = new ArrayList<>(termArray.length));
             ++distinctPositions;
           }
-          for (int j = 0; j < termArray.length; ++j) {
-            disjuncts.add(new SpanTermQuery(termArray[j]));
+          for (Term aTermArray : termArray) {
+            disjuncts.add(new SpanTermQuery(aTermArray));
           }
         }
 
         int positionGaps = 0;
         int position = 0;
         final SpanQuery[] clauses = new SpanQuery[distinctPositions];
-        for (int i = 0; i < disjunctLists.length; ++i) {
-          List<SpanQuery> disjuncts = disjunctLists[i];
+        for (List<SpanQuery> disjuncts : disjunctLists) {
           if (disjuncts != null) {
             clauses[position++] = new SpanOrQuery(disjuncts
                 .toArray(new SpanQuery[disjuncts.size()]));
@@ -196,35 +200,55 @@ public class WeightedSpanTermExtractor {
           }
         }
 
-        final int slop = mpq.getSlop();
-        final boolean inorder = (slop == 0);
+        if (clauses.length == 1) {
+          extractWeightedSpanTerms(terms, clauses[0], boost);
+        } else {
+          final int slop = mpq.getSlop();
+          final boolean inorder = (slop == 0);
 
-        SpanNearQuery sp = new SpanNearQuery(clauses, slop + positionGaps, inorder);
-        extractWeightedSpanTerms(terms, sp, boost);
+          SpanNearQuery sp = new SpanNearQuery(clauses, slop + positionGaps, inorder);
+          extractWeightedSpanTerms(terms, sp, boost);
+        }
       }
     } else if (query instanceof MatchAllDocsQuery) {
       //nothing
     } else if (query instanceof CustomScoreQuery){
       extract(((CustomScoreQuery) query).getSubQuery(), boost, terms);
+    } else if (isQueryUnsupported(query.getClass())) {
+      // nothing
     } else {
+      if (query instanceof MultiTermQuery &&
+          (!expandMultiTermQuery || !fieldNameComparator(((MultiTermQuery)query).getField()))) {
+        return;
+      }
       Query origQuery = query;
       final IndexReader reader = getLeafContext().reader();
       Query rewritten;
       if (query instanceof MultiTermQuery) {
-        if (!expandMultiTermQuery) {
-          return;
-        }
         rewritten = MultiTermQuery.SCORING_BOOLEAN_REWRITE.rewrite(reader, (MultiTermQuery) query);
       } else {
         rewritten = origQuery.rewrite(reader);
       }
       if (rewritten != origQuery) {
-        // only rewrite once and then flatten again - the rewritten query could have a speacial treatment
+        // only rewrite once and then flatten again - the rewritten query could have a special treatment
         // if this method is overwritten in a subclass or above in the next recursion
         extract(rewritten, boost, terms);
-      } 
+      } else {
+        extractUnknownQuery(query, terms);
+      }
     }
-    extractUnknownQuery(query, terms);
+  }
+
+  protected boolean isQueryUnsupported(Class<? extends Query> clazz) {
+    // spatial queries do not support highlighting:
+    if (clazz.getName().startsWith("org.apache.lucene.spatial.")) {
+      return true;
+    }
+    // spatial3d queries are also not supported:
+    if (clazz.getName().startsWith("org.apache.lucene.spatial3d.")) {
+      return true;
+    }
+    return false;
   }
 
   protected void extractUnknownQuery(Query query,
@@ -267,10 +291,10 @@ public class WeightedSpanTermExtractor {
       for (final String field : fieldNames) {
         final SpanQuery rewrittenQuery = (SpanQuery) spanQuery.rewrite(getLeafContext().reader());
         queries.put(field, rewrittenQuery);
-        rewrittenQuery.createWeight(searcher, false).extractTerms(nonWeightedTerms);
+        rewrittenQuery.createWeight(searcher, false, boost).extractTerms(nonWeightedTerms);
       }
     } else {
-      spanQuery.createWeight(searcher, false).extractTerms(nonWeightedTerms);
+      spanQuery.createWeight(searcher, false, boost).extractTerms(nonWeightedTerms);
     }
 
     List<PositionSpan> spanPositions = new ArrayList<>();
@@ -450,11 +474,6 @@ public class WeightedSpanTermExtractor {
     public NumericDocValues getNormValues(String field) throws IOException {
       return super.getNormValues(FIELD_NAME);
     }
-
-    @Override
-    public Bits getDocsWithField(String field) throws IOException {
-      return super.getDocsWithField(FIELD_NAME);
-    }
   }
 
   /**
@@ -490,11 +509,7 @@ public class WeightedSpanTermExtractor {
    */
   public Map<String,WeightedSpanTerm> getWeightedSpanTerms(Query query, float boost, TokenStream tokenStream,
       String fieldName) throws IOException {
-    if (fieldName != null) {
-      this.fieldName = fieldName;
-    } else {
-      this.fieldName = null;
-    }
+    this.fieldName = fieldName;
 
     Map<String,WeightedSpanTerm> terms = new PositionCheckingMap<>();
     this.tokenStream = tokenStream;

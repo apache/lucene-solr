@@ -31,7 +31,7 @@ public class TestTestInjection extends LuceneTestCase {
   
   @AfterClass
   public static void cleanup() {
-  
+    TestInjection.reset();
   }
   
   public void testBasics() {
@@ -97,5 +97,9 @@ public class TestTestInjection extends LuceneTestCase {
       // we can fail, but should not be for bad syntax
       assertFalse(e.getMessage().toLowerCase(Locale.ENGLISH).contains("bad syntax"));
     }
+  }
+
+  public void testUsingConsistentRandomization() {
+    assertSame(random(), TestInjection.random());
   }
 }

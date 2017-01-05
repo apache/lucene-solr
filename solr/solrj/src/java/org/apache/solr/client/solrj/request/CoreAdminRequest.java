@@ -16,6 +16,11 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -28,11 +33,6 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * This class is experimental and subject to change.
@@ -110,11 +110,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
      */
     @Override
     public void setCoreName(String coreName) {
-      if (!SolrIdentifierValidator.validateCoreName(coreName)) {
-        throw new IllegalArgumentException("Invalid core: " + coreName
-            + ". Core names must consist entirely of periods, underscores, and alphanumerics");
-      }
-      this.core = coreName;
+      this.core = SolrIdentifierValidator.validateCoreName(coreName);
     }
     
     @Override
@@ -457,6 +453,63 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
 
   }
 
+  public static class CreateSnapshot extends CoreAdminRequest {
+    private String commitName;
+
+    public CreateSnapshot(String commitName) {
+      super();
+      this.action = CoreAdminAction.CREATESNAPSHOT;
+      if(commitName == null) {
+        throw new NullPointerException("Please specify non null value for commitName parameter.");
+      }
+      this.commitName = commitName;
+    }
+
+    public String getCommitName() {
+      return commitName;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      params.set(CoreAdminParams.COMMIT_NAME, this.commitName);
+      return params;
+    }
+  }
+
+  public static class DeleteSnapshot extends CoreAdminRequest {
+    private String commitName;
+
+    public DeleteSnapshot(String commitName) {
+      super();
+      this.action = CoreAdminAction.DELETESNAPSHOT;
+
+      if(commitName == null) {
+        throw new NullPointerException("Please specify non null value for commitName parameter.");
+      }
+      this.commitName = commitName;
+    }
+
+    public String getCommitName() {
+      return commitName;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      params.set(CoreAdminParams.COMMIT_NAME, this.commitName);
+      return params;
+    }
+  }
+
+  public static class ListSnapshots extends CoreAdminRequest {
+    public ListSnapshots() {
+      super();
+      this.action = CoreAdminAction.LISTSNAPSHOTS;
+    }
+  }
+
+
   public CoreAdminRequest()
   {
     super( METHOD.GET, "/admin/cores" );
@@ -559,16 +612,23 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
    */
   public static CoreAdminResponse renameCore(String coreName, String newName, SolrClient client )
       throws SolrServerException, IOException {
-    if (!SolrIdentifierValidator.validateCoreName(newName)) {
-      throw new IllegalArgumentException("Invalid core: " + newName
-          + ". Core names must consist entirely of periods, underscores, and alphanumerics");
-    }
-    
     CoreAdminRequest req = new CoreAdminRequest();
     req.setCoreName(coreName);
-    req.setOtherCoreName(newName);
+    req.setOtherCoreName(SolrIdentifierValidator.validateCoreName(newName));
     req.setAction( CoreAdminAction.RENAME );
     return req.process( client );
+  }
+
+  public static CoreStatus getCoreStatus(String coreName, SolrClient client) throws SolrServerException, IOException {
+    return getCoreStatus(coreName, true, client);
+  }
+
+  public static CoreStatus getCoreStatus(String coreName, boolean getIndexInfo, SolrClient client)
+      throws SolrServerException, IOException {
+    CoreAdminRequest req = new CoreAdminRequest();
+    req.setAction(CoreAdminAction.STATUS);
+    req.setIndexInfoNeeded(getIndexInfo);
+    return new CoreStatus(req.process(client).getCoreStatus(coreName));
   }
 
   public static CoreAdminResponse getStatus( String name, SolrClient client ) throws SolrServerException, IOException

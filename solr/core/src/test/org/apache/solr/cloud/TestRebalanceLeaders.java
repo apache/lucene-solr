@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -276,7 +277,21 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
       fail("Waited for timeout for preferredLeader assignments to be made and they werent.");
     }
     //fillExpectedWithCurrent();
-    // Now rebalance the leaders
+    // Now rebalance the leaders randomly using SolrJ or direct call
+    if(random().nextBoolean())
+      rebalanceLeaderUsingSolrJAPI();
+    else
+      rebalanceLeaderUsingDirectCall();
+
+  }
+
+  private void rebalanceLeaderUsingSolrJAPI() throws IOException, SolrServerException {
+    CollectionAdminRequest.RebalanceLeaders rebalanceLeaders = CollectionAdminRequest.rebalanceLeaders(COLLECTION_NAME);
+    rebalanceLeaders.setMaxAtOnce(10)
+        .process(cloudClient);
+  }
+
+  private void rebalanceLeaderUsingDirectCall() throws IOException, SolrServerException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.REBALANCELEADERS.toString());
 
@@ -286,6 +301,7 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     cloudClient.request(request);
+
   }
 
   void issuePreferred(String slice, Replica rep) throws IOException, SolrServerException, InterruptedException {
@@ -310,7 +326,6 @@ public class TestRebalanceLeaders extends AbstractFullDistribZkTestBase {
     TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS);
     while (! timeout.hasTimedOut()) {
       goAgain = false;
-      cloudClient.getZkStateReader().updateClusterState();
       Map<String, Slice> slices = cloudClient.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
 
       for (Map.Entry<String, Replica> ent : expected.entrySet()) {

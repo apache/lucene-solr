@@ -18,16 +18,13 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.cloud.ZkController.ContextKey;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -116,7 +113,7 @@ public  class LeaderElector {
 
     // If any double-registrations exist for me, remove all but this latest one!
     // TODO: can we even get into this state?
-    String prefix = zkClient.getSolrZooKeeper().getSessionId() + "-" + context.id;
+    String prefix = zkClient.getSolrZooKeeper().getSessionId() + "-" + context.id + "-";
     Iterator<String> it = seqs.iterator();
     while (it.hasNext()) {
       String elec = it.next();
@@ -153,7 +150,7 @@ public  class LeaderElector {
       try {
         String watchedNode = holdElectionPath + "/" + toWatch;
         zkClient.getData(watchedNode, watcher = new ElectionWatcher(context.leaderSeqPath, watchedNode, getSeq(context.leaderSeqPath), context), null, true);
-        log.info("Watching path {} to know if I could be the leader", watchedNode);
+        log.debug("Watching path {} to know if I could be the leader", watchedNode);
       } catch (KeeperException.SessionExpiredException e) {
         throw e;
       } catch (KeeperException.NoNodeException e) {
@@ -241,14 +238,14 @@ public  class LeaderElector {
     while (cont) {
       try {
         if(joinAtHead){
-          log.info("Node {} trying to join election at the head", id);
+          log.debug("Node {} trying to join election at the head", id);
           List<String> nodes = OverseerTaskProcessor.getSortedElectionNodes(zkClient, shardsElectZkPath);
           if(nodes.size() <2){
             leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
                 CreateMode.EPHEMERAL_SEQUENTIAL, false);
           } else {
             String firstInLine = nodes.get(1);
-            log.info("The current head: {}", firstInLine);
+            log.debug("The current head: {}", firstInLine);
             Matcher m = LEADER_SEQ.matcher(firstInLine);
             if (!m.matches()) {
               throw new IllegalStateException("Could not find regex match in:"
@@ -262,7 +259,7 @@ public  class LeaderElector {
               CreateMode.EPHEMERAL_SEQUENTIAL, false);
         }
 
-        log.info("Joined leadership election with path: {}", leaderSeqPath);
+        log.debug("Joined leadership election with path: {}", leaderSeqPath);
         context.leaderSeqPath = leaderSeqPath;
         cont = false;
       } catch (ConnectionLossException e) {
@@ -336,7 +333,7 @@ public  class LeaderElector {
         return;
       }
       if (canceled) {
-        log.info("This watcher is not active anymore {}", myNode);
+        log.debug("This watcher is not active anymore {}", myNode);
         try {
           zkClient.delete(myNode, -1, true);
         } catch (KeeperException.NoNodeException nne) {
@@ -350,7 +347,9 @@ public  class LeaderElector {
         // am I the next leader?
         checkIfIamLeader(context, true);
       } catch (Exception e) {
-        log.warn("", e);
+        if (!zkClient.isClosed()) {
+          log.warn("", e);
+        }
       }
     }
   }
@@ -361,8 +360,13 @@ public  class LeaderElector {
   public void setup(final ElectionContext context) throws InterruptedException,
       KeeperException {
     String electZKPath = context.electionPath + LeaderElector.ELECTION_NODE;
-    
-    zkCmdExecutor.ensureExists(electZKPath, zkClient);
+    if (context instanceof OverseerElectionContext) {
+      zkCmdExecutor.ensureExists(electZKPath, zkClient);
+    } else {
+      // we use 2 param so that replica won't create /collection/{collection} if it doesn't exist
+      zkCmdExecutor.ensureExists(electZKPath, (byte[])null, CreateMode.PERSISTENT, zkClient, 2);
+    }
+
     this.context = context;
   }
   
@@ -370,13 +374,9 @@ public  class LeaderElector {
    * Sort n string sequence list.
    */
   public static void sortSeqs(List<String> seqs) {
-    Collections.sort(seqs, new Comparator<String>() {
-      
-      @Override
-      public int compare(String o1, String o2) {
-        int i = getSeq(o1) - getSeq(o2);
-        return i == 0 ? o1.compareTo(o2) : i ;
-      }
+    Collections.sort(seqs, (o1, o2) -> {
+      int i = getSeq(o1) - getSeq(o2);
+      return i == 0 ? o1.compareTo(o2) : i;
     });
   }
 

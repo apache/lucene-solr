@@ -17,16 +17,11 @@
 -->
 
 <schema name="test" version="1.6">
-  <types>
-    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-  </types>
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
-
-  <fields>
-    <field name="id" type="string" indexed="true" stored="true" required="true"/>
-    <field name="text" type="string" indexed="true" stored="true"/>
-    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
-  </fields>
+  <field name="id" type="string" indexed="true" stored="true" required="true"/>
+  <field name="text" type="string" indexed="true" stored="true"/>
+  <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
 
 
   <!-- This should cause an exception, since the copyField source is not a glob 

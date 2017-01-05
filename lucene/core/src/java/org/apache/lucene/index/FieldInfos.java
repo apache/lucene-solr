@@ -394,7 +394,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
                                           boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues,
                                           int dimensionCount, int dimensionNumBytes) {
       if (docValues == null) {
-        throw new NullPointerException("DocValuesType cannot be null");
+        throw new NullPointerException("DocValuesType must not be null");
       }
       FieldInfo fi = fieldInfo(name);
       if (fi == null) {

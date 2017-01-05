@@ -29,7 +29,7 @@ import org.apache.lucene.queryparser.flexible.core.QueryParserHelper;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.standard.builders.StandardQueryTreeBuilder;
 import org.apache.lucene.queryparser.flexible.standard.config.FuzzyConfig;
-import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
+import org.apache.lucene.queryparser.flexible.standard.config.PointsConfig;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.Operator;
@@ -83,7 +83,7 @@ import org.apache.lucene.search.Query;
  * 
  * <p>
  * Examples of appropriately formatted queries can be found in the <a
- * href="{@docRoot}/org/apache/lucene/queryparser/classic/package-summary.html#package_description">
+ * href="{@docRoot}/org/apache/lucene/queryparser/classic/package-summary.html#package.description">
  * query syntax documentation</a>.
  * </p>
  * <p>
@@ -177,36 +177,6 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
    */
   public void setDefaultOperator(StandardQueryConfigHandler.Operator operator) {
     getQueryConfigHandler().set(ConfigurationKeys.DEFAULT_OPERATOR, operator);
-  }
-  
-  /**
-   * Set to <code>true</code> to allow leading wildcard characters.
-   * <p>
-   * When set, <code>*</code> or <code>?</code> are allowed as the first
-   * character of a PrefixQuery and WildcardQuery. Note that this can produce
-   * very slow queries on big indexes.
-   * <p>
-   * Default: false.
-   */
-  @Override
-  public void setLowercaseExpandedTerms(boolean lowercaseExpandedTerms) {
-    getQueryConfigHandler().set(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS, lowercaseExpandedTerms);
-  }
-  
-  /**
-   * @see #setLowercaseExpandedTerms(boolean)
-   */
-  @Override
-  public boolean getLowercaseExpandedTerms() {
-    Boolean lowercaseExpandedTerms = getQueryConfigHandler().get(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS);
-    
-    if (lowercaseExpandedTerms == null) {
-      return true;
-      
-    } else {
-      return lowercaseExpandedTerms;
-    }
-    
   }
   
   /**
@@ -322,12 +292,12 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
     
   }
   
-  public void setNumericConfigMap(Map<String,NumericConfig> numericConfigMap) {
-    getQueryConfigHandler().set(ConfigurationKeys.NUMERIC_CONFIG_MAP, numericConfigMap);
+  public void setPointsConfigMap(Map<String,PointsConfig> pointsConfigMap) {
+    getQueryConfigHandler().set(ConfigurationKeys.POINTS_CONFIG_MAP, pointsConfigMap);
   }
   
-  public Map<String,NumericConfig> getNumericConfigMap() {
-    return getQueryConfigHandler().get(ConfigurationKeys.NUMERIC_CONFIG_MAP);
+  public Map<String,PointsConfig> getPointsConfigMap() {
+    return getQueryConfigHandler().get(ConfigurationKeys.POINTS_CONFIG_MAP);
   }
   
   /**

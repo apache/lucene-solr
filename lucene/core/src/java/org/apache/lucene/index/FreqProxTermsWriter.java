@@ -79,8 +79,8 @@ final class FreqProxTermsWriter extends TermsHash {
   }
 
   @Override
-  public void flush(Map<String,TermsHashPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
-    super.flush(fieldsToFlush, state);
+  public void flush(Map<String,TermsHashPerField> fieldsToFlush, final SegmentWriteState state, Sorter.DocMap sortMap) throws IOException {
+    super.flush(fieldsToFlush, state, sortMap);
 
     // Gather all fields that saw any postings:
     List<FreqProxTermsWriterPerField> allFields = new ArrayList<>();
@@ -98,8 +98,10 @@ final class FreqProxTermsWriter extends TermsHash {
     CollectionUtil.introSort(allFields);
 
     Fields fields = new FreqProxFields(allFields);
-
     applyDeletes(state, fields);
+    if (sortMap != null) {
+      fields = new SortingLeafReader.SortingFields(fields, state.fieldInfos, sortMap);
+    }
 
     FieldsConsumer consumer = state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state);
     boolean success = false;

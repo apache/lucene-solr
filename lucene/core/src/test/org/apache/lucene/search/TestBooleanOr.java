@@ -34,7 +34,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 public class TestBooleanOr extends LuceneTestCase {
 
@@ -239,7 +239,7 @@ public class TestBooleanOr extends LuceneTestCase {
         if (i == matches.length) {
           return DocIdSetIterator.NO_MORE_DOCS;
         }
-        return RandomInts.randomIntBetween(random(), max, matches[i]);
+        return RandomNumbers.randomIntBetween(random(), max, matches[i]);
       }
       @Override
       public long cost() {
@@ -257,7 +257,7 @@ public class TestBooleanOr extends LuceneTestCase {
         scorer(5000, 100000, 9999998, 9999999)
     );
     Collections.shuffle(optionalScorers, random());
-    BooleanScorer scorer = new BooleanScorer(null, true, 0, optionalScorers, 1, random().nextBoolean());
+    BooleanScorer scorer = new BooleanScorer(null, optionalScorers, 1, random().nextBoolean());
     final List<Integer> matches = new ArrayList<>();
     scorer.score(new LeafCollector() {
 

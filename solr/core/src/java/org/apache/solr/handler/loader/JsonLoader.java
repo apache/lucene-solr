@@ -50,10 +50,12 @@ import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.RecordingJSONParser;
 import org.noggit.JSONParser;
+import org.noggit.JSONParser.ParseException;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.stream.Collectors.toList;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
@@ -63,7 +65,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
  */
 public class JsonLoader extends ContentStreamLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String CHILD_DOC_KEY = "_childDocuments_";
+  public static final String CHILD_DOC_KEY = "_childDocuments_";
 
   @Override
   public String getDefaultWT() {
@@ -111,7 +113,10 @@ public class JsonLoader extends ContentStreamLoader {
         }
 
         this.processUpdate(reader);
-      } finally {
+      } catch (ParseException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot parse provided JSON: " + e.getMessage());
+      }
+      finally {
         IOUtils.closeQuietly(reader);
       }
     }
@@ -217,15 +222,13 @@ public class JsonLoader extends ContentStreamLoader {
               docs = new ArrayList();
               rsp.add("docs", docs);
             }
+            changeChildDoc(copy);
             docs.add(copy);
           } else {
             AddUpdateCommand cmd = new AddUpdateCommand(req);
             cmd.commitWithin = commitWithin;
             cmd.overwrite = overwrite;
-            cmd.solrDoc = new SolrInputDocument();
-            for (Map.Entry<String, Object> entry : copy.entrySet()) {
-              cmd.solrDoc.setField(entry.getKey(), entry.getValue());
-            }
+            cmd.solrDoc = buildDoc(copy);
             try {
               processor.processAdd(cmd);
             } catch (IOException e) {
@@ -234,6 +237,25 @@ public class JsonLoader extends ContentStreamLoader {
           }
         }
       });
+    }
+
+    private SolrInputDocument buildDoc(Map<String, Object> m) {
+      SolrInputDocument result = new SolrInputDocument();
+      for (Map.Entry<String, Object> e : m.entrySet()) {
+        if (e.getKey() == null) {// special case. JsonRecordReader emits child docs with null key
+          if (e.getValue() instanceof List) {
+            List value = (List) e.getValue();
+            for (Object o : value) {
+              if (o instanceof Map) result.addChildDocument(buildDoc((Map) o));
+            }
+          } else if (e.getValue() instanceof Map) {
+            result.addChildDocument(buildDoc((Map) e.getValue()));
+          }
+        } else {
+          result.setField(e.getKey(), e.getValue());
+        }
+      }
+      return result;
     }
 
     private Map<String, Object> getDocMap(Map<String, Object> record, JSONParser parser, String srcField, boolean mapUniqueKeyOnly) {
@@ -633,6 +655,18 @@ public class JsonLoader extends ContentStreamLoader {
         lst.add(val);
       }
     }
+  }
+
+  private static Object changeChildDoc(Object o) {
+    if (o instanceof List) {
+      return ((List) o)
+          .stream()
+          .map(JsonLoader::changeChildDoc)
+          .collect(toList());
+    }
+    Map m = (Map) o;
+    if (m.containsKey(null)) m.put(CHILD_DOC_KEY, changeChildDoc(m.remove(null)));
+    return m;
   }
 
 }

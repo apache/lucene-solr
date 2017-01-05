@@ -17,9 +17,12 @@
 
 package org.apache.solr.cloud;
 
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Random;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -45,7 +48,12 @@ class SegmentTerminateEarlyTestState {
   Integer maxTimestampMM = null;
 
   int numDocs = 0;
+  final Random rand;
 
+  public SegmentTerminateEarlyTestState(Random rand) {
+    this.rand = rand;
+  }
+  
   void addDocuments(CloudSolrClient cloudSolrClient,
       int numCommits, int numDocsPerCommit, boolean optimize) throws Exception {
     for (int cc = 1; cc <= numCommits; ++cc) {
@@ -54,7 +62,7 @@ class SegmentTerminateEarlyTestState {
         final Integer docKey = new Integer(numDocs);
         SolrInputDocument doc = new SolrInputDocument();
         doc.setField(keyField, ""+docKey);
-        final int MM = TestMiniSolrCloudCluster.random().nextInt(60);
+        final int MM = rand.nextInt(60); // minutes
         if (minTimestampMM == null || MM <= minTimestampMM.intValue()) {
           if (minTimestampMM != null && MM < minTimestampMM.intValue()) {
             minTimestampDocKeys.clear();
@@ -69,7 +77,7 @@ class SegmentTerminateEarlyTestState {
           maxTimestampMM = new Integer(MM);
           maxTimestampDocKeys.add(docKey);
         }
-        doc.setField(timestampField, "2016-01-01T00:"+MM+":00Z");
+        doc.setField(timestampField, ZonedDateTime.of(2016, 1, 1, 0, MM, 0, 0, ZoneOffset.UTC).toInstant().toString());
         doc.setField(oddField, ""+(numDocs % 2));
         doc.setField(quadField, ""+(numDocs % 4)+1);
         cloudSolrClient.add(doc);
@@ -114,7 +122,7 @@ class SegmentTerminateEarlyTestState {
     query.setFields(keyField, oddField, timestampField);
     final int rowsWanted = 1;
     query.setRows(rowsWanted);
-    final Boolean shardsInfoWanted = (TestMiniSolrCloudCluster.random().nextBoolean() ? null : new Boolean(TestMiniSolrCloudCluster.random().nextBoolean()));
+    final Boolean shardsInfoWanted = (rand.nextBoolean() ? null : new Boolean(rand.nextBoolean()));
     if (shardsInfoWanted != null) {
       query.set(ShardParams.SHARDS_INFO, shardsInfoWanted.booleanValue());
     }
@@ -161,7 +169,7 @@ class SegmentTerminateEarlyTestState {
     query.setSort(timestampField, SolrQuery.ORDER.desc);
     query.setFields(keyField, oddField, timestampField);
     query.setRows(1);
-    final Boolean shardsInfoWanted = (TestMiniSolrCloudCluster.random().nextBoolean() ? null : new Boolean(TestMiniSolrCloudCluster.random().nextBoolean()));
+    final Boolean shardsInfoWanted = (rand.nextBoolean() ? null : new Boolean(rand.nextBoolean()));
     if (shardsInfoWanted != null) {
       query.set(ShardParams.SHARDS_INFO, shardsInfoWanted.booleanValue());
     }

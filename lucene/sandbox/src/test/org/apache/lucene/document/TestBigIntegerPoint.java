@@ -21,6 +21,7 @@ import java.math.BigInteger;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -40,7 +41,7 @@ public class TestBigIntegerPoint extends LuceneTestCase {
     
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = newSearcher(reader, false);
+    IndexSearcher searcher = newSearcher(reader);
     assertEquals(1, searcher.count(BigIntegerPoint.newExactQuery("field", large)));
     assertEquals(1, searcher.count(BigIntegerPoint.newRangeQuery("field", large.subtract(BigInteger.ONE), large.add(BigInteger.ONE))));
     assertEquals(1, searcher.count(BigIntegerPoint.newSetQuery("field", large)));
@@ -65,7 +66,7 @@ public class TestBigIntegerPoint extends LuceneTestCase {
     
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = newSearcher(reader, false);
+    IndexSearcher searcher = newSearcher(reader);
     assertEquals(1, searcher.count(BigIntegerPoint.newExactQuery("field", negative)));
     assertEquals(1, searcher.count(BigIntegerPoint.newRangeQuery("field", negative.subtract(BigInteger.ONE), negative.add(BigInteger.ONE))));
 
@@ -93,4 +94,26 @@ public class TestBigIntegerPoint extends LuceneTestCase {
                                                                                  new BigInteger[] {BigInteger.valueOf(17), BigInteger.valueOf(42)}).toString());
     assertEquals("field:{1}", BigIntegerPoint.newSetQuery("field", BigInteger.ONE).toString());
   }
+
+  public void testQueryEquals() throws Exception {
+    Query q1, q2;
+    q1 = BigIntegerPoint.newRangeQuery("a", BigInteger.valueOf(0), BigInteger.valueOf(1000));
+    q2 = BigIntegerPoint.newRangeQuery("a", BigInteger.valueOf(0), BigInteger.valueOf(1000));
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(BigIntegerPoint.newRangeQuery("a", BigInteger.valueOf(1), BigInteger.valueOf(1000))));
+    assertFalse(q1.equals(BigIntegerPoint.newRangeQuery("b", BigInteger.valueOf(0), BigInteger.valueOf(1000))));
+
+    q1 = BigIntegerPoint.newExactQuery("a", BigInteger.valueOf(1000));
+    q2 = BigIntegerPoint.newExactQuery("a", BigInteger.valueOf(1000));
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(BigIntegerPoint.newExactQuery("a", BigInteger.valueOf(1))));
+
+    q1 = BigIntegerPoint.newSetQuery("a", BigInteger.valueOf(0), BigInteger.valueOf(1000), BigInteger.valueOf(17));
+    q2 = BigIntegerPoint.newSetQuery("a", BigInteger.valueOf(17), BigInteger.valueOf(0), BigInteger.valueOf(1000));
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(BigIntegerPoint.newSetQuery("a", BigInteger.valueOf(1), BigInteger.valueOf(17), BigInteger.valueOf(1000))));
+  }     
 }

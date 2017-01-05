@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.queries;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.valuesource.ConstValueSource;
@@ -23,9 +25,13 @@ import org.apache.lucene.search.BaseExplanationTestCase;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 
 public class TestCustomScoreExplanations extends BaseExplanationTestCase {
   public void testOneTerm() throws Exception {
@@ -49,4 +55,37 @@ public class TestCustomScoreExplanations extends BaseExplanationTestCase {
     BooleanQuery bq = bqB.build();
     qtest(new BoostQuery(bq, 6), new int[] { 0,1,2,3 });
   }
+
+  public void testSubExplanations() throws IOException {
+    Query query = new FunctionQuery(new ConstValueSource(5));
+    IndexSearcher searcher = newSearcher(BaseExplanationTestCase.searcher.getIndexReader());
+    searcher.setSimilarity(new BM25Similarity());
+
+    Explanation expl = searcher.explain(query, 0);
+    assertEquals(2, expl.getDetails().length);
+    // function
+    assertEquals(5f, expl.getDetails()[0].getValue(), 0f);
+    // boost
+    assertEquals("boost", expl.getDetails()[1].getDescription());
+    assertEquals(1f, expl.getDetails()[1].getValue(), 0f);
+
+    query = new BoostQuery(query, 2);
+    expl = searcher.explain(query, 0);
+    assertEquals(2, expl.getDetails().length);
+    // function
+    assertEquals(5f, expl.getDetails()[0].getValue(), 0f);
+    // boost
+    assertEquals("boost", expl.getDetails()[1].getDescription());
+    assertEquals(2f, expl.getDetails()[1].getValue(), 0f);
+
+    searcher.setSimilarity(new ClassicSimilarity()); // in order to have a queryNorm != 1
+    expl = searcher.explain(query, 0);
+    assertEquals(2, expl.getDetails().length);
+    // function
+    assertEquals(5f, expl.getDetails()[0].getValue(), 0f);
+    // boost
+    assertEquals("boost", expl.getDetails()[1].getDescription());
+    assertEquals(2f, expl.getDetails()[1].getValue(), 0f);
+  }
 }
+

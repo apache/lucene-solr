@@ -62,7 +62,7 @@ public class TestForceMergeForever extends LuceneTestCase {
     // Try to make an index that requires merging:
     w.getConfig().setMaxBufferedDocs(TestUtil.nextInt(random(), 2, 11));
     final int numStartDocs = atLeast(20);
-    final LineFileDocs docs = new LineFileDocs(random(), true);
+    final LineFileDocs docs = new LineFileDocs(random());
     for(int docIDX=0;docIDX<numStartDocs;docIDX++) {
       w.addDocument(docs.nextDoc());
     }

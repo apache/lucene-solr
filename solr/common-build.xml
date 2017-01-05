@@ -25,10 +25,9 @@
   
   <property name="Name" value="Solr" />
   
-  <!-- solr uses 1.8 -->
-  <property name="javac.source" value="1.8"/>
-  <property name="javac.target" value="1.8"/>
-  <property name="javac.args" value=""/>
+  <!-- solr uses Java 8 -->
+  <property name="javac.release" value="8"/>
+  <property name="javac.args" value="-Xlint:-deprecation"/>
   <property name="javac.profile.args" value=""/>
 
   <property name="dest" location="${common-solr.dir}/build" />
@@ -108,6 +107,7 @@
     <pathelement location="${queryparser.jar}"/>
     <pathelement location="${join.jar}"/>
     <pathelement location="${sandbox.jar}"/>
+    <pathelement location="${classification.jar}"/>
   </path>
 
   <path id="solr.base.classpath">
@@ -151,10 +151,13 @@
 
   <!-- 
     We don't want to run HDFS tests on Windows, because they require Cygwin.
-    If you have Cygwin or manually raised permgen, you can override this property on command line:
+    We don't want to run HDFS tests on Java 9 Jigsaw, because Hadoop/HDFS is completely broken with Java's module system.
   -->
   <condition property="tests.disableHdfs" value="true">
-    <os family="windows"/>
+    <or>
+      <os family="windows"/>
+      <available classname="java.lang.reflect.Module"/>
+    </or>
   </condition>
 
   <target name="validate" depends="compile-tools">
@@ -169,7 +172,7 @@
 
   <target name="prep-lucene-jars" 
           depends="jar-lucene-core, jar-backward-codecs, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-codecs,jar-expressions, jar-suggest, jar-highlighter, jar-memory,
-                   jar-misc, jar-spatial-extras, jar-grouping, jar-queries, jar-queryparser, jar-join, jar-sandbox">
+                   jar-misc, jar-spatial-extras, jar-grouping, jar-queries, jar-queryparser, jar-join, jar-sandbox, jar-classification">
       <property name="solr.deps.compiled" value="true"/>
   </target>
   
@@ -322,6 +325,7 @@
           <link offline="true" href="${lucene.javadoc.url}highlighter" packagelistloc="${lucenedocs}/highlighter"/>
           <link offline="true" href="${lucene.javadoc.url}memory" packagelistloc="${lucenedocs}/memory"/>
           <link offline="true" href="${lucene.javadoc.url}misc" packagelistloc="${lucenedocs}/misc"/>
+          <link offline="true" href="${lucene.javadoc.url}classification" packagelistloc="${lucenedocs}/classification"/>
           <link offline="true" href="${lucene.javadoc.url}spatial-extras" packagelistloc="${lucenedocs}/spatial-extras"/>
           <links/>
           <link href=""/>
@@ -463,6 +467,12 @@
     </sequential>
   </macrodef>
 
+  <target name="-compile-test-lucene-analysis">
+    <ant dir="${common.dir}/analysis" target="compile-test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
   <target name="-compile-test-lucene-queryparser">
     <ant dir="${common.dir}/queryparser" target="compile-test" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
@@ -500,12 +510,14 @@
   
   <!-- Forbidden API Task, customizations for Solr -->
   <target name="-check-forbidden-all" depends="-init-forbidden-apis,compile-core,compile-test">
-    <property file="${common.dir}/ivy-versions.properties"/> <!-- for commons-io version -->
-    <forbidden-apis internalRuntimeForbidden="true" suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath">
+    <property prefix="ivyversions" file="${common.dir}/ivy-versions.properties"/><!-- for commons-io version -->
+    <forbidden-apis suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath" targetVersion="${javac.release}">
       <signatures>
-        <bundled name="jdk-unsafe-${javac.target}"/>
-        <bundled name="jdk-deprecated-${javac.target}"/>
-        <bundled name="commons-io-unsafe-${/commons-io/commons-io}"/>
+        <bundled name="jdk-unsafe"/>
+        <bundled name="jdk-deprecated"/>
+        <bundled name="jdk-non-portable"/>
+        <bundled name="jdk-reflection"/>
+        <bundled name="commons-io-unsafe-${ivyversions./commons-io/commons-io}"/>
         <fileset dir="${common.dir}/tools/forbiddenApis">
           <include name="base.txt" />
           <include name="servlet-api.txt" />

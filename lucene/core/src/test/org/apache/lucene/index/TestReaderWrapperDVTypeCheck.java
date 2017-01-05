@@ -45,7 +45,7 @@ public class TestReaderWrapperDVTypeCheck extends LuceneTestCase {
     {
       final Random indexRandom = new Random(seed);
       final int docs;
-      docs = indexRandom.nextInt(4);
+      docs = TestUtil.nextInt(indexRandom, 1, 4);
      // System.out.println("docs:"+docs);
       
       for(int i=0; i< docs; i++){
@@ -68,12 +68,13 @@ public class TestReaderWrapperDVTypeCheck extends LuceneTestCase {
         iw.commit();
       }
     }
+    iw.forceMerge(1);
     final DirectoryReader reader = iw.getReader();
     
    // System.out.println("sdv:"+ sdvExist+ " ssdv:"+ssdvExist+", segs: "+reader.leaves().size() +", "+reader.leaves());
     
     iw.close();
-    final LeafReader wrapper = SlowCompositeReaderWrapper.wrap(reader);
+    final LeafReader wrapper = getOnlyLeafReader(reader);
     
     {
       //final Random indexRandom = new Random(seed);

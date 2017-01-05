@@ -22,7 +22,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -33,7 +36,7 @@ import org.apache.solr.response.TextResponseWriter;
  *
  *
  */
-public final class SchemaField extends FieldProperties {
+public final class SchemaField extends FieldProperties implements IndexableFieldType {
   private static final String FIELD_NAME = "name";
   private static final String TYPE_NAME = "type";
   private static final String DEFAULT_VALUE = "default";
@@ -352,5 +355,63 @@ public final class SchemaField extends FieldProperties {
       }
     }
     return properties;
+  }
+
+  @Override
+  public boolean tokenized() {
+    return isTokenized();
+  }
+
+  @Override
+  public boolean storeTermVectors() {
+    return storeTermVector();
+  }
+
+  @Override
+  public boolean storeTermVectorOffsets() {
+    return storeTermOffsets();
+  }
+
+  @Override
+  public boolean storeTermVectorPositions() {
+    return storeTermPositions();
+  }
+
+  @Override
+  public boolean storeTermVectorPayloads() {
+    return storeTermPayloads();
+  }
+
+  @Override
+  public IndexOptions indexOptions() {
+    if (!indexed()) {
+      return IndexOptions.NONE;
+    }
+    
+    IndexOptions options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+    if (omitTermFreqAndPositions()) {
+      options = IndexOptions.DOCS;
+    } else if (omitPositions()) {
+      options = IndexOptions.DOCS_AND_FREQS;
+    } else if (storeOffsetsWithPositions()) {
+      options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+    }
+
+    return options;
+  }
+
+  @Override
+  public DocValuesType docValuesType() {
+    return DocValuesType.NONE;
+  }
+
+  @Override
+  public int pointDimensionCount() {
+    return 0;
+  }
+
+  @Override
+  public int pointNumBytes() {
+    return 0;
   }
 }

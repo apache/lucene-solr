@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.component;
+
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -35,7 +35,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -54,7 +54,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,110 +113,75 @@ public class HttpShardHandler extends ShardHandler {
 
   // Not thread safe... don't use in Callable.
   // Don't modify the returned URL list.
-  private List<String> getURLs(String shard, String preferredHostAddress) {
+  private List<String> getURLs(String shard) {
     List<String> urls = shardToURLs.get(shard);
     if (urls == null) {
-      urls = httpShardHandlerFactory.makeURLList(shard);
-      if (preferredHostAddress != null && urls.size() > 1) {
-        preferCurrentHostForDistributedReq(preferredHostAddress, urls);
-      }
+      urls = httpShardHandlerFactory.buildURLList(shard);
       shardToURLs.put(shard, urls);
     }
     return urls;
   }
 
-  /**
-   * A distributed request is made via {@link LBHttpSolrClient} to the first live server in the URL list.
-   * This means it is just as likely to choose current host as any of the other hosts.
-   * This function makes sure that the cores of current host are always put first in the URL list.
-   * If all nodes prefer local-cores then a bad/heavily-loaded node will receive less requests from healthy nodes.
-   * This will help prevent a distributed deadlock or timeouts in all the healthy nodes due to one bad node.
-   */
-  private void preferCurrentHostForDistributedReq(final String currentHostAddress, final List<String> urls) {
-    if (log.isDebugEnabled())
-      log.debug("Trying to prefer local shard on {} among the urls: {}",
-          currentHostAddress, Arrays.toString(urls.toArray()));
-
-    ListIterator<String> itr = urls.listIterator();
-    while (itr.hasNext()) {
-      String url = itr.next();
-      if (url.startsWith(currentHostAddress)) {
-        // move current URL to the fore-front
-        itr.remove();
-        urls.add(0, url);
-
-        if (log.isDebugEnabled())
-          log.debug("Applied local shard preference for urls: {}",
-              Arrays.toString(urls.toArray()));
-
-        break;
-      }
-    }
-  }
-
   @Override
-  public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params, String preferredHostAddress) {
+  public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
     // do this outside of the callable for thread safety reasons
-    final List<String> urls = getURLs(shard, preferredHostAddress);
+    final List<String> urls = getURLs(shard);
 
-    Callable<ShardResponse> task = new Callable<ShardResponse>() {
-      @Override
-      public ShardResponse call() throws Exception {
+    Callable<ShardResponse> task = () -> {
 
-        ShardResponse srsp = new ShardResponse();
-        if (sreq.nodeName != null) {
-          srsp.setNodeName(sreq.nodeName);
-        }
-        srsp.setShardRequest(sreq);
-        srsp.setShard(shard);
-        SimpleSolrResponse ssr = new SimpleSolrResponse();
-        srsp.setSolrResponse(ssr);
-        long startTime = System.nanoTime();
-
-        try {
-          params.remove(CommonParams.WT); // use default (currently javabin)
-          params.remove(CommonParams.VERSION);
-
-          QueryRequest req = makeQueryRequest(sreq, params, shard);
-          req.setMethod(SolrRequest.METHOD.POST);
-
-          // no need to set the response parser as binary is the default
-          // req.setResponseParser(new BinaryResponseParser());
-
-          // if there are no shards available for a slice, urls.size()==0
-          if (urls.size()==0) {
-            // TODO: what's the right error code here? We should use the same thing when
-            // all of the servers for a shard are down.
-            throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
-          }
-
-          if (urls.size() <= 1) {
-            String url = urls.get(0);
-            srsp.setShardAddress(url);
-            try (SolrClient client = new HttpSolrClient(url, httpClient)) {
-              ssr.nl = client.request(req);
-            }
-          } else {
-            LBHttpSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
-            ssr.nl = rsp.getResponse();
-            srsp.setShardAddress(rsp.getServer());
-          }
-        }
-        catch( ConnectException cex ) {
-          srsp.setException(cex); //????
-        } catch (Exception th) {
-          srsp.setException(th);
-          if (th instanceof SolrException) {
-            srsp.setResponseCode(((SolrException)th).code());
-          } else {
-            srsp.setResponseCode(-1);
-          }
-        }
-
-        ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
-
-        return transfomResponse(sreq, srsp, shard);
+      ShardResponse srsp = new ShardResponse();
+      if (sreq.nodeName != null) {
+        srsp.setNodeName(sreq.nodeName);
       }
+      srsp.setShardRequest(sreq);
+      srsp.setShard(shard);
+      SimpleSolrResponse ssr = new SimpleSolrResponse();
+      srsp.setSolrResponse(ssr);
+      long startTime = System.nanoTime();
+
+      try {
+        params.remove(CommonParams.WT); // use default (currently javabin)
+        params.remove(CommonParams.VERSION);
+
+        QueryRequest req = makeQueryRequest(sreq, params, shard);
+        req.setMethod(SolrRequest.METHOD.POST);
+
+        // no need to set the response parser as binary is the default
+        // req.setResponseParser(new BinaryResponseParser());
+
+        // if there are no shards available for a slice, urls.size()==0
+        if (urls.size()==0) {
+          // TODO: what's the right error code here? We should use the same thing when
+          // all of the servers for a shard are down.
+          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
+        }
+
+        if (urls.size() <= 1) {
+          String url = urls.get(0);
+          srsp.setShardAddress(url);
+          try (SolrClient client = new Builder(url).withHttpClient(httpClient).build()) {
+            ssr.nl = client.request(req);
+          }
+        } else {
+          LBHttpSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
+          ssr.nl = rsp.getResponse();
+          srsp.setShardAddress(rsp.getServer());
+        }
+      }
+      catch( ConnectException cex ) {
+        srsp.setException(cex); //????
+      } catch (Exception th) {
+        srsp.setException(th);
+        if (th instanceof SolrException) {
+          srsp.setResponseCode(((SolrException)th).code());
+        } else {
+          srsp.setResponseCode(-1);
+        }
+      }
+
+      ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+
+      return transfomResponse(sreq, srsp, shard);
     };
 
     try {
@@ -317,12 +281,7 @@ public class HttpShardHandler extends ShardHandler {
     CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
     ZkController zkController = coreDescriptor.getCoreContainer().getZkController();
 
-    if (params.getBool(CommonParams.PREFER_LOCAL_SHARDS, false)) {
-      rb.preferredHostAddress = (zkController != null) ? zkController.getBaseUrl() : null;
-      if (rb.preferredHostAddress == null) {
-        log.warn("Couldn't determine current host address to prefer local shards");
-      }
-    }
+    final ReplicaListTransformer replicaListTransformer = httpShardHandlerFactory.getReplicaListTransformer(req);
 
     if (shards != null) {
       List<String> lst = StrUtils.splitSmart(shards, ",", true);
@@ -408,7 +367,11 @@ public class HttpShardHandler extends ShardHandler {
 
 
       for (int i=0; i<rb.shards.length; i++) {
-        if (rb.shards[i] == null) {
+        final List<String> shardUrls;
+        if (rb.shards[i] != null) {
+          shardUrls = StrUtils.splitSmart(rb.shards[i], "|", true);
+          replicaListTransformer.transform(shardUrls);
+        } else {
           if (clusterState == null) {
             clusterState =  zkController.getClusterState();
             slices = clusterState.getSlicesMap(cloudDescriptor.getCollectionName());
@@ -425,26 +388,25 @@ public class HttpShardHandler extends ShardHandler {
             // throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such shard: " + sliceName);
           }
 
-          Map<String, Replica> sliceShards = slice.getReplicasMap();
-
-          // For now, recreate the | delimited list of equivalent servers
-          StringBuilder sliceShardsStr = new StringBuilder();
-          boolean first = true;
-          for (Replica replica : sliceShards.values()) {
+          final Collection<Replica> allSliceReplicas = slice.getReplicasMap().values();
+          final List<Replica> eligibleSliceReplicas = new ArrayList<>(allSliceReplicas.size());
+          for (Replica replica : allSliceReplicas) {
             if (!clusterState.liveNodesContain(replica.getNodeName())
                 || replica.getState() != Replica.State.ACTIVE) {
               continue;
             }
-            if (first) {
-              first = false;
-            } else {
-              sliceShardsStr.append('|');
-            }
-            String url = ZkCoreNodeProps.getCoreUrl(replica);
-            sliceShardsStr.append(url);
+            eligibleSliceReplicas.add(replica);
           }
 
-          if (sliceShardsStr.length() == 0) {
+          replicaListTransformer.transform(eligibleSliceReplicas);
+
+          shardUrls = new ArrayList<>(eligibleSliceReplicas.size());
+          for (Replica replica : eligibleSliceReplicas) {
+            String url = ZkCoreNodeProps.getCoreUrl(replica);
+            shardUrls.add(url);
+          }
+
+          if (shardUrls.isEmpty()) {
             boolean tolerant = rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false);
             if (!tolerant) {
               // stop the check when there are no replicas available for a shard
@@ -452,9 +414,19 @@ public class HttpShardHandler extends ShardHandler {
                   "no servers hosting shard: " + rb.slices[i]);
             }
           }
-
-          rb.shards[i] = sliceShardsStr.toString();
         }
+        // And now recreate the | delimited list of equivalent servers
+        final StringBuilder sliceShardsStr = new StringBuilder();
+        boolean first = true;
+        for (String shardUrl : shardUrls) {
+          if (first) {
+            first = false;
+          } else {
+            sliceShardsStr.append('|');
+          }
+          sliceShardsStr.append(shardUrl);
+        }
+        rb.shards[i] = sliceShardsStr.toString();
       }
     }
     String shards_rows = params.get(ShardParams.SHARDS_ROWS);

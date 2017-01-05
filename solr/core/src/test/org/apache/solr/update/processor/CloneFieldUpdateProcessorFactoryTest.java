@@ -155,7 +155,7 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
 
     SolrInputDocument d;
 
-    // regardless of chain, all of these checks should be equivilent
+    // regardless of chain, all of these checks should be equivalent
     for (String chain : Arrays.asList("clone-single", "clone-single-regex",
                                       "clone-multi", "clone-multi-regex",
                                       "clone-array", "clone-array-regex", 
@@ -191,7 +191,7 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
                    2.3f, d.getField("dest_s").getBoost(), 0.0f);
     }
 
-    // should be equivilent for any chain matching source1_s and source2_s (but not source0_s)
+    // should be equivalent for any chain matching source1_s and source2_s (but not source0_s)
     for (String chain : Arrays.asList("clone-multi", "clone-multi-regex",
                                       "clone-array", "clone-array-regex", 
                                       "clone-selector", "clone-selector-regex")) {
@@ -236,7 +236,7 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
                    2.3f, d.getField("dest_s").getBoost(), 0.0f);
     }
     
-    // any chain that copies source1_s to dest_s should be equivilent for these assertions
+    // any chain that copies source1_s to dest_s should be equivalent for these assertions
     for (String chain : Arrays.asList("clone-simple-regex-syntax",
                                       "clone-single", "clone-single-regex",
                                       "clone-multi", "clone-multi-regex",

@@ -25,15 +25,16 @@ import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Circle;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.RectIntersectionTestHelper;
-import org.apache.lucene.geo3d.LatLonBounds;
-import org.apache.lucene.geo3d.GeoBBox;
-import org.apache.lucene.geo3d.GeoBBoxFactory;
-import org.apache.lucene.geo3d.GeoStandardCircle;
-import org.apache.lucene.geo3d.GeoPath;
-import org.apache.lucene.geo3d.GeoPoint;
-import org.apache.lucene.geo3d.GeoPolygonFactory;
-import org.apache.lucene.geo3d.GeoShape;
-import org.apache.lucene.geo3d.PlanetModel;
+import org.apache.lucene.spatial3d.geom.LatLonBounds;
+import org.apache.lucene.spatial3d.geom.GeoBBox;
+import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
+import org.apache.lucene.spatial3d.geom.GeoCircle;
+import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
+import org.apache.lucene.spatial3d.geom.GeoPathFactory;
+import org.apache.lucene.spatial3d.geom.GeoPoint;
+import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
+import org.apache.lucene.spatial3d.geom.GeoShape;
+import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -118,14 +119,14 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
       protected Geo3dShape generateRandomShape(Point nearP) {
         final int circleRadius = 180 - random().nextInt(180);//no 0-radius
         final Point point = nearP;
-        final GeoShape shape = new GeoStandardCircle(planetModel, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
+        final GeoShape shape = GeoCircleFactory.makeGeoCircle(planetModel, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
             circleRadius * DEGREES_TO_RADIANS);
         return new Geo3dShape(planetModel, shape, ctx);
       }
 
       @Override
       protected Point randomPointInEmptyShape(Geo3dShape shape) {
-        GeoPoint geoPoint = ((GeoStandardCircle)shape.shape).getCenter();
+        GeoPoint geoPoint = ((GeoCircle)shape.shape).getCenter();
         return geoPointToSpatial4jPoint(geoPoint);
       }
 
@@ -183,9 +184,11 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
             final GeoPoint gPt = new GeoPoint(planetModel, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS);
             geoPoints.add(gPt);
           }
-          final int convexPointIndex = random().nextInt(vertexCount); //If we get this wrong, hopefully we get IllegalArgumentException
           try {
-            final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(planetModel, geoPoints, convexPointIndex);
+            final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(planetModel, geoPoints);
+            if (shape == null) {
+              continue;
+            }
             return new Geo3dShape(planetModel, shape, ctx);
           } catch (IllegalArgumentException e) {
             // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
@@ -220,14 +223,15 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
         final Circle pointZone = ctx.makeCircle(centerPoint, maxDistance);
         final int pointCount = random().nextInt(5) + 1;
         final double width = (random().nextInt(89)+1) * DEGREES_TO_RADIANS;
+        final GeoPoint[] points = new GeoPoint[pointCount];
         while (true) {
+          for (int i = 0; i < pointCount; i++) {
+            final Point nextPoint = randomPointIn(pointZone);
+            points[i] = new GeoPoint(planetModel, nextPoint.getY() * DEGREES_TO_RADIANS, nextPoint.getX() * DEGREES_TO_RADIANS);
+          }
+          
           try {
-            final GeoPath path = new GeoPath(planetModel, width);
-            for (int i = 0; i < pointCount; i++) {
-              final Point nextPoint = randomPointIn(pointZone);
-              path.addPoint(nextPoint.getY() * DEGREES_TO_RADIANS, nextPoint.getX() * DEGREES_TO_RADIANS);
-            }
-            path.done();
+            final GeoShape path = GeoPathFactory.makeGeoPath(planetModel, width, points);
             return new Geo3dShape(planetModel, path, ctx);
           } catch (IllegalArgumentException e) {
             // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where

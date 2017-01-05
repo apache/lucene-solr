@@ -33,7 +33,6 @@ import org.easymock.EasyMock;
 import org.junit.Test;
 
 import static org.easymock.EasyMock.createMock;
-import static org.easymock.EasyMock.createStrictMock;
 
 public class ClusterStateTest extends SolrTestCaseJ4 {
   @Test
@@ -66,21 +65,21 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     
     assertEquals("Provided liveNodes not used properly", 2, loadedClusterState
         .getLiveNodes().size());
-    assertEquals("No collections found", 2, loadedClusterState.getCollections().size());
-    assertEquals("Poperties not copied properly", replica.getStr("prop1"), loadedClusterState.getSlice("collection1", "shard1").getReplicasMap().get("node1").getStr("prop1"));
-    assertEquals("Poperties not copied properly", replica.getStr("prop2"), loadedClusterState.getSlice("collection1", "shard1").getReplicasMap().get("node1").getStr("prop2"));
+    assertEquals("No collections found", 2, loadedClusterState.getCollectionsMap().size());
+    assertEquals("Properties not copied properly", replica.getStr("prop1"), loadedClusterState.getSlice("collection1", "shard1").getReplicasMap().get("node1").getStr("prop1"));
+    assertEquals("Properties not copied properly", replica.getStr("prop2"), loadedClusterState.getSlice("collection1", "shard1").getReplicasMap().get("node1").getStr("prop2"));
 
     loadedClusterState = ClusterState.load(-1, new byte[0], liveNodes);
     
     assertEquals("Provided liveNodes not used properly", 2, loadedClusterState
         .getLiveNodes().size());
-    assertEquals("Should not have collections", 0, loadedClusterState.getCollections().size());
+    assertEquals("Should not have collections", 0, loadedClusterState.getCollectionsMap().size());
 
     loadedClusterState = ClusterState.load(-1, (byte[])null, liveNodes);
     
     assertEquals("Provided liveNodes not used properly", 2, loadedClusterState
         .getLiveNodes().size());
-    assertEquals("Should not have collections", 0, loadedClusterState.getCollections().size());
+    assertEquals("Should not have collections", 0, loadedClusterState.getCollectionsMap().size());
   }
 
   public static ZkStateReader getMockZkStateReader(final Set<String> collections) {

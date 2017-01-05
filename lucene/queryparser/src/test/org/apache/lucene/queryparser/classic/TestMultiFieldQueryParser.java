@@ -21,15 +21,19 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockSynonymFilter;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -326,10 +330,31 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     MultiFieldQueryParser mfqp = new MultiFieldQueryParser(fields, new MockAnalyzer(random()));
 
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    bq.setDisableCoord(true);
     bq.add(new RegexpQuery(new Term("a", "[a-z][123]")), Occur.SHOULD);
     bq.add(new RegexpQuery(new Term("b", "[a-z][123]")), Occur.SHOULD);
     assertEquals(bq.build(), mfqp.parse("/[a-z][123]/"));
   }
 
+  /** whitespace+lowercase analyzer with synonyms (dogs,dog) and (guinea pig,cavy) */
+  private class MockSynonymAnalyzer extends Analyzer {
+    @Override
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+      return new TokenStreamComponents(tokenizer, new MockSynonymFilter(tokenizer));
+    }
+  }
+
+  public void testSynonyms() throws ParseException {
+    String[] fields = {"b", "t"};
+    MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, new MockSynonymAnalyzer());
+    Query q = parser.parse("dogs");
+    assertEquals("Synonym(b:dog b:dogs) Synonym(t:dog t:dogs)", q.toString());
+    q = parser.parse("guinea pig");
+    assertFalse(parser.getSplitOnWhitespace());
+    assertEquals("Graph(b:guinea b:pig, b:cavy, hasBoolean=true, hasPhrase=false) "
+        + "Graph(t:guinea t:pig, t:cavy, hasBoolean=true, hasPhrase=false)", q.toString());
+    parser.setSplitOnWhitespace(true);
+    q = parser.parse("guinea pig");
+    assertEquals("(b:guinea t:guinea) (b:pig t:pig)", q.toString());
+  }
 }

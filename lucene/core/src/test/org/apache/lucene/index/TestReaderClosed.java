@@ -17,7 +17,6 @@
 package org.apache.lucene.index;
 
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -32,7 +31,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestReaderClosed extends LuceneTestCase {
-  private IndexReader reader;
+  private DirectoryReader reader;
   private Directory dir;
 
   @Override
@@ -54,6 +53,7 @@ public class TestReaderClosed extends LuceneTestCase {
       field.setStringValue(TestUtil.randomUnicodeString(random(), 10));
       writer.addDocument(doc);
     }
+    writer.forceMerge(1);
     reader = writer.getReader();
     writer.close();
   }
@@ -77,8 +77,7 @@ public class TestReaderClosed extends LuceneTestCase {
   // LUCENE-3800
   public void testReaderChaining() throws Exception {
     assertTrue(reader.getRefCount() > 0);
-    IndexReader wrappedReader = SlowCompositeReaderWrapper.wrap(reader);
-    wrappedReader = new ParallelLeafReader((LeafReader) wrappedReader);
+    LeafReader wrappedReader = new ParallelLeafReader(getOnlyLeafReader(reader));
 
     IndexSearcher searcher = newSearcher(wrappedReader);
 

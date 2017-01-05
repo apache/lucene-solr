@@ -38,9 +38,6 @@ import java.io.IOException;
  *  <li> {@link #compareBottom} Compare a new hit (docID)
  *       against the "weakest" (bottom) entry in the queue.
  *
- *  <li> {@link #compareBottom} Compare a new hit (docID)
- *       against the "weakest" (bottom) entry in the queue.
- *
  *  <li> {@link #compareTop} Compare a new hit (docID)
  *       against the top value previously set by a call to
  *       {@link FieldComparator#setTopValue}.
@@ -64,7 +61,7 @@ public interface LeafFieldComparator {
    * 
    * @param slot the currently weakest (sorted last) slot in the queue
    */
-  void setBottom(final int slot);
+  void setBottom(final int slot) throws IOException;
 
   /**
    * Compare the bottom of the queue with this doc.  This will
@@ -95,8 +92,8 @@ public interface LeafFieldComparator {
    *    
    * @param doc that was hit
    * @return any {@code N < 0} if the doc's value is sorted after
-   * the bottom entry (not competitive), any {@code N > 0} if the
-   * doc's value is sorted before the bottom entry and {@code 0} if
+   * the top entry (not competitive), any {@code N > 0} if the
+   * doc's value is sorted before the top entry and {@code 0} if
    * they are equal.
    */
   int compareTop(int doc) throws IOException;
@@ -117,6 +114,6 @@ public interface LeafFieldComparator {
    * 
    * @param scorer Scorer instance that you should use to
    * obtain the current hit's score, if necessary. */
-  void setScorer(Scorer scorer);
+  void setScorer(Scorer scorer) throws IOException;
 
 }

@@ -18,14 +18,13 @@ package org.apache.lucene.spatial.prefix;
 
 import java.io.IOException;
 
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.SpatialRelation;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
-import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.DocIdSetBuilder;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.SpatialRelation;
 
 /**
  * A Query matching documents that have an {@link SpatialRelation#INTERSECTS}
@@ -53,16 +52,16 @@ public class IntersectsPrefixTreeQuery extends AbstractVisitingPrefixTreeQuery {
 
      */
     return new VisitorTemplate(context) {
-      private FixedBitSet results;
+      private DocIdSetBuilder results;
 
       @Override
-      protected void start() {
-        results = new FixedBitSet(maxDoc);
+      protected void start() throws IOException {
+        results = new DocIdSetBuilder(maxDoc, terms);
       }
 
       @Override
       protected DocIdSet finish() {
-        return new BitDocIdSet(results);
+        return results.build();
       }
 
       @Override

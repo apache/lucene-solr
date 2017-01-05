@@ -29,12 +29,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.internal.csv.CSVPrinter;
 import org.apache.solr.internal.csv.CSVStrategy;
@@ -45,9 +46,6 @@ import org.apache.solr.schema.StrField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.util.FastWriter;
-
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 
 /**
  *
@@ -179,7 +177,8 @@ class CSVWriter extends TextResponseWriter {
   public void writeResponse() throws IOException {
     SolrParams params = req.getParams();
 
-    strategy = new CSVStrategy(',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true);
+    strategy = new CSVStrategy
+        (',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true, "\n");
     CSVStrategy strat = strategy;
 
     String sep = params.get(CSV_SEPARATOR);
@@ -218,7 +217,8 @@ class CSVWriter extends TextResponseWriter {
     printer = new CSVPrinter(writer, strategy);
     
 
-    CSVStrategy mvStrategy = new CSVStrategy(strategy.getDelimiter(), CSVStrategy.ENCAPSULATOR_DISABLED, CSVStrategy.COMMENTS_DISABLED, '\\', false, false, false, false);
+    CSVStrategy mvStrategy = new CSVStrategy(strategy.getDelimiter(), CSVStrategy.ENCAPSULATOR_DISABLED, 
+        CSVStrategy.COMMENTS_DISABLED, '\\', false, false, false, false, "\n");
     strat = mvStrategy;
 
     sep = params.get(MV_SEPARATOR);
@@ -495,9 +495,7 @@ class CSVWriter extends TextResponseWriter {
 
   @Override
   public void writeDate(String name, Date val) throws IOException {
-    StringBuilder sb = new StringBuilder(25);
-    cal = DateUtil.formatDate(val, cal, sb);
-    writeDate(name, sb.toString());
+    writeDate(name, val.toInstant().toString());
   }
 
   @Override

@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.Comparator;
 
 public class TestIntervalFaceting extends SolrTestCaseJ4 {
 
@@ -351,13 +350,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     values[0] = random().nextInt(max);
     values[1] = random().nextInt(max);
     if (fieldName.startsWith("test_s")) {
-      Arrays.sort(values, new Comparator<Integer>() {
-
-        @Override
-        public int compare(Integer o1, Integer o2) {
-          return String.valueOf(o1).compareTo(String.valueOf(o2));
-        }
-      });
+      Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
     } else {
       Arrays.sort(values);
     }
@@ -950,6 +943,9 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertIntervalQuery(field, "(0,2]", "2");
     assertIntervalQuery(field, "[*,5]", "6");
     assertIntervalQuery(field, "[*,3)", "3", "[2,5)", "3", "[6,8)", "2", "[3,*]", "7", "[10,10]", "1", "[10,10]", "1", "[10,10]", "1");
+    assertIntervalQuery(field, "(5,*]", "4", "[5,5]", "1", "(*,5)", "5");
+    assertIntervalQuery(field, "[5,5]", "1", "(*,5)", "5", "(5,*]", "4");
+    assertIntervalQuery(field, "(5,*]", "4", "(*,5)", "5", "[5,5]", "1");
 
   }
 
@@ -962,7 +958,9 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertIntervalQuery(field, "[*,bird)", "2", "[bird,cat)", "1", "[cat,dog)", "2", "[dog,*]", "4");
     assertIntervalQuery(field, "[*,*]", "9", "[*,dog)", "5", "[*,dog]", "8", "[dog,*]", "4");
     assertIntervalQuery(field, field + ":dog", 3, "[*,*]", "3", "[*,dog)", "0", "[*,dog]", "3", "[dog,*]", "3", "[bird,cat]", "0");
-
+    assertIntervalQuery(field, "(*,dog)", "5", "[dog, dog]", "3", "(dog,*)", "1");
+    assertIntervalQuery(field, "[dog, dog]", "3", "(dog,*)", "1", "(*,dog)", "5");
+    assertIntervalQuery(field, "(dog,*)", "1", "(*,dog)", "5", "[dog, dog]", "3");
   }
 
   /**

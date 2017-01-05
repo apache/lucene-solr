@@ -29,6 +29,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase;
@@ -85,8 +86,10 @@ public class TestAllFilesCheckIndexHeader extends LuceneTestCase {
   }
   
   private void checkOneFile(Directory dir, String victim) throws IOException {
-    try (BaseDirectoryWrapper dirCopy = newDirectory()) {
+    // use ramdir explicit, as we do evil things like try to generate broken files, deletes must work.
+    try (BaseDirectoryWrapper dirCopy = new MockDirectoryWrapper(random(), new RAMDirectory())) {
       dirCopy.setCheckIndexOnClose(false);
+
       long victimLength = dir.fileLength(victim);
       int wrongBytes = TestUtil.nextInt(random(), 1, (int) Math.min(100, victimLength));
       assert victimLength > 0;
@@ -117,6 +120,8 @@ public class TestAllFilesCheckIndexHeader extends LuceneTestCase {
                 break;
               }
             }
+            // we have to try again, delete the first attempt and retry the loop
+            dirCopy.deleteFile(name);
           }
         }
         dirCopy.sync(Collections.singleton(name));
@@ -132,7 +137,7 @@ public class TestAllFilesCheckIndexHeader extends LuceneTestCase {
 
       // CheckIndex should also fail:
       try {
-        TestUtil.checkIndex(dirCopy, true, true);
+        TestUtil.checkIndex(dirCopy, true, true, null);
         fail("wrong bytes not detected after randomizing first " + wrongBytes + " bytes out of " + victimLength + " for file " + victim);
       } catch (CorruptIndexException | EOFException | IndexFormatTooOldException e) {
         // expected

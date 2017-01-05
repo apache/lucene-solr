@@ -88,7 +88,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     waitForRecoveriesToFinish("a1x2", true);
     waitForRecoveriesToFinish("b1x1", true);
 
-    cloudClient.getZkStateReader().updateClusterState();
+    cloudClient.getZkStateReader().forceUpdateCollection("b1x1");
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     DocCollection b1x1 = clusterState.getCollection("b1x1");
@@ -96,13 +96,14 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     assertEquals(1, replicas.size());
     String baseUrl = replicas.iterator().next().getStr(ZkStateReader.BASE_URL_PROP);
     if (!baseUrl.endsWith("/")) baseUrl += "/";
-    HttpSolrClient client = new HttpSolrClient(baseUrl + "a1x2");
-    client.setSoTimeout(5000);
-    client.setConnectionTimeout(2000);
+    try (HttpSolrClient client = getHttpSolrClient(baseUrl + "a1x2")) {
+      client.setSoTimeout(5000);
+      client.setConnectionTimeout(2000);
 
-    log.info("Making requests to " + baseUrl + "a1x2");
-    for (int i=0; i < 10; i++)  {
-      client.query(new SolrQuery("*:*"));
+      log.info("Making requests to " + baseUrl + "a1x2");
+      for (int i = 0; i < 10; i++) {
+        client.query(new SolrQuery("*:*"));
+      }
     }
 
     Map<String, Integer> shardVsCount = new HashMap<>();
@@ -137,7 +138,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
     waitForRecoveriesToFinish("football", true);
 
-    cloudClient.getZkStateReader().updateClusterState();
+    cloudClient.getZkStateReader().forceUpdateCollection("football");
 
     Replica leader = null;
     Replica notLeader = null;
@@ -173,58 +174,59 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     if (!baseUrl.endsWith("/")) baseUrl += "/";
     String path = baseUrl + "football";
     log.info("Firing queries against path=" + path);
-    HttpSolrClient client = new HttpSolrClient(path);
-    client.setSoTimeout(5000);
-    client.setConnectionTimeout(2000);
+    try (HttpSolrClient client = getHttpSolrClient(path)) {
+      client.setSoTimeout(5000);
+      client.setConnectionTimeout(2000);
 
-    SolrCore leaderCore = null;
-    for (JettySolrRunner jetty : jettys) {
-      CoreContainer container = jetty.getCoreContainer();
-      for (SolrCore core : container.getCores()) {
-        if (core.getName().equals(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
-          leaderCore = core;
-          break;
+      SolrCore leaderCore = null;
+      for (JettySolrRunner jetty : jettys) {
+        CoreContainer container = jetty.getCoreContainer();
+        for (SolrCore core : container.getCores()) {
+          if (core.getName().equals(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
+            leaderCore = core;
+            break;
+          }
         }
       }
-    }
-    assertNotNull(leaderCore);
+      assertNotNull(leaderCore);
 
-    //All queries should be served by the active replica
-    //To make sure that's true we keep querying the down replica
-    //If queries are getting processed by the down replica then the cluster state hasn't updated for that replica locally
-    //So we keep trying till it has updated and then verify if ALL queries go to the active reploca
-    long count = 0;
-    while (true) {
-      count++;
-      client.query(new SolrQuery("*:*"));
+      // All queries should be served by the active replica
+      // To make sure that's true we keep querying the down replica
+      // If queries are getting processed by the down replica then the cluster state hasn't updated for that replica
+      // locally
+      // So we keep trying till it has updated and then verify if ALL queries go to the active replica
+      long count = 0;
+      while (true) {
+        count++;
+        client.query(new SolrQuery("*:*"));
 
-      SolrRequestHandler select = leaderCore.getRequestHandler("");
-      long c = (long) select.getStatistics().get("requests");
+        SolrRequestHandler select = leaderCore.getRequestHandler("");
+        long c = (long) select.getStatistics().get("requests");
 
-      if (c == 1) {
-        break;  //cluster state has got update locally
-      } else {
-        Thread.sleep(100);
+        if (c == 1) {
+          break; // cluster state has got update locally
+        } else {
+          Thread.sleep(100);
+        }
+
+        if (count > 10000) {
+          fail("After 10k queries we still see all requests being processed by the down replica");
+        }
       }
 
-      if (count > 10000) {
-        fail("After 10k queries we still see all requests being processed by the down replica");
+      // Now we fire a few additional queries and make sure ALL of them
+      // are served by the active replica
+      int moreQueries = TestUtil.nextInt(random(), 4, 10);
+      count = 1; // Since 1 query has already hit the leader
+      for (int i = 0; i < moreQueries; i++) {
+        client.query(new SolrQuery("*:*"));
+        count++;
+
+        SolrRequestHandler select = leaderCore.getRequestHandler("");
+        long c = (long) select.getStatistics().get("requests");
+
+        assertEquals("Query wasn't served by leader", count, c);
       }
     }
-
-    //Now we fire a few additional queries and make sure ALL of them
-    //are served by the active replica
-    int moreQueries = TestUtil.nextInt(random(), 4, 10);
-    count = 1; //Since 1 query has already hit the leader
-    for (int i=0; i<moreQueries; i++) {
-      client.query(new SolrQuery("*:*"));
-      count++;
-
-      SolrRequestHandler select = leaderCore.getRequestHandler("");
-      long c = (long) select.getStatistics().get("requests");
-
-      assertEquals("Query wasn't served by leader", count, c);
-    }
-
   }
 }

@@ -25,12 +25,11 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.uninverting.DocTermOrds;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.uninverting.DocTermOrds;
 import org.apache.solr.util.RefCounted;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -83,7 +82,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
     createIndex(size);
     req = lrf.makeRequest("q","*:*");
 
-    SortedSetDocValues dv = DocValues.getSortedSet(req.getSearcher().getLeafReader(), proto.field());
+    SortedSetDocValues dv = DocValues.getSortedSet(req.getSearcher().getSlowAtomicReader(), proto.field());
 
     assertEquals(size, dv.getValueCount());
 
@@ -255,17 +254,17 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
     int i=iter-1;
     assertQ("check many tokens",
-            req("q", "id:"+t(i),"indent","true"
-                ,"facet", "true", "facet.method",((methodSeed + i)%2 ==0 ?"fc":"uif")
-                ,"facet.field", "many_ws"
-                ,"facet.limit", "-1"
-                ,"facet.mincount", "1"
+        req("q", "id:" + t(i), "indent", "true"
+            , "facet", "true", "facet.method", ((methodSeed + i) % 2 == 0 ? "fc" : "uif")
+            , "facet.field", "many_ws"
+            , "facet.limit", "-1"
+            , "facet.mincount", "1"
 
-                )
-            ,"*[count(//lst[@name='many_ws']/int)=" + 2 + "]"
-            ,"//lst[@name='many_ws']/int[@name='" + t(i1+i) + "'][.='1']"
-            ,"//lst[@name='many_ws']/int[@name='" + t(i1*2+i) + "'][.='1']"
-            );
+        )
+        , "*[count(//lst[@name='many_ws']/int)=" + 2 + "]"
+        , "//lst[@name='many_ws']/int[@name='" + t(i1 + i) + "'][.='1']"
+        , "//lst[@name='many_ws']/int[@name='" + t(i1 * 2 + i) + "'][.='1']"
+    );
   }
 
   @Test
@@ -314,111 +313,40 @@ public class TestFaceting extends SolrTestCaseJ4 {
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[1][@name='-420.126']",
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[2][@name='-285.672']",
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
+
+    assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX, FacetParams.FACET_MINCOUNT, "1", FacetParams.FACET_METHOD, FacetParams.FACET_METHOD_uif),
+        "*[count(//lst[@name='f_td']/int)=3]",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[1][@name='-420.126']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[2][@name='-285.672']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
     
-    assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX, FacetParams.FACET_MINCOUNT, "1", "indent","true"),
+    assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX, FacetParams.FACET_MINCOUNT, "1", "indent", "true"),
         "*[count(//lst[@name='f_td']/int)=3]",
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[1][@name='-420.126']",
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[2][@name='-285.672']",
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
   }
 
-
   @Test
-  public void testDateFacetsWithMultipleConfigurationForSameField() {
-    clearIndex();
-    final String f = "bday_dt";
-
-    assertU(adoc("id", "1",  f, "1976-07-04T12:08:56.235Z"));
-    assertU(adoc("id", "2",  f, "1976-07-05T00:00:00.000Z"));
-    assertU(adoc("id", "3",  f, "1976-07-15T00:07:67.890Z"));
-    assertU(commit());
-    assertU(adoc("id", "4",  f, "1976-07-21T00:07:67.890Z"));
-    assertU(adoc("id", "5",  f, "1976-07-13T12:12:25.255Z"));
-    assertU(adoc("id", "6",  f, "1976-07-03T17:01:23.456Z"));
-    assertU(adoc("id", "7",  f, "1976-07-12T12:12:25.255Z"));
-    assertU(adoc("id", "8",  f, "1976-07-15T15:15:15.155Z"));
-    assertU(adoc("id", "9",  f, "1907-07-12T13:13:23.235Z"));
-    assertU(adoc("id", "10", f, "1976-07-03T11:02:45.678Z"));
-    assertU(commit());
-    assertU(adoc("id", "11", f, "1907-07-12T12:12:25.255Z"));
-    assertU(adoc("id", "12", f, "2007-07-30T07:07:07.070Z"));
-    assertU(adoc("id", "13", f, "1976-07-30T22:22:22.222Z"));
-    assertU(adoc("id", "14", f, "1976-07-05T22:22:22.222Z"));
+  public void testFacetSortWithMinCount0() {
+    assertU(adoc("id", "1.0", "f_td", "-420.126"));
+    assertU(adoc("id", "2.0", "f_td", "-285.672"));
+    assertU(adoc("id", "3.0", "f_td", "-1.218"));
     assertU(commit());
 
-    final String preFoo = "//lst[@name='facet_dates']/lst[@name='foo']";
-    final String preBar = "//lst[@name='facet_dates']/lst[@name='bar']";
+    assertQ(req("q", "id:1.0", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX, FacetParams.FACET_MINCOUNT, "0", FacetParams.FACET_METHOD, FacetParams.FACET_METHOD_fc),
+        "*[count(//lst[@name='f_td']/int)=3]",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[1][@name='-420.126']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[2][@name='-285.672']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
 
-    assertQ("check counts for month of facet by day",
-            req( "q", "*:*"
-                ,"rows", "0"
-                ,"facet", "true"
-                ,"facet.date", "{!key=foo " +
-                  "facet.date.start=1976-07-01T00:00:00.000Z " +
-                  "facet.date.end=1976-07-01T00:00:00.000Z+1MONTH " +
-                  "facet.date.gap=+1DAY " +
-                  "facet.date.other=all " +
-                "}" + f
-                ,"facet.date", "{!key=bar " +
-                  "facet.date.start=1976-07-01T00:00:00.000Z " +
-                  "facet.date.end=1976-07-01T00:00:00.000Z+7DAY " +
-                  "facet.date.gap=+1DAY " +
-                "}" + f
-              )
-            // 31 days + pre+post+inner = 34
-            ,"*[count("+preFoo+"/int)=34]"
-            ,preFoo+"/int[@name='1976-07-01T00:00:00Z'][.='0'  ]"
-            ,preFoo+"/int[@name='1976-07-02T00:00:00Z'][.='0'  ]"
-            ,preFoo+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
-            // july4th = 2 because exists doc @ 00:00:00.000 on July5
-            // (date faceting is inclusive)
-            ,preFoo+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
-            ,preFoo+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
-            ,preFoo+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-07T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-08T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-09T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-10T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-11T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
-            ,preFoo+"/int[@name='1976-07-13T00:00:00Z'][.='1'  ]"
-            ,preFoo+"/int[@name='1976-07-14T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-15T00:00:00Z'][.='2'  ]"
-            ,preFoo+"/int[@name='1976-07-16T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-17T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-18T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-19T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-21T00:00:00Z'][.='1'  ]"
-            ,preFoo+"/int[@name='1976-07-22T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-23T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-24T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-25T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-26T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-27T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-28T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-29T00:00:00Z'][.='0']"
-            ,preFoo+"/int[@name='1976-07-30T00:00:00Z'][.='1'  ]"
-            ,preFoo+"/int[@name='1976-07-31T00:00:00Z'][.='0']"
+    assertQ(req("q", "id:1.0", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX, FacetParams.FACET_MINCOUNT, "0", FacetParams.FACET_METHOD, FacetParams.FACET_METHOD_uif),
+        "*[count(//lst[@name='f_td']/int)=3]",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[1][@name='-420.126']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[2][@name='-285.672']",
+        "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
+  }
 
-            ,preFoo+"/int[@name='before' ][.='2']"
-            ,preFoo+"/int[@name='after'  ][.='1']"
-            ,preFoo+"/int[@name='between'][.='11']"
-
-            ,"*[count("+preBar+"/int)=7]"
-            ,preBar+"/int[@name='1976-07-01T00:00:00Z'][.='0'  ]"
-            ,preBar+"/int[@name='1976-07-02T00:00:00Z'][.='0'  ]"
-            ,preBar+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
-            // july4th = 2 because exists doc @ 00:00:00.000 on July5
-            // (date faceting is inclusive)
-            ,preBar+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
-            ,preBar+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
-            ,preBar+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
-            ,preBar+"/int[@name='1976-07-07T00:00:00Z'][.='0']"
-              );
-
-      clearIndex();
-      assertU(commit());
-    }
 
     public void testSimpleFacetCountsWithMultipleConfigurationsForSameField() {
       clearIndex();
@@ -626,12 +554,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
   }
       
   private void assertQforUIF(String message, SolrQueryRequest request, String ... tests) {
-    final String paramString = request.getParamString();
-    if (paramString.contains("uif") && paramString.contains("prefix")){
-      assertQEx("uif prohibits prefix", "not supported", request, ErrorCode.BAD_REQUEST);
-    }else{
-      assertQ(message,request, tests);
-    }
+    // handle any differences for uif here, like skipping unsupported options
+    assertQ(message,request, tests);
   }
 
   private void add50ocs() {
@@ -788,16 +712,16 @@ public class TestFaceting extends SolrTestCaseJ4 {
     RefCounted<SolrIndexSearcher> currentSearcherRef = h.getCore().getSearcher();
     try {
       SolrIndexSearcher currentSearcher = currentSearcherRef.get();
-      SortedSetDocValues ui0 = DocValues.getSortedSet(currentSearcher.getLeafReader(), "f0_ws");
-      SortedSetDocValues ui1 = DocValues.getSortedSet(currentSearcher.getLeafReader(), "f1_ws");
-      SortedSetDocValues ui2 = DocValues.getSortedSet(currentSearcher.getLeafReader(), "f2_ws");
-      SortedSetDocValues ui3 = DocValues.getSortedSet(currentSearcher.getLeafReader(), "f3_ws");
-      SortedSetDocValues ui4 = DocValues.getSortedSet(currentSearcher.getLeafReader(), "f4_ws");
-      SortedSetDocValues ui5 = DocValues.getSortedSet(currentSearcher.getLeafReader(), "f5_ws");
-      SortedSetDocValues ui6 = DocValues.getSortedSet(currentSearcher.getLeafReader(), "f6_ws");
-      SortedSetDocValues ui7 = DocValues.getSortedSet(currentSearcher.getLeafReader(), "f7_ws");
-      SortedSetDocValues ui8 = DocValues.getSortedSet(currentSearcher.getLeafReader(), "f8_ws");
-      SortedSetDocValues ui9 = DocValues.getSortedSet(currentSearcher.getLeafReader(), "f9_ws");
+      SortedSetDocValues ui0 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f0_ws");
+      SortedSetDocValues ui1 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f1_ws");
+      SortedSetDocValues ui2 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f2_ws");
+      SortedSetDocValues ui3 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f3_ws");
+      SortedSetDocValues ui4 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f4_ws");
+      SortedSetDocValues ui5 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f5_ws");
+      SortedSetDocValues ui6 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f6_ws");
+      SortedSetDocValues ui7 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f7_ws");
+      SortedSetDocValues ui8 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f8_ws");
+      SortedSetDocValues ui9 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f9_ws");
 
       assertQ("check threading, more threads than fields",
           req(methodParam

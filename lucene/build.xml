@@ -78,7 +78,7 @@
 
   <!-- Validation here depends on compile-tools: but we want to compile modules' tools too -->
   <target name="compile-tools" depends="common.compile-tools">
-    <modules-crawl target="compile-tools" failonerror="true"/>
+    <modules-crawl target="compile-tools"/>
   </target>
 
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
@@ -97,7 +97,7 @@
           description="Verify that the '/org/name' keys in ivy-versions.properties are sorted lexically and are neither duplicates nor orphans, and that all dependencies in all ivy.xml files use rev=&quot;$${/org/name}&quot; format.">
     <lib-versions-check-macro dir="${common.dir}/.."
                               centralized.versions.file="${common.dir}/ivy-versions.properties"
-                              ivy.settings.file="${common.dir}/ivy-settings.xml"
+                              top.level.ivy.settings.file="${common.dir}/top-level-ivy-settings.xml"
                               ivy.resolution-cache.dir="${ivy.resolution-cache.dir}"
                               ivy.lock-strategy="${ivy.lock-strategy}"
                               common.build.dir="${common.build.dir}"
@@ -123,7 +123,7 @@
       <ant dir="${common.dir}/tools" target="resolve" inheritAll="false">
          <propertyset refid="uptodate.and.compiled.properties"/>
       </ant>
-      <modules-crawl target="resolve" failonerror="true"/>
+      <modules-crawl target="resolve"/>
     </sequential>
   </target>
 
@@ -213,6 +213,8 @@
       <filterchain>
         <!--  private static Codec defaultCodec   =   LOADER    .   lookup    (   "LuceneXXX"                 )   ; -->
         <containsregex pattern="^.*defaultCodec\s*=\s*LOADER\s*\.\s*lookup\s*\(\s*&quot;([^&quot;]+)&quot;\s*\)\s*;.*$" replace="\1"/>
+        <fixcrlf eol="unix" eof="remove" />
+        <deletecharacters chars="\n"/>
       </filterchain>
     </loadfile>
 
@@ -242,8 +244,7 @@
   </target>
   
   <target name="javadocs-modules" description="Generate javadoc for modules classes">
-    <modules-crawl target="javadocs"
-                   failonerror="true"/>
+    <modules-crawl target="javadocs"/>
   </target>
 
   <!-- rat-sources-typedef is *not* a useless dependency. do not remove -->
@@ -356,12 +357,13 @@
     
     <build-changes changes.src.file="${local.src.export.dir}/CHANGES.txt"
                    changes.target.dir="${local.src.export.dir}/docs/changes"
-                   changes.product="LUCENE"/>
+                   changes.product="lucene"/>
     <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset prefix="lucene-${version}" dir="${local.src.export.dir}"/>
     </tar>
     <make-checksums file="${source.package.file}"/>
   </target>
+
 
   <!-- ================================================================== -->
   <!-- Packages the sources from local working copy with tar-gzip     -->
@@ -395,7 +397,7 @@
 
   <!-- copy KEYS to the release folder -->
   <target name="-dist-keys">
-   <get src="http://people.apache.org/keys/group/lucene.asc" 
+   <get src="http://home.apache.org/keys/group/lucene.asc" 
         dest="${dist.dir}/KEYS"/>
   </target>
 
@@ -462,7 +464,7 @@
       <ant dir="test-framework" target="compile-test" inheritall="false">
         <propertyset refid="uptodate.and.compiled.properties"/>
       </ant>
-      <modules-crawl target="compile-test" failonerror="true"/>
+      <modules-crawl target="compile-test"/>
     </sequential>
   </target>
 
@@ -473,11 +475,11 @@
   </target>
   
   <target name="test-modules">
-    <modules-crawl target="test" failonerror="true"/>
+    <modules-crawl target="test"/>
   </target>
 
   <target name="changes-to-html">
-    <build-changes changes.product="LUCENE"/>
+    <build-changes changes.product="lucene"/>
   </target>
 
   <target name="pitest-modules" depends="compile-test">
@@ -492,7 +494,7 @@
     <ant dir="${common.dir}/test-framework" target="jacoco" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
-    <modules-crawl target="jacoco" failonerror="true"/>
+    <modules-crawl target="jacoco"/>
 
     <!-- produce aggregate report -->
     <property name="jacoco.output.dir" location="${jacoco.report.dir}/lucene-all"/>
@@ -560,7 +562,7 @@
   <target name="get-jenkins-line-docs" unless="enwiki.exists">
     <sequential>
       <!-- TODO: can get .lzma instead (it's ~17% smaller) but there's no builtin ant support...? -->
-      <get src="http://people.apache.org/~mikemccand/enwiki.random.lines.txt.bz2"
+      <get src="http://home.apache.org/~mikemccand/enwiki.random.lines.txt.bz2"
            dest="enwiki.random.lines.txt.bz2"/>
       <bunzip2 src="enwiki.random.lines.txt.bz2" dest="enwiki.random.lines.txt"/>
     </sequential>
@@ -583,7 +585,7 @@
     <sequential>
       <ant dir="core" target="common.-append-module-dependencies-properties" inheritall="false"/>
       <ant dir="test-framework" target="common.-append-module-dependencies-properties" inheritall="false"/>
-      <modules-crawl target="-append-module-dependencies-properties" failonerror="true"/>
+      <modules-crawl target="-append-module-dependencies-properties"/>
     </sequential>
   </target>
 </project>

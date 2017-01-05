@@ -43,7 +43,7 @@ public interface Bits {
   public static class MatchAllBits implements Bits {
     final int len;
     
-    public MatchAllBits( int len ) {
+    public MatchAllBits(int len) {
       this.len = len;
     }
 
@@ -64,7 +64,7 @@ public interface Bits {
   public static class MatchNoBits implements Bits {
     final int len;
     
-    public MatchNoBits( int len ) {
+    public MatchNoBits(int len) {
       this.len = len;
     }
 

@@ -436,23 +436,15 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
-      UpdateLog.testing_logReplayHook = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
         }
       };
 
-      UpdateLog.testing_logReplayFinishHook = new Runnable() {
-        @Override
-        public void run() {
-          logReplayFinish.release();
-        }
-      };
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
       Deque<Long> versions = new ArrayDeque<>();
       versions.addFirst(addAndGetVersion(sdoc("id", "A11"), null));
@@ -668,12 +660,7 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
     try {
       DirectUpdateHandler2.commitOnClose = false;
       final Semaphore logReplayFinish = new Semaphore(0);
-      UpdateLog.testing_logReplayFinishHook = new Runnable() {
-        @Override
-        public void run() {
-          logReplayFinish.release();
-        }
-      };
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
       this.clearCore();
 

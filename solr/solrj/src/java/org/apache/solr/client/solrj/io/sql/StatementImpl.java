@@ -26,18 +26,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Random;
 
+import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 
 class StatementImpl implements Statement {
 
@@ -52,8 +50,13 @@ class StatementImpl implements Statement {
     this.connection = connection;
   }
 
-  @Override
-  public ResultSet executeQuery(String sql) throws SQLException {
+  private void checkClosed() throws SQLException {
+    if(isClosed()) {
+      throw new SQLException("Statement is closed.");
+    }
+  }
+
+  private ResultSet executeQueryImpl(String sql) throws SQLException {
     try {
       if(this.currentResultSet != null) {
         this.currentResultSet.close();
@@ -75,12 +78,7 @@ class StatementImpl implements Statement {
   protected SolrStream constructStream(String sql) throws IOException {
     try {
       ZkStateReader zkStateReader = this.connection.getClient().getZkStateReader();
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Collection<Slice> slices = clusterState.getActiveSlices(this.connection.getSchema());
-
-      if(slices == null) {
-        throw new Exception("Collection not found:"+this.connection.getSchema());
-      }
+      Collection<Slice> slices = CloudSolrStream.getSlices(this.connection.getCollection(), zkStateReader, true);
 
       List<Replica> shuffler = new ArrayList<>();
       for(Slice slice : slices) {
@@ -92,11 +90,11 @@ class StatementImpl implements Statement {
 
       Collections.shuffle(shuffler, new Random());
 
-      Map<String, String> params = new HashMap<>();
-      params.put(CommonParams.QT, "/sql");
-      params.put("stmt", sql);
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(CommonParams.QT, "/sql");
+      params.set("stmt", sql);
       for(String propertyName : this.connection.getProperties().stringPropertyNames()) {
-        params.put(propertyName, this.connection.getProperties().getProperty(propertyName));
+        params.set(propertyName, this.connection.getProperties().getProperty(propertyName));
       }
 
       Replica rep = shuffler.get(0);
@@ -106,6 +104,11 @@ class StatementImpl implements Statement {
     } catch (Exception e) {
       throw new IOException(e);
     }
+  }
+
+  @Override
+  public ResultSet executeQuery(String sql) throws SQLException {
+    return this.executeQueryImpl(sql);
   }
 
   @Override
@@ -168,18 +171,14 @@ class StatementImpl implements Statement {
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
-    if(isClosed()) {
-      throw new SQLException("Statement is closed.");
-    }
+    checkClosed();
 
     return this.currentWarning;
   }
 
   @Override
   public void clearWarnings() throws SQLException {
-    if(isClosed()) {
-      throw new SQLException("Statement is closed.");
-    }
+    checkClosed();
 
     this.currentWarning = null;
   }
@@ -204,14 +203,12 @@ class StatementImpl implements Statement {
 
   @Override
   public ResultSet getResultSet() throws SQLException {
-    return this.executeQuery(this.currentSQL);
+    return this.executeQueryImpl(this.currentSQL);
   }
 
   @Override
   public int getUpdateCount() throws SQLException {
-    if(isClosed()) {
-      throw new SQLException("Statement is closed");
-    }
+    checkClosed();
 
     // TODO Add logic when update statements are added to JDBC.
     return -1;
@@ -219,9 +216,7 @@ class StatementImpl implements Statement {
 
   @Override
   public boolean getMoreResults() throws SQLException {
-    if(isClosed()) {
-      throw new SQLException("Statement is closed");
-    }
+    checkClosed();
 
     // Currently multiple result sets are not possible yet
     this.currentResultSet.close();
@@ -230,32 +225,48 @@ class StatementImpl implements Statement {
 
   @Override
   public void setFetchDirection(int direction) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    if(direction != ResultSet.FETCH_FORWARD) {
+      throw new SQLException("Direction must be ResultSet.FETCH_FORWARD currently");
+    }
   }
 
   @Override
   public int getFetchDirection() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return ResultSet.FETCH_FORWARD;
   }
 
   @Override
   public void setFetchSize(int rows) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    if(rows < 0) {
+      throw new SQLException("Rows must be >= 0");
+    }
   }
 
   @Override
   public int getFetchSize() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return 0;
   }
 
   @Override
   public int getResultSetConcurrency() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return ResultSet.CONCUR_READ_ONLY;
   }
 
   @Override
   public int getResultSetType() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return ResultSet.TYPE_FORWARD_ONLY;
   }
 
   @Override

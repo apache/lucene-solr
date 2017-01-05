@@ -145,10 +145,10 @@ public class TestSimpleSearchEquivalence extends SearchEquivalenceTestBase {
     Term t2 = randomTerm();
     PhraseQuery q1 = new PhraseQuery(t1.field(), t1.bytes(), t2.bytes());
     Term t3 = randomTerm();
-    MultiPhraseQuery q2 = new MultiPhraseQuery();
-    q2.add(t1);
-    q2.add(new Term[] { t2, t3 });
-    assertSubsetOf(q1, q2);
+    MultiPhraseQuery.Builder q2b = new MultiPhraseQuery.Builder();
+    q2b.add(t1);
+    q2b.add(new Term[] { t2, t3 });
+    assertSubsetOf(q1, q2b.build());
   }
   
   /** same as above, with posincs */
@@ -160,10 +160,10 @@ public class TestSimpleSearchEquivalence extends SearchEquivalenceTestBase {
     builder.add(t2, 2);
     PhraseQuery q1 = builder.build();
     Term t3 = randomTerm();
-    MultiPhraseQuery q2 = new MultiPhraseQuery();
-    q2.add(t1);
-    q2.add(new Term[] { t2, t3 }, 2);
-    assertSubsetOf(q1, q2);
+    MultiPhraseQuery.Builder q2b = new MultiPhraseQuery.Builder();
+    q2b.add(t1);
+    q2b.add(new Term[] { t2, t3 }, 2);
+    assertSubsetOf(q1, q2b.build());
   }
   
   /** "A B"~∞ = +A +B if A != B */

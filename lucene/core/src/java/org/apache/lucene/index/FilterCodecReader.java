@@ -19,12 +19,13 @@ package org.apache.lucene.index;
 
 import java.util.Objects;
 
-import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 
 /** 
@@ -32,7 +33,7 @@ import org.apache.lucene.util.Bits;
  * uses as its basic source of data, possibly transforming the data along the
  * way or providing additional functionality.
  */
-public class FilterCodecReader extends CodecReader {
+public abstract class FilterCodecReader extends CodecReader {
   /** 
    * The underlying CodecReader instance. 
    */
@@ -82,13 +83,8 @@ public class FilterCodecReader extends CodecReader {
   }
 
   @Override
-  public PointReader getPointReader() {
-    return in.getPointReader();
-  }
-
-  @Override
-  public PointValues getPointValues() {
-    return in.getPointValues();
+  public PointsReader getPointsReader() {
+    return in.getPointsReader();
   }
 
   @Override
@@ -99,6 +95,11 @@ public class FilterCodecReader extends CodecReader {
   @Override
   public int maxDoc() {
     return in.maxDoc();
+  }
+
+  @Override
+  public Sort getIndexSort() {
+    return in.getIndexSort();
   }
 
   @Override

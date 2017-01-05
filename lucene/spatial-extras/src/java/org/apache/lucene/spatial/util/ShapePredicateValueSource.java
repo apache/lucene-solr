@@ -72,7 +72,7 @@ public class ShapePredicateValueSource extends ValueSource {
 
     return new BoolDocValues(this) {
       @Override
-      public boolean boolVal(int doc) {
+      public boolean boolVal(int doc) throws IOException {
         Shape indexedShape = (Shape) shapeValues.objectVal(doc);
         if (indexedShape == null)
           return false;
@@ -80,7 +80,7 @@ public class ShapePredicateValueSource extends ValueSource {
       }
 
       @Override
-      public Explanation explain(int doc) {
+      public Explanation explain(int doc) throws IOException {
         Explanation exp = super.explain(doc);
         List<Explanation> details = new ArrayList<>(Arrays.asList(exp.getDetails()));
         details.add(shapeValues.explain(doc));

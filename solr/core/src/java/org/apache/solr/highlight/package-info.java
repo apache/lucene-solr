@@ -16,7 +16,7 @@
  */
  
 /** 
- * {@link org.apache.solr.highlight.SolrHighlighter} API and related implementaions and utilities
+ * {@link org.apache.solr.highlight.SolrHighlighter} API and related implementations and utilities
  * <p>
  * See {@link org.apache.lucene.search.highlight} for addition information.
  */

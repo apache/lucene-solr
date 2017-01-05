@@ -24,13 +24,13 @@ import java.util.Locale;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ListMultimap;
 import com.typesafe.config.Config;
-import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.cloud.AbstractZkTestCase;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.kitesdk.morphline.api.Collector;
 import org.kitesdk.morphline.api.Command;
@@ -41,70 +41,58 @@ import org.kitesdk.morphline.base.FaultTolerance;
 import org.kitesdk.morphline.base.Notifications;
 import org.kitesdk.morphline.stdlib.PipeBuilder;
 
-public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistribZkTestBase {
-  private static File solrHomeDirectory;
-  
-  protected static final String RESOURCES_DIR = getFile("morphlines-core.marker").getParent();  
-  private static final File SOLR_INSTANCE_DIR = new File(RESOURCES_DIR + "/solr");
-  private static final File SOLR_CONF_DIR = new File(RESOURCES_DIR + "/solr/collection1");
+public abstract class AbstractSolrMorphlineZkTestBase extends SolrCloudTestCase {
+
+  protected static final String COLLECTION = "collection1";
+
+  protected static final int TIMEOUT = 30;
+
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(2)
+        .addConfig("conf", SOLR_CONF_DIR.toPath())
+        .configure();
+
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
+        .processAndWait(cluster.getSolrClient(), TIMEOUT);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
+  }
+
+  protected static final String RESOURCES_DIR = getFile("morphlines-core.marker").getParent();
+  private static final File SOLR_CONF_DIR = new File(RESOURCES_DIR + "/solr/collection1/conf");
 
   protected Collector collector;
   protected Command morphline;
-
-  @Override
-  public String getSolrHome() {
-    return solrHomeDirectory.getPath();
-  }
-  
-  public AbstractSolrMorphlineZkTestBase() {
-    sliceCount = 3;
-    fixShardCount(3);
-  }
   
   @BeforeClass
   public static void setupClass() throws Exception {
+
+    assumeFalse("This test fails on Java 9 (https://issues.apache.org/jira/browse/SOLR-8876)",
+        Constants.JRE_IS_MINIMUM_JAVA9);
+    
     assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
         new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
-    solrHomeDirectory = createTempDir().toFile();
-    AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
-    FileUtils.copyDirectory(SOLR_INSTANCE_DIR, solrHomeDirectory);
+
   }
-  
-  @AfterClass
-  public static void tearDownClass() throws Exception {
-    solrHomeDirectory = null;
-  }
-  
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    System.setProperty("host", "127.0.0.1");
-    System.setProperty("numShards", Integer.toString(sliceCount));
-    uploadConfFiles();
+
+  @Before
+  public void setup() throws Exception {
     collector = new Collector();
   }
-  
-  @Override
-  public void distribTearDown() throws Exception {
-    super.distribTearDown();
-    System.clearProperty("host");
-    System.clearProperty("numShards");
-  }
-  
-  @Override
+
   protected void commit() throws Exception {
-    Notifications.notifyCommitTransaction(morphline);    
-    super.commit();
+    Notifications.notifyCommitTransaction(morphline);
   }
   
   protected Command parse(String file) throws IOException {
-    return parse(file, "collection1");
+    return parse(file, COLLECTION);
   }
   
   protected Command parse(String file, String collection) throws IOException {
     SolrLocator locator = new SolrLocator(createMorphlineContext());
     locator.setCollectionName(collection);
-    locator.setZkHost(zkServer.getZkAddress());
+    locator.setZkHost(cluster.getZkServer().getZkAddress());
     //locator.setServerUrl(cloudJettys.get(0).url); // TODO: download IndexSchema from solrUrl not yet implemented
     //locator.setSolrHomeDir(SOLR_HOME_DIR.getPath());
     Config config = new Compiler().parse(new File(RESOURCES_DIR + "/" + file + ".conf"), locator.toConfig("SOLR_LOCATOR"));
@@ -140,35 +128,6 @@ public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistri
       record.getFields().replaceValues(key, doc.getFieldValues(key));        
     }
     return record;
-  }
-  
-  private void putConfig(SolrZkClient zkClient, String name) throws Exception {
-    File file = new File(new File(SOLR_CONF_DIR, "conf"), name);    
-    String destPath = "/configs/conf1/" + name;
-    System.out.println("put " + file.getAbsolutePath() + " to " + destPath);
-    zkClient.makePath(destPath, file, false, true);
-  }
-  
-  private void uploadConfFiles(SolrZkClient zkClient, File dir, String prefix) throws Exception {
-    boolean found = false;
-    for (File f : dir.listFiles()) {
-      String name = f.getName();
-      if (name.startsWith(".")) continue;
-      if (f.isFile()) {
-        putConfig(zkClient, prefix + name);
-        found = true;
-      } else if (f.isDirectory()) {
-        uploadConfFiles(zkClient, new File(dir, name), prefix + name + "/");
-      }
-    }
-    assertTrue("Config folder '" + dir + "' with files to upload to zookeeper was empty.", found);
-  }
-  
-  private void uploadConfFiles() throws Exception {
-    // upload our own config files
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), 10000);
-    uploadConfFiles(zkClient, new File(SOLR_CONF_DIR, "conf"), "");
-    zkClient.close();
   }
   
 }

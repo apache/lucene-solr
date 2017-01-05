@@ -17,8 +17,6 @@
 package org.apache.lucene.search;
 
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -36,7 +34,7 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
     for (int i = 0; i < 1000; ++i) {
       policy.onUse(q);
     }
-    assertFalse(policy.shouldCache(q, SlowCompositeReaderWrapper.wrap(new MultiReader()).getContext()));
+    assertFalse(policy.shouldCache(q));
   }
 
 }

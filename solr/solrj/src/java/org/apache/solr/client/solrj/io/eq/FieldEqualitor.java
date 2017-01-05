@@ -16,15 +16,15 @@
  */
 package org.apache.solr.client.solrj.io.eq;
 
-import java.io.Serializable;
-import java.util.Comparator;
+import java.io.IOException;
+import java.util.UUID;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class FieldEqualitor implements StreamEqualitor {
 
   private static final long serialVersionUID = 1;
+  private UUID equalitorNodeId = UUID.randomUUID();
   
   private String leftFieldName;
   private String rightFieldName;
@@ -62,6 +63,14 @@ public class FieldEqualitor implements StreamEqualitor {
     }
     
     return new StreamExpressionValue(sb.toString());
+  }
+
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+    return new Explanation(equalitorNodeId.toString())
+      .withExpressionType(ExpressionType.EQUALITOR)
+      .withImplementingClass(getClass().getName())
+      .withExpression(toExpression(factory).toString());
   }
   
   public boolean test(Tuple leftTuple, Tuple rightTuple) {

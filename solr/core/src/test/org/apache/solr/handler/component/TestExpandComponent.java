@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.*;
 
 public class TestExpandComponent extends SolrTestCaseJ4 {
@@ -315,4 +314,19 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
   }
 
+  @Test
+  public void testExpandWithEmptyIndexReturnsZeroResults() {
+    //We make sure the index is cleared
+
+    clearIndex();
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field=group_s}");
+    params.add("expand" ,"true");
+    params.add("expand.rows", "10");
+
+    assertQ(req(params), "*[count(//doc)=0]");
+  }
 }

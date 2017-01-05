@@ -20,7 +20,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.handler.TestBlobHandler;
-import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.SimplePostTool;
 import org.junit.BeforeClass;
@@ -45,12 +44,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
   private void setupHarnesses() {
     for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(new RESTfulServerProvider() {
-        @Override
-        public String getBaseURL() {
-          return ((HttpSolrClient)client).getBaseURL();
-        }
-      });
+      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient)client).getBaseURL());
       restTestHarnesses.add(harness);
     }
   }
@@ -109,17 +103,17 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     Map map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
 
     assertNotNull(TestBlobHandler.getAsString(map), map = (Map) map.get("error"));
-    assertEquals(TestBlobHandler.getAsString(map), ".system collection not available", map.get("msg"));
+    assertTrue(TestBlobHandler.getAsString(map), map.get("msg").toString().contains(".system collection not available"));
 
 
-    TestBlobHandler.createSystemCollection(new HttpSolrClient(baseURL, randomClient.getHttpClient()));
+    TestBlobHandler.createSystemCollection(getHttpSolrClient(baseURL, randomClient.getHttpClient()));
     waitForRecoveriesToFinish(".system", true);
 
     map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
 
 
     assertNotNull(map = (Map) map.get("error"));
-    assertEquals("full output " + TestBlobHandler.getAsString(map), "no such blob or version available: colltest/1" , map.get("msg"));
+    assertTrue("full output " + TestBlobHandler.getAsString(map), map.get("msg").toString().contains("no such blob or version available: colltest/1" ));
     payload = " {\n" +
         "  'set' : {'watched': {" +
         "                    'x':'X val',\n" +

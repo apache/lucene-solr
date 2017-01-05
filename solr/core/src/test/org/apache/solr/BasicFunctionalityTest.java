@@ -16,6 +16,8 @@
  */
 package org.apache.solr;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -24,8 +26,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -867,25 +867,26 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
                 
     assertQ("check counts using fixed NOW and TZ rounding",
             req("q", "bday:[NOW/DAY TO NOW/DAY+1DAY]",
-                "TZ", "GMT-23",
+                "TZ", "GMT+01",
                 "NOW", "205369736000" // 1976-07-04T23:08:56.235Z
                 ),
             "*[count(//doc)=0]");
 
   }
 
-  public void testDateRoundtrip() {
-    assertU(adoc("id", "99",  "bday", "99-01-01T12:34:56.789Z"));
-    assertU(commit());
-    assertQ("year should be canonicallized to 4 digits",
-            req("q", "id:99"),
-            "//date[@name='bday'][.='0099-01-01T12:34:56.789Z']");
-    assertU(adoc("id", "99",  "bday", "1999-01-01T12:34:56.900Z"));
-    assertU(commit());
-    assertQ("millis should be canonicallized to no trailing zeros",
-            req("q", "id:99"),
-            "//date[@name='bday'][.='1999-01-01T12:34:56.9Z']");
-  }
+  // commented after SOLR-8904; both are false
+//  public void testDateRoundtrip() {
+//    assertU(adoc("id", "99",  "bday", "99-01-01T12:34:56.789Z"));
+//    assertU(commit());
+//    assertQ("year should be canonicallized to 4 digits",
+//            req("q", "id:99"),
+//            "//date[@name='bday'][.='0099-01-01T12:34:56.789Z']");
+//    assertU(adoc("id", "99",  "bday", "1999-01-01T12:34:56.900Z"));
+//    assertU(commit());
+//    assertQ("millis should be canonicallized to no trailing zeros",
+//            req("q", "id:99"),
+//            "//date[@name='bday'][.='1999-01-01T12:34:56.9Z']");
+//  }
   
   @Test
   public void testPatternReplaceFilter() {

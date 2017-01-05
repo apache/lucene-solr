@@ -22,6 +22,7 @@ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:applicatio
     "add-field" : {
         "name":"name",
         "type":"text_general",
+        "multiValued":false,
         "stored":true
     },
     "add-field" : {
@@ -103,6 +104,7 @@ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:applicatio
     "add-field" : {
         "name":"name",
         "type":"text_general",
+        "multiValued":false,
         "stored":true
     },
     "add-field" : {

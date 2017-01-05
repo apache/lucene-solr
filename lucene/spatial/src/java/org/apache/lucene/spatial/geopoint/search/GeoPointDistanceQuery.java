@@ -20,10 +20,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
-import org.apache.lucene.spatial.util.GeoDistanceUtils;
-import org.apache.lucene.spatial.util.GeoRect;
-import org.apache.lucene.spatial.util.GeoUtils;
+import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.geo.GeoUtils;
 
 /** Implements a simple point distance query on a GeoPoint field. This is based on
  * {@link GeoPointInBBoxQuery} and is implemented using a two phase approach. First,
@@ -31,10 +29,9 @@ import org.apache.lucene.spatial.util.GeoUtils;
  * the morton codes of the min and max lat/lon pairs that intersect the boundary of the point-radius
  * circle. Terms
  * passing this initial filter are then passed to a secondary {@code postFilter} method that verifies whether the
- * decoded lat/lon point fall within the specified query distance (see {@link org.apache.lucene.util.SloppyMath#haversin}.
- * All morton value comparisons are subject to the same precision tolerance defined in
- * {@value org.apache.lucene.spatial.util.GeoEncodingUtils#TOLERANCE} and distance comparisons are subject to the accuracy of the
- * haversine formula (from R.W. Sinnott, "Virtues of the Haversine", Sky and Telescope, vol. 68, no. 2, 1984, p. 159)
+ * decoded lat/lon point fall within the specified query distance (see {@link org.apache.lucene.util.SloppyMath#haversinMeters(double, double, double, double)}.
+ * Distance comparisons are subject to the accuracy of the haversine formula
+ * (from R.W. Sinnott, "Virtues of the Haversine", Sky and Telescope, vol. 68, no. 2, 1984, p. 159)
  *
  * <p>Note: This query currently uses haversine which is a sloppy distance calculation (see above reference). For large
  * queries one can expect upwards of 400m error. Vincenty shrinks this to ~40m error but pays a penalty for computing
@@ -42,59 +39,39 @@ import org.apache.lucene.spatial.util.GeoUtils;
  *
  * @lucene.experimental */
 public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
-  /** longitude value (in degrees) for query location */
-  protected final double centerLon;
   /** latitude value (in degrees) for query location */
   protected final double centerLat;
-  /** distance (in meters) from lon, lat center location */
+  /** longitude value (in degrees) for query location */
+  protected final double centerLon;
+  /** distance (in meters) from lat, lon center location */
   protected final double radiusMeters;
+  /** partial haversin computation */
+  protected final double sortKey;
+
+  // we must check these before passing to superclass or circleToBBox, or users can get a strange exception!
+  private static double checkRadius(double radiusMeters) {
+    if (Double.isFinite(radiusMeters) == false || radiusMeters < 0) {
+      throw new IllegalArgumentException("invalid radiusMeters " + radiusMeters);
+    }
+    return radiusMeters;
+  }
 
   /**
    * Constructs a Query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types within a
    * distance (in meters) from a given point
    **/
-  public GeoPointDistanceQuery(final String field, final double centerLon, final double centerLat, final double radiusMeters) {
-    this(field, TermEncoding.PREFIX, centerLon, centerLat, radiusMeters);
+  public GeoPointDistanceQuery(final String field, final double centerLat, final double centerLon, final double radiusMeters) {
+    this(field, Rectangle.fromPointDistance(centerLat, centerLon, checkRadius(radiusMeters)), centerLat, centerLon, radiusMeters);
   }
 
-  /**
-   * Constructs a Query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types within a
-   * distance (in meters) from a given point. Accepts optional
-   * {@link org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding} parameter
-   **/
-  public GeoPointDistanceQuery(final String field, final TermEncoding termEncoding, final double centerLon, final double centerLat, final double radiusMeters) {
-    this(field, termEncoding, GeoUtils.circleToBBox(centerLon, centerLat, radiusMeters), centerLon, centerLat, radiusMeters);
-  }
+  private GeoPointDistanceQuery(final String field, final Rectangle bbox,
+                                 final double centerLat, final double centerLon, final double radiusMeters) {
+    super(field, bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon);
 
-  private GeoPointDistanceQuery(final String field, final TermEncoding termEncoding, final GeoRect bbox, final double centerLon,
-                                final double centerLat, final double radiusMeters) {
-    super(field, termEncoding, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
-    {
-      // check longitudinal overlap (restrict distance to maximum longitudinal radius)
-      // todo this restriction technically shouldn't be needed,
-      // its only purpose is to ensure the bounding box doesn't self overlap.
-      final double maxRadius = GeoDistanceUtils.maxRadialDistanceMeters(centerLon, centerLat);
-      if (radiusMeters > maxRadius) {
-        throw new IllegalArgumentException("radiusMeters " + radiusMeters + " exceeds maxRadius [" + maxRadius
-            + "] at location [" + centerLon + " " + centerLat + "]");
-      }
-    }
-
-    if (GeoUtils.isValidLon(centerLon) == false) {
-      throw new IllegalArgumentException("invalid centerLon " + centerLon);
-    }
-
-    if (GeoUtils.isValidLat(centerLat) == false) {
-      throw new IllegalArgumentException("invalid centerLat " + centerLat);
-    }
-
-    if (radiusMeters <= 0.0) {
-      throw new IllegalArgumentException("invalid radiusMeters " + radiusMeters);
-    }
-
-    this.centerLon = centerLon;
     this.centerLat = centerLat;
+    this.centerLon = centerLon;
     this.radiusMeters = radiusMeters;
+    this.sortKey = GeoUtils.distanceQuerySortKey(radiusMeters);
   }
 
   @Override
@@ -109,22 +86,22 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
         // unwrap left
         unwrappedLon += -360.0D;
       }
-      GeoPointDistanceQueryImpl left = new GeoPointDistanceQueryImpl(field, termEncoding, this, unwrappedLon,
-          new GeoRect(GeoUtils.MIN_LON_INCL, maxLon, minLat, maxLat));
+      GeoPointDistanceQueryImpl left = new GeoPointDistanceQueryImpl(field, this, unwrappedLon,
+                                                                     new Rectangle(minLat, maxLat, GeoUtils.MIN_LON_INCL, maxLon));
       bqb.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
 
       if (unwrappedLon < maxLon) {
         // unwrap right
         unwrappedLon += 360.0D;
       }
-      GeoPointDistanceQueryImpl right = new GeoPointDistanceQueryImpl(field, termEncoding, this, unwrappedLon,
-          new GeoRect(minLon, GeoUtils.MAX_LON_INCL, minLat, maxLat));
+      GeoPointDistanceQueryImpl right = new GeoPointDistanceQueryImpl(field, this, unwrappedLon,
+                                                                      new Rectangle(minLat, maxLat, minLon, GeoUtils.MAX_LON_INCL));
       bqb.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
 
       return bqb.build();
     }
-    return new GeoPointDistanceQueryImpl(field, termEncoding, this, centerLon,
-        new GeoRect(this.minLon, this.maxLon, this.minLat, this.maxLat));
+    return new GeoPointDistanceQueryImpl(field, this, centerLon,
+                                         new Rectangle(this.minLat, this.maxLat, this.minLon, this.maxLon));
   }
 
   @Override
@@ -166,9 +143,9 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
       sb.append(':');
     }
     return sb.append( " Center: [")
-        .append(centerLon)
-        .append(',')
         .append(centerLat)
+        .append(',')
+        .append(centerLon)
         .append(']')
         .append(" Distance: ")
         .append(radiusMeters)

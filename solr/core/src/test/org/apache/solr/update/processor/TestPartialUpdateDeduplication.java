@@ -17,18 +17,13 @@
 package org.apache.solr.update.processor;
 
 import com.google.common.collect.Maps;
-import org.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.List;
 import java.util.Map;
-
-import static org.apache.solr.update.processor.SignatureUpdateProcessorFactoryTest.addDoc;
 
 public class TestPartialUpdateDeduplication extends SolrTestCaseJ4 {
   @BeforeClass

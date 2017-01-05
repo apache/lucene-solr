@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.classification.ClassificationResult;
 import org.apache.lucene.classification.KNearestNeighborClassifier;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -54,7 +54,7 @@ public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifi
   /**
    * Creates a {@link KNearestNeighborClassifier}.
    *
-   * @param leafReader     the reader on the index to be used for classification
+   * @param indexReader     the reader on the index to be used for classification
    * @param similarity     the {@link Similarity} to be used by the underlying {@link IndexSearcher} or {@code null}
    *                       (defaults to {@link org.apache.lucene.search.similarities.ClassicSimilarity})
    * @param query          a {@link org.apache.lucene.search.Query} to eventually filter the docs used for training the classifier, or {@code null}
@@ -66,9 +66,9 @@ public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifi
    * @param field2analyzer map with key a field name and the related {org.apache.lucene.analysis.Analyzer}
    * @param textFieldNames the name of the fields used as the inputs for the classifier, they can contain boosting indication e.g. title^10
    */
-  public KNearestNeighborDocumentClassifier(LeafReader leafReader, Similarity similarity, Query query, int k, int minDocsFreq,
+  public KNearestNeighborDocumentClassifier(IndexReader indexReader, Similarity similarity, Query query, int k, int minDocsFreq,
                                             int minTermFreq, String classFieldName, Map<String, Analyzer> field2analyzer, String... textFieldNames) {
-    super(leafReader,similarity, null, query, k, minDocsFreq, minTermFreq, classFieldName, textFieldNames);
+    super(indexReader, similarity, null, query, k, minDocsFreq, minTermFreq, classFieldName, textFieldNames);
     this.field2analyzer = field2analyzer;
   }
 
@@ -109,6 +109,7 @@ public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifi
     TopDocs knnResults = knnSearch(document);
     List<ClassificationResult<BytesRef>> assignedClasses = buildListFromTopDocs(knnResults);
     Collections.sort(assignedClasses);
+    max = Math.min(max, assignedClasses.size());
     return assignedClasses.subList(0, max);
   }
 
@@ -130,15 +131,14 @@ public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifi
         boost = field2boost[1];
       }
       String[] fieldValues = document.getValues(fieldName);
+      mlt.setBoost(true); // we want always to use the boost coming from TF * IDF of the term
       if (boost != null) {
-        mlt.setBoost(true);
-        mlt.setBoostFactor(Float.parseFloat(boost));
+        mlt.setBoostFactor(Float.parseFloat(boost)); // this is an additional multiplicative boost coming from the field boost
       }
       mlt.setAnalyzer(field2analyzer.get(fieldName));
       for (String fieldContent : fieldValues) {
         mltQuery.add(new BooleanClause(mlt.like(fieldName, new StringReader(fieldContent)), BooleanClause.Occur.SHOULD));
       }
-      mlt.setBoost(false);
     }
     Query classFieldQuery = new WildcardQuery(new Term(classFieldName, "*"));
     mltQuery.add(new BooleanClause(classFieldQuery, BooleanClause.Occur.MUST));

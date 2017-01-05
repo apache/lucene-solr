@@ -16,18 +16,17 @@
  */
 package org.apache.solr;
 
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+import java.util.TimeZone;
+
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.DateMathParser;
-import org.apache.solr.util.DateFormatUtil;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.text.SimpleDateFormat;
-import java.util.Locale;
-import java.util.TimeZone;
 
 /**
  * Tests for TrieField functionality
@@ -173,7 +172,7 @@ public class TestTrie extends SolrTestCaseJ4 {
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
 
     assertU(delQ("*:*"));
-    DateMathParser dmp = new DateMathParser(DateFormatUtil.UTC, Locale.ROOT);
+    DateMathParser dmp = new DateMathParser(DateMathParser.UTC);
     String largestDate = "";
     for (int i = 0; i < 10; i++) {
       // index 10 days starting with today
@@ -222,7 +221,7 @@ public class TestTrie extends SolrTestCaseJ4 {
     // For tdate tests
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT);
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
-    DateMathParser dmp = new DateMathParser(DateFormatUtil.UTC, Locale.ROOT);
+    DateMathParser dmp = new DateMathParser(DateMathParser.UTC);
 
     for (int i = 0; i < 10; i++) {
       long l = Integer.MAX_VALUE + i*1L;
@@ -249,11 +248,7 @@ public class TestTrie extends SolrTestCaseJ4 {
             "facet.field", "tint",
             "facet.field", "tlong",
             "facet.field", "tfloat",
-            "facet.field", "tdouble",
-            "facet.date", "tdate",
-            "facet.date.start", "NOW/DAY",
-            "facet.date.end", "NOW/DAY+6DAYS",
-            "facet.date.gap", "+1DAY");
+            "facet.field", "tdouble");
     testFacetField(req, "tint", "0", "2");
     testFacetField(req, "tint", "5", "1");
     testFacetField(req, "tlong", String.valueOf(Integer.MAX_VALUE), "2");
@@ -262,9 +257,6 @@ public class TestTrie extends SolrTestCaseJ4 {
     testFacetField(req, "tfloat", String.valueOf(5*5*31.11f), "1");
     testFacetField(req, "tdouble", String.valueOf(2.33d), "2");
     testFacetField(req, "tdouble", String.valueOf(5*2.33d), "1");
-
-    testFacetDate(req, "tdate", format.format(dmp.parseMath("/DAY")), "4");
-    testFacetDate(req, "tdate", format.format(dmp.parseMath("/DAY+5DAYS")), "2");
   }
 
   private void checkPrecisionSteps(String fieldType) {
@@ -277,11 +269,6 @@ public class TestTrie extends SolrTestCaseJ4 {
 
   private void testFacetField(SolrQueryRequest req, String field, String value, String count) {
     String xpath = "//lst[@name='facet_fields']/lst[@name='" + field + "']/int[@name='" + value + "'][.='" + count + "']";
-    assertQ(req, xpath);
-  }
-
-  private void testFacetDate(SolrQueryRequest req, String field, String value, String count)  {
-    String xpath = "//lst[@name='facet_dates']/lst[@name='" + field + "']/int[@name='" + value + "'][.='" + count + "']";
     assertQ(req, xpath);
   }
 }

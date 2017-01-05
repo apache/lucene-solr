@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -52,7 +51,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.handler.loader.XMLLoader;
-import org.apache.solr.search.QueryWrapperFilter;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RefCounted;
@@ -575,22 +573,14 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     for (Document block : blocks) {
       final String msg = block.asXML();
       if (msg.length() > 0) {
-        rez.add(new Callable<Void>() {
-          @Override
-          public Void call() {
-            assertBlockU(msg);
-            return null;
-          }
-          
+        rez.add(() -> {
+          assertBlockU(msg);
+          return null;
         });
         if (rarely()) {
-          rez.add(new Callable<Void>() {
-            @Override
-            public Void call() {
-              assertBlockU(commit());
-              return null;
-            }
-            
+          rez.add(() -> {
+            assertBlockU(commit());
+            return null;
           });
         }
       }

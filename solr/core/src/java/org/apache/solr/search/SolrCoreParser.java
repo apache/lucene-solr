@@ -16,23 +16,57 @@
  */
 package org.apache.solr.search;
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.xml.CoreParser;
-
+import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
  * Assembles a QueryBuilder which uses Query objects from Solr's <code>search</code> module
  * in addition to Query objects supported by the Lucene <code>CoreParser</code>.
  */
-public class SolrCoreParser extends CoreParser {
+public class SolrCoreParser extends CoreParser implements NamedListInitializedPlugin {
+
+  protected final SolrQueryRequest req;
 
   public SolrCoreParser(String defaultField, Analyzer analyzer,
       SolrQueryRequest req) {
     super(defaultField, analyzer);
+    queryFactory.addBuilder("LegacyNumericRangeQuery", new LegacyNumericRangeQueryBuilder());
+    this.req = req;
+  }
 
-    // final IndexSchema schema = req.getSchema();
-    // lucene_parser.addQueryBuilder("SomeOtherQuery", new SomeOtherQueryBuilder(schema));
+  @Override
+  public void init(NamedList initArgs) {
+    if (initArgs == null || initArgs.size() == 0) {
+      return;
+    }
+    final SolrResourceLoader loader;
+    if (req == null) {
+      loader = new SolrResourceLoader();
+    } else {
+      loader = req.getCore().getResourceLoader();
+    }
+
+    final Iterable<Map.Entry<String,Object>> args = initArgs;
+    for (final Map.Entry<String,Object> entry : args) {
+      final String queryName = entry.getKey();
+      final String queryBuilderClassName = (String)entry.getValue();
+
+      final SolrQueryBuilder queryBuilder = loader.newInstance(
+          queryBuilderClassName,
+          SolrQueryBuilder.class,
+          null,
+          new Class[] {String.class, Analyzer.class, SolrQueryRequest.class, QueryBuilder.class},
+          new Object[] {defaultField, analyzer, req, this});
+
+      this.queryFactory.addBuilder(queryName, queryBuilder);
+    }
   }
 
 }

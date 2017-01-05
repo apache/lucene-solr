@@ -22,25 +22,24 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.index.SlowCompositeReaderWrapper;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.DocList;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.CopyField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-
+import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -361,15 +360,18 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
       NumericDocValues fooNorms = reader.getNormValues("foo_t");
       NumericDocValues textNorms =  reader.getNormValues("text");
 
+      assertEquals(docid, titleNorms.advance(docid));
       assertEquals(expectedNorm(sim, 2, TITLE_BOOST * DOC_BOOST),
-                   titleNorms.get(docid));
+                   titleNorms.longValue());
 
+      assertEquals(docid, fooNorms.advance(docid));
       assertEquals(expectedNorm(sim, 8-3, FOO_BOOST * DOC_BOOST),
-                   fooNorms.get(docid));
+                   fooNorms.longValue());
 
+      assertEquals(docid, textNorms.advance(docid));
       assertEquals(expectedNorm(sim, 2 + 8-3, 
                                 TITLE_BOOST * FOO_BOOST * DOC_BOOST),
-                   textNorms.get(docid));
+                   textNorms.longValue());
 
     } finally {
       req.close();

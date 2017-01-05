@@ -29,7 +29,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
@@ -55,13 +54,13 @@ public class TestTermScorer extends LuceneTestCase {
         .setSimilarity(new ClassicSimilarity()));
     for (int i = 0; i < values.length; i++) {
       Document doc = new Document();
-      doc
-          .add(newTextField(FIELD, values[i], Field.Store.YES));
+      doc.add(newTextField(FIELD, values[i], Field.Store.YES));
       writer.addDocument(doc);
     }
-    indexReader = SlowCompositeReaderWrapper.wrap(writer.getReader());
+    writer.forceMerge(1);
+    indexReader = getOnlyLeafReader(writer.getReader());
     writer.close();
-    indexSearcher = newSearcher(indexReader);
+    indexSearcher = newSearcher(indexReader, false);
     indexSearcher.setSimilarity(new ClassicSimilarity());
   }
   

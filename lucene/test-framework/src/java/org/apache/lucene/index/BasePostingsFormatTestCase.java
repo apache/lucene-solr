@@ -16,13 +16,6 @@
  */
 package org.apache.lucene.index;
 
-import static org.apache.lucene.index.PostingsEnum.ALL;
-import static org.apache.lucene.index.PostingsEnum.FREQS;
-import static org.apache.lucene.index.PostingsEnum.NONE;
-import static org.apache.lucene.index.PostingsEnum.OFFSETS;
-import static org.apache.lucene.index.PostingsEnum.PAYLOADS;
-import static org.apache.lucene.index.PostingsEnum.POSITIONS;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -38,9 +31,8 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -48,15 +40,23 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import static org.apache.lucene.index.PostingsEnum.ALL;
+import static org.apache.lucene.index.PostingsEnum.FREQS;
+import static org.apache.lucene.index.PostingsEnum.NONE;
+import static org.apache.lucene.index.PostingsEnum.OFFSETS;
+import static org.apache.lucene.index.PostingsEnum.PAYLOADS;
+import static org.apache.lucene.index.PostingsEnum.POSITIONS;
 
 /**
  * Abstract class to do basic tests for a postings format.
@@ -165,8 +165,9 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
     te.seekExact(fieldAndTerm.term);
     checkReuse(te, PostingsEnum.FREQS, PostingsEnum.ALL, false);
-    if (isPostingsEnumReuseImplemented())
+    if (isPostingsEnumReuseImplemented()) {
       checkReuse(te, PostingsEnum.ALL, PostingsEnum.ALL, true);
+    }
 
     fieldsProducer.close();
     dir.close();
@@ -175,10 +176,11 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
   protected static void checkReuse(TermsEnum termsEnum, int firstFlags, int secondFlags, boolean shouldReuse) throws IOException {
     PostingsEnum postings1 = termsEnum.postings(null, firstFlags);
     PostingsEnum postings2 = termsEnum.postings(postings1, secondFlags);
-    if (shouldReuse)
+    if (shouldReuse) {
       assertSame("Expected PostingsEnum " + postings1.getClass().getName() + " to be reused", postings1, postings2);
-    else
+    } else {
       assertNotSame("Expected PostingsEnum " + postings1.getClass().getName() + " to not be reused", postings1, postings2);
+    }
   }
   
   public void testJustEmptyField() throws Exception {
@@ -190,7 +192,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     doc.add(newStringField("", "something", Field.Store.NO));
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
-    LeafReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlyLeafReader(ir);
     Fields fields = ar.fields();
     int fieldCount = fields.size();
     // -1 is allowed, if the codec doesn't implement fields.size():
@@ -215,7 +217,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     doc.add(newStringField("", "", Field.Store.NO));
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
-    LeafReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlyLeafReader(ir);
     Fields fields = ar.fields();
     int fieldCount = fields.size();
     // -1 is allowed, if the codec doesn't implement fields.size():
@@ -241,7 +243,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     iw.addDocument(doc);
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
-    LeafReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlyLeafReader(ir);
     TermsEnum termsEnum = ar.terms("field").iterator();
     assertTrue(termsEnum.seekExact(new BytesRef("value")));
     PostingsEnum docsEnum = termsEnum.postings(null, PostingsEnum.NONE);
@@ -264,7 +266,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     iw.addDocument(doc);
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
-    LeafReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlyLeafReader(ir);
     TermsEnum termsEnum = ar.terms("field").iterator();
     assertTrue(termsEnum.seekExact(new BytesRef("value")));
     PostingsEnum docsEnum = termsEnum.postings(null, PostingsEnum.POSITIONS);
@@ -293,7 +295,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     iw.deleteDocuments(new Term("ghostField", "something")); // delete the only term for the field
     iw.forceMerge(1);
     DirectoryReader ir = iw.getReader();
-    LeafReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlyLeafReader(ir);
     Fields fields = ar.fields();
     // Ghost busting terms dict impls will have
     // fields.size() == 0; all others must be == 1:
@@ -308,6 +310,49 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       }
     }
     ir.close();
+    iw.close();
+    dir.close();
+  }
+
+  // tests that level 2 ghost fields still work
+  public void testLevel2Ghosts() throws Exception {
+    Directory dir = newDirectory();
+
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriterConfig iwc = newIndexWriterConfig(null);
+    iwc.setCodec(getCodec());
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iw = new IndexWriter(dir, iwc);
+
+    Document document = new Document();
+    document.add(new StringField("id", "0", Field.Store.NO));
+    document.add(new StringField("suggest_field", "apples", Field.Store.NO));
+    iw.addDocument(document);
+    // need another document so whole segment isn't deleted
+    iw.addDocument(new Document());
+    iw.commit();
+
+    document = new Document();
+    document.add(new StringField("id", "1", Field.Store.NO));
+    document.add(new StringField("suggest_field2", "apples", Field.Store.NO));
+    iw.addDocument(document);
+    iw.commit();
+
+    iw.deleteDocuments(new Term("id", "0"));
+    // first force merge creates a level 1 ghost field
+    iw.forceMerge(1);
+    
+    // second force merge creates a level 2 ghost field, causing MultiFields to include "suggest_field" in its iteration, yet a null Terms is returned (no documents have
+    // this field anymore)
+    iw.addDocument(new Document());
+    iw.forceMerge(1);
+
+    DirectoryReader reader = DirectoryReader.open(iw);
+    IndexSearcher indexSearcher = new IndexSearcher(reader);
+
+    assertEquals(1, indexSearcher.count(new TermQuery(new Term("id", "1"))));
+
+    reader.close();
     iw.close();
     dir.close();
   }
@@ -337,61 +382,104 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     // TODO: would be better to use / delegate to the current
     // Codec returned by getCodec()
 
-    iwc.setCodec(new AssertingCodec() {
+    iwc.setCodec(new FilterCodec(getCodec().getName(), getCodec()) {
         @Override
-        public PostingsFormat getPostingsFormatForField(String field) {
+        public PostingsFormat postingsFormat() {
 
-          PostingsFormat p = getCodec().postingsFormat();
-          if (p instanceof PerFieldPostingsFormat) {
-            p = ((PerFieldPostingsFormat) p).getPostingsFormatForField(field);
-          }
-          final PostingsFormat defaultPostingsFormat = p;
+          final PostingsFormat defaultPostingsFormat = delegate.postingsFormat();
 
           final Thread mainThread = Thread.currentThread();
 
-          if (field.equals("body")) {
+          // A PF that counts up some stats and then in
+          // the end we verify the stats match what the
+          // final IndexReader says, just to exercise the
+          // new freedom of iterating the postings more
+          // than once at flush/merge:
 
-            // A PF that counts up some stats and then in
-            // the end we verify the stats match what the
-            // final IndexReader says, just to exercise the
-            // new freedom of iterating the postings more
-            // than once at flush/merge:
+          return new PostingsFormat(defaultPostingsFormat.getName()) {
 
-            return new PostingsFormat(defaultPostingsFormat.getName()) {
+            @Override
+            public FieldsConsumer fieldsConsumer(final SegmentWriteState state) throws IOException {
 
-              @Override
-              public FieldsConsumer fieldsConsumer(final SegmentWriteState state) throws IOException {
+              final FieldsConsumer fieldsConsumer = defaultPostingsFormat.fieldsConsumer(state);
 
-                final FieldsConsumer fieldsConsumer = defaultPostingsFormat.fieldsConsumer(state);
+              return new FieldsConsumer() {
+                @Override
+                public void write(Fields fields) throws IOException {
+                  fieldsConsumer.write(fields);
 
-                return new FieldsConsumer() {
-                  @Override
-                  public void write(Fields fields) throws IOException {
-                    fieldsConsumer.write(fields);
+                  boolean isMerge = state.context.context == IOContext.Context.MERGE;
 
-                    boolean isMerge = state.context.context == IOContext.Context.MERGE;
+                  // We only use one thread for flushing
+                  // in this test:
+                  assert isMerge || Thread.currentThread() == mainThread;
 
-                    // We only use one thread for flushing
-                    // in this test:
-                    assert isMerge || Thread.currentThread() == mainThread;
+                  // We iterate the provided TermsEnum
+                  // twice, so we excercise this new freedom
+                  // with the inverted API; if
+                  // addOnSecondPass is true, we add up
+                  // term stats on the 2nd iteration:
+                  boolean addOnSecondPass = random().nextBoolean();
 
-                    // We iterate the provided TermsEnum
-                    // twice, so we excercise this new freedom
-                    // with the inverted API; if
-                    // addOnSecondPass is true, we add up
-                    // term stats on the 2nd iteration:
-                    boolean addOnSecondPass = random().nextBoolean();
+                  //System.out.println("write isMerge=" + isMerge + " 2ndPass=" + addOnSecondPass);
 
-                    //System.out.println("write isMerge=" + isMerge + " 2ndPass=" + addOnSecondPass);
+                  // Gather our own stats:
+                  Terms terms = fields.terms("body");
+                  assert terms != null;
 
-                    // Gather our own stats:
-                    Terms terms = fields.terms("body");
-                    assert terms != null;
+                  TermsEnum termsEnum = terms.iterator();
+                  PostingsEnum docs = null;
+                  while(termsEnum.next() != null) {
+                    BytesRef term = termsEnum.term();
+                    // TODO: also sometimes ask for payloads/offsets?
+                    boolean noPositions = random().nextBoolean();
+                    if (noPositions) {
+                      docs = termsEnum.postings(docs, PostingsEnum.FREQS);
+                    } else {
+                      docs = termsEnum.postings(null, PostingsEnum.POSITIONS);
+                    }
+                    int docFreq = 0;
+                    long totalTermFreq = 0;
+                    while (docs.nextDoc() != PostingsEnum.NO_MORE_DOCS) {
+                      docFreq++;
+                      totalTermFreq += docs.freq();
+                      int limit = TestUtil.nextInt(random(), 1, docs.freq());
+                      if (!noPositions) {
+                        for (int i = 0; i < limit; i++) {
+                          docs.nextPosition();
+                        }
+                      }
+                    }
 
-                    TermsEnum termsEnum = terms.iterator();
-                    PostingsEnum docs = null;
-                    while(termsEnum.next() != null) {
-                      BytesRef term = termsEnum.term();
+                    String termString = term.utf8ToString();
+
+                    // During merge we should only see terms
+                    // we had already seen during a
+                    // previous flush:
+                    assertTrue(isMerge==false || termFreqs.containsKey(termString));
+
+                    if (isMerge == false) {
+                      if (addOnSecondPass == false) {
+                        TermFreqs tf = termFreqs.get(termString);
+                        if (tf == null) {
+                          tf = new TermFreqs();
+                          termFreqs.put(termString, tf);
+                        }
+                        tf.docFreq += docFreq;
+                        tf.totalTermFreq += totalTermFreq;
+                        sumDocFreq.addAndGet(docFreq);
+                        sumTotalTermFreq.addAndGet(totalTermFreq);
+                      } else if (termFreqs.containsKey(termString) == false) {
+                        // Add placeholder (2nd pass will
+                        // set its counts):
+                        termFreqs.put(termString, new TermFreqs());
+                      }
+                    }
+                  }
+
+                  // Also test seeking the TermsEnum:
+                  for(String term : termFreqs.keySet()) {
+                    if (termsEnum.seekExact(new BytesRef(term))) {
                       // TODO: also sometimes ask for payloads/offsets?
                       boolean noPositions = random().nextBoolean();
                       if (noPositions) {
@@ -399,6 +487,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                       } else {
                         docs = termsEnum.postings(null, PostingsEnum.POSITIONS);
                       }
+
                       int docFreq = 0;
                       long totalTermFreq = 0;
                       while (docs.nextDoc() != PostingsEnum.NO_MORE_DOCS) {
@@ -412,96 +501,43 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                         }
                       }
 
-                      String termString = term.utf8ToString();
-
-                      // During merge we should only see terms
-                      // we had already seen during a
-                      // previous flush:
-                      assertTrue(isMerge==false || termFreqs.containsKey(termString));
-
-                      if (isMerge == false) {
-                        if (addOnSecondPass == false) {
-                          TermFreqs tf = termFreqs.get(termString);
-                          if (tf == null) {
-                            tf = new TermFreqs();
-                            termFreqs.put(termString, tf);
-                          }
-                          tf.docFreq += docFreq;
-                          tf.totalTermFreq += totalTermFreq;
-                          sumDocFreq.addAndGet(docFreq);
-                          sumTotalTermFreq.addAndGet(totalTermFreq);
-                        } else if (termFreqs.containsKey(termString) == false) {
-                          // Add placeholder (2nd pass will
-                          // set its counts):
-                          termFreqs.put(termString, new TermFreqs());
-                        }
+                      if (isMerge == false && addOnSecondPass) {
+                        TermFreqs tf = termFreqs.get(term);
+                        assert tf != null;
+                        tf.docFreq += docFreq;
+                        tf.totalTermFreq += totalTermFreq;
+                        sumDocFreq.addAndGet(docFreq);
+                        sumTotalTermFreq.addAndGet(totalTermFreq);
                       }
-                    }
 
-                    // Also test seeking the TermsEnum:
-                    for(String term : termFreqs.keySet()) {
-                      if (termsEnum.seekExact(new BytesRef(term))) {
-                        // TODO: also sometimes ask for payloads/offsets?
-                        boolean noPositions = random().nextBoolean();
-                        if (noPositions) {
-                          docs = termsEnum.postings(docs, PostingsEnum.FREQS);
-                        } else {
-                          docs = termsEnum.postings(null, PostingsEnum.POSITIONS);
-                        }
-
-                        int docFreq = 0;
-                        long totalTermFreq = 0;
-                        while (docs.nextDoc() != PostingsEnum.NO_MORE_DOCS) {
-                          docFreq++;
-                          totalTermFreq += docs.freq();
-                          int limit = TestUtil.nextInt(random(), 1, docs.freq());
-                          if (!noPositions) {
-                            for (int i = 0; i < limit; i++) {
-                              docs.nextPosition();
-                            }
-                          }
-                        }
-
-                        if (isMerge == false && addOnSecondPass) {
-                          TermFreqs tf = termFreqs.get(term);
-                          assert tf != null;
-                          tf.docFreq += docFreq;
-                          tf.totalTermFreq += totalTermFreq;
-                          sumDocFreq.addAndGet(docFreq);
-                          sumTotalTermFreq.addAndGet(totalTermFreq);
-                        }
-
-                        //System.out.println("  term=" + term + " docFreq=" + docFreq + " ttDF=" + termToDocFreq.get(term));
-                        assertTrue(docFreq <= termFreqs.get(term).docFreq);
-                        assertTrue(totalTermFreq <= termFreqs.get(term).totalTermFreq);
-                      }
-                    }
-
-                    // Also test seekCeil
-                    for(int iter=0;iter<10;iter++) {
-                      BytesRef term = new BytesRef(TestUtil.randomRealisticUnicodeString(random()));
-                      SeekStatus status = termsEnum.seekCeil(term);
-                      if (status == SeekStatus.NOT_FOUND) {
-                        assertTrue(term.compareTo(termsEnum.term()) < 0);
-                      }
+                      //System.out.println("  term=" + term + " docFreq=" + docFreq + " ttDF=" + termToDocFreq.get(term));
+                      assertTrue(docFreq <= termFreqs.get(term).docFreq);
+                      assertTrue(totalTermFreq <= termFreqs.get(term).totalTermFreq);
                     }
                   }
 
-                  @Override
-                  public void close() throws IOException {
-                    fieldsConsumer.close();
+                  // Also test seekCeil
+                  for(int iter=0;iter<10;iter++) {
+                    BytesRef term = new BytesRef(TestUtil.randomRealisticUnicodeString(random()));
+                    SeekStatus status = termsEnum.seekCeil(term);
+                    if (status == SeekStatus.NOT_FOUND) {
+                      assertTrue(term.compareTo(termsEnum.term()) < 0);
+                    }
                   }
-                };
-              }
+                }
 
-              @Override
-              public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-                return defaultPostingsFormat.fieldsProducer(state);
-              }
-            };
-          } else {
-            return defaultPostingsFormat;
-          }
+                @Override
+                public void close() throws IOException {
+                  fieldsConsumer.close();
+                }
+              };
+            }
+
+            @Override
+            public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
+              return defaultPostingsFormat.fieldsProducer(state);
+            }
+          };
         }
       });
 
@@ -512,8 +548,10 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     int bytesIndexed = 0;
     while (bytesIndexed < bytesToIndex) {
       Document doc = docs.nextDoc();
-      w.addDocument(doc);
-      bytesIndexed += RamUsageTester.sizeOf(doc);
+      Document justBodyDoc = new Document();
+      justBodyDoc.add(doc.getField("body"));
+      w.addDocument(justBodyDoc);
+      bytesIndexed += RamUsageTester.sizeOf(justBodyDoc);
     }
 
     IndexReader r = w.getReader();
@@ -567,14 +605,14 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     DirectoryReader reader = DirectoryReader.open(iw);
     
     // sugar method (FREQS)
-    PostingsEnum postings = getOnlySegmentReader(reader).postings(new Term("foo", "bar"));
+    PostingsEnum postings = getOnlyLeafReader(reader).postings(new Term("foo", "bar"));
     assertEquals(-1, postings.docID());
     assertEquals(0, postings.nextDoc());
     assertEquals(1, postings.freq());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
     
     // termsenum reuse (FREQS)
-    TermsEnum termsEnum = getOnlySegmentReader(reader).terms("foo").iterator();
+    TermsEnum termsEnum = getOnlyLeafReader(reader).terms("foo").iterator();
     termsEnum.seekExact(new BytesRef("bar"));
     PostingsEnum postings2 = termsEnum.postings(postings);
     assertNotNull(postings2);
@@ -625,14 +663,14 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     DirectoryReader reader = DirectoryReader.open(iw);
     
     // sugar method (FREQS)
-    PostingsEnum postings = getOnlySegmentReader(reader).postings(new Term("foo", "bar"));
+    PostingsEnum postings = getOnlyLeafReader(reader).postings(new Term("foo", "bar"));
     assertEquals(-1, postings.docID());
     assertEquals(0, postings.nextDoc());
     assertEquals(2, postings.freq());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
     
     // termsenum reuse (FREQS)
-    TermsEnum termsEnum = getOnlySegmentReader(reader).terms("foo").iterator();
+    TermsEnum termsEnum = getOnlyLeafReader(reader).terms("foo").iterator();
     termsEnum.seekExact(new BytesRef("bar"));
     PostingsEnum postings2 = termsEnum.postings(postings);
     assertNotNull(postings2);
@@ -703,14 +741,14 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     DirectoryReader reader = DirectoryReader.open(iw);
     
     // sugar method (FREQS)
-    PostingsEnum postings = getOnlySegmentReader(reader).postings(new Term("foo", "bar"));
+    PostingsEnum postings = getOnlyLeafReader(reader).postings(new Term("foo", "bar"));
     assertEquals(-1, postings.docID());
     assertEquals(0, postings.nextDoc());
     assertEquals(2, postings.freq());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
     
     // termsenum reuse (FREQS)
-    TermsEnum termsEnum = getOnlySegmentReader(reader).terms("foo").iterator();
+    TermsEnum termsEnum = getOnlyLeafReader(reader).terms("foo").iterator();
     termsEnum.seekExact(new BytesRef("bar"));
     PostingsEnum postings2 = termsEnum.postings(postings);
     assertNotNull(postings2);
@@ -740,7 +778,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly2.nextDoc());
     
     // asking for positions, ok
-    PostingsEnum docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.POSITIONS);
+    PostingsEnum docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.POSITIONS);
     assertEquals(-1, docsAndPositionsEnum.docID());
     assertEquals(0, docsAndPositionsEnum.nextDoc());
     assertEquals(2, docsAndPositionsEnum.freq());
@@ -771,7 +809,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     // payloads, offsets, etc don't cause an error if they aren't there
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
+    docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
     assertNotNull(docsAndPositionsEnum);
     // but make sure they work
     assertEquals(-1, docsAndPositionsEnum.docID());
@@ -802,7 +840,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertNull(docsAndPositionsEnum2.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
+    docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
     assertNotNull(docsAndPositionsEnum);
     assertEquals(-1, docsAndPositionsEnum.docID());
     assertEquals(0, docsAndPositionsEnum.nextDoc());
@@ -832,7 +870,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertNull(docsAndPositionsEnum2.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
+    docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
     assertNotNull(docsAndPositionsEnum);
     assertEquals(-1, docsAndPositionsEnum.docID());
     assertEquals(0, docsAndPositionsEnum.nextDoc());
@@ -883,14 +921,14 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     DirectoryReader reader = DirectoryReader.open(iw);
     
     // sugar method (FREQS)
-    PostingsEnum postings = getOnlySegmentReader(reader).postings(new Term("foo", "bar"));
+    PostingsEnum postings = getOnlyLeafReader(reader).postings(new Term("foo", "bar"));
     assertEquals(-1, postings.docID());
     assertEquals(0, postings.nextDoc());
     assertEquals(2, postings.freq());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
     
     // termsenum reuse (FREQS)
-    TermsEnum termsEnum = getOnlySegmentReader(reader).terms("foo").iterator();
+    TermsEnum termsEnum = getOnlyLeafReader(reader).terms("foo").iterator();
     termsEnum.seekExact(new BytesRef("bar"));
     PostingsEnum postings2 = termsEnum.postings(postings);
     assertNotNull(postings2);
@@ -920,7 +958,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly2.nextDoc());
     
     // asking for positions, ok
-    PostingsEnum docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.POSITIONS);
+    PostingsEnum docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.POSITIONS);
     assertEquals(-1, docsAndPositionsEnum.docID());
     assertEquals(0, docsAndPositionsEnum.nextDoc());
     assertEquals(2, docsAndPositionsEnum.freq());
@@ -955,7 +993,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     // payloads don't cause an error if they aren't there
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
+    docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
     assertNotNull(docsAndPositionsEnum);
     // but make sure they work
     assertEquals(-1, docsAndPositionsEnum.docID());
@@ -990,7 +1028,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertNull(docsAndPositionsEnum2.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
+    docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
     assertNotNull(docsAndPositionsEnum);
     assertEquals(-1, docsAndPositionsEnum.docID());
     assertEquals(0, docsAndPositionsEnum.nextDoc());
@@ -1020,7 +1058,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertNull(docsAndPositionsEnum2.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
+    docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
     assertNotNull(docsAndPositionsEnum);
     assertEquals(-1, docsAndPositionsEnum.docID());
     assertEquals(0, docsAndPositionsEnum.nextDoc());
@@ -1068,14 +1106,14 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     DirectoryReader reader = DirectoryReader.open(iw);
     
     // sugar method (FREQS)
-    PostingsEnum postings = getOnlySegmentReader(reader).postings(new Term("foo", "bar"));
+    PostingsEnum postings = getOnlyLeafReader(reader).postings(new Term("foo", "bar"));
     assertEquals(-1, postings.docID());
     assertEquals(0, postings.nextDoc());
     assertEquals(2, postings.freq());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
     
     // termsenum reuse (FREQS)
-    TermsEnum termsEnum = getOnlySegmentReader(reader).terms("foo").iterator();
+    TermsEnum termsEnum = getOnlyLeafReader(reader).terms("foo").iterator();
     termsEnum.seekExact(new BytesRef("bar"));
     PostingsEnum postings2 = termsEnum.postings(postings);
     assertNotNull(postings2);
@@ -1105,7 +1143,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly2.nextDoc());
     
     // asking for positions, ok
-    PostingsEnum docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.POSITIONS);
+    PostingsEnum docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.POSITIONS);
     assertEquals(-1, docsAndPositionsEnum.docID());
     assertEquals(0, docsAndPositionsEnum.nextDoc());
     assertEquals(2, docsAndPositionsEnum.freq());
@@ -1140,7 +1178,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     // payloads
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
+    docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
     assertNotNull(docsAndPositionsEnum);
     assertEquals(-1, docsAndPositionsEnum.docID());
     assertEquals(0, docsAndPositionsEnum.nextDoc());
@@ -1170,7 +1208,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(new BytesRef("pay2"), docsAndPositionsEnum2.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
+    docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
     assertNotNull(docsAndPositionsEnum);
     assertEquals(-1, docsAndPositionsEnum.docID());
     assertEquals(0, docsAndPositionsEnum.nextDoc());
@@ -1204,7 +1242,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertTrue(docsAndPositionsEnum2.getPayload() == null || new BytesRef("pay2").equals(docsAndPositionsEnum2.getPayload()));
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
+    docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
     assertNotNull(docsAndPositionsEnum);
     assertEquals(-1, docsAndPositionsEnum.docID());
     assertEquals(0, docsAndPositionsEnum.nextDoc());
@@ -1254,14 +1292,14 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     DirectoryReader reader = DirectoryReader.open(iw);
     
     // sugar method (FREQS)
-    PostingsEnum postings = getOnlySegmentReader(reader).postings(new Term("foo", "bar"));
+    PostingsEnum postings = getOnlyLeafReader(reader).postings(new Term("foo", "bar"));
     assertEquals(-1, postings.docID());
     assertEquals(0, postings.nextDoc());
     assertEquals(2, postings.freq());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, postings.nextDoc());
     
     // termsenum reuse (FREQS)
-    TermsEnum termsEnum = getOnlySegmentReader(reader).terms("foo").iterator();
+    TermsEnum termsEnum = getOnlyLeafReader(reader).terms("foo").iterator();
     termsEnum.seekExact(new BytesRef("bar"));
     PostingsEnum postings2 = termsEnum.postings(postings);
     assertNotNull(postings2);
@@ -1291,7 +1329,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsOnly2.nextDoc());
     
     // asking for positions, ok
-    PostingsEnum docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.POSITIONS);
+    PostingsEnum docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.POSITIONS);
     assertEquals(-1, docsAndPositionsEnum.docID());
     assertEquals(0, docsAndPositionsEnum.nextDoc());
     assertEquals(2, docsAndPositionsEnum.freq());
@@ -1330,7 +1368,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
     // payloads
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
+    docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.PAYLOADS);
     assertNotNull(docsAndPositionsEnum);
     assertEquals(-1, docsAndPositionsEnum.docID());
     assertEquals(0, docsAndPositionsEnum.nextDoc());
@@ -1364,7 +1402,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertEquals(new BytesRef("pay2"), docsAndPositionsEnum2.getPayload());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
+    docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.OFFSETS);
     assertNotNull(docsAndPositionsEnum);
     assertEquals(-1, docsAndPositionsEnum.docID());
     assertEquals(0, docsAndPositionsEnum.nextDoc());
@@ -1398,7 +1436,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     assertTrue(docsAndPositionsEnum2.getPayload() == null || new BytesRef("pay2").equals(docsAndPositionsEnum2.getPayload()));
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsAndPositionsEnum2.nextDoc());
     
-    docsAndPositionsEnum = getOnlySegmentReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
+    docsAndPositionsEnum = getOnlyLeafReader(reader).postings(new Term("foo", "bar"), PostingsEnum.ALL);
     assertNotNull(docsAndPositionsEnum);
     assertEquals(-1, docsAndPositionsEnum.docID());
     assertEquals(0, docsAndPositionsEnum.nextDoc());

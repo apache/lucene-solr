@@ -34,7 +34,7 @@ import org.apache.lucene.util.Bits;
  * Constrains search results to only match those which also match a provided
  * query.  
  *
- * <p> This could be used, for example, with a {@link org.apache.lucene.search.LegacyNumericRangeQuery} on a suitably
+ * <p> This could be used, for example, with a {@link org.apache.lucene.legacy.LegacyNumericRangeQuery} on a suitably
  * formatted date field to implement date filtering.  One could re-use a single
  * CachingWrapperFilter(QueryWrapperFilter) that matches, e.g., only documents modified 
  * within the last week.  This would only need to be reconstructed once per day.
@@ -89,14 +89,16 @@ public class QueryWrapperFilter extends Filter {
 
   @Override
   public boolean equals(Object o) {
-    if (super.equals(o) == false) {
-      return false;
-    }
-    return this.query.equals(((QueryWrapperFilter)o).query);
+    return sameClassAs(o) &&
+           equalsTo(getClass().cast(o));
+  }
+
+  private boolean equalsTo(QueryWrapperFilter other) {
+    return query.equals(other.query);
   }
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + query.hashCode();
+    return query.hashCode();
   }
 }

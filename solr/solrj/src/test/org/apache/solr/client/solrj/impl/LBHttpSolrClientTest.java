@@ -38,18 +38,23 @@ public class LBHttpSolrClientTest {
    */
   @Test
   public void testLBHttpSolrClientHttpClientResponseParserStringArray() throws IOException {
-
-    try (CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
+    CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
+    try (
          LBHttpSolrClient testClient = new LBHttpSolrClient(httpClient, (ResponseParser) null);
          HttpSolrClient httpSolrClient = testClient.makeSolrClient("http://127.0.0.1:8080")) {
       assertNull("Generated server should have null parser.", httpSolrClient.getParser());
+    } finally {
+      HttpClientUtil.close(httpClient);
     }
 
     ResponseParser parser = new BinaryResponseParser();
-    try (CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
-         LBHttpSolrClient testClient = new LBHttpSolrClient(httpClient, parser);
-         HttpSolrClient httpSolrClient = testClient.makeSolrClient("http://127.0.0.1:8080")) {
-      assertEquals("Invalid parser passed to generated server.", parser, httpSolrClient.getParser());
+    httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
+    try {
+      try ( LBHttpSolrClient testClient = new LBHttpSolrClient(httpClient, parser); HttpSolrClient httpSolrClient = testClient.makeSolrClient("http://127.0.0.1:8080")) {
+        assertEquals("Invalid parser passed to generated server.", parser, httpSolrClient.getParser());
+      }
+    } finally {
+      HttpClientUtil.close(httpClient);
     }
   }
   

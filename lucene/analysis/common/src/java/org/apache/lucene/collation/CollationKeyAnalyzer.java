@@ -20,7 +20,7 @@ package org.apache.lucene.collation;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.AttributeFactory;
 
 import java.text.Collator;
 
@@ -82,6 +82,11 @@ public final class CollationKeyAnalyzer extends Analyzer {
    */
   public CollationKeyAnalyzer(Collator collator) {
     this.factory = new CollationAttributeFactory(collator);
+  }
+
+  @Override
+  protected AttributeFactory attributeFactory(String fieldName) {
+    return factory;
   }
 
   @Override

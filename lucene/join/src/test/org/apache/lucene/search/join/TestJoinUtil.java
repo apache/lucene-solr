@@ -34,10 +34,13 @@ import java.util.TreeSet;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleDocValuesField;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType.LegacyNumericType;
-import org.apache.lucene.document.LegacyIntField;
-import org.apache.lucene.document.LegacyLongField;
+import org.apache.lucene.document.FloatDocValuesField;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -48,16 +51,16 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
@@ -85,7 +88,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
@@ -93,7 +95,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 public class TestJoinUtil extends LuceneTestCase {
@@ -297,6 +299,108 @@ public class TestJoinUtil extends LuceneTestCase {
     dir.close();
   }
 
+  public void testOrdinalsJoinExplainNoMatches() throws Exception {
+    final String idField = "id";
+    final String productIdField = "productId";
+    // A field indicating to what type a document belongs, which is then used to distinques between documents during joining.
+    final String typeField = "type";
+    // A single sorted doc values field that holds the join values for all document types.
+    // Typically during indexing a schema will automatically create this field with the values
+    final String joinField = idField + productIdField;
+
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(
+        dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE)
+    );
+
+    // 0
+    Document doc = new Document();
+    doc.add(new TextField(idField, "1", Field.Store.NO));
+    doc.add(new TextField(typeField, "product", Field.Store.NO));
+    doc.add(new TextField("description", "random text", Field.Store.NO));
+    doc.add(new TextField("name", "name1", Field.Store.NO));
+    doc.add(new SortedDocValuesField(joinField, new BytesRef("1")));
+    w.addDocument(doc);
+
+    // 1
+    doc = new Document();
+    doc.add(new TextField(idField, "2", Field.Store.NO));
+    doc.add(new TextField(typeField, "product", Field.Store.NO));
+    doc.add(new TextField("description", "random text", Field.Store.NO));
+    doc.add(new TextField("name", "name2", Field.Store.NO));
+    doc.add(new SortedDocValuesField(joinField, new BytesRef("2")));
+    w.addDocument(doc);
+
+    // 2
+    doc = new Document();
+    doc.add(new TextField(productIdField, "1", Field.Store.NO));
+    doc.add(new TextField(typeField, "price", Field.Store.NO));
+    doc.add(new TextField("price", "10.0", Field.Store.NO));
+    doc.add(new SortedDocValuesField(joinField, new BytesRef("1")));
+    w.addDocument(doc);
+
+    // 3
+    doc = new Document();
+    doc.add(new TextField(productIdField, "2", Field.Store.NO));
+    doc.add(new TextField(typeField, "price", Field.Store.NO));
+    doc.add(new TextField("price", "20.0", Field.Store.NO));
+    doc.add(new SortedDocValuesField(joinField, new BytesRef("1")));
+    w.addDocument(doc);
+
+    if (random().nextBoolean()) {
+      w.flush();
+    }
+
+    // 4
+    doc = new Document();
+    doc.add(new TextField(productIdField, "3", Field.Store.NO));
+    doc.add(new TextField(typeField, "price", Field.Store.NO));
+    doc.add(new TextField("price", "5.0", Field.Store.NO));
+    doc.add(new SortedDocValuesField(joinField, new BytesRef("2")));
+    w.addDocument(doc);
+
+    // 5
+    doc = new Document();
+    doc.add(new TextField("field", "value", Field.Store.NO));
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher indexSearcher = new IndexSearcher(r);
+    SortedDocValues[] values = new SortedDocValues[r.leaves().size()];
+    for (int i = 0; i < values.length; i++) {
+      LeafReader leafReader =  r.leaves().get(i).reader();
+      values[i] = DocValues.getSorted(leafReader, joinField);
+    }
+    MultiDocValues.OrdinalMap ordinalMap = MultiDocValues.OrdinalMap.build(
+        r.getCoreCacheKey(), values, PackedInts.DEFAULT
+    );
+
+    Query toQuery = new TermQuery(new Term("price", "5.0"));
+    Query fromQuery = new TermQuery(new Term("name", "name2"));
+
+    for (ScoreMode scoreMode : ScoreMode.values()) {
+      Query joinQuery = JoinUtil.createJoinQuery(joinField, fromQuery, toQuery, indexSearcher, scoreMode, ordinalMap);
+      TopDocs result = indexSearcher.search(joinQuery, 10);
+      assertEquals(1, result.totalHits);
+      assertEquals(4, result.scoreDocs[0].doc); // doc with price: 5.0
+      Explanation explanation = indexSearcher.explain(joinQuery, 4);
+      assertTrue(explanation.isMatch());
+      assertEquals(explanation.getDescription(), "A match, join value 2");
+
+      explanation = indexSearcher.explain(joinQuery, 3);
+      assertFalse(explanation.isMatch());
+      assertEquals(explanation.getDescription(), "Not a match, join value 1");
+
+      explanation = indexSearcher.explain(joinQuery, 5);
+      assertFalse(explanation.isMatch());
+      assertEquals(explanation.getDescription(), "Not a match");
+    }
+
+    w.close();
+    indexSearcher.getIndexReader().close();
+    dir.close();
+  }
+
   public void testRandomOrdinalsJoin() throws Exception {
     IndexIterationContext context = createContext(512, false, true);
     int searchIters = 10;
@@ -356,8 +460,8 @@ public class TestJoinUtil extends LuceneTestCase {
       private final Query fieldQuery = new FieldValueQuery(priceField);
 
       @Override
-      public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-        Weight fieldWeight = fieldQuery.createWeight(searcher, false);
+      public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+        Weight fieldWeight = fieldQuery.createWeight(searcher, false, boost);
         return new Weight(this) {
 
           @Override
@@ -370,15 +474,6 @@ public class TestJoinUtil extends LuceneTestCase {
           }
 
           @Override
-          public float getValueForNormalization() throws IOException {
-            return 0;
-          }
-
-          @Override
-          public void normalize(float norm, float topLevelBoost) {
-          }
-
-          @Override
           public Scorer scorer(LeafReaderContext context) throws IOException {
             Scorer fieldScorer = fieldWeight.scorer(context);
             if (fieldScorer == null) {
@@ -388,7 +483,8 @@ public class TestJoinUtil extends LuceneTestCase {
             return new FilterScorer(fieldScorer, this) {
               @Override
               public float score() throws IOException {
-                return (float) price.get(in.docID());
+                assertEquals(in.docID(), price.nextDoc());
+                return (float) price.longValue();
               }
             };
           }
@@ -399,6 +495,17 @@ public class TestJoinUtil extends LuceneTestCase {
       public String toString(String field) {
         return fieldQuery.toString(field);
       }
+
+      @Override
+      public boolean equals(Object o) {
+        return o == this;
+      }
+
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(this);
+      }
+
     };
 
     Directory dir = newDirectory();
@@ -410,7 +517,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
     Map<String, Float> lowestScoresPerParent = new HashMap<>();
     Map<String, Float> highestScoresPerParent = new HashMap<>();
-    int numParents = RandomInts.randomIntBetween(random(), 16, 64);
+    int numParents = RandomNumbers.randomIntBetween(random(), 16, 64);
     for (int p = 0; p < numParents; p++) {
       String parentId = Integer.toString(p);
       Document parentDoc = new Document();
@@ -418,7 +525,7 @@ public class TestJoinUtil extends LuceneTestCase {
       parentDoc.add(new StringField("type", "to", Field.Store.NO));
       parentDoc.add(new SortedDocValuesField("join_field", new BytesRef(parentId)));
       iw.addDocument(parentDoc);
-      int numChildren = RandomInts.randomIntBetween(random(), 2, 16);
+      int numChildren = RandomNumbers.randomIntBetween(random(), 2, 16);
       int lowest = Integer.MAX_VALUE;
       int highest = Integer.MIN_VALUE;
       for (int c = 0; c < numChildren; c++) {
@@ -455,7 +562,7 @@ public class TestJoinUtil extends LuceneTestCase {
     assertEquals(numParents, topDocs.totalHits);
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       ScoreDoc scoreDoc = topDocs.scoreDocs[i];
-      String id = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()).document(scoreDoc.doc).get("id");
+      String id = searcher.doc(scoreDoc.doc).get("id");
       assertEquals(lowestScoresPerParent.get(id), scoreDoc.score, 0f);
     }
 
@@ -464,7 +571,7 @@ public class TestJoinUtil extends LuceneTestCase {
     assertEquals(numParents, topDocs.totalHits);
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       ScoreDoc scoreDoc = topDocs.scoreDocs[i];
-      String id = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()).document(scoreDoc.doc).get("id");
+      String id = searcher.doc(scoreDoc.doc).get("id");
       assertEquals(highestScoresPerParent.get(id), scoreDoc.score, 0f);
     }
 
@@ -482,7 +589,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
     int minChildDocsPerParent = 2;
     int maxChildDocsPerParent = 16;
-    int numParents = RandomInts.randomIntBetween(random(), 16, 64);
+    int numParents = RandomNumbers.randomIntBetween(random(), 16, 64);
     int[] childDocsPerParent = new int[numParents];
     for (int p = 0; p < numParents; p++) {
       String parentId = Integer.toString(p);
@@ -491,7 +598,7 @@ public class TestJoinUtil extends LuceneTestCase {
       parentDoc.add(new StringField("type", "to", Field.Store.NO));
       parentDoc.add(new SortedDocValuesField("join_field", new BytesRef(parentId)));
       iw.addDocument(parentDoc);
-      int numChildren = RandomInts.randomIntBetween(random(), minChildDocsPerParent, maxChildDocsPerParent);
+      int numChildren = RandomNumbers.randomIntBetween(random(), minChildDocsPerParent, maxChildDocsPerParent);
       childDocsPerParent[p] = numChildren;
       for (int c = 0; c < numChildren; c++) {
         String childId = Integer.toString(p + c);
@@ -515,11 +622,11 @@ public class TestJoinUtil extends LuceneTestCase {
     Query fromQuery = new TermQuery(new Term("type", "from"));
     Query toQuery = new TermQuery(new Term("type", "to"));
 
-    int iters = RandomInts.randomIntBetween(random(), 3, 9);
+    int iters = RandomNumbers.randomIntBetween(random(), 3, 9);
     for (int i = 1; i <= iters; i++) {
       final ScoreMode scoreMode = ScoreMode.values()[random().nextInt(ScoreMode.values().length)];
-      int min = RandomInts.randomIntBetween(random(), minChildDocsPerParent, maxChildDocsPerParent - 1);
-      int max = RandomInts.randomIntBetween(random(), min, maxChildDocsPerParent);
+      int min = RandomNumbers.randomIntBetween(random(), minChildDocsPerParent, maxChildDocsPerParent - 1);
+      int max = RandomNumbers.randomIntBetween(random(), min, maxChildDocsPerParent);
       if (VERBOSE) {
         System.out.println("iter=" + i);
         System.out.println("scoreMode=" + scoreMode);
@@ -856,16 +963,36 @@ public class TestJoinUtil extends LuceneTestCase {
 
         final Query joinQuery;
         {
-          // single val can be handled by multiple-vals 
+          // single val can be handled by multiple-vals
           final boolean muliValsQuery = multipleValuesPerDocument || random().nextBoolean();
-          final String fromField = from ? "from":"to"; 
-          final String toField = from ? "to":"from"; 
-          
-          if (random().nextBoolean()) { // numbers
-            final LegacyNumericType numType = random().nextBoolean() ? LegacyNumericType.INT: LegacyNumericType.LONG ;
-            joinQuery = JoinUtil.createJoinQuery(fromField+numType, muliValsQuery, toField+numType, numType, actualQuery, indexSearcher, scoreMode);
-          } else {
-            joinQuery = JoinUtil.createJoinQuery(fromField, muliValsQuery, toField, actualQuery, indexSearcher, scoreMode);
+          final String fromField = from ? "from":"to";
+          final String toField = from ? "to":"from";
+
+          int surpriseMe = random().nextInt(2);
+          switch (surpriseMe) {
+            case 0:
+              Class<? extends Number> numType;
+              String suffix;
+              if (random().nextBoolean()) {
+                numType = Integer.class;
+                suffix = "INT";
+              } else if (random().nextBoolean()) {
+                numType = Float.class;
+                suffix = "FLOAT";
+              } else if (random().nextBoolean()) {
+                numType = Long.class;
+                suffix = "LONG";
+              } else {
+                numType = Double.class;
+                suffix = "DOUBLE";
+              }
+              joinQuery = JoinUtil.createJoinQuery(fromField + suffix, muliValsQuery, toField + suffix, numType, actualQuery, indexSearcher, scoreMode);
+              break;
+            case 1:
+              joinQuery = JoinUtil.createJoinQuery(fromField, muliValsQuery, toField, actualQuery, indexSearcher, scoreMode);
+              break;
+            default:
+              throw new RuntimeException("unexpected value " + surpriseMe);
           }
         }
         if (VERBOSE) {
@@ -940,29 +1067,29 @@ public class TestJoinUtil extends LuceneTestCase {
     );
 
     IndexIterationContext context = new IndexIterationContext();
-    int numRandomValues = nDocs / RandomInts.randomIntBetween(random, 1, 4);
+    int numRandomValues = nDocs / RandomNumbers.randomIntBetween(random, 1, 4);
     context.randomUniqueValues = new String[numRandomValues];
     Set<String> trackSet = new HashSet<>();
     context.randomFrom = new boolean[numRandomValues];
     for (int i = 0; i < numRandomValues; i++) {
       String uniqueRandomValue;
       do {
-        // the trick is to generate values which will be ordered similarly for string, ints&longs, positive nums makes it easier 
+        // the trick is to generate values which will be ordered similarly for string, ints&longs, positive nums makes it easier
         final int nextInt = random.nextInt(Integer.MAX_VALUE);
         uniqueRandomValue = String.format(Locale.ROOT, "%08x", nextInt);
         assert nextInt == Integer.parseUnsignedInt(uniqueRandomValue,16);
       } while ("".equals(uniqueRandomValue) || trackSet.contains(uniqueRandomValue));
-     
+
       // Generate unique values and empty strings aren't allowed.
       trackSet.add(uniqueRandomValue);
-      
+
       context.randomFrom[i] = random.nextBoolean();
       context.randomUniqueValues[i] = uniqueRandomValue;
-      
+
     }
 
     List<String> randomUniqueValuesReplica = new ArrayList<>(Arrays.asList(context.randomUniqueValues));
-        
+
     RandomDoc[] docs = new RandomDoc[nDocs];
     for (int i = 0; i < nDocs; i++) {
       String id = Integer.toString(i);
@@ -985,7 +1112,7 @@ public class TestJoinUtil extends LuceneTestCase {
       Collections.shuffle(subValues, random);
       }
       for (String linkValue : subValues) {
-        
+
         assert !docs[i].linkValues.contains(linkValue);
         docs[i].linkValues.add(linkValue);
         if (from) {
@@ -999,7 +1126,7 @@ public class TestJoinUtil extends LuceneTestCase {
           context.fromDocuments.get(linkValue).add(docs[i]);
           context.randomValueFromDocs.get(value).add(docs[i]);
           addLinkFields(random, document,  "from", linkValue, multipleValuesPerDocument, globalOrdinalJoin);
-          
+
         } else {
           if (!context.toDocuments.containsKey(linkValue)) {
             context.toDocuments.put(linkValue, new ArrayList<>());
@@ -1055,15 +1182,19 @@ public class TestJoinUtil extends LuceneTestCase {
 
           @Override
           public void collect(int doc) throws IOException {
-            docTermOrds.setDocument(doc);
-            long ord;
-            while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-              final BytesRef joinValue = docTermOrds.lookupOrd(ord);
-              JoinScore joinScore = joinValueToJoinScores.get(joinValue);
-              if (joinScore == null) {
-                joinValueToJoinScores.put(BytesRef.deepCopyOf(joinValue), joinScore = new JoinScore());
+            if (doc > docTermOrds.docID()) {
+              docTermOrds.advance(doc);
+            }
+            if (doc == docTermOrds.docID()) {
+              long ord;
+              while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+                final BytesRef joinValue = docTermOrds.lookupOrd(ord);
+                JoinScore joinScore = joinValueToJoinScores.get(joinValue);
+                if (joinScore == null) {
+                  joinValueToJoinScores.put(BytesRef.deepCopyOf(joinValue), joinScore = new JoinScore());
+                }
+                joinScore.addScore(scorer.score());
               }
-              joinScore.addScore(scorer.score());
             }
           }
 
@@ -1087,12 +1218,17 @@ public class TestJoinUtil extends LuceneTestCase {
 
           private Scorer scorer;
           private BinaryDocValues terms;
-          private Bits docsWithField;
 
           @Override
           public void collect(int doc) throws IOException {
-            final BytesRef joinValue = terms.get(doc);
-            if (joinValue.length == 0 && !docsWithField.get(doc)) {
+            if (doc > terms.docID()) {
+              terms.advance(doc);
+            }
+            final BytesRef joinValue;
+            if (doc == terms.docID()) {
+              joinValue = terms.binaryValue();
+            } else {
+              // missing;
               return;
             }
 
@@ -1109,7 +1245,6 @@ public class TestJoinUtil extends LuceneTestCase {
           @Override
           protected void doSetNextReader(LeafReaderContext context) throws IOException {
             terms = DocValues.getBinary(context.reader(), fromField);
-            docsWithField = DocValues.getDocsWithField(context.reader(), fromField);
           }
 
           @Override
@@ -1126,8 +1261,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
       final Map<Integer, JoinScore> docToJoinScore = new HashMap<>();
       if (multipleValuesPerDocument) {
-        LeafReader slowCompositeReader = SlowCompositeReaderWrapper.wrap(topLevelReader);
-        Terms terms = slowCompositeReader.terms(toField);
+        Terms terms = MultiFields.getTerms(topLevelReader, toField);
         if (terms != null) {
           PostingsEnum postingsEnum = null;
           SortedSet<BytesRef> joinValues = new TreeSet<>();
@@ -1155,8 +1289,17 @@ public class TestJoinUtil extends LuceneTestCase {
           private int docBase;
 
           @Override
-          public void collect(int doc) {
-            final BytesRef joinValue = terms.get(doc);
+          public void collect(int doc) throws IOException {
+            if (doc > terms.docID()) {
+              terms.advance(doc);
+            }
+            final BytesRef joinValue;
+            if (doc == terms.docID()) {
+              joinValue = terms.binaryValue();
+            } else {
+              // missing;
+              joinValue = new BytesRef(BytesRef.EMPTY_BYTES);
+            }
             JoinScore joinScore = joinValueToJoinScores.get(joinValue);
             if (joinScore == null) {
               return;
@@ -1203,19 +1346,25 @@ public class TestJoinUtil extends LuceneTestCase {
     document.add(newTextField(random, fieldName, linkValue, Field.Store.NO));
 
     final int linkInt = Integer.parseUnsignedInt(linkValue,16);
-    document.add(new LegacyIntField(fieldName+ LegacyNumericType.INT, linkInt, Field.Store.NO));
+    document.add(new IntPoint(fieldName + "INT", linkInt));
+    document.add(new FloatPoint(fieldName + "FLOAT", linkInt));
 
     final long linkLong = linkInt<<32 | linkInt;
-    document.add(new LegacyLongField(fieldName+ LegacyNumericType.LONG, linkLong, Field.Store.NO));
+    document.add(new LongPoint(fieldName + "LONG", linkLong));
+    document.add(new DoublePoint(fieldName + "DOUBLE", linkLong));
 
     if (multipleValuesPerDocument) {
       document.add(new SortedSetDocValuesField(fieldName, new BytesRef(linkValue)));
-      document.add(new SortedNumericDocValuesField(fieldName+ LegacyNumericType.INT, linkInt));
-      document.add(new SortedNumericDocValuesField(fieldName+ LegacyNumericType.LONG, linkLong));
+      document.add(new SortedNumericDocValuesField(fieldName+ "INT", linkInt));
+      document.add(new SortedNumericDocValuesField(fieldName+ "FLOAT", Float.floatToRawIntBits(linkInt)));
+      document.add(new SortedNumericDocValuesField(fieldName+ "LONG", linkLong));
+      document.add(new SortedNumericDocValuesField(fieldName+ "DOUBLE", Double.doubleToRawLongBits(linkLong)));
     } else {
       document.add(new SortedDocValuesField(fieldName, new BytesRef(linkValue)));
-      document.add(new NumericDocValuesField(fieldName+ LegacyNumericType.INT, linkInt));
-      document.add(new NumericDocValuesField(fieldName+ LegacyNumericType.LONG, linkLong));
+      document.add(new NumericDocValuesField(fieldName+ "INT", linkInt));
+      document.add(new FloatDocValuesField(fieldName+ "FLOAT", linkInt));
+      document.add(new NumericDocValuesField(fieldName+ "LONG", linkLong));
+      document.add(new DoubleDocValuesField(fieldName+ "DOUBLE", linkLong));
     }
     if (globalOrdinalJoin) {
       document.add(new SortedDocValuesField("join_field", new BytesRef(linkValue)));

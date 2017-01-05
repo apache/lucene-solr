@@ -37,13 +37,10 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.impl.action.HelpArgumentAction;
@@ -1188,12 +1185,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     }
     
     // use alphanumeric sort (rather than lexicographical sort) to properly handle more than 99999 shards
-    Arrays.sort(dirs, new Comparator<FileStatus>() {
-      @Override
-      public int compare(FileStatus f1, FileStatus f2) {
-        return new AlphaNumericComparator().compare(f1.getPath().getName(), f2.getPath().getName());
-      }
-    });
+    Arrays.sort(dirs, (f1, f2) -> new AlphaNumericComparator().compare(f1.getPath().getName(), f2.getPath().getName()));
 
     return dirs;
   }

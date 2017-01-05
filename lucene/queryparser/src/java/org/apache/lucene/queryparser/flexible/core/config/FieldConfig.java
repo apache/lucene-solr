@@ -26,13 +26,13 @@ public class FieldConfig extends AbstractQueryConfig {
   /**
    * Constructs a {@link FieldConfig}
    * 
-   * @param fieldName the field name, it cannot be null
+   * @param fieldName the field name, it must not be null
    * @throws IllegalArgumentException if the field name is null
    */
   public FieldConfig(String fieldName) {
 
     if (fieldName == null) {
-      throw new IllegalArgumentException("field name should not be null!");
+      throw new IllegalArgumentException("field name must not be null!");
     }
 
     this.fieldName = fieldName;

@@ -28,6 +28,7 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -55,6 +56,7 @@ import org.apache.solr.handler.component.TrackingShardHandlerFactory;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +70,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.3
  */
 @Slow
+@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9061")
 public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -89,6 +92,15 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     return "solr-trackingshardhandler.xml";
   }
 
+  @BeforeClass
+  public static void beforeClass() {
+    // we shutdown a jetty and start it and try to use
+    // the same http client pretty fast - this lowered setting makes sure
+    // we validate the connection before use on the restarted
+    // server so that we don't use a bad one
+    System.setProperty("validateAfterInactivity", "200");
+  }
+  
   @Test
   public void test() throws Exception {
     QueryResponse rsp = null;
@@ -224,27 +236,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     assertEquals(2, rsp.getFacetFields().size());
     
     String facetQuery = "id:[1 TO 15]";
-
-    // simple date facet on one field
-    query("q",facetQuery, "rows",100, "facet","true", 
-          "facet.date",tdate_a,
-          "facet.date",tdate_a,
-          "facet.date.other", "all", 
-          "facet.date.start","2010-05-01T11:00:00Z", 
-          "facet.date.gap","+1DAY", 
-          "facet.date.end","2010-05-20T11:00:00Z");
-
-    // date facet on multiple fields
-    query("q",facetQuery, "rows",100, "facet","true", 
-          "facet.date",tdate_a,
-          "facet.date",tdate_b,
-          "facet.date",tdate_a,
-          "facet.date.other", "all", 
-          "f."+tdate_b+".facet.date.start","2009-05-01T11:00:00Z", 
-          "f."+tdate_b+".facet.date.gap","+3MONTHS", 
-          "facet.date.start","2010-05-01T11:00:00Z", 
-          "facet.date.gap","+1DAY", 
-          "facet.date.end","2010-05-20T11:00:00Z");
 
     // simple range facet on one field
     query("q",facetQuery, "rows",100, "facet","true", 
@@ -1009,7 +1000,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
       // restart the jettys
       for (JettySolrRunner downJetty : downJettys) {
-        downJetty.start();
+        ChaosMonkey.start(downJetty);
       }
     }
 
@@ -1178,12 +1169,12 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           if (upShards.contains(s)) {
             // this is no longer true if there was a query timeout on an up shard
             // assertTrue("Expected to find numFound in the up shard info",info.get("numFound") != null);
-            assertTrue("Expected to find shardAddress in the up shard info",info.get("shardAddress") != null);
+            assertTrue("Expected to find shardAddress in the up shard info: " + info.toString(), info.get("shardAddress") != null);
           }
           else {
             assertEquals("Expected to find the "+SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" header set if a shard is down",
                 Boolean.TRUE, rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-            assertTrue("Expected to find error in the down shard info",info.get("error") != null);
+            assertTrue("Expected to find error in the down shard info: " + info.toString(), info.get("error") != null);
           }
         }
       }

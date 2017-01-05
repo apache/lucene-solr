@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.stream.metrics;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -24,15 +23,13 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class CountMetric extends Metric implements Serializable {
-
-  private static final long serialVersionUID = 1;
-
+public class CountMetric extends Metric {
   private long count;
   
   public CountMetric(){
     init("count");
   }
+
   public CountMetric(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String functionName = expression.getFunctionName();
@@ -49,6 +46,10 @@ public class CountMetric extends Metric implements Serializable {
     init(functionName);
     
   }
+
+  public String[] getColumns() {
+    return new String[0];
+  }
   
   private void init(String functionName){
     setFunctionName(functionName);
@@ -59,7 +60,7 @@ public class CountMetric extends Metric implements Serializable {
     ++count;
   }
 
-  public double getValue() {
+  public Long getValue() {
     return count;
   }
 

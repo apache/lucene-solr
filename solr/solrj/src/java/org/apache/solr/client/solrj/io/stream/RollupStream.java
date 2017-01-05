@@ -17,23 +17,24 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.ArrayList;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.HashKey;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
@@ -121,12 +122,21 @@ public class RollupStream extends TupleStream implements Expressible {
   }
 
   @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+    return toExpression(factory, true);
+  }
+  
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     
     // stream
-    expression.addParameter(tupleStream.toExpression(factory));
+    if(includeStreams){
+      expression.addParameter(tupleStream.toExpression(factory));
+    }
+    else{
+      expression.addParameter("<stream>");
+    }
         
     // over
     StringBuilder overBuilder = new StringBuilder();
@@ -142,6 +152,25 @@ public class RollupStream extends TupleStream implements Expressible {
     }
     
     return expression;
+  }
+  
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    Explanation explanation = new StreamExplanation(getStreamNodeId().toString())
+      .withChildren(new Explanation[]{
+        tupleStream.toExplanation(factory)
+      })
+      .withFunctionName(factory.getFunctionName(this.getClass()))
+      .withImplementingClass(this.getClass().getName())
+      .withExpressionType(ExpressionType.STREAM_DECORATOR)
+      .withExpression(toExpression(factory, false).toString());
+    
+    for(Metric metric : metrics){
+      explanation.withHelper(metric.toExplanation(factory));
+    }
+    
+    return explanation;
   }
 
   public void setStreamContext(StreamContext context) {
@@ -176,7 +205,7 @@ public class RollupStream extends TupleStream implements Expressible {
             return tuple;
           }
 
-          Map map = new HashMap();
+          Map<String,Object> map = new HashMap<String,Object>();
           for(Metric metric : currentMetrics) {
             map.put(metric.getIdentifier(), metric.getValue());
           }
@@ -207,7 +236,7 @@ public class RollupStream extends TupleStream implements Expressible {
       } else {
         Tuple t = null;
         if(currentMetrics != null) {
-          Map map = new HashMap();
+          Map<String,Object> map = new HashMap<String,Object>();
           for(Metric metric : currentMetrics) {
             map.put(metric.getIdentifier(), metric.getValue());
           }

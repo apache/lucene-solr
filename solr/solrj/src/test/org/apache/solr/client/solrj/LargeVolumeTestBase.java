@@ -60,7 +60,8 @@ public abstract class LargeVolumeTestBase extends SolrJettyTestBase
 
     // some of the commits could have failed because maxWarmingSearchers exceeded,
     // so do a final commit to make sure everything is visible.
-    client.commit();
+    // This should no longer be true as of SOLR-9712 (Solr 6.4)
+    // client.commit();
     
     query(threadCount * numdocs);
     log.info("done");

@@ -46,9 +46,9 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
    */
   @Override
   public void setPositionIncrement(int positionIncrement) {
-    if (positionIncrement < 0)
-      throw new IllegalArgumentException
-        ("Increment must be zero or greater: " + positionIncrement);
+    if (positionIncrement < 0) {
+      throw new IllegalArgumentException("Increment must be zero or greater: " + positionIncrement);
+    }
     this.positionIncrement = positionIncrement;
   }
 
@@ -67,6 +67,9 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
    */
   @Override
   public void setPositionLength(int positionLength) {
+    if (positionLength < 1) {
+      throw new IllegalArgumentException("Position length must be 1 or greater: got " + positionLength);
+    }
     this.positionLength = positionLength;
   }
 
@@ -135,6 +138,17 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
   public void clear() {
     super.clear();
     positionIncrement = positionLength = 1;
+    startOffset = endOffset = 0;
+    type = DEFAULT_TYPE;
+  }
+  
+  /** Resets the attributes at end
+   */
+  @Override
+  public void end() {
+    super.end();
+    positionIncrement = 0;
+    positionLength = 1;
     startOffset = endOffset = 0;
     type = DEFAULT_TYPE;
   }

@@ -108,8 +108,28 @@ public abstract class CoreAdminParams
   // Node to create a replica on for ADDREPLICA at least.
   public static final String NODE = "node";
 
+  /**
+   * A parameter to specify the name of the backup repository to be used.
+   */
+  public static final String BACKUP_REPOSITORY = "repository";
+
+  /**
+   * A parameter to specify the location where the backup should be stored.
+   */
+  public static final String BACKUP_LOCATION = "location";
+
+  /**
+   * A parameter to specify the name of the commit to be stored during the backup operation.
+   */
+  public static final String COMMIT_NAME = "commitName";
+
+  /**
+   * A boolean parameter specifying if a core is being created as part of a new collection
+   */
+  public static final String NEW_COLLECTION = "newCollection";
+
   public enum CoreAdminAction {
-    STATUS,
+    STATUS(true),
     UNLOAD,
     RELOAD,
     CREATE,
@@ -118,17 +138,33 @@ public abstract class CoreAdminParams
     MERGEINDEXES,
     SPLIT,
     PREPRECOVERY,
-    REQUESTRECOVERY, 
+    REQUESTRECOVERY,
     REQUESTSYNCSHARD,
     DELETEALIAS,
     REQUESTBUFFERUPDATES,
     REQUESTAPPLYUPDATES,
     OVERSEEROP,
-    REQUESTSTATUS,
+    REQUESTSTATUS(true),
     REJOINLEADERELECTION,
     //internal API used by force shard leader election
     FORCEPREPAREFORLEADERSHIP,
-    INVOKE;
+    INVOKE,
+    //Internal APIs to backup and restore a core
+    BACKUPCORE,
+    RESTORECORE,
+    CREATESNAPSHOT,
+    DELETESNAPSHOT,
+    LISTSNAPSHOTS;
+
+    public final boolean isRead;
+
+    CoreAdminAction(boolean isRead) {
+      this.isRead = isRead;
+    }
+
+    CoreAdminAction() {
+      this.isRead = false;
+    }
 
     public static CoreAdminAction get( String p ) {
       if (p != null) {

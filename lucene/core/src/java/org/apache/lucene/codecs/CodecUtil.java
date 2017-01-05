@@ -258,6 +258,57 @@ public final class CodecUtil {
     return version;
   }
 
+  /**
+   * Expert: verifies the incoming {@link IndexInput} has an index header
+   * and that its segment ID matches the expected one, and then copies
+   * that index header into the provided {@link DataOutput}.  This is
+   * useful when building compound files.
+   *
+   * @param in Input stream, positioned at the point where the
+   *        index header was previously written. Typically this is located
+   *        at the beginning of the file.
+   * @param out Output stream, where the header will be copied to.
+   * @param expectedID Expected segment ID
+   * @throws CorruptIndexException If the first four bytes are not
+   *         {@link #CODEC_MAGIC}, or if the <code>expectedID</code>
+   *         does not match.
+   * @throws IOException If there is an I/O error reading from the underlying medium.
+   *
+   * @lucene.internal 
+   */
+  public static void verifyAndCopyIndexHeader(IndexInput in, DataOutput out, byte[] expectedID) throws IOException {
+    // make sure it's large enough to have a header and footer
+    if (in.length() < footerLength() + headerLength("")) {
+      throw new CorruptIndexException("compound sub-files must have a valid codec header and footer: file is too small (" + in.length() + " bytes)", in);
+    }
+
+    int actualHeader = in.readInt();
+    if (actualHeader != CODEC_MAGIC) {
+      throw new CorruptIndexException("compound sub-files must have a valid codec header and footer: codec header mismatch: actual header=" + actualHeader + " vs expected header=" + CodecUtil.CODEC_MAGIC, in);
+    }
+
+    // we can't verify these, so we pass-through:
+    String codec = in.readString();
+    int version = in.readInt();
+
+    // verify id:
+    checkIndexHeaderID(in, expectedID);
+
+    // we can't verify extension either, so we pass-through:
+    int suffixLength = in.readByte() & 0xFF;
+    byte[] suffixBytes = new byte[suffixLength];
+    in.readBytes(suffixBytes, 0, suffixLength);
+
+    // now write the header we just verified
+    out.writeInt(CodecUtil.CODEC_MAGIC);
+    out.writeString(codec);
+    out.writeInt(version);
+    out.writeBytes(expectedID, 0, expectedID.length);
+    out.writeByte((byte) suffixLength);
+    out.writeBytes(suffixBytes, 0, suffixLength);
+  }
+
+
   /** Retrieves the full index header from the provided {@link IndexInput}.
    *  This throws {@link CorruptIndexException} if this file does
    * not appear to be an index file. */
@@ -438,9 +489,9 @@ public final class CodecUtil {
     long remaining = in.length() - in.getFilePointer();
     long expected = footerLength();
     if (remaining < expected) {
-      throw new CorruptIndexException("misplaced codec footer (file truncated?): remaining=" + remaining + ", expected=" + expected, in);
+      throw new CorruptIndexException("misplaced codec footer (file truncated?): remaining=" + remaining + ", expected=" + expected + ", fp=" + in.getFilePointer(), in);
     } else if (remaining > expected) {
-      throw new CorruptIndexException("misplaced codec footer (file extended?): remaining=" + remaining + ", expected=" + expected, in);
+      throw new CorruptIndexException("misplaced codec footer (file extended?): remaining=" + remaining + ", expected=" + expected + ", fp=" + in.getFilePointer(), in);
     }
     
     final int magic = in.readInt();
@@ -474,7 +525,7 @@ public final class CodecUtil {
    * @throws CorruptIndexException if CRC is formatted incorrectly (wrong bits set)
    * @throws IOException if an i/o error occurs
    */
-  public static long readCRC(IndexInput input) throws IOException {
+  static long readCRC(IndexInput input) throws IOException {
     long value = input.readLong();
     if ((value & 0xFFFFFFFF00000000L) != 0) {
       throw new CorruptIndexException("Illegal CRC-32 checksum: " + value, input);
@@ -487,7 +538,7 @@ public final class CodecUtil {
    * @throws IllegalStateException if CRC is formatted incorrectly (wrong bits set)
    * @throws IOException if an i/o error occurs
    */
-  public static void writeCRC(IndexOutput output) throws IOException {
+  static void writeCRC(IndexOutput output) throws IOException {
     long value = output.getChecksum();
     if ((value & 0xFFFFFFFF00000000L) != 0) {
       throw new IllegalStateException("Illegal CRC-32 checksum: " + value + " (resource=" + output + ")");

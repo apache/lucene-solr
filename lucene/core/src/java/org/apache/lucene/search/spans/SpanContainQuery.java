@@ -47,6 +47,14 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
 
   @Override
   public String getField() { return big.getField(); }
+  
+  public SpanQuery getBig() {
+    return big;
+  }
+
+  public SpanQuery getLittle() {
+    return little;
+  }
 
   public abstract class SpanContainWeight extends SpanWeight {
 
@@ -54,8 +62,8 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
     final SpanWeight littleWeight;
 
     public SpanContainWeight(IndexSearcher searcher, Map<Term, TermContext> terms,
-                             SpanWeight bigWeight, SpanWeight littleWeight) throws IOException {
-      super(SpanContainQuery.this, searcher, terms);
+                             SpanWeight bigWeight, SpanWeight littleWeight, float boost) throws IOException {
+      super(SpanContainQuery.this, searcher, terms, boost);
       this.bigWeight = bigWeight;
       this.littleWeight = littleWeight;
     }
@@ -121,17 +129,19 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (! super.equals(o)) {
-      return false;
-    }
-    SpanContainQuery other = (SpanContainQuery)o;
-    return big.equals(other.big) && little.equals(other.little);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  } 
+  
+  private boolean equalsTo(SpanContainQuery other) {
+    return big.equals(other.big) && 
+           little.equals(other.little);
   }
 
   @Override
   public int hashCode() {
-    int h = Integer.rotateLeft(super.hashCode(), 1);
+    int h = Integer.rotateLeft(classHash(), 1);
     h ^= big.hashCode();
     h = Integer.rotateLeft(h, 1);
     h ^= little.hashCode();

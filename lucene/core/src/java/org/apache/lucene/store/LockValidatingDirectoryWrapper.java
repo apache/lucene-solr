@@ -51,9 +51,15 @@ public final class LockValidatingDirectoryWrapper extends FilterDirectory {
   }
 
   @Override
-  public void renameFile(String source, String dest) throws IOException {
+  public void rename(String source, String dest) throws IOException {
     writeLock.ensureValid();
-    in.renameFile(source, dest);
+    in.rename(source, dest);
+  }
+
+  @Override
+  public void syncMetaData() throws IOException {
+    writeLock.ensureValid();
+    in.syncMetaData();
   }
 
   @Override

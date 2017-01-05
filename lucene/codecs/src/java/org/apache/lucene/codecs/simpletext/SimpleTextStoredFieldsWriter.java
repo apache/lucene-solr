@@ -143,7 +143,6 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
       } else {
         write(TYPE_STRING);
         newLine();
-        
         write(VALUE);
         write(field.stringValue());
         newLine();

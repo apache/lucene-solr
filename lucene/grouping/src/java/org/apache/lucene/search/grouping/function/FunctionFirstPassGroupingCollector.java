@@ -61,7 +61,7 @@ public class FunctionFirstPassGroupingCollector extends AbstractFirstPassGroupin
   }
 
   @Override
-  protected MutableValue getDocGroupValue(int doc) {
+  protected MutableValue getDocGroupValue(int doc) throws IOException {
     filler.fillValue(doc);
     return mval;
   }

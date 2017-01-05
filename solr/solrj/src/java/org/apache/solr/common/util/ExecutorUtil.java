@@ -19,16 +19,9 @@ package org.apache.solr.common.util;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-
-import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
@@ -154,6 +147,13 @@ public class ExecutorUtil {
   }
 
   /**
+   * Create a cached thread pool using a named thread factory
+   */
+  public static ExecutorService newMDCAwareCachedThreadPool(String name) {
+    return newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(name));
+  }
+
+  /**
    * See {@link java.util.concurrent.Executors#newCachedThreadPool(ThreadFactory)}
    */
   public static ExecutorService newMDCAwareCachedThreadPool(ThreadFactory threadFactory) {
@@ -211,42 +211,39 @@ public class ExecutorUtil {
           providersCopy.get(i).store(reference);
         }
       }
-      super.execute(new Runnable() {
-        @Override
-        public void run() {
-          isServerPool.set(Boolean.TRUE);
-          if (ctx != null) {
-            for (int i = 0; i < providersCopy.size(); i++) providersCopy.get(i).set(ctx.get(i));
+      super.execute(() -> {
+        isServerPool.set(Boolean.TRUE);
+        if (ctx != null) {
+          for (int i = 0; i < providersCopy.size(); i++) providersCopy.get(i).set(ctx.get(i));
+        }
+        Map<String, String> threadContext = MDC.getCopyOfContextMap();
+        final Thread currentThread = Thread.currentThread();
+        final String oldName = currentThread.getName();
+        if (submitterContext != null && !submitterContext.isEmpty()) {
+          MDC.setContextMap(submitterContext);
+          currentThread.setName(oldName + "-processing-" + submitterContextStr);
+        } else {
+          MDC.clear();
+        }
+        try {
+          command.run();
+        } catch (Throwable t) {
+          if (t instanceof OutOfMemoryError) {
+            throw t;
           }
-          Map<String, String> threadContext = MDC.getCopyOfContextMap();
-          final Thread currentThread = Thread.currentThread();
-          final String oldName = currentThread.getName();
-          if (submitterContext != null && !submitterContext.isEmpty()) {
-            MDC.setContextMap(submitterContext);
-            currentThread.setName(oldName + "-processing-" + submitterContextStr);
+          log.error("Uncaught exception {} thrown by thread: {}", t, currentThread.getName(), submitterStackTrace);
+          throw t;
+        } finally {
+          isServerPool.remove();
+          if (threadContext != null && !threadContext.isEmpty()) {
+            MDC.setContextMap(threadContext);
           } else {
             MDC.clear();
           }
-          try {
-            command.run();
-          } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError) {
-              throw t;
-            }
-            log.error("Uncaught exception {} thrown by thread: {}", t, currentThread.getName(), submitterStackTrace);
-            throw t;
-          } finally {
-            isServerPool.remove();
-            if (threadContext != null && !threadContext.isEmpty()) {
-              MDC.setContextMap(threadContext);
-            } else {
-              MDC.clear();
-            }
-            if (ctx != null) {
-              for (int i = 0; i < providersCopy.size(); i++) providersCopy.get(i).clean(ctx.get(i));
-            }
-            currentThread.setName(oldName);
+          if (ctx != null) {
+            for (int i = 0; i < providersCopy.size(); i++) providersCopy.get(i).clean(ctx.get(i));
           }
+          currentThread.setName(oldName);
         }
       });
     }

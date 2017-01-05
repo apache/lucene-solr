@@ -16,10 +16,9 @@
  */
 package org.apache.lucene.spatial.geopoint.search;
 
+import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
-import org.apache.lucene.spatial.util.GeoRect;
-import org.apache.lucene.spatial.util.GeoRelationUtils;
 import org.apache.lucene.util.SloppyMath;
 
 /** Package private implementation for the public facing GeoPointDistanceQuery delegate class.
@@ -29,12 +28,16 @@ import org.apache.lucene.util.SloppyMath;
 final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
   private final GeoPointDistanceQuery distanceQuery;
   private final double centerLon;
-
-  GeoPointDistanceQueryImpl(final String field, final TermEncoding termEncoding, final GeoPointDistanceQuery q,
-                            final double centerLonUnwrapped, final GeoRect bbox) {
-    super(field, termEncoding, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
+  
+  // optimization, used for detecting axis cross
+  final double axisLat;
+  
+  GeoPointDistanceQueryImpl(final String field, final GeoPointDistanceQuery q,
+                            final double centerLonUnwrapped, final Rectangle bbox) {
+    super(field, bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon);
     distanceQuery = q;
     centerLon = centerLonUnwrapped;
+    axisLat = Rectangle.axisLat(distanceQuery.centerLat, distanceQuery.radiusMeters);
   }
 
   @Override
@@ -53,31 +56,53 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
     }
 
     @Override
-    protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectCrossesCircle(minLon, minLat, maxLon, maxLat,
-          centerLon, distanceQuery.centerLat, distanceQuery.radiusMeters, true);
-    }
+    protected PointValues.Relation relate(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+      // bounding box check
+      if (cellIntersectsMBR(minLat, maxLat, minLon, maxLon) == false) {
+        return PointValues.Relation.CELL_OUTSIDE_QUERY;
+      }
+      if ((centerLon < minLon || centerLon > maxLon) && (axisLat + Rectangle.AXISLAT_ERROR < minLat
+          || axisLat- Rectangle.AXISLAT_ERROR > maxLat)) {
+        if (SloppyMath.haversinSortKey(distanceQuery.centerLat, centerLon, minLat, minLon) > distanceQuery.sortKey &&
+            SloppyMath.haversinSortKey(distanceQuery.centerLat, centerLon, minLat, maxLon) > distanceQuery.sortKey &&
+            SloppyMath.haversinSortKey(distanceQuery.centerLat, centerLon, maxLat, minLon) > distanceQuery.sortKey &&
+            SloppyMath.haversinSortKey(distanceQuery.centerLat, centerLon, maxLat, maxLon) > distanceQuery.sortKey) {
+          return PointValues.Relation.CELL_OUTSIDE_QUERY;
+        }
+      }
 
-    @Override
-    protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectWithinCircle(minLon, minLat, maxLon, maxLat,
-          centerLon, distanceQuery.centerLat, distanceQuery.radiusMeters, true);
-    }
+      if (maxLon - centerLon < 90 && centerLon - minLon < 90 &&
+          SloppyMath.haversinSortKey(distanceQuery.centerLat, centerLon, minLat, minLon) <= distanceQuery.sortKey &&
+          SloppyMath.haversinSortKey(distanceQuery.centerLat, centerLon, minLat, maxLon) <= distanceQuery.sortKey &&
+          SloppyMath.haversinSortKey(distanceQuery.centerLat, centerLon, maxLat, minLon) <= distanceQuery.sortKey &&
+          SloppyMath.haversinSortKey(distanceQuery.centerLat, centerLon, maxLat, maxLon) <= distanceQuery.sortKey) {
+        // we are fully enclosed, collect everything within this subtree
+        return PointValues.Relation.CELL_INSIDE_QUERY;
+      }
 
-    @Override
-    protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return cellCrosses(minLon, minLat, maxLon, maxLat);
+      return PointValues.Relation.CELL_CROSSES_QUERY;
     }
 
     /**
      * The two-phase query approach. The parent {@link GeoPointTermsEnum} class matches
      * encoded terms that fall within the minimum bounding box of the point-radius circle. Those documents that pass
      * the initial bounding box filter are then post filter compared to the provided distance using the
-     * {@link org.apache.lucene.util.SloppyMath#haversin} method.
+     * {@link org.apache.lucene.util.SloppyMath#haversinMeters(double, double, double, double)} method.
      */
     @Override
-    protected boolean postFilter(final double lon, final double lat) {
-      return (SloppyMath.haversin(distanceQuery.centerLat, centerLon, lat, lon) * 1000.0 <= distanceQuery.radiusMeters);
+    protected boolean postFilter(final double lat, final double lon) {
+      // check bbox
+      if (lat < minLat || lat > maxLat || lon < minLon || lon > maxLon) {
+        return false;
+      }
+
+      // first check the partial distance, if its more than that, it can't be <= radiusMeters
+      double h1 = SloppyMath.haversinSortKey(distanceQuery.centerLat, centerLon, lat, lon);
+      if (h1 <= distanceQuery.sortKey) {
+        return true;
+      }
+
+      return false;
     }
   }
 

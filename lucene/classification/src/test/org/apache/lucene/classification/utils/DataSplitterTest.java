@@ -17,27 +17,27 @@
 package org.apache.lucene.classification.utils;
 
 
-import org.apache.lucene.analysis.Analyzer;
+import java.io.IOException;
+import java.util.Random;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Random;
 
 /**
  * Testcase for {@link org.apache.lucene.classification.utils.DatasetSplitter}
@@ -48,9 +48,9 @@ public class DataSplitterTest extends LuceneTestCase {
   private RandomIndexWriter indexWriter;
   private Directory dir;
 
-  private String textFieldName = "text";
-  private String classFieldName = "class";
-  private String idFieldName = "id";
+  private static final String textFieldName = "text";
+  private static final String classFieldName = "class";
+  private static final String idFieldName = "id";
 
   @Override
   @Before
@@ -66,18 +66,20 @@ public class DataSplitterTest extends LuceneTestCase {
 
     Document doc;
     Random rnd = random();
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1000; i++) {
       doc = new Document();
-      doc.add(new Field(idFieldName, Integer.toString(i), ft));
+      doc.add(new Field(idFieldName, "id" + Integer.toString(i), ft));
       doc.add(new Field(textFieldName, TestUtil.randomUnicodeString(rnd, 1024), ft));
-      doc.add(new Field(classFieldName, TestUtil.randomUnicodeString(rnd, 10), ft));
+      String className = Integer.toString(rnd.nextInt(10));
+      doc.add(new Field(classFieldName, className, ft));
+      doc.add(new SortedDocValuesField(classFieldName, new BytesRef(className)));
       indexWriter.addDocument(doc);
     }
 
     indexWriter.commit();
+    indexWriter.forceMerge(1);
 
-    originalIndex = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
-
+    originalIndex = getOnlyLeafReader(indexWriter.getReader());
   }
 
   @Override
@@ -89,12 +91,10 @@ public class DataSplitterTest extends LuceneTestCase {
     super.tearDown();
   }
 
-
   @Test
   public void testSplitOnAllFields() throws Exception {
     assertSplit(originalIndex, 0.1, 0.1);
   }
-
 
   @Test
   public void testSplitOnSomeFields() throws Exception {
@@ -109,18 +109,18 @@ public class DataSplitterTest extends LuceneTestCase {
 
     try {
       DatasetSplitter datasetSplitter = new DatasetSplitter(testRatio, crossValidationRatio);
-      datasetSplitter.split(originalIndex, trainingIndex, testIndex, crossValidationIndex, new MockAnalyzer(random()), fieldNames);
+      datasetSplitter.split(originalIndex, trainingIndex, testIndex, crossValidationIndex, new MockAnalyzer(random()), true, classFieldName, fieldNames);
 
       assertNotNull(trainingIndex);
       assertNotNull(testIndex);
       assertNotNull(crossValidationIndex);
 
       DirectoryReader trainingReader = DirectoryReader.open(trainingIndex);
-      assertTrue((int) (originalIndex.maxDoc() * (1d - testRatio - crossValidationRatio)) == trainingReader.maxDoc());
+      assertEquals((int) (originalIndex.maxDoc() * (1d - testRatio - crossValidationRatio)), trainingReader.maxDoc(), 20);
       DirectoryReader testReader = DirectoryReader.open(testIndex);
-      assertTrue((int) (originalIndex.maxDoc() * testRatio) == testReader.maxDoc());
+      assertEquals((int) (originalIndex.maxDoc() * testRatio), testReader.maxDoc(), 20);
       DirectoryReader cvReader = DirectoryReader.open(crossValidationIndex);
-      assertTrue((int) (originalIndex.maxDoc() * crossValidationRatio) == cvReader.maxDoc());
+      assertEquals((int) (originalIndex.maxDoc() * crossValidationRatio), cvReader.maxDoc(), 20);
 
       trainingReader.close();
       testReader.close();

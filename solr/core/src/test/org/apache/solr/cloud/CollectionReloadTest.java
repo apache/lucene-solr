@@ -16,26 +16,14 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.client.solrj.response.CoreAdminResponse;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.RetryUtil;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,136 +31,54 @@ import org.slf4j.LoggerFactory;
 /**
  * Verifies cluster state remains consistent after collection reload.
  */
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-public class CollectionReloadTest extends AbstractFullDistribZkTestBase {
+public class CollectionReloadTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public CollectionReloadTest() {
-    super();
-    sliceCount = 1;
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(1)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
   }
   
   @Test
   public void testReloadedLeaderStateAfterZkSessionLoss() throws Exception {
-    waitForThingsToLevelOut(30000);
 
     log.info("testReloadedLeaderStateAfterZkSessionLoss initialized OK ... running test logic");
 
-    String testCollectionName = "c8n_1x1";
-    String shardId = "shard1";
-    createCollectionRetry(testCollectionName, 1, 1, 1);
-    cloudClient.setDefaultCollection(testCollectionName);
+    final String testCollectionName = "c8n_1x1";
+    CollectionAdminRequest.createCollection(testCollectionName, "conf", 1, 1)
+        .process(cluster.getSolrClient());
 
-    Replica leader = null;
-    String replicaState = null;
-    int timeoutSecs = 30;
-    long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutSecs, TimeUnit.SECONDS);
-    while (System.nanoTime() < timeout) {
-      Replica tmp = null;
+    Replica leader
+        = cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "shard1", DEFAULT_TIMEOUT);
+
+    long coreStartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+    CollectionAdminRequest.reloadCollection(testCollectionName).process(cluster.getSolrClient());
+
+    RetryUtil.retryUntil("Timed out waiting for core to reload", 30, 1000, TimeUnit.MILLISECONDS, () -> {
+      long restartTime = 0;
       try {
-        tmp = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
-      } catch (Exception exc) {}
-      if (tmp != null && "active".equals(tmp.getStr(ZkStateReader.STATE_PROP))) {
-        leader = tmp;
-        replicaState = "active";
-        break;
+        restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+      } catch (Exception e) {
+        log.warn("Exception getting core start time: {}", e.getMessage());
+        return false;
       }
-      Thread.sleep(1000);
-    }
-    assertNotNull("Could not find active leader for " + shardId + " of " +
-        testCollectionName + " after "+timeoutSecs+" secs; clusterState: " +
-        printClusterStateInfo(testCollectionName), leader);
+      return restartTime > coreStartTime;
+    });
 
-    // reload collection and wait to see the core report it has been reloaded
-    boolean wasReloaded = reloadCollection(leader, testCollectionName);
-    assertTrue("Collection '"+testCollectionName+"' failed to reload within a reasonable amount of time!",
-        wasReloaded);
+    final int initialStateVersion = getCollectionState(testCollectionName).getZNodeVersion();
 
+    cluster.expireZkSession(cluster.getReplicaJetty(leader));
 
-    // cause session loss
-    chaosMonkey.expireSession(getJettyOnPort(getReplicaPort(leader)));
-
-    // TODO: have to wait a while for the node to get marked down after ZK session loss
-    // but tests shouldn't be so timing dependent!
-    Thread.sleep(15000);
-
-    // wait up to 15 seconds to see the replica in the active state
-    timeoutSecs = 15;
-    timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutSecs, TimeUnit.SECONDS);
-    while (System.nanoTime() < timeout) {
-      // state of leader should be active after session loss recovery - see SOLR-7338
-      cloudClient.getZkStateReader().updateClusterState();
-      ClusterState cs = cloudClient.getZkStateReader().getClusterState();
-      Slice slice = cs.getSlice(testCollectionName, shardId);
-      replicaState = slice.getReplica(leader.getName()).getStr(ZkStateReader.STATE_PROP);
-      if ("active".equals(replicaState))
-        break;
-
-      Thread.sleep(1000);
-    }
-    assertEquals("Leader state should be active after recovering from ZK session loss, but after " +
-        timeoutSecs + " seconds, it is " + replicaState, "active", replicaState);
-
-    // try to clean up
-    try {
-      new CollectionAdminRequest.Delete()
-              .setCollectionName(testCollectionName).process(cloudClient);
-    } catch (Exception e) {
-      // don't fail the test
-      log.warn("Could not delete collection {} after test completed", testCollectionName);
-    }
+    waitForState("Timed out waiting for core to re-register as ACTIVE after session expiry", testCollectionName, (n, c) -> {
+      log.info("Collection state: {}", c.toString());
+      Replica expiredReplica = c.getReplica(leader.getName());
+      return expiredReplica.getState() == Replica.State.ACTIVE && c.getZNodeVersion() > initialStateVersion;
+    });
 
     log.info("testReloadedLeaderStateAfterZkSessionLoss succeeded ... shutting down now!");
-  }
-
-  protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
-    ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
-    String coreName = coreProps.getCoreName();
-    boolean reloadedOk = false;
-    try (HttpSolrClient client = new HttpSolrClient(coreProps.getBaseUrl())) {
-      CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
-      long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
-
-      Thread.sleep(1000);
-
-      // send reload command for the collection
-      log.info("Sending RELOAD command for "+testCollectionName);
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("action", CollectionParams.CollectionAction.RELOAD.toString());
-      params.set("name", testCollectionName);
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
-      client.request(request);
-      Thread.sleep(2000); // reload can take a short while
-
-      // verify reload is done, waiting up to 30 seconds for slow test environments
-      long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
-      while (System.nanoTime() < timeout) {
-        statusResp = CoreAdminRequest.getStatus(coreName, client);
-        long startTimeAfterReload = statusResp.getStartTime(coreName).getTime();
-        if (startTimeAfterReload > leaderCoreStartTime) {
-          reloadedOk = true;
-          break;
-        }
-        // else ... still waiting to see the reloaded core report a later start time
-        Thread.sleep(1000);
-      }
-    }
-    return reloadedOk;
-  }
-
-  private void createCollectionRetry(String testCollectionName, int numShards, int replicationFactor, int maxShardsPerNode)
-      throws SolrServerException, IOException {
-    CollectionAdminResponse resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
-    if (resp.getResponse().get("failure") != null) {
-      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-      req.setCollectionName(testCollectionName);
-      req.process(cloudClient);
-      resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
-      if (resp.getResponse().get("failure") != null)
-        fail("Could not create " + testCollectionName);
-    }
   }
 }

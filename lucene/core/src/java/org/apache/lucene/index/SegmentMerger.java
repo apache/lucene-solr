@@ -21,10 +21,10 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PointWriter;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.NormsConsumer;
+import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.store.Directory;
@@ -59,6 +59,11 @@ final class SegmentMerger {
     this.codec = segmentInfo.getCodec();
     this.context = context;
     this.fieldInfosBuilder = new FieldInfos.Builder(fieldNumbers);
+    if (mergeState.infoStream.isEnabled("SM")) {
+      if (segmentInfo.getIndexSort() != null) {
+        mergeState.infoStream.message("SM", "index sort during merge: " + segmentInfo.getIndexSort());
+      }
+    }
   }
   
   /** True if any merging should happen */
@@ -164,7 +169,7 @@ final class SegmentMerger {
   }
 
   private void mergePoints(SegmentWriteState segmentWriteState) throws IOException {
-    try (PointWriter writer = codec.pointFormat().fieldsWriter(segmentWriteState)) {
+    try (PointsWriter writer = codec.pointsFormat().fieldsWriter(segmentWriteState)) {
       writer.merge(mergeState);
     }
   }

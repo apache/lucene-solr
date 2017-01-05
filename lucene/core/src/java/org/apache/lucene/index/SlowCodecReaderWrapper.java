@@ -20,12 +20,13 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -92,13 +93,8 @@ public final class SlowCodecReaderWrapper {
         }
 
         @Override
-        public PointValues getPointValues() {
-          return reader.getPointValues();
-        }
-
-        @Override
-        public PointReader getPointReader() {
-          return pointValuesToReader(reader.getPointValues());
+        public PointsReader getPointsReader() {
+          return pointValuesToReader(reader);
         }
 
         @Override
@@ -125,18 +121,26 @@ public final class SlowCodecReaderWrapper {
         public void removeCoreClosedListener(CoreClosedListener listener) {
           reader.removeCoreClosedListener(listener);
         }
+
+        @Override
+        public String toString() {
+          return "SlowCodecReaderWrapper(" + reader + ")";
+        }
+
+        @Override
+        public Sort getIndexSort() {
+          return reader.getIndexSort();
+        }
       };
     }
   }
 
-  private static PointReader pointValuesToReader(PointValues values) {
-    if (values == null) {
-      return null;
-    }
-    return new PointReader() {
+  private static PointsReader pointValuesToReader(LeafReader reader) {
+    return new PointsReader() {
+
       @Override
-      public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
-        values.intersect(fieldName, visitor);
+      public PointValues getValues(String field) throws IOException {
+        return reader.getPointValues(field);
       }
 
       @Override
@@ -153,25 +157,6 @@ public final class SlowCodecReaderWrapper {
         return 0;
       }
 
-      @Override
-      public byte[] getMinPackedValue(String fieldName) throws IOException {
-        return values.getMinPackedValue(fieldName);
-      }
-
-      @Override
-      public byte[] getMaxPackedValue(String fieldName) throws IOException {
-        return values.getMaxPackedValue(fieldName);
-      }
-
-      @Override
-      public int getNumDimensions(String fieldName) throws IOException {
-        return values.getNumDimensions(fieldName);
-      }
-
-      @Override
-      public int getBytesPerDimension(String fieldName) throws IOException {
-        return values.getBytesPerDimension(fieldName);
-      }
     };
   }
   
@@ -203,7 +188,7 @@ public final class SlowCodecReaderWrapper {
     return new DocValuesProducer() {
 
       @Override
-      public NumericDocValues getNumeric(FieldInfo field) throws IOException {  
+      public NumericDocValues getNumeric(FieldInfo field) throws IOException {
         return reader.getNumericDocValues(field.name);
       }
 
@@ -225,11 +210,6 @@ public final class SlowCodecReaderWrapper {
       @Override
       public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
         return reader.getSortedSetDocValues(field.name);
-      }
-
-      @Override
-      public Bits getDocsWithField(FieldInfo field) throws IOException {
-        return reader.getDocsWithField(field.name);
       }
 
       @Override

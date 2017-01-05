@@ -17,37 +17,32 @@
 -->
 
 <schema name="schema-docValuesMulti" version="1.6">
-  <types>
 
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
-         seconds part (.999) is optional.
-      -->
-    <fieldType name="date" class="solr.TrieDateField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
+       seconds part (.999) is optional.
+    -->
+  <fieldType name="date" class="solr.TrieDateField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
-    <fieldType name="boolean" class="solr.BoolField" />
-    <fieldType name="string" class="solr.StrField" />
+  <fieldType name="boolean" class="solr.BoolField"/>
+  <fieldType name="string" class="solr.StrField"/>
 
-    <fieldType name="uuid" class="solr.UUIDField" />
-
-  </types>
+  <fieldType name="uuid" class="solr.UUIDField"/>
 
 
-  <fields>
+  <field name="id" type="string" required="true"/>
 
-    <field name="id" type="string" required="true" />
+  <field name="floatdv" type="float" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="intdv" type="int" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="doubledv" type="double" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="longdv" type="long" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="datedv" type="date" indexed="false" stored="false" docValues="true" multiValued="true"/>
 
-    <field name="floatdv" type="float" indexed="false" stored="false" docValues="true" multiValued="true" />
-    <field name="intdv" type="int" indexed="false" stored="false" docValues="true" multiValued="true" />
-    <field name="doubledv" type="double" indexed="false" stored="false" docValues="true" multiValued="true" />
-    <field name="longdv" type="long" indexed="false" stored="false" docValues="true" multiValued="true" />
-    <field name="datedv" type="date" indexed="false" stored="false" docValues="true" multiValued="true" />
-
-    <field name="stringdv" type="string" indexed="false" stored="false" docValues="true" multiValued="true" />
-  </fields>
+  <field name="stringdv" type="string" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="booldv" type="boolean" indexed="false" stored="false" docValues="true" multiValued="true"/>
 
   <uniqueKey>id</uniqueKey>
 

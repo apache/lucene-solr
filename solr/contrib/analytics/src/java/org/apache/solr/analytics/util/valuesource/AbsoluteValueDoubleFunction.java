@@ -16,6 +16,8 @@
  */
 package org.apache.solr.analytics.util.valuesource;
 
+import java.io.IOException;
+
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.analytics.util.AnalyticsParams;
@@ -39,7 +41,7 @@ public class AbsoluteValueDoubleFunction extends SingleDoubleFunction {
     return name()+"("+source.description()+")";
   }
 
-  protected double func(int doc, FunctionValues vals) {
+  protected double func(int doc, FunctionValues vals) throws IOException {
     double d = vals.doubleVal(doc);
     if (d<0) {
       return d*-1;

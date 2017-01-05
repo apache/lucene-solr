@@ -1,0 +1,469 @@
+<?xml version="1.0"?>
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one
+   or more contributor license agreements.  See the NOTICE file
+   distributed with this work for additional information
+   regarding copyright ownership.  The ASF licenses this file
+   to you under the Apache License, Version 2.0 (the
+   "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing,
+   software distributed under the License is distributed on an
+   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+   KIND, either express or implied.  See the License for the
+   specific language governing permissions and limitations
+   under the License.    
+-->
+<rdf:RDF xml:lang="en"
+         xmlns="http://usefulinc.com/ns/doap#"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:asfext="http://projects.apache.org/ns/asfext#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/">
+<!--
+  This file's canonical URL is: http://lucene.apache.org/solr/doap.rdf
+
+  Note that the canonical URL may redirect to other non-canonical locations.
+-->
+  <Project rdf:about="http://lucene.apache.org/solr/">
+    <created>2006-01-17</created>
+    <license rdf:resource="http://www.apache.org/licenses/LICENSE-2.0"/>
+    <name>Apache Solr</name>
+    <homepage rdf:resource="http://lucene.apache.org/solr/" />
+    <asfext:pmc rdf:resource="http://lucene.apache.org" />
+
+    <shortdesc>Solr is a full-text search server</shortdesc>
+    <description>Solr is an open source enterprise search server based on the Lucene Java search library, with XML/HTTP and JSON, Ruby, and Python APIs, hit highlighting, faceted search, caching, replication, and a web administration interface.
+    </description>
+    <bug-database rdf:resource="http://issues.apache.org/jira/browse/SOLR" />
+    <mailing-list rdf:resource="http://lucene.apache.org/solr/discussion.html" />
+    <download-page rdf:resource="http://lucene.apache.org/solr/downloads.html" />
+    <programming-language>Java</programming-language>
+
+    <!--
+        The ASF has a finite set of categories projects should use,
+        but the list does grow occasionally, and we should keep an eye
+        on it and adjust which ones we list as appropriate.
+    -->
+    <category rdf:resource="http://projects.apache.org/category/web-framework" />
+    <category rdf:resource="http://projects.apache.org/category/network-server" />
+    <category rdf:resource="http://projects.apache.org/category/search" />
+
+    <wiki rdf:resource="http://wiki.apache.org/solr/"/>
+
+    <repository>
+      <GitRepository>
+        <location rdf:resource="https://git-wip-us.apache.org/repos/asf/lucene-solr.git"/>
+      </GitRepository>
+    </repository>
+
+    <maintainer>
+      <foaf:Person>
+        <foaf:name>Apache Solr Team</foaf:name>
+        <foaf:mbox rdf:resource="mailto:dev@lucene.apache.org"/>
+      </foaf:Person>
+    </maintainer>
+    
+    <release>
+      <Version>
+        <name>solr-6.3.0</name>
+        <created>2016-11-08</created>
+        <revision>6.3.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-6.2.1</name>
+        <created>2016-09-20</created>
+        <revision>6.2.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-6.2.0</name>
+        <created>2016-08-25</created>
+        <revision>6.2.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-6.1.0</name>
+        <created>2016-06-17</created>
+        <revision>6.1.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-6.0.1</name>
+        <created>2016-05-28</created>
+        <revision>6.0.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-6.0.0</name>
+        <created>2016-04-08</created>
+        <revision>6.0.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-5.5.3</name>
+        <created>2016-09-09</created>
+        <revision>5.5.3</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-5.5.2</name>
+        <created>2016-06-25</created>
+        <revision>5.5.2</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-5.5.1</name>
+        <created>2016-05-05</created>
+        <revision>5.5.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-5.5.0</name>
+        <created>2016-02-22</created>
+        <revision>5.5.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-5.4.1</name>
+        <created>2016-01-23</created>
+        <revision>5.4.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-5.4.0</name>
+        <created>2015-12-14</created>
+        <revision>5.4.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-5.3.2</name>
+        <created>2016-01-23</created>
+        <revision>5.3.2</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-5.3.1</name>
+        <created>2015-09-24</created>
+        <revision>5.3.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-5.3.0</name>
+        <created>2015-08-21</created>
+        <revision>5.3.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-5.2.1</name>
+        <created>2015-06-15</created>
+        <revision>5.2.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-5.2.0</name>
+        <created>2015-06-07</created>
+        <revision>5.2.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-5.1.0</name>
+        <created>2015-04-14</created>
+        <revision>5.1.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-5.0.0</name>
+        <created>2015-02-20</created>
+        <revision>5.0.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.10.4</name>
+        <created>2015-03-03</created>
+        <revision>4.10.4</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.10.3</name>
+        <created>2014-12-29</created>
+        <revision>4.10.3</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.10.2</name>
+        <created>2014-10-31</created>
+        <revision>4.10.2</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.10.1</name>
+        <created>2014-09-29</created>
+        <revision>4.10.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.10.0</name>
+        <created>2014-09-03</created>
+        <revision>4.10.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.9.1</name>
+        <created>2014-09-22</created>
+        <revision>4.9.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.9.0</name>
+        <created>2014-06-25</created>
+        <revision>4.9.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.8.1</name>
+        <created>2014-05-20</created>
+        <revision>4.8.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.8.0</name>
+        <created>2014-04-28</created>
+        <revision>4.8.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.7.2</name>
+        <created>2014-04-15</created>
+        <revision>4.7.2</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.7.1</name>
+        <created>2014-02-26</created>
+        <revision>4.7.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.7.0</name>
+        <created>2014-02-26</created>
+        <revision>4.7.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.6.1</name>
+        <created>2014-01-28</created>
+        <revision>4.6.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.6.0</name>
+        <created>2013-11-22</created>
+        <revision>4.6.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.5.1</name>
+        <created>2013-10-24</created>
+        <revision>4.5.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.5</name>
+        <created>2013-10-05</created>
+        <revision>4.5</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.4</name>
+        <created>2013-07-23</created>
+        <revision>4.4</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.3.1</name>
+        <created>2013-06-18</created>
+        <revision>4.3.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.3</name>
+        <created>2013-05-06</created>
+        <revision>4.3</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.2.1</name>
+        <created>2013-04-03</created>
+        <revision>4.2.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.2</name>
+        <created>2013-03-11</created>
+        <revision>4.2</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.1</name>
+        <created>2013-01-22</created>
+        <revision>4.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.0</name>
+        <created>2012-10-12</created>
+        <revision>4.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.0-BETA</name>
+        <created>2012-08-13</created>
+        <revision>4.0-BETA</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-4.0-ALPHA</name>
+        <created>2012-07-03</created>
+        <revision>4.0-ALPHA</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-3.6.2</name>
+        <created>2012-12-25</created>
+        <revision>3.6.2</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-3.6.1</name>
+        <created>2012-07-22</created>
+        <revision>3.6.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-3.6</name>
+        <created>2012-04-12</created>
+        <revision>3.6</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-3.5</name>
+        <created>2011-11-11</created>
+        <revision>3.5</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-3.4</name>
+        <created>2011-09-15</created>
+        <revision>3.4</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-3.3</name>
+        <created>2011-07-10</created>
+        <revision>3.3</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-3.2</name>
+        <created>2011-06-03</created>
+        <revision>3.2</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-3.1</name>
+        <created>2011-03-31</created>
+        <revision>3.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-1.4.1</name>
+        <created>2010-6-25</created>
+        <revision>1.4.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-1.4.0</name>
+        <created>2009-11-10</created>
+        <revision>1.4.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-1.3.0</name>
+        <created>2008-09-16</created>
+        <revision>1.3.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-1.2.0</name>
+        <created>2007-06-06</created>
+        <revision>1.2.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>solr-1.1.0</name>
+        <created>2006-12-22</created>
+        <revision>1.1.0</revision>
+      </Version>
+    </release>
+  </Project>
+</rdf:RDF>

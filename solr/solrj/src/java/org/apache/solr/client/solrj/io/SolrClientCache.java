@@ -21,7 +21,7 @@ import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Iterator;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -44,7 +44,9 @@ public class SolrClientCache implements Serializable {
     if (solrClients.containsKey(zkHost)) {
       client = (CloudSolrClient) solrClients.get(zkHost);
     } else {
-      client = new CloudSolrClient(zkHost);
+      client = new CloudSolrClient.Builder()
+          .withZkHost(zkHost)
+          .build();
       client.connect();
       solrClients.put(zkHost, client);
     }
@@ -57,13 +59,14 @@ public class SolrClientCache implements Serializable {
     if (solrClients.containsKey(host)) {
       client = (HttpSolrClient) solrClients.get(host);
     } else {
-      client = new HttpSolrClient(host);
+      client = new HttpSolrClient.Builder(host)
+          .build();
       solrClients.put(host, client);
     }
     return client;
   }
 
-  public void close() {
+  public synchronized void close() {
     for(Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
       try {
         entry.getValue().close();
@@ -71,5 +74,6 @@ public class SolrClientCache implements Serializable {
         log.error("Error closing SolrClient for " + entry.getKey(), e);
       }
     }
+    solrClients.clear();
   }
 }

@@ -22,6 +22,8 @@ import java.util.Iterator;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.LegacyDocValuesIterables;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -29,14 +31,14 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.VERSION_CURRENT;
 import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.BYTES;
+import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.NUMBER;
 import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.SORTED;
 import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.SORTED_NUMERIC;
 import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.SORTED_NUMERIC_SINGLETON;
 import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.SORTED_SET;
 import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.SORTED_SET_SINGLETON;
-import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.NUMBER;
+import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.VERSION_CURRENT;
 
 /**
  * Writer for {@link DirectDocValuesFormat}
@@ -65,10 +67,10 @@ class DirectDocValuesConsumer extends DocValuesConsumer {
   }
 
   @Override
-  public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+  public void addNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     meta.writeVInt(field.number);
     meta.writeByte(NUMBER);
-    addNumericFieldValues(field, values);
+    addNumericFieldValues(field, LegacyDocValuesIterables.numericIterable(field, valuesProducer, maxDoc));
   }
 
   private void addNumericFieldValues(FieldInfo field, Iterable<Number> values) throws IOException {
@@ -162,10 +164,10 @@ class DirectDocValuesConsumer extends DocValuesConsumer {
   }
 
   @Override
-  public void addBinaryField(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
+  public void addBinaryField(FieldInfo field, final DocValuesProducer valuesProducer) throws IOException {
     meta.writeVInt(field.number);
     meta.writeByte(BYTES);
-    addBinaryFieldValues(field, values);
+    addBinaryFieldValues(field, LegacyDocValuesIterables.binaryIterable(field, valuesProducer, maxDoc));
   }
 
   private void addBinaryFieldValues(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
@@ -231,19 +233,22 @@ class DirectDocValuesConsumer extends DocValuesConsumer {
   }
 
   @Override
-  public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+  public void addSortedField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     meta.writeVInt(field.number);
     meta.writeByte(SORTED);
 
     // write the ordinals as numerics
-    addNumericFieldValues(field, docToOrd);
-    
+    addNumericFieldValues(field, LegacyDocValuesIterables.sortedOrdIterable(valuesProducer, field, maxDoc));
     // write the values as binary
-    addBinaryFieldValues(field, values);
+    addBinaryFieldValues(field, LegacyDocValuesIterables.valuesIterable(valuesProducer.getSorted(field)));
   }
   
   @Override
-  public void addSortedNumericField(FieldInfo field, Iterable<Number> docToValueCount, Iterable<Number> values) throws IOException {
+  public void addSortedNumericField(FieldInfo field, final DocValuesProducer valuesProducer) throws IOException {
+
+    final Iterable<Number> docToValueCount = LegacyDocValuesIterables.sortedNumericToDocCount(valuesProducer, field, maxDoc);
+    final Iterable<Number> values = LegacyDocValuesIterables.sortedNumericToValues(valuesProducer, field);
+
     meta.writeVInt(field.number);
     if (isSingleValued(docToValueCount)) {
       meta.writeByte(SORTED_NUMERIC_SINGLETON);
@@ -264,7 +269,11 @@ class DirectDocValuesConsumer extends DocValuesConsumer {
 
   // note: this might not be the most efficient... but it's fairly simple
   @Override
-  public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, final Iterable<Number> docToOrdCount, final Iterable<Number> ords) throws IOException {
+  public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    Iterable<BytesRef> values = LegacyDocValuesIterables.valuesIterable(valuesProducer.getSortedSet(field));
+    Iterable<Number> docToOrdCount = LegacyDocValuesIterables.sortedSetOrdCountIterable(valuesProducer, field, maxDoc);
+    Iterable<Number> ords = LegacyDocValuesIterables.sortedSetOrdsIterable(valuesProducer, field);
+    
     meta.writeVInt(field.number);
     
     if (isSingleValued(docToOrdCount)) {

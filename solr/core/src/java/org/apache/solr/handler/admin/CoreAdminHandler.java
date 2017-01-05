@@ -35,7 +35,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -43,26 +42,32 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
+import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
 /**
  *
  * @since solr 1.3
  */
-public class CoreAdminHandler extends RequestHandlerBase {
+public class CoreAdminHandler extends RequestHandlerBase implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final CoreContainer coreContainer;
   protected final Map<String, Map<String, TaskObject>> requestStatusMap;
 
-  protected final ExecutorService parallelExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(50,
+  protected ExecutorService parallelExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(50,
       new DefaultSolrThreadFactory("parallelCoreAdminExecutor"));
 
   protected static int MAX_TRACKED_REQUESTS = 100;
@@ -106,6 +111,13 @@ public class CoreAdminHandler extends RequestHandlerBase {
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "CoreAdminHandler should not be configured in solrconf.xml\n" +
                     "it is a special Handler configured directly by the RequestDispatcher");
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+    super.initializeMetrics(manager, registryName, scope);
+    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, manager.registry(registryName),
+        SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(),scope, "threadPool"));
   }
 
   /**
@@ -155,23 +167,20 @@ public class CoreAdminHandler extends RequestHandlerBase {
         try {
           MDC.put("CoreAdminHandler.asyncId", taskId);
           MDC.put("CoreAdminHandler.action", op.action.toString());
-          parallelExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-              boolean exceptionCaught = false;
-              try {
-                callInfo.call();
-                taskObject.setRspObject(callInfo.rsp);
-              } catch (Exception e) {
-                exceptionCaught = true;
-                taskObject.setRspObjectFromException(e);
-              } finally {
-                removeTask("running", taskObject.taskId);
-                if (exceptionCaught) {
-                  addTask("failed", taskObject, true);
-                } else
-                  addTask("completed", taskObject, true);
-              }
+          parallelExecutor.execute(() -> {
+            boolean exceptionCaught = false;
+            try {
+              callInfo.call();
+              taskObject.setRspObject(callInfo.rsp);
+            } catch (Exception e) {
+              exceptionCaught = true;
+              taskObject.setRspObjectFromException(e);
+            } finally {
+              removeTask("running", taskObject.taskId);
+              if (exceptionCaught) {
+                addTask("failed", taskObject, true);
+              } else
+                addTask("completed", taskObject, true);
             }
           });
         } finally {
@@ -265,6 +274,17 @@ public class CoreAdminHandler extends RequestHandlerBase {
     return "Manage Multiple Solr Cores";
   }
 
+  @Override
+  public Name getPermissionName(AuthorizationContext ctx) {
+    String action = ctx.getParams().get(CoreAdminParams.ACTION);
+    if (action == null) return CORE_READ_PERM;
+    CoreAdminParams.CoreAdminAction coreAction = CoreAdminParams.CoreAdminAction.get(action);
+    if (coreAction == null) return CORE_READ_PERM;
+    return coreAction.isRead ?
+        CORE_READ_PERM :
+        CORE_EDIT_PERM;
+  }
+
   /**
    * Helper class to manage the tasks to be tracked.
    * This contains the taskId, request and the response (if available).
@@ -351,7 +371,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     }
 
     void call() throws Exception {
-      op.call(this);
+      op.execute(this);
     }
 
   }
@@ -363,7 +383,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
   /**
    * used by the INVOKE action of core admin handler
    */
-  public static interface Invocable {
-    public Map<String, Object> invoke(SolrQueryRequest req);
+  public interface Invocable {
+    Map<String, Object> invoke(SolrQueryRequest req);
+  }
+  interface CoreAdminOp {
+    void execute(CallInfo it) throws Exception;
   }
 }

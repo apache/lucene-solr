@@ -25,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;

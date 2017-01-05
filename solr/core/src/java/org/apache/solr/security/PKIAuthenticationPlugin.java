@@ -36,11 +36,10 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.StrUtils;
@@ -59,14 +58,14 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 
-public class PKIAuthenticationPlugin extends AuthenticationPlugin implements HttpClientInterceptorPlugin {
+public class PKIAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
   private final CryptoKeys.RSAKeyPair keyPair = new CryptoKeys.RSAKeyPair();
   private final CoreContainer cores;
   private final int MAX_VALIDITY = Integer.parseInt(System.getProperty("pkiauth.ttl", "5000"));
   private final String myNodeName;
-
+  private final HttpHeaderClientInterceptor interceptor = new HttpHeaderClientInterceptor();
   private boolean interceptorRegistered = false;
 
   public void setInterceptorRegistered(){
@@ -89,12 +88,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to compare against time in header")
   @Override
-  public void doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
+  public boolean doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
 
     String requestURI = ((HttpServletRequest) request).getRequestURI();
     if (requestURI.endsWith(PATH)) {
       filterChain.doFilter(request, response);
-      return;
+      return true;
     }
     long receivedTime = System.currentTimeMillis();
     String header = ((HttpServletRequest) request).getHeader(HEADER);
@@ -102,14 +101,14 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       //this must not happen
       log.error("No SolrAuth header present");
       filterChain.doFilter(request, response);
-      return;
+      return true;
     }
 
     List<String> authInfo = StrUtils.splitWS(header, false);
     if (authInfo.size() < 2) {
       log.error("Invalid SolrAuth Header {}", header);
       filterChain.doFilter(request, response);
-      return;
+      return true;
     }
 
     String nodeName = authInfo.get(0);
@@ -119,12 +118,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     if (decipher == null) {
       log.error("Could not decipher a header {} . No principal set", header);
       filterChain.doFilter(request, response);
-      return;
+      return true;
     }
     if ((receivedTime - decipher.timestamp) > MAX_VALIDITY) {
-        log.error("Invalid key ");
+      log.error("Invalid key request timestamp: {} , received timestamp: {} , TTL: {}", decipher.timestamp, receivedTime, MAX_VALIDITY);
         filterChain.doFilter(request, response);
-        return;
+        return true;
     }
 
     final Principal principal = "$".equals(decipher.userName) ?
@@ -132,6 +131,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
         new BasicUserPrincipal(decipher.userName);
 
     filterChain.doFilter(getWrapper((HttpServletRequest) request, principal), response);
+    return true;
   }
 
   private static HttpServletRequestWrapper getWrapper(final HttpServletRequest request, final Principal principal) {
@@ -197,7 +197,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     try {
       String uri = url + PATH + "?wt=json&omitHeader=true";
       log.debug("Fetching fresh public key from : {}",uri);
-      HttpResponse rsp = cores.getUpdateShardHandler().getHttpClient().execute(new HttpGet(uri));
+      HttpResponse rsp = cores.getUpdateShardHandler().getHttpClient()
+          .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
       byte[] bytes = EntityUtils.toByteArray(rsp.getEntity());
       Map m = (Map) Utils.fromJSON(bytes);
       String key = (String) m.get("key");
@@ -217,11 +218,10 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
   }
 
-  private HttpHeaderClientConfigurer clientConfigurer = new HttpHeaderClientConfigurer();
-
   @Override
-  public HttpClientConfigurer getClientConfigurer() {
-    return clientConfigurer;
+  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
+    HttpClientUtil.addRequestInterceptor(interceptor);
+    return builder;
   }
 
   public SolrRequestHandler getRequestHandler() {
@@ -242,13 +242,9 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     return req.getUserPrincipal() != SU;
   }
 
-  private class HttpHeaderClientConfigurer extends HttpClientConfigurer implements
-      HttpRequestInterceptor {
+  private class HttpHeaderClientInterceptor implements HttpRequestInterceptor {
 
-    @Override
-    public void configure(DefaultHttpClient httpClient, SolrParams config) {
-      super.configure(httpClient, config);
-      httpClient.addRequestInterceptor(this);
+    public HttpHeaderClientInterceptor() {
     }
 
     @Override
@@ -299,12 +295,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
   boolean disabled() {
     return cores.getAuthenticationPlugin() == null ||
-        cores.getAuthenticationPlugin() instanceof HttpClientInterceptorPlugin;
+        cores.getAuthenticationPlugin() instanceof HttpClientBuilderPlugin;
   }
 
   @Override
   public void close() throws IOException {
-
+    HttpClientUtil.removeRequestInterceptor(interceptor);
   }
 
   public String getPublicKey() {

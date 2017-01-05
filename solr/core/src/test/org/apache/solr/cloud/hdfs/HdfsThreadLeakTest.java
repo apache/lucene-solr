@@ -17,8 +17,6 @@
 package org.apache.solr.cloud.hdfs;
 
 import java.io.IOException;
-import java.net.URI;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;

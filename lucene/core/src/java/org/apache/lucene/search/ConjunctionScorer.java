@@ -25,26 +25,20 @@ import java.util.List;
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 class ConjunctionScorer extends Scorer {
 
-  final ConjunctionDISI disi;
+  final DocIdSetIterator disi;
   final Scorer[] scorers;
-  final float coord;
-
-  ConjunctionScorer(Weight weight, List<Scorer> required, List<Scorer> scorers) {
-    this(weight, required, scorers, 1f);
-  }
 
   /** Create a new {@link ConjunctionScorer}, note that {@code scorers} must be a subset of {@code required}. */
-  ConjunctionScorer(Weight weight, List<Scorer> required, List<Scorer> scorers, float coord) {
+  ConjunctionScorer(Weight weight, List<Scorer> required, List<Scorer> scorers) {
     super(weight);
     assert required.containsAll(scorers);
-    this.coord = coord;
     this.disi = ConjunctionDISI.intersectScorers(required);
     this.scorers = scorers.toArray(new Scorer[scorers.size()]);
   }
 
   @Override
   public TwoPhaseIterator twoPhaseIterator() {
-    return disi.asTwoPhaseIterator();
+    return TwoPhaseIterator.unwrap(disi);
   }
 
   @Override
@@ -63,7 +57,7 @@ class ConjunctionScorer extends Scorer {
     for (Scorer scorer : scorers) {
       sum += scorer.score();
     }
-    return coord * (float)sum;
+    return (float) sum;
   }
 
   @Override

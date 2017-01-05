@@ -30,7 +30,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -106,7 +105,7 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
 
       long evaluationStart = System.currentTimeMillis();
       ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
-          simpleNaiveBayesClassifier, categoryFieldName, textFieldName);
+          simpleNaiveBayesClassifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
       long evaluationEnd = System.currentTimeMillis();
       long evaluationTime = evaluationEnd - evaluationStart;

@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 package org.apache.solr.core;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.DateMathParser;
-import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.Locale;
 
 
 /**
@@ -78,14 +77,10 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
    */
   @Override
   public void onInit(List<? extends IndexCommit> commits) throws IOException {
-    // SOLR-4547: log basic data at INFO, add filenames at DEBUG.
     if (commits.isEmpty()) {
       return;
     }
-    log.info("SolrDeletionPolicy.onInit: commits: {}",
-        new CommitsLoggingInfo(commits));
-    log.debug("SolrDeletionPolicy.onInit: commits: {}",
-        new CommitsLoggingDebug(commits));
+    log.debug("SolrDeletionPolicy.onInit: commits: {}", new CommitsLoggingDebug(commits));
     updateCommits(commits);
   }
 
@@ -94,11 +89,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
    */
   @Override
   public void onCommit(List<? extends IndexCommit> commits) throws IOException {
-    // SOLR-4547: log basic data at INFO, add filenames at DEBUG.
-    log.info("SolrDeletionPolicy.onCommit: commits: {}",
-        new CommitsLoggingInfo(commits));
-    log.debug("SolrDeletionPolicy.onCommit: commits: {}",
-        new CommitsLoggingDebug(commits));
+    log.debug("SolrDeletionPolicy.onCommit: commits: {}", new CommitsLoggingDebug(commits));
     updateCommits(commits);
   }
 
@@ -123,6 +114,9 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
 
     protected void appendDetails(StringBuilder sb, IndexCommit c) {
       Directory dir = c.getDirectory();
+      if (dir instanceof MetricsDirectoryFactory.MetricsDirectory) { // unwrap
+        dir = ((MetricsDirectoryFactory.MetricsDirectory) dir).getDelegate();
+      }
       if (dir instanceof FSDirectory) {
         FSDirectory fsd = (FSDirectory) dir;
         sb.append("dir=").append(fsd.getDirectory());
@@ -159,10 +153,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
     synchronized (this) {
       long maxCommitAgeTimeStamp = -1L;
       IndexCommit newest = commits.get(commits.size() - 1);
-      // SOLR-4547: Removed the filenames from this log entry because this
-      // method is only called from methods that have just logged them
-      // at DEBUG.
-      log.info("newest commit generation = " + newest.getGeneration());
+      log.debug("newest commit generation = " + newest.getGeneration());
       int singleSegKept = (newest.getSegmentCount() == 1) ? 1 : 0;
       int totalKept = 1;
 
@@ -174,7 +165,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
         try {
           if (maxCommitAge != null) {
             if (maxCommitAgeTimeStamp==-1) {
-              DateMathParser dmp = new DateMathParser(DateFormatUtil.UTC, Locale.ROOT);
+              DateMathParser dmp = new DateMathParser(DateMathParser.UTC);
               maxCommitAgeTimeStamp = dmp.parseMath(maxCommitAge).getTime();
             }
             if (IndexDeletionPolicyWrapper.getCommitTimestamp(commit) < maxCommitAgeTimeStamp) {
@@ -206,6 +197,9 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
   private String getId(IndexCommit commit) {
     StringBuilder sb = new StringBuilder();
     Directory dir = commit.getDirectory();
+    if (dir instanceof MetricsDirectoryFactory.MetricsDirectory) { // unwrap
+      dir = ((MetricsDirectoryFactory.MetricsDirectory) dir).getDelegate();
+    }
 
     // For anything persistent, make something that will
     // be the same, regardless of the Directory instance.

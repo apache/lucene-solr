@@ -32,6 +32,7 @@ grant {
   permission java.io.FilePermission "${junit4.childvm.cwd}${/}jacoco.db", "write";
   permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,execute,write,delete";
   permission java.io.FilePermission "${clover.db.dir}${/}-", "read,execute,write,delete";
+  permission java.io.FilePermission "${tests.linedocsfile}", "read";
   
   // all possibilities of accepting/binding connections on localhost with ports >=1024:
   permission java.net.SocketPermission "localhost:1024-", "accept,listen";
@@ -73,6 +74,7 @@ grant {
 
   // SSL related properties for Solr tests
   permission java.security.SecurityPermission "getProperty.ssl.*";
+  permission javax.net.ssl.SSLPermission "setDefaultSSLContext";
 
   // SASL/Kerberos related properties for Solr tests
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KerberosTicket * \"*\"", "read";

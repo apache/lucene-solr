@@ -31,10 +31,10 @@ import org.apache.lucene.index.DocValuesType;
  * 
  * <p>
  * Note that if you want to encode doubles or floats with proper sort order,
- * you will need to encode them with {@link org.apache.lucene.util.LegacyNumericUtils}:
+ * you will need to encode them with {@link org.apache.lucene.util.NumericUtils}:
  * 
  * <pre class="prettyprint">
- *   document.add(new SortedNumericDocValuesField(name, LegacyNumericUtils.floatToSortableInt(-5.3f)));
+ *   document.add(new SortedNumericDocValuesField(name, NumericUtils.floatToSortableInt(-5.3f)));
  * </pre>
  * 
  * <p>

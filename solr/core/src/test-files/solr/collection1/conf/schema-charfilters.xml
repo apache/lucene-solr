@@ -16,35 +16,31 @@
   -->
 
 <schema name="test" version="1.0">
-  <types>
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
-    <!--  charfilter only at query-time -->
-    <fieldType name="text" class="solr.TextField">
-      <analyzer type="index">
-        <tokenizer class="solr.MockTokenizerFactory"/>
-      </analyzer>
-      <analyzer type="query">
-        <charFilter class="solr.MockCharFilterFactory" remainder="7"/>
-        <tokenizer class="solr.MockTokenizerFactory"/>
-      </analyzer>
-    </fieldType>
-    <!--  charfilter only at index-time -->
-    <fieldType name="text2" class="solr.TextField">
-      <analyzer type="index">
-        <charFilter class="solr.MockCharFilterFactory" remainder="7"/>
-        <tokenizer class="solr.MockTokenizerFactory"/>
-      </analyzer>
-      <analyzer type="query">
-        <tokenizer class="solr.MockTokenizerFactory"/>
-      </analyzer>
-    </fieldType>
-  </types>
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
+  <!--  charfilter only at query-time -->
+  <fieldType name="text" class="solr.TextField">
+    <analyzer type="index">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <charFilter class="solr.MockCharFilterFactory" remainder="7"/>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+  <!--  charfilter only at index-time -->
+  <fieldType name="text2" class="solr.TextField">
+    <analyzer type="index">
+      <charFilter class="solr.MockCharFilterFactory" remainder="7"/>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
 
-  <fields>
-    <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="true"/>
-    <field name="content" type="text" indexed="true" stored="true"/>
-    <field name="content2" type="text2" indexed="true" stored="true"/>
-  </fields>
+  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="true"/>
+  <field name="content" type="text" indexed="true" stored="true"/>
+  <field name="content2" type="text2" indexed="true" stored="true"/>
 
   <defaultSearchField>content</defaultSearchField>
   <uniqueKey>id</uniqueKey>

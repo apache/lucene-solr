@@ -51,20 +51,28 @@ public class CollectionMutator {
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     String shardId = message.getStr(ZkStateReader.SHARD_ID_PROP);
-    Slice slice = clusterState.getSlice(collectionName, shardId);
+    DocCollection collection = clusterState.getCollection(collectionName);
+    Slice slice = collection.getSlice(shardId);
     if (slice == null) {
       Map<String, Replica> replicas = Collections.EMPTY_MAP;
       Map<String, Object> sliceProps = new HashMap<>();
       String shardRange = message.getStr(ZkStateReader.SHARD_RANGE_PROP);
       String shardState = message.getStr(ZkStateReader.SHARD_STATE_PROP);
       String shardParent = message.getStr(ZkStateReader.SHARD_PARENT_PROP);
+      String shardParentZkSession = message.getStr("shard_parent_zk_session");
+      String shardParentNode = message.getStr("shard_parent_node");
       sliceProps.put(Slice.RANGE, shardRange);
       sliceProps.put(ZkStateReader.STATE_PROP, shardState);
       if (shardParent != null) {
         sliceProps.put(Slice.PARENT, shardParent);
       }
-      DocCollection collection = updateSlice(collectionName,
-          clusterState.getCollection(collectionName), new Slice(shardId, replicas, sliceProps));
+      if (shardParentZkSession != null) {
+        sliceProps.put("shard_parent_zk_session", shardParentZkSession);
+      }
+      if (shardParentNode != null)  {
+        sliceProps.put("shard_parent_node", shardParentNode);
+      }
+      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps));
       return new ZkWriteCommand(collectionName, collection);
     } else {
       log.error("Unable to create Shard: " + shardId + " because it already exists in collection: " + collectionName);
@@ -92,9 +100,18 @@ public class CollectionMutator {
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     DocCollection coll = clusterState.getCollection(message.getStr(COLLECTION_PROP));
     Map<String, Object> m = coll.shallowCopy();
+    boolean hasAnyOps = false;
     for (String prop : CollectionsHandler.MODIFIABLE_COLL_PROPS) {
-      if(message.get(prop)!= null) m.put(prop,message.get(prop));
+      if(message.get(prop)!= null) {
+        hasAnyOps = true;
+        m.put(prop,message.get(prop));
+      }
     }
+    
+    if(!hasAnyOps) {
+      return ZkStateWriter.NO_OP;
+    }
+    
     return new ZkWriteCommand(coll.getName(),
         new DocCollection(coll.getName(),coll.getSlicesMap(),m,coll.getRouter(),coll.getZNodeVersion(),coll.getZNode()));
   }

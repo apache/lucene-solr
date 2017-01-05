@@ -16,12 +16,15 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -35,17 +38,21 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 /**
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
  */
-public class DocCollection extends ZkNodeProps {
+public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
+
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
   public static final String STATE_FORMAT = "stateFormat";
   public static final String RULE = "rule";
   public static final String SNITCH = "snitch";
-  private int znodeVersion = -1; // sentinel
+
+  private final int znodeVersion;
 
   private final String name;
   private final Map<String, Slice> slices;
   private final Map<String, Slice> activeSlices;
+  private final Map<String, List<Replica>> nodeNameReplicas;
+  private final Map<String, List<Replica>> nodeNameLeaderReplicas;
   private final DocRouter router;
   private final String znode;
 
@@ -55,7 +62,7 @@ public class DocCollection extends ZkNodeProps {
 
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    this(name, slices, props, router, -1, ZkStateReader.CLUSTER_STATE);
+    this(name, slices, props, router, Integer.MAX_VALUE, ZkStateReader.CLUSTER_STATE);
   }
 
   /**
@@ -64,12 +71,15 @@ public class DocCollection extends ZkNodeProps {
    * @param props  The properties of the slice.  This is used directly and a copy is not made.
    */
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion, String znode) {
-    super(props==null ? props = new HashMap<String,Object>() : props);
-    this.znodeVersion = zkVersion;
+    super(props==null ? props = new HashMap<>() : props);
+    // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental overwrites
+    this.znodeVersion = zkVersion == -1 ? Integer.MAX_VALUE : zkVersion;
     this.name = name;
 
     this.slices = slices;
     this.activeSlices = new HashMap<>();
+    this.nodeNameLeaderReplicas = new HashMap<>();
+    this.nodeNameReplicas = new HashMap<>();
     this.replicationFactor = (Integer) verifyProp(props, REPLICATION_FACTOR);
     this.maxShardsPerNode = (Integer) verifyProp(props, MAX_SHARDS_PER_NODE);
     Boolean autoAddReplicas = (Boolean) verifyProp(props, AUTO_ADD_REPLICAS);
@@ -80,12 +90,34 @@ public class DocCollection extends ZkNodeProps {
 
     while (iter.hasNext()) {
       Map.Entry<String, Slice> slice = iter.next();
-      if (slice.getValue().getState() == Slice.State.ACTIVE)
+      if (slice.getValue().getState() == Slice.State.ACTIVE) {
         this.activeSlices.put(slice.getKey(), slice.getValue());
+      }
+      for (Replica replica : slice.getValue()) {
+        addNodeNameReplica(replica);
+      }
     }
     this.router = router;
     this.znode = znode == null? ZkStateReader.CLUSTER_STATE : znode;
     assert name != null && slices != null;
+  }
+
+  private void addNodeNameReplica(Replica replica) {
+    List<Replica> replicas = nodeNameReplicas.get(replica.getNodeName());
+    if (replicas == null) {
+      replicas = new ArrayList<>();
+      nodeNameReplicas.put(replica.getNodeName(), replicas);
+    }
+    replicas.add(replica);
+
+    if (replica.getStr(Slice.LEADER) != null) {
+      List<Replica> leaderReplicas = nodeNameLeaderReplicas.get(replica.getNodeName());
+      if (leaderReplicas == null) {
+        leaderReplicas = new ArrayList<>();
+        nodeNameLeaderReplicas.put(replica.getNodeName(), leaderReplicas);
+      }
+      leaderReplicas.add(replica);
+    }
   }
 
   public static Object verifyProp(Map<String, Object> props, String propName) {
@@ -101,7 +133,7 @@ public class DocCollection extends ZkNodeProps {
       case "rule":
         return (List) o;
       default:
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Unknown property " + propName);
+        return o;
     }
 
   }
@@ -154,6 +186,20 @@ public class DocCollection extends ZkNodeProps {
     return activeSlices;
   }
 
+  /**
+   * Get the list of replicas hosted on the given node or <code>null</code> if none.
+   */
+  public List<Replica> getReplicas(String nodeName) {
+    return nodeNameReplicas.get(nodeName);
+  }
+
+  /**
+   * Get the list of all leaders hosted on the given node or <code>null</code> if none.
+   */
+  public List<Replica> getLeaderReplicas(String nodeName) {
+    return nodeNameLeaderReplicas.get(nodeName);
+  }
+
   public int getZNodeVersion(){
     return znodeVersion;
   }
@@ -191,7 +237,7 @@ public class DocCollection extends ZkNodeProps {
 
   @Override
   public String toString() {
-    return "DocCollection("+name+")=" + JSONUtil.toJSON(this);
+    return "DocCollection("+name+"/" + znode + "/" + znodeVersion + ")=" + JSONUtil.toJSON(this);
   }
 
   @Override
@@ -209,4 +255,70 @@ public class DocCollection extends ZkNodeProps {
     }
     return null;
   }
+
+  public Replica getLeader(String sliceName) {
+    Slice slice = getSlice(sliceName);
+    if (slice == null) return null;
+    return slice.getLeader();
+  }
+
+  /**
+   * Check that all replicas in a collection are live
+   *
+   * @see CollectionStatePredicate
+   */
+  public static boolean isFullyActive(Set<String> liveNodes, DocCollection collectionState,
+                                      int expectedShards, int expectedReplicas) {
+    Objects.requireNonNull(liveNodes);
+    if (collectionState == null)
+      return false;
+    int activeShards = 0;
+    for (Slice slice : collectionState) {
+      int activeReplicas = 0;
+      for (Replica replica : slice) {
+        if (replica.isActive(liveNodes) == false)
+          return false;
+        activeReplicas++;
+      }
+      if (activeReplicas != expectedReplicas)
+        return false;
+      activeShards++;
+    }
+    return activeShards == expectedShards;
+  }
+
+  @Override
+  public Iterator<Slice> iterator() {
+    return slices.values().iterator();
+  }
+
+  public List<Replica> getReplicas() {
+    List<Replica> replicas = new ArrayList<>();
+    for (Slice slice : this) {
+      replicas.addAll(slice.getReplicas());
+    }
+    return replicas;
+  }
+
+  /**
+   * Get the shardId of a core on a specific node
+   */
+  public String getShardId(String nodeName, String coreName) {
+    for (Slice slice : this) {
+      for (Replica replica : slice) {
+        if (Objects.equals(replica.getNodeName(), nodeName) && Objects.equals(replica.getCoreName(), coreName))
+          return slice.getName();
+      }
+    }
+    return null;
+  }
+
+  @Override
+  public boolean equals(Object that) {
+    if (that instanceof DocCollection == false)
+      return false;
+    DocCollection other = (DocCollection) that;
+    return super.equals(that) && Objects.equals(this.znode, other.znode) && this.znodeVersion == other.znodeVersion;
+  }
+
 }

@@ -6,8 +6,6 @@ import java.util.List;
 import java.io.StringReader;
 
 
-import org.apache.lucene.analysis.TokenStream;
-
 import org.apache.lucene.queryparser.surround.query.SrndQuery;
 import org.apache.lucene.queryparser.surround.query.FieldsQuery;
 import org.apache.lucene.queryparser.surround.query.OrQuery;

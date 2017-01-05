@@ -26,7 +26,6 @@ import java.util.Map;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.PivotListEntry;
 
 /**
@@ -92,7 +91,7 @@ public class PivotFacetValue {
     if (null == value) {
       out.add(null);
     } else if (value instanceof Date) {
-      out.add(DateFormatUtil.formatExternal((Date) value));
+      out.add(((Date) value).toInstant().toString());
     } else {
       out.add(value.toString());
     }

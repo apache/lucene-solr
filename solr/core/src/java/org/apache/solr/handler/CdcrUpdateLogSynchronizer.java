@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CommonParams;
@@ -113,7 +114,8 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
     private String getLeaderUrl() {
       ZkController zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
       ClusterState cstate = zkController.getClusterState();
-      ZkNodeProps leaderProps = cstate.getLeader(collection, shardId);
+      DocCollection docCollection = cstate.getCollection(collection);
+      ZkNodeProps leaderProps = docCollection.getLeader(shardId);
       if (leaderProps == null) { // we might not have a leader yet, returns null
         return null;
       }
@@ -129,7 +131,7 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
           return;
         }
 
-        HttpSolrClient server = new HttpSolrClient(leaderUrl);
+        HttpSolrClient server = new HttpSolrClient.Builder(leaderUrl).build();
         server.setConnectionTimeout(15000);
         server.setSoTimeout(60000);
 

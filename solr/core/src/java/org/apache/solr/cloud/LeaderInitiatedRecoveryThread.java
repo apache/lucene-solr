@@ -201,7 +201,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
         log.info("Asking core={} coreNodeName={} on " + recoveryUrl + " to recover", coreNeedingRecovery, replicaCoreNodeName);
       }
 
-      try (HttpSolrClient client = new HttpSolrClient(recoveryUrl)) {
+      try (HttpSolrClient client = new HttpSolrClient.Builder(recoveryUrl).build()) {
         client.setSoTimeout(60000);
         client.setConnectionTimeout(15000);
         try {
@@ -244,12 +244,6 @@ public class LeaderInitiatedRecoveryThread extends Thread {
         
         // see if the replica's node is still live, if not, no need to keep doing this loop
         ZkStateReader zkStateReader = zkController.getZkStateReader();
-        try {
-          zkStateReader.updateClusterState();
-        } catch (Exception exc) {
-          log.warn("Error when updating cluster state: "+exc);
-        }        
-        
         if (!zkStateReader.getClusterState().liveNodesContain(replicaNodeName)) {
           log.warn("Node "+replicaNodeName+" hosting core "+coreNeedingRecovery+
               " is no longer live. No need to keep trying to tell it to recover!");

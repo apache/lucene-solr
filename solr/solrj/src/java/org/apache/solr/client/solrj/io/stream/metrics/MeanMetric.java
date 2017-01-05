@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.stream.metrics;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -25,14 +24,12 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class MeanMetric extends Metric implements Serializable {
+public class MeanMetric extends Metric {
   // How'd the MeanMetric get to be so mean?
   // Maybe it was born with it.
   // Maybe it was mayba-mean.
   //
   // I'll see myself out.
-  
-  private static final long serialVersionUID = 1;
 
   private String columnName;
   private double doubleSum;
@@ -42,6 +39,7 @@ public class MeanMetric extends Metric implements Serializable {
   public MeanMetric(String columnName){
     init("avg", columnName);
   }
+
   public MeanMetric(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String functionName = expression.getFunctionName();
@@ -69,10 +67,10 @@ public class MeanMetric extends Metric implements Serializable {
     Object o = tuple.get(columnName);
     if(o instanceof Double) {
       Double d = (Double)tuple.get(columnName);
-      doubleSum += d.doubleValue();
+      doubleSum += d;
     } else {
       Long l = (Long)tuple.get(columnName);
-      longSum += l.doubleValue();
+      longSum += l;
     }
   }
 
@@ -80,15 +78,17 @@ public class MeanMetric extends Metric implements Serializable {
     return new MeanMetric(columnName);
   }
 
-  public double getValue() {
+  public String[] getColumns() {
+    return new String[]{columnName};
+  }
+
+  public Double getValue() {
     double dcount = (double)count;
     if(longSum == 0) {
-      double ave = doubleSum/dcount;
-      return ave;
+      return doubleSum/dcount;
 
     } else {
-      double ave = longSum/dcount;
-      return ave;
+      return longSum/dcount;
     }
   }
   

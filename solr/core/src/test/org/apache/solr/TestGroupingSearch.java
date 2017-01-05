@@ -57,7 +57,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   public static final String FOO_STRING_FIELD = "foo_s1";
   public static final String SMALL_STRING_FIELD = "small_s1";
   public static final String SMALL_INT_FIELD = "small_i";
-  static final String EMPTY_FACETS = "'facet_dates':{},'facet_ranges':{},'facet_intervals':{},'facet_heatmaps':{}";
+  static final String EMPTY_FACETS = "'facet_ranges':{},'facet_intervals':{},'facet_heatmaps':{}";
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -915,26 +915,20 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
 
   public static Comparator<Grp> createMaxDocComparator(final Comparator<Doc> docComparator) {
-    return new Comparator<Grp>() {
-      @Override
-      public int compare(Grp o1, Grp o2) {
-        // all groups should have at least one doc
-        Doc d1 = o1.maxDoc;
-        Doc d2 = o2.maxDoc;
-        return docComparator.compare(d1, d2);
-      }
+    return (o1, o2) -> {
+      // all groups should have at least one doc
+      Doc d1 = o1.maxDoc;
+      Doc d2 = o2.maxDoc;
+      return docComparator.compare(d1, d2);
     };
   }
 
   public static Comparator<Grp> createFirstDocComparator(final Comparator<Doc> docComparator) {
-    return new Comparator<Grp>() {
-      @Override
-      public int compare(Grp o1, Grp o2) {
-        // all groups should have at least one doc
-        Doc d1 = o1.docs.get(0);
-        Doc d2 = o2.docs.get(0);
-        return docComparator.compare(d1, d2);
-      }
+    return (o1, o2) -> {
+      // all groups should have at least one doc
+      Doc d1 = o1.docs.get(0);
+      Doc d2 = o2.docs.get(0);
+      return docComparator.compare(d1, d2);
     };
   }
 

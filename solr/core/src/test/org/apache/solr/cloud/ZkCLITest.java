@@ -16,6 +16,15 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.List;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
@@ -23,6 +32,7 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -37,22 +47,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.List;
-
 // TODO: This test would be a lot faster if it used a solrhome with fewer config
 // files - there are a lot of them to upload
 public class ZkCLITest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  private static final boolean VERBOSE = false;
-  
+
   protected ZkTestServer zkServer;
   
   protected String zkDir;
@@ -100,6 +99,14 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     log.info("####SETUP_END " + getTestName());
   }
   
+  @Test
+  public void testCmdConstants() throws Exception {
+    assertEquals("upconfig", ZkCLI.UPCONFIG);
+    assertEquals("x", ZkCLI.EXCLUDE_REGEX_SHORT);
+    assertEquals("excluderegex", ZkCLI.EXCLUDE_REGEX);
+    assertEquals(ZkConfigManager.UPLOAD_FILENAME_EXCLUDE_REGEX, ZkCLI.EXCLUDE_REGEX_DEFAULT);
+  }
+
   @Test
   public void testBootstrapWithChroot() throws Exception {
     String chroot = "/foo/bar";
@@ -193,14 +200,23 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     
     // test upconfig
     String confsetname = "confsetone";
-    String[] args = new String[] {
-        "-zkhost",
-        zkServer.getZkAddress(),
-        "-cmd",
-        "upconfig",
-        "-confdir",
-        ExternalPaths.TECHPRODUCTS_CONFIGSET, "-confname", confsetname};
-    ZkCLI.main(args);
+    final String[] upconfigArgs;
+    if (random().nextBoolean()) {
+      upconfigArgs = new String[] {
+          "-zkhost", zkServer.getZkAddress(),
+          "-cmd", ZkCLI.UPCONFIG,
+          "-confdir", ExternalPaths.TECHPRODUCTS_CONFIGSET,
+          "-confname", confsetname};
+    } else {
+      final String excluderegexOption = (random().nextBoolean() ? "--"+ZkCLI.EXCLUDE_REGEX : "-"+ZkCLI.EXCLUDE_REGEX_SHORT);
+      upconfigArgs = new String[] {
+          "-zkhost", zkServer.getZkAddress(),
+          "-cmd", ZkCLI.UPCONFIG,
+          excluderegexOption, ZkCLI.EXCLUDE_REGEX_DEFAULT,
+          "-confdir", ExternalPaths.TECHPRODUCTS_CONFIGSET,
+          "-confname", confsetname};
+    }
+    ZkCLI.main(upconfigArgs);
     
     assertTrue(zkClient.exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + confsetname, true));
 
@@ -208,7 +224,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     // ZkCLI.main(new String[0]);
     
     // test linkconfig
-    args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "linkconfig", "-collection", "collection1", "-confname", confsetname};
     ZkCLI.main(args);
     
@@ -236,8 +252,12 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         int indexOfRelativePath = sourceFile.getAbsolutePath().lastIndexOf("sample_techproducts_configs" + File.separator + "conf");
         String relativePathofFile = sourceFile.getAbsolutePath().substring(indexOfRelativePath + 33, sourceFile.getAbsolutePath().length());
         File downloadedFile = new File(confDir,relativePathofFile);
-        assertTrue(downloadedFile.getAbsolutePath() + " does not exist source:" + sourceFile.getAbsolutePath(), downloadedFile.exists());
-        assertTrue("Content didn't change",FileUtils.contentEquals(sourceFile,downloadedFile));
+        if (ZkConfigManager.UPLOAD_FILENAME_EXCLUDE_PATTERN.matcher(relativePathofFile).matches()) {
+          assertFalse(sourceFile.getAbsolutePath() + " exists in ZK, downloaded:" + downloadedFile.getAbsolutePath(), downloadedFile.exists());
+        } else {
+          assertTrue(downloadedFile.getAbsolutePath() + " does not exist source:" + sourceFile.getAbsolutePath(), downloadedFile.exists());
+          assertTrue(relativePathofFile+" content changed",FileUtils.contentEquals(sourceFile,downloadedFile));
+        }
     }
     
    
@@ -279,10 +299,9 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFileNotExists() throws Exception {
-    File tmpDir = createTempDir().toFile();
     String getNode = "/getFileNotExistsNode";
 
-    File file = File.createTempFile("newfile", null, tmpDir);
+    File file = createTempFile("newfile", null).toFile();
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "getfile", getNode, file.getAbsolutePath()};
     try {
@@ -300,22 +319,19 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testSetClusterProperty() throws Exception {
-    ZkStateReader reader = new ZkStateReader(zkClient);
-    try {
-      // add property urlScheme=http
-      String[] args = new String[] {"-zkhost", zkServer.getZkAddress(),
-          "-cmd", "CLUSTERPROP", "-name", "urlScheme", "-val", "http"};
-      ZkCLI.main(args);
-      assertEquals("http", reader.getClusterProps().get("urlScheme"));
-      
-      // remove it again
-      args = new String[] {"-zkhost", zkServer.getZkAddress(),
-          "-cmd", "CLUSTERPROP", "-name", "urlScheme"};
-      ZkCLI.main(args);
-      assertNull(reader.getClusterProps().get("urlScheme"));
-    } finally {
-      reader.close();
-    }
+    ClusterProperties properties = new ClusterProperties(zkClient);
+    // add property urlScheme=http
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(),
+        "-cmd", "CLUSTERPROP", "-name", "urlScheme", "-val", "http"};
+    ZkCLI.main(args);
+    assertEquals("http", properties.getClusterProperty("urlScheme", "none"));
+
+    // remove it again
+    args = new String[] {"-zkhost", zkServer.getZkAddress(),
+        "-cmd", "CLUSTERPROP", "-name", "urlScheme"};
+    ZkCLI.main(args);
+    assertNull(properties.getClusterProperty("urlScheme", (String) null));
+
   }
   
   @Test
@@ -345,9 +361,6 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    if (VERBOSE) {
-      printLayout(zkServer.getZkHost());
-    }
     zkClient.close();
     zkServer.shutdown();
     super.tearDown();

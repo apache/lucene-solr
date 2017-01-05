@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -32,12 +31,14 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
@@ -55,7 +56,29 @@ public class TestDocSet extends LuceneTestCase {
     super.setUp();
     rand = random();
   }
-  
+
+  // test the DocSetCollector
+  public void collect(DocSet set, int maxDoc) {
+    int smallSetSize = maxDoc >> 64 + 3;
+    if (set.size() > 1) {
+      if (random().nextBoolean()) {
+        smallSetSize = set.size() + random().nextInt(3) - 1;  // test the bounds around smallSetSize
+      }
+    }
+    DocSetCollector collector = new DocSetCollector(smallSetSize, maxDoc);
+
+    for(DocIterator i1 = set.iterator(); i1.hasNext();) {
+      try {
+        collector.collect( i1.nextDoc() );
+      } catch (IOException e) {
+        throw new RuntimeException(e);  // should be impossible
+      }
+    }
+
+    DocSet result = collector.getDocSet();
+    iter(set, result);  // check that they are equal
+  }
+
   public FixedBitSet getRandomSet(int sz, int bitsToSet) {
     FixedBitSet bs = new FixedBitSet(sz);
     if (sz==0) return bs;
@@ -164,6 +187,9 @@ public class TestDocSet extends LuceneTestCase {
 
     iter(a1,b1);
     iter(a2,b2);
+
+    collect(a1, maxSize);
+    collect(a2, maxSize);
 
     FixedBitSet a_and = bs1.clone(); a_and.and(bs2);
     FixedBitSet a_or = bs1.clone(); a_or.or(bs2);
@@ -417,17 +443,12 @@ public class TestDocSet extends LuceneTestCase {
       }
 
       @Override
-      public Bits getDocsWithField(String field) throws IOException {
-        return null;
-      }
-
-      @Override
       public NumericDocValues getNormValues(String field) {
         return null;
       }
 
       @Override
-      public PointValues getPointValues() {
+      public PointValues getPointValues(String field) {
         return null;
       }
 
@@ -441,6 +462,11 @@ public class TestDocSet extends LuceneTestCase {
 
       @Override
       public void checkIntegrity() throws IOException {
+      }
+
+      @Override
+      public Sort getIndexSort() {
+        return null;
       }
     };
   }

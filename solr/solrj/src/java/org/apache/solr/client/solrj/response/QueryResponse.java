@@ -51,6 +51,7 @@ public class QueryResponse extends SolrResponseBase
   private Map<String,NamedList<Object>> _suggestInfo = null;
   private NamedList<Object> _statsInfo = null;
   private NamedList<NamedList<Number>> _termsInfo = null;
+  private NamedList<SolrDocumentList> _moreLikeThisInfo = null;
   private String _cursorMarkNext = null;
 
   // Grouping response
@@ -167,6 +168,9 @@ public class QueryResponse extends SolrResponseBase
       else if ( "terms".equals( n ) ) {
         _termsInfo = (NamedList<NamedList<Number>>) res.getVal( i );
         extractTermsInfo( _termsInfo );
+      }
+      else if ( "moreLikeThis".equals( n ) ) {
+        _moreLikeThisInfo = (NamedList<SolrDocumentList>) res.getVal( i );
       }
       else if ( CursorMarkParams.CURSOR_MARK_NEXT.equals( n ) ) {
         _cursorMarkNext = (String) res.getVal( i );
@@ -332,30 +336,6 @@ public class QueryResponse extends SolrResponseBase
       }
     }
     
-    //Parse date facets
-    NamedList<NamedList<Object>> df = (NamedList<NamedList<Object>>) info.get("facet_dates");
-    if (df != null) {
-      // System.out.println(df);
-      _facetDates = new ArrayList<>( df.size() );
-      for (Map.Entry<String, NamedList<Object>> facet : df) {
-        // System.out.println("Key: " + facet.getKey() + " Value: " + facet.getValue());
-        NamedList<Object> values = facet.getValue();
-        String gap = (String) values.get("gap");
-        Date end = (Date) values.get("end");
-        FacetField f = new FacetField(facet.getKey(), gap, end);
-        
-        for (Map.Entry<String, Object> entry : values)   {
-          try {
-            f.add(entry.getKey(), Long.parseLong(entry.getValue().toString()));
-          } catch (NumberFormatException e) {
-            //Ignore for non-number responses which are already handled above
-          }
-        }
-        
-        _facetDates.add(f);
-      }
-    }
-
     //Parse range facets
     NamedList<NamedList<Object>> rf = (NamedList<NamedList<Object>>) info.get("facet_ranges");
     if (rf != null) {
@@ -570,6 +550,10 @@ public class QueryResponse extends SolrResponseBase
 
   public TermsResponse getTermsResponse() {
     return _termsResponse;
+  }
+
+  public NamedList<SolrDocumentList> getMoreLikeThis() {
+    return _moreLikeThisInfo;
   }
   
   /**

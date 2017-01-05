@@ -43,10 +43,6 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Tests some basic functionality of Solr while demonstrating good
- * Best Practices for using AbstractSolrTestCase
- */
 public class HighlighterTest extends SolrTestCaseJ4 {
 
   private static String LONG_TEXT = "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is " +
@@ -91,6 +87,25 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testMethodPostings() {
+    String field = "t_text";
+    assertU(adoc(field, LONG_TEXT,
+        "id", "1"));
+    assertU(commit());
+
+    try {
+      assertQ("Tried PostingsSolrHighlighter but failed due to offsets not in postings",
+          req("q", "long", "hl.method", "postings", "df", field, "hl", "true"));
+      fail("Did not encounter exception for no offsets");
+    } catch (Exception e) {
+      assertTrue("Cause should be illegal argument", e.getCause() instanceof IllegalArgumentException);
+      assertTrue("Should warn no offsets", e.getCause().getMessage().contains("indexed without offsets"));
+    }
+    // note: the default schema.xml has no offsets in postings to test the PostingsHighlighter. Leave that for another
+    //  test class.
+  }
+
+  @Test
   public void testMergeContiguous() throws Exception {
     HashMap<String,String> args = new HashMap<>();
     args.put(HighlightParams.HIGHLIGHT, "true");
@@ -99,6 +114,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     args.put(HighlightParams.SNIPPETS, String.valueOf(4));
     args.put(HighlightParams.FRAGSIZE, String.valueOf(40));
     args.put(HighlightParams.MERGE_CONTIGUOUS_FRAGMENTS, "true");
+    args.put(HighlightParams.METHOD, "original"); // test works; no complaints
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard", 0, 200, args);
     String input = "this is some long text.  It has the word long in many places.  In fact, it has long on some different fragments.  " +
@@ -703,7 +719,87 @@ public class HighlighterTest extends SolrTestCaseJ4 {
             "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='a piece of text']"
             );
   }
-  
+
+  @Test
+  public void testAlternateSummaryWithHighlighting() {
+     //long document
+     assertU(adoc("tv_text", "keyword is only here, tv_text alternate field",
+                  "t_text", "a piece of text to be substituted",
+                  "other_t", "keyword",
+                  "id", "1",
+                  "foo_t","hi"));
+     assertU(commit());
+     assertU(optimize());
+
+    // Prove that hl.highlightAlternate is default true and respects maxAlternateFieldLength
+    HashMap<String,String> args = new HashMap<>();
+    args.put("hl", "true");
+    args.put("hl.fragsize","0");
+    args.put("hl.fl", "t_text");
+    args.put("hl.simple.pre", "<simplepre>");
+    args.put("hl.simple.post", "</simplepost>");
+    args.put("hl.alternateField", "tv_text");
+    args.put("hl.maxAlternateFieldLength", "39");
+    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+      "standard", 0, 200, args);
+    assertQ("Alternate summarization with highlighting",
+            sumLRF.makeRequest("tv_text:keyword"),
+            "//lst[@name='highlighting']/lst[@name='1' and count(*)=1]",
+            "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='<simplepre>keyword</simplepost> is only here, tv_text']"
+            );
+
+    // Query on other field than hl or alternate. Still we get the hightlighted snippet from alternate
+    assertQ("Alternate summarization with highlighting, query other field",
+            sumLRF.makeRequest("other_t:keyword"),
+            "//lst[@name='highlighting']/lst[@name='1' and count(*)=1]",
+            "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='<simplepre>keyword</simplepost> is only here, tv_text']"
+            );
+
+    // With hl.requireFieldMatch, will not highlight but fall back to plain-text alternate
+    args.put("hl.requireFieldMatch", "true");
+    sumLRF = h.getRequestFactory(
+      "standard", 0, 200, args);
+    assertQ("Alternate summarization with highlighting, requireFieldMatch",
+            sumLRF.makeRequest("other_t:keyword"),
+            "//lst[@name='highlighting']/lst[@name='1' and count(*)=1]",
+            "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='keyword is only here, tv_text alternate']"
+            );
+    args.put("hl.requireFieldMatch", "false");
+
+
+    // Works with field specific params, overriding maxAlternateFieldLength to return everything
+    args.remove("hl.alternateField");
+    args.put("f.t_text.hl.alternateField", "tv_text");
+    args.put("f.t_text.hl.maxAlternateFieldLength", "0");
+    sumLRF = h.getRequestFactory("standard", 0, 200, args);
+    assertQ("Alternate summarization with highlighting",
+            sumLRF.makeRequest("tv_text:keyword"),
+            "//lst[@name='highlighting']/lst[@name='1' and count(*)=1]",
+            "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='<simplepre>keyword</simplepost> is only here, tv_text alternate field']"
+            );
+
+    // Prove fallback highlighting works also with FVH
+    args.put("hl.method", "fastVector");
+    args.put("hl.tag.pre", "<fvhpre>");
+    args.put("hl.tag.post", "</fvhpost>");
+    args.put("f.t_text.hl.maxAlternateFieldLength", "18");
+    sumLRF = h.getRequestFactory("standard", 0, 200, args);
+    assertQ("Alternate summarization with highlighting using FVH",
+            sumLRF.makeRequest("tv_text:keyword"),
+            "//lst[@name='highlighting']/lst[@name='1' and count(*)=1]",
+        "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='<fvhpre>keyword</fvhpost> is only here']"
+            );
+
+    // Prove it is possible to turn off highlighting of alternate field
+    args.put("hl.highlightAlternate", "false");
+    sumLRF = h.getRequestFactory("standard", 0, 200, args);
+    assertQ("Alternate summarization without highlighting",
+            sumLRF.makeRequest("tv_text:keyword"),
+            "//lst[@name='highlighting']/lst[@name='1' and count(*)=1]",
+            "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='keyword is only he']"
+            );
+  }
+
   @Test
   public void testPhraseHighlighter() {
     HashMap<String,String> args = new HashMap<>();

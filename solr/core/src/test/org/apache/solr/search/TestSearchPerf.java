@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -199,10 +198,10 @@ public class TestSearchPerf extends AbstractSolrTestCase {
     String u=t((int)(indexSize*10*fractionCovered));   
 
     SolrQueryRequest req = lrf.makeRequest();
-    QParser parser = QParser.getParser("foomany_s:[" + l + " TO " + u + "]", null, req);
+    QParser parser = QParser.getParser("foomany_s:[" + l + " TO " + u + "]", req);
     Query range = parser.getQuery();
                                      
-    QParser parser2 = QParser.getParser("{!frange l="+l+" u="+u+"}foomany_s", null, req);
+    QParser parser2 = QParser.getParser("{!frange l="+l+" u="+u+"}foomany_s", req);
     Query frange = parser2.getQuery();
     req.close();
 
@@ -225,13 +224,13 @@ public class TestSearchPerf extends AbstractSolrTestCase {
 
     SolrQueryRequest req = lrf.makeRequest();
 
-    QParser parser = QParser.getParser("foomany_s:[" + l + " TO " + u + "]", null, req);
+    QParser parser = QParser.getParser("foomany_s:[" + l + " TO " + u + "]", req);
     Query rangeQ = parser.getQuery();
     List<Query> filters = new ArrayList<>();
     filters.add(rangeQ);
     req.close();
 
-    parser = QParser.getParser("{!dismax qf=t10_100_ws pf=t10_100_ws ps=20}"+ t(0) + ' ' + t(1) + ' ' + t(2), null, req);
+    parser = QParser.getParser("{!dismax qf=t10_100_ws pf=t10_100_ws ps=20}"+ t(0) + ' ' + t(1) + ' ' + t(2), req);
     Query q= parser.getQuery();
 
     // SolrIndexSearcher searcher = req.getSearcher();

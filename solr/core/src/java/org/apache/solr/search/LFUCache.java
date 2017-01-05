@@ -272,11 +272,11 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
     long cevictions = 0;
 
     // NOTE: It is safe to iterate on a CopyOnWriteArrayList
-    for (ConcurrentLFUCache.Stats statistiscs : statsList) {
-      clookups += statistiscs.getCumulativeLookups();
-      chits += statistiscs.getCumulativeHits();
-      cinserts += statistiscs.getCumulativePuts();
-      cevictions += statistiscs.getCumulativeEvictions();
+    for (ConcurrentLFUCache.Stats statistics : statsList) {
+      clookups += statistics.getCumulativeLookups();
+      chits += statistics.getCumulativeHits();
+      cinserts += statistics.getCumulativePuts();
+      cevictions += statistics.getCumulativeEvictions();
     }
     lst.add("cumulative_lookups", clookups);
     lst.add("cumulative_hits", chits);

@@ -98,8 +98,8 @@ public class TestFilterLeafReader extends LuceneTestCase {
       }
     }
     
-    public TestReader(IndexReader reader) throws IOException {
-      super(SlowCompositeReaderWrapper.wrap(reader));
+    public TestReader(LeafReader reader) throws IOException {
+      super(reader);
     }
 
     @Override
@@ -128,7 +128,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
     Document d3 = new Document();
     d3.add(newTextField("default", "two four", Field.Store.YES));
     writer.addDocument(d3);
-
+    writer.forceMerge(1);
     writer.close();
 
     Directory target = newDirectory();
@@ -137,7 +137,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
     ((BaseDirectoryWrapper) target).setCrossCheckTermVectorsOnClose(false);
 
     writer = new IndexWriter(target, newIndexWriterConfig(new MockAnalyzer(random())));
-    try (LeafReader reader = new TestReader(DirectoryReader.open(directory))) {
+    try (LeafReader reader = new TestReader(getOnlyLeafReader(DirectoryReader.open(directory)))) {
       writer.addIndexes(SlowCodecReaderWrapper.wrap(reader));
     }
     writer.close();
@@ -196,7 +196,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
     w.addDocument(new Document());
     DirectoryReader dr = w.getReader();
     LeafReader r = dr.leaves().get(0).reader();
-    FilterLeafReader r2 = new FilterLeafReader(r);
+    FilterLeafReader r2 = new FilterLeafReader(r) {};
     assertEquals(r, r2.getDelegate());
     assertEquals(r, FilterLeafReader.unwrap(r2));
     w.close();

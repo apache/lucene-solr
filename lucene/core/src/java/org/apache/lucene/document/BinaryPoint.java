@@ -19,6 +19,8 @@ package org.apache.lucene.document;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
@@ -27,7 +29,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 
 /** 
- * An indexed binary field.
+ * An indexed binary field for fast range filters.  If you also
+ * need to store the value, you should add a separate {@link StoredField} instance.
  * <p>
  * Finding all documents within an N-dimensional shape or range at search time is
  * efficient.  Multiple values for the same field in one document
@@ -40,24 +43,25 @@ import org.apache.lucene.util.StringHelper;
  *   <li>{@link #newRangeQuery(String, byte[], byte[])} for matching a 1D range.
  *   <li>{@link #newRangeQuery(String, byte[][], byte[][])} for matching points/ranges in n-dimensional space.
  * </ul> 
+ * @see PointValues
  */
 public final class BinaryPoint extends Field {
 
   private static FieldType getType(byte[][] point) {
     if (point == null) {
-      throw new IllegalArgumentException("point cannot be null");
+      throw new IllegalArgumentException("point must not be null");
     }
     if (point.length == 0) {
-      throw new IllegalArgumentException("point cannot be 0 dimensions");
+      throw new IllegalArgumentException("point must not be 0 dimensions");
     }
     int bytesPerDim = -1;
     for(int i=0;i<point.length;i++) {
       byte[] oneDim = point[i];
       if (oneDim == null) {
-        throw new IllegalArgumentException("point cannot have null values");
+        throw new IllegalArgumentException("point must not have null values");
       }
       if (oneDim.length == 0) {
-        throw new IllegalArgumentException("point cannot have 0-length values");
+        throw new IllegalArgumentException("point must not have 0-length values");
       }
       if (bytesPerDim == -1) {
         bytesPerDim = oneDim.length;
@@ -77,10 +81,10 @@ public final class BinaryPoint extends Field {
 
   private static BytesRef pack(byte[]... point) {
     if (point == null) {
-      throw new IllegalArgumentException("point cannot be null");
+      throw new IllegalArgumentException("point must not be null");
     }
     if (point.length == 0) {
-      throw new IllegalArgumentException("point cannot be 0 dimensions");
+      throw new IllegalArgumentException("point must not be 0 dimensions");
     }
     if (point.length == 1) {
       return new BytesRef(point[0]);
@@ -88,11 +92,11 @@ public final class BinaryPoint extends Field {
     int bytesPerDim = -1;
     for(byte[] dim : point) {
       if (dim == null) {
-        throw new IllegalArgumentException("point cannot have null values");
+        throw new IllegalArgumentException("point must not have null values");
       }
       if (bytesPerDim == -1) {
         if (dim.length == 0) {
-          throw new IllegalArgumentException("point cannot have 0-length values");
+          throw new IllegalArgumentException("point must not have 0-length values");
         }
         bytesPerDim = dim.length;
       } else if (dim.length != bytesPerDim) {
@@ -118,7 +122,7 @@ public final class BinaryPoint extends Field {
   }
 
   /** Expert API */
-  public BinaryPoint(String name, byte[] packedPoint, FieldType type) {
+  public BinaryPoint(String name, byte[] packedPoint, IndexableFieldType type) {
     super(name, packedPoint, type);
     if (packedPoint.length != type.pointDimensionCount() * type.pointNumBytes()) {
       throw new IllegalArgumentException("packedPoint is length=" + packedPoint.length + " but type.pointDimensionCount()=" + type.pointDimensionCount() + " and type.pointNumBytes()=" + type.pointNumBytes());
@@ -171,7 +175,7 @@ public final class BinaryPoint extends Field {
    * @return a query matching documents within this range.
    */
   public static Query newRangeQuery(String field, byte[][] lowerValue, byte[][] upperValue) {
-    return new PointRangeQuery(field, lowerValue, upperValue) {
+    return new PointRangeQuery(field, pack(lowerValue).bytes, pack(upperValue).bytes, lowerValue.length) {
       @Override
       protected String toString(int dimension, byte[] value) {
         assert value != null;
@@ -209,7 +213,7 @@ public final class BinaryPoint extends Field {
 
     if (bytesPerDim == -1) {
       // There are no points, and we cannot guess the bytesPerDim here, so we return an equivalent query:
-      return new MatchNoDocsQuery();
+      return new MatchNoDocsQuery("empty BinaryPoint.newSetQuery");
     }
 
     // Don't unexpectedly change the user's incoming values array:

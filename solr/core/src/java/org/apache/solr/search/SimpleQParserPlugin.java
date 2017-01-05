@@ -27,7 +27,6 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SimpleParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
@@ -183,7 +182,6 @@ public class SimpleQParserPlugin extends QParserPlugin {
     @Override
     protected Query newPrefixQuery(String text) {
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
-      bq.setDisableCoord(true);
 
       for (Map.Entry<String, Float> entry : weights.entrySet()) {
         String field = entry.getKey();
@@ -215,7 +213,6 @@ public class SimpleQParserPlugin extends QParserPlugin {
     @Override
     protected Query newFuzzyQuery(String text, int fuzziness) {
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
-      bq.setDisableCoord(true);
 
       for (Map.Entry<String, Float> entry : weights.entrySet()) {
         String field = entry.getKey();

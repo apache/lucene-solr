@@ -20,18 +20,18 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.SortedSetSelector;
+import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.Insanity;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -88,7 +88,7 @@ public class ReverseOrdFieldSource extends ValueSource {
         r = SlowCompositeReaderWrapper.wrap(new MultiReader(insaneLeaves));
       } else {
         // reuse ordinalmap
-        r = ((SolrIndexSearcher)o).getLeafReader();
+        r = ((SolrIndexSearcher)o).getSlowAtomicReader();
       }
     } else {
       IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader();
@@ -99,9 +99,16 @@ public class ReverseOrdFieldSource extends ValueSource {
     final int end = sindex.getValueCount();
 
     return new IntDocValues(this) {
-     @Override
-      public int intVal(int doc) {
-        return (end - sindex.getOrd(doc+off) - 1);
+      @Override
+      public int intVal(int doc) throws IOException {
+        if (doc+off > sindex.docID()) {
+          sindex.advance(doc+off);
+        }
+        if (doc+off == sindex.docID()) {
+          return (end - sindex.ordValue() - 1);
+        } else {
+          return end;
+        }
       }
     };
   }

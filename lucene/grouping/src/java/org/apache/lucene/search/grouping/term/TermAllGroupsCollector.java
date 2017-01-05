@@ -16,17 +16,17 @@
  */
 package org.apache.lucene.search.grouping.term;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.SentinelIntSet;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.SentinelIntSet;
 
 /**
  * A collector that collects all groups that match the
@@ -81,7 +81,15 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
 
   @Override
   public void collect(int doc) throws IOException {
-    int key = index.getOrd(doc);
+    if (doc > index.docID()) {
+      index.advance(doc);
+    }
+    int key;
+    if (doc == index.docID()) {
+      key = index.ordValue();
+    } else {
+      key = -1;
+    }
     if (!ordSet.exists(key)) {
       ordSet.put(key);
       final BytesRef term;

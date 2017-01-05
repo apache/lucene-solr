@@ -101,10 +101,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
       files.add(f);
     }
     for(String f : in.listAll()) {
-      if (!files.add(f)) {
-        throw new IllegalStateException("file: " + in + " appears both in delegate and in cache: " +
-                                        "cache=" + Arrays.toString(cache.listAll()) + ",delegate=" + Arrays.toString(in.listAll()));
-      }
+      files.add(f);
     }
     String[] result = files.toArray(new String[files.size()]);
     Arrays.sort(result);
@@ -173,12 +170,12 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
   }
 
   @Override
-  public void renameFile(String source, String dest) throws IOException {
+  public void rename(String source, String dest) throws IOException {
     unCache(source);
     if (cache.fileNameExists(dest)) {
       throw new IllegalArgumentException("target file " + dest + " already exists");
     }
-    in.renameFile(source, dest);
+    in.rename(source, dest);
   }
 
   @Override

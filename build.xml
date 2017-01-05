@@ -20,7 +20,7 @@
 <project name="lucene-solr" default="-projecthelp" basedir=".">
   <import file="lucene/common-build.xml"/>
 
-  <property name="jgit-version" value="4.2.0.201601211800-r"/>
+  <property name="jgit-version" value="4.4.1.201607150455-r"/>
   
   <property name="tests.heap-dump-dir" location="heapdumps"/>
   
@@ -138,6 +138,7 @@
         'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
         'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
         'properties', 'mdtext',
+        'template',
       ];
       def invalidPatterns = [
         (~$/@author\b/$) : '@author javadoc tag',
@@ -151,6 +152,7 @@
         (~$/\$$Id\b/$) : 'svn keyword',
         (~$/\$$Header\b/$) : 'svn keyword',
         (~$/\$$Source\b/$) : 'svn keyword',
+        (~$/^\uFEFF/$) : 'UTF-8 byte order mark'
       ];
       
       def baseDir = properties['validate.baseDir'];
@@ -165,10 +167,36 @@
       }
       
       def javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$;
+      def javaCommentPattern = ~$/(?sm)^\Q/*\E(.*?)\Q*/\E/$;
+      def xmlCommentPattern = ~$/(?sm)\Q<!--\E(.*?)\Q-->\E/$;
       def lineSplitter = ~$/[\r\n]+/$;
       def licenseMatcher = Defaults.createDefaultMatcher();
       def validLoggerPattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+\p{javaJavaIdentifierStart}+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$;
+      def packagePattern = ~$/(?m)^\s*package\s+org\.apache.*;/$;
+      def xmlTagPattern = ~$/(?m)\s*<[a-zA-Z].*/$;
       
+      def isLicense = { matcher, ratDocument ->
+        licenseMatcher.reset();
+        return lineSplitter.split(matcher.group(1)).any{ licenseMatcher.match(ratDocument, it) };
+      }
+
+      def checkLicenseHeaderPrecedes = { f, description, contentPattern, commentPattern, text, ratDocument ->
+          def contentMatcher = contentPattern.matcher(text);
+          if (contentMatcher.find()) {
+            def contentStartPos = contentMatcher.start();
+            def commentMatcher = commentPattern.matcher(text);
+            while (commentMatcher.find()) {
+              if (isLicense(commentMatcher, ratDocument)) {
+                if (commentMatcher.start() < contentStartPos) {
+                  break; // This file is all good, so break loop: license header precedes 'description' definition
+                } else {
+                  reportViolation(f, description+' declaration precedes license header');
+                }
+              }
+            }
+          }
+      }
+
       ant.fileScanner{
         fileset(dir: baseDir){
           extensions.each{
@@ -184,6 +212,8 @@
           // excludes:
           exclude(name: '**/build/**')
           exclude(name: '**/dist/**')
+          exclude(name: 'lucene/benchmark/work/**')
+          exclude(name: 'lucene/benchmark/temp/**')
           exclude(name: '**/CheckLoggingConfiguration.java')
           exclude(name: 'build.xml') // ourselves :-)
         }
@@ -196,18 +226,23 @@
           }
         }
         def javadocsMatcher = javadocsPattern.matcher(text);
+        def ratDocument = new FileDocument(f);
         while (javadocsMatcher.find()) {
-          def ratDocument = new FileDocument(f);
-          licenseMatcher.reset();
-          if (lineSplitter.split(javadocsMatcher.group(1)).any{ licenseMatcher.match(ratDocument, it) }) {
+          if (isLicense(javadocsMatcher, ratDocument)) {
             reportViolation(f, String.format(Locale.ENGLISH, 'javadoc-style license header [%s]',
               ratDocument.getMetaData().value(MetaData.RAT_URL_LICENSE_FAMILY_NAME)));
           }
         }
-        if (f.toString().endsWith('.java') && text.contains('org.slf4j.LoggerFactory')) {
-          if (!validLoggerPattern.matcher(text).find()) {
-            reportViolation(f, 'invalid logging pattern [not private static final, uses static class name]');
+        if (f.toString().endsWith('.java')) {
+          if (text.contains('org.slf4j.LoggerFactory')) {
+            if (!validLoggerPattern.matcher(text).find()) {
+              reportViolation(f, 'invalid logging pattern [not private static final, uses static class name]');
+            }
           }
+          checkLicenseHeaderPrecedes(f, 'package', packagePattern, javaCommentPattern, text, ratDocument);
+        }
+        if (f.toString().endsWith('.xml') || f.toString().endsWith('.xml.template')) {
+          checkLicenseHeaderPrecedes(f, '<tag>', xmlTagPattern, xmlCommentPattern, text, ratDocument);
         }
       };
       
@@ -739,6 +774,7 @@ Test args: [${args}]</echo>
   <target name="jenkins-hourly">
     <antcall>
       <param name="is.jenkins.build" value="true"/>
+      <param name="tests.haltonfailure" value="false"/>
       <target name="-jenkins-base"/>
     </antcall>
   </target>
@@ -746,6 +782,7 @@ Test args: [${args}]</echo>
   <target name="jenkins-nightly">
     <antcall>
       <param name="is.jenkins.build" value="true"/>
+      <param name="tests.haltonfailure" value="false"/>
       <param name="tests.nightly" value="true"/>
       <target name="-jenkins-base"/>
     </antcall>

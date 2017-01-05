@@ -25,7 +25,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LongBitSet;
 
 /**
@@ -59,32 +58,29 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
     }
     
     @Override
-    public final boolean equals(final Object o) {
-      if (super.equals(o) == false) {
-        return false;
-      }
-      MultiTermQueryDocValuesWrapper that = (MultiTermQueryDocValuesWrapper) o;
-      return query.equals(that.query);
+    public final boolean equals(final Object other) {
+      return sameClassAs(other) &&
+             query.equals(((MultiTermQueryDocValuesWrapper) other).query);
     }
-    
+
     @Override
     public final int hashCode() {
-      return 31 * super.hashCode() + query.hashCode();
+      return 31 * classHash() + query.hashCode();
     }
     
     /** Returns the field name for this query */
     public final String getField() { return query.getField(); }
     
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      return new RandomAccessWeight(this) {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      return new ConstantScoreWeight(this, boost) {
         @Override
-        protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
+        public Scorer scorer(LeafReaderContext context) throws IOException {
           final SortedSetDocValues fcsi = DocValues.getSortedSet(context.reader(), query.field);
           TermsEnum termsEnum = query.getTermsEnum(new Terms() {
             
             @Override
-            public TermsEnum iterator() {
+            public TermsEnum iterator() throws IOException {
               return fcsi.termsEnum();
             }
 
@@ -144,11 +140,10 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
             }
           } while (termsEnum.next() != null);
 
-          return new Bits() {
+          return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(fcsi) {
 
             @Override
-            public boolean get(int doc) {
-              fcsi.setDocument(doc);
+            public boolean matches() throws IOException {
               for (long ord = fcsi.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = fcsi.nextOrd()) {
                 if (termSet.get(ord)) {
                   return true;
@@ -158,25 +153,19 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
             }
 
             @Override
-            public int length() {
-              return context.reader().maxDoc();
+            public float matchCost() {
+              return 3; // lookup in a bitset
             }
-
-          };
+          });
         }
       };
     }
   }
-  
+
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    return true;
+  public boolean equals(Object other) {
+    return other != null &&
+           getClass() == other.getClass();
   }
 
   @Override

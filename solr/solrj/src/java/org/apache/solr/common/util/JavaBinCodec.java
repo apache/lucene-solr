@@ -33,6 +33,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.solr.common.EnumFieldValue;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.IteratorWriter.ItemWriter;
+import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -40,16 +45,21 @@ import org.apache.solr.common.SolrInputField;
 import org.noggit.CharArr;
 
 /**
- * The class is designed to optimaly serialize/deserialize any supported types in Solr response. As we know there are only a limited type of
- * items this class can do it with very minimal amount of payload and code. There are 15 known types and if there is an
- * object in the object tree which does not fall into these types, It must be converted to one of these. Implement an
- * ObjectResolver and pass it over It is expected that this class is used on both end of the pipes. The class has one
- * read method and one write method for each of the datatypes
+ * Defines a space-efficient serialization/deserialization format for transferring data.
  * <p>
- * Note -- Never re-use an instance of this class for more than one marshal or unmarshall operation. Always create a new
- * instance.
+ * JavaBinCodec has built in support many commonly used types.  This includes primitive types (boolean, byte,
+ * short, double, int, long, float), common Java containers/utilities (Date, Map, Collection, Iterator, String,
+ * Object[], byte[]), and frequently used Solr types ({@link NamedList}, {@link SolrDocument},
+ * {@link SolrDocumentList}). Each of the above types has a pair of associated methods which read and write
+ * that type to a stream.
+ * <p>
+ * Classes that aren't supported natively can still be serialized/deserialized by providing
+ * an {@link JavaBinCodec.ObjectResolver} object that knows how to work with the unsupported class.
+ * This allows {@link JavaBinCodec} to be used to marshall/unmarshall arbitrary content.
+ * <p>
+ * NOTE -- {@link JavaBinCodec} instances cannot be reused for more than one marshall or unmarshall operation.
  */
-public class JavaBinCodec {
+public class JavaBinCodec implements PushWriter {
 
   public static final byte
           NULL = 0,
@@ -73,7 +83,7 @@ public class JavaBinCodec {
           END = 15,
 
           SOLRINPUTDOC = 16,
-          SOLRINPUTDOC_CHILDS = 17,
+          MAP_ENTRY_ITER = 17,
           ENUM_FIELD_VALUE = 18,
           MAP_ENTRY = 19,
           // types that combine tag + length (or other info) in a single byte
@@ -94,10 +104,22 @@ public class JavaBinCodec {
   protected FastOutputStream daos;
   private StringCache stringCache;
   private WritableDocFields writableDocFields;
+  private boolean alreadyMarshalled;
+  private boolean alreadyUnmarshalled;
 
   public JavaBinCodec() {
     resolver =null;
     writableDocFields =null;
+  }
+
+  /**
+   * Use this to use this as a PushWriter. ensure that close() is called explicitly after use
+   *
+   * @param os The output stream
+   */
+  public JavaBinCodec(OutputStream os, ObjectResolver resolver) throws IOException {
+    this.resolver = resolver;
+    initWrite(os);
   }
 
   public JavaBinCodec(ObjectResolver resolver) {
@@ -119,13 +141,24 @@ public class JavaBinCodec {
   }
   
   public void marshal(Object nl, OutputStream os) throws IOException {
-    init(FastOutputStream.wrap(os));
+    initWrite(os);
     try {
-      daos.writeByte(VERSION);
       writeVal(nl);
     } finally {
-      daos.flushBuffer();
+      finish();
     }
+  }
+
+  protected void initWrite(OutputStream os) throws IOException {
+    assert !alreadyMarshalled;
+    init(FastOutputStream.wrap(os));
+    daos.writeByte(VERSION);
+  }
+
+  protected void finish() throws IOException {
+    closed = true;
+    daos.flushBuffer();
+    alreadyMarshalled = true;
   }
 
   /** expert: sets a new output stream */
@@ -136,13 +169,21 @@ public class JavaBinCodec {
   byte version;
 
   public Object unmarshal(InputStream is) throws IOException {
+    FastInputStream dis = initRead(is);
+    return readVal(dis);
+  }
+
+  protected FastInputStream initRead(InputStream is) throws IOException {
+    assert !alreadyUnmarshalled;
     FastInputStream dis = FastInputStream.wrap(is);
     version = dis.readByte();
     if (version != VERSION) {
       throw new RuntimeException("Invalid version (expected " + VERSION +
           ", but " + version + ") or the data in not in 'javabin' format");
     }
-    return readVal(dis);
+
+    alreadyUnmarshalled = true;
+    return dis;
   }
 
 
@@ -195,7 +236,9 @@ public class JavaBinCodec {
         if (writeKnownType(tmpVal)) return;
       }
     }
-
+    // Fallback to do *something*.
+    // note: if the user of this codec doesn't want this (e.g. UpdateLog) it can supply an ObjectResolver that does
+    //  something else like throw an exception.
     writeVal(val.getClass().getName() + ':' + val.toString());
   }
 
@@ -205,7 +248,10 @@ public class JavaBinCodec {
 
   public Object readVal(DataInputInputStream dis) throws IOException {
     tagByte = dis.readByte();
+    return readObject(dis);
+  }
 
+  protected Object readObject(DataInputInputStream dis) throws IOException {
     // if ((tagByte & 0xe0) == 0) {
     // if top 3 bits are clear, this is a normal tag
 
@@ -266,6 +312,8 @@ public class JavaBinCodec {
         return readEnumFieldValue(dis);
       case MAP_ENTRY:
         return readMapEntry(dis);
+      case MAP_ENTRY_ITER:
+        return readMapIter(dis);
     }
 
     throw new RuntimeException("Unknown type " + tagByte);
@@ -279,6 +327,10 @@ public class JavaBinCodec {
     }
     if (val instanceof SolrDocumentList) { // SolrDocumentList is a List, so must come before List check
       writeSolrDocumentList((SolrDocumentList) val);
+      return true;
+    }
+    if (val instanceof IteratorWriter) {
+      writeIterator((IteratorWriter) val);
       return true;
     }
     if (val instanceof Collection) {
@@ -296,6 +348,10 @@ public class JavaBinCodec {
     }
     if (val instanceof SolrInputDocument) {
       writeSolrInputDocument((SolrInputDocument)val);
+      return true;
+    }
+    if (val instanceof MapWriter) {
+      writeMap((MapWriter) val);
       return true;
     }
     if (val instanceof Map) {
@@ -322,8 +378,66 @@ public class JavaBinCodec {
       writeMapEntry((Map.Entry)val);
       return true;
     }
+    if (val instanceof MapSerializable) {
+      //todo find a better way to reuse the map more efficiently
+      writeMap(((MapSerializable) val).toMap(new NamedList().asShallowMap()));
+      return true;
+    }
+
     return false;
   }
+
+  private final MapWriter.EntryWriter ew = new MapWriter.EntryWriter() {
+    @Override
+    public MapWriter.EntryWriter put(String k, Object v) throws IOException {
+      writeExternString(k);
+      JavaBinCodec.this.writeVal(v);
+      return this;
+    }
+
+    @Override
+    public MapWriter.EntryWriter put(String k, int v) throws IOException {
+      writeExternString(k);
+      JavaBinCodec.this.writeInt(v);
+      return this;
+    }
+
+    @Override
+    public MapWriter.EntryWriter put(String k, long v) throws IOException {
+      writeExternString(k);
+      JavaBinCodec.this.writeLong(v);
+      return this;
+    }
+
+    @Override
+    public MapWriter.EntryWriter put(String k, float v) throws IOException {
+      writeExternString(k);
+      JavaBinCodec.this.writeFloat(v);
+      return this;
+    }
+
+    @Override
+    public MapWriter.EntryWriter put(String k, double v) throws IOException {
+      writeExternString(k);
+      JavaBinCodec.this.writeDouble(v);
+      return this;
+    }
+
+    @Override
+    public MapWriter.EntryWriter put(String k, boolean v) throws IOException {
+      writeExternString(k);
+      writeBoolean(v);
+      return this;
+    }
+  };
+
+
+  public void writeMap(MapWriter val) throws IOException {
+    writeTag(MAP_ENTRY_ITER);
+    val.writeMap(ew);
+    writeTag(END);
+  }
+
 
   public void writeTag(byte tag) throws IOException {
     daos.writeByte(tag);
@@ -482,6 +596,17 @@ public class JavaBinCodec {
   }
 
 
+  public Map<Object, Object> readMapIter(DataInputInputStream dis) throws IOException {
+    Map<Object, Object> m = new LinkedHashMap<>();
+    for (; ; ) {
+      Object key = readVal(dis);
+      if (key == END_OBJ) break;
+      Object val = readVal(dis);
+      m.put(key, val);
+    }
+    return m;
+  }
+
   public Map<Object,Object> readMap(DataInputInputStream dis)
           throws IOException {
     int sz = readVInt(dis);
@@ -495,12 +620,56 @@ public class JavaBinCodec {
     return m;
   }
 
+  private final ItemWriter itemWriter = new ItemWriter() {
+    @Override
+    public ItemWriter add(Object o) throws IOException {
+      writeVal(o);
+      return this;
+    }
+
+    @Override
+    public ItemWriter add(int v) throws IOException {
+      writeInt(v);
+      return this;
+    }
+
+    @Override
+    public ItemWriter add(long v) throws IOException {
+      writeLong(v);
+      return this;
+    }
+
+    @Override
+    public ItemWriter add(float v) throws IOException {
+      writeFloat(v);
+      return this;
+    }
+
+    @Override
+    public ItemWriter add(double v) throws IOException {
+      writeDouble(v);
+      return this;
+    }
+
+    @Override
+    public ItemWriter add(boolean v) throws IOException {
+      writeBoolean(v);
+      return this;
+    }
+  };
+
+  @Override
+  public void writeIterator(IteratorWriter val) throws IOException {
+    writeTag(ITERATOR);
+    val.writeIter(itemWriter);
+    writeTag(END);
+  }
   public void writeIterator(Iterator iter) throws IOException {
     writeTag(ITERATOR);
     while (iter.hasNext()) {
       writeVal(iter.next());
     }
-    writeVal(END_OBJ);
+    writeTag(END);
   }
 
   public List<Object> readIterator(DataInputInputStream fis) throws IOException {
@@ -623,7 +792,7 @@ public class JavaBinCodec {
   /**
    * write the string as tag+length, with length being the number of UTF-8 bytes
    */
-  public void writeStr(String s) throws IOException {
+  public void writeStr(CharSequence s) throws IOException {
     if (s == null) {
       writeTag(NULL);
       return;
@@ -724,8 +893,8 @@ public class JavaBinCodec {
     if (val == null) {
       daos.writeByte(NULL);
       return true;
-    } else if (val instanceof String) {
-      writeStr((String) val);
+    } else if (val instanceof CharSequence) {
+      writeStr((CharSequence) val);
       return true;
     } else if (val instanceof Number) {
 
@@ -739,8 +908,7 @@ public class JavaBinCodec {
         writeFloat(((Float) val).floatValue());
         return true;
       } else if (val instanceof Double) {
-        daos.writeByte(DOUBLE);
-        daos.writeDouble(((Double) val).doubleValue());
+        writeDouble(((Double) val).doubleValue());
         return true;
       } else if (val instanceof Byte) {
         daos.writeByte(BYTE);
@@ -758,8 +926,7 @@ public class JavaBinCodec {
       daos.writeLong(((Date) val).getTime());
       return true;
     } else if (val instanceof Boolean) {
-      if ((Boolean) val) daos.writeByte(BOOL_TRUE);
-      else daos.writeByte(BOOL_FALSE);
+      writeBoolean((Boolean) val);
       return true;
     } else if (val instanceof byte[]) {
       writeByteArray((byte[]) val, 0, ((byte[]) val).length);
@@ -773,6 +940,16 @@ public class JavaBinCodec {
       return true;
     }
     return false;
+  }
+
+  protected void writeBoolean(boolean val) throws IOException {
+    if (val) daos.writeByte(BOOL_TRUE);
+    else daos.writeByte(BOOL_FALSE);
+  }
+
+  protected void writeDouble(double val) throws IOException {
+    daos.writeByte(DOUBLE);
+    daos.writeDouble(val);
   }
 
 
@@ -879,14 +1056,26 @@ public class JavaBinCodec {
     }
   }
 
-
-  public static interface ObjectResolver {
-    public Object resolve(Object o, JavaBinCodec codec) throws IOException;
+  /**
+   * Allows extension of {@link JavaBinCodec} to support serialization of arbitrary data types.
+   * <p>
+   * Implementors of this interface write a method to serialize a given object using an existing {@link JavaBinCodec}
+   */
+  public interface ObjectResolver {
+    /**
+     * Examine and attempt to serialize the given object, using a {@link JavaBinCodec} to write it to a stream.
+     *
+     * @param o     the object that the caller wants serialized.
+     * @param codec used to actually serialize {@code o}.
+     * @return the object {@code o} itself if it could not be serialized, or {@code null} if the whole object was successfully serialized.
+     * @see JavaBinCodec
+     */
+    Object resolve(Object o, JavaBinCodec codec) throws IOException;
   }
 
   public interface WritableDocFields {
-    public boolean isWritable(String name);
-    public boolean wantsAllFields();
+    boolean isWritable(String name);
+    boolean wantsAllFields();
   }
 
 
@@ -969,5 +1158,13 @@ public class JavaBinCodec {
     public int hashCode() {
       return hash;
     }
+  }
+
+  private boolean closed;
+
+  @Override
+  public void close() throws IOException {
+    if (closed) return;
+    finish();
   }
 }

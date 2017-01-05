@@ -68,32 +68,26 @@ class CdcrReplicatorScheduler {
 
       // the scheduler thread is executed every second and submits one replication task
       // per available state in the queue
-      scheduler.scheduleWithFixedDelay(new Runnable() {
-
-        @Override
-        public void run() {
-          int nCandidates = statesQueue.size();
-          for (int i = 0; i < nCandidates; i++) {
-            // a thread that poll one state from the queue, execute the replication task, and push back
-            // the state in the queue when the task is completed
-            replicatorsPool.execute(new Runnable() {
-
-              @Override
-              public void run() {
-                CdcrReplicatorState state = statesQueue.poll();
-                assert state != null; // Should never happen
-                try {
-                  new CdcrReplicator(state, batchSize).run();
-                } finally {
-                  statesQueue.offer(state);
-                }
+      scheduler.scheduleWithFixedDelay(() -> {
+        int nCandidates = statesQueue.size();
+        for (int i = 0; i < nCandidates; i++) {
+          // a thread that poll one state from the queue, execute the replication task, and push back
+          // the state in the queue when the task is completed
+          replicatorsPool.execute(() -> {
+            CdcrReplicatorState state = statesQueue.poll();
+            assert state != null; // Should never happen
+            try {
+              if (!state.isBootstrapInProgress()) {
+                new CdcrReplicator(state, batchSize).run();
+              } else  {
+                log.debug("Replicator state is bootstrapping, skipping replication for target collection {}", state.getTargetCollection());
               }
+            } finally {
+              statesQueue.offer(state);
+            }
+          });
 
-            });
-
-          }
         }
-
       }, 0, timeSchedule, TimeUnit.MILLISECONDS);
       isStarted = true;
     }

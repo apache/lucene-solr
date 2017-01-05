@@ -63,11 +63,11 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     
     // PhrasePrefixQuery query1 = new PhrasePrefixQuery();
-    MultiPhraseQuery query1 = new MultiPhraseQuery();
+    MultiPhraseQuery.Builder query1builder = new MultiPhraseQuery.Builder();
     // PhrasePrefixQuery query2 = new PhrasePrefixQuery();
-    MultiPhraseQuery query2 = new MultiPhraseQuery();
-    query1.add(new Term("body", "blueberry"));
-    query2.add(new Term("body", "strawberry"));
+    MultiPhraseQuery.Builder query2builder = new MultiPhraseQuery.Builder();
+    query1builder.add(new Term("body", "blueberry"));
+    query2builder.add(new Term("body", "strawberry"));
     
     LinkedList<Term> termsWithPrefix = new LinkedList<>();
     
@@ -84,14 +84,14 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
       }
     } while (te.next() != null);
     
-    query1.add(termsWithPrefix.toArray(new Term[0]));
-    query2.add(termsWithPrefix.toArray(new Term[0]));
+    query1builder.add(termsWithPrefix.toArray(new Term[0]));
+    query2builder.add(termsWithPrefix.toArray(new Term[0]));
     
     ScoreDoc[] result;
-    result = searcher.search(query1, 1000).scoreDocs;
+    result = searcher.search(query1builder.build(), 1000).scoreDocs;
     assertEquals(2, result.length);
     
-    result = searcher.search(query2, 1000).scoreDocs;
+    result = searcher.search(query2builder.build(), 1000).scoreDocs;
     assertEquals(0, result.length);
     reader.close();
     indexStore.close();

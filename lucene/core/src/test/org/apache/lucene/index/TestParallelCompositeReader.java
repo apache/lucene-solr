@@ -276,32 +276,6 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     dir2.close();
   }
   
-  public void testIncompatibleIndexes3() throws IOException {
-    Directory dir1 = getDir1(random());
-    Directory dir2 = getDir2(random());
-
-    CompositeReader ir1 = new MultiReader(DirectoryReader.open(dir1), SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1))),
-        ir2 = new MultiReader(DirectoryReader.open(dir2), DirectoryReader.open(dir2));
-    CompositeReader[] readers = new CompositeReader[] {ir1, ir2};
-
-    expectThrows(IllegalArgumentException.class, () -> {
-      new ParallelCompositeReader(readers);
-    });
-
-    expectThrows(IllegalArgumentException.class, () -> {
-      new ParallelCompositeReader(random().nextBoolean(), readers, readers);
-    });
-
-    assertEquals(1, ir1.getRefCount());
-    assertEquals(1, ir2.getRefCount());
-    ir1.close();
-    ir2.close();
-    assertEquals(0, ir1.getRefCount());
-    assertEquals(0, ir2.getRefCount());
-    dir1.close();
-    dir2.close();
-  }
-  
   public void testIgnoreStoredFields() throws IOException {
     Directory dir1 = getDir1(random());
     Directory dir2 = getDir2(random());
@@ -317,7 +291,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertNull(pr.document(0).get("f3"));
     assertNull(pr.document(0).get("f4"));
     // check that fields are there
-    LeafReader slow = SlowCompositeReaderWrapper.wrap(pr);
+    Fields slow = MultiFields.getFields(pr);
     assertNotNull(slow.terms("f1"));
     assertNotNull(slow.terms("f2"));
     assertNotNull(slow.terms("f3"));
@@ -333,7 +307,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertNull(pr.document(0).get("f3"));
     assertNull(pr.document(0).get("f4"));
     // check that fields are there
-    slow = SlowCompositeReaderWrapper.wrap(pr);
+    slow = MultiFields.getFields(pr);
     assertNull(slow.terms("f1"));
     assertNull(slow.terms("f2"));
     assertNotNull(slow.terms("f3"));
@@ -349,7 +323,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertNull(pr.document(0).get("f3"));
     assertNull(pr.document(0).get("f4"));
     // check that fields are there
-    slow = SlowCompositeReaderWrapper.wrap(pr);
+    slow = MultiFields.getFields(pr);
     assertNull(slow.terms("f1"));
     assertNull(slow.terms("f2"));
     assertNotNull(slow.terms("f3"));

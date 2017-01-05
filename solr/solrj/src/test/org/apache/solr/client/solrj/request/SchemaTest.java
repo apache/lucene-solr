@@ -54,8 +54,8 @@ import static org.hamcrest.CoreMatchers.is;
  */
 public class SchemaTest extends RestTestBase {
   private static void assertValidSchemaResponse(SolrResponseBase schemaResponse) {
-    assertEquals(0, schemaResponse.getStatus());
-    assertNull(schemaResponse.getResponse().get("errors"));
+    assertEquals("Response contained errors: " + schemaResponse.toString(), 0, schemaResponse.getStatus());
+    assertNull("Response contained errors: " + schemaResponse.toString(), schemaResponse.getResponse().get("errors"));
   }
 
   private static void createStoredStringField(String fieldName, SolrClient solrClient) throws Exception {
@@ -105,12 +105,11 @@ public class SchemaTest extends RestTestBase {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() throws Exception  {
     if (jetty != null) {
       jetty.stop();
       jetty = null;
     }
-    client = null;
     if (restTestHarness != null) {
       restTestHarness.close();
     }
@@ -392,8 +391,7 @@ public class SchemaTest extends RestTestBase {
     fieldAttributes.put("type", "string");
     fieldAttributes.put("stored", false);
     fieldAttributes.put("indexed", true);
-    fieldAttributes.put("default", "accuracy");
-    fieldAttributes.put("required", true);
+    // Dynamic fields cannot be required or have a default value
     SchemaRequest.AddDynamicField addFieldUpdateSchemaRequest =
         new SchemaRequest.AddDynamicField(fieldAttributes);
     SchemaResponse.UpdateResponse addFieldResponse = addFieldUpdateSchemaRequest.process(getSolrClient());
@@ -413,8 +411,6 @@ public class SchemaTest extends RestTestBase {
     assertThat("string", is(equalTo(newFieldAttributes.get("type"))));
     assertThat(false, is(equalTo(newFieldAttributes.get("stored"))));
     assertThat(true, is(equalTo(newFieldAttributes.get("indexed"))));
-    assertThat("accuracy", is(equalTo(newFieldAttributes.get("default"))));
-    assertThat(true, is(equalTo(newFieldAttributes.get("required"))));
   }
 
   @Test
@@ -424,7 +420,8 @@ public class SchemaTest extends RestTestBase {
     fieldAttributes.put("type", "string");
     SchemaRequest.AddDynamicField addDFieldUpdateSchemaRequest =
         new SchemaRequest.AddDynamicField(fieldAttributes);
-    SchemaResponse.UpdateResponse addDFieldFirstResponse = addDFieldUpdateSchemaRequest.process(getSolrClient());
+    SolrClient client = getSolrClient();
+    SchemaResponse.UpdateResponse addDFieldFirstResponse = addDFieldUpdateSchemaRequest.process(client);
     assertValidSchemaResponse(addDFieldFirstResponse);
 
     SchemaResponse.UpdateResponse addDFieldSecondResponse = addDFieldUpdateSchemaRequest.process(getSolrClient());
@@ -481,7 +478,6 @@ public class SchemaTest extends RestTestBase {
     fieldAttributes.put("type", "string");
     fieldAttributes.put("stored", false);
     fieldAttributes.put("indexed", true);
-    fieldAttributes.put("required", true);
     SchemaRequest.AddDynamicField addDFieldUpdateSchemaRequest =
         new SchemaRequest.AddDynamicField(fieldAttributes);
     SchemaResponse.UpdateResponse addFieldResponse = addDFieldUpdateSchemaRequest.process(getSolrClient());
@@ -506,7 +502,6 @@ public class SchemaTest extends RestTestBase {
     assertThat("string", is(equalTo(newFieldAttributes.get("type"))));
     assertThat(true, is(equalTo(newFieldAttributes.get("stored"))));
     assertThat(false, is(equalTo(newFieldAttributes.get("indexed"))));
-    assertThat(true, is(equalTo(newFieldAttributes.get("required"))));
   }
 
   @Test
@@ -575,10 +570,6 @@ public class SchemaTest extends RestTestBase {
     assertThat("solr.TextField", is(equalTo(newFieldTypeRepresentation.getAttributes().get("class"))));
     assertThat(analyzerDefinition.getTokenizer().get("class"),
         is(equalTo(newFieldTypeRepresentation.getAnalyzer().getTokenizer().get("class"))));
-    assertTrue(newFieldTypeRepresentation.getFields().size() == 1);
-    assertTrue(newFieldTypeRepresentation.getFields().contains(fieldName));
-    assertTrue(newFieldTypeRepresentation.getDynamicFields().size() == 1);
-    assertTrue(newFieldTypeRepresentation.getDynamicFields().contains(dynamicFieldName));
   }
 
   @Test
@@ -684,7 +675,8 @@ public class SchemaTest extends RestTestBase {
     fieldTypeDefinition.setAttributes(fieldTypeAttributes);
     SchemaRequest.AddFieldType addFieldTypeRequest =
         new SchemaRequest.AddFieldType(fieldTypeDefinition);
-    SchemaResponse.UpdateResponse addFieldTypeResponse = addFieldTypeRequest.process(getSolrClient());
+    SolrClient c = getSolrClient();
+    SchemaResponse.UpdateResponse addFieldTypeResponse = addFieldTypeRequest.process(c);
     assertValidSchemaResponse(addFieldTypeResponse);
 
     SchemaRequest.FieldType fieldTypeRequest = new SchemaRequest.FieldType(fieldTypeName);

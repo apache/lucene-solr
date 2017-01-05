@@ -33,18 +33,16 @@
     </analyzer>
   </fieldType>
 
-  <fields>
-    <field name="id"           type="string"  indexed="true" stored="true" multiValued="false" required="true"/>
-    <field name="_version_"    type="long"    indexed="true" stored="true"/>
-    <field name="_root_"       type="string"  indexed="true" stored="true" multiValued="false"/>
-    
-    <dynamicField name="*_t"   type="text"    indexed="true" stored="true"/>
-    <dynamicField name="*_ti"  type="tint"    indexed="true" stored="true"/>
-    <dynamicField name="*_tl"  type="tlong"   indexed="true" stored="true"/>
-    <dynamicField name="*_tf"  type="tfloat"  indexed="true" stored="true"/>
-    <dynamicField name="*_td"  type="tdouble" indexed="true" stored="true"/>
-    <dynamicField name="*_tdt" type="tdate"   indexed="true" stored="true"/>
-  </fields>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
+  <field name="_version_" type="long" indexed="true" stored="true"/>
+  <field name="_root_" type="string" indexed="true" stored="true" multiValued="false"/>
+
+  <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
+  <dynamicField name="*_ti" type="tint" indexed="true" stored="true"/>
+  <dynamicField name="*_tl" type="tlong" indexed="true" stored="true"/>
+  <dynamicField name="*_tf" type="tfloat" indexed="true" stored="true"/>
+  <dynamicField name="*_td" type="tdouble" indexed="true" stored="true"/>
+  <dynamicField name="*_tdt" type="tdate" indexed="true" stored="true"/>
 
   <uniqueKey>id</uniqueKey>
 

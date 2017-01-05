@@ -18,8 +18,8 @@ package org.apache.lucene.search.grouping.term;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
@@ -28,7 +28,7 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * Concrete implementation of {@link org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector} that groups based on
- * field values and more specifically uses {@link org.apache.lucene.index.SortedDocValues}
+ * field values and more specifically uses {@link SortedDocValues}
  * to collect groups.
  *
  * @lucene.experimental
@@ -61,12 +61,14 @@ public class TermFirstPassGroupingCollector extends AbstractFirstPassGroupingCol
   }
 
   @Override
-  protected BytesRef getDocGroupValue(int doc) {
-    final int ord = index.getOrd(doc);
-    if (ord == -1) {
-      return null;
+  protected BytesRef getDocGroupValue(int doc) throws IOException {
+    if (doc > index.docID()) {
+      index.advance(doc);
+    }
+    if (doc == index.docID()) {
+      return index.binaryValue();
     } else {
-      return index.lookupOrd(ord);
+      return null;
     }
   }
 

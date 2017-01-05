@@ -16,12 +16,13 @@
  */
 package org.apache.solr.common.util;
 
-import java.text.MessageFormat;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Locale;
 import java.io.IOException;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
 
 import org.apache.solr.common.SolrException;
 
@@ -147,11 +148,12 @@ public class StrUtils {
    * Creates a backslash escaped string, joining all the items. 
    * @see #escapeTextWithSeparator
    */
-  public static String join(List<?> items, char separator) {
+  public static String join(Collection<?> items, char separator) {
+    if (items == null) return "";
     StringBuilder sb = new StringBuilder(items.size() << 3);
     boolean first=true;
     for (Object o : items) {
-      String item = o.toString();
+      String item = String.valueOf(o);
       if (first) {
         first = false;
       } else {

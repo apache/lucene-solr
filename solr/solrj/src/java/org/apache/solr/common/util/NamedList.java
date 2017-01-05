@@ -25,6 +25,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.apache.solr.common.SolrException;
 
@@ -396,6 +398,91 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     return new NamedList<>( Collections.unmodifiableList(copy.nvPairs));
   }
 
+  public Map<String,T> asShallowMap() {
+    return new Map<String, T>() {
+      @Override
+      public int size() {
+        return NamedList.this.size();
+      }
+
+      @Override
+      public boolean isEmpty() {
+        return size() == 0;
+      }
+
+      public boolean containsKey(Object  key) {
+        return NamedList.this.get((String) key) != null ;
+      }
+
+      @Override
+      public boolean containsValue(Object value) {
+        return false;
+      }
+
+      @Override
+      public T get(Object key) {
+        return  NamedList.this.get((String) key);
+      }
+
+      @Override
+      public T put(String  key, T value) {
+        int idx = NamedList.this.indexOf(key, 0);
+        if (idx == -1) {
+          NamedList.this.add(key, value);
+        } else {
+          NamedList.this.setVal(idx, value);
+        }
+        return  null;
+      }
+
+      @Override
+      public T remove(Object key) {
+        return  NamedList.this.remove((String) key);
+      }
+
+      @Override
+      public void putAll(Map m) {
+        boolean isEmpty = isEmpty();
+        for (Object o : m.entrySet()) {
+          Map.Entry e = (Entry) o;
+          if (isEmpty) {// we know that there are no duplicates
+            add((String) e.getKey(), (T) e.getValue());
+          } else {
+            put(e.getKey() == null ? null : e.getKey().toString(), (T) e.getValue());
+          }
+        }
+      }
+
+      @Override
+      public void clear() {
+        NamedList.this.clear();
+      }
+
+      @Override
+      public Set<String> keySet() {
+        //TODO implement more efficiently
+        return  NamedList.this.asMap(1).keySet();
+      }
+
+      @Override
+      public Collection values() {
+        //TODO implement more efficiently
+        return  NamedList.this.asMap(1).values();
+      }
+
+      @Override
+      public Set<Entry<String,T>> entrySet() {
+        //TODO implement more efficiently
+        return NamedList.this.asMap(1).entrySet();
+      }
+
+      @Override
+      public void forEach(BiConsumer action) {
+        NamedList.this.forEach(action);
+      }
+    };
+  }
+
   public Map asMap(int maxDepth) {
     LinkedHashMap result = new LinkedHashMap();
     for(int i=0;i<size();i++){
@@ -709,5 +796,12 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     if (!(obj instanceof NamedList)) return false;
     NamedList<?> nl = (NamedList<?>) obj;
     return this.nvPairs.equals(nl.nvPairs);
+  }
+
+  public void forEach(BiConsumer<String, T> action) {
+    int sz = size();
+    for (int i = 0; i < sz; i++) {
+      action.accept(getName(i), getVal(i));
+    }
   }
 }

@@ -20,19 +20,14 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldValueQuery;
-import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
-import org.apache.lucene.spatial.util.GeoUtils;
+import org.apache.lucene.geo.GeoUtils;
 
-/** Implements a simple bounding box query on a GeoPoint field. This is inspired by
- * {@link LegacyNumericRangeQuery} and is implemented using a
+/** Implements a simple bounding box query on a GeoPoint field. This is implemented using a
  * two phase approach. First, candidate terms are queried using a numeric
  * range based on the morton codes of the min and max lat/lon pairs. Terms
  * passing this initial filter are passed to a final check that verifies whether
  * the decoded lat/lon falls within (or on the boundary) of the query bounding box.
- * The value comparisons are subject to a precision tolerance defined in
- * {@value org.apache.lucene.spatial.util.GeoEncodingUtils#TOLERANCE}
  *
  * NOTES:
  *    1.  All latitude/longitude values must be in decimal degrees.
@@ -47,43 +42,39 @@ import org.apache.lucene.spatial.util.GeoUtils;
 public class GeoPointInBBoxQuery extends Query {
   /** field name */
   protected final String field;
-  /** minimum longitude value (in degrees) */
-  protected final double minLon;
   /** minimum latitude value (in degrees) */
   protected final double minLat;
-  /** maximum longitude value (in degrees) */
-  protected final double maxLon;
+  /** minimum longitude value (in degrees) */
+  protected final double minLon;
   /** maximum latitude value (in degrees) */
   protected final double maxLat;
-  /** term encoding enum to define how the points are encoded (PREFIX or NUMERIC) */
-  protected final TermEncoding termEncoding;
+  /** maximum longitude value (in degrees) */
+  protected final double maxLon;
 
   /**
    * Constructs a query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types that fall within a
-   * defined bounding box
+   * defined bounding box.
    */
-  public GeoPointInBBoxQuery(final String field, final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    this(field, TermEncoding.PREFIX, minLon, minLat, maxLon, maxLat);
-  }
-
-  /**
-   * Constructs a query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types that fall within a
-   * defined bounding box. Accepts optional {@link org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding} parameter
-   */
-  public GeoPointInBBoxQuery(final String field, final TermEncoding termEncoding, final double minLon, final double minLat, final double maxLon, final double maxLat) {
+  public GeoPointInBBoxQuery(final String field, final double minLat, final double maxLat, final double minLon, final double maxLon) {
+    if (field == null) {
+      throw new IllegalArgumentException("field must not be null");
+    }
+    GeoUtils.checkLatitude(minLat);
+    GeoUtils.checkLatitude(maxLat);
+    GeoUtils.checkLongitude(minLon);
+    GeoUtils.checkLongitude(maxLon);
     this.field = field;
-    this.minLon = minLon;
     this.minLat = minLat;
-    this.maxLon = maxLon;
     this.maxLat = maxLat;
-    this.termEncoding = termEncoding;
+    this.minLon = minLon;
+    this.maxLon = maxLon;
   }
 
   @Override
   public Query rewrite(IndexReader reader) {
     // short-circuit to match all if specifying the whole map
-    if (minLon == GeoUtils.MIN_LON_INCL && maxLon == GeoUtils.MAX_LON_INCL
-        && minLat == GeoUtils.MIN_LAT_INCL && maxLat == GeoUtils.MAX_LAT_INCL) {
+    if (minLat == GeoUtils.MIN_LAT_INCL && maxLat == GeoUtils.MAX_LAT_INCL &&
+        minLon == GeoUtils.MIN_LON_INCL && maxLon == GeoUtils.MAX_LON_INCL) {
       // FieldValueQuery is valid since DocValues are *required* for GeoPointField
       return new FieldValueQuery(field);
     }
@@ -91,13 +82,13 @@ public class GeoPointInBBoxQuery extends Query {
     if (maxLon < minLon) {
       BooleanQuery.Builder bqb = new BooleanQuery.Builder();
 
-      GeoPointInBBoxQueryImpl left = new GeoPointInBBoxQueryImpl(field, termEncoding, -180.0D, minLat, maxLon, maxLat);
+      GeoPointInBBoxQueryImpl left = new GeoPointInBBoxQueryImpl(field, minLat, maxLat, -180.0D, maxLon);
       bqb.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
-      GeoPointInBBoxQueryImpl right = new GeoPointInBBoxQueryImpl(field, termEncoding, minLon, minLat, 180.0D, maxLat);
+      GeoPointInBBoxQueryImpl right = new GeoPointInBBoxQueryImpl(field, minLat, maxLat, minLon, 180.0D);
       bqb.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
       return bqb.build();
     }
-    return new GeoPointInBBoxQueryImpl(field, termEncoding, minLon, minLat, maxLon, maxLat);
+    return new GeoPointInBBoxQueryImpl(field, minLat, maxLat, minLon, maxLon);
   }
 
   @Override
@@ -111,47 +102,44 @@ public class GeoPointInBBoxQuery extends Query {
       sb.append(':');
     }
     return sb.append(" Lower Left: [")
-        .append(minLon)
-        .append(',')
         .append(minLat)
+        .append(',')
+        .append(minLon)
         .append(']')
         .append(" Upper Right: [")
-        .append(maxLon)
-        .append(',')
         .append(maxLat)
+        .append(',')
+        .append(maxLon)
         .append("]")
         .toString();
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof GeoPointInBBoxQuery)) return false;
-    if (!super.equals(o)) return false;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
 
-    GeoPointInBBoxQuery that = (GeoPointInBBoxQuery) o;
-
-    if (Double.compare(that.maxLat, maxLat) != 0) return false;
-    if (Double.compare(that.maxLon, maxLon) != 0) return false;
-    if (Double.compare(that.minLat, minLat) != 0) return false;
-    if (Double.compare(that.minLon, minLon) != 0) return false;
-    if (!field.equals(that.field)) return false;
-
-    return true;
+  private boolean equalsTo(GeoPointInBBoxQuery other) {
+    return Double.compare(other.minLat, minLat) == 0 &&
+           Double.compare(other.maxLat, maxLat) == 0 &&
+           Double.compare(other.minLon, minLon) == 0 &&
+           Double.compare(other.maxLon, maxLon) == 0 &&
+           field.equals(other.field);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
+    int result = classHash();
     long temp;
     result = 31 * result + field.hashCode();
-    temp = Double.doubleToLongBits(minLon);
-    result = 31 * result + (int) (temp ^ (temp >>> 32));
     temp = Double.doubleToLongBits(minLat);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
-    temp = Double.doubleToLongBits(maxLon);
-    result = 31 * result + (int) (temp ^ (temp >>> 32));
     temp = Double.doubleToLongBits(maxLat);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(minLon);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(maxLon);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     return result;
   }
@@ -161,23 +149,23 @@ public class GeoPointInBBoxQuery extends Query {
     return this.field;
   }
 
-  /** getter method for retrieving the minimum longitude (in degrees) */
-  public final double getMinLon() {
-    return this.minLon;
-  }
-
   /** getter method for retrieving the minimum latitude (in degrees) */
   public final double getMinLat() {
     return this.minLat;
   }
 
-  /** getter method for retrieving the maximum longitude (in degrees) */
-  public final double getMaxLon() {
-    return this.maxLon;
-  }
-
   /** getter method for retrieving the maximum latitude (in degrees) */
   public final double getMaxLat() {
     return this.maxLat;
+  }
+
+  /** getter method for retrieving the minimum longitude (in degrees) */
+  public final double getMinLon() {
+    return this.minLon;
+  }
+
+  /** getter method for retrieving the maximum longitude (in degrees) */
+  public final double getMaxLon() {
+    return this.maxLon;
   }
 }

@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.search.highlight.custom;
 
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -35,7 +36,9 @@ import org.apache.lucene.search.highlight.WeightedSpanTermExtractor;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Tests the extensibility of {@link WeightedSpanTermExtractor} and
@@ -80,6 +83,19 @@ public class HighlightCustomQueryTest extends LuceneTestCase {
         "Query in a named field does not result in highlighting when that field isn't in the query",
         s1, highlightField(q, FIELD_NAME, s1));
 
+  }
+
+  public void testHighlightKnownQuery() throws IOException {
+    WeightedSpanTermExtractor extractor = new WeightedSpanTermExtractor() {
+      @Override
+      protected void extractUnknownQuery(Query query, Map<String,WeightedSpanTerm> terms) throws IOException {
+        terms.put("foo", new WeightedSpanTerm(3, "foo"));
+      }
+    };
+    Map<String,WeightedSpanTerm> terms = extractor.getWeightedSpanTerms(
+        new TermQuery(new Term("bar", "quux")), 3, new CannedTokenStream());
+    // no foo
+    assertEquals(Collections.singleton("quux"), terms.keySet());
   }
 
   /**
@@ -146,7 +162,6 @@ public class HighlightCustomQueryTest extends LuceneTestCase {
     private final Term term;
 
     public CustomQuery(Term term) {
-      super();
       this.term = term;
     }
 
@@ -162,28 +177,13 @@ public class HighlightCustomQueryTest extends LuceneTestCase {
 
     @Override
     public int hashCode() {
-      final int prime = 31;
-      int result = super.hashCode();
-      result = prime * result + ((term == null) ? 0 : term.hashCode());
-      return result;
+      return classHash() + Objects.hashCode(term);
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (!super.equals(obj))
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
-      CustomQuery other = (CustomQuery) obj;
-      if (term == null) {
-        if (other.term != null)
-          return false;
-      } else if (!term.equals(other.term))
-        return false;
-      return true;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             Objects.equals(term, ((CustomQuery) other).term);
     }
-
   }
 }

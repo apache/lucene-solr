@@ -22,7 +22,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -50,6 +49,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.facet.FacetDebugInfo;
+import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +67,6 @@ public class FacetComponent extends SearchComponent {
 
   public static final String FACET_QUERY_KEY = "facet_queries";
   public static final String FACET_FIELD_KEY = "facet_fields";
-  public static final String FACET_DATE_KEY = "facet_dates";
   public static final String FACET_RANGES_KEY = "facet_ranges";
   public static final String FACET_INTERVALS_KEY = "facet_intervals";
 
@@ -253,7 +253,16 @@ public class FacetComponent extends SearchComponent {
       SolrParams params = rb.req.getParams();
       SimpleFacets f = new SimpleFacets(rb.req, rb.getResults().docSet, params, rb);
 
-      NamedList<Object> counts = FacetComponent.getFacetCounts(f);
+      RTimer timer = null;
+      FacetDebugInfo fdebug = null;
+
+      if (rb.isDebug()) {
+        fdebug = new FacetDebugInfo();
+        rb.req.getContext().put("FacetDebugInfo-nonJson", fdebug);
+        timer = new RTimer();
+      }
+
+      NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
       if (!ArrayUtils.isEmpty(pivots)) {
         PivotFacetProcessor pivotProcessor 
@@ -265,8 +274,17 @@ public class FacetComponent extends SearchComponent {
         }
       }
 
+      if (fdebug != null) {
+        long timeElapsed = (long) timer.getTime();
+        fdebug.setElapse(timeElapsed);
+      }
+
       rb.rsp.add("facet_counts", counts);
     }
+  }
+
+  public static NamedList<Object> getFacetCounts(SimpleFacets simpleFacets) {
+    return getFacetCounts(simpleFacets, null);
   }
 
   /**
@@ -275,24 +293,33 @@ public class FacetComponent extends SearchComponent {
    *
    * @see SimpleFacets#getFacetQueryCounts
    * @see SimpleFacets#getFacetFieldCounts
-   * @see DateFacetProcessor#getFacetDateCounts
    * @see RangeFacetProcessor#getFacetRangeCounts
    * @see RangeFacetProcessor#getFacetIntervalCounts
    * @see FacetParams#FACET
    * @return a NamedList of Facet Count info or null
    */
-  public static NamedList<Object> getFacetCounts(SimpleFacets simpleFacets) {
+  public static NamedList<Object> getFacetCounts(SimpleFacets simpleFacets, FacetDebugInfo fdebug) {
     // if someone called this method, benefit of the doubt: assume true
     if (!simpleFacets.getGlobalParams().getBool(FacetParams.FACET, true))
       return null;
 
-    DateFacetProcessor dateFacetProcessor = new DateFacetProcessor(simpleFacets.getRequest(), simpleFacets.getDocsOrig(), simpleFacets.getGlobalParams(), simpleFacets.getResponseBuilder());
     RangeFacetProcessor rangeFacetProcessor = new RangeFacetProcessor(simpleFacets.getRequest(), simpleFacets.getDocsOrig(), simpleFacets.getGlobalParams(), simpleFacets.getResponseBuilder());
     NamedList<Object> counts = new SimpleOrderedMap<>();
     try {
       counts.add(FACET_QUERY_KEY, simpleFacets.getFacetQueryCounts());
-      counts.add(FACET_FIELD_KEY, simpleFacets.getFacetFieldCounts());
-      counts.add(FACET_DATE_KEY, dateFacetProcessor.getFacetDateCounts());
+      if (fdebug != null) {
+        FacetDebugInfo fd = new FacetDebugInfo();
+        fd.putInfoItem("action", "field facet");
+        fd.setProcessor(simpleFacets.getClass().getSimpleName());
+        fdebug.addChild(fd);
+        simpleFacets.setFacetDebugInfo(fd);
+        final RTimer timer = new RTimer();
+        counts.add(FACET_FIELD_KEY, simpleFacets.getFacetFieldCounts());
+        long timeElapsed = (long) timer.getTime();
+        fd.setElapse(timeElapsed);
+      } else {
+        counts.add(FACET_FIELD_KEY, simpleFacets.getFacetFieldCounts());
+      }
       counts.add(FACET_RANGES_KEY, rangeFacetProcessor.getFacetRangeCounts());
       counts.add(FACET_INTERVALS_KEY, simpleFacets.getFacetIntervalCounts());
       counts.add(SpatialHeatmapFacets.RESPONSE_KEY, simpleFacets.getHeatmapCounts());
@@ -536,9 +563,16 @@ public class FacetComponent extends SearchComponent {
           // set the initial limit higher to increase accuracy
           dff.initialLimit = doOverRequestMath(dff.initialLimit, dff.overrequestRatio, 
                                                dff.overrequestCount);
-          dff.initialMincount = 0; // TODO: we could change this to 1, but would
-                                   // then need more refinement for small facet
-                                   // result sets?
+          
+          // If option FACET_DISTRIB_MCO is turned on then we will use 1 as the initial 
+          // minCount (unless the user explicitly set it to something less than 1). If 
+          // option FACET_DISTRIB_MCO is turned off then we will use 0 as the initial 
+          // minCount regardless of what the user might have provided (prior to the
+          // addition of the FACET_DISTRIB_MCO option the default logic was to use 0).
+          // As described in issues SOLR-8559 and SOLR-8988 the use of 1 provides a 
+          // significant performance boost.
+          dff.initialMincount = dff.mco ? Math.min(dff.minCount, 1) : 0;
+                                   
         } else {
           // if limit==-1, then no need to artificially lower mincount to 0 if
           // it's 1
@@ -712,9 +746,6 @@ public class FacetComponent extends SearchComponent {
           dff.add(shardNum, (NamedList) facet_fields.get(dff.getKey()), dff.initialLimit);
         }
       }
-
-      // Distributed facet_dates
-      doDistribDates(fi, facet_counts);
 
       // Distributed facet_ranges
       @SuppressWarnings("unchecked")
@@ -929,53 +960,6 @@ public class FacetComponent extends SearchComponent {
     }
   }
 
-  //
-  // The implementation below uses the first encountered shard's
-  // facet_dates as the basis for subsequent shards' data to be merged.
-  // (the "NOW" param should ensure consistency)
-  private void doDistribDates(FacetInfo fi, NamedList facet_counts) {
-    @SuppressWarnings("unchecked")
-    SimpleOrderedMap<SimpleOrderedMap<Object>> facet_dates =
-      (SimpleOrderedMap<SimpleOrderedMap<Object>>)
-      facet_counts.get("facet_dates");
-
-    if (facet_dates != null) {
-
-      // go through each facet_date
-      for (Map.Entry<String,SimpleOrderedMap<Object>> entry : facet_dates) {
-        final String field = entry.getKey();
-        if (fi.dateFacets.get(field) == null) {
-          // first time we've seen this field, no merging
-          fi.dateFacets.add(field, entry.getValue());
-
-        } else {
-          // not the first time, merge current field
-
-          SimpleOrderedMap<Object> shardFieldValues
-            = entry.getValue();
-          SimpleOrderedMap<Object> existFieldValues
-            = fi.dateFacets.get(field);
-
-          for (Map.Entry<String,Object> existPair : existFieldValues) {
-            final String key = existPair.getKey();
-            if (key.equals("gap") ||
-                key.equals("end") ||
-                key.equals("start")) {
-              // we can skip these, must all be the same across shards
-              continue;
-            }
-            // can be null if inconsistencies in shards responses
-            Integer newValue = (Integer) shardFieldValues.get(key);
-            if  (null != newValue) {
-              Integer oldValue = ((Integer) existPair.getValue());
-              existPair.setValue(oldValue + newValue);
-            }
-          }
-        }
-      }
-    }
-  }
-
   private void doDistribPivots(ResponseBuilder rb, int shardNum, NamedList facet_counts) {
     @SuppressWarnings("unchecked")
     SimpleOrderedMap<List<NamedList<Object>>> facet_pivot 
@@ -1159,8 +1143,6 @@ public class FacetComponent extends SearchComponent {
       }
     }
 
-    facet_counts.add("facet_dates", fi.dateFacets);
-
     SimpleOrderedMap<SimpleOrderedMap<Object>> rangeFacetOutput = new SimpleOrderedMap<>();
     for (Map.Entry<String, RangeFacetRequest.DistribRangeFacet> entry : fi.rangeFacets.entrySet()) {
       String key = entry.getKey();
@@ -1283,7 +1265,14 @@ public class FacetComponent extends SearchComponent {
       if (facetFs != null) {
         
         for (String field : facetFs) {
-          DistribFieldFacet ff = new DistribFieldFacet(rb, field);
+          final DistribFieldFacet ff;
+          
+          if (params.getFieldBool(field, FacetParams.FACET_EXISTS, false)) {
+            // cap facet count by 1 with this method
+            ff = new DistribFacetExistsField(rb, field);
+          } else {
+            ff = new DistribFieldFacet(rb, field);
+          }
           facets.put(ff.getKey(), ff);
         }
       }
@@ -1440,6 +1429,7 @@ public class FacetComponent extends SearchComponent {
     
     public int initialLimit; // how many terms requested in first phase
     public int initialMincount; // mincount param sent to each shard
+    public boolean mco;
     public double overrequestRatio;
     public int overrequestCount;
     public boolean needRefinements;
@@ -1458,7 +1448,9 @@ public class FacetComponent extends SearchComponent {
         = params.getFieldDouble(field, FacetParams.FACET_OVERREQUEST_RATIO, 1.5);
       this.overrequestCount 
         = params.getFieldInt(field, FacetParams.FACET_OVERREQUEST_COUNT, 10);
-                             
+      
+      this.mco 
+      = params.getFieldBool(field, FacetParams.FACET_DISTRIB_MCO, false);
     }
     
     void add(int shardNum, NamedList shardCounts, int numRequested) {
@@ -1484,7 +1476,7 @@ public class FacetComponent extends SearchComponent {
             sfc.termNum = termNum++;
             counts.put(name, sfc);
           }
-          sfc.count += count;
+          incCount(sfc, count);
           terms.set(sfc.termNum);
           last = count;
         }
@@ -1500,16 +1492,15 @@ public class FacetComponent extends SearchComponent {
       missingMax[shardNum] = last;
       counted[shardNum] = terms;
     }
+
+    protected void incCount(ShardFacetCount sfc, long count) {
+      sfc.count += count;
+    }
     
     public ShardFacetCount[] getLexSorted() {
       ShardFacetCount[] arr 
         = counts.values().toArray(new ShardFacetCount[counts.size()]);
-      Arrays.sort(arr, new Comparator<ShardFacetCount>() {
-        @Override
-        public int compare(ShardFacetCount o1, ShardFacetCount o2) {
-          return o1.indexed.compareTo(o2.indexed);
-        }
-      });
+      Arrays.sort(arr, (o1, o2) -> o1.indexed.compareTo(o2.indexed));
       countSorted = arr;
       return arr;
     }
@@ -1517,13 +1508,10 @@ public class FacetComponent extends SearchComponent {
     public ShardFacetCount[] getCountSorted() {
       ShardFacetCount[] arr 
         = counts.values().toArray(new ShardFacetCount[counts.size()]);
-      Arrays.sort(arr, new Comparator<ShardFacetCount>() {
-        @Override
-        public int compare(ShardFacetCount o1, ShardFacetCount o2) {
-          if (o2.count < o1.count) return -1;
-          else if (o1.count < o2.count) return 1;
-          return o1.indexed.compareTo(o2.indexed);
-        }
+      Arrays.sort(arr, (o1, o2) -> {
+        if (o2.count < o1.count) return -1;
+        else if (o1.count < o2.count) return 1;
+        return o1.indexed.compareTo(o2.indexed);
       });
       countSorted = arr;
       return arr;
@@ -1553,7 +1541,7 @@ public class FacetComponent extends SearchComponent {
       }
     }
   }
-  
+
   /**
    * <b>This API is experimental and subject to change</b>
    */
@@ -1570,4 +1558,18 @@ public class FacetComponent extends SearchComponent {
     }
   }
 
+  
+  private static final class DistribFacetExistsField extends DistribFieldFacet {
+    private DistribFacetExistsField(ResponseBuilder rb, String facetStr) {
+      super(rb, facetStr);
+      SimpleFacets.checkMincountOnExists(field, minCount); 
+    }
+
+    @Override
+    protected void incCount(ShardFacetCount sfc, long count) {
+      if (count>0) {
+        sfc.count = 1;
+      }
+    }
+  }
 }

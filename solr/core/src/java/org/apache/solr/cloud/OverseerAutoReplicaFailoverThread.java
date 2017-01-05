@@ -16,9 +16,22 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.common.SolrException;
@@ -33,21 +46,6 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-
-import java.io.Closeable;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 
 // TODO: how to tmp exclude nodes?
@@ -91,6 +89,8 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
 
   private final int workLoopDelay;
   private final int waitAfterExpiration;
+
+  private volatile Thread thread;
   
   public OverseerAutoReplicaFailoverThread(CloudConfig config, ZkStateReader zkStateReader,
       UpdateShardHandler updateShardHandler) {
@@ -100,7 +100,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
     this.waitAfterExpiration = config.getAutoReplicaFailoverWaitAfterExpiration();
     int badNodeExpiration = config.getAutoReplicaFailoverBadNodeExpiration();
     
-    log.info(
+    log.debug(
         "Starting "
             + this.getClass().getSimpleName()
             + " autoReplicaFailoverWorkLoopDelay={} autoReplicaFailoverWaitAfterExpiration={} autoReplicaFailoverBadNodeExpiration={}",
@@ -120,7 +120,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
   
   @Override
   public void run() {
-    
+    this.thread = Thread.currentThread();
     while (!this.isClosed) {
       // work loop
       log.debug("do " + this.getClass().getSimpleName() + " work loop");
@@ -138,7 +138,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
         try {
           Thread.sleep(workLoopDelay);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          return;
         }
       }
     }
@@ -149,7 +149,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
     // TODO: extract to configurable strategy class ??
     ClusterState clusterState = zkStateReader.getClusterState();
     //check if we have disabled autoAddReplicas cluster wide
-    String autoAddReplicas = (String) zkStateReader.getClusterProps().get(ZkStateReader.AUTO_ADD_REPLICAS);
+    String autoAddReplicas = zkStateReader.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, (String) null);
     if (autoAddReplicas != null && autoAddReplicas.equals("false")) {
       return;
     }
@@ -163,10 +163,10 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
 
       liveNodes = clusterState.getLiveNodes();
       lastClusterStateVersion = clusterState.getZkClusterStateVersion();
-      Set<String> collections = clusterState.getCollections();
-      for (final String collection : collections) {
-        log.debug("look at collection={}", collection);
-        DocCollection docCollection = clusterState.getCollection(collection);
+      Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+      for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+        log.debug("look at collection={}", entry.getKey());
+        DocCollection docCollection = entry.getValue();
         if (!docCollection.getAutoAddReplicas()) {
           log.debug("Collection {} is not setup to use autoAddReplicas, skipping..", docCollection.getName());
           continue;
@@ -175,7 +175,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
           log.debug("Skipping collection because it has no defined replicationFactor, name={}", docCollection.getName());
           continue;
         }
-        log.debug("Found collection, name={} replicationFactor={}", collection, docCollection.getReplicationFactor());
+        log.debug("Found collection, name={} replicationFactor={}", entry.getKey(), docCollection.getReplicationFactor());
         
         Collection<Slice> slices = docCollection.getSlices();
         for (Slice slice : slices) {
@@ -189,7 +189,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
             
             if (downReplicas.size() > 0 && goodReplicas < docCollection.getReplicationFactor()) {
               // badReplicaMap.put(collection, badReplicas);
-              processBadReplicas(collection, downReplicas);
+              processBadReplicas(entry.getKey(), downReplicas);
             } else if (goodReplicas > docCollection.getReplicationFactor()) {
               log.debug("There are too many replicas");
             }
@@ -230,7 +230,8 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
   private boolean addReplica(final String collection, DownReplica badReplica) {
     // first find best home - first strategy, sort by number of cores
     // hosted where maxCoresPerNode is not violated
-    final String createUrl = getBestCreateUrl(zkStateReader, badReplica);
+    final Integer maxCoreCount = zkStateReader.getClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, (Integer) null);
+    final String createUrl = getBestCreateUrl(zkStateReader, badReplica, maxCoreCount);
     if (createUrl == null) {
       log.warn("Could not find a node to create new replica on.");
       return false;
@@ -248,13 +249,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       log.debug("submit call to {}", createUrl);
       MDC.put("OverseerAutoReplicaFailoverThread.createUrl", createUrl);
       try {
-        updateExecutor.submit(new Callable<Boolean>() {
-
-          @Override
-          public Boolean call() {
-            return createSolrCore(collection, createUrl, dataDir, ulogDir, coreNodeName, coreName);
-          }
-        });
+        updateExecutor.submit(() -> createSolrCore(collection, createUrl, dataDir, ulogDir, coreNodeName, coreName));
       } finally {
         MDC.remove("OverseerAutoReplicaFailoverThread.createUrl");
       }
@@ -308,22 +303,24 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
    * @return the best node to replace the badReplica on or null if there is no
    *         such node
    */
-  static String getBestCreateUrl(ZkStateReader zkStateReader, DownReplica badReplica) {
+  static String getBestCreateUrl(ZkStateReader zkStateReader, DownReplica badReplica, Integer maxCoreCount) {
     assert badReplica != null;
     assert badReplica.collection != null;
     assert badReplica.slice != null;
     log.debug("getBestCreateUrl for " + badReplica.replica);
-    Map<String,Counts> counts = new HashMap<String, Counts>();
-    Set<String> unsuitableHosts = new HashSet<String>();
+    Map<String,Counts> counts = new HashMap<>();
+    Set<String> unsuitableHosts = new HashSet<>();
     
     Set<String> liveNodes = new HashSet<>(zkStateReader.getClusterState().getLiveNodes());
+    Map<String, Integer> coresPerNode = new HashMap<>();
     
     ClusterState clusterState = zkStateReader.getClusterState();
     if (clusterState != null) {
-      Set<String> collections = clusterState.getCollections();
-      for (String collection : collections) {
-        log.debug("look at collection {} as possible create candidate", collection); 
-        DocCollection docCollection = clusterState.getCollection(collection);
+      Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+      for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+        String collection = entry.getKey();
+        log.debug("look at collection {} as possible create candidate", collection);
+        DocCollection docCollection = entry.getValue();
         // TODO - only operate on collections with sharedfs failover = true ??
         Collection<Slice> slices = docCollection.getSlices();
         for (Slice slice : slices) {
@@ -335,8 +332,13 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
             for (Replica replica : replicas) {
               liveNodes.remove(replica.getNodeName());
               String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
-              if (baseUrl.equals(
-                  badReplica.replica.getStr(ZkStateReader.BASE_URL_PROP))) {
+              if (coresPerNode.containsKey(baseUrl)) {
+                Integer nodeCount = coresPerNode.get(baseUrl);
+                coresPerNode.put(baseUrl, nodeCount++);
+              } else {
+                coresPerNode.put(baseUrl, 1);
+              }
+              if (baseUrl.equals(badReplica.replica.getStr(ZkStateReader.BASE_URL_PROP))) {
                 continue;
               }
               // on a live node?
@@ -357,16 +359,15 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
                 if (badReplica.collection.getName().equals(collection) && badReplica.slice.getName().equals(slice.getName())) {
                   cnt.ourReplicas++;
                 }
-                
-                // TODO: this is collection wide and we want to take into
-                // account cluster wide - use new cluster sys prop
+
                 Integer maxShardsPerNode = badReplica.collection.getMaxShardsPerNode();
                 if (maxShardsPerNode == null) {
                   log.warn("maxShardsPerNode is not defined for collection, name=" + badReplica.collection.getName());
                   maxShardsPerNode = Integer.MAX_VALUE;
                 }
-                log.debug("collection={} node={} max shards per node={} potential hosts={}", collection, baseUrl, maxShardsPerNode, cnt);
-                
+                log.debug("collection={} node={} maxShardsPerNode={} maxCoresPerNode={} potential hosts={}",
+                    collection, baseUrl, maxShardsPerNode, maxCoreCount, cnt);
+
                 Collection<Replica> badSliceReplicas = null;
                 DocCollection c = clusterState.getCollection(badReplica.collection.getName());
                 if (c != null) {
@@ -376,7 +377,8 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
                   }
                 }
                 boolean alreadyExistsOnNode = replicaAlreadyExistsOnNode(zkStateReader.getClusterState(), badSliceReplicas, badReplica, baseUrl);
-                if (unsuitableHosts.contains(baseUrl) || alreadyExistsOnNode || cnt.collectionShardsOnNode >= maxShardsPerNode) {
+                if (unsuitableHosts.contains(baseUrl) || alreadyExistsOnNode || cnt.collectionShardsOnNode >= maxShardsPerNode
+                    || (maxCoreCount != null && coresPerNode.get(baseUrl) >= maxCoreCount) ) {
                   counts.remove(baseUrl);
                   unsuitableHosts.add(baseUrl);
                   log.debug("not a candidate node, collection={} node={} max shards per node={} good replicas={}", collection, baseUrl, maxShardsPerNode, cnt);
@@ -440,7 +442,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       final String createUrl, final String dataDir, final String ulogDir,
       final String coreNodeName, final String coreName) {
 
-    try (HttpSolrClient client = new HttpSolrClient(createUrl)) {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(createUrl).build()) {
       log.debug("create url={}", createUrl);
       client.setConnectionTimeout(30000);
       client.setSoTimeout(60000);
@@ -451,7 +453,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       // for now, the collections API will use unique names
       createCmd.setCoreName(coreName);
       createCmd.setDataDir(dataDir);
-      createCmd.setUlogDir(ulogDir);
+      createCmd.setUlogDir(ulogDir.substring(0, ulogDir.length() - "/tlog".length()));
       client.request(createCmd);
     } catch (Exception e) {
       SolrException.log(log, "Exception trying to create new replica on " + createUrl, e);
@@ -479,6 +481,10 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
   @Override
   public void close() {
     isClosed = true;
+    Thread lThread = thread;
+    if (lThread != null) {
+      lThread.interrupt();
+    }
   }
   
   public boolean isClosed() {

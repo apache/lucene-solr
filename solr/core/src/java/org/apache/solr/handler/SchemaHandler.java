@@ -22,13 +22,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -37,21 +41,36 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.schema.ZkIndexSchemaReader;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.params.CommonParams.JSON;
-import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
+import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.COPY_FIELDS;
+import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.DYNAMIC_FIELDS;
+import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELDS;
+import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELD_TYPES;
 
-public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware {
+public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean isImmutableConfigSet = false;
 
-  @Override
-  public void init(NamedList args) {
-    super.init(args);
+  private static final Map<String, String> level2;
+
+  static {
+    Map s = Utils.makeMap(
+        FIELD_TYPES.nameLower, null,
+        FIELDS.nameLower, "fl",
+        DYNAMIC_FIELDS.nameLower, "fl",
+        COPY_FIELDS.nameLower, null
+    );
+
+    level2 = Collections.unmodifiableMap(s);
   }
+
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
@@ -79,6 +98,18 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware {
       }
     } else {
       handleGET(req, rsp);
+    }
+  }
+
+  @Override
+  public PermissionNameProvider.Name getPermissionName(AuthorizationContext ctx) {
+    switch (ctx.getHttpMethod()) {
+      case "GET":
+        return PermissionNameProvider.Name.SCHEMA_READ_PERM;
+      case "POST":
+        return PermissionNameProvider.Name.SCHEMA_EDIT_PERM;
+      default:
+        return null;
     }
   }
 
@@ -150,6 +181,39 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware {
           break;
         }
         default: {
+          List<String> parts = StrUtils.splitSmart(path, '/');
+          if (parts.get(0).isEmpty()) parts.remove(0);
+          if (parts.size() > 1 && level2.containsKey(parts.get(1))) {
+            String realName = parts.get(1);
+            String fieldName = IndexSchema.nameMapping.get(realName);
+
+            String pathParam = level2.get(realName);
+            if (parts.size() > 2) {
+              req.setParams(SolrParams.wrapDefaults(new MapSolrParams(singletonMap(pathParam, parts.get(2))), req.getParams()));
+            }
+            Map propertyValues = req.getSchema().getNamedPropertyValues(realName, req.getParams());
+            Object o = propertyValues.get(fieldName);
+            if(parts.size()> 2) {
+              String name = parts.get(2);
+              if (o instanceof List) {
+                List list = (List) o;
+                for (Object obj : list) {
+                  if (obj instanceof SimpleOrderedMap) {
+                    SimpleOrderedMap simpleOrderedMap = (SimpleOrderedMap) obj;
+                    if(name.equals(simpleOrderedMap.get("name"))) {
+                      rsp.add(fieldName.substring(0, realName.length() - 1), simpleOrderedMap);
+                      return;
+                    }
+                  }
+                }
+              }
+              throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such path " + path);
+            } else {
+              rsp.add(fieldName, o);
+            }
+            return;
+          }
+
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such path " + path);
         }
       }
@@ -160,19 +224,25 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware {
   }
 
   private static Set<String> subPaths = new HashSet<>(Arrays.asList(
-      "/version",
-      "/uniquekey",
-      "/name",
-      "/similarity",
-      "/defaultsearchfield",
-      "/solrqueryparser",
-      "/zkversion",
-      "/solrqueryparser/defaultoperator"
+      "version",
+      "uniquekey",
+      "name",
+      "similarity",
+      "defaultsearchfield",
+      "solrqueryparser",
+      "zkversion"
   ));
+  static {
+    subPaths.addAll(level2.keySet());
+  }
 
   @Override
   public SolrRequestHandler getSubHandler(String subPath) {
-    if (subPaths.contains(subPath)) return this;
+    List<String> parts = StrUtils.splitSmart(subPath, '/');
+    if (parts.get(0).isEmpty()) parts.remove(0);
+    String prefix =  parts.get(0);
+    if(subPaths.contains(prefix)) return this;
+
     return null;
   }
 

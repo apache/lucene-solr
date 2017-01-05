@@ -16,7 +16,7 @@
 */
 
 var contentTypeMap = { xml : 'text/xml', html : 'text/html', js : 'text/javascript', json : 'application/json', 'css' : 'text/css' };
-var languages = {js: "javascript", xml:"xml", xsl:"xml", vm: "xml", html: "xml", json: "text", css: "css"};
+var languages = {js: "javascript", xml:"xml", xsl:"xml", vm: "xml", html: "xml", json: "json", css: "css"};
 
 solrAdminApp.controller('FilesController',
     function($scope, $rootScope, $routeParams, $location, Files, Constants) {
@@ -82,10 +82,10 @@ solrAdminApp.controller('FilesController',
                 Files.get({core: $routeParams.core, file: $scope.file, contentType: contentType}, function(data) {
                     $scope.content = data.data;
                     $scope.url = $scope.baseurl + data.config.url + "?" + $.param(data.config.params);
-                    if (contentType.indexOf("text/plain") && data.data.indexOf("<?xml") || data.data.indexOf("<!--")) {
+                    if (contentType.indexOf("text/plain") && (data.data.indexOf("<?xml")>=0) || data.data.indexOf("<!--")>=0) {
                         $scope.lang = "xml";
                     } else {
-                        $scope.lang = languages[extension] || "text";
+                        $scope.lang = languages[extension] || "txt";
                     }
                 });
             }

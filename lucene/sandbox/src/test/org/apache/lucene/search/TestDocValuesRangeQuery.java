@@ -81,7 +81,7 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
       return null;
     } else {
       byte[] bytes = new byte[Long.BYTES];
-      NumericUtils.longToBytes(l, bytes, 0);
+      NumericUtils.longToSortableBytes(l, bytes, 0);
       return new BytesRef(bytes);
     }
   }
@@ -265,6 +265,40 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
     w = searcher.createNormalizedWeight(q2, true);
     s = w.scorer(ctx);
     assertNotNull(s.twoPhaseIterator());
+
+    reader.close();
+    dir.close();
+  }
+
+  public void testLongRangeBoundaryValues() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+
+    Document doc = new Document();
+    doc.add(new SortedNumericDocValuesField("dv", 100l));
+    iw.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new SortedNumericDocValuesField("dv", 200l));
+    iw.addDocument(doc);
+
+    iw.commit();
+
+    final IndexReader reader = iw.getReader();
+    final IndexSearcher searcher = newSearcher(reader, false);
+    iw.close();
+
+    Long min = Long.MIN_VALUE;
+    Long max = Long.MIN_VALUE;
+    Query query = DocValuesRangeQuery.newLongRange("dv", min, max, true, false);
+    TopDocs td = searcher.search(query, searcher.reader.maxDoc(), Sort.INDEXORDER);
+    assertEquals(0, td.totalHits);
+
+    min = Long.MAX_VALUE;
+    max = Long.MAX_VALUE;
+    query = DocValuesRangeQuery.newLongRange("dv", min, max, false, true);
+    td = searcher.search(query, searcher.reader.maxDoc(), Sort.INDEXORDER);
+    assertEquals(0, td.totalHits);
 
     reader.close();
     dir.close();

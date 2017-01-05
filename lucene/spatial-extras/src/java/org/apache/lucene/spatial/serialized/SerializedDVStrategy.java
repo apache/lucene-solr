@@ -24,29 +24,31 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.io.BinaryCodec;
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.RandomAccessWeight;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.DistanceToShapeValueSource;
 import org.apache.lucene.spatial.util.ShapePredicateValueSource;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.io.BinaryCodec;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Shape;
 
 
 /**
@@ -135,41 +137,39 @@ public class SerializedDVStrategy extends SpatialStrategy {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      return new RandomAccessWeight(this) {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      return new ConstantScoreWeight(this, boost) {
         @Override
-        protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
           final FunctionValues predFuncValues = predicateValueSource.getValues(null, context);
-          return new Bits() {
+          return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(approximation) {
+
             @Override
-            public boolean get(int index) {
-              return predFuncValues.boolVal(index);
+            public boolean matches() throws IOException {
+              final int docID = approximation.docID();
+              return predFuncValues.boolVal(docID);
             }
 
             @Override
-            public int length() {
-              return context.reader().maxDoc();
+            public float matchCost() {
+              // TODO: what is the cost of the predicateValueSource
+              return 100f;
             }
-          };
+          });
         }
       };
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (super.equals(o) == false) return false;
-
-      PredicateValueSourceQuery that = (PredicateValueSourceQuery) o;
-
-      if (!predicateValueSource.equals(that.predicateValueSource)) return false;
-
-      return true;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             predicateValueSource.equals(((PredicateValueSourceQuery) other).predicateValueSource);
     }
 
     @Override
     public int hashCode() {
-      return super.hashCode() + 31 * predicateValueSource.hashCode();
+      return classHash() + 31 * predicateValueSource.hashCode();
     }
 
     @Override
@@ -202,21 +202,28 @@ public class SerializedDVStrategy extends SpatialStrategy {
         int bytesRefDoc = -1;
         BytesRefBuilder bytesRef = new BytesRefBuilder();
 
-        boolean fillBytes(int doc) {
+        boolean fillBytes(int doc) throws IOException {
           if (bytesRefDoc != doc) {
-            bytesRef.copyBytes(docValues.get(doc));
+            if (docValues.docID() < doc) {
+              docValues.advance(doc);
+            }
+            if (docValues.docID() == doc) {
+              bytesRef.copyBytes(docValues.binaryValue());
+            } else {
+              bytesRef.clear();
+            }
             bytesRefDoc = doc;
           }
           return bytesRef.length() != 0;
         }
 
         @Override
-        public boolean exists(int doc) {
+        public boolean exists(int doc) throws IOException {
           return fillBytes(doc);
         }
 
         @Override
-        public boolean bytesVal(int doc, BytesRefBuilder target) {
+        public boolean bytesVal(int doc, BytesRefBuilder target) throws IOException {
           target.clear();
           if (fillBytes(doc)) {
             target.copyBytes(bytesRef);
@@ -227,7 +234,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
         }
 
         @Override
-        public Object objectVal(int docId) {
+        public Object objectVal(int docId) throws IOException {
           if (!fillBytes(docId))
             return null;
           DataInputStream dataInput = new DataInputStream(
@@ -240,12 +247,12 @@ public class SerializedDVStrategy extends SpatialStrategy {
         }
 
         @Override
-        public Explanation explain(int doc) {
+        public Explanation explain(int doc) throws IOException {
           return Explanation.match(Float.NaN, toString(doc));
         }
 
         @Override
-        public String toString(int doc) {
+        public String toString(int doc) throws IOException {
           return description() + "=" + objectVal(doc);//TODO truncate?
         }
 

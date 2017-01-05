@@ -21,7 +21,6 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.*;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.function.*;
 
@@ -47,7 +46,9 @@ public class FunctionRangeQParserPlugin extends QParserPlugin {
       @Override
       public Query parse() throws SyntaxError {
         funcStr = localParams.get(QueryParsing.V, null);
-        Query funcQ = subQuery(funcStr, FunctionQParserPlugin.NAME).getQuery();
+        QParser subParser = subQuery(funcStr, FunctionQParserPlugin.NAME);
+        subParser.setIsFilter(false);  // the range can be based on the relevancy score of embedded queries.
+        Query funcQ = subParser.getQuery();
         if (funcQ instanceof FunctionQuery) {
           vs = ((FunctionQuery)funcQ).getValueSource();
         } else {

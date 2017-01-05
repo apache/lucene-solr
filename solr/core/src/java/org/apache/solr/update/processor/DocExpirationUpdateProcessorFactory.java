@@ -18,45 +18,41 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-
-import org.apache.solr.common.SolrException;
-
-import static org.apache.solr.common.SolrException.ErrorCode.*;
-
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.core.CloseHook;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.DeleteUpdateCommand;
-import org.apache.solr.util.DateMathParser;
-import org.apache.solr.util.DateFormatUtil;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.plugin.SolrCoreAware;
-
 import java.text.ParseException;
-import java.util.Comparator;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CloseHook;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.util.DateMathParser;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 /**
  * <p>
@@ -251,7 +247,7 @@ public final class DocExpirationUpdateProcessorFactory
       } catch (SolrException e) {
         throw confErr(DEL_CHAIN_NAME_CONF + " does not exist: " + deleteChainName, e);
       }
-      // schedule recuring deletion
+      // schedule recurring deletion
       initDeleteExpiredDocsScheduler(core);
     }
   }
@@ -335,9 +331,9 @@ public final class DocExpirationUpdateProcessorFactory
           final DateMathParser dmp = new DateMathParser();
           // TODO: should we try to accept things like "1DAY" as well as "+1DAY" ?
           // How? 
-          // 'startsWith("+")' is a bad idea because it would cause porblems with
+          // 'startsWith("+")' is a bad idea because it would cause problems with
           // things like "/DAY+1YEAR"
-          // Maybe catch ParseException and rety with "+" prepended?
+          // Maybe catch ParseException and retry with "+" prepended?
           doc.addField(expireField, dmp.parseMath(math));
         } catch (ParseException pe) {
           throw new SolrException(BAD_REQUEST, "Can't parse ttl as date math: " + math, pe);
@@ -404,7 +400,7 @@ public final class DocExpirationUpdateProcessorFactory
           try {
             DeleteUpdateCommand del = new DeleteUpdateCommand(req);
             del.setQuery("{!cache=false}" + expireField + ":[* TO " +
-                         DateFormatUtil.formatExternal(SolrRequestInfo.getRequestInfo().getNOW())
+                SolrRequestInfo.getRequestInfo().getNOW().toInstant()
                          + "]");
             proc.processDelete(del);
             
@@ -423,11 +419,11 @@ public final class DocExpirationUpdateProcessorFactory
         } catch (IOException ioe) {
           log.error("IOException in periodic deletion of expired docs: " +
                     ioe.getMessage(), ioe);
-          // DO NOT RETHROW: ScheduledExecutor will supress subsequent executions
+          // DO NOT RETHROW: ScheduledExecutor will suppress subsequent executions
         } catch (RuntimeException re) {
           log.error("Runtime error in periodic deletion of expired docs: " + 
                     re.getMessage(), re);
-          // DO NOT RETHROW: ScheduledExecutor will supress subsequent executions
+          // DO NOT RETHROW: ScheduledExecutor will suppress subsequent executions
         } finally {
           SolrRequestInfo.clearRequestInfo();
         }
@@ -440,12 +436,12 @@ public final class DocExpirationUpdateProcessorFactory
   /**
    * <p>
    * Helper method that returns true if the Runnable managed by this factory 
-   * should be responseible of doing periodica deletes.
+   * should be responsible of doing periodical deletes.
    * </p>
    * <p>
-   * In simple standalone instalations this method always returns true, 
+   * In simple standalone installations this method always returns true, 
    * but in cloud mode it will be true if and only if we are currently the leader 
-   * of the (active) slice with the first name (lexigraphically).
+   * of the (active) slice with the first name (lexicographically).
    * </p>
    * <p>
    * If this method returns false, it may have also logged a message letting the user 
@@ -500,11 +496,7 @@ public final class DocExpirationUpdateProcessorFactory
   /** @see #iAmInChargeOfPeriodicDeletes */
   private volatile boolean previouslyInChargeOfDeletes = true;
 
-  private static final Comparator<Slice> COMPARE_SLICES_BY_NAME = new Comparator<Slice>() {
-    public int compare(Slice a, Slice b) {
-      return a.getName().compareTo(b.getName());
-    }
-  };
+  private static final Comparator<Slice> COMPARE_SLICES_BY_NAME = (a, b) -> a.getName().compareTo(b.getName());
 
 }
 

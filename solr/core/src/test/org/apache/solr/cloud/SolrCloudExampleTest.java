@@ -21,14 +21,12 @@ import java.io.FilenameFilter;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -43,7 +41,6 @@ import org.slf4j.LoggerFactory;
  * this test is useful for catching regressions in indexing the example docs in collections that
  * use data-driven schema and managed schema features provided by configsets/data_driven_schema_configs.
  */
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-8135")
 public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -94,6 +91,10 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     ensureAllReplicasAreActive(testCollectionName, "shard2", 2, 2, 10);
     cloudClient.setDefaultCollection(testCollectionName);
 
+    int invalidToolExitStatus = 1;
+    assertEquals("Collection '" + testCollectionName + "' created even though it already existed",
+        invalidToolExitStatus, tool.runTool(cli));
+
     // now index docs like bin/post would do but we can't use SimplePostTool because it uses System.exit when
     // it encounters an error, which JUnit doesn't like ...
     log.info("Created collection, now posting example docs!");
@@ -108,12 +109,10 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     }));
 
     // force a deterministic random ordering of the files so seeds reproduce regardless of platform/filesystem
-    Collections.sort(xmlFiles, new Comparator<File>() {
-        public int compare(File o1, File o2) {
-          // don't rely on File.compareTo, it's behavior varies by OS
-          return o1.getName().compareTo(o2.getName());
-        }
-      });
+    Collections.sort(xmlFiles, (o1, o2) -> {
+      // don't rely on File.compareTo, it's behavior varies by OS
+      return o1.getName().compareTo(o2.getName());
+    });
     Collections.shuffle(xmlFiles, new Random(random().nextLong()));
 
     // if you add/remove example XML docs, you'll have to fix these expected values

@@ -55,7 +55,13 @@ public class SlopQueryNodeBuilder implements StandardQueryBuilder {
       query = builder.build();
 
     } else {
-      ((MultiPhraseQuery) query).setSlop(phraseSlopNode.getValue());
+      MultiPhraseQuery mpq = (MultiPhraseQuery)query;
+      
+      int slop = phraseSlopNode.getValue();
+      
+      if (slop != mpq.getSlop()) {
+        query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
+      }
     }
 
     return query;

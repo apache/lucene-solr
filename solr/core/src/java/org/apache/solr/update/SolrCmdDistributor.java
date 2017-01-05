@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient; // jdoc
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -43,7 +44,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
@@ -138,7 +138,7 @@ public class SolrCmdDistributor {
             
             SolrException.log(SolrCmdDistributor.log, "forwarding update to "
                 + oldNodeUrl + " failed - retrying ... retries: "
-                + err.req.retries + " " + err.req.cmdString + " params:"
+                + err.req.retries + " " + err.req.cmd.toString() + " params:"
                 + err.req.uReq.getParams() + " rsp:" + rspCode, err.e);
             try {
               Thread.sleep(retryPause);
@@ -187,7 +187,7 @@ public class SolrCmdDistributor {
         uReq.deleteByQuery(cmd.query);
       }
       
-      submit(new Req(cmd.toString(), node, uReq, sync), false);
+      submit(new Req(cmd, node, uReq, sync), false);
     }
   }
   
@@ -200,14 +200,13 @@ public class SolrCmdDistributor {
   }
   
   public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean synchronous, RequestReplicationTracker rrt) throws IOException {  
-    String cmdStr = cmd.toString();
     for (Node node : nodes) {
       UpdateRequest uReq = new UpdateRequest();
       if (cmd.isLastDocInBatch)
         uReq.lastDocInBatch();
       uReq.setParams(params);
       uReq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
-      submit(new Req(cmdStr, node, uReq, synchronous, rrt, cmd.pollQueueTime), false);
+      submit(new Req(cmd, node, uReq, synchronous, rrt, cmd.pollQueueTime), false);
     }
     
   }
@@ -226,7 +225,7 @@ public class SolrCmdDistributor {
     log.debug("Distrib commit to: {} params: {}", nodes, params);
     
     for (Node node : nodes) {
-      submit(new Req(cmd.toString(), node, uReq, false), true);
+      submit(new Req(cmd, node, uReq, false), true);
     }
     
   }
@@ -260,7 +259,7 @@ public class SolrCmdDistributor {
     if (req.synchronous) {
       blockAndDoRetries();
 
-      try (HttpSolrClient client = new HttpSolrClient(req.node.getUrl(), clients.getHttpClient())) {
+      try (HttpSolrClient client = new HttpSolrClient.Builder(req.node.getUrl()).withHttpClient(clients.getHttpClient()).build()) {
         client.request(req.uReq);
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Failed synchronous update on shard " + req.node + " update: " + req.uReq , e);
@@ -272,21 +271,16 @@ public class SolrCmdDistributor {
     if (log.isDebugEnabled()) {
       log.debug("sending update to "
           + req.node.getUrl() + " retry:"
-          + req.retries + " " + req.cmdString + " params:" + req.uReq.getParams());
+          + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
     }
     
     if (isCommit) {
       // a commit using ConncurrentUpdateSolrServer is not async,
       // so we make it async to prevent commits from happening
       // serially across multiple nodes
-      pending.add(completionService.submit(new Callable<Object>() {
-        
-        @Override
-        public Object call() throws Exception {
-          doRequest(req);
-          return null;
-        }
-
+      pending.add(completionService.submit(() -> {
+        doRequest(req);
+        return null;
       }));
     } else {
       doRequest(req);
@@ -314,26 +308,26 @@ public class SolrCmdDistributor {
     public UpdateRequest uReq;
     public int retries;
     public boolean synchronous;
-    public String cmdString;
+    public UpdateCommand cmd;
     public RequestReplicationTracker rfTracker;
     public int pollQueueTime;
 
-    public Req(String cmdString, Node node, UpdateRequest uReq, boolean synchronous) {
-      this(cmdString, node, uReq, synchronous, null, 0);
+    public Req(UpdateCommand cmd, Node node, UpdateRequest uReq, boolean synchronous) {
+      this(cmd, node, uReq, synchronous, null, 0);
     }
     
-    public Req(String cmdString, Node node, UpdateRequest uReq, boolean synchronous, RequestReplicationTracker rfTracker, int pollQueueTime) {
+    public Req(UpdateCommand cmd, Node node, UpdateRequest uReq, boolean synchronous, RequestReplicationTracker rfTracker, int pollQueueTime) {
       this.node = node;
       this.uReq = uReq;
       this.synchronous = synchronous;
-      this.cmdString = cmdString;
+      this.cmd = cmd;
       this.rfTracker = rfTracker;
       this.pollQueueTime = pollQueueTime;
     }
     
     public String toString() {
       StringBuilder sb = new StringBuilder();
-      sb.append("SolrCmdDistributor$Req: cmd=").append(String.valueOf(cmdString));
+      sb.append("SolrCmdDistributor$Req: cmd=").append(cmd.toString());
       sb.append("; node=").append(String.valueOf(node));
       return sb.toString();
     }
@@ -382,6 +376,13 @@ public class SolrCmdDistributor {
   public static class Error {
     public Exception e;
     public int statusCode = -1;
+
+    /**
+     * NOTE: This is the request that happened to be executed when this error was <b>triggered</b> the error, 
+     * but because of how {@link StreamingSolrClients} uses {@link ConcurrentUpdateSolrClient} it might not 
+     * actaully be the request that <b>caused</b> the error -- multiple requests are merged &amp; processed as 
+     * a sequential batch.
+     */
     public Req req;
     
     public String toString() {

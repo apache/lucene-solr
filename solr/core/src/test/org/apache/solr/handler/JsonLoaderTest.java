@@ -31,10 +31,6 @@ import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
-import org.xml.sax.SAXException;
-
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
@@ -179,6 +175,26 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(add.overwrite, false);
 
     req.close();
+  }
+
+  @Test
+  public void testInvalidJsonProducesBadRequestSolrException() throws Exception
+  {
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    String invalidJsonString = "}{";
+    
+    try(SolrQueryRequest req = req()) {
+      try {
+        loader.load(req, rsp, new ContentStreamBase.StringStream(invalidJsonString), p);
+        fail("Expected invalid JSON to produce a SolrException.");
+      } catch (SolrException expectedException) {
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, expectedException.code());
+        assertTrue(expectedException.getMessage().contains("Cannot parse"));
+        assertTrue(expectedException.getMessage().contains("JSON"));
+      }
+    }
   }
 
   public void testSimpleFormatInAdd() throws Exception
@@ -346,6 +362,70 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     obj = (Map) ObjectBuilder.fromJSON(content);
     assertEquals("2", obj.get("id"));
 
+    String json = "{a:{" +
+        "b:[{c:c1, e:e1},{c:c2, e :e2, d:{p:q}}]," +
+        "x:y" +
+        "}}";
+    req = req("split", "/|/a/b"   );
+    req.getContext().put("path","/update/json/docs");
+    rsp = new SolrQueryResponse();
+    p = new BufferingRequestProcessor(null);
+    loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(json), p);
+
+    assertEquals( 1, p.addCommands.size() );
+    assertEquals("y",  p.addCommands.get(0).solrDoc.getFieldValue("a.x"));
+    List<SolrInputDocument> children = p.addCommands.get(0).solrDoc.getChildDocuments();
+    assertEquals(2, children.size());
+    SolrInputDocument d = children.get(0);
+    assertEquals(d.getFieldValue("c"), "c1");
+    assertEquals(d.getFieldValue("e"), "e1");
+    d = children.get(1);
+    assertEquals(d.getFieldValue("c"), "c2");
+    assertEquals(d.getFieldValue("e"), "e2");
+    assertEquals(d.getFieldValue("d.p"), "q");
+
+    json = "{\n" +
+        "  \"id\": \"1\",\n" +
+        "  \"name\": \"i am the parent\",\n" +
+        "  \"cat\": \"parent\",\n" +
+        "  \"children\": [\n" +
+        "    {\n" +
+        "      \"id\": \"1.1\",\n" +
+        "      \"name\": \"i am the 1st child\",\n" +
+        "      \"cat\": \"child\"\n" +
+        "    },\n" +
+        "    {\n" +
+        "      \"id\": \"1.2\",\n" +
+        "      \"name\": \"i am the 2nd child\",\n" +
+        "      \"cat\": \"child\",\n" +
+        "      \"grandchildren\": [\n" +
+        "        {\n" +
+        "          \"id\": \"1.2.1\",\n" +
+        "          \"name\": \"i am the grandchild\",\n" +
+        "          \"cat\": \"grandchild\"\n" +
+        "        }\n" +
+        "      ]\n" +
+        "    }\n" +
+        "  ]\n" +
+        "}";
+    req = req(
+        "split", "/|/children|/children/grandchildren",
+        "f","$FQN:/**",
+        "f", "id:/children/id",
+        "f", "/name",
+        "f", "/children/name",
+        "f", "cat:/children/cat",
+        "f", "id:/children/grandchildren/id",
+        "f", "name:/children/grandchildren/name",
+        "f", "cat:/children/grandchildren/cat");
+    req.getContext().put("path", "/update/json/docs");
+    rsp = new SolrQueryResponse();
+    p = new BufferingRequestProcessor(null);
+    loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(json), p);
+    assertEquals(2, p.addCommands.get(0).solrDoc.getChildDocuments().size());
+    assertEquals(1, p.addCommands.get(0).solrDoc.getChildDocuments().get(1).getChildDocuments().size());
 
   }
 

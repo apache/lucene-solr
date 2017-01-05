@@ -31,7 +31,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.lucene.classification.ClassificationResult;
 import org.apache.lucene.classification.Classifier;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermRangeQuery;
@@ -50,18 +50,19 @@ public class ConfusionMatrixGenerator {
 
   /**
    * get the {@link org.apache.lucene.classification.utils.ConfusionMatrixGenerator.ConfusionMatrix} of a given {@link Classifier},
-   * generated on the given {@link LeafReader}, class and text fields.
+   * generated on the given {@link IndexReader}, class and text fields.
    *
-   * @param reader         the {@link LeafReader} containing the index used for creating the {@link Classifier}
-   * @param classifier     the {@link Classifier} whose confusion matrix has to be generated
-   * @param classFieldName the name of the Lucene field used as the classifier's output
-   * @param textFieldName  the nome the Lucene field used as the classifier's input
-   * @param <T>            the return type of the {@link ClassificationResult} returned by the given {@link Classifier}
+   * @param reader              the {@link IndexReader} containing the index used for creating the {@link Classifier}
+   * @param classifier          the {@link Classifier} whose confusion matrix has to be generated
+   * @param classFieldName      the name of the Lucene field used as the classifier's output
+   * @param textFieldName       the nome the Lucene field used as the classifier's input
+   * @param timeoutMilliseconds timeout to wait before stopping creating the confusion matrix
+   * @param <T>                 the return type of the {@link ClassificationResult} returned by the given {@link Classifier}
    * @return a {@link org.apache.lucene.classification.utils.ConfusionMatrixGenerator.ConfusionMatrix}
    * @throws IOException if problems occurr while reading the index or using the classifier
    */
-  public static <T> ConfusionMatrix getConfusionMatrix(LeafReader reader, Classifier<T> classifier, String classFieldName,
-                                                       String textFieldName) throws IOException {
+  public static <T> ConfusionMatrix getConfusionMatrix(IndexReader reader, Classifier<T> classifier, String classFieldName,
+                                                       String textFieldName, long timeoutMilliseconds) throws IOException {
 
     ExecutorService executorService = Executors.newFixedThreadPool(1, new NamedThreadFactory("confusion-matrix-gen-"));
 
@@ -72,7 +73,13 @@ public class ConfusionMatrixGenerator {
       TopDocs topDocs = indexSearcher.search(new TermRangeQuery(classFieldName, null, null, true, true), Integer.MAX_VALUE);
       double time = 0d;
 
+      int counter = 0;
       for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+
+        if (timeoutMilliseconds > 0 && time >= timeoutMilliseconds) {
+          break;
+        }
+
         Document doc = reader.document(scoreDoc.doc);
         String[] correctAnswers = doc.getValues(classFieldName);
 
@@ -91,6 +98,7 @@ public class ConfusionMatrixGenerator {
               if (result != null) {
                 T assignedClass = result.getAssignedClass();
                 if (assignedClass != null) {
+                  counter++;
                   String classified = assignedClass instanceof BytesRef ? ((BytesRef) assignedClass).utf8ToString() : assignedClass.toString();
 
                   String correctAnswer;
@@ -106,18 +114,18 @@ public class ConfusionMatrixGenerator {
                     if (aLong != null) {
                       stringLongMap.put(classified, aLong + 1);
                     } else {
-                      stringLongMap.put(classified, 1l);
+                      stringLongMap.put(classified, 1L);
                     }
                   } else {
                     stringLongMap = new HashMap<>();
-                    stringLongMap.put(classified, 1l);
+                    stringLongMap.put(classified, 1L);
                     counts.put(correctAnswer, stringLongMap);
                   }
 
                 }
               }
             } catch (TimeoutException timeoutException) {
-              // add timeout
+              // add classification timeout
               time += 5000;
             } catch (ExecutionException | InterruptedException executionException) {
               throw new RuntimeException(executionException);
@@ -126,7 +134,7 @@ public class ConfusionMatrixGenerator {
           }
         }
       }
-      return new ConfusionMatrix(counts, time / topDocs.totalHits, topDocs.totalHits);
+      return new ConfusionMatrix(counts, time / counter, counter);
     } finally {
       executorService.shutdown();
     }
@@ -167,7 +175,7 @@ public class ConfusionMatrixGenerator {
     public double getPrecision(String klass) {
       Map<String, Long> classifications = linearizedMatrix.get(klass);
       double tp = 0;
-      double fp = -1;
+      double den = 0; // tp + fp
       if (classifications != null) {
         for (Map.Entry<String, Long> entry : classifications.entrySet()) {
           if (klass.equals(entry.getKey())) {
@@ -176,11 +184,11 @@ public class ConfusionMatrixGenerator {
         }
         for (Map<String, Long> values : linearizedMatrix.values()) {
           if (values.containsKey(klass)) {
-            fp += values.get(klass);
+            den += values.get(klass);
           }
         }
       }
-      return tp + fp > 0 ? tp / (tp + fp) : 0;
+      return tp > 0 ? tp / den : 0;
     }
 
     /**
@@ -218,6 +226,17 @@ public class ConfusionMatrixGenerator {
     }
 
     /**
+     * get the F-1 measure on this confusion matrix
+     *
+     * @return the F-1 measure
+     */
+    public double getF1Measure() {
+      double recall = getRecall();
+      double precision = getPrecision();
+      return precision > 0 && recall > 0 ? 2 * precision * recall / (precision + recall) : 0;
+    }
+
+    /**
      * Calculate accuracy on this confusion matrix using the formula:
      * {@literal accuracy = correctly-classified / (correctly-classified + wrongly-classified)}
      *
@@ -225,73 +244,61 @@ public class ConfusionMatrixGenerator {
      */
     public double getAccuracy() {
       if (this.accuracy == -1) {
-        double cc = 0d;
-        double wc = 0d;
-        for (Map.Entry<String, Map<String, Long>> entry : linearizedMatrix.entrySet()) {
-          String correctAnswer = entry.getKey();
-          for (Map.Entry<String, Long> classifiedAnswers : entry.getValue().entrySet()) {
-            Long value = classifiedAnswers.getValue();
-            if (value != null) {
-              if (correctAnswer.equals(classifiedAnswers.getKey())) {
-                cc += value;
-              } else {
-                wc += value;
-              }
+        double tp = 0d;
+        double tn = 0d;
+        double tfp = 0d; // tp + fp
+        double fn = 0d;
+        for (Map.Entry<String, Map<String, Long>> classification : linearizedMatrix.entrySet()) {
+          String klass = classification.getKey();
+          for (Map.Entry<String, Long> entry : classification.getValue().entrySet()) {
+            if (klass.equals(entry.getKey())) {
+              tp += entry.getValue();
+            } else {
+              fn += entry.getValue();
+            }
+          }
+          for (Map<String, Long> values : linearizedMatrix.values()) {
+            if (values.containsKey(klass)) {
+              tfp += values.get(klass);
+            } else {
+              tn++;
             }
           }
 
         }
-        this.accuracy = cc / (cc + wc);
+        this.accuracy = (tp + tn) / (tfp + fn + tn);
       }
       return this.accuracy;
     }
 
     /**
-     * get the precision (see {@link #getPrecision(String)}) over all the classes.
+     * get the macro averaged precision (see {@link #getPrecision(String)}) over all the classes.
      *
-     * @return the precision as computed from the whole confusion matrix
+     * @return the macro averaged precision as computed from the confusion matrix
      */
     public double getPrecision() {
-      double tp = 0;
-      double fp = -linearizedMatrix.size();
+      double p = 0;
       for (Map.Entry<String, Map<String, Long>> classification : linearizedMatrix.entrySet()) {
         String klass = classification.getKey();
-        for (Map.Entry<String, Long> entry : classification.getValue().entrySet()) {
-          if (klass.equals(entry.getKey())) {
-            tp += entry.getValue();
-          }
-        }
-        for (Map<String, Long> values : linearizedMatrix.values()) {
-          if (values.containsKey(klass)) {
-            fp += values.get(klass);
-          }
-        }
+        p += getPrecision(klass);
       }
 
-      return tp + fp > 0 ? tp / (tp + fp) : 0;
-
+      return p / linearizedMatrix.size();
     }
 
     /**
-     * get the recall (see {@link #getRecall(String)}) over all the classes
+     * get the macro averaged recall (see {@link #getRecall(String)}) over all the classes
      *
-     * @return the recall as computed from the whole confusion matrix
+     * @return the recall as computed from the confusion matrix
      */
     public double getRecall() {
-      double tp = 0;
-      double fn = 0;
+      double r = 0;
       for (Map.Entry<String, Map<String, Long>> classification : linearizedMatrix.entrySet()) {
         String klass = classification.getKey();
-        for (Map.Entry<String, Long> entry : classification.getValue().entrySet()) {
-          if (klass.equals(entry.getKey())) {
-            tp += entry.getValue();
-          } else {
-            fn += entry.getValue();
-          }
-        }
+        r += getRecall(klass);
       }
 
-      return tp + fn > 0 ? tp / (tp + fn) : 0;
+      return r / linearizedMatrix.size();
     }
 
     @Override

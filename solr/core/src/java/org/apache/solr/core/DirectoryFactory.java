@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -26,6 +27,7 @@ import java.util.Collections;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
@@ -60,6 +62,8 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public final static String LOCK_TYPE_SINGLE = "single";
   public final static String LOCK_TYPE_NONE   = "none";
   public final static String LOCK_TYPE_HDFS   = "hdfs";
+
+  protected volatile CoreContainer coreContainer;
   
   /**
    * Indicates a Directory will no longer be used, and when its ref count
@@ -144,6 +148,31 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public abstract void remove(String path) throws IOException;
   
   /**
+   * @param directory to calculate size of
+   * @return size in bytes
+   * @throws IOException on low level IO error
+   */
+  public long size(Directory directory) throws IOException {
+    return sizeOfDirectory(directory);
+  }
+  
+  /**
+   * @param path to calculate size of
+   * @return size in bytes
+   * @throws IOException on low level IO error
+   */
+  public long size(String path) throws IOException {
+    Directory dir = get(path, DirContext.DEFAULT, null);
+    long size;
+    try {
+      size = sizeOfDirectory(dir);
+    } finally {
+      release(dir); 
+    }
+    return size;
+  }
+  
+  /**
    * Override for more efficient moves.
    * 
    * Intended for use with replication - use
@@ -155,6 +184,20 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
     toDir.copyFrom(fromDir, fileName, fileName, ioContext);
     fromDir.deleteFile(fileName);
+  }
+  
+  // sub classes perform an atomic rename if possible, otherwise fall back to delete + rename
+  // this is important to support for index roll over durability after crashes
+  public void renameWithOverwrite(Directory dir, String fileName, String toName) throws IOException {
+    try {
+      dir.deleteFile(toName);
+    } catch (FileNotFoundException e) {
+
+    } catch (Exception e) {
+      log.error("Exception deleting file", e);
+    }
+
+    dir.rename(fileName, toName);
   }
   
   /**
@@ -285,7 +328,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public void cleanupOldIndexDirectories(final String dataDirPath, final String currentIndexDirPath) {
     File dataDir = new File(dataDirPath);
     if (!dataDir.isDirectory()) {
-      log.warn("{} does not point to a valid data directory; skipping clean-up of old index directories.", dataDirPath);
+      log.debug("{} does not point to a valid data directory; skipping clean-up of old index directories.", dataDirPath);
       return;
     }
 
@@ -324,5 +367,19 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     File dirToRm = new File(oldDirPath);
     FileUtils.deleteDirectory(dirToRm);
     return !dirToRm.isDirectory();
+  }
+  
+  public void initCoreContainer(CoreContainer cc) {
+    this.coreContainer = cc;
+  }
+  
+  // special hack to work with FilterDirectory
+  protected Directory getBaseDir(Directory dir) {
+    Directory baseDir = dir;
+    while (baseDir instanceof FilterDirectory) {
+      baseDir = ((FilterDirectory)baseDir).getDelegate();
+    } 
+    
+    return baseDir;
   }
 }

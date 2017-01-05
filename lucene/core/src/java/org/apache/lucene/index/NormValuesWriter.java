@@ -18,10 +18,10 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.NormsConsumer;
+import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
@@ -30,29 +30,33 @@ import org.apache.lucene.util.packed.PackedLongValues;
  *  segment flushes. */
 class NormValuesWriter {
 
-  private final static long MISSING = 0L;
-
+  private DocsWithFieldSet docsWithField;
   private PackedLongValues.Builder pending;
   private final Counter iwBytesUsed;
   private long bytesUsed;
   private final FieldInfo fieldInfo;
+  private int lastDocID = -1;
 
   public NormValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+    docsWithField = new DocsWithFieldSet();
     pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
-    bytesUsed = pending.ramBytesUsed();
+    bytesUsed = pending.ramBytesUsed() + docsWithField.ramBytesUsed();
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
     iwBytesUsed.addAndGet(bytesUsed);
   }
 
   public void addValue(int docID, long value) {
-    // Fill in any holes:
-    for (int i = (int)pending.size(); i < docID; ++i) {
-      pending.add(MISSING);
+    if (docID <= lastDocID) {
+      throw new IllegalArgumentException("Norm for \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
     }
 
     pending.add(value);
+    docsWithField.add(docID);
+
     updateBytesUsed();
+
+    lastDocID = docID;
   }
 
   private void updateBytesUsed() {
@@ -64,56 +68,89 @@ class NormValuesWriter {
   public void finish(int maxDoc) {
   }
 
-  public void flush(SegmentWriteState state, NormsConsumer normsConsumer) throws IOException {
-
-    final int maxDoc = state.segmentInfo.maxDoc();
+  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, NormsConsumer normsConsumer) throws IOException {
     final PackedLongValues values = pending.build();
-
+    final SortingLeafReader.CachedNumericDVs sorted;
+    if (sortMap != null) {
+      sorted = NumericDocValuesWriter.sortDocValues(state.segmentInfo.maxDoc(), sortMap,
+          new BufferedNorms(values, docsWithField.iterator()));
+    } else {
+      sorted = null;
+    }
     normsConsumer.addNormsField(fieldInfo,
-                               new Iterable<Number>() {
-                                 @Override
-                                 public Iterator<Number> iterator() {
-                                   return new NumericIterator(maxDoc, values);
-                                 }
+                                new NormsProducer() {
+                                  @Override
+                                  public NumericDocValues getNorms(FieldInfo fieldInfo2) {
+                                   if (fieldInfo != NormValuesWriter.this.fieldInfo) {
+                                     throw new IllegalArgumentException("wrong fieldInfo");
+                                   }
+                                   if (sorted == null) {
+                                     return new BufferedNorms(values, docsWithField.iterator());
+                                   } else {
+                                     return new SortingLeafReader.SortingNumericDocValues(sorted);
+                                   }
+                                  }
+
+                                  @Override
+                                  public void checkIntegrity() {
+                                  }
+
+                                  @Override
+                                  public void close() {
+                                  }
+                                  
+                                  @Override
+                                  public long ramBytesUsed() {
+                                    return 0;
+                                  }
                                });
   }
 
+  // TODO: norms should only visit docs that had a field indexed!!
+  
   // iterates over the values we have in ram
-  private static class NumericIterator implements Iterator<Number> {
+  private static class BufferedNorms extends NumericDocValues {
     final PackedLongValues.Iterator iter;
-    final int size;
-    final int maxDoc;
-    int upto;
-    
-    NumericIterator(int maxDoc, PackedLongValues values) {
-      this.maxDoc = maxDoc;
+    final DocIdSetIterator docsWithField;
+    private long value;
+
+    BufferedNorms(PackedLongValues values, DocIdSetIterator docsWithFields) {
       this.iter = values.iterator();
-      this.size = (int) values.size();
-    }
-    
-    @Override
-    public boolean hasNext() {
-      return upto < maxDoc;
+      this.docsWithField = docsWithFields;
     }
 
     @Override
-    public Number next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
-      }
-      Long value;
-      if (upto < size) {
+    public int docID() {
+      return docsWithField.docID();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      int docID = docsWithField.nextDoc();
+      if (docID != NO_MORE_DOCS) {
         value = iter.next();
-      } else {
-        value = MISSING;
       }
-      upto++;
-      return value;
+      return docID;
     }
 
     @Override
-    public void remove() {
+    public int advance(int target) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      return docsWithField.cost();
+    }
+
+    @Override
+    public long longValue() {
+      return value;
     }
   }
 }

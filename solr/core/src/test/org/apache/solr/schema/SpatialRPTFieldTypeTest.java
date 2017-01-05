@@ -21,9 +21,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.junit.After;
 import org.junit.Before;
+import org.locationtech.spatial4j.shape.Shape;
 
 public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   
@@ -201,7 +203,44 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     );
   }
 
-  private void setupRPTField(String distanceUnits, String geo) throws Exception {
+  public void testShapeToFromStringWKT() throws Exception {
+    setupRPTField("miles", "true", "WKT", random().nextBoolean()
+        ? new SpatialRecursivePrefixTreeFieldType() : new RptWithGeometrySpatialField());
+
+    AbstractSpatialFieldType ftype = (AbstractSpatialFieldType)
+        h.getCore().getLatestSchema().getField("geo").getType();
+
+    String wkt = "POINT (1 2)";
+    Shape shape = ftype.parseShape(wkt);
+    String out = ftype.shapeToString(shape);
+
+    assertEquals(wkt, out);
+
+    //assert fails GeoJSON
+    try {
+      ftype.parseShape("{\"type\":\"Point\",\"coordinates\":[1,2]}");
+      fail("Should not parse GeoJSON if told format is WKT");
+    } catch (SolrException e) {// expected
+      System.out.println(e);
+    }
+
+  }
+
+  public void testShapeToFromStringGeoJSON() throws Exception {
+    setupRPTField("miles", "true", "GeoJSON", random().nextBoolean()
+        ? new SpatialRecursivePrefixTreeFieldType() : new RptWithGeometrySpatialField());
+
+    AbstractSpatialFieldType ftype = (AbstractSpatialFieldType)
+        h.getCore().getLatestSchema().getField("geo").getType();
+
+    String json = "{\"type\":\"Point\",\"coordinates\":[1,2]}";
+    Shape shape = ftype.parseShape(json);
+    String out = ftype.shapeToString(shape);
+
+    assertEquals(json, out);
+  }
+
+  private void setupRPTField(String distanceUnits, String geo, String format, FieldType fieldType) throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema");
     Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
@@ -214,19 +253,28 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     
     IndexSchema oldSchema = h.getCore().getLatestSchema();
 
-    SpatialRecursivePrefixTreeFieldType rptFieldType = new SpatialRecursivePrefixTreeFieldType();
+    if (fieldType == null) {
+      fieldType = new SpatialRecursivePrefixTreeFieldType();
+    }
     Map<String, String> rptMap = new HashMap<String,String>();
     if(distanceUnits!=null)
       rptMap.put("distanceUnits", distanceUnits);
     if(geo!=null)
       rptMap.put("geo", geo);
-    rptFieldType.init(oldSchema, rptMap);
-    rptFieldType.setTypeName("location_rpt");
-    SchemaField newField = new SchemaField("geo", rptFieldType, SchemaField.STORED | SchemaField.INDEXED, null);
+    if(format!=null) {
+      rptMap.put("format", format);
+    }
+    fieldType.init(oldSchema, rptMap);
+    fieldType.setTypeName("location_rpt");
+    SchemaField newField = new SchemaField("geo", fieldType, SchemaField.STORED | SchemaField.INDEXED, null);
     IndexSchema newSchema = oldSchema.addField(newField);
 
     h.getCore().setLatestSchema(newSchema);
 
     assertU(delQ("*:*"));
+  }
+
+  private void setupRPTField(String distanceUnits, String geo) throws Exception {
+    setupRPTField(distanceUnits, geo, null, null);
   }
 }

@@ -32,6 +32,9 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.BasicDistributedZkTest;
 import org.apache.solr.cloud.ChaosMonkey;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -46,6 +49,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -87,7 +91,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   }
   
   protected String getSolrXml() {
-    return "solr-no-core.xml";
+    return "solr.xml";
   }
 
   @Test
@@ -106,7 +110,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
         createCollection(DELETE_DATA_DIR_COLLECTION, 1, 1, 1);
         
         waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
-        
+
         ChaosMonkey.stop(jettys.get(0));
         
         // enter safe mode and restart a node
@@ -153,8 +157,19 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     createCollection(DELETE_DATA_DIR_COLLECTION, nShards, rep, maxReplicasPerNode);
 
     waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
+    
+    // data dirs should be in zk, SOLR-8913
+    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    Slice slice = clusterState.getSlice(DELETE_DATA_DIR_COLLECTION, "shard1");
+    assertNotNull(clusterState.getSlices(DELETE_DATA_DIR_COLLECTION).toString(), slice);
+    Collection<Replica> replicas = slice.getReplicas();
+    for (Replica replica : replicas) {
+      assertNotNull(replica.getProperties().toString(), replica.get("dataDir"));
+      assertNotNull(replica.getProperties().toString(), replica.get("ulogDir"));
+    }
+    
     cloudClient.setDefaultCollection(DELETE_DATA_DIR_COLLECTION);
-    cloudClient.getZkStateReader().updateClusterState();
+    cloudClient.getZkStateReader().forceUpdateCollection(DELETE_DATA_DIR_COLLECTION);
     
     for (int i = 1; i < nShards + 1; i++) {
       cloudClient.getZkStateReader().getLeaderRetry(DELETE_DATA_DIR_COLLECTION, "shard" + i, 30000);
@@ -165,7 +180,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     
     int i = 0;
     for (SolrClient client : clients) {
-      try (HttpSolrClient c = new HttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION)) {
+      try (HttpSolrClient c = getHttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION)) {
         int docCnt = random().nextInt(1000) + 1;
         for (int j = 0; j < docCnt; j++) {
           c.add(getDoc("id", i++, "txt_t", "just some random text for a doc"));
@@ -211,7 +226,6 @@ public class StressHdfsTest extends BasicDistributedZkTest {
       }
       
       Thread.sleep(200);
-      cloudClient.getZkStateReader().updateClusterState();
     }
     
     // check that all dirs are gone

@@ -33,6 +33,34 @@ package org.apache.lucene.util;
 public class SloppyMath {
   
   /**
+   * Returns the Haversine distance in meters between two points
+   * specified in decimal degrees (latitude/longitude).  This works correctly
+   * even if the dateline is between the two points.
+   * <p>
+   * Error is at most 4E-1 (40cm) from the actual haversine distance, but is typically
+   * much smaller for reasonable distances: around 1E-5 (0.01mm) for distances less than
+   * 1000km.
+   *
+   * @param lat1 Latitude of the first point.
+   * @param lon1 Longitude of the first point.
+   * @param lat2 Latitude of the second point.
+   * @param lon2 Longitude of the second point.
+   * @return distance in meters.
+   */
+  public static double haversinMeters(double lat1, double lon1, double lat2, double lon2) {
+    return haversinMeters(haversinSortKey(lat1, lon1, lat2, lon2));
+  }
+  
+  /**
+   * Returns the Haversine distance in meters between two points
+   * given the previous result from {@link #haversinSortKey(double, double, double, double)}
+   * @return distance in meters.
+   */
+  public static double haversinMeters(double sortKey) {
+    return TO_METERS * 2 * asin(Math.min(1, Math.sqrt(sortKey * 0.5)));
+  }
+  
+  /**
    * Returns the Haversine distance in kilometers between two points
    * specified in decimal degrees (latitude/longitude).  This works correctly
    * even if the dateline is between the two points.
@@ -42,19 +70,28 @@ public class SloppyMath {
    * @param lat2 Latitude of the second point.
    * @param lon2 Longitude of the second point.
    * @return distance in kilometers.
+   * @deprecated Use {@link #haversinMeters(double, double, double, double) instead}
    */
-  public static double haversin(double lat1, double lon1, double lat2, double lon2) {
+  @Deprecated
+  public static double haversinKilometers(double lat1, double lon1, double lat2, double lon2) {
+    double h = haversinSortKey(lat1, lon1, lat2, lon2);
+    return TO_KILOMETERS * 2 * asin(Math.min(1, Math.sqrt(h * 0.5)));
+  }
+  
+  /**
+   * Returns a sort key for distance. This is less expensive to compute than 
+   * {@link #haversinMeters(double, double, double, double)}, but it always compares the same.
+   * This can be converted into an actual distance with {@link #haversinMeters(double)}, which
+   * effectively does the second half of the computation.
+   */
+  public static double haversinSortKey(double lat1, double lon1, double lat2, double lon2) {
     double x1 = lat1 * TO_RADIANS;
     double x2 = lat2 * TO_RADIANS;
     double h1 = 1 - cos(x1 - x2);
     double h2 = 1 - cos((lon1 - lon2) * TO_RADIANS);
-    double h = (h1 + cos(x1) * cos(x2) * h2) / 2;
-
-    double avgLat = (x1 + x2) / 2d;
-    double diameter = earthDiameter(avgLat);
-
-    return diameter * asin(Math.min(1, Math.sqrt(h)));
-    
+    double h = h1 + cos(x1) * cos(x2) * h2;
+    // clobber crazy precision so subsequent rounding does not create ties.
+    return Double.longBitsToDouble(Double.doubleToRawLongBits(h) & 0xFFFFFFFFFFFFFFF8L);
   }
 
   /**
@@ -86,40 +123,6 @@ public class SloppyMath {
     double indexCos = cosTab[index];
     double indexSin = sinTab[index];
     return indexCos + delta * (-indexSin + delta * (-indexCos * ONE_DIV_F2 + delta * (indexSin * ONE_DIV_F3 + delta * indexCos * ONE_DIV_F4)));
-  }
-
-  /**
-   * Returns the trigonometric sine of an angle converted as a cos operation.
-   * <p>
-   * Error is around 1E-15.
-   * <p>
-   * Special cases:
-   * <ul>
-   *  <li>If the argument is {@code NaN} or an infinity, then the result is {@code NaN}.
-   * </ul>
-   * @param a an angle, in radians.
-   * @return the sine of the argument.
-   * @see Math#cos(double)
-   */
-  public static double sin(double a) {
-    return cos(a - PIO2);
-  }
-
-  /**
-   * Returns the trigonometric tangent of an angle converted in terms of a sin/cos operation.
-   * <p>
-   * Error is around 1E-15.
-   * <p>
-   * Special cases:
-   * <ul>
-   *  <li>If the argument is {@code NaN} or an infinity, then the result is {@code NaN}.
-   * </ul>
-   * @param a an angle, in radians.
-   * @return the tangent of the argument.
-   * @see Math#sin(double) aand Math#cos(double)
-   */
-  public static double tan(double a) {
-    return sin(a) / cos(a);
   }
 
   /**
@@ -173,22 +176,38 @@ public class SloppyMath {
     }
   }
 
-  /** Return an approximate value of the diameter of the earth at the given latitude, in kilometers. */
-  public static double earthDiameter(double latitude) {
-    final int index = (int)(Math.abs(latitude) * RADIUS_INDEXER + 0.5) % earthDiameterPerLatitude.length;
-    return earthDiameterPerLatitude[index];
+  /**
+   * Convert to degrees.
+   * @param radians radians to convert to degrees
+   * @return degrees
+   */
+  public static double toDegrees(final double radians) {
+    return radians * TO_DEGREES;
   }
-
+  
+  /**
+   * Convert to radians.
+   * @param degrees degrees to convert to radians
+   * @return radians
+   */
+  public static double toRadians(final double degrees) {
+    return degrees * TO_RADIANS;
+  }
+  
   // haversin
+  // TODO: remove these for java 9, they fixed Math.toDegrees()/toRadians() to work just like this.
   public static final double TO_RADIANS = Math.PI / 180D;
   public static final double TO_DEGREES = 180D / Math.PI;
+
+  // Earth's mean radius, in meters and kilometers; see http://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf
+  private static final double TO_METERS = 6_371_008.7714D; // equatorial radius
+  private static final double TO_KILOMETERS = 6_371.0087714D; // equatorial radius
   
   // cos/asin
   private static final double ONE_DIV_F2 = 1/2.0;
   private static final double ONE_DIV_F3 = 1/6.0;
   private static final double ONE_DIV_F4 = 1/24.0;
 
-  public static final double PIO2 = Math.PI / 2D;
   private static final double PIO2_HI = Double.longBitsToDouble(0x3FF921FB54400000L); // 1.57079632673412561417e+00 first 33 bits of pi/2
   private static final double PIO2_LO = Double.longBitsToDouble(0x3DD0B4611A626331L); // 6.07710050650619224932e-11 pi/2 - PIO2_HI
   private static final double TWOPI_HI = 4*PIO2_HI;
@@ -208,7 +227,7 @@ public class SloppyMath {
     
   // Supposed to be >= sin(77.2deg), as fdlibm code is supposed to work with values > 0.975,
   // but seems to work well enough as long as value >= sin(25deg).
-  private static final double ASIN_MAX_VALUE_FOR_TABS = StrictMath.sin(Math.toRadians(73.0));
+  private static final double ASIN_MAX_VALUE_FOR_TABS = StrictMath.sin(toRadians(73.0));
   
   private static final int ASIN_TABS_SIZE = (1<<13) + 1;
   private static final double ASIN_DELTA = ASIN_MAX_VALUE_FOR_TABS/(ASIN_TABS_SIZE - 1);
@@ -231,11 +250,6 @@ public class SloppyMath {
   private static final double ASIN_QS2 = Double.longBitsToDouble(0x40002ae59c598ac8L); //  2.02094576023350569471e+00
   private static final double ASIN_QS3 = Double.longBitsToDouble(0xbfe6066c1b8d0159L); // -6.88283971605453293030e-01
   private static final double ASIN_QS4 = Double.longBitsToDouble(0x3fb3b8c5b12e9282L); //  7.70381505559019352791e-02
-  
-  private static final int RADIUS_TABS_SIZE = (1<<10) + 1;
-  private static final double RADIUS_DELTA = (StrictMath.PI/2d) / (RADIUS_TABS_SIZE - 1);
-  private static final double RADIUS_INDEXER = 1d/RADIUS_DELTA;
-  private static final double[] earthDiameterPerLatitude = new double[RADIUS_TABS_SIZE];
   
   /** Initializes look-up tables. */
   static {
@@ -278,28 +292,6 @@ public class SloppyMath {
       asinDer2DivF2Tab[i] = (x*oneMinusXSqInv1_5) * ONE_DIV_F2;
       asinDer3DivF3Tab[i] = ((1+2*x*x)*oneMinusXSqInv2_5) * ONE_DIV_F3;
       asinDer4DivF4Tab[i] = ((5+2*x*(2+x*(5-2*x)))*oneMinusXSqInv3_5) * ONE_DIV_F4;
-    }
-    
-    
-    // WGS84 earth-ellipsoid major (a) and minor (b) radius
-    final double a = 6_378_137; // [m]
-    final double b = 6_356_752.31420; // [m]
-    
-    final double a2 = a*a;
-    final double b2 = b*b;
-    
-    earthDiameterPerLatitude[0] = 2 * a / 1000d;
-    earthDiameterPerLatitude[RADIUS_TABS_SIZE-1] = 2 * b / 1000d;
-    // earth radius
-    for (int i=1;i<RADIUS_TABS_SIZE-1;i++) {
-      final double lat = Math.PI * i / (2d * RADIUS_TABS_SIZE-1);
-      double one = StrictMath.pow(a2 * StrictMath.cos(lat), 2); 
-      double two = StrictMath.pow(b2 * StrictMath.sin(lat), 2);
-      double three = StrictMath.pow(a * StrictMath.cos(lat), 2);
-      double four = StrictMath.pow(b * StrictMath.sin(lat), 2);
-      
-      double radius = StrictMath.sqrt((one+two)/(three+four));
-      earthDiameterPerLatitude[i] = 2 * radius / 1000d;
     }
   }
 }

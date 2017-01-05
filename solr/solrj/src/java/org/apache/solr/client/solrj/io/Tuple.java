@@ -16,11 +16,15 @@
  */
 package org.apache.solr.client.solrj.io;
 
+import java.io.IOException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
-import java.util.Iterator;
+import java.util.Map;
 
+import org.apache.solr.common.MapWriter;
 
 /**
  *  A simple abstraction of a record containing key/value pairs.
@@ -29,7 +33,7 @@ import java.util.Iterator;
  *
 **/
 
-public class Tuple implements Cloneable {
+public class Tuple implements Cloneable, MapWriter {
 
   /**
    *  When EOF field is true the Tuple marks the end of the stream.
@@ -85,6 +89,53 @@ public class Tuple implements Cloneable {
       //Attempt to parse the long
       return Long.parseLong(o.toString());
     }
+  }
+
+  // Convenience method since Booleans can be passed around as Strings.
+  public Boolean getBool(Object key) {
+    Object o = this.fields.get(key);
+
+    if (o == null) {
+      return null;
+    }
+
+    if (o instanceof Boolean) {
+      return (Boolean) o;
+    } else {
+      //Attempt to parse the Boolean
+      return Boolean.parseBoolean(o.toString());
+    }
+  }
+
+  public List<Boolean> getBools(Object key) {
+    return (List<Boolean>) this.fields.get(key);
+  }
+
+  // Convenience methods since the dates are actually shipped around as Strings.
+  public Date getDate(Object key) {
+    Object o = this.fields.get(key);
+
+    if (o == null) {
+      return null;
+    }
+
+    if (o instanceof Date) {
+      return (Date) o;
+    } else {
+      //Attempt to parse the Date from a String
+      return new Date(Instant.parse(o.toString()).toEpochMilli());
+    }
+  }
+
+  public List<Date> getDates(Object key) {
+    List<String> vals = (List<String>) this.fields.get(key);
+    if (vals == null) return null;
+    
+    List<Date> ret = new ArrayList<>();
+    for (String dateStr : (List<String>) this.fields.get(key)) {
+      ret.add(new Date(Instant.parse(dateStr).toEpochMilli()));
+    }
+    return ret;
   }
 
   public Double getDouble(Object key) {
@@ -143,5 +194,16 @@ public class Tuple implements Cloneable {
   
   public void merge(Tuple other){
     fields.putAll(other.getMap());
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    fields.forEach((k, v) -> {
+      try {
+        ew.put((String)k,v);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
 }

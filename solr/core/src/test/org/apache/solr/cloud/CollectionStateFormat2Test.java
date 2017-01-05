@@ -16,74 +16,55 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.zookeeper.data.Stat;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class CollectionStateFormat2Test extends AbstractFullDistribZkTestBase {
+public class CollectionStateFormat2Test extends SolrCloudTestCase {
 
-  protected String getSolrXml() {
-    return "solr-no-core.xml";
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(4)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
   }
 
   @Test
-  @ShardsFixed(num = 4)
-  public void test() throws Exception {
-    try (CloudSolrClient client = createCloudClient(null))  {
-      testZkNodeLocation(client);
-      testConfNameAndCollectionNameSame(client);
-    }
-  }
+  public void testConfNameAndCollectionNameSame() throws Exception {
 
-  @Override
-  protected String getStateFormat() {
-    return "2";
-  }
-
-  private void testConfNameAndCollectionNameSame(CloudSolrClient client) throws Exception{
     // .system collection precreates the configset
-
-    createCollection(".system", client, 2, 1);
-    waitForRecoveriesToFinish(".system", false);
+    CollectionAdminRequest.createCollection(".system", 2, 1)
+        .process(cluster.getSolrClient());
   }
 
-  private void testZkNodeLocation(CloudSolrClient client) throws Exception{
+  @Test
+  public void testZkNodeLocation() throws Exception {
 
     String collectionName = "myExternColl";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+        .process(cluster.getSolrClient());
 
-    createCollection(collectionName, client, 2, 2);
+    waitForState("Collection not created", collectionName, (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+    assertTrue("State Format 2 collection path does not exist",
+        zkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
 
-    waitForRecoveriesToFinish(collectionName, false);
-    assertTrue("does not exist collection state externally",
-        cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
     Stat stat = new Stat();
-    byte[] data = cloudClient.getZkStateReader().getZkClient().getData(ZkStateReader.getCollectionPath(collectionName), null, stat, true);
-    DocCollection c = ZkStateReader.getCollectionLive(cloudClient.getZkStateReader(), collectionName);
-    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
-    assertEquals("The zkversion of the nodes must be same zkver:" + stat.getVersion() , stat.getVersion(),clusterState.getCollection(collectionName).getZNodeVersion() );
-    assertTrue("DocCllection#getStateFormat() must be > 1", cloudClient.getZkStateReader().getClusterState().getCollection(collectionName).getStateFormat() > 1);
+    zkClient().getData(ZkStateReader.getCollectionPath(collectionName), null, stat, true);
 
+    DocCollection c = getCollectionState(collectionName);
+
+    assertEquals("DocCollection version should equal the znode version", stat.getVersion(), c.getZNodeVersion() );
+    assertTrue("DocCollection#getStateFormat() must be > 1", c.getStateFormat() > 1);
 
     // remove collection
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("action", CollectionParams.CollectionAction.DELETE.toString());
-    params.set("name", collectionName);
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    if (client == null) {
-      client = createCloudClient(null);
-    }
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
+    waitForState("Collection not deleted", collectionName, (n, coll) -> coll == null);
 
-    client.request(request);
-
-    assertCollectionNotExists(collectionName, 45);
-    assertFalse("collection state should not exist externally", cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
+    assertFalse("collection state should not exist externally",
+        zkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
 
   }
 }

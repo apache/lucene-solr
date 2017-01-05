@@ -27,15 +27,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.io.Closeables;
+import com.typesafe.config.Config;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.handler.extraction.ExtractingParams;
+import org.apache.solr.handler.extraction.ExtractionDateUtil;
 import org.apache.solr.handler.extraction.SolrContentHandler;
 import org.apache.solr.handler.extraction.SolrContentHandlerFactory;
 import org.apache.solr.morphlines.solr.SolrLocator;
@@ -50,7 +55,6 @@ import org.apache.tika.sax.XHTMLContentHandler;
 import org.apache.tika.sax.xpath.Matcher;
 import org.apache.tika.sax.xpath.MatchingContentHandler;
 import org.apache.tika.sax.xpath.XPathParser;
-
 import org.kitesdk.morphline.api.Command;
 import org.kitesdk.morphline.api.CommandBuilder;
 import org.kitesdk.morphline.api.MorphlineCompilationException;
@@ -62,13 +66,6 @@ import org.kitesdk.morphline.base.Fields;
 import org.kitesdk.morphline.stdio.AbstractParser;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
-
-import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.io.Closeables;
-import com.typesafe.config.Config;
 
 /**
  * Command that pipes the first attachment of a record into one of the given Tika parsers, then maps
@@ -116,9 +113,12 @@ public final class SolrCellBuilder implements CommandBuilder {
       Config solrLocatorConfig = getConfigs().getConfig(config, "solrLocator");
       SolrLocator locator = new SolrLocator(solrLocatorConfig, context);
       LOG.debug("solrLocator: {}", locator);
-      this.schema = locator.getIndexSchema();
-      Preconditions.checkNotNull(schema);
-      LOG.trace("Solr schema: \n{}", Joiner.on("\n").join(new TreeMap<>(schema.getFields()).values()));
+      this.schema = Objects.requireNonNull(locator.getIndexSchema());
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("Solr schema: \n" + schema.getFields().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey()).map(Map.Entry::getValue).map(Object::toString)
+                .collect(Collectors.joining("\n")));
+      }
 
       ListMultimap<String, String> cellParams = ArrayListMultimap.create();
       String uprefix = getConfigs().getString(config, ExtractingParams.UNKNOWN_FIELD_PREFIX, null);
@@ -151,7 +151,7 @@ public final class SolrCellBuilder implements CommandBuilder {
         cellParams.put(ExtractingParams.XPATH_EXPRESSION, xpathExpr);
       }
       
-      this.dateFormats = getConfigs().getStringList(config, "dateFormats", new ArrayList<>(DateUtil.DEFAULT_DATE_FORMATS));
+      this.dateFormats = getConfigs().getStringList(config, "dateFormats", new ArrayList<>(ExtractionDateUtil.DEFAULT_DATE_FORMATS));
       
       String handlerStr = getConfigs().getString(config, "solrContentHandlerFactory", TrimSolrContentHandlerFactory.class.getName());
       Class<? extends SolrContentHandlerFactory> factoryClass;

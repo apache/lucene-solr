@@ -16,7 +16,6 @@
  limitations under the License.
 -->
 <schema name="luceneMatchVersionTest" version="1.1">
- <types>
   <fieldType name="long" class="solr.TrieLongField"/>
   <fieldType name="string" class="solr.StrField"/>
   <fieldType name="text40" class="solr.TextField">
@@ -43,16 +42,13 @@
   <fieldType name="textTurkishAnalyzerDefault" class="solr.TextField">
     <analyzer class="org.apache.lucene.analysis.tr.TurkishAnalyzer"/>
   </fieldType>
- </types>
- <fields>
-   <field name="id" type="string" indexed="true" stored="true"/>
-   <field name="signatureField" type="string" indexed="true" stored="false"/>
-   <field name="text40" type="text40" indexed="true" stored="false" />
-   <field name="textDefault" type="textDefault" indexed="true" stored="false" />
-   <field name="textTurkishAnalyzer40" type="textTurkishAnalyzer40" indexed="true" stored="false" />
-   <field name="textTurkishAnalyzerDefault" type="textTurkishAnalyzerDefault" indexed="true" stored="false" />
-   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
-   <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
- </fields>
- <uniqueKey>id</uniqueKey>
+  <field name="id" type="string" indexed="true" stored="true"/>
+  <field name="signatureField" type="string" indexed="true" stored="false"/>
+  <field name="text40" type="text40" indexed="true" stored="false"/>
+  <field name="textDefault" type="textDefault" indexed="true" stored="false"/>
+  <field name="textTurkishAnalyzer40" type="textTurkishAnalyzer40" indexed="true" stored="false"/>
+  <field name="textTurkishAnalyzerDefault" type="textTurkishAnalyzerDefault" indexed="true" stored="false"/>
+  <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
+  <uniqueKey>id</uniqueKey>
 </schema>

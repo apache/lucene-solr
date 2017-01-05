@@ -17,12 +17,8 @@
 package org.apache.solr.security;
 
 import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import java.io.IOException;
 import java.security.Principal;
 import java.security.PublicKey;
 import java.util.HashMap;
@@ -40,8 +36,6 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
 import org.easymock.EasyMock;
-import org.easymock.IAnswer;
-
 import static org.easymock.EasyMock.getCurrentArguments;
 
 public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
@@ -100,13 +94,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assertTrue(header.get().getValue().startsWith(nodeName));
     final AtomicReference<ServletRequest> wrappedRequestByFilter = new AtomicReference<>();
     HttpServletRequest mockReq = createMockRequest(header);
-    FilterChain filterChain = new FilterChain() {
-      @Override
-      public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse)
-          throws IOException, ServletException {
-        wrappedRequestByFilter.set(servletRequest);
-      }
-    };
+    FilterChain filterChain = (servletRequest, servletResponse) -> wrappedRequestByFilter.set(servletRequest);
     mock.doAuthenticate(mockReq, null, filterChain);
 
     assertNotNull(wrappedRequestByFilter.get());
@@ -164,30 +152,17 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     HttpServletRequest mockReq = EasyMock.createMock(HttpServletRequest.class);
     EasyMock.reset(mockReq);
     mockReq.getHeader(EasyMock.anyObject(String.class));
-    EasyMock.expectLastCall().andAnswer(new IAnswer<String>() {
-      @Override
-      public String answer() throws Throwable {
-        if (PKIAuthenticationPlugin.HEADER.equals(getCurrentArguments()[0])) {
-          if (header.get() == null) return null;
-          return header.get().getValue();
-        } else return null;
-      }
+    EasyMock.expectLastCall().andAnswer(() -> {
+      if (PKIAuthenticationPlugin.HEADER.equals(getCurrentArguments()[0])) {
+        if (header.get() == null) return null;
+        return header.get().getValue();
+      } else return null;
     }).anyTimes();
     mockReq.getUserPrincipal();
-    EasyMock.expectLastCall().andAnswer(new IAnswer<Principal>() {
-      @Override
-      public Principal answer() throws Throwable {
-        return null;
-      }
-    }).anyTimes();
+    EasyMock.expectLastCall().andAnswer(() -> null).anyTimes();
 
     mockReq.getRequestURI();
-    EasyMock.expectLastCall().andAnswer(new IAnswer<String>() {
-      @Override
-      public String answer() throws Throwable {
-        return "/collection1/select";
-      }
-    }).anyTimes();
+    EasyMock.expectLastCall().andAnswer(() -> "/collection1/select").anyTimes();
 
     EasyMock.replay(mockReq);
     return mockReq;

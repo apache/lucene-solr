@@ -30,13 +30,17 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.XML;
 
@@ -101,6 +105,10 @@ public class UpdateRequest extends AbstractUpdateRequest {
     }
     documents.put(doc, null);
     return this;
+  }
+
+  public UpdateRequest add(String... fields) {
+    return add(new SolrInputDocument(fields));
   }
 
   /**
@@ -209,6 +217,20 @@ public class UpdateRequest extends AbstractUpdateRequest {
     deleteQuery.add(q);
     return this;
   }
+
+  public UpdateRequest withRoute(String route) {
+    if (params == null)
+      params = new ModifiableSolrParams();
+    params.set(ROUTE, route);
+    return this;
+  }
+
+  public UpdateResponse commit(SolrClient client, String collection) throws IOException, SolrServerException {
+    if (params == null)
+      params = new ModifiableSolrParams();
+    params.set(UpdateParams.COMMIT, "true");
+    return process(client, collection);
+  }
   
   /**
    * @param router to route updates with
@@ -242,6 +264,9 @@ public class UpdateRequest extends AbstractUpdateRequest {
           return null;
         }
         List<String> urls = urlMap.get(slice.getName());
+        if (urls == null) {
+          return null;
+        }
         String leaderUrl = urls.get(0);
         LBHttpSolrClient.Req request = (LBHttpSolrClient.Req) routes
             .get(leaderUrl);
@@ -290,6 +315,9 @@ public class UpdateRequest extends AbstractUpdateRequest {
           return null;
         }
         List<String> urls = urlMap.get(slice.getName());
+        if (urls == null) {
+          return null;
+        }
         String leaderUrl = urls.get(0);
         LBHttpSolrClient.Req request = routes.get(leaderUrl);
         if (request != null) {
@@ -383,7 +411,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   /**
    * @since solr 1.4
    */
-  public void writeXML(Writer writer) throws IOException {
+  public UpdateRequest writeXML(Writer writer) throws IOException {
     List<Map<SolrInputDocument,Map<String,Object>>> getDocLists = getDocLists(documents);
     
     for (Map<SolrInputDocument,Map<String,Object>> docs : getDocLists) {
@@ -457,6 +485,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
       }
       writer.append("</delete>");
     }
+    return this;
   }
   
   // --------------------------------------------------------------------------
@@ -502,4 +531,5 @@ public class UpdateRequest extends AbstractUpdateRequest {
   public void lastDocInBatch() {
     isLastDocInBatch = true;
   }
+
 }

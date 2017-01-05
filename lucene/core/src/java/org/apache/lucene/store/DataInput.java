@@ -255,24 +255,6 @@ public abstract class DataInput implements Cloneable {
       throw new Error("This cannot happen: Failing to clone DataInput");
     }
   }
-
-  /** Reads a Map&lt;String,String&gt; previously written
-   *  with {@link DataOutput#writeStringStringMap(Map)}. 
-   *  @deprecated Only for reading existing formats. Encode maps with 
-   *  {@link DataOutput#writeMapOfStrings(Map)} instead.
-   */
-  @Deprecated
-  public Map<String,String> readStringStringMap() throws IOException {
-    final Map<String,String> map = new HashMap<>();
-    final int count = readInt();
-    for(int i=0;i<count;i++) {
-      final String key = readString();
-      final String val = readString();
-      map.put(key, val);
-    }
-
-    return map;
-  }
   
   /** 
    * Reads a Map&lt;String,String&gt; previously written
@@ -294,21 +276,6 @@ public abstract class DataInput implements Cloneable {
       }
       return Collections.unmodifiableMap(map);
     }
-  }
-
-  /** Reads a Set&lt;String&gt; previously written
-   *  with {@link DataOutput#writeStringSet(Set)}. 
-   *  @deprecated Only for reading existing formats. Encode maps with 
-   *  {@link DataOutput#writeSetOfStrings(Set)} instead. */
-  @Deprecated
-  public Set<String> readStringSet() throws IOException {
-    final Set<String> set = new HashSet<>();
-    final int count = readInt();
-    for(int i=0;i<count;i++) {
-      set.add(readString());
-    }
-
-    return set;
   }
   
   /** 

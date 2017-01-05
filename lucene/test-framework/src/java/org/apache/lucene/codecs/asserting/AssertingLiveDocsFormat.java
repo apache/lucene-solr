@@ -68,8 +68,13 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
 
   @Override
   public void writeLiveDocs(MutableBits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
-    assert bits instanceof AssertingMutableBits;
-    MutableBits raw = (MutableBits) ((AssertingMutableBits)bits).in;
+    MutableBits raw = bits;
+    /**
+     * bits is not necessarily an AssertingMutableBits because index sorting needs to wrap it in a sorted view.
+     */
+    if (bits instanceof AssertingMutableBits) {
+      raw = (MutableBits) ((AssertingMutableBits) bits).in;
+    }
     check(raw, info.info.maxDoc(), info.getDelCount() + newDelCount);
     in.writeLiveDocs(raw, dir, info, newDelCount, context);
   }
@@ -106,7 +111,7 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
     @Override
     public boolean get(int index) {
       assert index >= 0;
-      assert index < in.length();
+      assert index < in.length(): "index=" + index + " vs in.length()=" + in.length();
       return in.get(index);
     }
     

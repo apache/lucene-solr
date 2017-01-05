@@ -17,6 +17,7 @@
 package org.apache.lucene.util;
 
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -25,11 +26,14 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.store.CorruptingIndexOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.OfflineSorter.BufferSize;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.OfflineSorter.SortInfo;
@@ -71,8 +75,8 @@ public class TestOfflineSorter extends LuceneTestCase {
   public void testIntermediateMerges() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer, binary merging.
     try (Directory dir = newDirectory()) {
-      SortInfo info = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 2), 
-          generateRandom((int)OfflineSorter.MB * 20));
+      SortInfo info = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 2, -1), 
+                                generateRandom((int)OfflineSorter.MB * 20));
       assertTrue(info.mergeRounds > 10);
     }
   }
@@ -80,9 +84,9 @@ public class TestOfflineSorter extends LuceneTestCase {
   public void testSmallRandom() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer.
     try (Directory dir = newDirectory()) {
-      SortInfo sortInfo = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), OfflineSorter.MAX_TEMPFILES),
+      SortInfo sortInfo = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), OfflineSorter.MAX_TEMPFILES, -1),
                                     generateRandom((int)OfflineSorter.MB * 20));
-      assertEquals(1, sortInfo.mergeRounds);
+      assertEquals(3, sortInfo.mergeRounds);
     }
   }
 
@@ -90,7 +94,7 @@ public class TestOfflineSorter extends LuceneTestCase {
   public void testLargerRandom() throws Exception {
     // Sort 100MB worth of data with 15mb buffer.
     try (Directory dir = newFSDirectory(createTempDir())) {
-      checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(16), OfflineSorter.MAX_TEMPFILES), 
+      checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(16), OfflineSorter.MAX_TEMPFILES, -1), 
                 generateRandom((int)OfflineSorter.MB * 100));
     }
   }
@@ -102,6 +106,29 @@ public class TestOfflineSorter extends LuceneTestCase {
       random().nextBytes(current);
       data.add(current);
       howMuchDataInBytes -= current.length;
+    }
+    byte [][] bytes = data.toArray(new byte[data.size()][]);
+    return bytes;
+  }
+
+  // Generates same data every time:
+  private byte[][] generateFixed(int howMuchDataInBytes) {
+    ArrayList<byte[]> data = new ArrayList<>();
+    int length = 256;
+    byte counter = 0;
+    while (howMuchDataInBytes > 0) {
+      byte[] current = new byte[length];
+      for(int i=0;i<current.length;i++) {
+        current[i] = counter;
+        counter++;
+      }
+      data.add(current);
+      howMuchDataInBytes -= current.length;
+
+      length--;
+      if (length <= 128) {
+        length = 256;
+      }
     }
     byte [][] bytes = data.toArray(new byte[data.size()][]);
     return bytes;
@@ -173,6 +200,7 @@ public class TestOfflineSorter extends LuceneTestCase {
       for (byte [] datum : data) {
         w.write(datum);
       }
+      CodecUtil.writeFooter(out);
     }
   }
   
@@ -225,5 +253,221 @@ public class TestOfflineSorter extends LuceneTestCase {
     }
 
     assertFalse(failed.get());
+  }
+
+  /** Make sure corruption on the incoming (unsorted) file is caught, even if the corruption didn't confuse OfflineSorter! */
+  public void testBitFlippedOnInput1() throws Exception {
+
+    try (Directory dir0 = newMockDirectory()) {
+
+      Directory dir = new FilterDirectory(dir0) {
+        @Override
+        public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+          IndexOutput out = in.createTempOutput(prefix, suffix, context);
+          if (prefix.equals("unsorted")) {
+            return new CorruptingIndexOutput(dir0, 22, out);
+          } else {
+            return out;
+          }
+        }
+      };
+
+      IndexOutput unsorted = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
+      writeAll(unsorted, generateFixed(10*1024));
+
+      CorruptIndexException e = expectThrows(CorruptIndexException.class, () -> {
+          new OfflineSorter(dir, "foo").sort(unsorted.getName());
+        });
+      assertTrue(e.getMessage().contains("checksum failed (hardware problem?)"));
+    }
+  }
+
+  /** Make sure corruption on the incoming (unsorted) file is caught, if the corruption did confuse OfflineSorter! */
+  public void testBitFlippedOnInput2() throws Exception {
+
+    try (Directory dir0 = newMockDirectory()) {
+
+      Directory dir = new FilterDirectory(dir0) {
+        @Override
+        public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+          IndexOutput out = in.createTempOutput(prefix, suffix, context);
+          if (prefix.equals("unsorted")) {
+            return new CorruptingIndexOutput(dir0, 22, out) {
+              @Override
+              protected void corruptFile() throws IOException {
+                String newTempName;
+                try(IndexOutput tmpOut = dir0.createTempOutput("tmp", "tmp", IOContext.DEFAULT);
+                    IndexInput in = dir0.openInput(out.getName(), IOContext.DEFAULT)) {
+                  newTempName = tmpOut.getName();
+                  // Replace length at the end with a too-long value:
+                  short v = in.readShort();
+                  assertEquals(256, v);
+                  tmpOut.writeShort(Short.MAX_VALUE);
+                  tmpOut.copyBytes(in, in.length()-Short.BYTES);
+                }
+
+                // Delete original and copy corrupt version back:
+                dir0.deleteFile(out.getName());
+                dir0.copyFrom(dir0, newTempName, out.getName(), IOContext.DEFAULT);
+                dir0.deleteFile(newTempName);
+              }
+            };
+          } else {
+            return out;
+          }
+        }
+      };
+
+      IndexOutput unsorted = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
+      writeAll(unsorted, generateFixed(5*1024));
+
+      // This corruption made OfflineSorter fail with its own exception, but we verify it also went and added (as suppressed) that the
+      // checksum was wrong:
+      EOFException e = expectThrows(EOFException.class, () -> {
+          new OfflineSorter(dir, "foo").sort(unsorted.getName());
+        });
+      assertEquals(1, e.getSuppressed().length);
+      assertTrue(e.getSuppressed()[0] instanceof CorruptIndexException);
+      assertTrue(e.getSuppressed()[0].getMessage().contains("checksum failed (hardware problem?)"));
+    }
+  }
+
+  /** Make sure corruption on a temp file (partition) is caught, even if the corruption didn't confuse OfflineSorter! */
+  public void testBitFlippedOnPartition1() throws Exception {
+
+    try (Directory dir0 = newMockDirectory()) {
+
+      Directory dir = new FilterDirectory(dir0) {
+
+        boolean corrupted;
+
+        @Override
+        public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+          IndexOutput out = in.createTempOutput(prefix, suffix, context);
+          if (corrupted == false && suffix.equals("sort")) {
+            corrupted = true;
+            return new CorruptingIndexOutput(dir0, 544677, out);
+          } else {
+            return out;
+          }
+        }
+      };
+
+      IndexOutput unsorted = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
+      writeAll(unsorted, generateFixed((int) (OfflineSorter.MB * 3)));
+
+      CorruptIndexException e = expectThrows(CorruptIndexException.class, () -> {
+          new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 10, -1).sort(unsorted.getName());
+        });
+      assertTrue(e.getMessage().contains("checksum failed (hardware problem?)"));
+    }
+  }
+
+  /** Make sure corruption on a temp file (partition) is caught, if the corruption did confuse OfflineSorter! */
+  public void testBitFlippedOnPartition2() throws Exception {
+
+    try (Directory dir0 = newMockDirectory()) {
+
+      Directory dir = new FilterDirectory(dir0) {
+
+        boolean corrupted;
+
+        @Override
+        public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+          IndexOutput out = in.createTempOutput(prefix, suffix, context);
+          if (corrupted == false && suffix.equals("sort")) {
+            corrupted = true;
+            return new CorruptingIndexOutput(dir0, 544677, out) {
+              @Override
+              protected void corruptFile() throws IOException {
+                String newTempName;
+                try(IndexOutput tmpOut = dir0.createTempOutput("tmp", "tmp", IOContext.DEFAULT);
+                    IndexInput in = dir0.openInput(out.getName(), IOContext.DEFAULT)) {
+                  newTempName = tmpOut.getName();
+                  tmpOut.copyBytes(in, 1025905);
+                  short v = in.readShort();
+                  assertEquals(254, v);
+                  tmpOut.writeShort(Short.MAX_VALUE);
+                  tmpOut.copyBytes(in, in.length()-1025905-Short.BYTES);
+                }
+
+                // Delete original and copy corrupt version back:
+                dir0.deleteFile(out.getName());
+                dir0.copyFrom(dir0, newTempName, out.getName(), IOContext.DEFAULT);
+                dir0.deleteFile(newTempName);
+              }
+            };
+          } else {
+            return out;
+          }
+        }
+      };
+
+      IndexOutput unsorted = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
+      writeAll(unsorted, generateFixed((int) (OfflineSorter.MB * 3)));
+
+      EOFException e = expectThrows(EOFException.class, () -> {
+          new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 10, -1).sort(unsorted.getName());
+        });
+      assertEquals(1, e.getSuppressed().length);
+      assertTrue(e.getSuppressed()[0] instanceof CorruptIndexException);
+      assertTrue(e.getSuppressed()[0].getMessage().contains("checksum failed (hardware problem?)"));
+    }
+  }
+
+  public void testFixedLengthHeap() throws Exception {
+    // Make sure the RAM accounting is correct, i.e. if we are sorting fixed width
+    // ints (4 bytes) then the heap used is really only 4 bytes per value:
+    Directory dir = newDirectory();
+    IndexOutput out = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
+    try (ByteSequencesWriter w = new OfflineSorter.ByteSequencesWriter(out)) {
+      byte[] bytes = new byte[Integer.BYTES];
+      for (int i=0;i<1024*1024;i++) {
+        random().nextBytes(bytes);
+        w.write(bytes);
+      }
+      CodecUtil.writeFooter(out);
+    }
+
+    OfflineSorter sorter = new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(4), OfflineSorter.MAX_TEMPFILES, Integer.BYTES);
+    sorter.sort(out.getName());
+    // 1 MB of ints with 4 MH heap allowed should have been sorted in a single heap partition:
+    assertEquals(0, sorter.sortInfo.mergeRounds);
+    dir.close();
+  }
+
+  public void testFixedLengthLiesLiesLies() throws Exception {
+    // Make sure OfflineSorter catches me if I lie about the fixed value length:
+    Directory dir = newDirectory();
+    IndexOutput out = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
+    try (ByteSequencesWriter w = new OfflineSorter.ByteSequencesWriter(out)) {
+      byte[] bytes = new byte[Integer.BYTES];
+      random().nextBytes(bytes);
+      w.write(bytes);
+      CodecUtil.writeFooter(out);
+    }
+
+    OfflineSorter sorter = new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(4), OfflineSorter.MAX_TEMPFILES, Long.BYTES);
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
+      sorter.sort(out.getName());
+      });
+    assertEquals("value length is 4 but is supposed to always be 8", e.getMessage());
+    dir.close();
+  }
+
+  public void testInvalidFixedLength() throws Exception {
+    IllegalArgumentException e;
+    e = expectThrows(IllegalArgumentException.class,
+                     () -> {
+                       new OfflineSorter(null, "foo", OfflineSorter.DEFAULT_COMPARATOR,
+                                         BufferSize.megabytes(1), OfflineSorter.MAX_TEMPFILES, 0);
+                     });
+    assertEquals("valueLength must be 1 .. 32767; got: 0", e.getMessage());
+    e = expectThrows(IllegalArgumentException.class,
+                     () -> {
+                       new OfflineSorter(null, "foo", OfflineSorter.DEFAULT_COMPARATOR,
+                                         BufferSize.megabytes(1), OfflineSorter.MAX_TEMPFILES, Integer.MAX_VALUE);
+                     });
+    assertEquals("valueLength must be 1 .. 32767; got: 2147483647", e.getMessage());
   }
 }

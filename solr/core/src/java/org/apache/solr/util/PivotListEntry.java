@@ -16,8 +16,6 @@
  */
 package org.apache.solr.util;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 
 import java.util.Locale;
@@ -80,7 +78,7 @@ public enum PivotListEntry {
       assert this.minIndex < pivotList.size();
       return pivotList.getVal(this.minIndex);
     }
-    // otherweise...
+    // otherwise...
     // scan starting at the min/optional index
     return pivotList.get(this.getName(), this.minIndex);
   }

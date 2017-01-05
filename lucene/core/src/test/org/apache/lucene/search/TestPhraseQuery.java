@@ -39,7 +39,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -95,7 +94,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     reader = writer.getReader();
     writer.close();
 
-    searcher = newSearcher(reader);
+    searcher = new IndexSearcher(reader);
   }
   
   @Override
@@ -123,7 +122,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query = new PhraseQuery(3, "field", "one", "five");
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    QueryUtils.check(random(), query,searcher);
+    QueryUtils.check(random(), query, searcher);
   }
 
   /**

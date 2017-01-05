@@ -29,7 +29,9 @@
     <dependency org="org.kitesdk" name="kite-morphlines-saxon" rev="${/org.kitesdk/kite-morphlines-saxon}" conf="compile" />
     <dependency org="net.sf.saxon" name="Saxon-HE" rev="${/net.sf.saxon/Saxon-HE}" conf="compile" />
     <dependency org="org.kitesdk" name="kite-morphlines-hadoop-sequencefile" rev="${/org.kitesdk/kite-morphlines-hadoop-sequencefile}" conf="compile" />
-
+    <dependency org="org.jboss.netty" name="netty" rev="${/org.jboss.netty/netty}" conf="test" />
+    <dependency org="org.bouncycastle" name="bcpkix-jdk15on" rev="${/org.bouncycastle/bcpkix-jdk15on}" conf="test"/>
+    <dependency org="com.rometools" name="rome" rev="${/com.rometools/rome}" conf="test"/>
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}" />
   </dependencies>
 </ivy-module>

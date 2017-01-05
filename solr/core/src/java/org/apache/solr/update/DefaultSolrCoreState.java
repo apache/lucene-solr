@@ -29,16 +29,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.SortingMergePolicy;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.RecoveryStrategy;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.index.SortingMergePolicy;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
@@ -82,12 +82,12 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   
   private void closeIndexWriter(IndexWriterCloser closer) {
     try {
-      log.info("SolrCoreState ref count has reached 0 - closing IndexWriter");
+      log.debug("SolrCoreState ref count has reached 0 - closing IndexWriter");
       if (closer != null) {
-        log.info("closing IndexWriter with IndexWriterCloser");
+        log.debug("closing IndexWriter with IndexWriterCloser");
         closer.closeWriter(indexWriter);
       } else if (indexWriter != null) {
-        log.info("closing IndexWriter...");
+        log.debug("closing IndexWriter...");
         indexWriter.close();
       }
       indexWriter = null;
@@ -184,14 +184,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     if (iw != null) {
       if (!rollback) {
         try {
-          log.info("Closing old IndexWriter... core=" + coreName);
+          log.debug("Closing old IndexWriter... core=" + coreName);
           iw.close();
         } catch (Exception e) {
           SolrException.log(log, "Error closing old IndexWriter. core=" + coreName, e);
         }
       } else {
         try {
-          log.info("Rollback old IndexWriter... core=" + coreName);
+          log.debug("Rollback old IndexWriter... core=" + coreName);
           iw.rollback();
         } catch (Exception e) {
           SolrException.log(log, "Error rolling back old IndexWriter. core=" + coreName, e);
@@ -362,12 +362,15 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   /** called from recoveryStrat on a successful recovery */
   @Override
   public void recovered() {
+    recoveryStrat = null;
     recoveringAfterStartup = false;  // once we have successfully recovered, we no longer need to act as if we are recovering after startup
   }
 
   /** called from recoveryStrat on a failed recovery */
   @Override
-  public void failed() {}
+  public void failed() {
+    recoveryStrat = null;
+  }
 
   @Override
   public synchronized void close(IndexWriterCloser closer) {
@@ -395,5 +398,9 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   public void setLastReplicateIndexSuccess(boolean success) {
     this.lastReplicationSuccess = success;
   }
-  
+
+  @Override
+  public Lock getRecoveryLock() {
+    return recoveryLock;
+  }
 }

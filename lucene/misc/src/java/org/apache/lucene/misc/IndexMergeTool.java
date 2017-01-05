@@ -21,6 +21,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.HardlinkCopyDirectoryWrapper;
 import org.apache.lucene.util.SuppressForbidden;
 
 import java.io.IOException;
@@ -45,7 +46,8 @@ public class IndexMergeTool {
 
     Directory[] indexes = new Directory[args.length - 1];
     for (int i = 1; i < args.length; i++) {
-      indexes[i  - 1] = FSDirectory.open(Paths.get(args[i]));
+      // try to use hardlinks if possible
+      indexes[i  - 1] = new HardlinkCopyDirectoryWrapper(FSDirectory.open(Paths.get(args[i])));
     }
 
     System.out.println("Merging...");

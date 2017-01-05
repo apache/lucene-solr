@@ -26,8 +26,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -67,7 +67,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
   /**
    * Creates a {@link BooleanPerceptronClassifier}
    *
-   * @param leafReader     the reader on the index to be used for classification
+   * @param indexReader     the reader on the index to be used for classification
    * @param analyzer       an {@link Analyzer} used to analyze unseen text
    * @param query          a {@link Query} to eventually filter the docs used for training the classifier, or {@code null}
    *                       if all the indexed docs should be used
@@ -78,9 +78,9 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
    * @throws IOException if the building of the underlying {@link FST} fails and / or {@link TermsEnum} for the text field
    *                     cannot be found
    */
-  public BooleanPerceptronClassifier(LeafReader leafReader, Analyzer analyzer, Query query, Integer batchSize,
+  public BooleanPerceptronClassifier(IndexReader indexReader, Analyzer analyzer, Query query, Integer batchSize,
                                      Double threshold, String classFieldName, String textFieldName) throws IOException {
-    this.textTerms = MultiFields.getTerms(leafReader, textFieldName);
+    this.textTerms = MultiFields.getTerms(indexReader, textFieldName);
 
     if (textTerms == null) {
       throw new IOException("term vectors need to be available for field " + textFieldName);
@@ -91,7 +91,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
 
     if (threshold == null || threshold == 0d) {
       // automatic assign a threshold
-      long sumDocFreq = leafReader.getSumDocFreq(textFieldName);
+      long sumDocFreq = indexReader.getSumDocFreq(textFieldName);
       if (sumDocFreq != -1) {
         this.threshold = (double) sumDocFreq / 2d;
       } else {
@@ -113,7 +113,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     }
     updateFST(weights);
 
-    IndexSearcher indexSearcher = new IndexSearcher(leafReader);
+    IndexSearcher indexSearcher = new IndexSearcher(indexReader);
 
     int batchCount = 0;
 
@@ -140,7 +140,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
         Boolean correctClass = Boolean.valueOf(classField.stringValue());
         long modifier = correctClass.compareTo(assignedClass);
         if (modifier != 0) {
-          updateWeights(leafReader, scoreDoc.doc, assignedClass,
+          updateWeights(indexReader, scoreDoc.doc, assignedClass,
                   weights, modifier, batchCount % batchSize == 0);
         }
         batchCount++;
@@ -149,13 +149,13 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     weights.clear(); // free memory while waiting for GC
   }
 
-  private void updateWeights(LeafReader leafReader,
+  private void updateWeights(IndexReader indexReader,
                              int docId, Boolean assignedClass, SortedMap<String, Double> weights,
                              double modifier, boolean updateFST) throws IOException {
     TermsEnum cte = textTerms.iterator();
 
     // get the doc term vectors
-    Terms terms = leafReader.getTermVector(docId, textFieldName);
+    Terms terms = indexReader.getTermVector(docId, textFieldName);
 
     if (terms == null) {
       throw new IOException("term vectors must be stored for field "
@@ -201,7 +201,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
   @Override
   public ClassificationResult<Boolean> assignClass(String text)
           throws IOException {
-    Long output = 0l;
+    Long output = 0L;
     try (TokenStream tokenStream = analyzer.tokenStream(textFieldName, text)) {
       CharTermAttribute charTermAttribute = tokenStream
               .addAttribute(CharTermAttribute.class);

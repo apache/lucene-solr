@@ -22,15 +22,23 @@ import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.EmptyDocValuesProducer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -69,7 +77,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   }
 
   @Override
-  public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+  public void addNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.NUMERIC || field.hasNorms();
     writeFieldEntry(field, DocValuesType.NUMERIC);
@@ -77,10 +85,17 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
     // first pass to find min/max
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
-    for(Number n : values) {
-      long v = n == null ? 0 : n.longValue();
+    NumericDocValues values = valuesProducer.getNumeric(field);
+    int numValues = 0;
+    for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
+      long v = values.longValue();
       minValue = Math.min(minValue, v);
       maxValue = Math.max(maxValue, v);
+      numValues++;
+    }
+    if (numValues != numDocs) {
+      minValue = Math.min(minValue, 0);
+      maxValue = Math.max(maxValue, 0);
     }
     
     // write our minimum value to the .dat, all entries are deltas from that
@@ -111,15 +126,20 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
     int numDocsWritten = 0;
 
     // second pass to write the values
-    for(Number n : values) {
-      long value = n == null ? 0 : n.longValue();
+    values = valuesProducer.getNumeric(field);
+    for (int i = 0; i < numDocs; ++i) {
+      if (values.docID() < i) {
+        values.nextDoc();
+        assert values.docID() >= i;
+      }
+      long value = values.docID() != i ? 0 : values.longValue();
       assert value >= minValue;
       Number delta = BigInteger.valueOf(value).subtract(BigInteger.valueOf(minValue));
       String s = encoder.format(delta);
       assert s.length() == patternString.length();
       SimpleTextUtil.write(data, s, scratch);
       SimpleTextUtil.writeNewline(data);
-      if (n == null) {
+      if (values.docID() != i) {
         SimpleTextUtil.write(data, "F", scratch);
       } else {
         SimpleTextUtil.write(data, "T", scratch);
@@ -133,17 +153,17 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   }
 
   @Override
-  public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+  public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.BINARY;
-    doAddBinary(field, values);
+    doAddBinaryField(field, valuesProducer);
   }
-    
-  private void doAddBinary(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+
+  private void doAddBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     int maxLength = 0;
-    for(BytesRef value : values) {
-      final int length = value == null ? 0 : value.length;
-      maxLength = Math.max(maxLength, length);
+    BinaryDocValues values = valuesProducer.getBinary(field);
+    for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
+      maxLength = Math.max(maxLength, values.binaryValue().length);
     }
     writeFieldEntry(field, DocValuesType.BINARY);
 
@@ -163,26 +183,32 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
     SimpleTextUtil.writeNewline(data);
     final DecimalFormat encoder = new DecimalFormat(sb.toString(), new DecimalFormatSymbols(Locale.ROOT));
 
+    values = valuesProducer.getBinary(field);
     int numDocsWritten = 0;
-    for(BytesRef value : values) {
+    for (int i = 0; i < numDocs; ++i) {
+      if (values.docID() < i) {
+        values.nextDoc();
+        assert values.docID() >= i;
+      }
       // write length
-      final int length = value == null ? 0 : value.length;
+      final int length = values.docID() != i ? 0 : values.binaryValue().length;
       SimpleTextUtil.write(data, LENGTH);
       SimpleTextUtil.write(data, encoder.format(length), scratch);
       SimpleTextUtil.writeNewline(data);
         
       // write bytes -- don't use SimpleText.write
       // because it escapes:
-      if (value != null) {
+      if (values.docID() == i) {
+        BytesRef value = values.binaryValue();
         data.writeBytes(value.bytes, value.offset, value.length);
       }
 
       // pad to fit
-      for (int i = length; i < maxLength; i++) {
+      for (int j = length; j < maxLength; j++) {
         data.writeByte((byte)' ');
       }
       SimpleTextUtil.writeNewline(data);
-      if (value == null) {
+      if (values.docID() != i) {
         SimpleTextUtil.write(data, "F", scratch);
       } else {
         SimpleTextUtil.write(data, "T", scratch);
@@ -195,14 +221,15 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   }
   
   @Override
-  public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+  public void addSortedField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.SORTED;
     writeFieldEntry(field, DocValuesType.SORTED);
 
     int valueCount = 0;
     int maxLength = -1;
-    for(BytesRef value : values) {
+    TermsEnum terms = valuesProducer.getSorted(field).termsEnum();
+    for(BytesRef value = terms.next(); value != null; value = terms.next()) {
       maxLength = Math.max(maxLength, value.length);
       valueCount++;
     }
@@ -244,7 +271,8 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
     // for asserts:
     int valuesSeen = 0;
 
-    for(BytesRef value : values) {
+    terms = valuesProducer.getSorted(field).termsEnum();
+    for(BytesRef value = terms.next(); value != null; value = terms.next()) {
       // write length
       SimpleTextUtil.write(data, LENGTH);
       SimpleTextUtil.write(data, encoder.format(value.length), scratch);
@@ -265,48 +293,84 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
 
     assert valuesSeen == valueCount;
 
-    for(Number ord : docToOrd) {
-      SimpleTextUtil.write(data, ordEncoder.format(ord.longValue()+1), scratch);
+    SortedDocValues values = valuesProducer.getSorted(field);
+    for (int i = 0; i < numDocs; ++i) {
+      if (values.docID() < i) {
+        values.nextDoc();
+        assert values.docID() >= i;
+      }
+      int ord = -1;
+      if (values.docID() == i) {
+        ord = values.ordValue();
+      }
+      SimpleTextUtil.write(data, ordEncoder.format(ord+1L), scratch);
       SimpleTextUtil.writeNewline(data);
     }
   }
 
   @Override
-  public void addSortedNumericField(FieldInfo field, final Iterable<Number> docToValueCount, final Iterable<Number> values) throws IOException {
+  public void addSortedNumericField(FieldInfo field, final DocValuesProducer valuesProducer) throws IOException {
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.SORTED_NUMERIC;
-    doAddBinary(field, new Iterable<BytesRef>() {     
+    doAddBinaryField(field, new EmptyDocValuesProducer() {
       @Override
-      public Iterator<BytesRef> iterator() {
-        final StringBuilder builder = new StringBuilder();
-        final BytesRefBuilder scratch = new BytesRefBuilder();
-        final Iterator<Number> counts = docToValueCount.iterator();
-        final Iterator<Number> numbers = values.iterator();
-        
-        return new Iterator<BytesRef>() {
+      public BinaryDocValues getBinary(FieldInfo field) throws IOException {
+        SortedNumericDocValues values = valuesProducer.getSortedNumeric(field);
+        return new BinaryDocValues() {
 
           @Override
-          public boolean hasNext() {
-            return counts.hasNext();
+          public int nextDoc() throws IOException {
+            int doc = values.nextDoc();
+            setCurrentDoc();
+            return doc;
           }
 
           @Override
-          public BytesRef next() {
+          public int docID() {
+            return values.docID();
+          }
+
+          @Override
+          public long cost() {
+            return values.cost();
+          }
+
+          @Override
+          public int advance(int target) throws IOException {
+            int doc = values.advance(target);
+            setCurrentDoc();
+            return doc;
+          }
+
+          @Override
+          public boolean advanceExact(int target) throws IOException {
+            if (values.advanceExact(target)) {
+              setCurrentDoc();
+              return true;
+            }
+            return false;
+          }
+          
+          final StringBuilder builder = new StringBuilder();
+          BytesRef binaryValue;
+
+          private void setCurrentDoc() throws IOException {
+            if (docID() == NO_MORE_DOCS) {
+              return;
+            }
             builder.setLength(0);
-            long count = counts.next().longValue();
-            for (int i = 0; i < count; i++) {
+            for (int i = 0, count = values.docValueCount(); i < count; ++i) {
               if (i > 0) {
                 builder.append(',');
               }
-              builder.append(Long.toString(numbers.next().longValue()));
+              builder.append(Long.toString(values.nextValue()));
             }
-            scratch.copyChars(builder);
-            return scratch.get();
+            binaryValue = new BytesRef(builder.toString());
           }
 
           @Override
-          public void remove() {
-            throw new UnsupportedOperationException();
+          public BytesRef binaryValue() throws IOException {
+            return binaryValue;
           }
         };
       }
@@ -314,14 +378,15 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   }
 
   @Override
-  public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
+  public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.SORTED_SET;
     writeFieldEntry(field, DocValuesType.SORTED_SET);
 
     long valueCount = 0;
     int maxLength = 0;
-    for(BytesRef value : values) {
+    TermsEnum terms = valuesProducer.getSortedSet(field).termsEnum();
+    for(BytesRef value = terms.next(); value != null; value = terms.next()) {
       maxLength = Math.max(maxLength, value.length);
       valueCount++;
     }
@@ -351,12 +416,10 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
     // compute ord pattern: this is funny, we encode all values for all docs to find the maximum length
     int maxOrdListLength = 0;
     StringBuilder sb2 = new StringBuilder();
-    Iterator<Number> ordStream = ords.iterator();
-    for (Number n : docToOrdCount) {
+    SortedSetDocValues values = valuesProducer.getSortedSet(field);
+    for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
       sb2.setLength(0);
-      int count = n.intValue();
-      for (int i = 0; i < count; i++) {
-        long ord = ordStream.next().longValue();
+      for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
         if (sb2.length() > 0) {
           sb2.append(",");
         }
@@ -378,7 +441,8 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
     // for asserts:
     long valuesSeen = 0;
 
-    for(BytesRef value : values) {
+    terms = valuesProducer.getSortedSet(field).termsEnum();
+    for(BytesRef value = terms.next(); value != null; value = terms.next()) {
       // write length
       SimpleTextUtil.write(data, LENGTH);
       SimpleTextUtil.write(data, encoder.format(value.length), scratch);
@@ -399,22 +463,26 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
 
     assert valuesSeen == valueCount;
 
-    ordStream = ords.iterator();
+    values = valuesProducer.getSortedSet(field);
     
     // write the ords for each doc comma-separated
-    for(Number n : docToOrdCount) {
+    for (int i = 0; i < numDocs; ++i) {
+      if (values.docID() < i) {
+        values.nextDoc();
+        assert values.docID() >= i;
+      }
       sb2.setLength(0);
-      int count = n.intValue();
-      for (int i = 0; i < count; i++) {
-        long ord = ordStream.next().longValue();
-        if (sb2.length() > 0) {
-          sb2.append(",");
+      if (values.docID() == i) {
+        for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
+          if (sb2.length() > 0) {
+            sb2.append(",");
+          }
+          sb2.append(Long.toString(ord));
         }
-        sb2.append(Long.toString(ord));
       }
       // now pad to fit: these are numbers so spaces work well. reader calls trim()
       int numPadding = maxOrdListLength - sb2.length();
-      for (int i = 0; i < numPadding; i++) {
+      for (int j = 0; j < numPadding; j++) {
         sb2.append(' ');
       }
       SimpleTextUtil.write(data, sb2.toString(), scratch);

@@ -17,5 +17,7 @@
     <orderEntry type="module" module-name="lucene-core" />
     <orderEntry type="module" module-name="queries" />
     <orderEntry type="module" scope="TEST" module-name="analysis-common" />
+    <orderEntry type="module" module-name="grouping" />
+    <orderEntry type="module" module-name="misc" />
   </component>
 </module>

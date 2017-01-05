@@ -64,6 +64,9 @@ public class MoreLikeThisComponent extends SearchComponent {
   
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
+    if (rb.req.getParams().getBool(MoreLikeThisParams.MLT, false)) {
+      rb.setNeedDocList(true);
+    }
     
   }
   
@@ -71,16 +74,17 @@ public class MoreLikeThisComponent extends SearchComponent {
   public void process(ResponseBuilder rb) throws IOException {
 
     SolrParams params = rb.req.getParams();
-    ReturnFields returnFields = new SolrReturnFields( rb.req );
-
-    int flags = 0;
-    if (returnFields.wantsScore()) {
-      flags |= SolrIndexSearcher.GET_SCORES;
-    }
-
-    rb.setFieldFlags(flags);
-
+    
     if (params.getBool(MoreLikeThisParams.MLT, false)) {
+      ReturnFields returnFields = new SolrReturnFields( rb.req );
+  
+      int flags = 0;
+      if (returnFields.wantsScore()) {
+        flags |= SolrIndexSearcher.GET_SCORES;
+      }
+  
+      rb.setFieldFlags(flags);
+
       log.debug("Starting MoreLikeThis.Process.  isShard: "
           + params.getBool(ShardParams.IS_SHARD));
       SolrIndexSearcher searcher = rb.req.getSearcher();
@@ -169,7 +173,7 @@ public class MoreLikeThisComponent extends SearchComponent {
         && rb.req.getParams().getBool(COMPONENT_NAME, false)) {
       Map<Object,SolrDocumentList> tempResults = new LinkedHashMap<>();
       
-      int mltcount = rb.req.getParams().getInt(MoreLikeThisParams.DOC_COUNT, 5);
+      int mltcount = rb.req.getParams().getInt(MoreLikeThisParams.DOC_COUNT, MoreLikeThisParams.DEFAULT_DOC_COUNT);
       String keyName = rb.req.getSchema().getUniqueKeyField().getName();
       
       for (ShardRequest sreq : rb.finished) {

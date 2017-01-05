@@ -34,8 +34,18 @@ public class SortSpec
   private int num = 10;
   private int offset = 0;
 
+  public SortSpec(Sort sort, List<SchemaField> fields, int num, int offset) {
+    setSortAndFields(sort, fields);
+    this.num = num;
+    this.offset = offset;
+  }
   public SortSpec(Sort sort, List<SchemaField> fields) {
     setSortAndFields(sort, fields);
+  }
+  public SortSpec(Sort sort, SchemaField[] fields, int num, int offset) {
+    setSortAndFields(sort, Arrays.asList(fields));
+    this.num = num;
+    this.offset = offset;
   }
   public SortSpec(Sort sort, SchemaField[] fields) {
     setSortAndFields(sort, Arrays.asList(fields));

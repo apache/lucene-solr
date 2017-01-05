@@ -20,17 +20,12 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
  */
@@ -43,7 +38,7 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
     char[] whitespace = "   ".toCharArray();
     char[] empty = "".toCharArray();
 
-    TokenStream ts = new IterTokenStream(new Token(new String(a, 0, a.length), 1, 5),
+    TokenStream ts = new CannedTokenStream(new Token(new String(a, 0, a.length), 1, 5),
                     new Token(new String(b, 0, b.length), 6, 10),
                     new Token(new String(ccc, 0, ccc.length), 11, 15),
                     new Token(new String(whitespace, 0, whitespace.length), 16, 20),
@@ -51,43 +46,6 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
     ts = new TrimFilter(ts);
 
     assertTokenStreamContents(ts, new String[] { "a", "b", "cCc", "", ""});
-  }
-  
-  /**
-   * @deprecated (3.0) does not support custom attributes
-   */
-  @Deprecated
-  private static class IterTokenStream extends TokenStream {
-    final Token tokens[];
-    int index = 0;
-    CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-    OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-    PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
-    FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
-    TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
-    PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
-    
-    public IterTokenStream(Token... tokens) {
-      super();
-      this.tokens = tokens;
-    }
-    
-    @Override
-    public boolean incrementToken() throws IOException {
-      if (index >= tokens.length)
-        return false;
-      else {
-        clearAttributes();
-        Token token = tokens[index++];
-        termAtt.setEmpty().append(token);
-        offsetAtt.setOffset(token.startOffset(), token.endOffset());
-        posIncAtt.setPositionIncrement(token.getPositionIncrement());
-        flagsAtt.setFlags(token.getFlags());
-        typeAtt.setType(token.type());
-        payloadAtt.setPayload(token.getPayload());
-        return true;
-      }
-    }
   }
   
   /** blast some random strings through the analyzer */

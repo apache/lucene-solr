@@ -108,8 +108,8 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
     NamedList updateStats = updateHandler.getStatistics();
     NamedList termStats = termHandler.getStatistics();
 
-    Double updateTime = (Double) updateStats.get("totalTime");
-    Double termTime = (Double) termStats.get("totalTime");
+    Double updateTime = (Double) updateStats.get("avgTimePerRequest");
+    Double termTime = (Double) termStats.get("avgTimePerRequest");
 
     assertFalse("RequestHandlers should not share statistics!", updateTime.equals(termTime));
   }

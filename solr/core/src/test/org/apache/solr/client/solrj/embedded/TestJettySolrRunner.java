@@ -16,13 +16,12 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import com.google.common.base.Charsets;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,7 +44,7 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
         = "<solr><str name=\"configSetBaseDir\">CONFIGSETS</str><str name=\"coreRootDirectory\">COREROOT</str></solr>"
         .replace("CONFIGSETS", configsets.toString())
         .replace("COREROOT", coresDir.toString());
-    Files.write(solrHome.resolve("solr.xml"), solrxml.getBytes(Charsets.UTF_8));
+    Files.write(solrHome.resolve("solr.xml"), solrxml.getBytes(StandardCharsets.UTF_8));
 
     JettyConfig jettyConfig = buildJettyConfig("/solr");
 
@@ -53,13 +52,13 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
     try {
       runner.start();
 
-      SolrClient client = new HttpSolrClient(runner.getBaseUrl().toString());
+      try (SolrClient client = getHttpSolrClient(runner.getBaseUrl().toString())) {
+        CoreAdminRequest.Create createReq = new CoreAdminRequest.Create();
+        createReq.setCoreName("newcore");
+        createReq.setConfigSet("minimal");
 
-      CoreAdminRequest.Create createReq = new CoreAdminRequest.Create();
-      createReq.setCoreName("newcore");
-      createReq.setConfigSet("minimal");
-
-      client.request(createReq);
+        client.request(createReq);
+      }
 
       assertTrue(Files.exists(coresDir.resolve("newcore").resolve("core.properties")));
 

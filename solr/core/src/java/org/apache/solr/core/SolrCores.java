@@ -34,10 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 
@@ -50,8 +48,6 @@ class SolrCores {
   private Map<String, SolrCore> transientCores = new LinkedHashMap<>(); // For "lazily loaded" cores
 
   private final Map<String, CoreDescriptor> dynamicDescriptors = new LinkedHashMap<>();
-
-  private final Map<String, SolrCore> createdCores = new LinkedHashMap<>();
 
   private final CoreContainer container;
   
@@ -127,22 +123,19 @@ class SolrCores {
           new DefaultSolrThreadFactory("coreCloseExecutor"));
       try {
         for (SolrCore core : coreList) {
-          coreCloseExecutor.submit(new Callable<SolrCore>() {
-            @Override
-            public SolrCore call() throws Exception {
-              MDCLoggingContext.setCore(core);
-              try {
-                core.close();
-              } catch (Throwable e) {
-                SolrException.log(log, "Error shutting down core", e);
-                if (e instanceof Error) {
-                  throw (Error) e;
-                }
-              } finally {
-                MDCLoggingContext.clear();
+          coreCloseExecutor.submit(() -> {
+            MDCLoggingContext.setCore(core);
+            try {
+              core.close();
+            } catch (Throwable e) {
+              SolrException.log(log, "Error shutting down core", e);
+              if (e instanceof Error) {
+                throw (Error) e;
               }
-              return core;
+            } finally {
+              MDCLoggingContext.clear();
             }
+            return core;
           });
         }
       } finally {
@@ -216,7 +209,6 @@ class SolrCores {
       set.addAll(cores.keySet());
       set.addAll(transientCores.keySet());
       set.addAll(dynamicDescriptors.keySet());
-      set.addAll(createdCores.keySet());
     }
     return set;
   }
@@ -263,8 +255,6 @@ class SolrCores {
       // It could have been a newly-created core. It could have been a transient core. The newly-created cores
       // in particular should be checked. It could have been a dynamic core.
       tmp = transientCores.remove(name);
-      ret = (ret == null) ? tmp : ret;
-      tmp = createdCores.remove(name);
       ret = (ret == null) ? tmp : ret;
       dynamicDescriptors.remove(name);
       return ret;
@@ -408,12 +398,6 @@ class SolrCores {
       }
     }
     return null;
-  }
-
-  protected void addCreated(SolrCore core) {
-    synchronized (modifyLock) {
-      createdCores.put(core.getName(), core);
-    }
   }
 
   /**

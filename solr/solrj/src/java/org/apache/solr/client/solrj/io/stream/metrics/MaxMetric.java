@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.stream.metrics;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -25,11 +24,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class MaxMetric extends Metric implements Serializable {
-
-  private static final long serialVersionUID = 1;
-
-  public static final String MAX = "max";
+public class MaxMetric extends Metric {
   private long longMax = -Long.MIN_VALUE;
   private double doubleMax = -Double.MAX_VALUE;
   private String columnName;
@@ -37,6 +32,7 @@ public class MaxMetric extends Metric implements Serializable {
   public MaxMetric(String columnName){
     init("max", columnName);
   }
+
   public MaxMetric(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String functionName = expression.getFunctionName();
@@ -58,13 +54,17 @@ public class MaxMetric extends Metric implements Serializable {
     setFunctionName(functionName);
     setIdentifier(functionName, "(", columnName, ")");
   }
-  
-  public double getValue() {
+
+  public Number getValue() {
     if(longMax == Long.MIN_VALUE) {
       return doubleMax;
     } else {
       return longMax;
     }
+  }
+
+  public String[] getColumns() {
+    return new String[]{columnName};
   }
 
   public void update(Tuple tuple) {

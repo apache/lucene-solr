@@ -28,17 +28,25 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -87,6 +95,7 @@ public class ZkStateReader implements Closeable {
   public static final String REPLICATION_FACTOR = "replicationFactor";
   public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
   public static final String AUTO_ADD_REPLICAS = "autoAddReplicas";
+  public static final String MAX_CORES_PER_NODE = "maxCoresPerNode";
 
   public static final String ROLES = "/roles.json";
 
@@ -96,6 +105,7 @@ public class ZkStateReader implements Closeable {
   public static final String LEGACY_CLOUD = "legacyCloud";
 
   public static final String URL_SCHEME = "urlScheme";
+
 
   /** A view of the current state of all collections; combines all the different state sources into a single view. */
   protected volatile ClusterState clusterState;
@@ -107,12 +117,10 @@ public class ZkStateReader implements Closeable {
 
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
   public static final String ELECTION_NODE = "election";
-
-  /** Collections we actively care about, and will try to keep watch on. */
-  private final Set<String> interestingCollections = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
+  
   /** Collections tracked in the legacy (shared) state format, reflects the contents of clusterstate.json. */
   private Map<String, ClusterState.CollectionRef> legacyCollectionStates = emptyMap();
+
   /** Last seen ZK version of clusterstate.json. */
   private int legacyClusterStateVersion = 0;
 
@@ -124,16 +132,35 @@ public class ZkStateReader implements Closeable {
 
   private volatile Set<String> liveNodes = emptySet();
 
+  private volatile Map<String, Object> clusterProperties = Collections.emptyMap();
+
   private final ZkConfigManager configManager;
 
   private ConfigData securityData;
 
   private final Runnable securityNodeListener;
 
+  private ConcurrentHashMap<String, CollectionWatch> collectionWatches = new ConcurrentHashMap<>();
+
+  private final ExecutorService notifications = ExecutorUtil.newMDCAwareCachedThreadPool("watches");
+
+  private class CollectionWatch {
+
+    int coreRefCount = 0;
+    Set<CollectionStateWatcher> stateWatchers = ConcurrentHashMap.newKeySet();
+
+    public boolean canBeRemoved() {
+      return coreRefCount + stateWatchers.size() == 0;
+    }
+
+  }
+
   public static final Set<String> KNOWN_CLUSTER_PROPS = unmodifiableSet(new HashSet<>(asList(
       LEGACY_CLOUD,
       URL_SCHEME,
-      AUTO_ADD_REPLICAS)));
+      AUTO_ADD_REPLICAS,
+      CoreAdminParams.BACKUP_LOCATION,
+      MAX_CORES_PER_NODE)));
 
   /**
    * Returns config set name for collection.
@@ -145,32 +172,29 @@ public class ZkStateReader implements Closeable {
     String configName = null;
 
     String path = COLLECTIONS_ZKNODE + "/" + collection;
-    LOG.info("Load collection config from: [{}]", path);
+    LOG.debug("Loading collection config from: [{}]", path);
 
     try {
       byte[] data = zkClient.getData(path, null, null, true);
 
-      if(data != null) {
+      if (data != null) {
         ZkNodeProps props = ZkNodeProps.load(data);
         configName = props.getStr(CONFIGNAME_PROP);
       }
 
       if (configName != null) {
-        if (!zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true)) {
-          LOG.error("Specified config does not exist in ZooKeeper: [{}]", configName);
+        String configPath = CONFIGS_ZKNODE + "/" + configName;
+        if (!zkClient.exists(configPath, true)) {
+          LOG.error("Specified config=[{}] does not exist in ZooKeeper at location=[{}]", configName, configPath);
           throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "Specified config does not exist in ZooKeeper: " + configName);
         } else {
-          LOG.info("path=[{}] [{}]=[{}] specified config exists in ZooKeeper", path, CONFIGNAME_PROP, configName);
+          LOG.debug("path=[{}] [{}]=[{}] specified config exists in ZooKeeper", configPath, CONFIGNAME_PROP, configName);
         }
       } else {
         throw new ZooKeeperException(ErrorCode.INVALID_STATE, "No config data found at path: " + path);
       }
-    }
-    catch (KeeperException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading config name for collection " + collection, e);
-    }
-    catch (InterruptedException e) {
-      Thread.interrupted();
+    } catch (KeeperException| InterruptedException e) {
+      SolrZkClient.checkInterrupted(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading config name for collection " + collection, e);
     }
 
@@ -228,7 +252,10 @@ public class ZkStateReader implements Closeable {
 
   /**
    * Forcibly refresh cluster state from ZK. Do this only to avoid race conditions because it's expensive.
+   *
+   * @deprecated Don't call this, call {@link #forceUpdateCollection(String)} on a single collection if you must.
    */
+  @Deprecated
   public void updateClusterState() throws KeeperException, InterruptedException {
     synchronized (getUpdateLock()) {
       if (clusterState == null) {
@@ -237,17 +264,69 @@ public class ZkStateReader implements Closeable {
         return;
       }
       // No need to set watchers because we should already have watchers registered for everything.
+      refreshCollectionList(null);
+      refreshLiveNodes(null);
       refreshLegacyClusterState(null);
       // Need a copy so we don't delete from what we're iterating over.
       Collection<String> safeCopy = new ArrayList<>(watchedCollectionStates.keySet());
+      Set<String> updatedCollections = new HashSet<>();
       for (String coll : safeCopy) {
         DocCollection newState = fetchCollectionState(coll, null);
-        updateWatchedCollection(coll, newState);
+        if (updateWatchedCollection(coll, newState)) {
+          updatedCollections.add(coll);
+        }
       }
-      refreshCollectionList(null);
-      refreshLiveNodes(null);
-      constructState();
+      constructState(updatedCollections);
     }
+  }
+
+  /**
+   * Forcibly refresh a collection's internal state from ZK. Try to avoid having to resort to this when
+   * a better design is possible.
+   */
+  public void forceUpdateCollection(String collection) throws KeeperException, InterruptedException {
+
+    synchronized (getUpdateLock()) {
+      if (clusterState == null) {
+        LOG.warn("ClusterState watchers have not been initialized");
+        return;
+      }
+
+      ClusterState.CollectionRef ref = clusterState.getCollectionRef(collection);
+      if (ref == null || legacyCollectionStates.containsKey(collection)) {
+        // We either don't know anything about this collection (maybe it's new?) or it's legacy.
+        // First update the legacy cluster state.
+        LOG.debug("Checking legacy cluster state for collection {}", collection);
+        refreshLegacyClusterState(null);
+        if (!legacyCollectionStates.containsKey(collection)) {
+          // No dice, see if a new collection just got created.
+          LazyCollectionRef tryLazyCollection = new LazyCollectionRef(collection);
+          if (tryLazyCollection.get() != null) {
+            // What do you know, it exists!
+            LOG.debug("Adding lazily-loaded reference for collection {}", collection);
+            lazyCollectionStates.putIfAbsent(collection, tryLazyCollection);
+            constructState(Collections.singleton(collection));
+          }
+        }
+      } else if (ref.isLazilyLoaded()) {
+        LOG.debug("Refreshing lazily-loaded state for collection {}", collection);
+        if (ref.get() != null) {
+          return;
+        }
+        // Edge case: if there's no external collection, try refreshing legacy cluster state in case it's there.
+        refreshLegacyClusterState(null);
+      } else if (watchedCollectionStates.containsKey(collection)) {
+        // Exists as a watched collection, force a refresh.
+        LOG.debug("Forcing refresh of watched collection state for {}", collection);
+        DocCollection newState = fetchCollectionState(collection, null);
+        if (updateWatchedCollection(collection, newState)) {
+          constructState(Collections.singleton(collection));
+        }
+      } else {
+        LOG.error("Collection {} is not lazy or watched!", collection);
+      }
+    }
+
   }
 
   /** Refresh the set of live nodes. */
@@ -267,7 +346,11 @@ public class ZkStateReader implements Closeable {
       DocCollection nu = getCollectionLive(this, coll);
       if (nu == null) return -1 ;
       if (nu.getZNodeVersion() > collection.getZNodeVersion()) {
-        updateWatchedCollection(coll, nu);
+        if (updateWatchedCollection(coll, nu)) {
+          synchronized (getUpdateLock()) {
+            constructState(Collections.singleton(coll));
+          }
+        }
         collection = nu;
       }
     }
@@ -285,7 +368,7 @@ public class ZkStateReader implements Closeable {
       InterruptedException {
     // We need to fetch the current cluster state and the set of live nodes
 
-    LOG.info("Updating cluster state from ZooKeeper... ");
+    LOG.debug("Updating cluster state from ZooKeeper... ");
 
     // Sanity check ZK structure.
     if (!zkClient.exists(CLUSTER_STATE, true)) {
@@ -294,13 +377,14 @@ public class ZkStateReader implements Closeable {
     }
 
     // on reconnect of SolrZkClient force refresh and re-add watches.
+    loadClusterProperties();
+    refreshLiveNodes(new LiveNodeWatcher());
     refreshLegacyClusterState(new LegacyClusterStateWatcher());
     refreshStateFormat2Collections();
     refreshCollectionList(new CollectionsChildWatcher());
-    refreshLiveNodes(new LiveNodeWatcher());
 
     synchronized (ZkStateReader.this.getUpdateLock()) {
-      constructState();
+      constructState(Collections.emptySet());
 
       zkClient.exists(ALIASES,
           new Watcher() {
@@ -313,13 +397,14 @@ public class ZkStateReader implements Closeable {
               }
               try {
                 synchronized (ZkStateReader.this.getUpdateLock()) {
-                  LOG.info("Updating aliases... ");
+                  LOG.debug("Updating aliases... ");
 
                   // remake watch
                   final Watcher thisWatch = this;
                   final Stat stat = new Stat();
                   final byte[] data = zkClient.getData(ALIASES, thisWatch, stat, true);
                   ZkStateReader.this.aliases = ClusterState.load(data);
+                  LOG.debug("New alias definition is: " + ZkStateReader.this.aliases.toString());
                 }
               } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
                 LOG.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
@@ -338,15 +423,12 @@ public class ZkStateReader implements Closeable {
     updateAliases();
 
     if (securityNodeListener != null) {
-      addSecuritynodeWatcher(new Callable<Pair<byte[], Stat>>() {
-        @Override
-        public void call(Pair<byte[], Stat> pair) {
-          ConfigData cd = new ConfigData();
-          cd.data = pair.getKey() == null || pair.getKey().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.getKey()), 4, false);
-          cd.version = pair.getValue() == null ? -1 : pair.getValue().getVersion();
-          securityData = cd;
-          securityNodeListener.run();
-        }
+      addSecuritynodeWatcher(pair -> {
+        ConfigData cd = new ConfigData();
+        cd.data = pair.first() == null || pair.first().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.first()), 4, false);
+        cd.version = pair.second() == null ? -1 : pair.second().getVersion();
+        securityData = cd;
+        securityNodeListener.run();
       });
       securityData = getSecurityProps(true);
     }
@@ -365,7 +447,7 @@ public class ZkStateReader implements Closeable {
             }
             try {
               synchronized (ZkStateReader.this.getUpdateLock()) {
-                LOG.info("Updating [{}] ... ", SOLR_SECURITY_CONF_PATH);
+                LOG.debug("Updating [{}] ... ", SOLR_SECURITY_CONF_PATH);
 
                 // remake watch
                 final Watcher thisWatch = this;
@@ -395,19 +477,18 @@ public class ZkStateReader implements Closeable {
   /**
    * Construct the total state view from all sources.
    * Must hold {@link #getUpdateLock()} before calling this.
+   *
+   * @param changedCollections collections that have changed since the last call,
+   *                           and that should fire notifications
    */
-  private void constructState() {
+  private void constructState(Set<String> changedCollections) {
+
+    Set<String> liveNodes = this.liveNodes; // volatile read
+
     // Legacy clusterstate is authoritative, for backwards compatibility.
     // To move a collection's state to format2, first create the new state2 format node, then remove legacy entry.
     Map<String, ClusterState.CollectionRef> result = new LinkedHashMap<>(legacyCollectionStates);
 
-    // Are there any interesting collections that disappeared from the legacy cluster state?
-    for (String coll : interestingCollections) {
-      if (!result.containsKey(coll) && !watchedCollectionStates.containsKey(coll)) {
-        new StateWatcher(coll).refreshAndWatch(true);
-      }
-    }
-  
     // Add state format2 collections, but don't override legacy collection states.
     for (Map.Entry<String, DocCollection> entry : watchedCollectionStates.entrySet()) {
       result.putIfAbsent(entry.getKey(), new ClusterState.CollectionRef(entry.getValue()));
@@ -419,9 +500,10 @@ public class ZkStateReader implements Closeable {
     }
 
     this.clusterState = new ClusterState(liveNodes, result, legacyClusterStateVersion);
+
     LOG.debug("clusterStateSet: legacy [{}] interesting [{}] watched [{}] lazy [{}] total [{}]",
         legacyCollectionStates.keySet().size(),
-        interestingCollections.size(),
+        collectionWatches.keySet().size(),
         watchedCollectionStates.keySet().size(),
         lazyCollectionStates.keySet().size(),
         clusterState.getCollectionStates().size());
@@ -429,31 +511,56 @@ public class ZkStateReader implements Closeable {
     if (LOG.isTraceEnabled()) {
       LOG.trace("clusterStateSet: legacy [{}] interesting [{}] watched [{}] lazy [{}] total [{}]",
           legacyCollectionStates.keySet(),
-          interestingCollections,
+          collectionWatches.keySet(),
           watchedCollectionStates.keySet(),
           lazyCollectionStates.keySet(),
           clusterState.getCollectionStates());
     }
+
+    for (String collection : changedCollections) {
+      notifyStateWatchers(liveNodes, collection, clusterState.getCollectionOrNull(collection));
+    }
+
   }
 
   /**
    * Refresh legacy (shared) clusterstate.json
    */
-  private void refreshLegacyClusterState(Watcher watcher)
-      throws KeeperException, InterruptedException {
+  private void refreshLegacyClusterState(Watcher watcher) throws KeeperException, InterruptedException {
     try {
       final Stat stat = new Stat();
       final byte[] data = zkClient.getData(CLUSTER_STATE, watcher, stat, true);
       final ClusterState loadedData = ClusterState.load(stat.getVersion(), data, emptySet(), CLUSTER_STATE);
       synchronized (getUpdateLock()) {
+        if (this.legacyClusterStateVersion >= stat.getVersion()) {
+          // Nothing to do, someone else updated same or newer.
+          return;
+        }
+        Set<String> updatedCollections = new HashSet<>();
+        for (String coll : this.collectionWatches.keySet()) {
+          ClusterState.CollectionRef ref = this.legacyCollectionStates.get(coll);
+          // legacy collections are always in-memory
+          DocCollection oldState = ref == null ? null : ref.get();
+          ClusterState.CollectionRef newRef = loadedData.getCollectionStates().get(coll);
+          DocCollection newState = newRef == null ? null : newRef.get();
+          if (newState == null) {
+            // check that we haven't just migrated
+            newState = watchedCollectionStates.get(coll);
+          }
+          if (!Objects.equals(oldState, newState)) {
+            updatedCollections.add(coll);
+          }
+        }
         this.legacyCollectionStates = loadedData.getCollectionStates();
         this.legacyClusterStateVersion = stat.getVersion();
+        constructState(updatedCollections);
       }
     } catch (KeeperException.NoNodeException e) {
       // Ignore missing legacy clusterstate.json.
       synchronized (getUpdateLock()) {
         this.legacyCollectionStates = emptyMap();
         this.legacyClusterStateVersion = 0;
+        constructState(Collections.emptySet());
       }
     }
   }
@@ -462,48 +569,54 @@ public class ZkStateReader implements Closeable {
    * Refresh state format2 collections.
    */
   private void refreshStateFormat2Collections() {
-    // It's okay if no format2 state.json exists, if one did not previous exist.
-    for (String coll : interestingCollections) {
-      new StateWatcher(coll).refreshAndWatch(watchedCollectionStates.containsKey(coll));
+    for (String coll : collectionWatches.keySet()) {
+      new StateWatcher(coll).refreshAndWatch();
     }
   }
+
+  // We don't get a Stat or track versions on getChildren() calls, so force linearization.
+  private final Object refreshCollectionListLock = new Object();
 
   /**
    * Search for any lazy-loadable state format2 collections.
    *
    * A stateFormat=1 collection which is not interesting to us can also
    * be put into the {@link #lazyCollectionStates} map here. But that is okay
-   * because {@link #constructState()} will give priority to collections in the
+   * because {@link #constructState(Set)} will give priority to collections in the
    * shared collection state over this map.
    * In fact this is a clever way to avoid doing a ZK exists check on
    * the /collections/collection_name/state.json znode
    * Such an exists check is done in {@link ClusterState#hasCollection(String)} and
-   * {@link ClusterState#getCollections()} method as a safeguard against exposing wrong collection names to the users
+   * {@link ClusterState#getCollections()} and {@link ClusterState#getCollectionsMap()} methods
+   * have a safeguard against exposing wrong collection names to the users
    */
   private void refreshCollectionList(Watcher watcher) throws KeeperException, InterruptedException {
-    List<String> children = null;
-    try {
-      children = zkClient.getChildren(COLLECTIONS_ZKNODE, watcher, true);
-    } catch (KeeperException.NoNodeException e) {
-      LOG.warn("Error fetching collection names: [{}]", e.getMessage());
-      // fall through
-    }
-    if (children == null || children.isEmpty()) {
-      lazyCollectionStates.clear();
-      return;
-    }
+    synchronized (refreshCollectionListLock) {
+      List<String> children = null;
+      try {
+        children = zkClient.getChildren(COLLECTIONS_ZKNODE, watcher, true);
+      } catch (KeeperException.NoNodeException e) {
+        LOG.warn("Error fetching collection names: [{}]", e.getMessage());
+        // fall through
+      }
+      if (children == null || children.isEmpty()) {
+        lazyCollectionStates.clear();
+        return;
+      }
 
-    // Don't mess with watchedCollections, they should self-manage.
+      // Don't lock getUpdateLock() here, we don't need it and it would cause deadlock.
+      // Don't mess with watchedCollections, they should self-manage.
 
-    // First, drop any children that disappeared.
-    this.lazyCollectionStates.keySet().retainAll(children);
-    for (String coll : children) {
-      // We will create an eager collection for any interesting collections, so don't add to lazy.
-      if (!interestingCollections.contains(coll)) {
-        // Double check contains just to avoid allocating an object.
-        LazyCollectionRef existing = lazyCollectionStates.get(coll);
-        if (existing == null) {
-          lazyCollectionStates.putIfAbsent(coll, new LazyCollectionRef(coll));
+      // First, drop any children that disappeared.
+      this.lazyCollectionStates.keySet().retainAll(children);
+      for (String coll : children) {
+        // We will create an eager collection for any interesting collections, so don't add to lazy.
+        if (!collectionWatches.containsKey(coll)) {
+          // Double check contains just to avoid allocating an object.
+          LazyCollectionRef existing = lazyCollectionStates.get(coll);
+          if (existing == null) {
+            lazyCollectionStates.putIfAbsent(coll, new LazyCollectionRef(coll));
+          }
         }
       }
     }
@@ -520,6 +633,7 @@ public class ZkStateReader implements Closeable {
 
     @Override
     public DocCollection get() {
+      gets.incrementAndGet();
       // TODO: consider limited caching
       return getCollectionLive(ZkStateReader.this, collName);
     }
@@ -535,26 +649,44 @@ public class ZkStateReader implements Closeable {
     }
   }
 
+  // We don't get a Stat or track versions on getChildren() calls, so force linearization.
+  private final Object refreshLiveNodesLock = new Object();
+  // Ensures that only the latest getChildren fetch gets applied.
+  private final AtomicReference<Set<String>> lastFetchedLiveNodes = new AtomicReference<>();
+
   /**
    * Refresh live_nodes.
    */
   private void refreshLiveNodes(Watcher watcher) throws KeeperException, InterruptedException {
-    Set<String> newLiveNodes;
-    try {
-      List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, true);
-      newLiveNodes = new HashSet<>(nodeList);
-    } catch (KeeperException.NoNodeException e) {
-      newLiveNodes = emptySet();
+    synchronized (refreshLiveNodesLock) {
+      Set<String> newLiveNodes;
+      try {
+        List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, true);
+        newLiveNodes = new HashSet<>(nodeList);
+      } catch (KeeperException.NoNodeException e) {
+        newLiveNodes = emptySet();
+      }
+      lastFetchedLiveNodes.set(newLiveNodes);
     }
-    Set<String> oldLiveNodes;
+
+    // Can't lock getUpdateLock() until we release the other, it would cause deadlock.
+    Set<String> oldLiveNodes, newLiveNodes;
     synchronized (getUpdateLock()) {
+      newLiveNodes = lastFetchedLiveNodes.getAndSet(null);
+      if (newLiveNodes == null) {
+        // Someone else won the race to apply the last update, just exit.
+        return;
+      }
+
       oldLiveNodes = this.liveNodes;
       this.liveNodes = newLiveNodes;
       if (clusterState != null) {
         clusterState.setLiveNodes(newLiveNodes);
       }
     }
-    LOG.info("Updated live nodes from ZooKeeper... ({}) -> ({})", oldLiveNodes.size(), newLiveNodes.size());
+    if (oldLiveNodes.size() != newLiveNodes.size()) {
+      LOG.info("Updated live nodes from ZooKeeper... ({}) -> ({})", oldLiveNodes.size(), newLiveNodes.size());
+    }
     if (LOG.isDebugEnabled()) {
       LOG.debug("Updated live nodes from ZooKeeper... {} -> {}", new TreeSet<>(oldLiveNodes), new TreeSet<>(newLiveNodes));
     }
@@ -573,6 +705,7 @@ public class ZkStateReader implements Closeable {
 
   public void close() {
     this.closed  = true;
+    notifications.shutdown();
     if (closeClient) {
       zkClient.close();
     }
@@ -585,7 +718,8 @@ public class ZkStateReader implements Closeable {
 
   public Replica getLeader(String collection, String shard) {
     if (clusterState != null) {
-      Replica replica = clusterState.getLeader(collection, shard);
+      DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+      Replica replica = docCollection != null ? docCollection.getLeader(shard) : null;
       if (replica != null && getClusterState().liveNodesContain(replica.getNodeName())) {
         return replica;
       }
@@ -653,8 +787,7 @@ public class ZkStateReader implements Closeable {
     Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     if (slices == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
-          "Could not find collection in zk: " + collection + " "
-              + clusterState.getCollections());
+          "Could not find collection in zk: " + collection);
     }
     
     Slice replicas = slices.get(shardId);
@@ -693,62 +826,68 @@ public class ZkStateReader implements Closeable {
     final byte[] data = zkClient.getData(ALIASES, null, null, true);
     this.aliases = ClusterState.load(data);
   }
-  
-  public Map getClusterProps(){
-    try {
-      if (getZkClient().exists(ZkStateReader.CLUSTER_PROPS, true)) {
-        return (Map) Utils.fromJSON(getZkClient().getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true)) ;
-      } else {
-        return new LinkedHashMap();
-      }
-    } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error reading cluster properties", e);
-    }
+
+  /**
+   * Get a cluster property
+   *
+   * N.B. Cluster properties are updated via ZK watchers, and so may not necessarily
+   * be completely up-to-date.  If you need to get the latest version, then use a
+   * {@link ClusterProperties} instance.
+   *
+   * @param key           the property to read
+   * @param defaultValue  a default value to use if no such property exists
+   * @param <T>           the type of the property
+   * @return the cluster property, or a default if the property is not set
+   */
+  @SuppressWarnings("unchecked")
+  public <T> T getClusterProperty(String key, T defaultValue) {
+    T value = (T) clusterProperties.get(key);
+    if (value == null)
+      return defaultValue;
+    return value;
   }
 
   /**
-   * This method sets a cluster property.
+   * Get all cluster properties for this cluster
    *
-   * @param propertyName  The property name to be set.
-   * @param propertyValue The value of the property.
+   * N.B. Cluster properties are updated via ZK watchers, and so may not necessarily
+   * be completely up-to-date.  If you need to get the latest version, then use a
+   * {@link ClusterProperties} instance.
+   *
+   * @return a Map of cluster properties
    */
-  public void setClusterProperty(String propertyName, String propertyValue) {
-    if (!KNOWN_CLUSTER_PROPS.contains(propertyName)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Not a known cluster property " + propertyName);
-    }
+  public Map<String, Object> getClusterProperties() {
+    return Collections.unmodifiableMap(clusterProperties);
+  }
 
-    for (; ; ) {
-      Stat s = new Stat();
-      try {
-        if (getZkClient().exists(CLUSTER_PROPS, true)) {
-          Map properties = (Map) Utils.fromJSON(getZkClient().getData(CLUSTER_PROPS, null, s, true));
-          if (propertyValue == null) {
-            //Don't update ZK unless absolutely necessary.
-            if (properties.get(propertyName) != null) {
-              properties.remove(propertyName);
-              getZkClient().setData(CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion(), true);
-            }
-          } else {
-            //Don't update ZK unless absolutely necessary.
-            if (!propertyValue.equals(properties.get(propertyName))) {
-              properties.put(propertyName, propertyValue);
-              getZkClient().setData(CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion(), true);
-            }
-          }
-        } else {
-          Map properties = new LinkedHashMap();
-          properties.put(propertyName, propertyValue);
-          getZkClient().create(CLUSTER_PROPS, Utils.toJSON(properties), CreateMode.PERSISTENT, true);
+  private final Watcher clusterPropertiesWatcher = event -> {
+    // session events are not change events, and do not remove the watcher
+    if (Watcher.Event.EventType.None.equals(event.getType())) {
+      return;
+    }
+    loadClusterProperties();
+  };
+
+  @SuppressWarnings("unchecked")
+  private void loadClusterProperties() {
+    try {
+      while (true) {
+        try {
+          byte[] data = zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
+          this.clusterProperties = (Map<String, Object>) Utils.fromJSON(data);
+          LOG.debug("Loaded cluster properties: {}", this.clusterProperties);
+          return;
+        } catch (KeeperException.NoNodeException e) {
+          this.clusterProperties = Collections.emptyMap();
+          LOG.debug("Loaded empty cluster properties");
+          // set an exists watch, and if the node has been created since the last call,
+          // read the data again
+          if (zkClient.exists(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, true) == null)
+            return;
         }
-      } catch (KeeperException.BadVersionException | KeeperException.NodeExistsException e) {
-        LOG.warn("Race condition while trying to set a new cluster prop on current version [{}]", s.getVersion());
-        //race condition
-        continue;
-      } catch (Exception ex) {
-        LOG.error("Error updating path [{}]", CLUSTER_PROPS, ex);
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Error updating cluster property " + propertyName, ex);
       }
-      break;
+    } catch (KeeperException | InterruptedException e) {
+      LOG.error("Error reading cluster properties from zookeeper", SolrZkClient.checkInterrupted(e));
     }
   }
 
@@ -769,19 +908,26 @@ public class ZkStateReader implements Closeable {
             new ConfigData((Map<String, Object>) Utils.fromJSON(data), stat.getVersion()) :
             null;
       }
-    } catch (KeeperException | InterruptedException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,"Error reading security properties",e) ;
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR,"Error reading security properties", e) ;
+    } catch (KeeperException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,"Error reading security properties", e) ;
     }
     return null;
   }
-  
+
   /**
    * Returns the baseURL corresponding to a given node's nodeName --
-   * NOTE: does not (currently) imply that the nodeName (or resulting 
+   * NOTE: does not (currently) imply that the nodeName (or resulting
    * baseURL) exists in the cluster.
    * @lucene.experimental
    */
   public String getBaseUrlForNodeName(final String nodeName) {
+    return getBaseUrlForNodeName(nodeName, getClusterProperty(URL_SCHEME, "http"));
+  }
+
+  public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
     final int _offset = nodeName.indexOf("_");
     if (_offset < 0) {
       throw new IllegalArgumentException("nodeName does not contain expected '_' seperator: " + nodeName);
@@ -789,10 +935,6 @@ public class ZkStateReader implements Closeable {
     final String hostAndPort = nodeName.substring(0,_offset);
     try {
       final String path = URLDecoder.decode(nodeName.substring(1+_offset), "UTF-8");
-      String urlScheme = (String) getClusterProps().get(URL_SCHEME);
-      if(urlScheme == null) {
-        urlScheme = "http";
-      }
       return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
     } catch (UnsupportedEncodingException e) {
       throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
@@ -814,38 +956,33 @@ public class ZkStateReader implements Closeable {
         return;
       }
 
-      if (!interestingCollections.contains(coll)) {
+      if (!collectionWatches.containsKey(coll)) {
         // This collection is no longer interesting, stop watching.
-        LOG.info("Uninteresting collection {}", coll);
+        LOG.debug("Uninteresting collection {}", coll);
         return;
       }
 
-      int liveNodesSize = ZkStateReader.this.clusterState == null ? 0
-          : ZkStateReader.this.clusterState.getLiveNodes().size();
+      Set<String> liveNodes = ZkStateReader.this.liveNodes;
       LOG.info("A cluster state change: [{}] for collection [{}] has occurred - updating... (live nodes size: [{}])",
-              event, coll, liveNodesSize);
+              event, coll, liveNodes.size());
 
-      refreshAndWatch(true);
-      synchronized (getUpdateLock()) {
-        constructState();
-      }
+      refreshAndWatch();
+
     }
 
     /**
      * Refresh collection state from ZK and leave a watch for future changes.
      * As a side effect, updates {@link #clusterState} and {@link #watchedCollectionStates}
      * with the results of the refresh.
-     *
-     * @param expectExists if true, error if no state node exists
      */
-    public void refreshAndWatch(boolean expectExists) {
+    public void refreshAndWatch() {
       try {
         DocCollection newState = fetchCollectionState(coll, this);
         updateWatchedCollection(coll, newState);
-      } catch (KeeperException.NoNodeException e) {
-        if (expectExists) {
-          LOG.warn("State node vanished for collection: [{}]", coll, e);
+        synchronized (getUpdateLock()) {
+          constructState(Collections.singleton(coll));
         }
+
       } catch (KeeperException.SessionExpiredException | KeeperException.ConnectionLossException e) {
         LOG.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
       } catch (KeeperException e) {
@@ -868,11 +1005,8 @@ public class ZkStateReader implements Closeable {
         return;
       }
       int liveNodesSize = ZkStateReader.this.clusterState == null ? 0 : ZkStateReader.this.clusterState.getLiveNodes().size();
-      LOG.info("A cluster state change: [{}], has occurred - updating... (live nodes size: [{}])", event, liveNodesSize);
+      LOG.debug("A cluster state change: [{}], has occurred - updating... (live nodes size: [{}])", event, liveNodesSize);
       refreshAndWatch();
-      synchronized (getUpdateLock()) {
-        constructState();
-      }
     }
 
     /** Must hold {@link #getUpdateLock()} before calling this method. */
@@ -904,10 +1038,10 @@ public class ZkStateReader implements Closeable {
       if (EventType.None.equals(event.getType())) {
         return;
       }
-      LOG.info("A collections change: [{}], has occurred - updating...", event);
+      LOG.debug("A collections change: [{}], has occurred - updating...", event);
       refreshAndWatch();
       synchronized (getUpdateLock()) {
-        constructState();
+        constructState(Collections.emptySet());
       }
     }
 
@@ -937,7 +1071,7 @@ public class ZkStateReader implements Closeable {
       if (EventType.None.equals(event.getType())) {
         return;
       }
-      LOG.info("A live node change: [{}], has occurred - updating... (live nodes size: [{}])", event, liveNodes.size());
+      LOG.debug("A live node change: [{}], has occurred - updating... (live nodes size: [{}])", event, liveNodes.size());
       refreshAndWatch();
     }
 
@@ -970,78 +1104,234 @@ public class ZkStateReader implements Closeable {
 
   private DocCollection fetchCollectionState(String coll, Watcher watcher) throws KeeperException, InterruptedException {
     String collectionPath = getCollectionPath(coll);
-    try {
-      Stat stat = new Stat();
-      byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
-      ClusterState state = ClusterState.load(stat.getVersion(), data,
-              Collections.<String>emptySet(), collectionPath);
-      ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
-      return collectionRef == null ? null : collectionRef.get();
-    } catch (KeeperException.NoNodeException e) {
-      return null;
+    while (true) {
+      try {
+        Stat stat = new Stat();
+        byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
+        ClusterState state = ClusterState.load(stat.getVersion(), data,
+            Collections.<String>emptySet(), collectionPath);
+        ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
+        return collectionRef == null ? null : collectionRef.get();
+      } catch (KeeperException.NoNodeException e) {
+        if (watcher != null) {
+          // Leave an exists watch in place in case a state.json is created later.
+          Stat exists = zkClient.exists(collectionPath, watcher, true);
+          if (exists != null) {
+            // Rare race condition, we tried to fetch the data and couldn't find it, then we found it exists.
+            // Loop and try again.
+            continue;
+          }
+        }
+        return null;
+      }
     }
+  }
+  
+  public static String getCollectionPathRoot(String coll) {
+    return COLLECTIONS_ZKNODE+"/"+coll;
   }
 
   public static String getCollectionPath(String coll) {
-    return COLLECTIONS_ZKNODE+"/"+coll + "/state.json";
+    return getCollectionPathRoot(coll) + "/state.json";
   }
 
-  public void addCollectionWatch(String coll) {
-    if (interestingCollections.add(coll)) {
-      LOG.info("addZkWatch [{}]", coll);
-      new StateWatcher(coll).refreshAndWatch(false);
+  /**
+   * Notify this reader that a local Core is a member of a collection, and so that collection
+   * state should be watched.
+   *
+   * Not a public API.  This method should only be called from ZkController.
+   *
+   * The number of cores per-collection is tracked, and adding multiple cores from the same
+   * collection does not increase the number of watches.
+   *
+   * @param collection the collection that the core is a member of
+   *
+   * @see ZkStateReader#unregisterCore(String)
+   */
+  public void registerCore(String collection) {
+    AtomicBoolean reconstructState = new AtomicBoolean(false);
+    collectionWatches.compute(collection, (k, v) -> {
+      if (v == null) {
+        reconstructState.set(true);
+        v = new CollectionWatch();
+      }
+      v.coreRefCount++;
+      return v;
+    });
+    if (reconstructState.get()) {
+      new StateWatcher(collection).refreshAndWatch();
+    }
+  }
+
+  /**
+   * Notify this reader that a local core that is a member of a collection has been closed.
+   *
+   * Not a public API.  This method should only be called from ZkController.
+   *
+   * If no cores are registered for a collection, and there are no {@link CollectionStateWatcher}s
+   * for that collection either, the collection watch will be removed.
+   *
+   * @param collection the collection that the core belongs to
+   */
+  public void unregisterCore(String collection) {
+    AtomicBoolean reconstructState = new AtomicBoolean(false);
+    collectionWatches.compute(collection, (k, v) -> {
+      if (v == null)
+        return null;
+      if (v.coreRefCount > 0)
+        v.coreRefCount--;
+      if (v.canBeRemoved()) {
+        watchedCollectionStates.remove(collection);
+        lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
+        reconstructState.set(true);
+        return null;
+      }
+      return v;
+    });
+    if (reconstructState.get()) {
       synchronized (getUpdateLock()) {
-        constructState();
+        constructState(Collections.emptySet());
       }
     }
   }
 
-  private void updateWatchedCollection(String coll, DocCollection newState) {
+  /**
+   * Register a CollectionStateWatcher to be called when the state of a collection changes
+   */
+  public void registerCollectionStateWatcher(String collection, CollectionStateWatcher stateWatcher) {
+    AtomicBoolean watchSet = new AtomicBoolean(false);
+    collectionWatches.compute(collection, (k, v) -> {
+      if (v == null) {
+        v = new CollectionWatch();
+        watchSet.set(true);
+      }
+      v.stateWatchers.add(stateWatcher);
+      return v;
+    });
+
+    if (watchSet.get()) {
+      new StateWatcher(collection).refreshAndWatch();
+    }
+    
+    DocCollection state = clusterState.getCollectionOrNull(collection);
+    if (stateWatcher.onStateChanged(liveNodes, state) == true) {
+      removeCollectionStateWatcher(collection, stateWatcher);
+    }
+  }
+
+  /**
+   * Block until a CollectionStatePredicate returns true, or the wait times out
+   *
+   * Note that the predicate may be called again even after it has returned true, so
+   * implementors should avoid changing state within the predicate call itself.
+   *
+   * @param collection the collection to watch
+   * @param wait       how long to wait
+   * @param unit       the units of the wait parameter
+   * @param predicate  the predicate to call on state changes
+   * @throws InterruptedException on interrupt
+   * @throws TimeoutException on timeout
+   */
+  public void waitForState(final String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
+      throws InterruptedException, TimeoutException {
+
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    CollectionStateWatcher watcher = (n, c) -> {
+      boolean matches = predicate.matches(n, c);
+      if (matches)
+        latch.countDown();
+      return matches;
+    };
+    registerCollectionStateWatcher(collection, watcher);
+
+    try {
+      // wait for the watcher predicate to return true, or time out
+      if (!latch.await(wait, unit))
+        throw new TimeoutException();
+
+    }
+    finally {
+      removeCollectionStateWatcher(collection, watcher);
+    }
+  }
+
+  /**
+   * Remove a watcher from a collection's watch list.
+   *
+   * This allows Zookeeper watches to be removed if there is no interest in the
+   * collection.
+   *
+   * @param collection the collection
+   * @param watcher    the watcher
+   */
+  public void removeCollectionStateWatcher(String collection, CollectionStateWatcher watcher) {
+    collectionWatches.compute(collection, (k, v) -> {
+      if (v == null)
+        return null;
+      v.stateWatchers.remove(watcher);
+      if (v.canBeRemoved())
+        return null;
+      return v;
+    });
+  }
+
+  /* package-private for testing */
+  Set<CollectionStateWatcher> getStateWatchers(String collection) {
+    final Set<CollectionStateWatcher> watchers = new HashSet<>();
+    collectionWatches.compute(collection, (k, v) -> {
+      if (v != null) {
+        watchers.addAll(v.stateWatchers);
+      }
+      return v;
+    });
+    return watchers;
+  }
+
+  // returns true if the state has changed
+  private boolean updateWatchedCollection(String coll, DocCollection newState) {
+
     if (newState == null) {
-      LOG.info("Deleting data for [{}]", coll);
+      LOG.debug("Removing cached collection state for [{}]", coll);
       watchedCollectionStates.remove(coll);
-      return;
+      return true;
     }
 
+    boolean updated = false;
     // CAS update loop
     while (true) {
-      if (!interestingCollections.contains(coll)) {
+      if (!collectionWatches.containsKey(coll)) {
         break;
       }
       DocCollection oldState = watchedCollectionStates.get(coll);
       if (oldState == null) {
         if (watchedCollectionStates.putIfAbsent(coll, newState) == null) {
-          LOG.info("Add data for [{}] ver [{}]", coll, newState.getZNodeVersion());
+          LOG.debug("Add data for [{}] ver [{}]", coll, newState.getZNodeVersion());
+          updated = true;
           break;
         }
       } else {
         if (oldState.getZNodeVersion() >= newState.getZNodeVersion()) {
-          // Nothing to do, someone else updated same or newer.
+          // no change to state, but we might have been triggered by the addition of a
+          // state watcher, so run notifications
+          updated = true;
           break;
         }
         if (watchedCollectionStates.replace(coll, oldState, newState)) {
-          LOG.info("Updating data for [{}] from [{}] to [{}]", coll, oldState.getZNodeVersion(), newState.getZNodeVersion());
+          LOG.debug("Updating data for [{}] from [{}] to [{}]", coll, oldState.getZNodeVersion(), newState.getZNodeVersion());
+          updated = true;
           break;
         }
       }
     }
 
-    // Resolve race with removeZKWatch.
-    if (!interestingCollections.contains(coll)) {
+    // Resolve race with unregisterCore.
+    if (!collectionWatches.containsKey(coll)) {
       watchedCollectionStates.remove(coll);
-      LOG.info("Removing uninteresting collection [{}]", coll);
+      LOG.debug("Removing uninteresting collection [{}]", coll);
     }
-  }
-  
-  /** This is not a public API. Only used by ZkController */
-  public void removeZKWatch(String coll) {
-    LOG.info("Removing watch for uninteresting collection [{}]", coll);
-    interestingCollections.remove(coll);
-    watchedCollectionStates.remove(coll);
-    lazyCollectionStates.put(coll, new LazyCollectionRef(coll));
-    synchronized (getUpdateLock()) {
-      constructState();
-    }
+
+    return updated;
   }
 
   public static class ConfigData {
@@ -1057,4 +1347,46 @@ public class ZkStateReader implements Closeable {
 
     }
   }
+
+  private void notifyStateWatchers(Set<String> liveNodes, String collection, DocCollection collectionState) {
+    try {
+      notifications.submit(new Notification(liveNodes, collection, collectionState));
+    }
+    catch (RejectedExecutionException e) {
+      if (closed == false) {
+        LOG.error("Couldn't run collection notifications for {}", collection, e);
+      }
+    }
+  }
+
+  private class Notification implements Runnable {
+
+    final Set<String> liveNodes;
+    final String collection;
+    final DocCollection collectionState;
+
+    private Notification(Set<String> liveNodes, String collection, DocCollection collectionState) {
+      this.liveNodes = liveNodes;
+      this.collection = collection;
+      this.collectionState = collectionState;
+    }
+
+    @Override
+    public void run() {
+      List<CollectionStateWatcher> watchers = new ArrayList<>();
+      collectionWatches.compute(collection, (k, v) -> {
+        if (v == null)
+          return null;
+        watchers.addAll(v.stateWatchers);
+        return v;
+      });
+      for (CollectionStateWatcher watcher : watchers) {
+        if (watcher.onStateChanged(liveNodes, collectionState)) {
+          removeCollectionStateWatcher(collection, watcher);
+        }
+      }
+    }
+
+  }
+
 }

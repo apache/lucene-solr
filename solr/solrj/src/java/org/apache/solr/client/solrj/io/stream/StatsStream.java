@@ -23,12 +23,17 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
@@ -37,7 +42,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 public class StatsStream extends TupleStream implements Expressible  {
@@ -47,7 +54,7 @@ public class StatsStream extends TupleStream implements Expressible  {
   private Metric[] metrics;
   private String zkHost;
   private Tuple tuple;
-  private Map<String, String> props;
+  private SolrParams params;
   private String collection;
   private boolean done;
   private long count;
@@ -55,20 +62,29 @@ public class StatsStream extends TupleStream implements Expressible  {
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
 
+  // Use StatsStream(String, String, SolrParams, Metric[]
+  @Deprecated
   public StatsStream(String zkHost,
                      String collection,
                      Map<String, String> props,
                      Metric[] metrics) {
-    init(zkHost, collection, props, metrics);
+    init(zkHost, collection, new MapSolrParams(props), metrics);
   }
-  
-  private void init(String zkHost, String collection, Map<String, String> props, Metric[] metrics) {
+
+  public StatsStream(String zkHost,
+                     String collection,
+                     SolrParams params,
+                     Metric[] metrics) {
+    init(zkHost, collection, params, metrics);
+  }
+
+  private void init(String zkHost, String collection, SolrParams params, Metric[] metrics) {
     this.zkHost  = zkHost;
-    this.props   = props;
+    this.params = params;
     this.metrics = metrics;
     this.collection = collection;
   }
-  
+
   public StatsStream(StreamExpression expression, StreamFactory factory) throws IOException{   
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
@@ -90,11 +106,11 @@ public class StatsStream extends TupleStream implements Expressible  {
     if(0 == namedParams.size()){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
     }
-    
-    Map<String,String> params = new HashMap<String,String>();
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
     for(StreamExpressionNamedParameter namedParam : namedParams){
       if(!namedParam.getName().equals("zkHost")){
-        params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
+        params.set(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
     
@@ -134,8 +150,9 @@ public class StatsStream extends TupleStream implements Expressible  {
     expression.addParameter(collection);
     
     // parameters
-    for(Entry<String,String> param : props.entrySet()){
-      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
+    ModifiableSolrParams mParams = new ModifiableSolrParams(params);
+    for (Entry<String, String[]> param : mParams.getMap().entrySet()) {
+      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), String.join(",", param.getValue())));
     }
     
     // zkHost
@@ -147,6 +164,30 @@ public class StatsStream extends TupleStream implements Expressible  {
     }
     
     return expression;   
+  }
+  
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
+    
+    explanation.setFunctionName(factory.getFunctionName(this.getClass()));
+    explanation.setImplementingClass(this.getClass().getName());
+    explanation.setExpressionType(ExpressionType.STREAM_SOURCE);
+    explanation.setExpression(toExpression(factory).toString());
+    
+    StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-datastore");
+    child.setFunctionName(String.format(Locale.ROOT, "solr (worker ? of ?)")); 
+      // TODO: fix this so we know the # of workers - check with Joel about a Stat's ability to be in a
+      // parallel stream.
+    
+    child.setImplementingClass("Solr/Lucene");
+    child.setExpressionType(ExpressionType.DATASTORE);
+    ModifiableSolrParams mParams = new ModifiableSolrParams(params);
+    child.setExpression(mParams.getMap().entrySet().stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue())).collect(Collectors.joining(",")));
+    explanation.addChild(child);
+    
+    return explanation;
   }
 
   public void setStreamContext(StreamContext context) {
@@ -162,15 +203,17 @@ public class StatsStream extends TupleStream implements Expressible  {
     if(cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
     } else {
-      cloudSolrClient = new CloudSolrClient(zkHost);
+      cloudSolrClient = new Builder()
+          .withZkHost(zkHost)
+          .build();
     }
 
-    ModifiableSolrParams params = getParams(this.props);
-    addStats(params, metrics);
-    params.add("stats", "true");
-    params.add("rows", "0");
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams(this.params);
+    addStats(paramsLoc, metrics);
+    paramsLoc.set("stats", "true");
+    paramsLoc.set("rows", "0");
 
-    QueryRequest request = new QueryRequest(params);
+    QueryRequest request = new QueryRequest(paramsLoc);
     try {
       NamedList response = cloudSolrClient.request(request, collection);
       this.tuple = getTuple(response);
@@ -243,15 +286,6 @@ public class StatsStream extends TupleStream implements Expressible  {
       buf.append("}").append(field);
       params.add("stats.field", buf.toString());
     }
-  }
-
-  private ModifiableSolrParams getParams(Map<String, String> props) {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    for(String key : props.keySet()) {
-      String value = props.get(key);
-      params.add(key, value);
-    }
-    return params;
   }
 
   private Tuple getTuple(NamedList response) {

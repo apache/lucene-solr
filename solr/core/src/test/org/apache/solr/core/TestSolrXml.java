@@ -67,12 +67,13 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     NodeConfig cfg = SolrXmlConfig.fromSolrHome(loader, solrHome.toPath());
     CloudConfig ccfg = cfg.getCloudConfig();
     UpdateShardHandlerConfig ucfg = cfg.getUpdateShardHandlerConfig();
+    PluginInfo[] backupRepoConfigs = cfg.getBackupRepositoryPlugins();
     
     assertEquals("core admin handler class", "testAdminHandler", cfg.getCoreAdminHandlerClass());
     assertEquals("collection handler class", "testCollectionsHandler", cfg.getCollectionsHandlerClass());
     assertEquals("info handler class", "testInfoHandler", cfg.getInfoHandlerClass());
     assertEquals("config set handler class", "testConfigSetsHandler", cfg.getConfigSetsHandlerClass());
-    assertEquals("core load threads", 11, cfg.getCoreLoadThreadCount());
+    assertEquals("core load threads", 11, cfg.getCoreLoadThreadCount(false));
     assertThat("core root dir", cfg.getCoreRootDirectory().toString(), containsString("testCoreRootDirectory"));
     assertEquals("distrib conn timeout", 22, cfg.getUpdateShardHandlerConfig().getDistributedConnectionTimeout());
     assertEquals("distrib socket timeout", 33, cfg.getUpdateShardHandlerConfig().getDistributedSocketTimeout());
@@ -98,6 +99,11 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("zk host", "testZkHost", ccfg.getZkHost());
     assertEquals("zk ACL provider", "DefaultZkACLProvider", ccfg.getZkACLProviderClass());
     assertEquals("zk credentials provider", "DefaultZkCredentialsProvider", ccfg.getZkCredentialsProviderClass());
+    assertEquals(1, backupRepoConfigs.length);
+    assertEquals("local", backupRepoConfigs[0].name);
+    assertEquals("a.b.C", backupRepoConfigs[0].className);
+    assertEquals("true", backupRepoConfigs[0].attributes.get("default"));
+    assertEquals(0, backupRepoConfigs[0].initArgs.size());
   }
 
   // Test  a few property substitutions that happen to be in solr-50-all.xml.
@@ -320,5 +326,12 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     expectedException.expectMessage("solrcloud section missing required entry 'hostContext'");
 
     SolrXmlConfig.fromString(loader, "<solr><solrcloud><str name=\"host\">host</str><int name=\"hostPort\">8983</int></solrcloud></solr>");
+  }
+
+  public void testMultiBackupSectionError() throws IOException {
+    String solrXml = "<solr><backup></backup><backup></backup></solr>";
+    expectedException.expect(SolrException.class);
+    expectedException.expectMessage("Multiple instances of backup section found in solr.xml");
+    SolrXmlConfig.fromString(loader, solrXml); // return not used, only for validation
   }
 }

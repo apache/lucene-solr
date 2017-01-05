@@ -18,9 +18,11 @@ package org.apache.solr.update;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.concurrent.Callable;
 
 public class TestUpdate extends SolrTestCaseJ4 {
@@ -35,20 +37,12 @@ public class TestUpdate extends SolrTestCaseJ4 {
     // Test both by running the same test with and without commits
 
     // do without commits
-    doUpdateTest(new Callable() {
-      @Override
-      public Object call() throws Exception {
-        return null;
-      }
-    });
+    doUpdateTest(() -> null);
 
     // do with commits
-    doUpdateTest(new Callable() {
-      @Override
-      public Object call() throws Exception {
-        assertU(commit("softCommit","false"));
-        return null;
-      }
+    doUpdateTest(() -> {
+      assertU(commit("softCommit","false"));
+      return null;
     });
 
 
@@ -241,6 +235,25 @@ public class TestUpdate extends SolrTestCaseJ4 {
         ,"/response/numFound==1"
     );
 
+  }
+
+  @Test // SOLR-8866
+  public void testUpdateLogThrowsForUnknownTypes() throws IOException {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "444");
+    doc.addField("text", new Object());//Object shouldn't be serialized later...
+
+    AddUpdateCommand cmd = new AddUpdateCommand(req());
+    cmd.solrDoc = doc;
+    try {
+      h.getCore().getUpdateHandler().addDoc(cmd); // should throw
+    } catch (SolrException e) {
+      if (e.getMessage().contains("serialize")) {
+        return;//passed test
+      }
+      throw e;
+    }
+    fail();
   }
 
 }

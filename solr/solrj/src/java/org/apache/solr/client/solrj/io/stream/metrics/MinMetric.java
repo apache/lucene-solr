@@ -25,8 +25,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class MinMetric extends Metric {
-
-  private static final long serialVersionUID = 1L;
   
   private long longMin = Long.MAX_VALUE;
   private double doubleMin = Double.MAX_VALUE;
@@ -35,6 +33,7 @@ public class MinMetric extends Metric {
   public MinMetric(String columnName){
     init("min", columnName);
   }
+
   public MinMetric(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String functionName = expression.getFunctionName();
@@ -56,9 +55,12 @@ public class MinMetric extends Metric {
     setFunctionName(functionName);
     setIdentifier(functionName, "(", columnName, ")");
   }
-  
 
-  public double getValue() {
+  public String[] getColumns() {
+    return new String[]{columnName};
+  }
+
+  public Number getValue() {
     if(longMin == Long.MAX_VALUE) {
       return doubleMin;
     } else {

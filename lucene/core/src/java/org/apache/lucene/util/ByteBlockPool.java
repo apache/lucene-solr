@@ -280,6 +280,28 @@ public final class ByteBlockPool {
     return newUpto+3;
   }
 
+  /** Fill the provided {@link BytesRef} with the bytes at the specified offset/length slice.
+   *  This will avoid copying the bytes, if the slice fits into a single block; otherwise, it uses
+   *  the provided {@link BytesRefBuilder} to copy bytes over. */
+  void setBytesRef(BytesRefBuilder builder, BytesRef result, long offset, int length) {
+    result.length = length;
+
+    int bufferIndex = (int) (offset >> BYTE_BLOCK_SHIFT);
+    byte[] buffer = buffers[bufferIndex];
+    int pos = (int) (offset & BYTE_BLOCK_MASK);
+    if (pos + length <= BYTE_BLOCK_SIZE) {
+      // common case where the slice lives in a single block: just reference the buffer directly without copying
+      result.bytes = buffer;
+      result.offset = pos;
+    } else {
+      // uncommon case: the slice spans at least 2 blocks, so we must copy the bytes:
+      builder.grow(length);
+      result.bytes = builder.get().bytes;
+      result.offset = 0;
+      readBytes(offset, result.bytes, 0, length);
+    }
+  }
+
   // Fill in a BytesRef from term's length & bytes encoded in
   // byte block
   public void setBytesRef(BytesRef term, int textStart) {
@@ -355,6 +377,35 @@ public final class ByteBlockPool {
         overflow = overflow - BYTE_BLOCK_SIZE;
       }
     } while (true);
+  }
+
+  /**
+   * Set the given {@link BytesRef} so that its content is equal to the
+   * {@code ref.length} bytes starting at {@code offset}. Most of the time this
+   * method will set pointers to internal data-structures. However, in case a
+   * value crosses a boundary, a fresh copy will be returned.
+   * On the contrary to {@link #setBytesRef(BytesRef, int)}, this does not
+   * expect the length to be encoded with the data.
+   */
+  public void setRawBytesRef(BytesRef ref, final long offset) {
+    int bufferIndex = (int) (offset >> BYTE_BLOCK_SHIFT);
+    int pos = (int) (offset & BYTE_BLOCK_MASK);
+    if (pos + ref.length <= BYTE_BLOCK_SIZE) {
+      ref.bytes = buffers[bufferIndex];
+      ref.offset = pos;
+    } else {
+      ref.bytes = new byte[ref.length];
+      ref.offset = 0;
+      readBytes(offset, ref.bytes, 0, ref.length);
+    }
+  }
+
+  /** Read a single byte at the given {@code offset}. */
+  public byte readByte(long offset) {
+    int bufferIndex = (int) (offset >> BYTE_BLOCK_SHIFT);
+    int pos = (int) (offset & BYTE_BLOCK_MASK);
+    byte[] buffer = buffers[bufferIndex];
+    return buffer[pos];
   }
 }
 

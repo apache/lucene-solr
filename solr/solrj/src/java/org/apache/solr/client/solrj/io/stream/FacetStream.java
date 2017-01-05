@@ -17,23 +17,27 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Collections;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
@@ -42,7 +46,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -58,14 +64,19 @@ public class FacetStream extends TupleStream implements Expressible  {
   private Metric[] metrics;
   private int bucketSizeLimit;
   private FieldComparator[] bucketSorts;
-  private List<Tuple> tuples = new ArrayList();
+  private List<Tuple> tuples = new ArrayList<Tuple>();
   private int index;
   private String zkHost;
-  private Map<String, String> props;
+  private SolrParams params;
   private String collection;
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
 
+  /*
+   *
+   * @deprecated. Use the form that takes a SolrParams rather than Map&ltString, String&gt;
+   */
+  @Deprecated
   public FacetStream(String zkHost,
                      String collection,
                      Map<String, String> props,
@@ -73,7 +84,17 @@ public class FacetStream extends TupleStream implements Expressible  {
                      Metric[] metrics,
                      FieldComparator[] bucketSorts,
                      int bucketSizeLimit) throws IOException {
-    init(collection, props, buckets, bucketSorts, metrics, bucketSizeLimit, zkHost);
+    init(collection, new MapSolrParams(props), buckets, bucketSorts, metrics, bucketSizeLimit, zkHost);
+  }
+
+  public FacetStream(String zkHost,
+                     String collection,
+                     SolrParams params,
+                     Bucket[] buckets,
+                     Metric[] metrics,
+                     FieldComparator[] bucketSorts,
+                     int bucketSizeLimit) throws IOException {
+    init(collection, params, buckets, bucketSorts, metrics, bucketSizeLimit, zkHost);
   }
   
   public FacetStream(StreamExpression expression, StreamFactory factory) throws IOException{   
@@ -102,10 +123,10 @@ public class FacetStream extends TupleStream implements Expressible  {
     }
     
     // pull out known named params
-    Map<String,String> params = new HashMap<String,String>();
+    ModifiableSolrParams params = new ModifiableSolrParams();
     for(StreamExpressionNamedParameter namedParam : namedParams){
       if(!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("buckets") && !namedParam.getName().equals("bucketSorts") && !namedParam.getName().equals("limit")){
-        params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
+        params.add(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
 
@@ -180,6 +201,14 @@ public class FacetStream extends TupleStream implements Expressible  {
     init(collectionName, params, buckets, bucketSorts, metrics, limitInt, zkHost);
   }
 
+  public Bucket[] getBuckets() {
+    return this.buckets;
+  }
+
+  public String getCollection() {
+    return this.collection;
+  }
+
   private FieldComparator[] parseBucketSorts(String bucketSortString) throws IOException {
 
     String[] sorts = bucketSortString.split(",");
@@ -200,10 +229,10 @@ public class FacetStream extends TupleStream implements Expressible  {
 
     return comps;
   }
-  
-  private void init(String collection, Map<String, String> props, Bucket[] buckets, FieldComparator[] bucketSorts, Metric[] metrics, int bucketSizeLimit, String zkHost) throws IOException {
+
+  private void init(String collection, SolrParams params, Bucket[] buckets, FieldComparator[] bucketSorts, Metric[] metrics, int bucketSizeLimit, String zkHost) throws IOException {
     this.zkHost  = zkHost;
-    this.props   = props;
+    this.params = params;
     this.buckets = buckets;
     this.metrics = metrics;
     this.bucketSizeLimit   = bucketSizeLimit;
@@ -229,8 +258,11 @@ public class FacetStream extends TupleStream implements Expressible  {
     expression.addParameter(collection);
     
     // parameters
-    for(Entry<String,String> param : props.entrySet()){
-      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
+    ModifiableSolrParams tmpParams = new ModifiableSolrParams(params);
+
+    for (Entry<String, String[]> param : tmpParams.getMap().entrySet()) {
+      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(),
+          String.join(",", param.getValue())));
     }
     
     // buckets
@@ -267,31 +299,58 @@ public class FacetStream extends TupleStream implements Expressible  {
     return expression;   
   }
 
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
 
+    StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
+    
+    explanation.setFunctionName(factory.getFunctionName(this.getClass()));
+    explanation.setImplementingClass(this.getClass().getName());
+    explanation.setExpressionType(ExpressionType.STREAM_SOURCE);
+    explanation.setExpression(toExpression(factory).toString());
+    
+    // child is a datastore so add it at this point
+    StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-datastore");
+    child.setFunctionName(String.format(Locale.ROOT, "solr (%s)", collection)); 
+    // TODO: fix this so we know the # of workers - check with Joel about a Topic's ability to be in a
+    // parallel stream.
+    
+    child.setImplementingClass("Solr/Lucene");
+    child.setExpressionType(ExpressionType.DATASTORE);
+    ModifiableSolrParams tmpParams = new ModifiableSolrParams(SolrParams.toMultiMap(params.toNamedList()));
+
+    child.setExpression(tmpParams.getMap().entrySet().stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue())).collect(Collectors.joining(",")));
+    
+    explanation.addChild(child);
+    
+    return explanation;
+  }
+  
   public void setStreamContext(StreamContext context) {
     cache = context.getSolrClientCache();
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
-    return l;
+    return new ArrayList();
   }
 
   public void open() throws IOException {
     if(cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
     } else {
-      cloudSolrClient = new CloudSolrClient(zkHost);
+      cloudSolrClient = new Builder()
+          .withZkHost(zkHost)
+          .build();
     }
 
     FieldComparator[] adjustedSorts = adjustSorts(buckets, bucketSorts);
     String json = getJsonFacetString(buckets, metrics, adjustedSorts, bucketSizeLimit);
 
-    ModifiableSolrParams params = getParams(this.props);
-    params.add("json.facet", json);
-    params.add("rows", "0");
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams(params);
+    paramsLoc.set("json.facet", json);
+    paramsLoc.set("rows", "0");
 
-    QueryRequest request = new QueryRequest(params);
+    QueryRequest request = new QueryRequest(paramsLoc);
     try {
       NamedList response = cloudSolrClient.request(request, collection);
       getTuples(response, buckets, metrics);
@@ -318,15 +377,6 @@ public class FacetStream extends TupleStream implements Expressible  {
       Tuple tuple = new Tuple(fields);
       return tuple;
     }
-  }
-
-  private ModifiableSolrParams getParams(Map<String, String> props) {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    for(String key : props.keySet()) {
-      String value = props.get(key);
-      params.add(key, value);
-    }
-    return params;
   }
 
   private String getJsonFacetString(Bucket[] _buckets, Metric[] _metrics, FieldComparator[] _sorts, int _limit) {
@@ -435,6 +485,9 @@ public class FacetStream extends TupleStream implements Expressible  {
 
     String bucketName = _buckets[level].toString();
     NamedList nl = (NamedList)facets.get(bucketName);
+    if(nl == null) {
+      return;
+    }
     List allBuckets = (List)nl.get("buckets");
     for(int b=0; b<allBuckets.size(); b++) {
       NamedList bucket = (NamedList)allBuckets.get(b);
@@ -458,7 +511,7 @@ public class FacetStream extends TupleStream implements Expressible  {
             t.put(identifier, d);
             ++m;
           } else {
-            long l = (long)bucket.get("count");
+            long l = ((Number)bucket.get("count")).longValue();
             t.put("count(*)", l);
           }
         }

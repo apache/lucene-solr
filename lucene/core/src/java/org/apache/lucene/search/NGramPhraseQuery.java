@@ -78,20 +78,27 @@ public class NGramPhraseQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (super.equals(o) == false) {
-      return false;
-    }
-    NGramPhraseQuery other = (NGramPhraseQuery) o;
-    return n == other.n && phraseQuery.equals(other.phraseQuery);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(NGramPhraseQuery other) {
+    return n == other.n && 
+           phraseQuery.equals(other.phraseQuery);
   }
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = classHash();
     h = 31 * h + phraseQuery.hashCode();
     h = 31 * h + n;
     return h;
+  }
+
+  /** Return the n in n-gram */
+  public int getN() {
+    return n;
   }
 
   /** Return the list of terms. */

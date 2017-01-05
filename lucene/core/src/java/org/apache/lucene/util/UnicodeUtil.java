@@ -449,7 +449,7 @@ public final class UnicodeUtil {
    *    content is prematurely truncated.
    */
   public static int UTF8toUTF32(final BytesRef utf8, final int[] ints) {
-    // TODO: ints cannot be null, should be an assert
+    // TODO: ints must not be null, should be an assert
     int utf32Count = 0;
     int utf8Upto = utf8.offset;
     final byte[] bytes = utf8.bytes;
@@ -611,6 +611,11 @@ public final class UnicodeUtil {
       }
     }
     return out_offset;
+  }
+
+  /** Returns the maximum number of utf8 bytes required to encode a utf16 (e.g., java char[], String) */
+  public static int maxUTF8Length(int utf16Length) {
+    return Math.multiplyExact(utf16Length, MAX_UTF8_BYTES_PER_CHAR);
   }
   
   /**

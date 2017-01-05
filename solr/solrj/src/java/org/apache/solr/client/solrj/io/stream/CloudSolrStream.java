@@ -26,33 +26,42 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 
 /**
  * Connects to Zookeeper to pick replicas from a specific collection to send the query to.
@@ -67,16 +76,11 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
   protected String zkHost;
   protected String collection;
-  protected Map<String,String> params;
+  protected SolrParams params;
   private Map<String, String> fieldMappings;
   protected StreamComparator comp;
-  private int zkConnectTimeout = 10000;
-  private int zkClientTimeout = 10000;
-  private int numWorkers;
-  private int workerID;
   private boolean trace;
   protected transient Map<String, Tuple> eofTuples;
-  protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
   protected transient List<TupleStream> solrStreams;
   protected transient TreeSet<TupleWrapper> tuples;
@@ -86,7 +90,34 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   protected CloudSolrStream(){
     
   }
+
+
+  /**
+   * @param zkHost         Zookeeper ensemble connection string
+   * @param collectionName Name of the collection to operate on
+   * @param params         Map&lt;String, String&gt; of parameter/value pairs
+   * @throws IOException Something went wrong
+   *                     <p>
+   *                     This form does not allow specifying multiple clauses, say "fq" clauses, use the form that
+   *                     takes a SolrParams. Transition code can call the preferred method that takes SolrParams
+   *                     by calling CloudSolrStream(zkHost, collectionName,
+   *                     new ModifiableSolrParams(SolrParams.toMultiMap(new NamedList(Map&lt;String, String&gt;)));
+   * @deprecated         Use the constructor that has a SolrParams obj rather than a Map
+   */
+
+  @Deprecated
   public CloudSolrStream(String zkHost, String collectionName, Map params) throws IOException {
+    init(collectionName, zkHost, new MapSolrParams(params));
+  }
+
+  /**
+   * @param zkHost         Zookeeper ensemble connection string
+   * @param collectionName Name of the collection to operate on
+   * @param params         Map&lt;String, String[]&gt; of parameter/value pairs
+   * @throws IOException Something went wrong
+   */
+
+  public CloudSolrStream(String zkHost, String collectionName, SolrParams params) throws IOException {
     init(collectionName, zkHost, params);
   }
 
@@ -96,32 +127,32 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter aliasExpression = factory.getNamedOperand(expression, "aliases");
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
-    
+
+    // Collection Name
+    if(null == collectionName){
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
+    }
+
     // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't need to count it twice
     if(expression.getParameters().size() != 1 + namedParams.size()){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - unknown operands found",expression));
     }
     
-    // Collection Name
-    if(null == collectionName){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
-    }
-        
     // Named parameters - passed directly to solr as solrparams
     if(0 == namedParams.size()){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
     }
     
-    Map<String,String> params = new HashMap<String,String>();
+    ModifiableSolrParams mParams = new ModifiableSolrParams();
     for(StreamExpressionNamedParameter namedParam : namedParams){
       if(!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("aliases")){
-        params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
+        mParams.add(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
 
     // Aliases, optional, if provided then need to split
     if(null != aliasExpression && aliasExpression.getParameter() instanceof StreamExpressionValue){
-      fieldMappings = new HashMap<String,String>();
+      fieldMappings = new HashMap<>();
       for(String mapping : ((StreamExpressionValue)aliasExpression.getParameter()).getValue().split(",")){
         String[] parts = mapping.trim().split("=");
         if(2 == parts.length){
@@ -149,11 +180,11 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
     
     // We've got all the required items
-    init(collectionName, zkHost, params);
+    init(collectionName, zkHost, mParams);
   }
   
   @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+  public StreamExpression toExpression(StreamFactory factory) throws IOException {
     // functionName(collectionName, param1, param2, ..., paramN, sort="comp", [aliases="field=alias,..."])
     
     // function name
@@ -163,14 +194,16 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     expression.addParameter(collection);
     
     // parameters
-    for(Entry<String,String> param : params.entrySet()){
-      String value = param.getValue();
+
+    ModifiableSolrParams mParams = new ModifiableSolrParams(SolrParams.toMultiMap(params.toNamedList()));
+    for (Entry<String, String[]> param : mParams.getMap().entrySet()) {
+      String value = String.join(",", param.getValue());
       
       // SOLR-8409: This is a special case where the params contain a " character
       // Do note that in any other BASE streams with parameters where a " might come into play
       // that this same replacement needs to take place.
       value = value.replace("\"", "\\\"");
-      
+
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), value));
     }
     
@@ -193,21 +226,54 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     return expression;   
   }
   
-  private void init(String collectionName, String zkHost, Map params) throws IOException {
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
+    
+    explanation.setFunctionName(factory.getFunctionName(this.getClass()));
+    explanation.setImplementingClass(this.getClass().getName());
+    explanation.setExpressionType(ExpressionType.STREAM_SOURCE);
+    explanation.setExpression(toExpression(factory).toString());
+    
+    // child is a datastore so add it at this point
+    StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-datastore");
+    child.setFunctionName(String.format(Locale.ROOT, "solr (%s)", collection));
+    child.setImplementingClass("Solr/Lucene");
+    child.setExpressionType(ExpressionType.DATASTORE);
+    
+    if(null != params){
+      ModifiableSolrParams mParams = new ModifiableSolrParams(params);
+      child.setExpression(mParams.getMap().entrySet().stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue())).collect(Collectors.joining(",")));
+    }
+    explanation.addChild(child);
+    
+    return explanation;
+  }
+
+  private void init(String collectionName, String zkHost, SolrParams params) throws IOException {
     this.zkHost = zkHost;
     this.collection = collectionName;
-    this.params = params;
+    this.params = new ModifiableSolrParams(params);
 
     // If the comparator is null then it was not explicitly set so we will create one using the sort parameter
     // of the query. While doing this we will also take into account any aliases such that if we are sorting on
     // fieldA but fieldA is aliased to alias.fieldA then the comparater will be against alias.fieldA.
-    if(!params.containsKey("fl")){
-      throw new IOException("fl param expected for a stream");
+
+    if (params.get("q") == null) {
+      throw new IOException("q param expected for search function");
     }
-    if(!params.containsKey("sort")){
-      throw new IOException("sort param expected for a stream");
+
+    if (params.getParams("fl") == null) {
+      throw new IOException("fl param expected for search function");
     }
-    this.comp = parseComp((String)params.get("sort"), (String)params.get("fl")); 
+    String fls = String.join(",", params.getParams("fl"));
+
+    if (params.getParams("sort") == null) {
+      throw new IOException("sort param expected for search function");
+    }
+    String sorts = String.join(",", params.getParams("sort"));
+    this.comp = parseComp(sorts, fls);
   }
   
   public void setFieldMappings(Map<String, String> fieldMappings) {
@@ -219,9 +285,6 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   }
 
   public void setStreamContext(StreamContext context) {
-    this.numWorkers = context.numWorkers;
-    this.workerID = context.workerID;
-    this.cache = context.getSolrClientCache();
     this.streamContext = context;
   }
 
@@ -233,10 +296,12 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     this.tuples = new TreeSet();
     this.solrStreams = new ArrayList();
     this.eofTuples = Collections.synchronizedMap(new HashMap());
-    if(this.cache != null) {
-      this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
+    if (this.streamContext != null && this.streamContext.getSolrClientCache() != null) {
+      this.cloudSolrClient = this.streamContext.getSolrClientCache().getCloudSolrClient(zkHost);
     } else {
-      this.cloudSolrClient = new CloudSolrClient(zkHost);
+      this.cloudSolrClient = new Builder()
+          .withZkHost(zkHost)
+          .build();
       this.cloudSolrClient.connect();
     }
     constructStreams();
@@ -267,6 +332,10 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
       String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
       
+      if (spec.length != 2) {
+        throw new IOException("Invalid sort spec:" + s);
+      }
+
       String fieldName = spec[0].trim();
       String order = spec[1].trim();
       
@@ -289,36 +358,57 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
   }
 
+  public static Collection<Slice> getSlices(String collectionName, ZkStateReader zkStateReader, boolean checkAlias) throws IOException {
+    ClusterState clusterState = zkStateReader.getClusterState();
+
+    Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
+
+    // Check collection case sensitive
+    if(collectionsMap.containsKey(collectionName)) {
+      return collectionsMap.get(collectionName).getActiveSlices();
+    }
+
+    // Check collection case insensitive
+    for(String collectionMapKey : collectionsMap.keySet()) {
+      if(collectionMapKey.equalsIgnoreCase(collectionName)) {
+        return collectionsMap.get(collectionMapKey).getActiveSlices();
+      }
+    }
+
+    if(checkAlias) {
+      // check for collection alias
+      Aliases aliases = zkStateReader.getAliases();
+      String alias = aliases.getCollectionAlias(collectionName);
+      if (alias != null) {
+        Collection<Slice> slices = new ArrayList<>();
+
+        List<String> aliasList = StrUtils.splitSmart(alias, ",", true);
+        for (String aliasCollectionName : aliasList) {
+          // Add all active slices for this alias collection
+          slices.addAll(collectionsMap.get(aliasCollectionName).getActiveSlices());
+        }
+
+        return slices;
+      }
+    }
+
+    throw new IOException("Slices not found for " + collectionName);
+  }
+
   protected void constructStreams() throws IOException {
-
     try {
-
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
+
+      Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, true);
+
+      ModifiableSolrParams mParams = new ModifiableSolrParams(params); 
+      mParams.set("distrib", "false"); // We are the aggregator.
+
       Set<String> liveNodes = clusterState.getLiveNodes();
-      //System.out.println("Connected to zk an got cluster state.");
-
-      Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
-
-      if(slices == null) {
-        //Try case insensitive match
-        for(String col : clusterState.getCollections()) {
-          if(col.equalsIgnoreCase(collection)) {
-            slices = clusterState.getActiveSlices(col);
-            break;
-          }
-        }
-
-        if(slices == null) {
-          throw new Exception("Collection not found:" + this.collection);
-        }
-      }
-
-      params.put("distrib","false"); // We are the aggregator.
-
       for(Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
-        List<Replica> shuffler = new ArrayList();
+        List<Replica> shuffler = new ArrayList<>();
         for(Replica replica : replicas) {
           if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName()))
           shuffler.add(replica);
@@ -328,7 +418,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
         Replica rep = shuffler.get(0);
         ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
         String url = zkProps.getCoreUrl();
-        SolrStream solrStream = new SolrStream(url, params);
+        SolrStream solrStream = new SolrStream(url, mParams);
         if(streamContext != null) {
           solrStream.setStreamContext(streamContext);
         }
@@ -375,7 +465,9 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       }
     }
 
-    if(cache == null && cloudSolrClient != null) {
+    if ((this.streamContext == null || this.streamContext.getSolrClientCache() == null) &&
+        cloudSolrClient != null) {
+
       cloudSolrClient.close();
     }
   }

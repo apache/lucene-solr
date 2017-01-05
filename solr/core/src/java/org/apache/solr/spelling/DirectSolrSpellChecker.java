@@ -23,20 +23,15 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.DirectSpellChecker;
 import org.apache.lucene.search.spell.StringDistance;
-import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
 import org.apache.lucene.search.spell.SuggestWordQueue;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,6 +94,9 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
   
   @Override
   public String init(NamedList config, SolrCore core) {
+
+    SolrParams params = SolrParams.toSolrParams(config);
+
     LOG.info("init: " + config);
     String name = super.init(config, core);
     
@@ -119,37 +117,37 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
       sd = core.getResourceLoader().newInstance(distClass, StringDistance.class);
 
     float minAccuracy = DEFAULT_ACCURACY;
-    Float accuracy = (Float) config.get(ACCURACY);
+    Float accuracy = params.getFloat(ACCURACY);
     if (accuracy != null)
       minAccuracy = accuracy;
     
     int maxEdits = DEFAULT_MAXEDITS;
-    Integer edits = (Integer) config.get(MAXEDITS);
+    Integer edits = params.getInt(MAXEDITS);
     if (edits != null)
       maxEdits = edits;
     
     int minPrefix = DEFAULT_MINPREFIX;
-    Integer prefix = (Integer) config.get(MINPREFIX);
+    Integer prefix = params.getInt(MINPREFIX);
     if (prefix != null)
       minPrefix = prefix;
     
     int maxInspections = DEFAULT_MAXINSPECTIONS;
-    Integer inspections = (Integer) config.get(MAXINSPECTIONS);
+    Integer inspections = params.getInt(MAXINSPECTIONS);
     if (inspections != null)
       maxInspections = inspections;
     
     float minThreshold = DEFAULT_THRESHOLD_TOKEN_FREQUENCY;
-    Float threshold = (Float) config.get(THRESHOLD_TOKEN_FREQUENCY);
+    Float threshold = params.getFloat(THRESHOLD_TOKEN_FREQUENCY);
     if (threshold != null)
       minThreshold = threshold;
     
     int minQueryLength = DEFAULT_MINQUERYLENGTH;
-    Integer queryLength = (Integer) config.get(MINQUERYLENGTH);
+    Integer queryLength = params.getInt(MINQUERYLENGTH);
     if (queryLength != null)
       minQueryLength = queryLength;
     
     float maxQueryFrequency = DEFAULT_MAXQUERYFREQUENCY;
-    Float queryFreq = (Float) config.get(MAXQUERYFREQUENCY);
+    Float queryFreq = params.getFloat(MAXQUERYFREQUENCY);
     if (queryFreq != null)
       maxQueryFrequency = queryFreq;
     

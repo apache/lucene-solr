@@ -603,11 +603,11 @@ public final class MoreLikeThis {
    * @return a query that will return docs like the passed Readers.
    */
   public Query like(String fieldName, Reader... readers) throws IOException {
-    Map<String, Int> words = new HashMap<>();
+    Map<String, Map<String, Int>> perFieldTermFrequencies = new HashMap<>();
     for (Reader r : readers) {
-      addTermFrequencies(r, words, fieldName);
+      addTermFrequencies(r, perFieldTermFrequencies, fieldName);
     }
-    return createQuery(createQueue(words));
+    return createQuery(createQueue(perFieldTermFrequencies));
   }
 
   /**
@@ -642,56 +642,63 @@ public final class MoreLikeThis {
   /**
    * Create a PriorityQueue from a word-&gt;tf map.
    *
-   * @param words a map of words keyed on the word(String) with Int objects as the values.
+   * @param perFieldTermFrequencies a per field map of words keyed on the word(String) with Int objects as the values.
    */
-  private PriorityQueue<ScoreTerm> createQueue(Map<String, Int> words) throws IOException {
+  private PriorityQueue<ScoreTerm> createQueue(Map<String, Map<String, Int>> perFieldTermFrequencies) throws IOException {
     // have collected all words in doc and their freqs
     int numDocs = ir.numDocs();
-    final int limit = Math.min(maxQueryTerms, words.size());
+    final int limit = Math.min(maxQueryTerms, this.getTermsCount(perFieldTermFrequencies));
     FreqQ queue = new FreqQ(limit); // will order words by score
+    for (Map.Entry<String, Map<String, Int>> entry : perFieldTermFrequencies.entrySet()) {
+      Map<String, Int> perWordTermFrequencies = entry.getValue();
+      String fieldName = entry.getKey();
 
-    for (String word : words.keySet()) { // for every word
-      int tf = words.get(word).x; // term freq in the source doc
-      if (minTermFreq > 0 && tf < minTermFreq) {
-        continue; // filter out words that don't occur enough times in the source
-      }
+      for (Map.Entry<String, Int> tfEntry : perWordTermFrequencies.entrySet()) { // for every word
+        String word = tfEntry.getKey();
+        int tf = tfEntry.getValue().x; // term freq in the source doc
+        if (minTermFreq > 0 && tf < minTermFreq) {
+          continue; // filter out words that don't occur enough times in the source
+        }
 
-      // go through all the fields and find the largest document frequency
-      String topField = fieldNames[0];
-      int docFreq = 0;
-      for (String fieldName : fieldNames) {
-        int freq = ir.docFreq(new Term(fieldName, word));
-        topField = (freq > docFreq) ? fieldName : topField;
-        docFreq = (freq > docFreq) ? freq : docFreq;
-      }
+        int docFreq = ir.docFreq(new Term(fieldName, word));
 
-      if (minDocFreq > 0 && docFreq < minDocFreq) {
-        continue; // filter out words that don't occur in enough docs
-      }
+        if (minDocFreq > 0 && docFreq < minDocFreq) {
+          continue; // filter out words that don't occur in enough docs
+        }
 
-      if (docFreq > maxDocFreq) {
-        continue; // filter out words that occur in too many docs
-      }
+        if (docFreq > maxDocFreq) {
+          continue; // filter out words that occur in too many docs
+        }
 
-      if (docFreq == 0) {
-        continue; // index update problem?
-      }
+        if (docFreq == 0) {
+          continue; // index update problem?
+        }
 
-      float idf = similarity.idf(docFreq, numDocs);
-      float score = tf * idf;
+        float idf = similarity.idf(docFreq, numDocs);
+        float score = tf * idf;
 
-      if (queue.size() < limit) {
-        // there is still space in the queue
-        queue.add(new ScoreTerm(word, topField, score, idf, docFreq, tf));
-      } else {
-        ScoreTerm term = queue.top();
-        if (term.score < score) { // update the smallest in the queue in place and update the queue.
-          term.update(word, topField, score, idf, docFreq, tf);
-          queue.updateTop();
+        if (queue.size() < limit) {
+          // there is still space in the queue
+          queue.add(new ScoreTerm(word, fieldName, score, idf, docFreq, tf));
+        } else {
+          ScoreTerm term = queue.top();
+          if (term.score < score) { // update the smallest in the queue in place and update the queue.
+            term.update(word, fieldName, score, idf, docFreq, tf);
+            queue.updateTop();
+          }
         }
       }
     }
     return queue;
+  }
+
+  private int getTermsCount(Map<String, Map<String, Int>> perFieldTermFrequencies) {
+    int totalTermsCount = 0;
+    Collection<Map<String, Int>> values = perFieldTermFrequencies.values();
+    for (Map<String, Int> perWordTermFrequencies : values) {
+      totalTermsCount += perWordTermFrequencies.size();
+    }
+    return totalTermsCount;
   }
 
   /**
@@ -721,7 +728,7 @@ public final class MoreLikeThis {
    * @param docNum the id of the lucene document from which to find terms
    */
   private PriorityQueue<ScoreTerm> retrieveTerms(int docNum) throws IOException {
-    Map<String, Int> termFreqMap = new HashMap<>();
+    Map<String, Map<String, Int>> field2termFreqMap = new HashMap<>();
     for (String fieldName : fieldNames) {
       final Fields vectors = ir.getTermVectors(docNum);
       final Terms vector;
@@ -738,43 +745,48 @@ public final class MoreLikeThis {
         for (IndexableField field : fields) {
           final String stringValue = field.stringValue();
           if (stringValue != null) {
-            addTermFrequencies(new StringReader(stringValue), termFreqMap, fieldName);
+            addTermFrequencies(new StringReader(stringValue), field2termFreqMap, fieldName);
           }
         }
       } else {
-        addTermFrequencies(termFreqMap, vector);
+        addTermFrequencies(field2termFreqMap, vector, fieldName);
       }
     }
 
-    return createQueue(termFreqMap);
+    return createQueue(field2termFreqMap);
   }
 
 
-  private PriorityQueue<ScoreTerm> retrieveTerms(Map<String, Collection<Object>> fields) throws 
+  private PriorityQueue<ScoreTerm> retrieveTerms(Map<String, Collection<Object>> field2fieldValues) throws
       IOException {
-    HashMap<String,Int> termFreqMap = new HashMap<>();
+    Map<String, Map<String, Int>> field2termFreqMap = new HashMap<>();
     for (String fieldName : fieldNames) {
-      for (String field : fields.keySet()) {
-        Collection<Object> fieldValues = fields.get(field);
+      for (String field : field2fieldValues.keySet()) {
+        Collection<Object> fieldValues = field2fieldValues.get(field);
         if(fieldValues == null)
           continue;
         for(Object fieldValue:fieldValues) {
           if (fieldValue != null) {
-            addTermFrequencies(new StringReader(String.valueOf(fieldValue)), termFreqMap,
+            addTermFrequencies(new StringReader(String.valueOf(fieldValue)), field2termFreqMap,
                 fieldName);
           }
         }
       }
     }
-    return createQueue(termFreqMap);
+    return createQueue(field2termFreqMap);
   }
   /**
    * Adds terms and frequencies found in vector into the Map termFreqMap
    *
-   * @param termFreqMap a Map of terms and their frequencies
+   * @param field2termFreqMap a Map of terms and their frequencies per field
    * @param vector List of terms and their frequencies for a doc/field
    */
-  private void addTermFrequencies(Map<String, Int> termFreqMap, Terms vector) throws IOException {
+  private void addTermFrequencies(Map<String, Map<String, Int>> field2termFreqMap, Terms vector, String fieldName) throws IOException {
+    Map<String, Int> termFreqMap = field2termFreqMap.get(fieldName);
+    if (termFreqMap == null) {
+      termFreqMap = new HashMap<>();
+      field2termFreqMap.put(fieldName, termFreqMap);
+    }
     final TermsEnum termsEnum = vector.iterator();
     final CharsRefBuilder spare = new CharsRefBuilder();
     BytesRef text;
@@ -802,14 +814,19 @@ public final class MoreLikeThis {
    * Adds term frequencies found by tokenizing text from reader into the Map words
    *
    * @param r a source of text to be tokenized
-   * @param termFreqMap a Map of terms and their frequencies
+   * @param perFieldTermFrequencies a Map of terms and their frequencies per field
    * @param fieldName Used by analyzer for any special per-field analysis
    */
-  private void addTermFrequencies(Reader r, Map<String, Int> termFreqMap, String fieldName)
+  private void addTermFrequencies(Reader r, Map<String, Map<String, Int>> perFieldTermFrequencies, String fieldName)
       throws IOException {
     if (analyzer == null) {
       throw new UnsupportedOperationException("To use MoreLikeThis without " +
           "term vectors, you must provide an Analyzer");
+    }
+    Map<String, Int> termFreqMap = perFieldTermFrequencies.get(fieldName);
+    if (termFreqMap == null) {
+      termFreqMap = new HashMap<>();
+      perFieldTermFrequencies.put(fieldName, termFreqMap);
     }
     try (TokenStream ts = analyzer.tokenStream(fieldName, r)) {
       int tokenCount = 0;
@@ -880,9 +897,9 @@ public final class MoreLikeThis {
    * @see #retrieveInterestingTerms
    */
   private PriorityQueue<ScoreTerm> retrieveTerms(Reader r, String fieldName) throws IOException {
-    Map<String, Int> words = new HashMap<>();
-    addTermFrequencies(r, words, fieldName);
-    return createQueue(words);
+    Map<String, Map<String, Int>> field2termFreqMap = new HashMap<>();
+    addTermFrequencies(r, field2termFreqMap, fieldName);
+    return createQueue(field2termFreqMap);
   }
 
   /**

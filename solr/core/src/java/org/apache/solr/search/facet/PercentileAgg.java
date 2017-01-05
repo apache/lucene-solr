@@ -109,7 +109,7 @@ public class PercentileAgg extends SimpleAggValueSource {
       digests = new AVLTreeDigest[numSlots];
     }
 
-    public void collect(int doc, int slotNum) {
+    public void collect(int doc, int slotNum) throws IOException {
       if (!values.exists(doc)) return;
       double val = values.doubleVal(doc);
 
@@ -149,7 +149,7 @@ public class PercentileAgg extends SimpleAggValueSource {
       }
       if (sortvals != null && percentiles.size()==1) {
         // we've already calculated everything we need
-        return sortvals[slotNum];
+        return digests[slotNum] != null ? sortvals[slotNum] : null;
       }
       return getValueFromDigest( digests[slotNum] );
     }
@@ -192,6 +192,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     @Override
     public void merge(Object facetResult, Context mcontext) {
       byte[] arr = (byte[])facetResult;
+      if (arr == null) return; // an explicit null can mean no values in the field
       AVLTreeDigest subDigest = AVLTreeDigest.fromBytes(ByteBuffer.wrap(arr));
       if (digest == null) {
         digest = subDigest;
@@ -202,18 +203,18 @@ public class PercentileAgg extends SimpleAggValueSource {
 
     @Override
     public Object getMergedResult() {
-      if (percentiles.size() == 1) return getSortVal();
+      if (percentiles.size() == 1 && digest != null) return getSortVal();
       return getValueFromDigest(digest);
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetField.SortDirection direction) {
+    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
       return Double.compare(getSortVal(), ((Merger) other).getSortVal());
     }
 
     private Double getSortVal() {
       if (sortVal == null) {
-        sortVal = digest.quantile( percentiles.get(0) * 0.01 );
+        sortVal = digest==null ? Double.NEGATIVE_INFINITY : digest.quantile( percentiles.get(0) * 0.01 );
       }
       return sortVal;
     }

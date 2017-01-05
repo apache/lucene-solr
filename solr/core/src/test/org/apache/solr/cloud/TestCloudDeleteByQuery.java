@@ -16,40 +16,35 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
-import java.util.ArrayList;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.SimpleOrderedMap;
-
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,23 +82,34 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   /** id field doc routing prefix for shard2 */
   private static final String S_TWO_PRE = "XYZ!";
   
+  @AfterClass
+  private static void afterClass() throws Exception {
+    CLOUD_CLIENT.close(); CLOUD_CLIENT = null;
+    S_ONE_LEADER_CLIENT.close(); S_ONE_LEADER_CLIENT = null;
+    S_TWO_LEADER_CLIENT.close(); S_TWO_LEADER_CLIENT = null;
+    S_ONE_NON_LEADER_CLIENT.close(); S_ONE_NON_LEADER_CLIENT = null;
+    S_TWO_NON_LEADER_CLIENT.close(); S_TWO_NON_LEADER_CLIENT = null;
+    NO_COLLECTION_CLIENT.close(); NO_COLLECTION_CLIENT = null;
+  }
+  
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {
     
     final String configName = "solrCloudCollectionConfig";
-    File configDir = new File(TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
+    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
     
     configureCluster(NUM_SERVERS)
-      .addConfig(configName, configDir.toPath())
+      .addConfig(configName, configDir)
       .configure();
     
     Map<String, String> collectionProperties = new HashMap<>();
     collectionProperties.put("config", "solrconfig-tlog.xml");
     collectionProperties.put("schema", "schema15.xml"); // string id for doc routing prefix
 
-    assertNotNull(cluster.createCollection(COLLECTION_NAME, NUM_SHARDS, REPLICATION_FACTOR,
-                                           configName, null, null, collectionProperties));
-    
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, NUM_SHARDS, REPLICATION_FACTOR)
+        .setProperties(collectionProperties)
+        .process(cluster.getSolrClient());
+
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
     
@@ -119,7 +125,6 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
       String nodeKey = jettyURL.getHost() + ":" + jettyURL.getPort() + jettyURL.getPath().replace("/","_");
       urlMap.put(nodeKey, jettyURL.toString());
     }
-    zkStateReader.updateClusterState();
     ClusterState clusterState = zkStateReader.getClusterState();
     for (Slice slice : clusterState.getSlices(COLLECTION_NAME)) {
       String shardName = slice.getName();
@@ -144,17 +149,17 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
       assertNotNull("could not find URL for " + shardName + " replica", passiveUrl);
 
       if (shardName.equals("shard1")) {
-        S_ONE_LEADER_CLIENT = new HttpSolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
-        S_ONE_NON_LEADER_CLIENT = new HttpSolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
+        S_ONE_LEADER_CLIENT = getHttpSolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
+        S_ONE_NON_LEADER_CLIENT = getHttpSolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
       } else if (shardName.equals("shard2")) {
-        S_TWO_LEADER_CLIENT = new HttpSolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
-        S_TWO_NON_LEADER_CLIENT = new HttpSolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
+        S_TWO_LEADER_CLIENT = getHttpSolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
+        S_TWO_NON_LEADER_CLIENT = getHttpSolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
       } else {
         fail("unexpected shard: " + shardName);
       }
     }
     assertEquals("Should be exactly one server left (nost hosting either shard)", 1, urlMap.size());
-    NO_COLLECTION_CLIENT = new HttpSolrClient(urlMap.values().iterator().next() +
+    NO_COLLECTION_CLIENT = getHttpSolrClient(urlMap.values().iterator().next() +
                                               "/" + COLLECTION_NAME + "/");
     
     assertNotNull(S_ONE_LEADER_CLIENT);

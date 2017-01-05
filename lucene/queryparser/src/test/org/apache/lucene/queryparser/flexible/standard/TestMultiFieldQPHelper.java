@@ -32,6 +32,7 @@ import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfi
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
@@ -55,9 +56,22 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     assertStopQueryEquals("one stop", "b:one t:one");
     assertStopQueryEquals("one (stop)", "b:one t:one");
     assertStopQueryEquals("one ((stop))", "b:one t:one");
-    assertStopQueryEquals("stop", "");
-    assertStopQueryEquals("(stop)", "");
-    assertStopQueryEquals("((stop))", "");
+    assertStopQueryIsMatchNoDocsQuery("stop");
+    assertStopQueryIsMatchNoDocsQuery("(stop)");
+    assertStopQueryIsMatchNoDocsQuery("((stop))");
+  }
+
+  // verify parsing of query using a stopping analyzer
+  private void assertStopQueryIsMatchNoDocsQuery(String qtxt) throws Exception {
+    String[] fields = { "b", "t" };
+    Occur occur[] = { Occur.SHOULD, Occur.SHOULD };
+    TestQPHelper.QPTestAnalyzer a = new TestQPHelper.QPTestAnalyzer();
+    StandardQueryParser mfqp = new StandardQueryParser();
+    mfqp.setMultiFields(fields);
+    mfqp.setAnalyzer(a);
+
+    Query q = mfqp.parse(qtxt, null);
+    assertTrue(q instanceof MatchNoDocsQuery);
   }
 
   // verify parsing of query using a stopping analyzer
@@ -205,12 +219,12 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
 
     String[] queries6 = { "((+stop))", "+((stop))" };
     q = QueryParserUtil.parse(queries6, fields, stopA);
-    assertEquals(" ", q.toString());
+    assertEquals("MatchNoDocsQuery(\"\") MatchNoDocsQuery(\"\")", q.toString());
+    //assertEquals(" ", q.toString());
 
     String[] queries7 = { "one ((+stop)) +more", "+((stop)) +two" };
     q = QueryParserUtil.parse(queries7, fields, stopA);
     assertEquals("(b:one +b:more) (+t:two)", q.toString());
-
   }
 
   public void testStaticMethod2() throws QueryNodeException {

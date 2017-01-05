@@ -24,16 +24,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -61,7 +61,7 @@ public class VersionInfo {
    */
   public static SchemaField getAndCheckVersionField(IndexSchema schema) 
     throws SolrException {
-    final String errPrefix = VERSION_FIELD + " field must exist in schema, using indexed=\"true\" or docValues=\"true\", stored=\"true\" and multiValued=\"false\"";
+    final String errPrefix = VERSION_FIELD + " field must exist in schema and be searchable (indexed or docValues) and retrievable(stored or docValues) and not multiValued";
     SchemaField sf = schema.getFieldOrNull(VERSION_FIELD);
 
     if (null == sf) {
@@ -72,12 +72,12 @@ public class VersionInfo {
     if ( !sf.indexed() && !sf.hasDocValues()) {
       throw new SolrException
         (SolrException.ErrorCode.SERVER_ERROR, 
-         errPrefix + " (" + VERSION_FIELD + " must be either indexed or have docValues");
+         errPrefix + " (" + VERSION_FIELD + " not searchable");
     }
-    if ( !sf.stored() ) {
+    if ( !sf.stored() && !sf.hasDocValues()) {
       throw new SolrException
         (SolrException.ErrorCode.SERVER_ERROR, 
-         errPrefix + " (" + VERSION_FIELD + " is not stored");
+         errPrefix + " (" + VERSION_FIELD + " not retrievable");
     }
     if ( sf.multiValued() ) {
       throw new SolrException
@@ -223,7 +223,7 @@ public class VersionInfo {
 
     String versionFieldName = versionField.getName();
 
-    log.info("Refreshing highest value of {} for {} version buckets from index", versionFieldName, buckets.length);
+    log.debug("Refreshing highest value of {} for {} version buckets from index", versionFieldName, buckets.length);
     long maxVersionInIndex = 0L;
 
     // if indexed, then we have terms to get the max from
@@ -233,9 +233,9 @@ public class VersionInfo {
       Long max = (versionTerms != null) ? LegacyNumericUtils.getMaxLong(versionTerms) : null;
       if (max != null) {
         maxVersionInIndex = max.longValue();
-        log.info("Found MAX value {} from Terms for {} in index", maxVersionInIndex, versionFieldName);
+        log.debug("Found MAX value {} from Terms for {} in index", maxVersionInIndex, versionFieldName);
       } else {
-        log.info("No terms found for {}, cannot seed version bucket highest value from index", versionFieldName);
+        log.debug("No terms found for {}, cannot seed version bucket highest value from index", versionFieldName);
       }
     } else {
       ValueSource vs = versionField.getType().getValueSource(versionField, null);

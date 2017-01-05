@@ -27,10 +27,9 @@ import org.apache.lucene.classification.ClassificationResult;
 import org.apache.lucene.classification.ClassificationTestBase;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Before;
 
@@ -48,7 +47,7 @@ public abstract class DocumentClassificationTestBase<T> extends ClassificationTe
 
   protected Analyzer analyzer;
   protected Map<String, Analyzer> field2analyzer;
-  protected LeafReader leafReader;
+  protected IndexReader indexReader;
 
   @Before
   public void init() throws IOException {
@@ -57,7 +56,7 @@ public abstract class DocumentClassificationTestBase<T> extends ClassificationTe
     field2analyzer.put(textFieldName, analyzer);
     field2analyzer.put(titleFieldName, analyzer);
     field2analyzer.put(authorFieldName, analyzer);
-    leafReader = populateDocumentClassificationIndex(analyzer);
+    indexReader = populateDocumentClassificationIndex(analyzer);
   }
 
   protected double checkCorrectDocumentClassification(DocumentClassifier<T> classifier, Document inputDoc, T expectedResult) throws Exception {
@@ -69,7 +68,7 @@ public abstract class DocumentClassificationTestBase<T> extends ClassificationTe
     return score;
   }
 
-  protected LeafReader populateDocumentClassificationIndex(Analyzer analyzer) throws IOException {
+  protected IndexReader populateDocumentClassificationIndex(Analyzer analyzer) throws IOException {
     indexWriter.close();
     indexWriter = new RandomIndexWriter(random(), dir, newIndexWriterConfig(analyzer).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
     indexWriter.commit();
@@ -202,7 +201,7 @@ public abstract class DocumentClassificationTestBase<T> extends ClassificationTe
     indexWriter.addDocument(doc);
 
     indexWriter.commit();
-    return SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
+    return indexWriter.getReader();
   }
 
   protected Document getVideoGameDocument() {

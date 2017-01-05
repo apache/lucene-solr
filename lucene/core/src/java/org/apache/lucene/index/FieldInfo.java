@@ -49,7 +49,7 @@ public final class FieldInfo {
   private long dvGen;
 
   /** If both of these are positive it means this field indexed points
-   *  (see {@link org.apache.lucene.codecs.PointFormat}). */
+   *  (see {@link org.apache.lucene.codecs.PointsFormat}). */
   private int pointDimensionCount;
   private int pointNumBytes;
 
@@ -63,8 +63,8 @@ public final class FieldInfo {
                    long dvGen, Map<String,String> attributes, int pointDimensionCount, int pointNumBytes) {
     this.name = Objects.requireNonNull(name);
     this.number = number;
-    this.docValuesType = Objects.requireNonNull(docValues, "DocValuesType cannot be null (field: \"" + name + "\")");
-    this.indexOptions = Objects.requireNonNull(indexOptions, "IndexOptions cannot be null (field: \"" + name + "\")");
+    this.docValuesType = Objects.requireNonNull(docValues, "DocValuesType must not be null (field: \"" + name + "\")");
+    this.indexOptions = Objects.requireNonNull(indexOptions, "IndexOptions must not be null (field: \"" + name + "\")");
     if (indexOptions != IndexOptions.NONE) {
       this.storeTermVector = storeTermVector;
       this.storePayloads = storePayloads;
@@ -130,7 +130,7 @@ public final class FieldInfo {
   void update(boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions,
               int dimensionCount, int dimensionNumBytes) {
     if (indexOptions == null) {
-      throw new NullPointerException("IndexOptions cannot be null (field: \"" + name + "\")");
+      throw new NullPointerException("IndexOptions must not be null (field: \"" + name + "\")");
     }
     //System.out.println("FI.update field=" + name + " indexed=" + indexed + " omitNorms=" + omitNorms + " this.omitNorms=" + this.omitNorms);
     if (this.indexOptions != indexOptions) {
@@ -145,6 +145,8 @@ public final class FieldInfo {
     if (this.pointDimensionCount == 0 && dimensionCount != 0) {
       this.pointDimensionCount = dimensionCount;
       this.pointNumBytes = dimensionNumBytes;
+    } else if (dimensionCount != 0 && (this.pointDimensionCount != dimensionCount || this.pointNumBytes != dimensionNumBytes)) {
+      throw new IllegalArgumentException("cannot change field \"" + name + "\" from points dimensionCount=" + this.pointDimensionCount + ", numBytes=" + this.pointNumBytes + " to inconsistent dimensionCount=" + dimensionCount + ", numBytes=" + dimensionNumBytes);
     }
 
     if (this.indexOptions != IndexOptions.NONE) { // if updated field data is not for indexing, leave the updates out
@@ -187,6 +189,8 @@ public final class FieldInfo {
 
     pointDimensionCount = count;
     pointNumBytes = numBytes;
+
+    assert checkConsistency();
   }
 
   /** Return point dimension count */
@@ -201,7 +205,7 @@ public final class FieldInfo {
 
   void setDocValuesType(DocValuesType type) {
     if (type == null) {
-      throw new NullPointerException("DocValuesType cannot be null (field: \"" + name + "\")");
+      throw new NullPointerException("DocValuesType must not be null (field: \"" + name + "\")");
     }
     if (docValuesType != DocValuesType.NONE && type != DocValuesType.NONE && docValuesType != type) {
       throw new IllegalArgumentException("cannot change DocValues type from " + docValuesType + " to " + type + " for field \"" + name + "\"");

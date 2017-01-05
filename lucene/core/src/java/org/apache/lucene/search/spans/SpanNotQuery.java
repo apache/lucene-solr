@@ -49,19 +49,23 @@ public final class SpanNotQuery extends SpanQuery {
 
   /** Construct a SpanNotQuery matching spans from <code>include</code> which
    * have no overlap with spans from <code>exclude</code> within
-   * <code>dist</code> tokens of <code>include</code>. */
+   * <code>dist</code> tokens of <code>include</code>. Inversely, a negative
+   * <code>dist</code> value may be used to specify a certain amount of allowable
+   * overlap. */
   public SpanNotQuery(SpanQuery include, SpanQuery exclude, int dist) {
      this(include, exclude, dist, dist);
   }
 
   /** Construct a SpanNotQuery matching spans from <code>include</code> which
    * have no overlap with spans from <code>exclude</code> within
-   * <code>pre</code> tokens before or <code>post</code> tokens of <code>include</code>. */
+   * <code>pre</code> tokens before or <code>post</code> tokens of
+   * <code>include</code>. Inversely, negative values for <code>pre</code> and/or
+   * <code>post</code> allow a certain amount of overlap to occur. */
   public SpanNotQuery(SpanQuery include, SpanQuery exclude, int pre, int post) {
     this.include = Objects.requireNonNull(include);
     this.exclude = Objects.requireNonNull(exclude);
-    this.pre = (pre >=0) ? pre : 0;
-    this.post = (post >= 0) ? post : 0;
+    this.pre = pre;
+    this.post = post;
 
     if (include.getField() != null && exclude.getField() != null && !include.getField().equals(exclude.getField()))
       throw new IllegalArgumentException("Clauses must have same field.");
@@ -93,11 +97,11 @@ public final class SpanNotQuery extends SpanQuery {
 
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    SpanWeight includeWeight = include.createWeight(searcher, false);
-    SpanWeight excludeWeight = exclude.createWeight(searcher, false);
+  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    SpanWeight includeWeight = include.createWeight(searcher, false, boost);
+    SpanWeight excludeWeight = exclude.createWeight(searcher, false, boost);
     return new SpanNotWeight(searcher, needsScores ? getTermContexts(includeWeight, excludeWeight) : null,
-                                  includeWeight, excludeWeight);
+                                  includeWeight, excludeWeight, boost);
   }
 
   public class SpanNotWeight extends SpanWeight {
@@ -106,8 +110,8 @@ public final class SpanNotQuery extends SpanQuery {
     final SpanWeight excludeWeight;
 
     public SpanNotWeight(IndexSearcher searcher, Map<Term, TermContext> terms,
-                         SpanWeight includeWeight, SpanWeight excludeWeight) throws IOException {
-      super(SpanNotQuery.this, searcher, terms);
+                         SpanWeight includeWeight, SpanWeight excludeWeight, float boost) throws IOException {
+      super(SpanNotQuery.this, searcher, terms, boost);
       this.includeWeight = includeWeight;
       this.excludeWeight = excludeWeight;
     }
@@ -126,7 +130,7 @@ public final class SpanNotQuery extends SpanQuery {
 
       Spans excludeSpans = excludeWeight.getSpans(context, requiredPostings);
       if (excludeSpans == null) {
-        return new ScoringWrapperSpans(includeSpans, getSimScorer(context));
+        return includeSpans;
       }
 
       TwoPhaseIterator excludeTwoPhase = excludeSpans.asTwoPhaseIterator();
@@ -200,20 +204,21 @@ public final class SpanNotQuery extends SpanQuery {
   }
     /** Returns true iff <code>o</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (!super.equals(o))
-      return false;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  } 
 
-    SpanNotQuery other = (SpanNotQuery)o;
-    return this.include.equals(other.include)
-            && this.exclude.equals(other.exclude)
-            && this.pre == other.pre
-            && this.post == other.post;
+  private boolean equalsTo(SpanNotQuery other) { 
+    return include.equals(other.include) && 
+           exclude.equals(other.exclude) && 
+           pre == other.pre && 
+           post == other.post;
   }
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = classHash();
     h = Integer.rotateLeft(h, 1);
     h ^= include.hashCode();
     h = Integer.rotateLeft(h, 1);

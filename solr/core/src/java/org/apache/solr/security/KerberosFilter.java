@@ -26,12 +26,26 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
+import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
 
 public class KerberosFilter extends AuthenticationFilter {
   
   @Override
   public void init(FilterConfig conf) throws ServletException {
     super.init(conf);
+  }
+
+  @Override
+  protected void initializeAuthHandler(String authHandlerClassName,
+                                       FilterConfig filterConfig) throws ServletException {
+    // set the internal authentication handler in order to record whether the request should continue
+    super.initializeAuthHandler(authHandlerClassName, filterConfig);
+    AuthenticationHandler authHandler = getAuthenticationHandler();
+    super.initializeAuthHandler(
+        RequestContinuesRecorderAuthenticationHandler.class.getName(), filterConfig);
+    RequestContinuesRecorderAuthenticationHandler newAuthHandler =
+        (RequestContinuesRecorderAuthenticationHandler)getAuthenticationHandler();
+    newAuthHandler.setAuthHandler(authHandler);
   }
 
   @Override

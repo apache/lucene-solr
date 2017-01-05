@@ -21,8 +21,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LegacyFloatField;
-import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.TextField;
@@ -31,6 +29,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.legacy.LegacyFloatField;
+import org.apache.lucene.legacy.LegacyIntField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
@@ -153,11 +153,11 @@ public class TestOrdValues extends LuceneTestCase {
       log("-------- " + i + ". Explain doc " + id);
       log(s.explain(q, sd[i].doc));
       float expectedScore = N_DOCS - i - 1;
-      assertEquals("score of result " + i + " shuould be " + expectedScore + " != " + score, expectedScore, score, TEST_SCORE_TOLERANCE_DELTA);
+      assertEquals("score of result " + i + " should be " + expectedScore + " != " + score, expectedScore, score, TEST_SCORE_TOLERANCE_DELTA);
       String expectedId = inOrder
               ? id2String(N_DOCS - i) // in-order ==> larger  values first
               : id2String(i + 1);     // reverse  ==> smaller values first
-      assertTrue("id of result " + i + " shuould be " + expectedId + " != " + score, expectedId.equals(id));
+      assertTrue("id of result " + i + " should be " + expectedId + " != " + score, expectedId.equals(id));
     }
     r.close();
   }

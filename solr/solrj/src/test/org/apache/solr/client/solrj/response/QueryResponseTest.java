@@ -20,6 +20,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 
 import junit.framework.Assert;
@@ -27,7 +29,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleLimitSysouts.Limit;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
@@ -40,33 +41,9 @@ import org.junit.Test;
 @Limit(bytes=20000)
 public class QueryResponseTest extends LuceneTestCase {
   @Test
-  public void testDateFacets() throws Exception   {
-    XMLResponseParser parser = new XMLResponseParser();
-    InputStream is = new SolrResourceLoader().openResource("solrj/sampleDateFacetResponse.xml");
-    assertNotNull(is);
-    Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
-    NamedList<Object> response = parser.processResponse(in);
-    in.close();
-    
-    QueryResponse qr = new QueryResponse(response, null);
-    Assert.assertNotNull(qr);
-    
-    Assert.assertNotNull(qr.getFacetDates());
-    
-    for (FacetField f : qr.getFacetDates()) {
-      Assert.assertNotNull(f);
-
-      // TODO - test values?
-      // System.out.println(f.toString());
-      // System.out.println("GAP: " + f.getGap());
-      // System.out.println("END: " + f.getEnd());
-    }
-  }
-
-  @Test
   public void testRangeFacets() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
-    InputStream is = new SolrResourceLoader().openResource("solrj/sampleDateFacetResponse.xml");
+    InputStream is = new SolrResourceLoader().openResource("solrj/sampleRangeFacetResponse.xml");
     assertNotNull(is);
     Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
     NamedList<Object> response = parser.processResponse(in);
@@ -106,8 +83,8 @@ public class QueryResponseTest extends LuceneTestCase {
     assertEquals("4.0", price.getCounts().get(4).getValue());
     assertEquals(0, price.getCounts().get(4).getCount());
 
-    assertEquals(DateUtil.parseDate("2005-02-13T15:26:37Z"), manufacturedateDt.getStart());
-    assertEquals(DateUtil.parseDate("2008-02-13T15:26:37Z"), manufacturedateDt.getEnd());
+    assertEquals(new Date(Instant.parse("2005-02-13T15:26:37Z").toEpochMilli()), manufacturedateDt.getStart());
+    assertEquals(new Date(Instant.parse("2008-02-13T15:26:37Z").toEpochMilli()), manufacturedateDt.getEnd());
     assertEquals("+1YEAR", manufacturedateDt.getGap());
     assertEquals("2005-02-13T15:26:37Z", manufacturedateDt.getCounts().get(0).getValue());
     assertEquals(4, manufacturedateDt.getCounts().get(0).getCount());

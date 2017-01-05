@@ -175,12 +175,9 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
   }
 
-  final static Comparator<String> lessFloat = new Comparator<String>() {
-    @Override
-    public int compare(String o1, String o2) {
-      assertTrue(Float.parseFloat(o1) < Float.parseFloat(o2));
-      return 0;
-    }
+  final static Comparator<String> lessFloat = (o1, o2) -> {
+    assertTrue(Float.parseFloat(o1) < Float.parseFloat(o2));
+    return 0;
   };
 
   @Ignore("SOLR-7814, also don't forget cover boost at testCacheHit()")
@@ -190,7 +187,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
     final SolrQueryRequest req = req("q", "{!join from=movieId_s to=id score=" + score + " b=200}title:movie", "fl", "id,score", "omitHeader", "true");
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse()));
-    final Query luceneQ = QParser.getParser(req.getParams().get("q"), null, req).getQuery().rewrite(req.getSearcher().getLeafReader());
+    final Query luceneQ = QParser.getParser(req.getParams().get("q"), req).getQuery().rewrite(req.getSearcher().getSlowAtomicReader());
     assertTrue(luceneQ instanceof BoostQuery);
     float boost = ((BoostQuery) luceneQ).getBoost();
     assertEquals("" + luceneQ, Float.floatToIntBits(200), Float.floatToIntBits(boost));

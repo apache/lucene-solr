@@ -128,7 +128,7 @@ public class RestManager {
     }
 
     /**
-     * Returns the set of non-registerable endpoints.
+     * Returns the set of non-registrable endpoints.
      */
     public Set<String> getReservedEndpoints() {
       return Collections.unmodifiableSet(reservedEndpoints);
@@ -611,7 +611,7 @@ public class RestManager {
                    StorageIO storageIO) 
       throws SolrException
   {
-    log.info("Initializing RestManager with initArgs: "+initArgs);
+    log.debug("Initializing RestManager with initArgs: "+initArgs);
 
     if (storageIO == null)
       throw new IllegalArgumentException(
@@ -630,7 +630,7 @@ public class RestManager {
     managed.put(SCHEMA_BASE_PATH+MANAGED_ENDPOINT, endpoint);
             
     // init registered managed resources
-    log.info("Initializing {} registered ManagedResources", registry.registered.size());
+    log.debug("Initializing {} registered ManagedResources", registry.registered.size());
     for (ManagedResourceRegistration reg : registry.registered.values()) {
       // keep track of this for lookups during request processing
       managed.put(reg.resourceId, createManagedResource(reg));
@@ -647,11 +647,11 @@ public class RestManager {
    * Restlet router.  Returns the corresponding instance.
    */
   public synchronized ManagedResource addManagedResource(String resourceId, Class<? extends ManagedResource> clazz) {
-    ManagedResource res = null;
-    ManagedResourceRegistration existingReg = registry.registered.get(resourceId);
+    final ManagedResource res;
+    final ManagedResourceRegistration existingReg = registry.registered.get(resourceId);
     if (existingReg == null) {
       registry.registerManagedResource(resourceId, clazz, null);
-      addRegisteredResource(registry.registered.get(resourceId));
+      res = addRegisteredResource(registry.registered.get(resourceId));
     } else {
       res = getManagedResource(resourceId);
     }

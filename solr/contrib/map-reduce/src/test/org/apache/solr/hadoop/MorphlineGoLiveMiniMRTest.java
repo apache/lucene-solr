@@ -47,6 +47,7 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -97,6 +98,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Conseque
 @SuppressSSL // SSL does not work with this test for currently unknown reasons
 @Slow
 @Nightly
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9076")
 public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   
   private static final int RECORD_COUNT = 2104;
@@ -380,7 +382,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     String[] args = new String[]{};
     List<String> argList = new ArrayList<>();
 
-    try (HttpSolrClient server = new HttpSolrClient(cloudJettys.get(0).url)) {
+    try (HttpSolrClient server = getHttpSolrClient(cloudJettys.get(0).url)) {
 
       args = new String[]{
           "--solr-home-dir=" + MINIMR_CONF_DIR.getAbsolutePath(),
@@ -646,7 +648,6 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
       }
       
       Thread.sleep(200);
-      cloudClient.getZkStateReader().updateClusterState();
     }
     
     if (TEST_NIGHTLY) {
@@ -707,7 +708,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
       Collection<Replica> replicas = slice.getReplicas();
       long found = -1;
       for (Replica replica : replicas) {
-        try (HttpSolrClient client = new HttpSolrClient(new ZkCoreNodeProps(replica).getCoreUrl())) {
+        try (HttpSolrClient client = getHttpSolrClient(new ZkCoreNodeProps(replica).getCoreUrl())) {
           SolrQuery query = new SolrQuery("*:*");
           query.set("distrib", false);
           QueryResponse replicaResults = client.query(query);

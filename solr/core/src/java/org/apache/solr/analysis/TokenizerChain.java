@@ -18,6 +18,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 
@@ -84,13 +85,38 @@ public final class TokenizerChain extends SolrAnalyzer {
   }
 
   @Override
+  protected Reader initReaderForNormalization(String fieldName, Reader reader) {
+    if (charFilters != null && charFilters.length > 0) {
+      for (CharFilterFactory charFilter : charFilters) {
+        if (charFilter instanceof MultiTermAwareComponent) {
+          charFilter = (CharFilterFactory) ((MultiTermAwareComponent) charFilter).getMultiTermComponent();
+          reader = charFilter.create(reader);
+        }
+      }
+    }
+    return reader;
+  }
+
+  @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    Tokenizer tk = tokenizer.create();
+    Tokenizer tk = tokenizer.create(attributeFactory(fieldName));
     TokenStream ts = tk;
     for (TokenFilterFactory filter : filters) {
       ts = filter.create(ts);
     }
     return new TokenStreamComponents(tk, ts);
+  }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    TokenStream result = in;
+    for (TokenFilterFactory filter : filters) {
+      if (filter instanceof MultiTermAwareComponent) {
+        filter = (TokenFilterFactory) ((MultiTermAwareComponent) filter).getMultiTermComponent();
+        result = filter.create(in);
+      }
+    }
+    return result;
   }
 
   @Override

@@ -18,7 +18,6 @@ package org.apache.solr.update;
 import java.io.File;
 import java.io.FileFilter;
 
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;

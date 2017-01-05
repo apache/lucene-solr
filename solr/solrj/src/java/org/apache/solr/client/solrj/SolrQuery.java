@@ -16,20 +16,20 @@
  */
 package org.apache.solr.client.solrj;
 
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.FacetParams;
-import org.apache.solr.common.params.HighlightParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.StatsParams;
-import org.apache.solr.common.params.TermsParams;
-import org.apache.solr.common.util.DateUtil;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.params.HighlightParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.MoreLikeThisParams;
+import org.apache.solr.common.params.StatsParams;
+import org.apache.solr.common.params.TermsParams;
 
 
 /**
@@ -63,6 +63,14 @@ public class SolrQuery extends ModifiableSolrParams
   public SolrQuery(String q) {
     this();
     this.set(CommonParams.Q, q);
+  }
+
+  public SolrQuery(String k, String v, String... params) {
+    assert params.length % 2 == 0;
+    this.set(k, v);
+    for (int i = 0; i < params.length; i += 2) {
+      this.set(params[i], params[i + 1]);
+    }
   }
 
   /** enable/disable terms.  
@@ -266,9 +274,9 @@ public class SolrQuery extends ModifiableSolrParams
    */
   public SolrQuery addDateRangeFacet(String field, Date start, Date end, String gap) {
     add(FacetParams.FACET_RANGE, field);
-    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_START), DateUtil.getThreadLocalDateFormat().format(start));
-    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_END), DateUtil.getThreadLocalDateFormat().format(end));
-    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_GAP), gap);
+    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_START), start.toInstant().toString());
+    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_END),   end.toInstant().toString());
+    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_GAP),   gap);
     this.set(FacetParams.FACET, true);
     return this;
   }
@@ -794,6 +802,253 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
+
+  /**
+   * Add field for MoreLikeThis. Automatically
+   * enables MoreLikeThis.
+   *
+   * @param field the names of the field to be added
+   * @return this
+   */
+  public SolrQuery addMoreLikeThisField(String field) {
+    this.setMoreLikeThis(true);
+    return addValueToParam(MoreLikeThisParams.SIMILARITY_FIELDS, field);
+  }
+
+  public SolrQuery setMoreLikeThisFields(String... fields) {
+    if( fields == null || fields.length == 0 ) {
+      this.remove( MoreLikeThisParams.SIMILARITY_FIELDS );
+      this.setMoreLikeThis(false);
+      return this;
+    }
+
+    StringBuilder sb = new StringBuilder();
+    sb.append(fields[0]);
+    for (int i = 1; i < fields.length; i++) {
+      sb.append(',');
+      sb.append(fields[i]);
+    }
+    this.set(MoreLikeThisParams.SIMILARITY_FIELDS, sb.toString());
+    this.setMoreLikeThis(true);
+    return this;
+  }
+
+  /**
+   * @return an array with the fields used to compute similarity.
+   */
+  public String[] getMoreLikeThisFields() {
+    String fl = this.get(MoreLikeThisParams.SIMILARITY_FIELDS);
+    if(fl==null || fl.length()==0) {
+      return null;
+    }
+    return fl.split(",");
+  }
+
+  /**
+   * Sets the frequency below which terms will be ignored in the source doc
+   *
+   * @param mintf the minimum term frequency
+   * @return this
+   */
+  public SolrQuery setMoreLikeThisMinTermFreq(int mintf) {
+    this.set(MoreLikeThisParams.MIN_TERM_FREQ, mintf);
+    return this;
+  }
+
+  /**
+   * Gets the frequency below which terms will be ignored in the source doc
+   */
+  public int getMoreLikeThisMinTermFreq() {
+    return this.getInt(MoreLikeThisParams.MIN_TERM_FREQ, 2);
+  }
+
+  /**
+   * Sets the frequency at which words will be ignored which do not occur in
+   * at least this many docs.
+   *
+   * @param mindf the minimum document frequency
+   * @return this
+   */
+  public SolrQuery setMoreLikeThisMinDocFreq(int mindf) {
+    this.set(MoreLikeThisParams.MIN_DOC_FREQ, mindf);
+    return this;
+  }
+
+  /**
+   * Gets the frequency at which words will be ignored which do not occur in
+   * at least this many docs.
+   */
+  public int getMoreLikeThisMinDocFreq() {
+    return this.getInt(MoreLikeThisParams.MIN_DOC_FREQ, 5);
+  }
+
+  /**
+   * Sets the minimum word length below which words will be ignored.
+   *
+   * @param minwl the minimum word length
+   * @return this
+   */
+  public SolrQuery setMoreLikeThisMinWordLen(int minwl) {
+    this.set(MoreLikeThisParams.MIN_WORD_LEN, minwl);
+    return this;
+  }
+
+  /**
+   * Gets the minimum word length below which words will be ignored.
+   */
+  public int getMoreLikeThisMinWordLen() {
+    return this.getInt(MoreLikeThisParams.MIN_WORD_LEN, 0);
+  }
+
+  /**
+   * Sets the maximum word length above which words will be ignored.
+   *
+   * @param maxwl the maximum word length
+   * @return this
+   */
+  public SolrQuery setMoreLikeThisMaxWordLen(int maxwl) {
+    this.set(MoreLikeThisParams.MAX_WORD_LEN, maxwl);
+    return this;
+  }
+
+  /**
+   * Gets the maximum word length above which words will be ignored.
+   */
+  public int getMoreLikeThisMaxWordLen() {
+    return this.getInt(MoreLikeThisParams.MAX_WORD_LEN, 0);
+  }
+
+  /**
+   * Sets the maximum number of query terms that will be included in any
+   * generated query.
+   *
+   * @param maxqt the maximum number of query terms
+   * @return this
+   */
+  public SolrQuery setMoreLikeThisMaxQueryTerms(int maxqt) {
+    this.set(MoreLikeThisParams.MAX_QUERY_TERMS, maxqt);
+    return this;
+  }
+
+  /**
+   * Gets the maximum number of query terms that will be included in any
+   * generated query.
+   */
+  public int getMoreLikeThisMaxQueryTerms() {
+    return this.getInt(MoreLikeThisParams.MAX_QUERY_TERMS, 25);
+  }
+
+  /**
+   * Sets the maximum number of tokens to parse in each example doc field
+   * that is not stored with TermVector support.
+   *
+   * @param maxntp the maximum number of tokens to parse
+   * @return this
+   */
+  public SolrQuery setMoreLikeThisMaxTokensParsed(int maxntp) {
+    this.set(MoreLikeThisParams.MAX_NUM_TOKENS_PARSED, maxntp);
+    return this;
+  }
+
+  /**
+   * Gets the maximum number of tokens to parse in each example doc field
+   * that is not stored with TermVector support.
+   */
+  public int getMoreLikeThisMaxTokensParsed() {
+    return this.getInt(MoreLikeThisParams.MAX_NUM_TOKENS_PARSED, 5000);
+  }
+
+  /**
+   * Sets if the query will be boosted by the interesting term relevance.
+   *
+   * @param b set to true to boost the query with the interesting term relevance
+   * @return this
+   */
+  public SolrQuery setMoreLikeThisBoost(boolean b) {
+    this.set(MoreLikeThisParams.BOOST, b);
+    return this;
+  }
+
+  /**
+   * Gets if the query will be boosted by the interesting term relevance.
+   */
+  public boolean getMoreLikeThisBoost() {
+    return this.getBool(MoreLikeThisParams.BOOST, false);
+  }
+
+  /**
+   * Sets the query fields and their boosts using the same format as that
+   * used in DisMaxQParserPlugin. These fields must also be added
+   * using {@link #addMoreLikeThisField(String)}.
+   *
+   * @param qf the query fields
+   * @return this
+   */
+  public SolrQuery setMoreLikeThisQF(String qf) {
+    this.set(MoreLikeThisParams.QF, qf);
+    return this;
+  }
+
+  /**
+   * Gets the query fields and their boosts.
+   */
+  public String getMoreLikeThisQF() {
+    return this.get(MoreLikeThisParams.QF);
+  }
+
+  /**
+   * Sets the number of similar documents to return for each result.
+   *
+   * @param count the number of similar documents to return for each result
+   * @return this
+   */
+  public SolrQuery setMoreLikeThisCount(int count) {
+    this.set(MoreLikeThisParams.DOC_COUNT, count);
+    return this;
+  }
+
+  /**
+   * Gets the number of similar documents to return for each result.
+   */
+  public int getMoreLikeThisCount() {
+    return this.getInt(MoreLikeThisParams.DOC_COUNT, MoreLikeThisParams.DEFAULT_DOC_COUNT);
+  }
+
+  /**
+   * Enable/Disable MoreLikeThis. After enabling MoreLikeThis, the fields
+   * used for computing similarity must be specified calling
+   * {@link #addMoreLikeThisField(String)}.
+   *
+   * @param b flag to indicate if MoreLikeThis should be enabled. if b==false
+   * removes all mlt.* parameters
+   * @return this
+   */
+  public SolrQuery setMoreLikeThis(boolean b) {
+    if(b) {
+      this.set(MoreLikeThisParams.MLT, true);
+    } else {
+      this.remove(MoreLikeThisParams.MLT);
+      this.remove(MoreLikeThisParams.SIMILARITY_FIELDS);
+      this.remove(MoreLikeThisParams.MIN_TERM_FREQ);
+      this.remove(MoreLikeThisParams.MIN_DOC_FREQ);
+      this.remove(MoreLikeThisParams.MIN_WORD_LEN);
+      this.remove(MoreLikeThisParams.MAX_WORD_LEN);
+      this.remove(MoreLikeThisParams.MAX_QUERY_TERMS);
+      this.remove(MoreLikeThisParams.MAX_NUM_TOKENS_PARSED);
+      this.remove(MoreLikeThisParams.BOOST);
+      this.remove(MoreLikeThisParams.QF);
+      this.remove(MoreLikeThisParams.DOC_COUNT);
+    }
+    return this;
+  }
+
+  /**
+   * @return true if MoreLikeThis is enabled, false otherwise
+   */
+  public boolean getMoreLikeThis() {
+    return this.getBool(MoreLikeThisParams.MLT, false);
+  }
+
   public SolrQuery setFields(String ... fields) {
     if( fields == null || fields.length == 0 ) {
       this.remove( CommonParams.FL );
@@ -859,8 +1114,9 @@ public class SolrQuery extends ModifiableSolrParams
     return this.getInt(CommonParams.ROWS);
   }
 
-  public void setShowDebugInfo(boolean showDebugInfo) {
+  public SolrQuery setShowDebugInfo(boolean showDebugInfo) {
     this.set(CommonParams.DEBUG_QUERY, String.valueOf(showDebugInfo));
+    return this;
   }
 
   public void setDistrib(boolean val) {

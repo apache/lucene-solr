@@ -20,14 +20,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.locationtech.spatial4j.shape.Rectangle;
-import org.apache.lucene.geo3d.GeoArea;
-import org.apache.lucene.geo3d.GeoBBox;
-import org.apache.lucene.geo3d.GeoBBoxFactory;
-import org.apache.lucene.geo3d.GeoStandardCircle;
-import org.apache.lucene.geo3d.GeoPoint;
-import org.apache.lucene.geo3d.GeoPolygonFactory;
-import org.apache.lucene.geo3d.GeoShape;
-import org.apache.lucene.geo3d.PlanetModel;
+import org.apache.lucene.spatial3d.geom.GeoArea;
+import org.apache.lucene.spatial3d.geom.GeoBBox;
+import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
+import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
+import org.apache.lucene.spatial3d.geom.GeoPoint;
+import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
+import org.apache.lucene.spatial3d.geom.GeoShape;
+import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.junit.Test;
 
 public class Geo3dShapeSphereModelRectRelationTest extends Geo3dShapeRectRelationTestCase {
@@ -40,10 +40,10 @@ public class Geo3dShapeSphereModelRectRelationTest extends Geo3dShapeRectRelatio
   public void testFailure1() {
     final GeoBBox rect = GeoBBoxFactory.makeGeoBBox(planetModel, 88 * RADIANS_PER_DEGREE, 30 * RADIANS_PER_DEGREE, -30 * RADIANS_PER_DEGREE, 62 * RADIANS_PER_DEGREE);
     final List<GeoPoint> points = new ArrayList<>();
-    points.add(new GeoPoint(planetModel, 66.2465299717 * RADIANS_PER_DEGREE, -29.1786158537 * RADIANS_PER_DEGREE));
-    points.add(new GeoPoint(planetModel, 43.684447915 * RADIANS_PER_DEGREE, 46.2210986329 * RADIANS_PER_DEGREE));
     points.add(new GeoPoint(planetModel, 30.4579218227 * RADIANS_PER_DEGREE, 14.5238410082 * RADIANS_PER_DEGREE));
-    final GeoShape path = GeoPolygonFactory.makeGeoPolygon(planetModel, points,0);
+    points.add(new GeoPoint(planetModel, 43.684447915 * RADIANS_PER_DEGREE, 46.2210986329 * RADIANS_PER_DEGREE));
+    points.add(new GeoPoint(planetModel, 66.2465299717 * RADIANS_PER_DEGREE, -29.1786158537 * RADIANS_PER_DEGREE));
+    final GeoShape path = GeoPolygonFactory.makeGeoPolygon(planetModel, points);
 
     final GeoPoint point = new GeoPoint(planetModel, 34.2730264413182 * RADIANS_PER_DEGREE, 82.75500168892472 * RADIANS_PER_DEGREE);
 
@@ -60,7 +60,7 @@ public class Geo3dShapeSphereModelRectRelationTest extends Geo3dShapeRectRelatio
 
   @Test
   public void testFailure2_LUCENE6475() {
-    GeoShape geo3dCircle = new GeoStandardCircle(planetModel, 1.6282053147165243E-4 * RADIANS_PER_DEGREE,
+    GeoShape geo3dCircle = GeoCircleFactory.makeGeoCircle(planetModel, 1.6282053147165243E-4 * RADIANS_PER_DEGREE,
         -70.1600629789353 * RADIANS_PER_DEGREE, 86 * RADIANS_PER_DEGREE);
     Geo3dShape geo3dShape = new Geo3dShape(planetModel, geo3dCircle, ctx);
     Rectangle rect = ctx.makeRectangle(-118, -114, -2.0, 32.0);

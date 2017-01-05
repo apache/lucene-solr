@@ -148,6 +148,7 @@ public class ReplicationService {
       throw new ServletException("unrecognized shard ID " + pathElements[SHARD_IDX]);
     }
     
+    // SOLR-8933 Don't close this stream.
     ServletOutputStream resOut = resp.getOutputStream();
     try {
       switch (action) {
@@ -171,7 +172,7 @@ public class ReplicationService {
           if (token == null) {
             resOut.write(0); // marker for null token
           } else {
-            resOut.write(1); // marker for null token
+            resOut.write(1);
             token.serialize(new DataOutputStream(resOut));
           }
           break;

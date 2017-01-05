@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.uima;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
-import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
 

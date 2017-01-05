@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.LegacyNumericUtils;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -34,10 +34,9 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.DateMathParser;
 
-public class FacetRange extends FacetRequest {
+public class FacetRange extends FacetRequestSorted {
   String field;
   Object start;
   Object end;
@@ -45,8 +44,12 @@ public class FacetRange extends FacetRequest {
   boolean hardend = false;
   EnumSet<FacetParams.FacetRangeInclude> include;
   EnumSet<FacetParams.FacetRangeOther> others;
-  long mincount = 0;
 
+  {
+    // defaults
+    mincount = 0;
+    limit = -1;
+  }
 
   @Override
   public FacetProcessor createFacetProcessor(FacetContext fcontext) {
@@ -92,11 +95,6 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     effectiveMincount = fcontext.isShard() ? (freq.mincount > 0 ? 1 : 0) : freq.mincount;
     sf = fcontext.searcher.getSchema().getField(freq.field);
     response = getRangeCounts();
-  }
-
-  @Override
-  public Object getResponse() {
-    return response;
   }
 
   private static class Range {
@@ -470,7 +468,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     @Override
     public long bitsToSortableBits(long bits) {
-      return LegacyNumericUtils.sortableDoubleBits(bits);
+      return NumericUtils.sortableDoubleBits(bits);
     }
 
     public FloatCalc(final SchemaField f) { super(f); }
@@ -491,7 +489,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     @Override
     public long bitsToSortableBits(long bits) {
-      return LegacyNumericUtils.sortableDoubleBits(bits);
+      return NumericUtils.sortableDoubleBits(bits);
     }
 
     public DoubleCalc(final SchemaField f) { super(f); }
@@ -546,11 +544,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     @Override
     public String formatValue(Comparable val) {
-      return DateFormatUtil.formatExternal( (Date)val );
+      return ((Date)val).toInstant().toString();
     }
     @Override
     protected Date parseStr(String rawval) {
-      return DateFormatUtil.parseMath(now, rawval);
+      return DateMathParser.parseMath(now, rawval);
     }
     @Override
     protected Object parseGap(final String rawval) {

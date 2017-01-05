@@ -74,33 +74,4 @@ public class TestBinaryDocument extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
-  public void testCompressionTools() throws Exception {
-    StoredField binaryFldCompressed = new StoredField("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes(StandardCharsets.UTF_8)));
-    StoredField stringFldCompressed = new StoredField("stringCompressed", CompressionTools.compressString(binaryValCompressed));
-    
-    Document doc = new Document();
-    
-    doc.add(binaryFldCompressed);
-    doc.add(stringFldCompressed);
-    
-    /** add the doc to a ram index */
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    writer.addDocument(doc);
-    
-    /** open a reader and fetch the document */ 
-    IndexReader reader = writer.getReader();
-    Document docFromReader = reader.document(0);
-    assertTrue(docFromReader != null);
-    
-    /** fetch the binary compressed field and compare its content with the original one */
-    String binaryFldCompressedTest = new String(CompressionTools.decompress(docFromReader.getBinaryValue("binaryCompressed")), StandardCharsets.UTF_8);
-    assertTrue(binaryFldCompressedTest.equals(binaryValCompressed));
-    assertTrue(CompressionTools.decompressString(docFromReader.getBinaryValue("stringCompressed")).equals(binaryValCompressed));
-
-    writer.close();
-    reader.close();
-    dir.close();
-  }
 }

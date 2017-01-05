@@ -16,16 +16,25 @@
  */
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.UpdateLog;
-import org.apache.solr.util.DateFormatUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.*;
 
 /**
  * The state of the replication with a target cluster.
@@ -45,6 +54,9 @@ class CdcrReplicatorState {
   private BenchmarkTimer benchmarkTimer;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private final AtomicBoolean bootstrapInProgress = new AtomicBoolean(false);
+  private final AtomicInteger numBootstraps = new AtomicInteger();
 
   CdcrReplicatorState(final String targetCollection, final String zkHost, final CloudSolrClient targetClient) {
     this.targetCollection = targetCollection;
@@ -133,7 +145,7 @@ class CdcrReplicatorState {
       Iterator<ErrorQueueEntry> it = errorsQueue.iterator();
       while (it.hasNext()) {
         ErrorQueueEntry entry = it.next();
-        lastErrors.add(new String[]{DateFormatUtil.formatExternal(entry.timestamp), entry.type.toLower()});
+        lastErrors.add(new String[]{entry.timestamp.toInstant().toString(), entry.type.toLower()});
       }
     }
     return lastErrors;
@@ -145,7 +157,7 @@ class CdcrReplicatorState {
   String getTimestampOfLastProcessedOperation() {
     if (logReader != null && logReader.getLastVersion() != -1) {
       // Shift back to the right by 20 bits the version number - See VersionInfo#getNewClock
-      return DateFormatUtil.formatExternal(new Date(logReader.getLastVersion() >> 20));
+      return Instant.ofEpochMilli(logReader.getLastVersion() >> 20).toString();
     }
     return "";
   }
@@ -155,6 +167,24 @@ class CdcrReplicatorState {
    */
   BenchmarkTimer getBenchmarkTimer() {
     return this.benchmarkTimer;
+  }
+
+  /**
+   * @return true if a bootstrap operation is in progress, false otherwise
+   */
+  boolean isBootstrapInProgress() {
+    return bootstrapInProgress.get();
+  }
+
+  void setBootstrapInProgress(boolean inProgress) {
+    if (bootstrapInProgress.compareAndSet(true, false)) {
+      numBootstraps.incrementAndGet();
+    }
+    bootstrapInProgress.set(inProgress);
+  }
+
+  public int getNumBootstraps() {
+    return numBootstraps.get();
   }
 
   enum ErrorType {

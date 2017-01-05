@@ -53,19 +53,14 @@ import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
-import org.apache.lucene.codecs.lucene54.Lucene54DocValuesFormat;
-import org.apache.lucene.codecs.lucene60.Lucene60Codec;
+import org.apache.lucene.codecs.lucene70.Lucene70Codec;
+import org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType.LegacyNumericType;
-import org.apache.lucene.document.LegacyDoubleField;
-import org.apache.lucene.document.LegacyFloatField;
-import org.apache.lucene.document.LegacyIntField;
-import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.CheckIndex;
@@ -105,7 +100,7 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.junit.Assert;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 /**
@@ -182,11 +177,14 @@ public final class TestUtil {
       assert hasNext;
       T v = iterator.next();
       assert allowNull || v != null;
-      try {
-        iterator.remove();
-        throw new AssertionError("broken iterator (supports remove): " + iterator);
-      } catch (UnsupportedOperationException expected) {
-        // ok
+      // for the first element, check that remove is not supported
+      if (i == 0) {
+        try {
+          iterator.remove();
+          throw new AssertionError("broken iterator (supports remove): " + iterator);
+        } catch (UnsupportedOperationException expected) {
+          // ok
+        }
       }
     }
     assert !iterator.hasNext();
@@ -284,28 +282,30 @@ public final class TestUtil {
   }
 
   public static CheckIndex.Status checkIndex(Directory dir, boolean crossCheckTermVectors) throws IOException {
-    return checkIndex(dir, crossCheckTermVectors, false);
+    return checkIndex(dir, crossCheckTermVectors, false, null);
   }
 
   /** If failFast is true, then throw the first exception when index corruption is hit, instead of moving on to other fields/segments to
    *  look for any other corruption.  */
-  public static CheckIndex.Status checkIndex(Directory dir, boolean crossCheckTermVectors, boolean failFast) throws IOException {
-    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+  public static CheckIndex.Status checkIndex(Directory dir, boolean crossCheckTermVectors, boolean failFast, ByteArrayOutputStream output) throws IOException {
+    if (output == null) {
+      output = new ByteArrayOutputStream(1024);
+    }
     // TODO: actually use the dir's locking, unless test uses a special method?
     // some tests e.g. exception tests become much more complicated if they have to close the writer
     try (CheckIndex checker = new CheckIndex(dir, NoLockFactory.INSTANCE.obtainLock(dir, "bogus"))) {
       checker.setCrossCheckTermVectors(crossCheckTermVectors);
       checker.setFailFast(failFast);
-      checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
+      checker.setInfoStream(new PrintStream(output, false, IOUtils.UTF_8), false);
       CheckIndex.Status indexStatus = checker.checkIndex(null);
       
       if (indexStatus == null || indexStatus.clean == false) {
         System.out.println("CheckIndex failed");
-        System.out.println(bos.toString(IOUtils.UTF_8));
+        System.out.println(output.toString(IOUtils.UTF_8));
         throw new RuntimeException("CheckIndex failed");
       } else {
         if (LuceneTestCase.INFOSTREAM) {
-          System.out.println(bos.toString(IOUtils.UTF_8));
+          System.out.println(output.toString(IOUtils.UTF_8));
         }
         return indexStatus;
       }
@@ -377,8 +377,7 @@ public final class TestUtil {
           if (reader.getBinaryDocValues(info.name) != null ||
               reader.getNumericDocValues(info.name) != null ||
               reader.getSortedDocValues(info.name) != null || 
-              reader.getSortedSetDocValues(info.name) != null || 
-              reader.getDocsWithField(info.name) != null) {
+              reader.getSortedSetDocValues(info.name) != null) {
             throw new RuntimeException("field: " + info.name + " has docvalues but should omit them!");
           }
           break;
@@ -430,7 +429,7 @@ public final class TestUtil {
 
   /** start and end are BOTH inclusive */
   public static int nextInt(Random r, int start, int end) {
-    return RandomInts.randomIntBetween(r, start, end);
+    return RandomNumbers.randomIntBetween(r, start, end);
   }
 
   /** start and end are BOTH inclusive */
@@ -447,6 +446,16 @@ public final class TestUtil {
       assert result <= end;
       return result;
     }
+  }
+  
+  /**
+   * Returns a randomish big integer with {@code 1 .. maxBytes} storage.
+   */
+  public static BigInteger nextBigInteger(Random random, int maxBytes) {
+    int length = TestUtil.nextInt(random, 1, maxBytes);
+    byte[] buffer = new byte[length];
+    random.nextBytes(buffer);
+    return new BigInteger(buffer);
   }
 
   public static String randomSimpleString(Random r, int maxLength) {
@@ -571,7 +580,7 @@ public final class TestUtil {
     final StringBuilder regexp = new StringBuilder(maxLength);
     for (int i = nextInt(r, 0, maxLength); i > 0; i--) {
       if (r.nextBoolean()) {
-        regexp.append((char) RandomInts.randomIntBetween(r, 'a', 'z'));
+        regexp.append((char) RandomNumbers.randomIntBetween(r, 'a', 'z'));
       } else {
         regexp.append(RandomPicks.randomFrom(r, ops));
       }
@@ -904,7 +913,7 @@ public final class TestUtil {
    * This may be different than {@link Codec#getDefault()} because that is randomized. 
    */
   public static Codec getDefaultCodec() {
-    return new Lucene60Codec();
+    return new Lucene70Codec();
   }
   
   /** 
@@ -937,7 +946,7 @@ public final class TestUtil {
    * Returns the actual default docvalues format (e.g. LuceneMNDocValuesFormat for this version of Lucene.
    */
   public static DocValuesFormat getDefaultDocValuesFormat() {
-    return new Lucene54DocValuesFormat();
+    return new Lucene70DocValuesFormat();
   }
 
   // TODO: generalize all 'test-checks-for-crazy-codecs' to
@@ -1062,7 +1071,6 @@ public final class TestUtil {
       final Field field2;
       final DocValuesType dvType = field1.fieldType().docValuesType();
       final int dimCount = field1.fieldType().pointDimensionCount();
-      final LegacyNumericType numType = field1.fieldType().numericType();
       if (dvType != DocValuesType.NONE) {
         switch(dvType) {
           case NUMERIC:
@@ -1082,23 +1090,6 @@ public final class TestUtil {
         byte[] bytes = new byte[br.length];
         System.arraycopy(br.bytes, br.offset, bytes, 0, br.length);
         field2 = new BinaryPoint(field1.name(), bytes, field1.fieldType());
-      } else if (numType != null) {
-        switch (numType) {
-          case INT:
-            field2 = new LegacyIntField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
-            break;
-          case FLOAT:
-            field2 = new LegacyFloatField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
-            break;
-          case LONG:
-            field2 = new LegacyLongField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
-            break;
-          case DOUBLE:
-            field2 = new LegacyDoubleField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
-            break;
-          default:
-            throw new IllegalStateException("unknown Type: " + numType);
-        }
       } else {
         field2 = new Field(field1.name(), field1.stringValue(), field1.fieldType());
       }

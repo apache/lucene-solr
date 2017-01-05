@@ -17,7 +17,9 @@
 package org.apache.lucene.document;
 
 import java.util.Arrays;
+import java.util.Collection;
 
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
@@ -25,7 +27,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 /** 
- * An indexed {@code double} field.
+ * An indexed {@code double} field for fast range filters.  If you also
+ * need to store the value, you should add a separate {@link StoredField} instance.
  * <p>
  * Finding all documents within an N-dimensional shape or range at search time is
  * efficient.  Multiple values for the same field in one document
@@ -38,8 +41,35 @@ import org.apache.lucene.util.NumericUtils;
  *   <li>{@link #newRangeQuery(String, double, double)} for matching a 1D range.
  *   <li>{@link #newRangeQuery(String, double[], double[])} for matching points/ranges in n-dimensional space.
  * </ul> 
+ * @see PointValues
  */
 public final class DoublePoint extends Field {
+
+  /**
+   * Return the least double that compares greater than {@code d} consistently
+   * with {@link Double#compare}. The only difference with
+   * {@link Math#nextUp(double)} is that this method returns {@code +0d} when
+   * the argument is {@code -0d}.
+   */
+  public static double nextUp(double d) {
+    if (Double.doubleToLongBits(d) == 0x8000_0000_0000_0000L) { // -0d
+      return +0d;
+    }
+    return Math.nextUp(d);
+  }
+
+  /**
+   * Return the greatest double that compares less than {@code d} consistently
+   * with {@link Double#compare}. The only difference with
+   * {@link Math#nextDown(double)} is that this method returns {@code -0d} when
+   * the argument is {@code +0d}.
+   */
+  public static double nextDown(double d) {
+    if (Double.doubleToLongBits(d) == 0L) { // +0d
+      return -0f;
+    }
+    return Math.nextDown(d);
+  }
 
   private static FieldType getType(int numDims) {
     FieldType type = new FieldType();
@@ -78,10 +108,10 @@ public final class DoublePoint extends Field {
 
   private static BytesRef pack(double... point) {
     if (point == null) {
-      throw new IllegalArgumentException("point cannot be null");
+      throw new IllegalArgumentException("point must not be null");
     }
     if (point.length == 0) {
-      throw new IllegalArgumentException("point cannot be 0 dimensions");
+      throw new IllegalArgumentException("point must not be 0 dimensions");
     }
     byte[] packed = new byte[point.length * Double.BYTES];
     
@@ -123,26 +153,16 @@ public final class DoublePoint extends Field {
     return result.toString();
   }
   
-  /** Encode n-dimensional double point into binary encoding */
-  private static byte[][] encode(double value[]) {
-    byte[][] encoded = new byte[value.length][];
-    for (int i = 0; i < value.length; i++) {
-      encoded[i] = new byte[Double.BYTES];
-      encodeDimension(value[i], encoded[i], 0);
-    }
-    return encoded;
-  }
-  
   // public helper methods (e.g. for queries)
   
   /** Encode single double dimension */
   public static void encodeDimension(double value, byte dest[], int offset) {
-    NumericUtils.longToBytes(NumericUtils.doubleToSortableLong(value), dest, offset);
+    NumericUtils.longToSortableBytes(NumericUtils.doubleToSortableLong(value), dest, offset);
   }
   
   /** Decode single double dimension */
   public static double decodeDimension(byte value[], int offset) {
-    return NumericUtils.sortableLongToDouble(NumericUtils.bytesToLong(value, offset));
+    return NumericUtils.sortableLongToDouble(NumericUtils.sortableBytesToLong(value, offset));
   }
   
   // static methods for generating queries
@@ -169,7 +189,9 @@ public final class DoublePoint extends Field {
    * {@link #newRangeQuery(String, double[], double[])} instead.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting {@code lowerValue = Double.NEGATIVE_INFINITY} or {@code upperValue = Double.POSITIVE_INFINITY}. 
+   * by setting {@code lowerValue = Double.NEGATIVE_INFINITY} or {@code upperValue = Double.POSITIVE_INFINITY}.
+   * <p> Ranges are inclusive. For exclusive ranges, pass {@link #nextUp(double) nextUp(lowerValue)}
+   * or {@link #nextUp(double) nextDown(upperValue)}.
    * <p>
    * Range comparisons are consistent with {@link Double#compareTo(Double)}.
    *
@@ -187,7 +209,9 @@ public final class DoublePoint extends Field {
    * Create a range query for n-dimensional double values.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting {@code lowerValue[i] = Double.NEGATIVE_INFINITY} or {@code upperValue[i] = Double.POSITIVE_INFINITY}. 
+   * by setting {@code lowerValue[i] = Double.NEGATIVE_INFINITY} or {@code upperValue[i] = Double.POSITIVE_INFINITY}.
+   * <p> Ranges are inclusive. For exclusive ranges, pass {@code Math#nextUp(lowerValue[i])}
+   * or {@code Math.nextDown(upperValue[i])}.
    * <p>
    * Range comparisons are consistent with {@link Double#compareTo(Double)}.
    *
@@ -200,7 +224,7 @@ public final class DoublePoint extends Field {
    */
   public static Query newRangeQuery(String field, double[] lowerValue, double[] upperValue) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, encode(lowerValue), encode(upperValue)) {
+    return new PointRangeQuery(field, pack(lowerValue).bytes, pack(upperValue).bytes, lowerValue.length) {
       @Override
       protected String toString(int dimension, byte[] value) {
         return Double.toString(decodeDimension(value, 0));
@@ -244,5 +268,20 @@ public final class DoublePoint extends Field {
         return Double.toString(decodeDimension(value, 0));
       }
     };
+  }
+  
+  /**
+   * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
+   * 
+   * @param field field name. must not be {@code null}.
+   * @param values all values to match
+   */
+  public static Query newSetQuery(String field, Collection<Double> values) {
+    Double[] boxed = values.toArray(new Double[0]);
+    double[] unboxed = new double[boxed.length];
+    for (int i = 0; i < boxed.length; i++) {
+      unboxed[i] = boxed[i];
+    }
+    return newSetQuery(field, unboxed);
   }
 }

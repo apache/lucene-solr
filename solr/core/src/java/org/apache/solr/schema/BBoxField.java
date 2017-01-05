@@ -22,8 +22,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import org.locationtech.spatial4j.shape.Rectangle;
 import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.legacy.LegacyFieldType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.spatial.bbox.BBoxOverlapRatioValueSource;
 import org.apache.lucene.spatial.bbox.BBoxStrategy;
@@ -31,6 +31,7 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.ShapeAreaValueSource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
+import org.locationtech.spatial4j.shape.Rectangle;
 
 public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements SchemaAware {
   private static final String PARAM_QUERY_TARGET_PROPORTION = "queryTargetProportion";
@@ -133,7 +134,6 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
       registerSubFields(schema, fieldName, numberType, booleanType);
     }
 
-    BBoxStrategy strategy = new BBoxStrategy(ctx, fieldName);
     //Solr's FieldType ought to expose Lucene FieldType. Instead as a hack we create a Field with a dummy value.
     final SchemaField solrNumField = new SchemaField("_", numberType);//dummy temp
     org.apache.lucene.document.FieldType luceneType =
@@ -142,11 +142,14 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     
     //and annoyingly this Field isn't going to have a docValues format because Solr uses a separate Field for that
     if (solrNumField.hasDocValues()) {
-      luceneType = new org.apache.lucene.document.FieldType(luceneType);
+      if (luceneType instanceof LegacyFieldType) {
+        luceneType = new LegacyFieldType((LegacyFieldType)luceneType);
+      } else {
+        luceneType = new org.apache.lucene.document.FieldType(luceneType);
+      }
       luceneType.setDocValuesType(DocValuesType.NUMERIC);
     }
-    strategy.setFieldType(luceneType);
-    return strategy;
+    return new BBoxStrategy(ctx, fieldName, luceneType);
   }
 
   @Override

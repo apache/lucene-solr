@@ -16,10 +16,10 @@
  */
 package org.apache.lucene.spatial.geopoint.search;
 
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoRelationUtils;
 
 /** Package private implementation for the public facing GeoPointInBBoxQuery delegate class.
@@ -36,8 +36,8 @@ class GeoPointInBBoxQueryImpl extends GeoPointMultiTermQuery {
    * @param maxLon upper longitude (x) value of the bounding box
    * @param maxLat upper latitude (y) value of the bounding box
    */
-  GeoPointInBBoxQueryImpl(final String field, final TermEncoding termEncoding, final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    super(field, termEncoding, minLon, minLat, maxLon, maxLat);
+  GeoPointInBBoxQueryImpl(final String field, final double minLat, final double maxLat, final double minLon, final double maxLon) {
+    super(field, minLat, maxLat, minLon, maxLon);
   }
 
   @Override
@@ -50,10 +50,10 @@ class GeoPointInBBoxQueryImpl extends GeoPointMultiTermQuery {
     final short shiftFactor;
 
     // compute diagonal radius
-    double midLon = (minLon + maxLon) * 0.5;
     double midLat = (minLat + maxLat) * 0.5;
+    double midLon = (minLon + maxLon) * 0.5;
 
-    if (SloppyMath.haversin(minLat, minLon, midLat, midLon)*1000 > 1000000) {
+    if (SloppyMath.haversinMeters(minLat, minLon, midLat, midLon) > 1000000) {
       shiftFactor = 5;
     } else {
       shiftFactor = 4;
@@ -72,30 +72,22 @@ class GeoPointInBBoxQueryImpl extends GeoPointMultiTermQuery {
       super(query);
     }
 
-    /**
-     * Determine whether the quad-cell crosses the shape
-     */
     @Override
-    protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectCrosses(minLon, minLat, maxLon, maxLat, GeoPointInBBoxQueryImpl.this.minLon,
-          GeoPointInBBoxQueryImpl.this.minLat, GeoPointInBBoxQueryImpl.this.maxLon, GeoPointInBBoxQueryImpl.this.maxLat);    }
-
-    /**
-     * Determine whether quad-cell is within the shape
-     */
-    @Override
-    protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectWithin(minLon, minLat, maxLon, maxLat, GeoPointInBBoxQueryImpl.this.minLon,
-          GeoPointInBBoxQueryImpl.this.minLat, GeoPointInBBoxQueryImpl.this.maxLon, GeoPointInBBoxQueryImpl.this.maxLat);    }
-
-    @Override
-    protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return cellIntersectsMBR(minLon, minLat, maxLon, maxLat);
+    protected Relation relate(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+      if (GeoRelationUtils.rectCrosses(minLat, maxLat, minLon, maxLon, GeoPointInBBoxQueryImpl.this.minLat,
+          GeoPointInBBoxQueryImpl.this.maxLat, GeoPointInBBoxQueryImpl.this.minLon, GeoPointInBBoxQueryImpl.this.maxLon)) {
+        return Relation.CELL_CROSSES_QUERY;
+      } else if (GeoRelationUtils.rectWithin(minLat, maxLat, minLon, maxLon, GeoPointInBBoxQueryImpl.this.minLat,
+          GeoPointInBBoxQueryImpl.this.maxLat,
+          GeoPointInBBoxQueryImpl.this.minLon, GeoPointInBBoxQueryImpl.this.maxLon)) {
+        return Relation.CELL_INSIDE_QUERY;
+      }
+      return Relation.CELL_OUTSIDE_QUERY;
     }
 
     @Override
-    protected boolean postFilter(final double lon, final double lat) {
-      return GeoRelationUtils.pointInRectPrecise(lon, lat, minLon, minLat, maxLon, maxLat);
+    protected boolean postFilter(final double lat, final double lon) {
+      return GeoRelationUtils.pointInRectPrecise(lat, lon, minLat, maxLat, minLon, maxLon);
     }
   }
 
@@ -108,10 +100,10 @@ class GeoPointInBBoxQueryImpl extends GeoPointMultiTermQuery {
 
     GeoPointInBBoxQueryImpl that = (GeoPointInBBoxQueryImpl) o;
 
-    if (Double.compare(that.maxLat, maxLat) != 0) return false;
-    if (Double.compare(that.maxLon, maxLon) != 0) return false;
     if (Double.compare(that.minLat, minLat) != 0) return false;
+    if (Double.compare(that.maxLat, maxLat) != 0) return false;
     if (Double.compare(that.minLon, minLon) != 0) return false;
+    if (Double.compare(that.maxLon, maxLon) != 0) return false;
 
     return true;
   }
@@ -120,13 +112,13 @@ class GeoPointInBBoxQueryImpl extends GeoPointMultiTermQuery {
   public int hashCode() {
     int result = super.hashCode();
     long temp;
-    temp = Double.doubleToLongBits(minLon);
-    result = 31 * result + (int) (temp ^ (temp >>> 32));
     temp = Double.doubleToLongBits(minLat);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
-    temp = Double.doubleToLongBits(maxLon);
-    result = 31 * result + (int) (temp ^ (temp >>> 32));
     temp = Double.doubleToLongBits(maxLat);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(minLon);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(maxLon);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     return result;
   }
@@ -142,14 +134,14 @@ class GeoPointInBBoxQueryImpl extends GeoPointMultiTermQuery {
       sb.append(':');
     }
     return sb.append(" Lower Left: [")
-        .append(minLon)
-        .append(',')
         .append(minLat)
+        .append(',')
+        .append(minLon)
         .append(']')
         .append(" Upper Right: [")
-        .append(maxLon)
-        .append(',')
         .append(maxLat)
+        .append(',')
+        .append(maxLon)
         .append("]")
         .toString();
   }

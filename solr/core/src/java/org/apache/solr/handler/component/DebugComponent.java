@@ -82,6 +82,7 @@ public class DebugComponent extends SearchComponent
   public void prepare(ResponseBuilder rb) throws IOException
   {
     if(rb.isDebugTrack() && rb.isDistrib) {
+      rb.setNeedDocList(true);
       doDebugTrack(rb);
     }
   }
@@ -112,6 +113,11 @@ public class DebugComponent extends SearchComponent
       FacetDebugInfo fdebug = (FacetDebugInfo)(rb.req.getContext().get("FacetDebugInfo"));
       if (fdebug != null) {
         info.add("facet-trace", fdebug.getFacetDebugInfo());
+      }
+
+      fdebug = (FacetDebugInfo)(rb.req.getContext().get("FacetDebugInfo-nonJson"));
+      if (fdebug != null) {
+        info.add("facet-debug", fdebug.getFacetDebugInfo());
       }
       
       if (rb.req.getJSON() != null) {

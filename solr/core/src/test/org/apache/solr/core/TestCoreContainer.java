@@ -336,7 +336,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     CoreContainer cc = init(CUSTOM_HANDLERS_SOLR_XML);
     try {
-      cc.load();
       assertThat(cc.getCollectionsHandler(), is(instanceOf(CustomCollectionsHandler.class)));
       assertThat(cc.getInfoHandler(), is(instanceOf(CustomInfoHandler.class)));
       assertThat(cc.getMultiCoreHandler(), is(instanceOf(CustomCoreAdminHandler.class)));

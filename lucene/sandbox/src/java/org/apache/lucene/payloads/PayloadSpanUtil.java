@@ -114,7 +114,7 @@ public class PayloadSpanUtil {
 
     } else if (query instanceof MultiPhraseQuery) {
       final MultiPhraseQuery mpq = (MultiPhraseQuery) query;
-      final List<Term[]> termArrays = mpq.getTermArrays();
+      final Term[][] termArrays = mpq.getTermArrays();
       final int[] positions = mpq.getPositions();
       if (positions.length > 0) {
 
@@ -129,8 +129,8 @@ public class PayloadSpanUtil {
             new List[maxPosition + 1];
         int distinctPositions = 0;
 
-        for (int i = 0; i < termArrays.size(); ++i) {
-          final Term[] termArray = termArrays.get(i);
+        for (int i = 0; i < termArrays.length; ++i) {
+          final Term[] termArray = termArrays[i];
           List<Query> disjuncts = disjunctLists[positions[i]];
           if (disjuncts == null) {
             disjuncts = (disjunctLists[positions[i]] = new ArrayList<>(

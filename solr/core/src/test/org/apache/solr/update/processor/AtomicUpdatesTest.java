@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.TrieDateField;
-import org.apache.solr.util.DateFormatUtil;
+import org.apache.solr.util.DateMathParser;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -43,6 +43,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     h.update("<delete><query>*:*</query></delete>");
     assertU(commit());
   }
+  
   @Test
   public void testRemove() throws Exception {
     SolrInputDocument doc;
@@ -597,45 +598,45 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
     TrieDateField trieDF = new TrieDateField();
-    Date tempDate = DateFormatUtil.parseMath(null, "2014-02-01T12:00:00Z");
-    doc.setField("dateRemove", new Date[]{DateFormatUtil.parseMath(null, "2014-02-01T12:00:00Z"), 
-        DateFormatUtil.parseMath(null, "2014-07-02T12:00:00Z"),
-        DateFormatUtil.parseMath(null, "2014-02-03T12:00:00Z"),
-        DateFormatUtil.parseMath(null, "2014-02-03T12:00:00Z"),
-        DateFormatUtil.parseMath(null, "2014-02-04T12:00:00Z")
+    Date tempDate = DateMathParser.parseMath(null, "2014-02-01T12:00:00Z");
+    doc.setField("dateRemove", new Date[]{DateMathParser.parseMath(null, "2014-02-01T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-07-02T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-02-03T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-02-03T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-02-04T12:00:00Z")
         });
     assertU(adoc(doc));
 
     doc = new SolrInputDocument();
     doc.setField("id", "10002");
-    doc.setField("dateRemove", new Date[]{DateFormatUtil.parseMath(null, "2014-02-01T12:00:00Z"), 
-        DateFormatUtil.parseMath(null, "2014-07-02T12:00:00Z"),
-        DateFormatUtil.parseMath(null, "2014-02-02T12:00:00Z"),
-        DateFormatUtil.parseMath(null, "2014-02-03T12:00:00Z"),
-        DateFormatUtil.parseMath(null, "2014-02-04T12:00:00Z")
+    doc.setField("dateRemove", new Date[]{DateMathParser.parseMath(null, "2014-02-01T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-07-02T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-02-02T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-02-03T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-02-04T12:00:00Z")
         });
     assertU(adoc(doc));
 
     doc = new SolrInputDocument();
     doc.setField("id", "10020");
-    doc.setField("dateRemove", new Date[]{DateFormatUtil.parseMath(null, "2014-02-01T12:00:00Z"), 
-        DateFormatUtil.parseMath(null, "2014-02-03T12:00:00Z"),
-        DateFormatUtil.parseMath(null, "2014-02-04T12:00:00Z")
+    doc.setField("dateRemove", new Date[]{DateMathParser.parseMath(null, "2014-02-01T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-02-03T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-02-04T12:00:00Z")
         });
     assertU(adoc(doc));
 
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
-    doc.setField("dateRemove", new Date[]{DateFormatUtil.parseMath(null, "2014-02-01T12:00:00Z"), 
-        DateFormatUtil.parseMath(null, "2014-02-02T12:00:00Z"),
-        DateFormatUtil.parseMath(null, "2014-02-04T12:00:00Z")
+    doc.setField("dateRemove", new Date[]{DateMathParser.parseMath(null, "2014-02-01T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-02-02T12:00:00Z"),
+        DateMathParser.parseMath(null, "2014-02-04T12:00:00Z")
         });
     assertU(adoc(doc));
 
     assertU(commit());
 
     assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
-    String dateString = DateFormatUtil.parseMath(null, "2014-02-02T12:00:00Z").toString();
+    String dateString = DateMathParser.parseMath(null, "2014-02-02T12:00:00Z").toString();
 //    assertQ(req("q", "dateRemove:"+URLEncoder.encode(dateString, "UTF-8"), "indent", "true"), "//result[@numFound = '3']");
 //    assertQ(req("q", "dateRemove:\"2014-09-02T12:00:00Z\"", "indent", "true"), "//result[@numFound = '3']");
 //    assertQ(req("q", "dateRemove:"+dateString, "indent", "true"), "//result[@numFound = '3']"); //Sun Feb 02 10:00:00 FNT 2014
@@ -645,8 +646,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
     List<Date> removeList = new ArrayList<Date>();
-    removeList.add(DateFormatUtil.parseMath(null, "2014-09-02T12:00:00Z"));
-    removeList.add(DateFormatUtil.parseMath(null, "2014-09-03T12:00:00Z"));
+    removeList.add(DateMathParser.parseMath(null, "2014-09-02T12:00:00Z"));
+    removeList.add(DateMathParser.parseMath(null, "2014-09-03T12:00:00Z"));
 
     doc.setField("dateRemove", ImmutableMap.of("remove", removeList)); //behavior when hitting Solr through ZK
     assertU(adoc(doc));
@@ -658,8 +659,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
     removeList = new ArrayList<Date>();
-    removeList.add(DateFormatUtil.parseMath(null, "2014-09-02T12:00:00Z"));
-    removeList.add(DateFormatUtil.parseMath(null, "2014-09-03T12:00:00Z"));
+    removeList.add(DateMathParser.parseMath(null, "2014-09-02T12:00:00Z"));
+    removeList.add(DateMathParser.parseMath(null, "2014-09-03T12:00:00Z"));
     doc.setField("dateRemove", ImmutableMap.of("remove", removeList)); //behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
@@ -669,7 +670,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    doc.setField("dateRemove", ImmutableMap.of("remove", DateFormatUtil.parseMath(null, "2014-09-01T12:00:00Z"))); //behavior when hitting Solr directly
+    doc.setField("dateRemove", ImmutableMap.of("remove", DateMathParser.parseMath(null, "2014-09-01T12:00:00Z"))); //behavior when hitting Solr directly
 
     assertU(adoc(doc));
     assertU(commit());
@@ -1064,6 +1065,49 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
         "/response/docs/[0]/title/[0]=='newtitle1'",
         "/response/docs/[0]/multi_ii_dvo/[0]==100",
         "/response/docs/[0]/multi_ii_dvo/[1]==" + Integer.MAX_VALUE);
+  }
+  
+  @Test
+  public void testAtomicUpdatesOnNonStoredDocValuesCopyField() throws Exception {
+    assertU(adoc(sdoc("id", 101, "title", "title2", "single_i_dvn", 100)));
+    assertU(adoc(sdoc("id", 102, "title", "title3", "single_d_dvn", 3.14)));
+    assertU(adoc(sdoc("id", 103, "single_s_dvn", "abc", "single_i_dvn", 1)));
+    assertU(commit());
+
+    // Do each one twice... the first time it will be retrieved from the index, and the second time from the transaction log.
+    for (int i=0; i<2; i++) {
+      assertU(adoc(sdoc("id", 101, "title", ImmutableMap.of("set", "newtitle2"),
+          "single_i_dvn", ImmutableMap.of("inc", 1))));
+      assertU(adoc(sdoc("id", 102, "title", ImmutableMap.of("set", "newtitle3"),
+          "single_d_dvn", ImmutableMap.of("inc", 1))));
+      assertU(adoc(sdoc("id", 103, "single_i_dvn", ImmutableMap.of("inc", 1))));
+    }
+    assertU(commit());
+
+    assertJQ(req("q", "id:101"),
+        "/response/docs/[0]/id==101",
+        "/response/docs/[0]/title/[0]=='newtitle2'",
+        "/response/docs/[0]/single_i_dvn==102");
+
+    assertJQ(req("q", "id:102"),
+        1e-4,
+        "/response/docs/[0]/id==102",
+        "/response/docs/[0]/title/[0]=='newtitle3'",
+        "/response/docs/[0]/single_d_dvn==5.14");
+
+    assertJQ(req("q", "id:103"),
+        "/response/docs/[0]/id==103",
+        "/response/docs/[0]/single_s_dvn=='abc'",
+        "/response/docs/[0]/single_i_dvn==3");
+
+    // test that non stored docvalues was carried forward for a non-docvalue update
+    assertU(adoc(sdoc("id", 103, "single_s_dvn", ImmutableMap.of("set", "abcupdate"),
+        "single_i_dvn", ImmutableMap.of("set", 5))));
+    assertU(commit());
+    assertJQ(req("q", "id:103"),
+        "/response/docs/[0]/id==103",
+        "/response/docs/[0]/single_s_dvn=='abcupdate'",
+        "/response/docs/[0]/single_i_dvn==5");
   }
 
   @Test

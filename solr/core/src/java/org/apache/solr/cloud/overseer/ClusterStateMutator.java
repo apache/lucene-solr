@@ -17,7 +17,6 @@
 package org.apache.solr.cloud.overseer;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -51,39 +50,43 @@ public class ClusterStateMutator {
 
   public ZkWriteCommand createCollection(ClusterState clusterState, ZkNodeProps message) {
     String cName = message.getStr(NAME);
-    log.info("building a new cName: " + cName);
+    log.debug("building a new cName: " + cName);
     if (clusterState.hasCollection(cName)) {
       log.warn("Collection {} already exists. exit", cName);
       return ZkStateWriter.NO_OP;
-    }
-
-    ArrayList<String> shards = new ArrayList<>();
-
-    if (ImplicitDocRouter.NAME.equals(message.getStr("router.name", DocRouter.DEFAULT_NAME))) {
-      getShardNames(shards, message.getStr("shards", DocRouter.DEFAULT_NAME));
-    } else {
-      int numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, -1);
-      if (numShards < 1)
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "numShards is a required parameter for 'compositeId' router");
-      getShardNames(numShards, shards);
     }
 
     Map<String, Object> routerSpec = DocRouter.getRouterSpec(message);
     String routerName = routerSpec.get(NAME) == null ? DocRouter.DEFAULT_NAME : (String) routerSpec.get(NAME);
     DocRouter router = DocRouter.getDocRouter(routerName);
 
-    List<DocRouter.Range> ranges = router.partitionRange(shards.size(), router.fullRange());
+    Object messageShardsObj = message.get("shards");
 
+    Map<String, Slice> slices;
+    if (messageShardsObj instanceof Map) { // we are being explicitly told the slice data (e.g. coll restore)
+      slices = Slice.loadAllFromMap((Map<String, Object>)messageShardsObj);
+    } else {
+      List<String> shardNames = new ArrayList<>();
 
-    Map<String, Slice> newSlices = new LinkedHashMap<>();
+      if (router instanceof ImplicitDocRouter) {
+        getShardNames(shardNames, message.getStr("shards", DocRouter.DEFAULT_NAME));
+      } else {
+        int numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, -1);
+        if (numShards < 1)
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "numShards is a required parameter for 'compositeId' router");
+        getShardNames(numShards, shardNames);
+      }
+      List<DocRouter.Range> ranges = router.partitionRange(shardNames.size(), router.fullRange());//maybe null
 
-    for (int i = 0; i < shards.size(); i++) {
-      String sliceName = shards.get(i);
+      slices = new LinkedHashMap<>();
+      for (int i = 0; i < shardNames.size(); i++) {
+        String sliceName = shardNames.get(i);
 
-      Map<String, Object> sliceProps = new LinkedHashMap<>(1);
-      sliceProps.put(Slice.RANGE, ranges == null ? null : ranges.get(i));
+        Map<String, Object> sliceProps = new LinkedHashMap<>(1);
+        sliceProps.put(Slice.RANGE, ranges == null ? null : ranges.get(i));
 
-      newSlices.put(sliceName, new Slice(sliceName, null, sliceProps));
+        slices.put(sliceName, new Slice(sliceName, null, sliceProps));
+      }
     }
 
     Map<String, Object> collectionProps = new HashMap<>();
@@ -101,11 +104,12 @@ public class ClusterStateMutator {
       collectionProps.put("autoCreated", "true");
     }
 
+    //TODO default to 2; but need to debug why BasicDistributedZk2Test fails early on
     String znode = message.getInt(DocCollection.STATE_FORMAT, 1) == 1 ? null
         : ZkStateReader.getCollectionPath(cName);
 
     DocCollection newCollection = new DocCollection(cName,
-        newSlices, collectionProps, router, -1, znode);
+        slices, collectionProps, router, -1, znode);
 
     return new ZkWriteCommand(cName, newCollection);
   }
@@ -122,7 +126,7 @@ public class ClusterStateMutator {
   public static ClusterState newState(ClusterState state, String name, DocCollection collection) {
     ClusterState newClusterState = null;
     if (collection == null) {
-      newClusterState = state.copyWith(name, (DocCollection) null);
+      newClusterState = state.copyWith(name, null);
     } else {
       newClusterState = state.copyWith(name, collection);
     }
@@ -153,9 +157,8 @@ public class ClusterStateMutator {
   /*
        * Return an already assigned id or null if not assigned
        */
-  public static String getAssignedId(final ClusterState state, final String nodeName,
-                              final ZkNodeProps coreState) {
-    Collection<Slice> slices = state.getSlices(coreState.getStr(ZkStateReader.COLLECTION_PROP));
+  public static String getAssignedId(final DocCollection collection, final String nodeName) {
+    Collection<Slice> slices = collection != null ? collection.getSlices() : null;
     if (slices != null) {
       for (Slice slice : slices) {
         if (slice.getReplicasMap().get(nodeName) != null) {
@@ -166,18 +169,15 @@ public class ClusterStateMutator {
     return null;
   }
 
-  public static String getAssignedCoreNodeName(ClusterState state, ZkNodeProps message) {
-    Collection<Slice> slices = state.getSlices(message.getStr(ZkStateReader.COLLECTION_PROP));
+  public static String getAssignedCoreNodeName(DocCollection collection, String forNodeName, String forCoreName) {
+    Collection<Slice> slices = collection != null ? collection.getSlices() : null;
     if (slices != null) {
       for (Slice slice : slices) {
         for (Replica replica : slice.getReplicas()) {
           String nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
           String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
 
-          String msgNodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
-          String msgCore = message.getStr(ZkStateReader.CORE_NAME_PROP);
-
-          if (nodeName.equals(msgNodeName) && core.equals(msgCore)) {
+          if (nodeName.equals(forNodeName) && core.equals(forCoreName)) {
             return replica.getName();
           }
         }

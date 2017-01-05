@@ -33,7 +33,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 
@@ -68,7 +67,6 @@ public class TermsQParserPlugin extends QParserPlugin {
       @Override
       Filter makeFilter(String fname, BytesRef[] byteRefs) {
         BooleanQuery.Builder bq = new BooleanQuery.Builder();
-        bq.setDisableCoord(true);
         for (BytesRef byteRef : byteRefs) {
           bq.add(new TermQuery(new Term(fname, byteRef)), BooleanClause.Occur.SHOULD);
         }

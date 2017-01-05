@@ -17,12 +17,16 @@
 package org.apache.lucene.index;
 
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.InfoStream;
 
@@ -93,6 +97,12 @@ public class LiveIndexWriterConfig {
   
   /** True if calls to {@link IndexWriter#close()} should first do a commit. */
   protected boolean commitOnClose = IndexWriterConfig.DEFAULT_COMMIT_ON_CLOSE;
+
+  /** The sort order to use to write merged segments. */
+  protected Sort indexSort = null;
+
+  /** The field names involved in the index sort */
+  protected Set<String> indexSortFields = Collections.emptySet();
 
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer) {
@@ -445,6 +455,21 @@ public class LiveIndexWriterConfig {
     return commitOnClose;
   }
 
+  /**
+   * Set the index-time {@link Sort} order. Merged segments will be written
+   * in this order.
+   */
+  public Sort getIndexSort() {
+    return indexSort;
+  }
+
+  /**
+   * Returns the field names involved in the index sort
+   */
+  public Set<String> getIndexSortFields() {
+    return indexSortFields;
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -467,6 +492,7 @@ public class LiveIndexWriterConfig {
     sb.append("perThreadHardLimitMB=").append(getRAMPerThreadHardLimitMB()).append("\n");
     sb.append("useCompoundFile=").append(getUseCompoundFile()).append("\n");
     sb.append("commitOnClose=").append(getCommitOnClose()).append("\n");
+    sb.append("indexSort=").append(getIndexSort()).append("\n");
     return sb.toString();
   }
 }

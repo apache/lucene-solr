@@ -17,7 +17,9 @@
 package org.apache.lucene.document;
 
 import java.util.Arrays;
+import java.util.Collection;
 
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
@@ -25,7 +27,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 /** 
- * An indexed {@code long} field.
+ * An indexed {@code long} field for fast range filters.  If you also
+ * need to store the value, you should add a separate {@link StoredField} instance.
  * <p>
  * Finding all documents within an N-dimensional shape or range at search time is
  * efficient.  Multiple values for the same field in one document
@@ -38,6 +41,7 @@ import org.apache.lucene.util.NumericUtils;
  *   <li>{@link #newRangeQuery(String, long, long)} for matching a 1D range.
  *   <li>{@link #newRangeQuery(String, long[], long[])} for matching points/ranges in n-dimensional space.
  * </ul>
+ * @see PointValues
  */
 public final class LongPoint extends Field {
 
@@ -78,10 +82,10 @@ public final class LongPoint extends Field {
 
   private static BytesRef pack(long... point) {
     if (point == null) {
-      throw new IllegalArgumentException("point cannot be null");
+      throw new IllegalArgumentException("point must not be null");
     }
     if (point.length == 0) {
-      throw new IllegalArgumentException("point cannot be 0 dimensions");
+      throw new IllegalArgumentException("point must not be 0 dimensions");
     }
     byte[] packed = new byte[point.length * Long.BYTES];
     
@@ -123,26 +127,16 @@ public final class LongPoint extends Field {
     return result.toString();
   }
   
-  /** Encode n-dimensional long values into binary encoding */
-  private static byte[][] encode(long value[]) {
-    byte[][] encoded = new byte[value.length][];
-    for (int i = 0; i < value.length; i++) {
-      encoded[i] = new byte[Long.BYTES];
-      encodeDimension(value[i], encoded[i], 0);
-    }
-    return encoded;
-  }
-  
   // public helper methods (e.g. for queries)
   
   /** Encode single long dimension */
   public static void encodeDimension(long value, byte dest[], int offset) {
-    NumericUtils.longToBytes(value, dest, offset);
+    NumericUtils.longToSortableBytes(value, dest, offset);
   }
   
   /** Decode single long dimension */
   public static long decodeDimension(byte value[], int offset) {
-    return NumericUtils.bytesToLong(value, offset);
+    return NumericUtils.sortableBytesToLong(value, offset);
   }
   
   // static methods for generating queries
@@ -171,7 +165,8 @@ public final class LongPoint extends Field {
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting {@code lowerValue = Long.MIN_VALUE} or {@code upperValue = Long.MAX_VALUE}. 
    * <p>
-   * Ranges are inclusive. For exclusive ranges, pass {@code lowerValue + 1} or {@code upperValue - 1}
+   * Ranges are inclusive. For exclusive ranges, pass {@code Math.addExact(lowerValue, 1)}
+   * or {@code Math.addExact(upperValue, -1)}.
    *
    * @param field field name. must not be {@code null}.
    * @param lowerValue lower portion of the range (inclusive).
@@ -189,7 +184,8 @@ public final class LongPoint extends Field {
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting {@code lowerValue[i] = Long.MIN_VALUE} or {@code upperValue[i] = Long.MAX_VALUE}. 
    * <p>
-   * Ranges are inclusive. For exclusive ranges, pass {@code lowerValue[i] + 1} or {@code upperValue[i] - 1}
+   * Ranges are inclusive. For exclusive ranges, pass {@code Math.addExact(lowerValue[i], 1)}
+   * or {@code Math.addExact(upperValue[i], -1)}.
    *
    * @param field field name. must not be {@code null}.
    * @param lowerValue lower portion of the range (inclusive). must not be {@code null}.
@@ -200,7 +196,7 @@ public final class LongPoint extends Field {
    */
   public static Query newRangeQuery(String field, long[] lowerValue, long[] upperValue) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, encode(lowerValue), encode(upperValue)) {
+    return new PointRangeQuery(field, pack(lowerValue).bytes, pack(upperValue).bytes, lowerValue.length) {
       @Override
       protected String toString(int dimension, byte[] value) {
         return Long.toString(decodeDimension(value, 0));
@@ -244,5 +240,20 @@ public final class LongPoint extends Field {
         return Long.toString(decodeDimension(value, 0));
       }
     };
+  }
+  
+  /**
+   * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
+   * 
+   * @param field field name. must not be {@code null}.
+   * @param values all values to match
+   */
+  public static Query newSetQuery(String field, Collection<Long> values) {
+    Long[] boxed = values.toArray(new Long[0]);
+    long[] unboxed = new long[boxed.length];
+    for (int i = 0; i < boxed.length; i++) {
+      unboxed[i] = boxed[i];
+    }
+    return newSetQuery(field, unboxed);
   }
 }

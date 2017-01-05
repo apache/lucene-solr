@@ -31,6 +31,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.RowId;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.sql.Statement;
@@ -39,6 +40,7 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
 
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.PushBackStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
@@ -78,7 +80,7 @@ class ResultSetImpl implements ResultSet {
       this.firstTuple = this.solrStream.read();
       this.solrStream.pushBack(firstTuple);
     } catch (IOException e) {
-      throw new SQLException("Couldn't read first tuple", e);
+      throw new SQLException(e);
     }
 
     this.resultSetMetaData = new ResultSetMetaDataImpl(this);
@@ -176,6 +178,7 @@ class ResultSetImpl implements ResultSet {
   }
 
   @Override
+  @SuppressForbidden(reason = "Implements deprecated method")
   public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
     return this.getBigDecimal(this.resultSetMetaData.getColumnLabel(columnIndex), scale);
   }
@@ -480,92 +483,133 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public boolean isBeforeFirst() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    throw new SQLFeatureNotSupportedException();
   }
 
   @Override
   public boolean isAfterLast() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    throw new SQLFeatureNotSupportedException();
   }
 
   @Override
   public boolean isFirst() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    throw new SQLFeatureNotSupportedException();
   }
 
   @Override
   public boolean isLast() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    throw new SQLFeatureNotSupportedException();
   }
 
   @Override
   public void beforeFirst() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    throw new SQLException("beforeFirst() not supported on ResultSet with type TYPE_FORWARD_ONLY");
   }
 
   @Override
   public void afterLast() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    throw new SQLException("afterLast() not supported on ResultSet with type TYPE_FORWARD_ONLY");
   }
 
   @Override
   public boolean first() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    throw new SQLException("first() not supported on ResultSet with type TYPE_FORWARD_ONLY");
   }
 
   @Override
   public boolean last() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    throw new SQLException("last() not supported on ResultSet with type TYPE_FORWARD_ONLY");
   }
 
   @Override
   public int getRow() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    throw new SQLFeatureNotSupportedException();
   }
 
   @Override
   public boolean absolute(int row) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    throw new SQLException("absolute() not supported on ResultSet with type TYPE_FORWARD_ONLY");
   }
 
   @Override
   public boolean relative(int rows) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    throw new SQLException("relative() not supported on ResultSet with type TYPE_FORWARD_ONLY");
   }
 
   @Override
   public boolean previous() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    throw new SQLException("previous() not supported on ResultSet with type TYPE_FORWARD_ONLY");
   }
 
   @Override
   public void setFetchDirection(int direction) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    if(direction != ResultSet.FETCH_FORWARD) {
+      throw new SQLException("Direction must be FETCH_FORWARD since ResultSet " +
+          "type is TYPE_FORWARD_ONLY");
+    }
   }
 
   @Override
   public int getFetchDirection() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return ResultSet.FETCH_FORWARD;
   }
 
   @Override
   public void setFetchSize(int rows) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    if(rows < 0) {
+      throw new SQLException("Rows must be >= 0");
+    }
   }
 
   @Override
   public int getFetchSize() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return 0;
   }
 
   @Override
   public int getType() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return ResultSet.TYPE_FORWARD_ONLY;
   }
 
   @Override
   public int getConcurrency() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return ResultSet.CONCUR_READ_ONLY;
   }
 
   @Override

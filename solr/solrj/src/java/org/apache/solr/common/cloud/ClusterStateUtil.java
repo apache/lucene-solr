@@ -20,7 +20,7 @@ import java.lang.invoke.MethodHandles;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.SolrException;
@@ -65,14 +65,14 @@ public class ClusterStateUtil {
       success = true;
       ClusterState clusterState = zkStateReader.getClusterState();
       if (clusterState != null) {
-        Set<String> collections;
+        Map<String, DocCollection> collections = null;
         if (collection != null) {
-          collections = Collections.singleton(collection);
+          collections = Collections.singletonMap(collection, clusterState.getCollection(collection));
         } else {
-          collections = clusterState.getCollections();
+          collections = clusterState.getCollectionsMap();
         }
-        for (String coll : collections) {
-          DocCollection docCollection = clusterState.getCollection(coll);
+        for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+          DocCollection docCollection = entry.getValue();
           Collection<Slice> slices = docCollection.getSlices();
           for (Slice slice : slices) {
             // only look at active shards
@@ -177,14 +177,14 @@ public class ClusterStateUtil {
       success = true;
       ClusterState clusterState = zkStateReader.getClusterState();
       if (clusterState != null) {
-        Set<String> collections;
-        if (collection == null) {
-          collections = clusterState.getCollections();
+        Map<String, DocCollection> collections = null;
+        if (collection != null) {
+          collections = Collections.singletonMap(collection, clusterState.getCollection(collection));
         } else {
-          collections = Collections.singleton(collection);
+          collections = clusterState.getCollectionsMap();
         }
-        for (String coll : collections) {
-          DocCollection docCollection = clusterState.getCollection(coll);
+        for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+          DocCollection docCollection = entry.getValue();
           Collection<Slice> slices = docCollection.getSlices();
           for (Slice slice : slices) {
             // only look at active shards

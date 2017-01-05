@@ -19,14 +19,6 @@ package org.apache.lucene.util;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.ByteBlockPool;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefIterator;
-import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.IntroSorter;
-import org.apache.lucene.util.RamUsageEstimator;
-
 /**
  * A simple append only random-access {@link BytesRef} array that stores full
  * copies of the appended bytes in a {@link ByteBlockPool}.
@@ -37,7 +29,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * @lucene.internal
  * @lucene.experimental
  */
-public final class BytesRefArray {
+public final class BytesRefArray implements SortableBytesRefArray {
   private final ByteBlockPool pool;
   private int[] offsets = new int[1];
   private int lastElement = 0;
@@ -58,9 +50,11 @@ public final class BytesRefArray {
   /**
    * Clears this {@link BytesRefArray}
    */
+  @Override
   public void clear() {
     lastElement = 0;
     currentOffset = 0;
+    // TODO: it's trappy that this does not return storage held by int[] offsets array!
     Arrays.fill(offsets, 0);
     pool.reset(false, true); // no need to 0 fill the buffers we control the allocator
   }
@@ -70,6 +64,7 @@ public final class BytesRefArray {
    * @param bytes the bytes to append
    * @return the index of the appended bytes
    */
+  @Override
   public int append(BytesRef bytes) {
     if (lastElement >= offsets.length) {
       int oldLen = offsets.length;
@@ -86,6 +81,7 @@ public final class BytesRefArray {
    * Returns the current size of this {@link BytesRefArray}
    * @return the current size of this {@link BytesRefArray}
    */
+  @Override
   public int size() {
     return lastElement;
   }
@@ -108,7 +104,23 @@ public final class BytesRefArray {
     }
     throw new IndexOutOfBoundsException("index " + index
         + " must be less than the size: " + lastElement);
-    
+  }
+
+  /** Used only by sort below, to set a {@link BytesRef} with the specified slice, avoiding copying bytes in the common case when the slice
+   *  is contained in a single block in the byte block pool. */
+  private void setBytesRef(BytesRefBuilder spare, BytesRef result, int index) {
+    if (index < lastElement) {
+      int offset = offsets[index];
+      int length;
+      if (index == lastElement - 1) {
+        length = currentOffset - offset;
+      } else {
+        length = offsets[index + 1] - offset;
+      }
+      pool.setBytesRef(spare, result, offset, length);
+    } else {
+      throw new IndexOutOfBoundsException("index " + index + " must be less than the size: " + lastElement);
+    }
   }
   
   private int[] sort(final Comparator<BytesRef> comp) {
@@ -127,25 +139,30 @@ public final class BytesRefArray {
       @Override
       protected int compare(int i, int j) {
         final int idx1 = orderedEntries[i], idx2 = orderedEntries[j];
-        return comp.compare(get(scratch1, idx1), get(scratch2, idx2));
+        setBytesRef(scratch1, scratchBytes1, idx1);
+        setBytesRef(scratch2, scratchBytes2, idx2);
+        return comp.compare(scratchBytes1, scratchBytes2);
       }
       
       @Override
       protected void setPivot(int i) {
         final int index = orderedEntries[i];
-        pivot = get(pivotBuilder, index);
+        setBytesRef(pivotBuilder, pivot, index);
       }
       
       @Override
       protected int comparePivot(int j) {
         final int index = orderedEntries[j];
-        return comp.compare(pivot, get(scratch2, index));
+        setBytesRef(scratch2, scratchBytes2, index);
+        return comp.compare(pivot, scratchBytes2);
       }
 
-      private BytesRef pivot;
-      private final BytesRefBuilder pivotBuilder = new BytesRefBuilder(),
-          scratch1 = new BytesRefBuilder(),
-          scratch2 = new BytesRefBuilder();
+      private final BytesRef pivot = new BytesRef();
+      private final BytesRef scratchBytes1 = new BytesRef();
+      private final BytesRef scratchBytes2 = new BytesRef();
+      private final BytesRefBuilder pivotBuilder = new BytesRefBuilder();
+      private final BytesRefBuilder scratch1 = new BytesRefBuilder();
+      private final BytesRefBuilder scratch2 = new BytesRefBuilder();
     }.sort(0, size());
     return orderedEntries;
   }
@@ -171,8 +188,10 @@ public final class BytesRefArray {
    * This is a non-destructive operation.
    * </p>
    */
+  @Override
   public BytesRefIterator iterator(final Comparator<BytesRef> comp) {
     final BytesRefBuilder spare = new BytesRefBuilder();
+    final BytesRef result = new BytesRef();
     final int size = size();
     final int[] indices = comp == null ? null : sort(comp);
     return new BytesRefIterator() {
@@ -181,7 +200,8 @@ public final class BytesRefArray {
       @Override
       public BytesRef next() {
         if (pos < size) {
-          return get(spare, indices == null ? pos++ : indices[pos++]);
+          setBytesRef(spare, result, indices == null ? pos++ : indices[pos++]);
+          return result;
         }
         return null;
       }

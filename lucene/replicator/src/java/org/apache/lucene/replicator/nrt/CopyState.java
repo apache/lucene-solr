@@ -1,5 +1,3 @@
-package org.apache.lucene.replicator.nrt;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,12 +15,13 @@ package org.apache.lucene.replicator.nrt;
  * limitations under the License.
  */
 
+package org.apache.lucene.replicator.nrt;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.store.Directory;
 
 /** Holds incRef'd file level details for one point-in-time segment infos on the primary node.
  *

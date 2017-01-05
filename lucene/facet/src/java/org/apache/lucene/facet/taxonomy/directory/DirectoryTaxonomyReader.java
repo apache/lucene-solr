@@ -178,7 +178,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
             recreated = true;
           }
         } else if (!t1.equals(t2)) {
-          // t1 != null and t2 cannot be null b/c DirTaxoWriter always puts the commit data.
+          // t1 != null and t2 must not be null b/c DirTaxoWriter always puts the commit data.
           // it's ok to use String.equals because we require the two epoch values to be the same.
           recreated = true;
         }

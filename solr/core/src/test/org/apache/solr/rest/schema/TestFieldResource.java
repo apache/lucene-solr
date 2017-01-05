@@ -71,19 +71,19 @@ public class TestFieldResource extends SolrRestletTestBase {
              "/field/required==false",
              "/field/tokenized==true");
   }
-  
   @Test
   public void testGetFieldIncludeDynamic() throws Exception {
     assertQ("/schema/fields/some_crazy_name_i?indent=on&wt=xml&includeDynamic=true",
-            "/response/lst[@name='field']/str[@name='name'] = 'some_crazy_name_i'",
-            "/response/lst[@name='field']/str[@name='dynamicBase'] = '*_i'");    
+        "/response/lst[@name='field']/str[@name='name'] = 'some_crazy_name_i'",
+        "/response/lst[@name='field']/str[@name='dynamicBase'] = '*_i'");
   }
   
+
   @Test
   public void testGetFieldDontShowDefaults() throws Exception {
     String[] tests = { 
         "count(/response/lst[@name='field']) = 1",
-        "count(/response/lst[@name='field']/*) = 7",
+        "count(/response/lst[@name='field']/*) = 6",
         "/response/lst[@name='field']/str[@name='name'] = 'id'",
         "/response/lst[@name='field']/str[@name='type'] = 'string'",
         "/response/lst[@name='field']/bool[@name='indexed'] = 'true'",
@@ -95,17 +95,4 @@ public class TestFieldResource extends SolrRestletTestBase {
     assertQ("/schema/fields/id?indent=on&wt=xml&showDefaults=false", tests);
   }
   
-  @Test
-  public void testJsonPutFieldToNonMutableIndexSchema() throws Exception {
-    assertJPut("/schema/fields/newfield",
-        "{\"type\":\"text_general\", \"stored\":\"false\"}",
-        "/error/msg=='This IndexSchema is not mutable.'");
-  }
-
-  @Test
-  public void testJsonPostFieldsToNonMutableIndexSchema() throws Exception {
-    assertJPost("/schema/fields",
-        "[{\"name\":\"foobarbaz\", \"type\":\"text_general\", \"stored\":\"false\"}]",
-        "/error/msg=='This IndexSchema is not mutable.'");
-  }
 }

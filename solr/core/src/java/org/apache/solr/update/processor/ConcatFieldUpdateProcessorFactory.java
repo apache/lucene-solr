@@ -16,19 +16,19 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TextField;
-import org.apache.solr.schema.StrField;
-
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.StrField;
+import org.apache.solr.schema.TextField;
 
-import org.apache.commons.lang.StringUtils;
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
 
 /**
  * Concatenates multiple values for fields matching the specified 
@@ -44,7 +44,7 @@ import org.apache.commons.lang.StringUtils;
  * For example, in the configuration below, any "single valued" string and 
  * text field which is found to contain multiple values <i>except</i> for 
  * the <code>primary_author</code> field will be concatenated using the 
- * string "<code>; </code>" as a delimeter.  For the 
+ * string "<code>; </code>" as a delimiter.  For the 
  * <code>primary_author</code> field, the multiple values will be left 
  * alone for <code>FirstFieldValueUpdateProcessorFactory</code> to deal with.
  * </p>
@@ -77,44 +77,38 @@ public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdate
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
-    return new FieldMutatingUpdateProcessor(getSelector(), next) {
-      @Override
-      protected SolrInputField mutate(final SolrInputField src) {
-        if (src.getValueCount() <= 1) return src;
+    return mutator(getSelector(), next, src -> {
+      if (src.getValueCount() <= 1) return src;
 
-        SolrInputField result = new SolrInputField(src.getName());
-        result.setValue(StringUtils.join(src.getValues(), delimiter), 
-                        src.getBoost());
-        return result;
-      }
-    };
+      SolrInputField result = new SolrInputField(src.getName());
+      result.setValue(StringUtils.join(src.getValues(), delimiter),
+          src.getBoost());
+      return result;
+    });
   }
 
   @Override
   public FieldMutatingUpdateProcessor.FieldNameSelector 
     getDefaultSelector(final SolrCore core) {
 
-    return new FieldMutatingUpdateProcessor.FieldNameSelector() {
-      @Override
-      public boolean shouldMutate(final String fieldName) {
-        final IndexSchema schema = core.getLatestSchema();
+    return fieldName -> {
+      final IndexSchema schema = core.getLatestSchema();
 
-        // first check type since it should be fastest
-        FieldType type = schema.getFieldTypeNoEx(fieldName);
-        if (null == type) return false;
-        
-        if (! (TextField.class.isInstance(type) 
-               || StrField.class.isInstance(type))) {
-          return false;
-        }
+      // first check type since it should be fastest
+      FieldType type = schema.getFieldTypeNoEx(fieldName);
+      if (null == type) return false;
 
-        // only ask for SchemaField if we passed the type check.
-        SchemaField sf = schema.getFieldOrNull(fieldName);
-        // shouldn't be null since since type wasn't, but just in case
-        if (null == sf) return false;
-        
-        return ! sf.multiValued();
+      if (! (TextField.class.isInstance(type)
+             || StrField.class.isInstance(type))) {
+        return false;
       }
+
+      // only ask for SchemaField if we passed the type check.
+      SchemaField sf = schema.getFieldOrNull(fieldName);
+      // shouldn't be null since since type wasn't, but just in case
+      if (null == sf) return false;
+
+      return ! sf.multiValued();
     };
   }
   

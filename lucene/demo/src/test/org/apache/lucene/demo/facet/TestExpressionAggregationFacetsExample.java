@@ -17,9 +17,6 @@
 package org.apache.lucene.demo.facet;
 
 
-import java.util.List;
-import java.util.Locale;
-
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;

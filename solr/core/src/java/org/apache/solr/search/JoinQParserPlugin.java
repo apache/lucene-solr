@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -44,7 +45,6 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -98,7 +98,7 @@ public class JoinQParserPlugin extends QParserPlugin {
           RefCounted<SolrIndexSearcher> fromHolder = null;
           LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, params);
           try {
-            QParser parser = QParser.getParser(v, "lucene", otherReq);
+            QParser parser = QParser.getParser(v, otherReq);
             fromQuery = parser.getQuery();
             fromHolder = fromCore.getRegisteredSearcher();
             if (fromHolder != null) fromCoreOpenTime = fromHolder.get().getOpenNanoTime();
@@ -110,6 +110,7 @@ public class JoinQParserPlugin extends QParserPlugin {
         } else {
           coreName = null;
           QParser fromQueryParser = subQuery(v, null);
+          fromQueryParser.setIsFilter(true);
           fromQuery = fromQueryParser.getQuery();
         }
 
@@ -146,8 +147,8 @@ class JoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new JoinQueryWeight((SolrIndexSearcher)searcher);
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new JoinQueryWeight((SolrIndexSearcher)searcher, boost);
   }
 
   private class JoinQueryWeight extends ConstantScoreWeight {
@@ -157,8 +158,8 @@ class JoinQuery extends Query {
     private Similarity similarity;
     ResponseBuilder rb;
 
-    public JoinQueryWeight(SolrIndexSearcher searcher) {
-      super(JoinQuery.this);
+    public JoinQueryWeight(SolrIndexSearcher searcher, float boost) {
+      super(JoinQuery.this, boost);
       this.fromSearcher = searcher;
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       if (info != null) {
@@ -299,8 +300,8 @@ class JoinQuery extends Query {
         fastForRandomSet = new HashDocSet(sset.getDocs(), 0, sset.size());
       }
 
-      Fields fromFields = fromSearcher.getLeafReader().fields();
-      Fields toFields = fromSearcher==toSearcher ? fromFields : toSearcher.getLeafReader().fields();
+      Fields fromFields = fromSearcher.getSlowAtomicReader().fields();
+      Fields toFields = fromSearcher==toSearcher ? fromFields : toSearcher.getSlowAtomicReader().fields();
       if (fromFields == null) return DocSet.EMPTY;
       Terms terms = fromFields.terms(fromField);
       Terms toTerms = toFields.terms(toField);
@@ -322,8 +323,8 @@ class JoinQuery extends Query {
         }
       }
 
-      Bits fromLiveDocs = fromSearcher.getLeafReader().getLiveDocs();
-      Bits toLiveDocs = fromSearcher == toSearcher ? fromLiveDocs : toSearcher.getLeafReader().getLiveDocs();
+      Bits fromLiveDocs = fromSearcher.getSlowAtomicReader().getLiveDocs();
+      Bits toLiveDocs = fromSearcher == toSearcher ? fromLiveDocs : toSearcher.getSlowAtomicReader().getLiveDocs();
 
       fromDeState = new SolrIndexSearcher.DocsEnumState();
       fromDeState.fieldName = fromField;
@@ -505,24 +506,27 @@ class JoinQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (!super.equals(o)) return false;
-    JoinQuery other = (JoinQuery)o;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(JoinQuery other) {
     return this.fromField.equals(other.fromField)
-           && this.toField.equals(other.toField)
-           && this.q.equals(other.q)
-           && (this.fromIndex == other.fromIndex || this.fromIndex != null && this.fromIndex.equals(other.fromIndex))
-           && this.fromCoreOpenTime == other.fromCoreOpenTime
-        ;
+        && this.toField.equals(other.toField)
+        && this.q.equals(other.q)
+        && Objects.equals(fromIndex, other.fromIndex)
+        && this.fromCoreOpenTime == other.fromCoreOpenTime;
   }
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
-    h = h * 31 + q.hashCode();
-    h = h * 31 + (int)fromCoreOpenTime;
+    int h = classHash();
     h = h * 31 + fromField.hashCode();
     h = h * 31 + toField.hashCode();
+    h = h * 31 + q.hashCode();
+    h = h * 31 + Objects.hashCode(fromIndex);
+    h = h * 31 + (int) fromCoreOpenTime;
     return h;
   }
 

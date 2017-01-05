@@ -16,7 +16,16 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.params.CommonParams.*;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -28,26 +37,16 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.OnReconnect;
+import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.concurrent.TimeoutException;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 
 public class ZkCLI {
   
@@ -66,7 +65,10 @@ public class ZkCLI {
   private static final String RUNZK = "runzk";
   private static final String SOLRHOME = "solrhome";
   private static final String BOOTSTRAP = "bootstrap";
-  private static final String UPCONFIG = "upconfig";
+  static final String UPCONFIG = "upconfig";
+  static final String EXCLUDE_REGEX_SHORT = "x";
+  static final String EXCLUDE_REGEX = "excluderegex";
+  static final String EXCLUDE_REGEX_DEFAULT = ZkConfigManager.UPLOAD_FILENAME_EXCLUDE_REGEX;
   private static final String COLLECTION = "collection";
   private static final String CLEAR = "clear";
   private static final String LIST = "list";
@@ -120,6 +122,9 @@ public class ZkCLI {
     options.addOption("c", COLLECTION, true,
         "for " + LINKCONFIG + ": name of the collection");
     
+    options.addOption(EXCLUDE_REGEX_SHORT, EXCLUDE_REGEX, true,
+        "for " + UPCONFIG + ": files matching this regular expression won't be uploaded");
+
     options
         .addOption(
             "r",
@@ -181,9 +186,7 @@ public class ZkCLI {
       SolrZkClient zkClient = null;
       try {
         zkClient = new SolrZkClient(zkServerAddress, 30000, 30000,
-            new OnReconnect() {
-              @Override
-              public void command() {}
+            () -> {
             });
         
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
@@ -213,13 +216,15 @@ public class ZkCLI {
           }
           String confDir = line.getOptionValue(CONFDIR);
           String confName = line.getOptionValue(CONFNAME);
+          final String excludeExpr = line.getOptionValue(EXCLUDE_REGEX, EXCLUDE_REGEX_DEFAULT);
           
           if(!ZkController.checkChrootPath(zkServerAddress, true)) {
             System.out.println("A chroot was specified in zkHost but the znode doesn't exist. ");
             System.exit(1);
           }
           ZkConfigManager configManager = new ZkConfigManager(zkClient);
-          configManager.uploadConfigDir(Paths.get(confDir), confName);
+          final Pattern excludePattern = Pattern.compile(excludeExpr);
+          configManager.uploadConfigDir(Paths.get(confDir), confName, excludePattern);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(DOWNCONFIG)) {
           if (!line.hasOption(CONFDIR) || !line.hasOption(CONFNAME)) {
             System.out.println("-" + CONFDIR + " and -" + CONFNAME
@@ -318,28 +323,12 @@ public class ZkCLI {
           //If -val option is missing, we will use the null value. This is required to maintain
           //compatibility with Collections API.
           String propertyValue = line.getOptionValue(VALUE_LONG);
-          ZkStateReader reader = new ZkStateReader(zkClient);
+          ClusterProperties props = new ClusterProperties(zkClient);
           try {
-            reader.setClusterProperty(propertyName, propertyValue);
-          } catch (SolrException ex) {
-            //This can happen if two concurrent invocations of this command collide
-            //with each other. Here we are just adding a defensive check to see if
-            //the value is already set to expected value. If yes, then we don't
-            //fail the command.
-            Throwable cause = ex.getCause();
-            if(cause instanceof KeeperException.NodeExistsException
-                || cause instanceof KeeperException.BadVersionException) {
-                String currentValue = (String)reader.getClusterProps().get(propertyName);
-                if((currentValue == propertyValue) || (currentValue != null && currentValue.equals(propertyValue))) {
-                  return;
-                }
-            }
-            System.out.println("Unable to set the cluster property due to following error : " +
-                ex.getLocalizedMessage() +
-                ((cause instanceof KeeperException.BadVersionException)?". Try again":""));
+            props.setClusterProperty(propertyName, propertyValue);
+          } catch (IOException ex) {
+            System.out.println("Unable to set the cluster property due to following error : " + ex.getLocalizedMessage());
             System.exit(1);
-          } finally {
-            reader.close();
           }
         } else {
           // If not cmd matches

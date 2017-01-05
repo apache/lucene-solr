@@ -67,7 +67,7 @@ public class VectorDistanceFunction extends ValueSource {
    * @param dv2 The values from the second MultiValueSource
    * @return The distance
    */
-  protected double distance(int doc, FunctionValues dv1, FunctionValues dv2) {
+  protected double distance(int doc, FunctionValues dv1, FunctionValues dv2) throws IOException {
     //Handle some special cases:
     double[] vals1 = new double[source1.dimension()];
     double[] vals2 = new double[source1.dimension()];
@@ -159,12 +159,12 @@ public class VectorDistanceFunction extends ValueSource {
     return new DoubleDocValues(this) {
 
       @Override
-      public double doubleVal(int doc) {
+      public double doubleVal(int doc) throws IOException {
         return distance(doc, vals1, vals2);
       }
 
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append(name()).append('(').append(power).append(',');
         boolean firstTime = true;

@@ -17,59 +17,121 @@
 package org.apache.lucene.spatial.geopoint.search;
 
 import org.apache.lucene.index.FilteredTermsEnum;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
-import org.apache.lucene.spatial.geopoint.search.GeoPointMultiTermQuery.CellComparator;
+import org.apache.lucene.spatial.geopoint.document.GeoPointField;
+
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.decodeLatitude;
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.decodeLongitude;
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.geoCodedToPrefixCoded;
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.prefixCodedToGeoCoded;
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.getPrefixCodedShift;
 
 /**
- * Base class for {@link GeoPointNumericTermsEnum} and {@link GeoPointPrefixTermsEnum} which compares
- * candidate GeoPointField encoded terms against terms matching the defined query criteria.
+ * Decomposes a given {@link GeoPointMultiTermQuery} into a set of terms that represent the query criteria. The terms
+ * are then enumerated by the {@link GeoPointTermQueryConstantScoreWrapper} and all docs whose GeoPoint fields match
+ * the prefix terms or pass the {@link GeoPointMultiTermQuery.CellComparator#postFilter} criteria are returned in the
+ * resulting DocIdSet.
  *
  *  @lucene.experimental
  */
-abstract class GeoPointTermsEnum extends FilteredTermsEnum {
-  protected final short maxShift;
+final class GeoPointTermsEnum extends FilteredTermsEnum {
+  private final short maxShift;
+  private final GeoPointMultiTermQuery.CellComparator relationImpl;
+  private final BytesRefBuilder currentCellBRB;
+  private final Range range;
 
-  protected BaseRange currentRange;
-  protected BytesRef currentCell;
-  protected final BytesRefBuilder currentCellBRB = new BytesRefBuilder();
-  protected final BytesRefBuilder nextSubRangeBRB = new BytesRefBuilder();
+  private short shift;    // shift mask
+  private long start;     // range start as encoded long
+  private long end;       // range end as encoded long
+  private boolean hasNext = false;
 
-  protected final CellComparator relationImpl;
-
-  GeoPointTermsEnum(final TermsEnum tenum, final GeoPointMultiTermQuery query) {
+  public GeoPointTermsEnum(final TermsEnum tenum, final GeoPointMultiTermQuery query) {
     super(tenum);
     this.maxShift = query.maxShift;
     this.relationImpl = query.cellComparator;
+    // start shift at maxShift value (from computeMaxShift)
+    this.shift = maxShift;
+    final long mask = (1L << shift) - 1;
+    this.start = query.minEncoded & ~mask;
+    this.end = start | mask;
+    this.currentCellBRB = new BytesRefBuilder();
+    this.range = new Range(-1, shift, true);
   }
 
-  static GeoPointTermsEnum newInstance(final TermsEnum terms, final GeoPointMultiTermQuery query) {
-    if (query.termEncoding == TermEncoding.PREFIX) {
-      return new GeoPointPrefixTermsEnum(terms, query);
-    } else if (query.termEncoding == TermEncoding.NUMERIC) {
-      return new GeoPointNumericTermsEnum(terms, query);
+  private boolean nextRelation() {
+    Relation relation;
+    do {
+      // within or a boundary
+      if ((shift % GeoPointField.PRECISION_STEP) == 0 &&
+          (relation = relationImpl.relate(decodeLatitude(start), decodeLatitude(end),
+              decodeLongitude(start), decodeLongitude(end))) != Relation.CELL_OUTSIDE_QUERY) {
+        // if at max depth or cell completely within
+        if (shift == maxShift || relation == Relation.CELL_INSIDE_QUERY) {
+          setRange(relation == Relation.CELL_CROSSES_QUERY);
+          advanceVariables();
+          return true;
+        }
+      }
+
+      // within cell but not at a depth factor of PRECISION_STEP
+      if (shift != maxShift && relationImpl.cellIntersectsMBR(start, end) == true) {
+        // descend: start need not change since shift handles end of range
+        end = start | (1L<<--shift) - 1;
+      } else {
+        advanceVariables();
+      }
+    } while(shift < 62);
+    return false;
+  }
+
+  private void setRange(final boolean boundary) {
+    range.start = start;
+    range.shift = shift;
+    range.boundary = boundary;
+    hasNext = true;
+  }
+
+  private void advanceVariables() {
+    /** set next variables */
+    long shiftMask = 1L << shift;
+    // pop-up if shift bit is set
+    while ((start & shiftMask) != 0) {
+      shiftMask = 1L << ++shift;
     }
-    throw new IllegalArgumentException("Invalid GeoPoint TermEncoding " + query.termEncoding);
+    final long shiftMOne = shiftMask - 1;
+    start = start & ~shiftMOne | shiftMask;
+    end = start | shiftMOne;
   }
 
-  public boolean boundaryTerm() {
-    if (currentCell == null) {
-      throw new IllegalStateException("GeoPointTermsEnum empty or not initialized");
+  private void seek(long term, short res) {
+    if (term < start && res < maxShift) {
+      throw new IllegalArgumentException("trying to seek backwards");
+    } else if (term == start && res == shift) {
+      return;
     }
-    return currentRange.boundary;
+    shift = res;
+    start = term;
+    end = start | ((1L<<shift)-1);
   }
 
-  protected BytesRef peek() {
-    return nextSubRangeBRB.get();
+  private final boolean hasNext() {
+    if (hasNext == false) {
+      return nextRelation();
+    }
+    return true;
   }
 
-  abstract protected boolean hasNext();
-
-  protected void nextRange() {
-    currentRange.fillBytesRef(currentCellBRB);
-    currentCell = currentCellBRB.get();
+  @Override
+  protected final BytesRef nextSeekTerm(BytesRef term) {
+    if (hasNext() == false) {
+      return null;
+    }
+    geoCodedToPrefixCoded(range.start, range.shift, currentCellBRB);
+    hasNext = false;
+    return currentCellBRB.get();
   }
 
   /**
@@ -82,59 +144,56 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
    */
   @Override
   protected AcceptStatus accept(BytesRef term) {
-    // validate value is in range
-    while (currentCell == null || term.compareTo(currentCell) > 0) {
+    final long encodedTerm = prefixCodedToGeoCoded(term);
+    final short termShift = (short)(64-getPrefixCodedShift(term));
+    // range < term
+    while (range.compare(encodedTerm, termShift) < 0) {
+      // no more ranges, be gone
       if (hasNext() == false) {
         return AcceptStatus.END;
       }
-      // peek next sub-range, only seek if the current term is smaller than next lower bound
-      if (term.compareTo(peek()) < 0) {
-        return AcceptStatus.NO_AND_SEEK;
-      }
-      // step forward to next range without seeking, as next range is less or equal current term
-      nextRange();
-    }
 
+      // peek next range, if the range > term then seek
+      final int peekCompare = range.compare(encodedTerm, termShift);
+      if (peekCompare > 0) {
+        return AcceptStatus.NO_AND_SEEK;
+      } else if (peekCompare < 0) {
+        seek(encodedTerm, termShift);
+      }
+      hasNext = false;
+    }
     return AcceptStatus.YES;
   }
 
-  protected boolean postFilter(final double lon, final double lat) {
-    return relationImpl.postFilter(lon, lat);
+  /** Returns true if the current range term is a boundary of the query shape */
+  protected boolean boundaryTerm() {
+    if (range.start == -1) {
+      throw new IllegalStateException("GeoPointTermsEnum empty or not initialized");
+    }
+    return range.boundary;
   }
 
-  /**
-   * Internal class to represent a range along the space filling curve
-   */
-  abstract class BaseRange implements Comparable<BaseRange> {
-    protected short shift;
-    protected long start;
-    protected boolean boundary;
+  protected boolean postFilter(final double lat, final double lon) {
+    return relationImpl.postFilter(lat, lon);
+  }
 
-    BaseRange(final long lower, final short shift, boolean boundary) {
+  protected final class Range {
+    private short shift;
+    private long start;
+    private boolean boundary;
+
+    public Range(final long start, final short shift, final boolean boundary) {
       this.boundary = boundary;
-      this.start = lower;
+      this.start = start;
       this.shift = shift;
     }
 
-    /**
-     * Encode as a BytesRef using a reusable object. This allows us to lazily create the BytesRef (which is
-     * quite expensive), only when we need it.
-     */
-    abstract protected void fillBytesRef(BytesRefBuilder result);
-
-    @Override
-    public int compareTo(BaseRange other) {
-      final int result = Short.compare(this.shift, other.shift);
+    private int compare(long encoded, short shift) {
+      final int result = Long.compare(this.start, encoded);
       if (result == 0) {
-        return Long.compare(this.start, other.start);
+        return Short.compare(shift, this.shift);
       }
       return result;
-    }
-
-    protected void set(BaseRange other) {
-      this.start = other.start;
-      this.shift = other.shift;
-      this.boundary = other.boundary;
     }
   }
 }

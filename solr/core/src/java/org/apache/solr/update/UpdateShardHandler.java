@@ -16,28 +16,30 @@
  */
 package org.apache.solr.update;
 
+import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.util.concurrent.ExecutorService;
+
+import com.codahale.metrics.InstrumentedExecutorService;
 import org.apache.http.client.HttpClient;
-import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
-import org.apache.http.impl.conn.SchemeRegistryFactory;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
+import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.ExecutorService;
-
-public class UpdateShardHandler {
+public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -54,52 +56,85 @@ public class UpdateShardHandler {
   private ExecutorService recoveryExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
       new SolrjNamedThreadFactory("recoveryExecutor"));
   
-  private PoolingClientConnectionManager clientConnectionManager;
-  
   private final CloseableHttpClient client;
 
-  private final UpdateShardHandlerConfig cfg;
+  private final InstrumentedPoolingHttpClientConnectionManager clientConnectionManager;
+
+  private final InstrumentedHttpRequestExecutor httpRequestExecutor;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
-    this.cfg = cfg;
-    clientConnectionManager = new PoolingClientConnectionManager(SchemeRegistryFactory.createSystemDefault());
+    clientConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
     if (cfg != null ) {
       clientConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
       clientConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
     }
 
-    ModifiableSolrParams clientParams = getClientParams();
-    log.info("Creating UpdateShardHandler HTTP client with params: {}", clientParams);
-    client = HttpClientUtil.createClient(clientParams, clientConnectionManager);
+    ModifiableSolrParams clientParams = new ModifiableSolrParams();
+    if (cfg != null)  {
+      clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
+      clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, cfg.getDistributedConnectionTimeout());
+    }
+    httpRequestExecutor = new InstrumentedHttpRequestExecutor();
+    client = HttpClientUtil.createClient(clientParams, clientConnectionManager, false, httpRequestExecutor);
+
+    // following is done only for logging complete configuration.
+    // The maxConnections and maxConnectionsPerHost have already been specified on the connection manager
+    if (cfg != null)  {
+      clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, cfg.getMaxUpdateConnections());
+      clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, cfg.getMaxUpdateConnectionsPerHost());
+    }
+    log.debug("Created UpdateShardHandler HTTP client with params: {}", clientParams);
   }
 
-  protected ModifiableSolrParams getClientParams() {
-    ModifiableSolrParams clientParams = new ModifiableSolrParams();
-    if (cfg != null) {
-      clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT,
-          cfg.getDistributedSocketTimeout());
-      clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT,
-          cfg.getDistributedConnectionTimeout());
-    }
-    // in the update case, we want to do retries, and to use
-    // the default Solr retry handler that createClient will 
-    // give us
-    clientParams.set(HttpClientUtil.PROP_USE_RETRY, true);
-    return clientParams;
+  @Override
+  public String getName() {
+    return this.getClass().getName();
   }
-  
-  
+
+  @Override
+  public String getVersion() {
+    return getClass().getPackage().getSpecificationVersion();
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    clientConnectionManager.initializeMetrics(manager, registry, scope);
+    httpRequestExecutor.initializeMetrics(manager, registry, scope);
+    updateExecutor = new InstrumentedExecutorService(updateExecutor,
+        manager.registry(registry),
+        SolrMetricManager.mkName("updateExecutor", scope, "threadPool"));
+    recoveryExecutor = new InstrumentedExecutorService(recoveryExecutor,
+        manager.registry(registry),
+        SolrMetricManager.mkName("recoveryExecutor", scope, "threadPool"));
+  }
+
+  @Override
+  public String getDescription() {
+    return "Metrics tracked by UpdateShardHandler related to distributed updates and recovery";
+  }
+
+  @Override
+  public Category getCategory() {
+    return null;
+  }
+
+  @Override
+  public String getSource() {
+    return null;
+  }
+
+  @Override
+  public URL[] getDocs() {
+    return new URL[0];
+  }
+
+  @Override
+  public NamedList getStatistics() {
+    return null;
+  }
+
   public HttpClient getHttpClient() {
     return client;
-  }
-
-  public void reconfigureHttpClient(HttpClientConfigurer configurer) {
-    log.info("Reconfiguring the default client with: " + configurer);
-    configurer.configure((DefaultHttpClient)client, getClientParams());
-  }
-
-  public ClientConnectionManager getConnectionManager() {
-    return clientConnectionManager;
   }
   
   /**
@@ -112,9 +147,14 @@ public class UpdateShardHandler {
     return updateExecutor;
   }
   
+
+  public PoolingHttpClientConnectionManager getConnectionManager() {
+    return clientConnectionManager;
+  }
+
   /**
    * In general, RecoveryStrategy threads do not do disk IO, but they open and close SolrCores
-   * in async threads, amoung other things, and can trigger disk IO, so we use this alternate 
+   * in async threads, among other things, and can trigger disk IO, so we use this alternate 
    * executor rather than the 'updateExecutor', which is interrupted on shutdown.
    * 
    * @return executor for {@link RecoveryStrategy} thread which will not be interrupted on close.
@@ -125,14 +165,14 @@ public class UpdateShardHandler {
 
   public void close() {
     try {
-      // we interrupt on purpose here, but this exectuor should not run threads that do disk IO!
+      // we interrupt on purpose here, but this executor should not run threads that do disk IO!
       ExecutorUtil.shutdownWithInterruptAndAwaitTermination(updateExecutor);
       ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
     } catch (Exception e) {
       SolrException.log(log, e);
     } finally {
-      IOUtils.closeQuietly(client);
-      clientConnectionManager.shutdown();
+      HttpClientUtil.close(client);
+      clientConnectionManager.close();
     }
   }
 

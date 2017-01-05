@@ -35,7 +35,6 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -58,7 +57,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     doc.add(newStringField("id", "1", Field.Store.YES));
     doc.add(new NumericDocValuesField("dv", 1));
     w.addDocument(doc);
-    IndexReader r1 = w.getReader();
+    DirectoryReader r1 = w.getReader();
     w.close();
 
     Directory d2 = newDirectory();
@@ -67,12 +66,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     doc.add(newStringField("id", "2", Field.Store.YES));
     doc.add(new NumericDocValuesField("dv", 2));
     w.addDocument(doc);
-    IndexReader r2 = w.getReader();
+    DirectoryReader r2 = w.getReader();
     w.close();
 
     Directory d3 = newDirectory();
     w = new RandomIndexWriter(random(), d3);
-    w.addIndexes(SlowCodecReaderWrapper.wrap(SlowCompositeReaderWrapper.wrap(r1)), SlowCodecReaderWrapper.wrap(SlowCompositeReaderWrapper.wrap(r2)));
+    w.addIndexes(SlowCodecReaderWrapper.wrap(getOnlyLeafReader(r1)), SlowCodecReaderWrapper.wrap(getOnlyLeafReader(r2)));
     r1.close();
     d1.close();
     r2.close();
@@ -81,7 +80,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r3 = w.getReader();
     w.close();
-    LeafReader sr = getOnlySegmentReader(r3);
+    LeafReader sr = getOnlyLeafReader(r3);
     assertEquals(2, sr.numDocs());
     NumericDocValues docValues = sr.getNumericDocValues("dv");
     assertNotNull(docValues);
@@ -109,7 +108,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     DirectoryReader r = w.getReader();
     w.close();
-    assertEquals(17, DocValues.getNumeric(getOnlySegmentReader(r), "field").get(0));
+    NumericDocValues values = DocValues.getNumeric(getOnlyLeafReader(r), "field");
+    assertEquals(0, values.nextDoc());
+    assertEquals(17, values.longValue());
     r.close();
     d.close();
   }
@@ -130,7 +131,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     DirectoryReader r = w.getReader();
     w.close();
-    assertEquals(17, DocValues.getNumeric(getOnlySegmentReader(r), "field").get(0));
+    NumericDocValues values = DocValues.getNumeric(getOnlyLeafReader(r), "field");
+    assertEquals(0, values.nextDoc());
+    assertEquals(17, values.longValue());
     r.close();
     d.close();
   }
@@ -150,7 +153,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     });
 
     DirectoryReader r = w.getReader();
-    assertEquals(17, getOnlySegmentReader(r).getNumericDocValues("field").get(0));
+    NumericDocValues values = DocValues.getNumeric(getOnlyLeafReader(r), "field");
+    assertEquals(0, values.nextDoc());
+    assertEquals(17, values.longValue());
     r.close();
     w.close();
     d.close();
@@ -171,14 +176,15 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.addDocument(doc);
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
-    BinaryDocValues s = DocValues.getSorted(getOnlySegmentReader(r), "field");
-
-    BytesRef bytes1 = s.get(0);
+    BinaryDocValues s = DocValues.getBinary(getOnlyLeafReader(r), "field");
+    assertEquals(0, s.nextDoc());
+    BytesRef bytes1 = s.binaryValue();
     assertEquals(bytes.length, bytes1.length);
     bytes[0] = 0;
     assertEquals(b, bytes1);
     
-    bytes1 = s.get(1);
+    assertEquals(1, s.nextDoc());
+    bytes1 = s.binaryValue();
     assertEquals(bytes.length, bytes1.length);
     bytes[0] = 1;
     assertEquals(b, bytes1);
@@ -199,19 +205,19 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       writer.addDocument(doc);
     }
     DirectoryReader r = writer.getReader();
-    LeafReader slow = SlowCompositeReaderWrapper.wrap(r);
-    FieldInfos fi = slow.getFieldInfos();
+    FieldInfos fi = MultiFields.getMergedFieldInfos(r);
     FieldInfo dvInfo = fi.fieldInfo("dv");
     assertTrue(dvInfo.getDocValuesType() != DocValuesType.NONE);
-    NumericDocValues dv = slow.getNumericDocValues("dv");
+    NumericDocValues dv = MultiDocValues.getNumericValues(r, "dv");
     for (int i = 0; i < 50; i++) {
-      assertEquals(i, dv.get(i));
-      Document d = slow.document(i);
+      assertEquals(i, dv.nextDoc());
+      assertEquals(i, dv.longValue());
+      Document d = r.document(i);
       // cannot use d.get("dv") due to another bug!
       assertNull(d.getField("dv"));
       assertEquals(Integer.toString(i), d.get("docId"));
     }
-    slow.close();
+    r.close();
     writer.close();
     dir.close();
   }
@@ -816,9 +822,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     LeafReader subR = r.leaves().get(0).reader();
     assertEquals(2, subR.numDocs());
 
-    Bits bits = DocValues.getDocsWithField(subR, "dv");
-    assertTrue(bits.get(0));
-    assertTrue(bits.get(1));
     r.close();
     dir.close();
   }

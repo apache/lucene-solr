@@ -82,7 +82,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
 
   // There are lots of assumptions about how/when cache entries should be changed in this method. The
   // simple case above shows the root problem without the confusion. testFilterSimpleCase should be
-  // removed once it is running and this test should be un-ignored and the assumptiions verified.
+  // removed once it is running and this test should be un-ignored and the assumptions verified.
   // With all the weirdness, I'm not going to vouch for this test. Feel free to change it.
   @Test
   public void testCacheAssumptions() throws Exception {

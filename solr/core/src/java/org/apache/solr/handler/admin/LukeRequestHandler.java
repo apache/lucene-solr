@@ -58,6 +58,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -340,7 +341,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       fields = new TreeSet<>(Arrays.asList(fl.split( "[,\\s]+" )));
     }
 
-    LeafReader reader = searcher.getLeafReader();
+    LeafReader reader = searcher.getSlowAtomicReader();
     IndexSchema schema = searcher.getSchema();
 
     // Don't be tempted to put this in the loop below, the whole point here is to alphabetize the fields!
@@ -474,6 +475,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     finfo.add("uniqueKeyField",
         null == uniqueField ? null : uniqueField.getName());
     finfo.add("defaultSearchField", schema.getDefaultSearchFieldName());
+    finfo.add("similarity", getSimilarityInfo(schema.getSimilarity()));
     finfo.add("types", types);
     return finfo;
   }
@@ -576,13 +578,13 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
     indexInfo.add("segmentCount", reader.leaves().size());
-    indexInfo.add("current", reader.isCurrent() );
+    indexInfo.add("current", closeSafe( reader::isCurrent));
     indexInfo.add("hasDeletions", reader.hasDeletions() );
     indexInfo.add("directory", dir );
     IndexCommit indexCommit = reader.getIndexCommit();
     String segmentsFileName = indexCommit.getSegmentsFileName();
     indexInfo.add("segmentsFile", segmentsFileName);
-    indexInfo.add("segmentsFileSizeInBytes", indexCommit.getDirectory().fileLength(segmentsFileName));
+    indexInfo.add("segmentsFileSizeInBytes", getFileLength(indexCommit.getDirectory(), segmentsFileName));
     Map<String,String> userData = indexCommit.getUserData();
     indexInfo.add("userData", userData);
     String s = userData.get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
@@ -590,6 +592,31 @@ public class LukeRequestHandler extends RequestHandlerBase
       indexInfo.add("lastModified", new Date(Long.parseLong(s)));
     }
     return indexInfo;
+  }
+
+  @FunctionalInterface
+  interface IOSupplier {
+    boolean get() throws IOException;
+  }
+  
+  private static Object closeSafe(IOSupplier isCurrent) {
+    try {
+      return isCurrent.get();
+    }catch(AlreadyClosedException | IOException exception) {
+    }
+    return false;
+  }
+
+
+
+  private static long getFileLength(Directory dir, String filename) {
+    try {
+      return dir.fileLength(filename);
+    } catch (IOException e) {
+      // Whatever the error is, only log it and return -1.
+      log.warn("Error getting file length for [{}]", filename, e);
+      return -1;
+    }
   }
 
   /** Returns the sum of RAM bytes used by each segment */

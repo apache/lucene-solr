@@ -16,19 +16,8 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.CommonParams;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -39,8 +28,22 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
+import org.apache.http.client.HttpClient;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -111,11 +114,16 @@ public class SolrEntityProcessor extends EntityProcessorBase {
       // (wt="javabin|xml") default is javabin
       if ("xml".equals(context.getResolvedEntityAttribute(CommonParams.WT))) {
         // TODO: it doesn't matter for this impl when passing a client currently, but we should close this!
-        solrClient = new HttpSolrClient(url.toExternalForm(), client, new XMLResponseParser());
+        solrClient = new Builder(url.toExternalForm())
+            .withHttpClient(client)
+            .withResponseParser(new XMLResponseParser())
+            .build();
         LOG.info("using XMLResponseParser");
       } else {
         // TODO: it doesn't matter for this impl when passing a client currently, but we should close this!
-        solrClient = new HttpSolrClient(url.toExternalForm(), client);
+        solrClient = new Builder(url.toExternalForm())
+            .withHttpClient(client)
+            .build();
         LOG.info("using BinaryResponseParser");
       }
     } catch (MalformedURLException e) {
@@ -133,81 +141,53 @@ public class SolrEntityProcessor extends EntityProcessorBase {
    * The following method changes the rowIterator mutable field. It requires
    * external synchronization. 
    */
-  private void buildIterator() {
+  protected void buildIterator() {
     if (rowIterator != null)  {
       SolrDocumentListIterator documentListIterator = (SolrDocumentListIterator) rowIterator;
       if (!documentListIterator.hasNext() && documentListIterator.hasMoreRows()) {
-        SolrDocumentList solrDocumentList = doQuery(documentListIterator
-            .getStart() + documentListIterator.getSize());
-        if (solrDocumentList != null) {
-          rowIterator = new SolrDocumentListIterator(solrDocumentList);
-        }
+        nextPage();
       }
-    } else  {
-      SolrDocumentList solrDocumentList = doQuery(0);
-      if (solrDocumentList != null) {
-        rowIterator = new SolrDocumentListIterator(solrDocumentList);
-      }
-      return;
+    } else {
+      Boolean cursor = new Boolean(context
+          .getResolvedEntityAttribute(CursorMarkParams.CURSOR_MARK_PARAM));
+      rowIterator = !cursor ? new SolrDocumentListIterator(new SolrDocumentList())
+          : new SolrDocumentListCursor(new SolrDocumentList(), CursorMarkParams.CURSOR_MARK_START);
+      nextPage();
     }
   }
   
-  protected SolrDocumentList doQuery(int start) {
-    this.queryString = context.getResolvedEntityAttribute(QUERY);
-    if (this.queryString == null) {
-      throw new DataImportHandlerException(
-          DataImportHandlerException.SEVERE,
-          "SolrEntityProcessor: parameter 'query' is required"
-      );
-    }
+  protected void nextPage() {
+    ((SolrDocumentListIterator)rowIterator).doQuery();
+  }
 
-    String rowsP = context.getResolvedEntityAttribute(CommonParams.ROWS);
-    if (rowsP != null) {
-      rows = Integer.parseInt(rowsP);
-    }
-
-    String fqAsString = context.getResolvedEntityAttribute(CommonParams.FQ);
-    if (fqAsString != null) {
-      this.filterQueries = fqAsString.split(",");
-    }
-
-    String fieldsAsString = context.getResolvedEntityAttribute(CommonParams.FL);
-    if (fieldsAsString != null) {
-      this.fields = fieldsAsString.split(",");
-    }
-    this.requestHandler = context.getResolvedEntityAttribute(CommonParams.QT);
-    String timeoutAsString = context.getResolvedEntityAttribute(TIMEOUT);
-    if (timeoutAsString != null) {
-      this.timeout = Integer.parseInt(timeoutAsString);
-    }
-
-    SolrQuery solrQuery = new SolrQuery(queryString);
-    solrQuery.setRows(rows);
-    solrQuery.setStart(start);
-    if (fields != null) {
-      for (String field : fields) {
-        solrQuery.addField(field);
-      }
-    }
-    solrQuery.setRequestHandler(requestHandler);
-    solrQuery.setFilterQueries(filterQueries);
-    solrQuery.setTimeAllowed(timeout * 1000);
+  class SolrDocumentListCursor extends SolrDocumentListIterator {
     
-    QueryResponse response = null;
-    try {
-      response = solrClient.query(solrQuery);
-    } catch (SolrServerException | IOException e) {
-      if (ABORT.equals(onError)) {
-        wrapAndThrow(SEVERE, e);
-      } else if (SKIP.equals(onError)) {
-        wrapAndThrow(DataImportHandlerException.SKIP_ROW, e);
+    private final String cursorMark;
+
+    public SolrDocumentListCursor(SolrDocumentList solrDocumentList, String cursorMark) {
+      super(solrDocumentList);
+      this.cursorMark = cursorMark;
+    }
+
+    @Override
+    protected void passNextPage(SolrQuery solrQuery) {
+      String timeoutAsString = context.getResolvedEntityAttribute(TIMEOUT);
+      if (timeoutAsString != null) {
+        throw new DataImportHandlerException(SEVERE,"cursorMark can't be used with timeout");
       }
+      
+      solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
     }
     
-    return response == null ? null : response.getResults();
+    @Override
+    protected Iterator<Map<String,Object>> createNextPageIterator(QueryResponse response) {
+      return
+          new SolrDocumentListCursor(response.getResults(),
+              response.getNextCursorMark()) ;
+    }
   }
   
-  private static class SolrDocumentListIterator implements Iterator<Map<String,Object>> {
+  class SolrDocumentListIterator implements Iterator<Map<String,Object>> {
     
     private final int start;
     private final int size;
@@ -224,6 +204,84 @@ public class SolrEntityProcessor extends EntityProcessorBase {
       this.size = solrDocumentList.size();
     }
 
+    protected QueryResponse doQuery() {
+      SolrEntityProcessor.this.queryString = context.getResolvedEntityAttribute(QUERY);
+      if (SolrEntityProcessor.this.queryString == null) {
+        throw new DataImportHandlerException(
+            DataImportHandlerException.SEVERE,
+            "SolrEntityProcessor: parameter 'query' is required"
+        );
+      }
+
+      String rowsP = context.getResolvedEntityAttribute(CommonParams.ROWS);
+      if (rowsP != null) {
+        rows = Integer.parseInt(rowsP);
+      }
+
+      String sortParam = context.getResolvedEntityAttribute(CommonParams.SORT);
+      
+      String fqAsString = context.getResolvedEntityAttribute(CommonParams.FQ);
+      if (fqAsString != null) {
+        SolrEntityProcessor.this.filterQueries = fqAsString.split(",");
+      }
+
+      String fieldsAsString = context.getResolvedEntityAttribute(CommonParams.FL);
+      if (fieldsAsString != null) {
+        SolrEntityProcessor.this.fields = fieldsAsString.split(",");
+      }
+      SolrEntityProcessor.this.requestHandler = context.getResolvedEntityAttribute(CommonParams.QT);
+     
+
+      SolrQuery solrQuery = new SolrQuery(queryString);
+      solrQuery.setRows(rows);
+      
+      if (sortParam!=null) {
+        solrQuery.setParam(CommonParams.SORT, sortParam);
+      }
+      
+      passNextPage(solrQuery);
+      
+      if (fields != null) {
+        for (String field : fields) {
+          solrQuery.addField(field);
+        }
+      }
+      solrQuery.setRequestHandler(requestHandler);
+      solrQuery.setFilterQueries(filterQueries);
+      
+      
+      QueryResponse response = null;
+      try {
+        response = solrClient.query(solrQuery);
+      } catch (SolrServerException | IOException | SolrException e) {
+        if (ABORT.equals(onError)) {
+          wrapAndThrow(SEVERE, e);
+        } else if (SKIP.equals(onError)) {
+          wrapAndThrow(DataImportHandlerException.SKIP_ROW, e);
+        }
+      }
+      
+      if (response != null) {
+        SolrEntityProcessor.this.rowIterator = createNextPageIterator(response);
+      }
+      return response;
+    }
+
+    protected Iterator<Map<String,Object>> createNextPageIterator(QueryResponse response) {
+      return new SolrDocumentListIterator(response.getResults());
+    }
+
+    protected void passNextPage(SolrQuery solrQuery) {
+      String timeoutAsString = context.getResolvedEntityAttribute(TIMEOUT);
+      if (timeoutAsString != null) {
+        SolrEntityProcessor.this.timeout = Integer.parseInt(timeoutAsString);
+      }
+      
+      solrQuery.setTimeAllowed(timeout * 1000);
+      
+      solrQuery.setStart(getStart() + getSize());
+    }
+    
     @Override
     public boolean hasNext() {
       return solrDocumentIterator.hasNext();

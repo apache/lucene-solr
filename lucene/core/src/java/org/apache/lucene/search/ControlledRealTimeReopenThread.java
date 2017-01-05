@@ -23,16 +23,11 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.TrackingIndexWriter;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /** Utility class that runs a thread to manage periodicc
  *  reopens of a {@link ReferenceManager}, with methods to wait for a specific
- *  index changes to become visible.  To use this class you
- *  must first wrap your {@link IndexWriter} with a {@link
- *  TrackingIndexWriter} and always use it to make changes
- *  to the index, saving the returned generation.  Then,
- *  when a given search request needs to see a specific
+ *  index changes to become visible.  When a given search request needs to see a specific
  *  index change, call the {#waitForGeneration} to wait for
  *  that change to be visible.  Note that this will only
  *  scale well if most searches do not need to wait for a
@@ -44,7 +39,7 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
   private final ReferenceManager<T> manager;
   private final long targetMaxStaleNS;
   private final long targetMinStaleNS;
-  private final TrackingIndexWriter writer;
+  private final IndexWriter writer;
   private volatile boolean finish;
   private volatile long waitingGen;
   private volatile long searchingGen;
@@ -69,7 +64,7 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
    *        is waiting for a specific generation to
    *        become visible.
    */
-  public ControlledRealTimeReopenThread(TrackingIndexWriter writer, ReferenceManager<T> manager, double targetMaxStaleSec, double targetMinStaleSec) {
+  public ControlledRealTimeReopenThread(IndexWriter writer, ReferenceManager<T> manager, double targetMaxStaleSec, double targetMinStaleSec) {
     if (targetMaxStaleSec < targetMinStaleSec) {
       throw new IllegalArgumentException("targetMaxScaleSec (= " + targetMaxStaleSec + ") < targetMinStaleSec (=" + targetMinStaleSec + ")");
     }
@@ -155,10 +150,6 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
    *         or false if maxMS wait time was exceeded
    */
   public synchronized boolean waitForGeneration(long targetGen, int maxMS) throws InterruptedException {
-    final long curGen = writer.getGeneration();
-    if (targetGen > curGen) {
-      throw new IllegalArgumentException("targetGen=" + targetGen + " was never returned by the ReferenceManager instance (current gen=" + curGen + ")");
-    }
     if (targetGen > searchingGen) {
       // Notify the reopen thread that the waitingGen has
       // changed, so it may wake up and realize it should
@@ -240,7 +231,7 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
       // Save the gen as of when we started the reopen; the
       // listener (HandleRefresh above) copies this to
       // searchingGen once the reopen completes:
-      refreshStartGen = writer.getAndIncrementGeneration();
+      refreshStartGen = writer.getMaxCompletedSequenceNumber();
       try {
         manager.maybeRefreshBlocking();
       } catch (IOException ioe) {
