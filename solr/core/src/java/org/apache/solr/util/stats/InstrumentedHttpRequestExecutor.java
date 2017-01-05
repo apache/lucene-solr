@@ -78,7 +78,9 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
       String schemeHostPort = null;
       if (request instanceof HttpRequestWrapper) {
         HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
-        schemeHostPort = wrapper.getTarget().getSchemeName() + "://" + wrapper.getTarget().getHostName() + ":" +  wrapper.getTarget().getPort();
+        if (wrapper.getTarget() != null)  {
+          schemeHostPort = wrapper.getTarget().getSchemeName() + "://" + wrapper.getTarget().getHostName() + ":" +  wrapper.getTarget().getPort();
+        }
       }
       final URIBuilder url = new URIBuilder(requestLine.getUri());
       return SolrMetricManager.mkName((schemeHostPort != null ? schemeHostPort : "") + url.removeQuery().build().toString() + "." + methodNameString(request), scope);
