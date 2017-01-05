@@ -190,7 +190,7 @@ New Features
 
 * SOLR-9812: SOLR-9911: Added a new /admin/metrics API to return all metrics collected by Solr via API.
   API supports three optional parameters:
-  * 'group' (all,jvm,jetty,http,node,core),
+  * 'group' (all,jvm,jetty,node,core),
   * 'type' (all,counter,timer,gauge,histogram) both of which are multi-valued
   * 'prefix' that filters the returned metrics
   Example: http://localhost:8983/solr/admin/metrics?group=jvm,jetty&type=counter
