@@ -201,7 +201,7 @@ New Features
 
 * SOLR-9725: Substitute properties into JdbcDataSource configuration ( Jamie Jackson, Yuri Sashevsky via Mikhail Khludnev)
 
-* SOLR-9877: Use instrumented http client and connection pool. (shalin)
+* SOLR-9877: SOLR-9923: Use instrumented http client and connection pool. (shalin)
 
 * SOLR-9880: Add Ganglia, Graphite and SLF4J metrics reporters. (ab)
 

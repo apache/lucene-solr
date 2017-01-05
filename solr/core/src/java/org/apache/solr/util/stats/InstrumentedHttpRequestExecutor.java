@@ -44,7 +44,7 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
   protected String scope;
 
   private static String methodNameString(HttpRequest request) {
-    return request.getRequestLine().getMethod().toLowerCase(Locale.ROOT) + "-requests";
+    return request.getRequestLine().getMethod().toLowerCase(Locale.ROOT) + ".requests";
   }
 
   @Override

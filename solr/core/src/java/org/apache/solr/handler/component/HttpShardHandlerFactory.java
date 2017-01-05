@@ -35,6 +35,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -363,10 +364,11 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    clientConnectionManager.initializeMetrics(manager, registry, scope);
-    httpRequestExecutor.initializeMetrics(manager, registry, scope);
+    String expandedScope = SolrMetricManager.mkName(scope, SolrInfoMBean.Category.HTTP.name());
+    clientConnectionManager.initializeMetrics(manager, registry, expandedScope);
+    httpRequestExecutor.initializeMetrics(manager, registry, expandedScope);
     commExecutor = MetricUtils.instrumentedExecutorService(commExecutor,
         manager.registry(registry),
-        SolrMetricManager.mkName("httpShardExecutor", scope, "threadPool"));
+        SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
   }
 }
