@@ -870,6 +870,33 @@ public class TestJsonFacets extends SolrTestCaseHS {
             " }"
     );
 
+
+    // stats at top level, matching documents, but no values in the field
+    // NOTE: this represents the current state of what is returned, not the ultimate desired state.
+    client.testJQ(params(p, "q", "id:3"
+        , "json.facet", "{ sum1:'sum(${num_d})', sumsq1:'sumsq(${num_d})', avg1:'avg(${num_d})', min1:'min(${num_d})', max1:'max(${num_d})'" +
+            ", numwhere:'unique(${where_s})', unique_num_i:'unique(${num_i})', unique_num_d:'unique(${num_d})', unique_date:'unique(${date})'" +
+            ", where_hll:'hll(${where_s})', hll_num_i:'hll(${num_i})', hll_num_d:'hll(${num_d})', hll_date:'hll(${date})'" +
+            ", med:'percentile(${num_d},50)', perc:'percentile(${num_d},0,50.0,100)' }"
+        )
+        , "facets=={count:1 " +
+            ",sum1:0.0," +
+            " sumsq1:0.0," +
+            " avg1:0.0," +   // TODO: undesirable. omit?
+            " min1:'NaN'," + // TODO: undesirable. omit?
+            " max1:'NaN'," +
+            " numwhere:0," +
+            " unique_num_i:0," +
+            " unique_num_d:0," +
+            " unique_date:0," +
+            " where_hll:0," +
+            " hll_num_i:0," +
+            " hll_num_d:0," +
+            " hll_date:0" +
+            " }"
+    );
+
+
     //
     // tests on a multi-valued field with actual multiple values, just to ensure that we are
     // using a multi-valued method for the rest of the tests when appropriate.
