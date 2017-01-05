@@ -332,6 +332,9 @@ Bug Fixes
 * SOLR-9917: JSON Facet API percentile function caused a NullPointerException in distributed mode when
   there were no values in a bucket from a shard. (yonik)
 
+* SOLR-9931: JSON Facet API hll (hyper-log-log) function returned 0 for non-empty buckets with no field values
+  in local mode, but nothing for distributed mode.  Both modes now return 0.  (yonik)
+
 Other Changes
 ----------------------
 

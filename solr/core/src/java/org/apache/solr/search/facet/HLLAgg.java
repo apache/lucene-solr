@@ -27,6 +27,8 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 
 public class HLLAgg extends StrAggValueSource {
+  public static Integer NO_VALUES = 0;
+
   protected HLLFactory factory;
 
   public HLLAgg(String field) {
@@ -71,10 +73,15 @@ public class HLLAgg extends StrAggValueSource {
 
   private static class Merger extends FacetSortableMerger {
     HLL aggregate = null;
-    long answer = -1;
+    long answer = -1; // -1 means unset
 
     @Override
     public void merge(Object facetResult, Context mcontext) {
+      if (facetResult instanceof Number) {
+        assert NO_VALUES.equals(facetResult);
+        return;
+      }
+
       SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
       byte[] serialized = ((byte[])map.get("hll"));
       HLL subHLL = HLL.fromBytes(serialized);
@@ -87,7 +94,7 @@ public class HLLAgg extends StrAggValueSource {
 
     private long getLong() {
       if (answer < 0) {
-        answer = aggregate.cardinality();
+        answer = aggregate == null ? 0 : aggregate.cardinality();
       }
       return answer;
     }
@@ -170,7 +177,7 @@ public class HLLAgg extends StrAggValueSource {
 
     public Object getShardValue(int slot) throws IOException {
       HLL hll = sets[slot];
-      if (hll == null) return null;
+      if (hll == null) return NO_VALUES;
       SimpleOrderedMap map = new SimpleOrderedMap();
       map.add("hll", hll.toBytes());
       // optionally use explicit values
