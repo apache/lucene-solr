@@ -63,7 +63,7 @@ Upgrade Notes
   risk in overlapping commits.  Nonetheless users should continue to avoid excessive committing. Users are
   advised to remove any pre-existing maxWarmingSearchers entries from their solrconfig.xml files.
 
-* SOLR-7466: complexphrase query parser now supports leading wildcards. Beware of its' possible heaviness. 
+* SOLR-7466: complexphrase query parser now supports leading wildcards. Beware of its' possible heaviness.
   Users are encouraged to use ReversedWildcardFilter in index time analysis.    
 
 New Features
@@ -158,11 +158,11 @@ New Features
 
 * SOLR-8530: Add HavingStream to Streaming API and StreamingExpressions (Joel Bernstein)
 
-* SOLR-9877: Use instrumented http client and connection pool. (shalin)
+* SOLR-9877: SOLR-9923: Use instrumented http client and connection pool. (shalin)
 
 * SOLR-9896: Instrument and collect metrics from query, update, core admin and core load thread pools. (shalin)
 
-* SOLR-7466: Enable leading wildcard in complexphrase query parser, optimize it with  ReversedWildcardFilterFactory 
+* SOLR-7466: Enable leading wildcard in complexphrase query parser, optimize it with  ReversedWildcardFilterFactory
   when it's provided (Mikhail Khludnev)
 
 Optimizations

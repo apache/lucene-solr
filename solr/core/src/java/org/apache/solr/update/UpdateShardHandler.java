@@ -122,17 +122,18 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    clientConnectionManager.initializeMetrics(manager, registry, scope);
+    String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
+    clientConnectionManager.initializeMetrics(manager, registry, expandedScope);
     if (client instanceof SolrMetricProducer) {
       SolrMetricProducer solrMetricProducer = (SolrMetricProducer) client;
-      solrMetricProducer.initializeMetrics(manager, registry, scope);
+      solrMetricProducer.initializeMetrics(manager, registry, expandedScope);
     }
     updateExecutor = new InstrumentedExecutorService(updateExecutor,
         manager.registry(registry),
-        SolrMetricManager.mkName("updateExecutor", scope, "threadPool"));
+        SolrMetricManager.mkName("updateExecutor", expandedScope, "threadPool"));
     recoveryExecutor = new InstrumentedExecutorService(recoveryExecutor,
         manager.registry(registry),
-        SolrMetricManager.mkName("recoveryExecutor", scope, "threadPool"));
+        SolrMetricManager.mkName("recoveryExecutor", expandedScope, "threadPool"));
   }
 
   @Override
@@ -142,7 +143,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
 
   @Override
   public Category getCategory() {
-    return null;
+    return Category.HTTP;
   }
 
   @Override

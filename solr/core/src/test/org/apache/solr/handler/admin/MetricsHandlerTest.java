@@ -42,10 +42,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     NamedList values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
-    System.out.println(values);
     assertNotNull(values.get("solr.jetty"));
     assertNotNull(values.get("solr.jvm"));
-    assertNotNull(values.get("solr.http"));
     assertNotNull(values.get("solr.node"));
     NamedList nl = (NamedList) values.get("solr.core.collection1");
     assertNotNull(nl);
@@ -100,9 +98,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
-    assertEquals(5, values.size());
+    assertEquals(4, values.size());
     assertEquals(0, ((NamedList)values.get("solr.jvm")).size());
-    assertEquals(0, ((NamedList)values.get("solr.http")).size());
     assertEquals(0, ((NamedList)values.get("solr.jetty")).size());
     assertEquals(0, ((NamedList)values.get("solr.core.collection1")).size());
     assertEquals(3, ((NamedList)values.get("solr.node")).size());
