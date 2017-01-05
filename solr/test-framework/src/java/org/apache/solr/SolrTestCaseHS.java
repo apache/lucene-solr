@@ -364,6 +364,10 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     public List<SolrClient> all() {
       return clients;
     }
+
+    public int getSeed() {
+      return hashSeed;
+    }
   }
 
 
