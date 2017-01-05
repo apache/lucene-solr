@@ -384,7 +384,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         "*[count(//doc)=5]"
     );
     assertQ(
-        "Return two facet counts for field airport_a",
+        "Return two facet counts for field airport_a and duration_i1",
          req(
              "q", "*:*",
              "fq", "id:[2000 TO 2004]",
@@ -393,12 +393,18 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
              "group.field", "hotel_s1",
              "facet", "true",
              "facet.limit", facetLimit,
-             "facet.field", "airport_s1"
+             "facet.field", "airport_s1",
+             "facet.field", "duration_i1"
          ),
         "//lst[@name='facet_fields']/lst[@name='airport_s1']",
         "*[count(//lst[@name='airport_s1']/int)=2]",
         "//lst[@name='airport_s1']/int[@name='ams'][.='2']",
-        "//lst[@name='airport_s1']/int[@name='dus'][.='1']"
+        "//lst[@name='airport_s1']/int[@name='dus'][.='1']",
+
+        "//lst[@name='facet_fields']/lst[@name='duration_i1']",
+        "*[count(//lst[@name='duration_i1']/int)=2]",
+        "//lst[@name='duration_i1']/int[@name='5'][.='2']",
+        "//lst[@name='duration_i1']/int[@name='10'][.='2']"
     );
     assertQ(
         "Return one facet count for field airport_a using facet.offset",

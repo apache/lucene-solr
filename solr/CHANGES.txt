@@ -327,6 +327,8 @@ Bug Fixes
 
 * SOLR-9919: random Streaming Expression is not registered in /stream or /graph handler (Joel Bernstein)
 
+* SOLR-7495: Support Facet.field on a non-DocValued, single-value, int field (Varun Thacker, Scott Stults)
+
 Other Changes
 ----------------------
 
