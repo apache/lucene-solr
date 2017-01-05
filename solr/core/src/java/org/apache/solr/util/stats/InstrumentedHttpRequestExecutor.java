@@ -28,8 +28,8 @@ import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.RequestLine;
-import org.apache.http.client.methods.HttpRequestWrapper;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.EntityEnclosingRequestWrapper;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -74,14 +74,15 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
 
   private String getNameFor(HttpRequest request) {
     try {
-      final RequestLine requestLine = request.getRequestLine();
-      String schemeHostPort = null;
-      if (request instanceof HttpRequestWrapper) {
-        HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
-        schemeHostPort = wrapper.getTarget().getSchemeName() + "://" + wrapper.getTarget().getHostName() + ":" +  wrapper.getTarget().getPort();
+      RequestLine requestLine = request.getRequestLine();
+      if (request instanceof EntityEnclosingRequestWrapper) {
+        EntityEnclosingRequestWrapper wrapper = (EntityEnclosingRequestWrapper) request;
+        if (wrapper.getOriginal() != null)  {
+          requestLine = wrapper.getOriginal().getRequestLine();
+        }
       }
       final URIBuilder url = new URIBuilder(requestLine.getUri());
-      return SolrMetricManager.mkName((schemeHostPort != null ? schemeHostPort : "") + url.removeQuery().build().toString() + "." + methodNameString(request), scope);
+      return SolrMetricManager.mkName(url.removeQuery().build().toString() + "." + methodNameString(request), scope);
     } catch (URISyntaxException e) {
       throw new IllegalArgumentException(e);
     }
