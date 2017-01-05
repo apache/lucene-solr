@@ -187,6 +187,14 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
   }
 
   @Override
+  public void renameWithOverwrite(Directory dir, String fileName, String toName) throws IOException {
+    if (dir instanceof MetricsDirectory) {
+      dir = ((MetricsDirectory) dir).getDelegate();
+    }
+    in.renameWithOverwrite(dir, fileName, toName);
+  }
+
+  @Override
   public Directory get(String path, DirContext dirContext, String rawLockType) throws IOException {
     Directory dir = in.get(path, dirContext, rawLockType);
     if (dir instanceof MetricsDirectory) {
