@@ -329,6 +329,9 @@ Bug Fixes
 
 * SOLR-7495: Support Facet.field on a non-DocValued, single-value, int field (Varun Thacker, Scott Stults)
 
+* SOLR-9917: JSON Facet API percentile function caused a NullPointerException in distributed mode when
+  there were no values in a bucket from a shard. (yonik)
+
 Other Changes
 ----------------------
 
