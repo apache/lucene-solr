@@ -198,6 +198,9 @@ Improvements
 * LUCENE-7401: Changed the way BKD trees pick the split dimension in order to
   ensure all dimensions are indexed. (Adrien Grand)
 
+* LUCENE-7614: Complex Phrase Query parser ignores double quotes around single token 
+  prefix, wildcard, range queries (Mikhail Khludnev) 
+
 Optimizations
 
 * LUCENE-7568: Optimize merging when index sorting is used but the
