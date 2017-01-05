@@ -64,6 +64,9 @@ public class MoreLikeThisComponent extends SearchComponent {
   
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
+    if (rb.req.getParams().getBool(MoreLikeThisParams.MLT, false)) {
+      rb.setNeedDocList(true);
+    }
     
   }
   

@@ -82,6 +82,7 @@ public class DebugComponent extends SearchComponent
   public void prepare(ResponseBuilder rb) throws IOException
   {
     if(rb.isDebugTrack() && rb.isDistrib) {
+      rb.setNeedDocList(true);
       doDebugTrack(rb);
     }
   }

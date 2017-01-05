@@ -330,6 +330,9 @@ Other Changes
 
 * SOLR-3990: Moves getIndexSize() from ReplicationHandler to SolrCore (Shawn Heisey)
 
+* SOLR-5616: Simplifies grouping code to use ResponseBuilder.needDocList() to determine if it needs to
+  generate a doc list for grouped results. (Steven Bower, Keith Laban, Dennis Gove)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
