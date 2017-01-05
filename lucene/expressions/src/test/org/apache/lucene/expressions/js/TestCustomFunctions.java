@@ -50,7 +50,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   public void testDefaultList() throws Exception {
     Map<String,Method> functions = JavascriptCompiler.DEFAULT_FUNCTIONS;
     Expression expr = JavascriptCompiler.compile("sqrt(20)", functions, getClass().getClassLoader());
-    assertEquals(Math.sqrt(20), expr.evaluate(0, null), DELTA);
+    assertEquals(Math.sqrt(20), expr.evaluate(null), DELTA);
   }
   
   public static double zeroArgMethod() { return 5; }
@@ -60,7 +60,7 @@ public class TestCustomFunctions extends LuceneTestCase {
     Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getMethod("zeroArgMethod"));
     Expression expr = JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
-    assertEquals(5, expr.evaluate(0, null), DELTA);
+    assertEquals(5, expr.evaluate(null), DELTA);
   }
 
   public static double oneArgMethod(double arg1) { return 3 + arg1; }
@@ -70,7 +70,7 @@ public class TestCustomFunctions extends LuceneTestCase {
     Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getMethod("oneArgMethod", double.class));
     Expression expr = JavascriptCompiler.compile("foo(3)", functions, getClass().getClassLoader());
-    assertEquals(6, expr.evaluate(0, null), DELTA);
+    assertEquals(6, expr.evaluate(null), DELTA);
   }
   
   public static double threeArgMethod(double arg1, double arg2, double arg3) { return arg1 + arg2 + arg3; }
@@ -80,7 +80,7 @@ public class TestCustomFunctions extends LuceneTestCase {
     Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getMethod("threeArgMethod", double.class, double.class, double.class));
     Expression expr = JavascriptCompiler.compile("foo(3, 4, 5)", functions, getClass().getClassLoader());
-    assertEquals(12, expr.evaluate(0, null), DELTA);
+    assertEquals(12, expr.evaluate(null), DELTA);
   }
   
   /** tests a map with 2 functions */
@@ -89,7 +89,7 @@ public class TestCustomFunctions extends LuceneTestCase {
     functions.put("foo", getClass().getMethod("zeroArgMethod"));
     functions.put("bar", getClass().getMethod("oneArgMethod", double.class));
     Expression expr = JavascriptCompiler.compile("foo() + bar(3)", functions, getClass().getClassLoader());
-    assertEquals(11, expr.evaluate(0, null), DELTA);
+    assertEquals(11, expr.evaluate(null), DELTA);
   }
 
   /** tests invalid methods that are not allowed to become variables to be mapped */
@@ -220,7 +220,7 @@ public class TestCustomFunctions extends LuceneTestCase {
     
     // this should pass:
     Expression expr = JavascriptCompiler.compile("bar()", functions, childLoader);
-    assertEquals(2.0, expr.evaluate(0, null), DELTA);
+    assertEquals(2.0, expr.evaluate(null), DELTA);
     
     // use our classloader, not the foreign one, which should fail!
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
@@ -232,9 +232,9 @@ public class TestCustomFunctions extends LuceneTestCase {
     Map<String,Method> mixedFunctions = new HashMap<>(JavascriptCompiler.DEFAULT_FUNCTIONS);
     mixedFunctions.putAll(functions);
     expr = JavascriptCompiler.compile("bar()", mixedFunctions, childLoader);
-    assertEquals(2.0, expr.evaluate(0, null), DELTA);
+    assertEquals(2.0, expr.evaluate(null), DELTA);
     expr = JavascriptCompiler.compile("sqrt(20)", mixedFunctions, childLoader);
-    assertEquals(Math.sqrt(20), expr.evaluate(0, null), DELTA);
+    assertEquals(Math.sqrt(20), expr.evaluate(null), DELTA);
     
     // use our classloader, not the foreign one, which should fail!
     expected = expectThrows(IllegalArgumentException.class, () -> {
@@ -256,7 +256,7 @@ public class TestCustomFunctions extends LuceneTestCase {
     String source = "3 * foo() / 5";
     Expression expr = JavascriptCompiler.compile(source, functions, getClass().getClassLoader());
     ArithmeticException expected = expectThrows(ArithmeticException.class, () -> {
-      expr.evaluate(0, null);
+      expr.evaluate(null);
     });
     assertEquals(MESSAGE, expected.getMessage());
     StringWriter sw = new StringWriter();
@@ -272,6 +272,6 @@ public class TestCustomFunctions extends LuceneTestCase {
     functions.put("foo.bar", getClass().getMethod("zeroArgMethod"));
     String source = "foo.bar()";
     Expression expr = JavascriptCompiler.compile(source, functions, getClass().getClassLoader());
-    assertEquals(5, expr.evaluate(0, null), DELTA);
+    assertEquals(5, expr.evaluate(null), DELTA);
   }
 }

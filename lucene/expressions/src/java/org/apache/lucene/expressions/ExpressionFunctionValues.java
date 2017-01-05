@@ -16,20 +16,16 @@
  */
 package org.apache.lucene.expressions;
 
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
+import java.io.IOException;
 
-/** A {@link FunctionValues} which evaluates an expression */
-class ExpressionFunctionValues extends DoubleDocValues {
+import org.apache.lucene.search.DoubleValues;
+
+/** A {@link DoubleValues} which evaluates an expression */
+class ExpressionFunctionValues extends DoubleValues {
   final Expression expression;
-  final FunctionValues[] functionValues;
+  final DoubleValues[] functionValues;
   
-  int currentDocument = -1;
-  double currentValue;
-  
-  ExpressionFunctionValues(ValueSource parent, Expression expression, FunctionValues[] functionValues) {
-    super(parent);
+  ExpressionFunctionValues(Expression expression, DoubleValues[] functionValues) {
     if (expression == null) {
       throw new NullPointerException();
     }
@@ -39,14 +35,17 @@ class ExpressionFunctionValues extends DoubleDocValues {
     this.expression = expression;
     this.functionValues = functionValues;
   }
+
+  @Override
+  public boolean advanceExact(int doc) throws IOException {
+    for (DoubleValues v : functionValues) {
+      v.advanceExact(doc);
+    }
+    return true;
+  }
   
   @Override
-  public double doubleVal(int document) {
-    if (currentDocument != document) {
-      currentDocument = document;
-      currentValue = expression.evaluate(document, functionValues);
-    }
-    
-    return currentValue;
+  public double doubleValue() {
+    return expression.evaluate(functionValues);
   }
 }

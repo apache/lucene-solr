@@ -74,6 +74,11 @@ API Changes
   grouping Collectors are renamed to remove the Abstract* prefix.
   (Alan Woodward, Martijn van Groningen)
 
+* LUCENE-7609: The expressions module now uses the DoubleValuesSource API, and 
+  no longer depends on the queries module.  Expression#getValueSource() is
+  replaced with Expression#getDoubleValuesSource(). (Alan Woodward, Adrien
+  Grand)
+
 New features
 
 * LUCENE-5867: Added BooleanSimilarity. (Robert Muir, Adrien Grand)

@@ -22,7 +22,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestJavascriptOperations extends LuceneTestCase {
   private void assertEvaluatesTo(String expression, long expected) throws Exception {
     Expression evaluator = JavascriptCompiler.compile(expression);
-    long actual = (long)evaluator.evaluate(0, null);
+    long actual = (long)evaluator.evaluate(null);
     assertEquals(expected, actual);
   }
   
