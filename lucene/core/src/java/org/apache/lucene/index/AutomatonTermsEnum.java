@@ -76,6 +76,9 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
    */
   public AutomatonTermsEnum(TermsEnum tenum, CompiledAutomaton compiled) {
     super(tenum);
+    if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
+      throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
+    }
     this.finite = compiled.finite;
     this.runAutomaton = compiled.runAutomaton;
     assert this.runAutomaton != null;
