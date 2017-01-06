@@ -79,6 +79,9 @@ API Changes
   replaced with Expression#getDoubleValuesSource(). (Alan Woodward, Adrien
   Grand)
 
+* LUCENE-7610: The facets module now uses the DoubleValuesSource API, and
+  methods that take ValueSource parameters are deprecated (Alan Woodward)
+
 New features
 
 * LUCENE-5867: Added BooleanSimilarity. (Robert Muir, Adrien Grand)

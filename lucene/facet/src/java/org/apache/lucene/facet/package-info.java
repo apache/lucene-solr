@@ -40,7 +40,7 @@
  * 
  *  <li> Range faceting {@link org.apache.lucene.facet.range.LongRangeFacetCounts}, {@link
  *       org.apache.lucene.facet.range.DoubleRangeFacetCounts} compute counts for a dynamic numeric
- *       range from a provided {@link org.apache.lucene.queries.function.ValueSource} (previously indexed
+ *       range from a provided {@link org.apache.lucene.search.LongValuesSource} (previously indexed
  *       numeric field, or a dynamic expression such as distance).
  * </ul>
  * <p>

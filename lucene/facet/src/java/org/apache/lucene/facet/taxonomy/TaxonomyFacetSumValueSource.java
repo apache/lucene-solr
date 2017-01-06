@@ -17,7 +17,6 @@
 package org.apache.lucene.facet.taxonomy;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +28,8 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.IntsRef;
 
@@ -39,52 +40,94 @@ import org.apache.lucene.util.IntsRef;
 public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {
   private final OrdinalsReader ordinalsReader;
 
-  /** Aggreggates float facet values from the provided
+  /**
+   * Aggreggates double facet values from the provided
    *  {@link ValueSource}, pulling ordinals using {@link
    *  DocValuesOrdinalsReader} against the default indexed
    *  facet field {@link
-   *  FacetsConfig#DEFAULT_INDEX_FIELD_NAME}. */
+   *  FacetsConfig#DEFAULT_INDEX_FIELD_NAME}.
+   *
+   *  @deprecated {@link #TaxonomyFacetSumValueSource(TaxonomyReader, FacetsConfig, FacetsCollector, DoubleValuesSource)}
+   */
+  @Deprecated
   public TaxonomyFacetSumValueSource(TaxonomyReader taxoReader, FacetsConfig config,
                                      FacetsCollector fc, ValueSource valueSource) throws IOException {
     this(new DocValuesOrdinalsReader(FacetsConfig.DEFAULT_INDEX_FIELD_NAME), taxoReader, config, fc, valueSource);
   }
 
-  /** Aggreggates float facet values from the provided
+  /**
+   * Aggreggates double facet values from the provided
+   * {@link DoubleValuesSource}, pulling ordinals using {@link
+   * DocValuesOrdinalsReader} against the default indexed
+   * facet field {@link FacetsConfig#DEFAULT_INDEX_FIELD_NAME}.
+   */
+   public TaxonomyFacetSumValueSource(TaxonomyReader taxoReader, FacetsConfig config,
+                                     FacetsCollector fc, DoubleValuesSource valueSource) throws IOException {
+    this(new DocValuesOrdinalsReader(FacetsConfig.DEFAULT_INDEX_FIELD_NAME), taxoReader, config, fc, valueSource);
+  }
+
+  /**
+   * Aggreggates float facet values from the provided
    *  {@link ValueSource}, and pulls ordinals from the
-   *  provided {@link OrdinalsReader}. */
+   *  provided {@link OrdinalsReader}.
+   *
+   *  @deprecated use {@link #TaxonomyFacetSumValueSource(OrdinalsReader, TaxonomyReader, FacetsConfig, FacetsCollector, DoubleValuesSource)}
+   */
+  @Deprecated
   public TaxonomyFacetSumValueSource(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader,
                                      FacetsConfig config, FacetsCollector fc, ValueSource valueSource) throws IOException {
     super(ordinalsReader.getIndexFieldName(), taxoReader, config);
     this.ordinalsReader = ordinalsReader;
-    sumValues(fc.getMatchingDocs(), fc.getKeepScores(), valueSource);
+    sumValues(fc.getMatchingDocs(), fc.getKeepScores(), valueSource.asDoubleValuesSource());
   }
 
-  private final void sumValues(List<MatchingDocs> matchingDocs, boolean keepScores, ValueSource valueSource) throws IOException {
-    final FakeScorer scorer = new FakeScorer();
-    Map<String, Scorer> context = new HashMap<>();
-    if (keepScores) {
-      context.put("scorer", scorer);
-    }
+  /**
+   * Aggreggates float facet values from the provided
+   *  {@link DoubleValuesSource}, and pulls ordinals from the
+   *  provided {@link OrdinalsReader}.
+   */
+   public TaxonomyFacetSumValueSource(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader,
+                                     FacetsConfig config, FacetsCollector fc, DoubleValuesSource vs) throws IOException {
+    super(ordinalsReader.getIndexFieldName(), taxoReader, config);
+    this.ordinalsReader = ordinalsReader;
+    sumValues(fc.getMatchingDocs(), fc.getKeepScores(), vs);
+  }
+
+  private static DoubleValues scores(MatchingDocs hits) {
+    return new DoubleValues() {
+
+      int index = -1;
+
+      @Override
+      public double doubleValue() throws IOException {
+        return hits.scores[index];
+      }
+
+      @Override
+      public boolean advanceExact(int doc) throws IOException {
+        index++;
+        return true;
+      }
+    };
+  }
+
+  private void sumValues(List<MatchingDocs> matchingDocs, boolean keepScores, DoubleValuesSource valueSource) throws IOException {
+
     IntsRef scratch = new IntsRef();
     for(MatchingDocs hits : matchingDocs) {
       OrdinalsReader.OrdinalsSegmentReader ords = ordinalsReader.getReader(hits.context);
-      
-      int scoresIdx = 0;
-      float[] scores = hits.scores;
-
-      FunctionValues functionValues = valueSource.getValues(context, hits.context);
+      DoubleValues scores = keepScores ? scores(hits) : null;
+      DoubleValues functionValues = valueSource.getValues(hits.context, scores);
       DocIdSetIterator docs = hits.bits.iterator();
       
       int doc;
       while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         ords.get(doc, scratch);
-        if (keepScores) {
-          scorer.doc = doc;
-          scorer.score = scores[scoresIdx++];
-        }
-        float value = (float) functionValues.doubleVal(doc);
-        for(int i=0;i<scratch.length;i++) {
-          values[scratch.ints[i]] += value;
+        if (functionValues.advanceExact(doc)) {
+          float value = (float) functionValues.doubleValue();
+          for (int i = 0; i < scratch.length; i++) {
+            values[scratch.ints[i]] += value;
+          }
         }
       }
     }
@@ -92,9 +135,13 @@ public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {
     rollup();
   }
 
-  /** {@link ValueSource} that returns the score for each
+  /**
+   * {@link ValueSource} that returns the score for each
    *  hit; use this to aggregate the sum of all hit scores
-   *  for each facet label.  */
+   *  for each facet label.
+   *
+   * @deprecated Use {@link DoubleValuesSource#SCORES}
+   */
   public static class ScoreValueSource extends ValueSource {
 
     /** Sole constructor. */
