@@ -17,15 +17,15 @@
 package org.apache.lucene.search.suggest;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.LongValues;
+import org.apache.lucene.search.LongValuesSource;
 
 
 /**
@@ -34,7 +34,7 @@ import org.apache.lucene.queries.function.ValueSource;
  * optionally contexts information
  * taken from stored fields in a Lucene index. Similar to 
  * {@link DocumentDictionary}, except it obtains the weight
- * of the terms in a document based on a {@link ValueSource}.
+ * of the terms in a document based on a {@link LongValuesSource}.
  * </p>
  * <b>NOTE:</b> 
  *  <ul>
@@ -46,43 +46,74 @@ import org.apache.lucene.queries.function.ValueSource;
  *    </li>
  *  </ul>
  *  <p>
- *  In practice the {@link ValueSource} will likely be obtained
+ *  In practice the {@link LongValuesSource} will likely be obtained
  *  using the lucene expression module. The following example shows
- *  how to create a {@link ValueSource} from a simple addition of two
+ *  how to create a {@link LongValuesSource} from a simple addition of two
  *  fields:
  *  <code>
  *    Expression expression = JavascriptCompiler.compile("f1 + f2");
  *    SimpleBindings bindings = new SimpleBindings();
  *    bindings.add(new SortField("f1", SortField.Type.LONG));
  *    bindings.add(new SortField("f2", SortField.Type.LONG));
- *    ValueSource valueSource = expression.getValueSource(bindings);
+ *    LongValuesSource valueSource = expression.getDoubleValuesSource(bindings).toLongValuesSource();
  *  </code>
  *  </p>
  *
  */
 public class DocumentValueSourceDictionary extends DocumentDictionary {
   
-  private final ValueSource weightsValueSource;
+  private final LongValuesSource weightsValueSource;
   
   /**
    * Creates a new dictionary with the contents of the fields named <code>field</code>
    * for the terms, <code>payload</code> for the corresponding payloads, <code>contexts</code>
    * for the associated contexts and uses the <code>weightsValueSource</code> supplied 
    * to determine the score.
+   *
+   * @deprecated Use {@link #DocumentValueSourceDictionary(IndexReader, String, LongValuesSource, String, String)}
    */
+  @Deprecated
   public DocumentValueSourceDictionary(IndexReader reader, String field,
                                        ValueSource weightsValueSource, String payload, String contexts) {
     super(reader, field, null, payload, contexts);
+    this.weightsValueSource = weightsValueSource.asLongValuesSource();
+  }
+
+  /**
+   * Creates a new dictionary with the contents of the fields named <code>field</code>
+   * for the terms, <code>payload</code> for the corresponding payloads, <code>contexts</code>
+   * for the associated contexts and uses the <code>weightsValueSource</code> supplied
+   * to determine the score.
+   */
+  public DocumentValueSourceDictionary(IndexReader reader, String field,
+                                       LongValuesSource weightsValueSource, String payload, String contexts) {
+    super(reader, field, null, payload, contexts);
     this.weightsValueSource = weightsValueSource;
   }
+
   /**
    * Creates a new dictionary with the contents of the fields named <code>field</code>
    * for the terms, <code>payloadField</code> for the corresponding payloads
    * and uses the <code>weightsValueSource</code> supplied to determine the 
    * score.
+   *
+   * @deprecated Use {@link #DocumentValueSourceDictionary(IndexReader, String, LongValuesSource, String)}
    */
+  @Deprecated
   public DocumentValueSourceDictionary(IndexReader reader, String field,
                                        ValueSource weightsValueSource, String payload) {
+    super(reader, field, null, payload);
+    this.weightsValueSource = weightsValueSource.asLongValuesSource();
+  }
+
+  /**
+   * Creates a new dictionary with the contents of the fields named <code>field</code>
+   * for the terms, <code>payloadField</code> for the corresponding payloads
+   * and uses the <code>weightsValueSource</code> supplied to determine the
+   * score.
+   */
+  public DocumentValueSourceDictionary(IndexReader reader, String field,
+                                       LongValuesSource weightsValueSource, String payload) {
     super(reader, field, null, payload);
     this.weightsValueSource = weightsValueSource;
   }
@@ -91,11 +122,25 @@ public class DocumentValueSourceDictionary extends DocumentDictionary {
    * Creates a new dictionary with the contents of the fields named <code>field</code>
    * for the terms and uses the <code>weightsValueSource</code> supplied to determine the 
    * score.
+   *
+   * @deprecated Use {@link #DocumentValueSourceDictionary(IndexReader, String, LongValuesSource)}
    */
+  @Deprecated
   public DocumentValueSourceDictionary(IndexReader reader, String field,
                                        ValueSource weightsValueSource) {
     super(reader, field, null, null);
-    this.weightsValueSource = weightsValueSource;  
+    this.weightsValueSource = weightsValueSource.asLongValuesSource();
+  }
+
+  /**
+   * Creates a new dictionary with the contents of the fields named <code>field</code>
+   * for the terms and uses the <code>weightsValueSource</code> supplied to determine the
+   * score.
+   */
+  public DocumentValueSourceDictionary(IndexReader reader, String field,
+                                       LongValuesSource weightsValueSource) {
+    super(reader, field, null, null);
+    this.weightsValueSource = weightsValueSource;
   }
   
   @Override
@@ -105,7 +150,7 @@ public class DocumentValueSourceDictionary extends DocumentDictionary {
   
   final class DocumentValueSourceInputIterator extends DocumentDictionary.DocumentInputIterator {
     
-    private FunctionValues currentWeightValues;
+    private LongValues currentWeightValues;
     /** leaves of the reader */
     private final List<LeafReaderContext> leaves;
     /** starting docIds of all the leaves */
@@ -123,7 +168,7 @@ public class DocumentValueSourceDictionary extends DocumentDictionary {
       }
       starts[leaves.size()] = reader.maxDoc();
       currentWeightValues = (leaves.size() > 0) 
-          ? weightsValueSource.getValues(new HashMap<String, Object>(), leaves.get(currentLeafIndex))
+          ? weightsValueSource.getValues(leaves.get(currentLeafIndex), null)
           : null;
     }
     
@@ -140,13 +185,16 @@ public class DocumentValueSourceDictionary extends DocumentDictionary {
       if (subIndex != currentLeafIndex) {
         currentLeafIndex = subIndex;
         try {
-          currentWeightValues = weightsValueSource.getValues(new HashMap<String, Object>(), leaves.get(currentLeafIndex));
+          currentWeightValues = weightsValueSource.getValues(leaves.get(currentLeafIndex), null);
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
       }
       try {
-        return currentWeightValues.longVal(docId - starts[subIndex]);
+        if (currentWeightValues.advanceExact(docId - starts[subIndex]))
+          return currentWeightValues.longValue();
+        else
+          return 0;
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

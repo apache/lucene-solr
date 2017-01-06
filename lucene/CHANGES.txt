@@ -82,6 +82,9 @@ API Changes
 * LUCENE-7610: The facets module now uses the DoubleValuesSource API, and
   methods that take ValueSource parameters are deprecated (Alan Woodward)
 
+* LUCENE-7611: DocumentValueSourceDictionary now takes a LongValuesSource
+  as a parameter, and the ValueSource equivalent is deprecated (Alan Woodward)
+
 New features
 
 * LUCENE-5867: Added BooleanSimilarity. (Robert Muir, Adrien Grand)
