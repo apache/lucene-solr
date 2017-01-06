@@ -45,7 +45,6 @@ public abstract class LeafOperation implements BooleanOperation {
 
   public LeafOperation(StreamExpression expression, StreamFactory factory) throws IOException {
     this.field = factory.getValueOperand(expression, 0);
-    this.field = this.field.replace("'","");
     this.val = Double.parseDouble(factory.getValueOperand(expression, 1));
   }
 

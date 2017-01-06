@@ -93,6 +93,8 @@ public class StreamFactory implements Serializable {
     if(null != parameter){ 
       if(parameter instanceof StreamExpressionValue){
         return ((StreamExpressionValue)parameter).getValue();
+      } else if(parameter instanceof StreamExpression) {
+        return parameter.toString();
       }
     }
     
