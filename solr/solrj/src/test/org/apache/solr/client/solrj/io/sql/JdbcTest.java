@@ -25,10 +25,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Properties;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -514,16 +515,20 @@ public class JdbcTest extends SolrCloudTestCase {
         assertFalse(rs.next());
       }
 
-      List<String> collections = new ArrayList<>();
-      collections.addAll(cluster.getSolrClient().getZkStateReader().getClusterState().getCollectionsMap().keySet());
-      Collections.sort(collections);
+      ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+
+      SortedSet<String> tables = new TreeSet<>();
+      Set<String> collections = zkStateReader.getClusterState().getCollectionsMap().keySet();
+      Set<String> aliases = zkStateReader.getAliases().getCollectionAliasMap().keySet();
+      tables.addAll(collections);
+      tables.addAll(aliases);
 
       try(ResultSet rs = databaseMetaData.getTables(null, zkHost, "%", null)) {
-        for(String acollection : collections) {
+        for(String table : tables) {
           assertTrue(rs.next());
           assertNull(rs.getString("tableCat"));
           assertEquals(zkHost, rs.getString("tableSchem"));
-          assertEquals(acollection, rs.getString("tableName"));
+          assertEquals(table, rs.getString("tableName"));
           assertEquals("TABLE", rs.getString("tableType"));
           assertNull(rs.getString("remarks"));
         }

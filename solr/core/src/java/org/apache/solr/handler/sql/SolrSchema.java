@@ -25,6 +25,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.luke.FieldFlag;
 
 import java.io.IOException;
@@ -46,12 +48,19 @@ class SolrSchema extends AbstractSchema {
     String zk = this.properties.getProperty("zk");
     try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zk).build()) {
       cloudSolrClient.connect();
-      Set<String> collections = cloudSolrClient.getZkStateReader().getClusterState().getCollectionsMap().keySet();
+      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+      ClusterState clusterState = zkStateReader.getClusterState();
 
       final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
-      for (String collection : collections) {
+
+      for (String collection : clusterState.getCollectionsMap().keySet()) {
         builder.put(collection, new SolrTable(this, collection));
       }
+
+      for (Map.Entry<String, String> alias : zkStateReader.getAliases().getCollectionAliasMap().entrySet()) {
+        builder.put(alias.getKey(), new SolrTable(this, alias.getValue()));
+      }
+
       return builder.build();
     } catch (IOException e) {
       throw new RuntimeException(e);
