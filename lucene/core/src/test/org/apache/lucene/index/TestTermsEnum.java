@@ -1016,4 +1016,12 @@ public class TestTermsEnum extends LuceneTestCase {
     w.close();
     d.close();
   }
+
+  // LUCENE-7576
+  public void testInvalidAutomatonTermsEnum() throws Exception {
+    expectThrows(IllegalArgumentException.class,
+                 () -> {
+                   new AutomatonTermsEnum(TermsEnum.EMPTY, new CompiledAutomaton(Automata.makeString("foo")));
+                 });
+  }
 }
