@@ -335,6 +335,8 @@ Bug Fixes
 * SOLR-9931: JSON Facet API hll (hyper-log-log) function returned 0 for non-empty buckets with no field values
   in local mode, but nothing for distributed mode.  Both modes now return 0.  (yonik)
 
+* SOLR-9503: NPE in Replica Placement Rules when using Overseer Role with other rules (Tim Owen via noble)
+
 Other Changes
 ----------------------
 
