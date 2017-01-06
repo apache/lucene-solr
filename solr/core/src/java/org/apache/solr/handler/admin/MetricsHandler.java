@@ -71,6 +71,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Core container instance not initialized");
     }
 
+    MetricFilter mustMatchFilter = parseMustMatchFilter(req);
     List<MetricType> metricTypes = parseMetricTypes(req);
     List<MetricFilter> metricFilters = metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
     List<Group> requestedGroups = parseGroups(req);
@@ -86,14 +87,25 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
             coreRegistryName = core.getCoreMetricManager().getRegistryName();
           }
           MetricRegistry registry = metricManager.registry(coreRegistryName);
-          response.add(coreRegistryName, MetricUtils.toNamedList(registry, metricFilters));
+          response.add(coreRegistryName, MetricUtils.toNamedList(registry, metricFilters, mustMatchFilter));
         });
       } else {
         MetricRegistry registry = metricManager.registry(registryName);
-        response.add(registryName, MetricUtils.toNamedList(registry, metricFilters));
+        response.add(registryName, MetricUtils.toNamedList(registry, metricFilters, mustMatchFilter));
       }
     }
     rsp.getValues().add("metrics", response);
+  }
+
+  private MetricFilter parseMustMatchFilter(SolrQueryRequest req) {
+    String prefix = req.getParams().get("prefix");
+    MetricFilter mustMatchFilter;
+    if (prefix != null) {
+      mustMatchFilter = new SolrMetricManager.PrefixFilter(prefix.trim());
+    } else  {
+      mustMatchFilter = MetricFilter.ALL;
+    }
+    return mustMatchFilter;
   }
 
   private List<Group> parseGroups(SolrQueryRequest req) {

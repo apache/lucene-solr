@@ -19,9 +19,6 @@ package org.apache.solr.util.stats;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Locale;
 
 import com.codahale.metrics.MetricRegistry;
@@ -35,7 +32,6 @@ import org.apache.http.client.methods.HttpRequestWrapper;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 
@@ -48,7 +44,7 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
   protected String scope;
 
   private static String methodNameString(HttpRequest request) {
-    return request.getRequestLine().getMethod().toLowerCase(Locale.ROOT) + "-requests";
+    return request.getRequestLine().getMethod().toLowerCase(Locale.ROOT) + ".requests";
   }
 
   @Override
@@ -71,45 +67,9 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
   }
 
   @Override
-  public String getName() {
-    return this.getClass().getName();
-  }
-
-  @Override
-  public String getVersion() {
-    return getClass().getPackage().getSpecificationVersion();
-  }
-
-  @Override
-  public Collection<String> initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
     this.metricsRegistry = manager.registry(registry);
     this.scope = scope;
-    return Collections.emptyList(); // we do not know the names of the metrics yet
-  }
-
-  @Override
-  public String getDescription() {
-    return null;
-  }
-
-  @Override
-  public Category getCategory() {
-    return Category.OTHER;
-  }
-
-  @Override
-  public String getSource() {
-    return null;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return null;
-  }
-
-  @Override
-  public NamedList getStatistics() {
-    return null;
   }
 
   private String getNameFor(HttpRequest request) {
@@ -118,7 +78,9 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
       String schemeHostPort = null;
       if (request instanceof HttpRequestWrapper) {
         HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
-        schemeHostPort = wrapper.getTarget().getSchemeName() + "://" + wrapper.getTarget().getHostName() + ":" +  wrapper.getTarget().getPort();
+        if (wrapper.getTarget() != null)  {
+          schemeHostPort = wrapper.getTarget().getSchemeName() + "://" + wrapper.getTarget().getHostName() + ":" +  wrapper.getTarget().getPort();
+        }
       }
       final URIBuilder url = new URIBuilder(requestLine.getUri());
       return SolrMetricManager.mkName((schemeHostPort != null ? schemeHostPort : "") + url.removeQuery().build().toString() + "." + methodNameString(request), scope);

@@ -22,12 +22,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.FieldComparator;
-import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
-import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
-import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
 import org.apache.solr.client.solrj.io.ops.BooleanOperation;
 import org.apache.solr.client.solrj.io.ops.StreamOperation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -35,23 +30,11 @@ import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
- *  Iterates over a TupleStream and buffers Tuples that are equal based on a comparator.
- *  This allows tuples to be grouped by common field(s).
- *
- *  The read() method emits one tuple per group. The fields of the emitted Tuple reflect the first tuple
- *  encountered in the group.
- *
- *  Use the Tuple.getMaps() method to return all the Tuples in the group. This method returns
- *  a list of maps (including the group head), which hold the data for each Tuple in the group.
- *
- *  Note: The ReducerStream requires that it's underlying stream be sorted and partitioned by the same
- *  fields as it's comparator.
- *
+ * The HavingStream iterates over an internal stream and applies a BooleanOperation to each tuple. If the BooleanOperation
+ * evaluates to true then the HavingStream emits the tuple, if it returns false the tuple is not emitted.
  **/
 
 public class HavingStream extends TupleStream implements Expressible {

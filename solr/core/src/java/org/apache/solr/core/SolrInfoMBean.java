@@ -32,12 +32,12 @@ public interface SolrInfoMBean {
   /**
    * Category of {@link SolrCore} component.
    */
-  enum Category { CORE, QUERYHANDLER, UPDATEHANDLER, CACHE, HIGHLIGHTING, QUERYPARSER, SEARCHER, INDEX, DIRECTORY, OTHER }
+  enum Category { CORE, QUERYHANDLER, UPDATEHANDLER, CACHE, HIGHLIGHTING, QUERYPARSER, SEARCHER, INDEX, DIRECTORY, HTTP, OTHER }
 
   /**
    * Top-level group of beans for a subsystem.
    */
-  enum Group { jvm, jetty, http, node, core }
+  enum Group { jvm, jetty, node, core }
 
   /**
    * Simple common usage name, e.g. BasicQueryHandler,

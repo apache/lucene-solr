@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.luke.FieldFlag;
@@ -57,8 +58,11 @@ class SolrSchema extends AbstractSchema {
         builder.put(collection, new SolrTable(this, collection));
       }
 
-      for (Map.Entry<String, String> alias : zkStateReader.getAliases().getCollectionAliasMap().entrySet()) {
-        builder.put(alias.getKey(), new SolrTable(this, alias.getValue()));
+      Aliases aliases = zkStateReader.getAliases();
+      if(aliases.collectionAliasSize() > 0) {
+        for (Map.Entry<String, String> alias : aliases.getCollectionAliasMap().entrySet()) {
+          builder.put(alias.getKey(), new SolrTable(this, alias.getValue()));
+        }
       }
 
       return builder.build();

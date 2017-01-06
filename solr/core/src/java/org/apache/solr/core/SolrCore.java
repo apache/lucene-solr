@@ -146,6 +146,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -390,6 +391,22 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   public IndexReaderFactory getIndexReaderFactory() {
     return indexReaderFactory;
+  }
+  
+  public long getIndexSize() {
+    Directory dir;
+    long size = 0;
+    try {
+      dir = directoryFactory.get(getIndexDir(), DirContext.DEFAULT, solrConfig.indexConfig.lockType);
+      try {
+        size = DirectoryFactory.sizeOfDirectory(dir);
+      } finally {
+        directoryFactory.release(dir);
+      }
+    } catch (IOException e) {
+      SolrException.log(log, "IO error while trying to get the size of the Directory", e);
+    }
+    return size;
   }
 
   @Override
@@ -2653,6 +2670,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     lst.add("refCount", getOpenCount());
     lst.add("instanceDir", resourceLoader.getInstancePath());
     lst.add("indexDir", getIndexDir());
+    long size = getIndexSize();
+    lst.add("sizeInBytes", size);
+    lst.add("size", NumberUtils.readableSize(size));
 
     CoreDescriptor cd = getCoreDescriptor();
     if (cd != null) {

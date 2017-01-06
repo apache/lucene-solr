@@ -35,6 +35,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -48,9 +49,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -365,48 +363,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   @Override
-  public String getName() {
-    return this.getClass().getName();
-  }
-
-  @Override
-  public String getVersion() {
-    return getClass().getPackage().getSpecificationVersion();
-  }
-
-  @Override
-  public Collection<String> initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    List<String> metricNames = new ArrayList<>(4);
-    metricNames.addAll(clientConnectionManager.initializeMetrics(manager, registry, scope));
-    metricNames.addAll(httpRequestExecutor.initializeMetrics(manager, registry, scope));
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    String expandedScope = SolrMetricManager.mkName(scope, SolrInfoMBean.Category.HTTP.name());
+    clientConnectionManager.initializeMetrics(manager, registry, expandedScope);
+    httpRequestExecutor.initializeMetrics(manager, registry, expandedScope);
     commExecutor = MetricUtils.instrumentedExecutorService(commExecutor,
         manager.registry(registry),
-        SolrMetricManager.mkName("httpShardExecutor", scope, "threadPool"));
-    return metricNames;
-  }
-
-  @Override
-  public String getDescription() {
-    return "Metrics tracked by HttpShardHandlerFactory for distributed query requests";
-  }
-
-  @Override
-  public Category getCategory() {
-    return Category.OTHER;
-  }
-
-  @Override
-  public String getSource() {
-    return null;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return new URL[0];
-  }
-
-  @Override
-  public NamedList getStatistics() {
-    return null;
+        SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
   }
 }

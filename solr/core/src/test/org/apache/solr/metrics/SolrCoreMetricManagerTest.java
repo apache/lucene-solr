@@ -68,11 +68,10 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
       coreMetricManager.registerMetricProducer(scope, producer);
       assertNotNull(scope);
       assertNotNull(category);
-      assertNotNull(metrics);
       assertRegistered(scope, metrics, coreMetricManager);
     } catch (final IllegalArgumentException e) {
-      assertTrue("expected at least one null but got: scope="+scope+" category="+category+" metrics="+metrics,
-          (scope == null || category == null || metrics == null));
+      assertTrue("expected at least one null but got: scope="+scope+", category="+category,
+          (scope == null || category == null));
       assertRegistered(scope, new HashMap<>(), coreMetricManager);
     }
   }
@@ -130,7 +129,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
   }
 
   private void assertRegistered(String scope, Map<String, Counter> newMetrics, SolrCoreMetricManager coreMetricManager) {
-    if (scope == null) {
+    if (scope == null || newMetrics == null) {
       return;
     }
     String filter = "." + scope + ".";

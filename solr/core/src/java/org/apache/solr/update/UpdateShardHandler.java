@@ -18,9 +18,6 @@ package org.apache.solr.update;
 
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import com.codahale.metrics.InstrumentedExecutorService;
@@ -34,6 +31,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
@@ -41,7 +39,7 @@ import org.apache.solr.util.stats.InstrumentedPoolingHttpClientConnectionManager
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UpdateShardHandler implements SolrMetricProducer {
+public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -99,17 +97,16 @@ public class UpdateShardHandler implements SolrMetricProducer {
   }
 
   @Override
-  public Collection<String> initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    List<String> metricNames = new ArrayList<>(4);
-    metricNames.addAll(clientConnectionManager.initializeMetrics(manager, registry, scope));
-    metricNames.addAll(httpRequestExecutor.initializeMetrics(manager, registry, scope));
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
+    clientConnectionManager.initializeMetrics(manager, registry, expandedScope);
+    httpRequestExecutor.initializeMetrics(manager, registry, expandedScope);
     updateExecutor = new InstrumentedExecutorService(updateExecutor,
         manager.registry(registry),
-        SolrMetricManager.mkName("updateExecutor", scope, "threadPool"));
+        SolrMetricManager.mkName("updateExecutor", expandedScope, "threadPool"));
     recoveryExecutor = new InstrumentedExecutorService(recoveryExecutor,
         manager.registry(registry),
-        SolrMetricManager.mkName("recoveryExecutor", scope, "threadPool"));
-    return metricNames;
+        SolrMetricManager.mkName("recoveryExecutor", expandedScope, "threadPool"));
   }
 
   @Override
@@ -119,7 +116,7 @@ public class UpdateShardHandler implements SolrMetricProducer {
 
   @Override
   public Category getCategory() {
-    return null;
+    return Category.HTTP;
   }
 
   @Override

@@ -728,6 +728,15 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       List<Tuple> tuples3 = getTuples(stream);
       assert (tuples3.size() == 1);
 
+
+      //Exercise the /stream handler
+      ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
+      sParams.add("expr", "random(" + COLLECTIONORALIAS + ", q=\"*:*\", rows=\"1\", fl=\"id, a_i\")" );
+      JettySolrRunner jetty = cluster.getJettySolrRunner(0);
+      SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
+      List<Tuple> tuples4 = getTuples(solrStream);
+      assert (tuples4.size() == 1);
+
     } finally {
       cache.close();
     }
@@ -837,6 +846,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("having", HavingStream.class)
+        .withFunctionName("rollup", RollupStream.class)
+        .withFunctionName("sum", SumMetric.class)
         .withFunctionName("and", AndOperation.class)
         .withFunctionName("or", OrOperation.class)
         .withFunctionName("not", NotOperation.class)
@@ -895,7 +906,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    System.out.println("####Tuples:"+tuples.size());
     assert(tuples.size() == 2);
 
     t = tuples.get(0);
@@ -903,6 +913,16 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     t = tuples.get(1);
     assertTrue(t.getString("id").equals("9"));
+
+    stream = factory.constructStream("having(rollup(over=a_f, sum(a_i), search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\")), and(eq(sum(a_i), 9),eq(sum(a_i), 9)))");
+    context = new StreamContext();
+    context.setSolrClientCache(solrClientCache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 1);
+    t = tuples.get(0);
+    assertTrue(t.getDouble("a_f") == 10.0D);
 
     solrClientCache.close();
   }
@@ -933,6 +953,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("having", HavingStream.class)
+        .withFunctionName("rollup", RollupStream.class)
+        .withFunctionName("sum", SumMetric.class)
         .withFunctionName("and", AndOperation.class)
         .withFunctionName("or", OrOperation.class)
         .withFunctionName("not", NotOperation.class)
@@ -992,7 +1014,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    System.out.println("####Tuples:"+tuples.size());
     assert(tuples.size() == 2);
 
     t = tuples.get(0);
@@ -1000,6 +1021,17 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     t = tuples.get(1);
     assertTrue(t.getString("id").equals("9"));
+
+    stream = factory.constructStream("parallel("+COLLECTIONORALIAS+", workers=2, sort=\"a_f asc\", having(rollup(over=a_f, sum(a_i), search(" + COLLECTIONORALIAS + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\", partitionKeys=a_f)), and(eq(sum(a_i), 9),eq(sum(a_i),9))))");
+    context = new StreamContext();
+    context.setSolrClientCache(solrClientCache);
+    stream.setStreamContext(context);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 1);
+
+    t = tuples.get(0);
+    assertTrue(t.getDouble("a_f") == 10.0D);
 
     solrClientCache.close();
   }

@@ -90,7 +90,10 @@ public abstract class SlotAcc implements Closeable {
 
   public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
     if (key == null) return;
-    bucket.add(key, getValue(slotNum));
+    Object val = getValue(slotNum);
+    if (val != null) {
+      bucket.add(key, val);
+    }
   }
 
   public abstract void reset();

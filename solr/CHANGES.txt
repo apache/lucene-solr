@@ -119,6 +119,8 @@ Upgrade Notes
   risk in overlapping commits.  Nonetheless users should continue to avoid excessive committing. Users are
   advised to remove any pre-existing maxWarmingSearchers entries from their solrconfig.xml files.
 
+* SOLR-7466: complexphrase query parser now supports leading wildcards, beware of its' possible heaviness. 
+  Users are encouraged to use ReversedWildcardFilter in index time analysis.    
 
 New Features
 ----------------------
@@ -178,24 +180,28 @@ New Features
 
 * SOLR-9860: Enable configuring invariantParams via HttpSolrClient.Builder (Hrishikesh Gadre, Ishan Chattopadhyaya)
  
-* SOLR-4735: Improve metrics reporting. This uses the dropwizard metric library, adding an internal API
-  for registering and reporting metrics from Solr components. Several new metrics and an improved JMX
+* SOLR-4735, SOLR-9921: Improve metrics reporting. This uses the dropwizard metric library, adding an internal
+  API for registering and reporting metrics from Solr components. Several new metrics and an improved JMX
   reporter have been added (Alan Woodward, Jeff Wartes, Christine Poerschke, Kelvin Wong, shalin, ab)
 
 * SOLR-9788: Use instrumented jetty classes provided by the dropwizard metric library. (shalin)
 
 * SOLR-9805: Use metrics-jvm library to instrument jvm internals such as GC, memory usage and others. (shalin)
 
-* SOLR-9812: Added a new /admin/metrics API to return all metrics collected by Solr via API. API supports two
-  optional parameters 'group' (all,jvm,jetty,http,node,core) and 'type' (all,counter,timer,gauge,histogram) both
-  of which are multi-valued. Example: http://localhost:8983/solr/admin/metrics?group=jvm,jetty&type=counter
+* SOLR-9812: SOLR-9911: Added a new /admin/metrics API to return all metrics collected by Solr via API.
+  API supports three optional parameters:
+  * 'group' (all,jvm,jetty,node,core),
+  * 'type' (all,counter,timer,gauge,histogram) both of which are multi-valued
+  * 'prefix' that filters the returned metrics
+  Example: http://localhost:8983/solr/admin/metrics?group=jvm,jetty&type=counter
+  Example: http://localhost:8983/solr/admin/metrics?group=jvm&prefix=buffers
   (shalin)
 
 * SOLR-9884: Add version to segments handler output (Steven Bower via Erick Erickson)
 
 * SOLR-9725: Substitute properties into JdbcDataSource configuration ( Jamie Jackson, Yuri Sashevsky via Mikhail Khludnev)
 
-* SOLR-9877: Use instrumented http client and connection pool. (shalin)
+* SOLR-9877: SOLR-9923: Use instrumented http client and connection pool. (shalin)
 
 * SOLR-9880: Add Ganglia, Graphite and SLF4J metrics reporters. (ab)
 
@@ -213,6 +219,11 @@ New Features
 * SOLR-9896: Instrument and collect metrics from query, update, core admin and core load thread pools. (shalin)
 
 * SOLR-9854: Collect metrics for index merges and index store IO (ab)
+
+* SOLR-8530: Add HavingStream to Streaming API and StreamingExpressions (Joel Bernstein)
+
+* SOLR-7466: Enable leading wildcard in complexphrase query parser, optimize it with  ReversedWildcardFilterFactory 
+  when it's provided (Mikhail Khludnev)
 
 Optimizations
 ----------------------
@@ -314,6 +325,18 @@ Bug Fixes
 
 * SOLR-9154: Fix DirectSolrSpellChecker to work when added through the Config API. (Anshum Gupta)
 
+* SOLR-9919: random Streaming Expression is not registered in /stream or /graph handler (Joel Bernstein)
+
+* SOLR-7495: Support Facet.field on a non-DocValued, single-value, int field (Varun Thacker, Scott Stults)
+
+* SOLR-9917: JSON Facet API percentile function caused a NullPointerException in distributed mode when
+  there were no values in a bucket from a shard. (yonik)
+
+* SOLR-9931: JSON Facet API hll (hyper-log-log) function returned 0 for non-empty buckets with no field values
+  in local mode, but nothing for distributed mode.  Both modes now return 0.  (yonik)
+
+* SOLR-9503: NPE in Replica Placement Rules when using Overseer Role with other rules (Tim Owen via noble)
+
 Other Changes
 ----------------------
 
@@ -369,6 +392,11 @@ Other Changes
 
 * SOLR-9899: StandardDirectoryFactory should use optimizations for all FilterDirectorys not just NRTCachingDirectory.
   (Mark Miller)
+
+* SOLR-9915: PeerSync alreadyInSync check is not backwards compatible and results in full replication during a rolling restart
+  (Tim Owen via noble)
+
+* SOLR-3990: Moves getIndexSize() from ReplicationHandler to SolrCore (Shawn Heisey)
 
 ==================  6.3.0 ==================
 

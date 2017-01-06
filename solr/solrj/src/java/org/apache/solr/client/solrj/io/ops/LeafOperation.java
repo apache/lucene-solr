@@ -56,4 +56,12 @@ public abstract class LeafOperation implements BooleanOperation {
         .withImplementingClass(getClass().getName())
         .withExpression(toExpression(factory).toString());
   }
+
+  protected String quote(String s) {
+    if(s.contains("(")) {
+      return "'"+s+"'";
+    }
+
+    return s;
+  }
 }

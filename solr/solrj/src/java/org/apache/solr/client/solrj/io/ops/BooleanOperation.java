@@ -16,8 +16,10 @@
  */
 package org.apache.solr.client.solrj.io.ops;
 
-import org.apache.solr.client.solrj.io.Tuple;
-
+/**
+ *  A BooleanOperation returns true or false for each tuple that it evaluates. The HavingStream applies a BooleanOperation to
+ *  determine which tuples to emit.
+ */
 
 public interface BooleanOperation extends StreamOperation {
   public abstract boolean evaluate();
