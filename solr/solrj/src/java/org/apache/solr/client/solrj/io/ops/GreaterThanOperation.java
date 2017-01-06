@@ -54,7 +54,7 @@ public class GreaterThanOperation extends LeafOperation {
 
   public StreamExpression toExpression(StreamFactory factory) throws IOException {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-    expression.addParameter(quote(field));
+    expression.addParameter(field);
     expression.addParameter(Double.toString(val));
     return expression;
   }
