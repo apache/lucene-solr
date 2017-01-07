@@ -132,27 +132,20 @@ public class DocumentValueSourceDictionary extends DocumentDictionary {
      * by the <code>weightsValueSource</code>
      * */
     @Override
-    protected long getWeight(Document doc, int docId) {
+    protected long getWeight(Document doc, int docId) throws IOException {
       if (currentWeightValues == null) {
         return 0;
       }
       int subIndex = ReaderUtil.subIndex(docId, starts);
       if (subIndex != currentLeafIndex) {
         currentLeafIndex = subIndex;
-        try {
-          currentWeightValues = weightsValueSource.getValues(leaves.get(currentLeafIndex), null);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
+        currentWeightValues = weightsValueSource.getValues(leaves.get(currentLeafIndex), null);
       }
-      try {
-        if (currentWeightValues.advanceExact(docId - starts[subIndex]))
-          return currentWeightValues.longValue();
-        else
-          return 0;
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+      if (currentWeightValues.advanceExact(docId - starts[subIndex]))
+        return currentWeightValues.longValue();
+      else
+        return 0;
+
     }
 
   }
