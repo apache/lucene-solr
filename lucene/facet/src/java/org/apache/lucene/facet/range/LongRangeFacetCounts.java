@@ -51,32 +51,11 @@ public class LongRangeFacetCounts extends RangeFacetCounts {
     this(field, LongValuesSource.fromLongField(field), hits, ranges);
   }
 
-  /**
-   * Create {@code RangeFacetCounts}, using the provided {@link ValueSource}.
-   *
-   * @deprecated Use {@link #LongRangeFacetCounts(String, LongValuesSource, FacetsCollector, LongRange...)}
-   */
-  @Deprecated
-  public LongRangeFacetCounts(String field, ValueSource valueSource, FacetsCollector hits, LongRange... ranges) throws IOException {
-    this(field, valueSource.asLongValuesSource(), hits, null, ranges);
-  }
-
   /** Create {@code RangeFacetCounts}, using the provided
    *  {@link ValueSource}. */
   public LongRangeFacetCounts(String field, LongValuesSource valueSource, FacetsCollector hits, LongRange... ranges) throws IOException {
     this(field, valueSource, hits, null, ranges);
   }
-
-  /**
-   * Create {@code RangeFacetCounts}, using the provided {@link ValueSource}.
-   *
-   * @deprecated Use {@link #LongRangeFacetCounts(String, LongValuesSource, FacetsCollector, Query, LongRange...)}
-   */
-  @Deprecated
-  public LongRangeFacetCounts(String field, ValueSource valueSource, FacetsCollector hits, Query fastMatchQuery, LongRange... ranges) throws IOException {
-    this(field, valueSource.asLongValuesSource(), hits, fastMatchQuery, ranges);
-  }
-
 
   /** Create {@code RangeFacetCounts}, using the provided
    *  {@link ValueSource}, and using the provided Filter as

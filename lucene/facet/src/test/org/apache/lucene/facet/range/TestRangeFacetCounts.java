@@ -46,13 +46,11 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
-import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
@@ -437,7 +435,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       } else {
         fastMatchQuery = null;
       }
-      ValueSource vs = new LongFieldSource("field");
+      LongValuesSource vs = LongValuesSource.fromLongField("field");
       Facets facets = new LongRangeFacetCounts("field", vs, sfc, fastMatchQuery, ranges);
       FacetResult result = facets.getTopChildren(10, "field");
       assertEquals(numRange, result.labelValues.length);
@@ -580,7 +578,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       } else {
         fastMatchFilter = null;
       }
-      ValueSource vs = new DoubleFieldSource("field");
+      DoubleValuesSource vs = DoubleValuesSource.fromDoubleField("field");
       Facets facets = new DoubleRangeFacetCounts("field", vs, sfc, fastMatchFilter, ranges);
       FacetResult result = facets.getTopChildren(10, "field");
       assertEquals(numRange, result.labelValues.length);

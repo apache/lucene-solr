@@ -25,7 +25,6 @@ import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
@@ -61,32 +60,10 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
   }
 
   /**
-   * Create {@code RangeFacetCounts}, using the provided {@link ValueSource}.
-   *
-   * @deprecated Use {@link #DoubleRangeFacetCounts(String, DoubleValuesSource, FacetsCollector, DoubleRange...)}
-   * */
-  public DoubleRangeFacetCounts(String field, ValueSource valueSource, FacetsCollector hits, DoubleRange... ranges) throws IOException {
-    this(field, valueSource, hits, null, ranges);
-  }
-
-  /**
    * Create {@code RangeFacetCounts} using the provided {@link DoubleValuesSource}
    */
   public DoubleRangeFacetCounts(String field, DoubleValuesSource valueSource, FacetsCollector hits, DoubleRange... ranges) throws IOException {
     this(field, valueSource, hits, null, ranges);
-  }
-
-  /**
-   * Create {@code RangeFacetCounts}, using the provided
-   * {@link ValueSource}, and using the provided Query as
-   * a fastmatch: only documents matching the query are
-   * checked for the matching ranges.
-   *
-   * @deprecated Use ({@link #DoubleRangeFacetCounts(String, DoubleValuesSource, FacetsCollector, Query, DoubleRange...)}
-   */
-  @Deprecated
-  public DoubleRangeFacetCounts(String field, ValueSource valueSource, FacetsCollector hits, Query fastMatchQuery, DoubleRange... ranges) throws IOException {
-    this(field, valueSource.asDoubleValuesSource(), hits, fastMatchQuery, ranges);
   }
 
   /**

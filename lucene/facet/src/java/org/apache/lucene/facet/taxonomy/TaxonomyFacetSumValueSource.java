@@ -18,19 +18,14 @@ package org.apache.lucene.facet.taxonomy;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.IntsRef;
 
 /** Aggregates sum of values from {@link
@@ -42,21 +37,6 @@ public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {
 
   /**
    * Aggreggates double facet values from the provided
-   *  {@link ValueSource}, pulling ordinals using {@link
-   *  DocValuesOrdinalsReader} against the default indexed
-   *  facet field {@link
-   *  FacetsConfig#DEFAULT_INDEX_FIELD_NAME}.
-   *
-   *  @deprecated {@link #TaxonomyFacetSumValueSource(TaxonomyReader, FacetsConfig, FacetsCollector, DoubleValuesSource)}
-   */
-  @Deprecated
-  public TaxonomyFacetSumValueSource(TaxonomyReader taxoReader, FacetsConfig config,
-                                     FacetsCollector fc, ValueSource valueSource) throws IOException {
-    this(new DocValuesOrdinalsReader(FacetsConfig.DEFAULT_INDEX_FIELD_NAME), taxoReader, config, fc, valueSource);
-  }
-
-  /**
-   * Aggreggates double facet values from the provided
    * {@link DoubleValuesSource}, pulling ordinals using {@link
    * DocValuesOrdinalsReader} against the default indexed
    * facet field {@link FacetsConfig#DEFAULT_INDEX_FIELD_NAME}.
@@ -64,29 +44,14 @@ public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {
    public TaxonomyFacetSumValueSource(TaxonomyReader taxoReader, FacetsConfig config,
                                      FacetsCollector fc, DoubleValuesSource valueSource) throws IOException {
     this(new DocValuesOrdinalsReader(FacetsConfig.DEFAULT_INDEX_FIELD_NAME), taxoReader, config, fc, valueSource);
-  }
-
-  /**
-   * Aggreggates float facet values from the provided
-   *  {@link ValueSource}, and pulls ordinals from the
-   *  provided {@link OrdinalsReader}.
-   *
-   *  @deprecated use {@link #TaxonomyFacetSumValueSource(OrdinalsReader, TaxonomyReader, FacetsConfig, FacetsCollector, DoubleValuesSource)}
-   */
-  @Deprecated
-  public TaxonomyFacetSumValueSource(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader,
-                                     FacetsConfig config, FacetsCollector fc, ValueSource valueSource) throws IOException {
-    super(ordinalsReader.getIndexFieldName(), taxoReader, config);
-    this.ordinalsReader = ordinalsReader;
-    sumValues(fc.getMatchingDocs(), fc.getKeepScores(), valueSource.asDoubleValuesSource());
-  }
+   }
 
   /**
    * Aggreggates float facet values from the provided
    *  {@link DoubleValuesSource}, and pulls ordinals from the
    *  provided {@link OrdinalsReader}.
    */
-   public TaxonomyFacetSumValueSource(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader,
+  public TaxonomyFacetSumValueSource(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader,
                                      FacetsConfig config, FacetsCollector fc, DoubleValuesSource vs) throws IOException {
     super(ordinalsReader.getIndexFieldName(), taxoReader, config);
     this.ordinalsReader = ordinalsReader;
@@ -133,42 +98,6 @@ public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {
     }
 
     rollup();
-  }
-
-  /**
-   * {@link ValueSource} that returns the score for each
-   *  hit; use this to aggregate the sum of all hit scores
-   *  for each facet label.
-   *
-   * @deprecated Use {@link DoubleValuesSource#SCORES}
-   */
-  public static class ScoreValueSource extends ValueSource {
-
-    /** Sole constructor. */
-    public ScoreValueSource() {
-    }
-
-    @Override
-    public FunctionValues getValues(@SuppressWarnings("rawtypes") Map context, LeafReaderContext readerContext) throws IOException {
-      final Scorer scorer = (Scorer) context.get("scorer");
-      if (scorer == null) {
-        throw new IllegalStateException("scores are missing; be sure to pass keepScores=true to FacetsCollector");
-      }
-      return new DoubleDocValues(this) {
-        @Override
-        public double doubleVal(int document) {
-          try {
-            return scorer.score();
-          } catch (IOException exception) {
-            throw new RuntimeException(exception);
-          }
-        }
-      };
-    }
-    
-    @Override public boolean equals(Object o) { return o == this; }
-    @Override public int hashCode() { return System.identityHashCode(this); }
-    @Override public String description() { return "score()"; }
   }
   
 }

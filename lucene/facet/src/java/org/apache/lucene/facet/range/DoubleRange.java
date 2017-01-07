@@ -21,7 +21,6 @@ import java.util.Objects;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -175,14 +174,6 @@ public final class DoubleRange extends Range {
       };
     }
 
-  }
-
-  /**
-   * @deprecated Use {@link #getQuery(Query, DoubleValuesSource)}
-   */
-  @Deprecated
-  public Query getQuery(final Query fastMatchQuery, final ValueSource valueSource) {
-    return new ValueSourceQuery(this, fastMatchQuery, valueSource.asDoubleValuesSource());
   }
 
   /**
