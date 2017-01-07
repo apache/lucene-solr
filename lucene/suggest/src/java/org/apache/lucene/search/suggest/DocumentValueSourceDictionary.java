@@ -23,7 +23,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
 
@@ -63,21 +62,6 @@ import org.apache.lucene.search.LongValuesSource;
 public class DocumentValueSourceDictionary extends DocumentDictionary {
   
   private final LongValuesSource weightsValueSource;
-  
-  /**
-   * Creates a new dictionary with the contents of the fields named <code>field</code>
-   * for the terms, <code>payload</code> for the corresponding payloads, <code>contexts</code>
-   * for the associated contexts and uses the <code>weightsValueSource</code> supplied 
-   * to determine the score.
-   *
-   * @deprecated Use {@link #DocumentValueSourceDictionary(IndexReader, String, LongValuesSource, String, String)}
-   */
-  @Deprecated
-  public DocumentValueSourceDictionary(IndexReader reader, String field,
-                                       ValueSource weightsValueSource, String payload, String contexts) {
-    super(reader, field, null, payload, contexts);
-    this.weightsValueSource = weightsValueSource.asLongValuesSource();
-  }
 
   /**
    * Creates a new dictionary with the contents of the fields named <code>field</code>
@@ -94,21 +78,6 @@ public class DocumentValueSourceDictionary extends DocumentDictionary {
   /**
    * Creates a new dictionary with the contents of the fields named <code>field</code>
    * for the terms, <code>payloadField</code> for the corresponding payloads
-   * and uses the <code>weightsValueSource</code> supplied to determine the 
-   * score.
-   *
-   * @deprecated Use {@link #DocumentValueSourceDictionary(IndexReader, String, LongValuesSource, String)}
-   */
-  @Deprecated
-  public DocumentValueSourceDictionary(IndexReader reader, String field,
-                                       ValueSource weightsValueSource, String payload) {
-    super(reader, field, null, payload);
-    this.weightsValueSource = weightsValueSource.asLongValuesSource();
-  }
-
-  /**
-   * Creates a new dictionary with the contents of the fields named <code>field</code>
-   * for the terms, <code>payloadField</code> for the corresponding payloads
    * and uses the <code>weightsValueSource</code> supplied to determine the
    * score.
    */
@@ -116,20 +85,6 @@ public class DocumentValueSourceDictionary extends DocumentDictionary {
                                        LongValuesSource weightsValueSource, String payload) {
     super(reader, field, null, payload);
     this.weightsValueSource = weightsValueSource;
-  }
-  
-  /** 
-   * Creates a new dictionary with the contents of the fields named <code>field</code>
-   * for the terms and uses the <code>weightsValueSource</code> supplied to determine the 
-   * score.
-   *
-   * @deprecated Use {@link #DocumentValueSourceDictionary(IndexReader, String, LongValuesSource)}
-   */
-  @Deprecated
-  public DocumentValueSourceDictionary(IndexReader reader, String field,
-                                       ValueSource weightsValueSource) {
-    super(reader, field, null, null);
-    this.weightsValueSource = weightsValueSource.asLongValuesSource();
   }
 
   /**
