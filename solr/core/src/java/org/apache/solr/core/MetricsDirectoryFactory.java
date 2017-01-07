@@ -74,21 +74,28 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
     }
   }
 
+  /**
+   * Unwrap just one level if the argument is a {@link MetricsDirectory}
+   * @param dir directory
+   * @return delegate if the instance was a {@link MetricsDirectory}, otherwise unchanged.
+   */
+  private static Directory unwrap(Directory dir) {
+    if (dir instanceof MetricsDirectory) {
+      return ((MetricsDirectory)dir).getDelegate();
+    } else {
+      return dir;
+    }
+  }
+
   @Override
   public void doneWithDirectory(Directory dir) throws IOException {
-    // unwrap
-    if (dir instanceof MetricsDirectory) {
-      dir = ((MetricsDirectory)dir).getDelegate();
-    }
+    dir = unwrap(dir);
     in.doneWithDirectory(dir);
   }
 
   @Override
   public void addCloseListener(Directory dir, CachingDirectoryFactory.CloseListener closeListener) {
-    // unwrap
-    if (dir instanceof MetricsDirectory) {
-      dir = ((MetricsDirectory)dir).getDelegate();
-    }
+    dir = unwrap(dir);
     in.addCloseListener(dir, closeListener);
   }
 
@@ -115,19 +122,13 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
 
   @Override
   public void remove(Directory dir) throws IOException {
-    // unwrap
-    if (dir instanceof MetricsDirectory) {
-      dir = ((MetricsDirectory)dir).getDelegate();
-    }
+    dir = unwrap(dir);
     in.remove(dir);
   }
 
   @Override
   public void remove(Directory dir, boolean afterCoreClose) throws IOException {
-    // unwrap
-    if (dir instanceof MetricsDirectory) {
-      dir = ((MetricsDirectory)dir).getDelegate();
-    }
+    dir = unwrap(dir);
     in.remove(dir, afterCoreClose);
   }
 
@@ -152,8 +153,9 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
   }
 
   @Override
-  public long size(Directory directory) throws IOException {
-    return in.size(directory);
+  public long size(Directory dir) throws IOException {
+    dir = unwrap(dir);
+    return in.size(dir);
   }
 
   @Override
@@ -183,14 +185,14 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
 
   @Override
   public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
+    fromDir = unwrap(fromDir);
+    toDir = unwrap(toDir);
     in.move(fromDir, toDir, fileName, ioContext);
   }
 
   @Override
   public void renameWithOverwrite(Directory dir, String fileName, String toName) throws IOException {
-    if (dir instanceof MetricsDirectory) {
-      dir = ((MetricsDirectory) dir).getDelegate();
-    }
+    dir = unwrap(dir);
     in.renameWithOverwrite(dir, fileName, toName);
   }
 
@@ -221,10 +223,7 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
 
   @Override
   public void incRef(Directory dir) {
-    // unwrap
-    if (dir instanceof MetricsDirectory) {
-      dir = ((MetricsDirectory)dir).getDelegate();
-    }
+    dir = unwrap(dir);
     in.incRef(dir);
   }
 
@@ -242,10 +241,7 @@ public class MetricsDirectoryFactory extends DirectoryFactory implements SolrCor
 
   @Override
   public void release(Directory dir) throws IOException {
-    // unwrap
-    if (dir instanceof MetricsDirectory) {
-      dir = ((MetricsDirectory)dir).getDelegate();
-    }
+    dir = unwrap(dir);
     in.release(dir);
   }
 
