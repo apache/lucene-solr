@@ -120,7 +120,8 @@ import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
  *   &lt;/lst&gt;
  * &lt;/processor&gt;</pre>
  */
-public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcessorFactory implements SolrCoreAware {
+public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcessorFactory
+    implements SolrCoreAware, UpdateRequestProcessorFactory.RunAlways {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String TYPE_MAPPING_PARAM = "typeMapping";
