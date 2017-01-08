@@ -109,7 +109,7 @@ Upgrade Notes
 
 * SOLR-9708: You are encouraged to try out the UnifiedHighlighter by setting hl.method=unified and report feedback. It
   might become the default in 7.0. It's more efficient/faster than the other highlighters, especially compared to the
-  original Highlighter. That said, some options aren't supported yet, notably hl.fragsize.
+  original Highlighter. That said, some options aren't supported yet.
   It will get more features in time, especially with your input. See HighlightParams.java
   for a listing of highlight parameters annotated with which highlighters use them.
   hl.useFastVectorHighlighter is now considered deprecated in lieu of hl.method=fastVector.
@@ -224,6 +224,9 @@ New Features
 
 * SOLR-7466: Enable leading wildcard in complexphrase query parser, optimize it with  ReversedWildcardFilterFactory 
   when it's provided (Mikhail Khludnev)
+
+* SOLR-9935: Add hl.fragsize support when using the UnifiedHighlighter to avoid snippets/Passages that are too small.
+  Defaults to 70. (David Smiley)
 
 Optimizations
 ----------------------
