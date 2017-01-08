@@ -248,7 +248,7 @@ Optimizations
   resulting in less produced garbage and 5-7% better performance.
   (yonik)
 
-* SOLR-9902: StandardDirectoryFactory should use Files API for it's move implementation. (Mark Miller)
+* SOLR-9902: StandardDirectoryFactory should use Files API for it's move implementation. (Mark Miller, Mike Drob)
 
 Bug Fixes
 ----------------------
