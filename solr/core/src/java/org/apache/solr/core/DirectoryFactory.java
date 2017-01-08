@@ -22,6 +22,7 @@ import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -191,7 +192,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public void renameWithOverwrite(Directory dir, String fileName, String toName) throws IOException {
     try {
       dir.deleteFile(toName);
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException | NoSuchFileException e) {
 
     } catch (Exception e) {
       log.error("Exception deleting file", e);
