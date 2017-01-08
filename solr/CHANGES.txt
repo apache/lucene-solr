@@ -346,6 +346,8 @@ Other Changes
 * SOLR-5616: Simplifies grouping code to use ResponseBuilder.needDocList() to determine if it needs to
   generate a doc list for grouped results. (Steven Bower, Keith Laban, Dennis Gove)
 
+* SOLR-9944: Map the nodes function name to the GatherNodesStream (Joel Bernstein)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
