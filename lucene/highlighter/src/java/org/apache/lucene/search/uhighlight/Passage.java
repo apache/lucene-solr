@@ -171,6 +171,7 @@ public class Passage {
 
   /** @lucene.internal */
   public void setEndOffset(int endOffset) {
+    assert startOffset <= endOffset;
     this.endOffset = endOffset;
   }
 
