@@ -49,7 +49,7 @@ public interface HighlightParams {
   public static final String HIGHLIGHT_ALTERNATE = HIGHLIGHT+".highlightAlternate"; // OH, FVH
 
   // sizing
-  public static final String FRAGSIZE    = HIGHLIGHT+".fragsize"; // OH, FVH
+  public static final String FRAGSIZE    = HIGHLIGHT+".fragsize"; // OH, FVH, UH
   public static final String FRAGMENTER  = HIGHLIGHT+".fragmenter"; // OH
   public static final String INCREMENT   = HIGHLIGHT+".increment"; // OH
   public static final String REGEX       = "regex"; // OH

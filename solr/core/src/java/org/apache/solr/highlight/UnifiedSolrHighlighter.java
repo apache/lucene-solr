@@ -30,6 +30,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.postingshighlight.WholeBreakIterator;
 import org.apache.lucene.search.uhighlight.DefaultPassageFormatter;
+import org.apache.lucene.search.uhighlight.LengthGoalBreakIterator;
 import org.apache.lucene.search.uhighlight.PassageFormatter;
 import org.apache.lucene.search.uhighlight.PassageScorer;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
@@ -299,7 +300,16 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       String variant = params.getFieldParam(field, HighlightParams.BS_VARIANT);
       Locale locale = parseLocale(language, country, variant);
       String type = params.getFieldParam(field, HighlightParams.BS_TYPE);
-      return parseBreakIterator(type, locale);
+      BreakIterator baseBI = parseBreakIterator(type, locale);
+
+      // Use a default fragsize the same as the regex Fragmenter (original Highlighter) since we're
+      //  both likely shooting for sentence-like patterns.
+      int fragsize = params.getFieldInt(field, HighlightParams.FRAGSIZE, LuceneRegexFragmenter.DEFAULT_FRAGMENT_SIZE);
+      if (fragsize <= 1 || baseBI instanceof WholeBreakIterator) { // no real minimum size
+        return baseBI;
+      }
+      return LengthGoalBreakIterator.createMinLength(baseBI, fragsize);
+      // TODO option for using createClosestToLength()
     }
 
     /**
