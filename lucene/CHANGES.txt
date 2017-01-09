@@ -85,6 +85,9 @@ API Changes
 * LUCENE-7611: DocumentValueSourceDictionary now takes a LongValuesSource
   as a parameter, and the ValueSource equivalent is deprecated (Alan Woodward)
 
+* LUCENE-7624: TermsQuery has been renamed as TermInSetQuery and moved to core.
+  (Alan Woodward)
+
 New features
 
 * LUCENE-5867: Added BooleanSimilarity. (Robert Muir, Adrien Grand)

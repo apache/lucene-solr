@@ -19,12 +19,12 @@ package org.apache.solr.search;
 import java.util.Locale;
 import java.util.Random;
 
-import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrInfoMBean;
@@ -224,13 +224,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     qParser = QParser.getParser("foo_s:(a b c d e f g h i j k l m n o p q r s t u v w x y z)", req);
     qParser.setIsFilter(true); // this may change in the future
     q = qParser.getQuery();
-    assertEquals(26, ((TermsQuery)q).getTermData().size());
+    assertEquals(26, ((TermInSetQuery)q).getTermData().size());
 
     // large numeric filter query should use TermsQuery (for trie fields)
     qParser = QParser.getParser("foo_i:(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 11)", req);
     qParser.setIsFilter(true); // this may change in the future
     q = qParser.getQuery();
-    assertEquals(20, ((TermsQuery)q).getTermData().size());
+    assertEquals(20, ((TermInSetQuery)q).getTermData().size());
 
     // a filter() clause inside a relevancy query should be able to use a TermsQuery
     qParser = QParser.getParser("foo_s:aaa filter(foo_s:(a b c d e f g h i j k l m n o p q r s t u v w x y z))", req);
@@ -245,7 +245,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qq = ((FilterQuery)qq).getQuery();
     }
 
-    assertEquals(26, ((TermsQuery)qq).getTermData().size());
+    assertEquals(26, ((TermInSetQuery)qq).getTermData().size());
 
     // test mixed boolean query, including quotes (which shouldn't matter)
     qParser = QParser.getParser("foo_s:(a +aaa b -bbb c d e f bar_s:(qqq www) g h i j k l m n o p q r s t u v w x y z)", req);
@@ -255,9 +255,9 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     qq = null;
     for (BooleanClause clause : ((BooleanQuery)q).clauses()) {
       qq = clause.getQuery();
-      if (qq instanceof TermsQuery) break;
+      if (qq instanceof TermInSetQuery) break;
     }
-    assertEquals(26, ((TermsQuery)qq).getTermData().size());
+    assertEquals(26, ((TermInSetQuery)qq).getTermData().size());
 
     req.close();
   }

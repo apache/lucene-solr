@@ -16,12 +16,12 @@
  */
 package org.apache.lucene.facet;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.TermsQuery;
-import org.apache.lucene.search.Query;
-
 import java.util.ArrayList;
 import java.util.Collection;
+
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermInSetQuery;
 
 /**
  * A multi-terms {@link Query} over a {@link FacetField}.
@@ -30,9 +30,9 @@ import java.util.Collection;
  * especially in cases where you don't intend to use {@link DrillSideways}
  *
  * @lucene.experimental
- * @see org.apache.lucene.queries.TermsQuery
+ * @see org.apache.lucene.search.TermInSetQuery
  */
-public class MultiFacetQuery extends TermsQuery {
+public class MultiFacetQuery extends TermInSetQuery {
 
   /**
    * Creates a new {@code MultiFacetQuery} filtering the query on the given dimension.

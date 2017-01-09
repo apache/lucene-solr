@@ -25,7 +25,6 @@ import java.util.TreeSet;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -35,6 +34,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
@@ -281,7 +281,7 @@ public class GraphQuery extends Query {
             collectorTerms.get(i, ref);
             termList.add(ref);
           }
-          q = new TermsQuery(fromField, termList);
+          q = new TermInSetQuery(fromField, termList);
         }
         
         // If there is a filter to be used while crawling the graph, add that.

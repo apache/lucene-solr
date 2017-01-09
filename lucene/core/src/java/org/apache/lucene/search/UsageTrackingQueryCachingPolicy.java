@@ -50,9 +50,8 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
     // DocIdSet in the first place
     return query instanceof MultiTermQuery ||
         query instanceof MultiTermQueryConstantScoreWrapper ||
-        isPointQuery(query) ||
-        // can't refer to TermsQuery directly as it is in another module
-        "TermsQuery".equals(query.getClass().getSimpleName());
+        query instanceof TermInSetQuery ||
+        isPointQuery(query);
   }
 
   static boolean isCheap(Query query) {
