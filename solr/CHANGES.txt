@@ -345,6 +345,10 @@ Bug Fixes
 * SOLR-9883: Example schemaless solr config files can lead to invalid tlog replays: when updates are buffered,
   update processors ordered before DistributedUpdateProcessor, e.g. field normalization, are never run. (Steve Rowe)
 
+* SOLR-9644: SimpleMLTQParser and CloudMLTQParser did not handle field boosts properly
+  and CloudMLTQParser included extra strings from the field definitions in the query.
+  (Ere Maijala via Anshum Gupta)
+
 Other Changes
 ----------------------
 
