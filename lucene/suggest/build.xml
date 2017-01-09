@@ -44,6 +44,6 @@
     </invoke-module-javadoc>
   </target>
 
-  <target name="compile-core" depends="jar-expressions, jar-analyzers-common, common.compile-core" />
+  <target name="compile-core" depends="jar-expressions, jar-analyzers-common, jar-queries, common.compile-core" />
 
 </project>
