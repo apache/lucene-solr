@@ -27,9 +27,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -172,6 +177,16 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
 
       // make sure leader has not changed after bringing initial leader back
       assertEquals(nodePeerSynced, shardToLeaderJetty.get("shard1"));
+
+      // assert metrics
+      MetricRegistry registry = nodePeerSynced.jetty.getCoreContainer().getMetricManager().registry("solr.core.collection1");
+      Map<String, Metric> metrics = registry.getMetrics();
+      assertTrue("REPLICATION.time present", metrics.containsKey("REPLICATION.time"));
+      assertTrue("REPLICATION.errors present", metrics.containsKey("REPLICATION.errors"));
+      Timer timer = (Timer)metrics.get("REPLICATION.time");
+      assertEquals(1L, timer.getCount());
+      Counter counter = (Counter)metrics.get("REPLICATION.errors");
+      assertEquals(0L, counter.getCount());
       success = true;
     } finally {
       System.clearProperty("solr.disableFingerprint");
