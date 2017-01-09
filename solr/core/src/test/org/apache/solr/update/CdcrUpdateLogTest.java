@@ -31,19 +31,13 @@ import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
 
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
 @Nightly
 public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
-
-  // means that we've seen the leader and have version info (i.e. we are a non-leader replica)
-  private static String FROM_LEADER = DistributedUpdateProcessor.DistribPhase.FROMLEADER.toString();
 
   private static int timeout = 60;  // acquire timeout in seconds.  change this to a huge number when debugging to prevent threads from advancing.
 
@@ -63,17 +57,6 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
       System.clearProperty("solr.directoryFactory");
     } else {
       System.setProperty("solr.directoryFactory", savedFactory);
-    }
-  }
-
-  // since we make up fake versions in these tests, we can get messed up by a DBQ with a real version
-  // since Solr can think following updates were reordered.
-  @Override
-  public void clearIndex() {
-    try {
-      deleteByQueryAndGetVersion("*:*", params("_version_", Long.toString(-Long.MAX_VALUE), DISTRIB_UPDATE_PARAM, FROM_LEADER));
-    } catch (Exception e) {
-      throw new RuntimeException(e);
     }
   }
 
