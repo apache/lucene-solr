@@ -1687,7 +1687,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   public IndexFingerprint getIndexFingerprint(SolrIndexSearcher searcher, LeafReaderContext ctx, long maxVersion)
       throws IOException {
     IndexFingerprint f = null;
-    f = perSegmentFingerprintCache.get(ctx.reader().getCoreCacheKey());
+    f = perSegmentFingerprintCache.get(ctx.reader().getCombinedCoreAndDeletesKey());
     // fingerprint is either not cached or
     // if we want fingerprint only up to a version less than maxVersionEncountered in the segment, or
     // documents were deleted from segment for which fingerprint was cached
@@ -1698,7 +1698,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       // cache fingerprint for the segment only if all the versions in the segment are included in the fingerprint
       if (f.getMaxVersionEncountered() == f.getMaxInHash()) {
         log.info("Caching fingerprint for searcher:{} leafReaderContext:{} mavVersion:{}", searcher, ctx, maxVersion);
-        perSegmentFingerprintCache.put(ctx.reader().getCoreCacheKey(), f);
+        perSegmentFingerprintCache.put(ctx.reader().getCombinedCoreAndDeletesKey(), f);
       }
 
     } else {

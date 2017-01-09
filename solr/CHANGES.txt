@@ -406,6 +406,8 @@ Other Changes
 
 * SOLR-9944: Map the nodes function name to the GatherNodesStream (Joel Bernstein)
 
+* SOLR-9777: IndexFingerprinting should use getCombinedCoreAndDeletesKey() instead of getCoreCacheKey() for per-segment caching (Ishan Chattopadhyaya)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
