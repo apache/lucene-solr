@@ -36,23 +36,11 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.update.UpdateLog;
 
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 public class TestRTGBase extends SolrTestCaseJ4 {
 
   // means we've seen the leader and have version info (i.e. we are a non-leader replica)
   public static String FROM_LEADER = DistribPhase.FROMLEADER.toString();
-
-  // since we make up fake versions in these tests, we can get messed up by a DBQ with a real version
-  // since Solr can think following updates were reordered.
-  @Override
-  public void clearIndex() {
-    try {
-      deleteByQueryAndGetVersion("*:*", params("_version_", Long.toString(-Long.MAX_VALUE), DISTRIB_UPDATE_PARAM,FROM_LEADER));
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
 
   protected final ConcurrentHashMap<Integer,DocInfo> model = new ConcurrentHashMap<>();
   protected Map<Integer,DocInfo> committedModel = new HashMap<>();
