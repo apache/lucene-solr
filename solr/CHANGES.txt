@@ -228,6 +228,8 @@ New Features
 * SOLR-9935: Add hl.fragsize support when using the UnifiedHighlighter to avoid snippets/Passages that are too small.
   Defaults to 70. (David Smiley)
 
+* SOLR-9856: Collect metrics for shard replication and tlog replay on replicas (ab).
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have

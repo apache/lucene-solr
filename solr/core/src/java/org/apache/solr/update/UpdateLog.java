@@ -40,6 +40,8 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Meter;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
@@ -50,6 +52,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -71,7 +76,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 
 
 /** @lucene.experimental */
-public class UpdateLog implements PluginInfoInitialized {
+public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   private static final long STATUS_TIME = TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
   public static String LOG_FILENAME_PATTERN = "%s.%019d";
   public static String TLOG_NAME="tlog";
@@ -185,6 +190,14 @@ public class UpdateLog implements PluginInfoInitialized {
   protected volatile boolean cancelApplyBufferUpdate;
   List<Long> startingVersions;
   int startingOperation;  // last operation in the logs on startup
+
+  // metrics
+  protected Gauge<Integer> bufferedOpsGauge;
+  protected Gauge<Integer> replayLogsCountGauge;
+  protected Gauge<Long> replayBytesGauge;
+  protected Gauge<Integer> stateGauge;
+  protected Meter applyingBufferedOpsMeter;
+  protected Meter replayOpsMeter;
 
   public static class LogPtr {
     final long pointer;
@@ -333,7 +346,39 @@ public class UpdateLog implements PluginInfoInitialized {
       }
 
     }
+    core.getCoreMetricManager().registerMetricProducer(SolrInfoMBean.Category.TLOG.toString(), this);
+  }
 
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    bufferedOpsGauge = () -> {
+      if (tlog == null) {
+        return 0;
+      } else if (state == State.APPLYING_BUFFERED) {
+        // numRecords counts header as a record
+        return tlog.numRecords() - 1 - recoveryInfo.adds - recoveryInfo.deleteByQuery - recoveryInfo.deletes - recoveryInfo.errors;
+      } else if (state == State.BUFFERING) {
+        // numRecords counts header as a record
+        return tlog.numRecords() - 1;
+      } else {
+        return 0;
+      }
+    };
+    replayLogsCountGauge = () -> logs.size();
+    replayBytesGauge = () -> {
+      if (state == State.REPLAYING) {
+        return getTotalLogsSize();
+      } else {
+        return 0L;
+      }
+    };
+    manager.register(registry, bufferedOpsGauge, true, "ops", scope, "buffered");
+    manager.register(registry, replayLogsCountGauge, true, "logs", scope, "replay", "remaining");
+    manager.register(registry, replayBytesGauge, true, "bytes", scope, "replay", "remaining");
+    applyingBufferedOpsMeter = manager.meter(registry, "ops", scope, "applying_buffered");
+    replayOpsMeter = manager.meter(registry, "ops", scope, "replay");
+    stateGauge = () -> state.ordinal();
+    manager.register(registry, stateGauge, true, "state", scope);
   }
 
   /**
@@ -1426,6 +1471,13 @@ public class UpdateLog implements PluginInfoInitialized {
             if (rsp.getException() != null) {
               loglog.error("REPLAY_ERR: Exception replaying log", rsp.getException());
               throw rsp.getException();
+            }
+            if (state == State.REPLAYING) {
+              replayOpsMeter.mark();
+            } else if (state == State.APPLYING_BUFFERED) {
+              applyingBufferedOpsMeter.mark();
+            } else {
+              // XXX should not happen?
             }
           } catch (IOException ex) {
             recoveryInfo.errors++;
