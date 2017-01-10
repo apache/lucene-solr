@@ -139,6 +139,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertTrue(replayingLogs.getValue().intValue() > 0);
       Gauge<Long> replayingDocs = (Gauge<Long>)metrics.get("TLOG.replay.remaining.bytes");
       assertTrue(replayingDocs.getValue().longValue() > 0);
+      Meter replayDocs = (Meter)metrics.get("TLOG.replay.ops");
+      long initialOps = replayDocs.getCount();
 
       // unblock recovery
       logReplay.release(1000);
@@ -151,8 +153,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertJQ(req("q","*:*") ,"/response/numFound==3");
 
-      Meter replayDocs = (Meter)metrics.get("TLOG.replay.ops");
-      assertEquals(5L, replayDocs.getCount());
+      assertEquals(5L, replayDocs.getCount() - initialOps);
       assertEquals(UpdateLog.State.ACTIVE.ordinal(), state.getValue().intValue());
 
       // make sure we can still access versions after recovery
@@ -236,6 +237,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
       Gauge<Integer> state = (Gauge<Integer>)metrics.get("TLOG.state");
       assertEquals(UpdateLog.State.BUFFERING.ordinal(), state.getValue().intValue());
+      Gauge<Integer> bufferedOps = (Gauge<Integer>)metrics.get("TLOG.buffered.ops");
+      int initialOps = bufferedOps.getValue();
+      Meter applyingBuffered = (Meter)metrics.get("TLOG.applying_buffered.ops");
+      long initialApplyingOps = applyingBuffered.getCount();
 
       // simulate updates from a leader
       updateJ(jsonAdd(sdoc("id","B1", "_version_","1010")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
@@ -267,8 +272,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
           ,"=={'doc':null}"
       );
 
-      Gauge<Integer> bufferedOps = (Gauge<Integer>)metrics.get("TLOG.buffered.ops");
-      assertEquals(6, bufferedOps.getValue().intValue());
+      assertEquals(6, bufferedOps.getValue().intValue() - initialOps);
 
       rinfoFuture = ulog.applyBufferedUpdates();
       assertTrue(rinfoFuture != null);
@@ -280,8 +284,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       UpdateLog.RecoveryInfo rinfo = rinfoFuture.get();
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
 
-      Meter applyingBuffered = (Meter)metrics.get("TLOG.applying_buffered.ops");
-      assertEquals(6L, applyingBuffered.getCount());
+      assertEquals(6L, applyingBuffered.getCount() - initialApplyingOps);
 
       assertJQ(req("qt","/get", "getVersions","6")
           ,"=={'versions':[-2010,1030,1020,-1017,1015,1010]}"
