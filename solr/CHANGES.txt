@@ -32,11 +32,25 @@ Jetty 9.3.14.v20161028
 Detailed Change List
 ----------------------
 
-Optimizations
+Upgrade Notes
 ----------------------
 
+New Features
+----------------------
+
+Optimizations
+----------------------
 * SOLR-9941: Clear the deletes lists at UpdateLog before replaying from log. This prevents redundantly pre-applying
   DBQs, during the log replay, to every update in the log as if the DBQs were out of order. (hossman, Ishan Chattopadhyaya)
+
+* SOLR-9584: Support Solr being proxied with another endpoint than default /solr, by using relative links
+  in AdminUI javascripts (Yun Jie Zhou via janhoy)
+
+Bug Fixes
+----------------------
+
+Other Changes
+----------------------
 
 ==================  6.4.0 ==================
 
