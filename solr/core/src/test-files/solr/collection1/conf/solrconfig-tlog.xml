@@ -46,10 +46,6 @@
 
   <requestHandler name="standard" class="solr.StandardRequestHandler">
   </requestHandler>
-  
-  <peerSync>
-    <useRangeVersions>${solr.peerSync.useRangeVersions:true}</useRangeVersions>
-  </peerSync>
 
   <updateHandler class="solr.DirectUpdateHandler2">
     <updateLog>
