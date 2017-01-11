@@ -126,6 +126,10 @@ New features
   concurrently across all segments in the index (Emmanuel Keller via
   Mike McCandless)
 
+* LUCENE-7627: Added .intersect methods to SortedDocValues and 
+  SortedSetDocValues to allow filtering their TermsEnums with a
+  CompiledAutomaton (Alan Woodward, Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-7547: JapaneseTokenizerFactory was failing to close the

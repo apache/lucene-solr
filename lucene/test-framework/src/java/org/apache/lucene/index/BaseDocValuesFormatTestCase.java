@@ -67,6 +67,8 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.RegExp;
 
 import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
@@ -906,6 +908,21 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     termsEnum.seekExact(2);
     assertEquals("world", termsEnum.term().utf8ToString());
     assertEquals(2, termsEnum.ord());
+
+    // NORMAL automaton
+    termsEnum = dv.intersect(new CompiledAutomaton(new RegExp(".*l.*").toAutomaton()));
+    assertEquals("hello", termsEnum.next().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertEquals("world", termsEnum.next().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    assertNull(termsEnum.next());
+
+    // SINGLE automaton
+    termsEnum = dv.intersect(new CompiledAutomaton(new RegExp("hello").toAutomaton()));
+    assertEquals("hello", termsEnum.next().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertNull(termsEnum.next());
+
     ireader.close();
     directory.close();
   }
@@ -2057,6 +2074,21 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     termsEnum.seekExact(2);
     assertEquals("world", termsEnum.term().utf8ToString());
     assertEquals(2, termsEnum.ord());
+
+    // NORMAL automaton
+    termsEnum = dv.intersect(new CompiledAutomaton(new RegExp(".*l.*").toAutomaton()));
+    assertEquals("hello", termsEnum.next().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertEquals("world", termsEnum.next().utf8ToString());
+    assertEquals(2, termsEnum.ord());
+    assertNull(termsEnum.next());
+
+    // SINGLE automaton
+    termsEnum = dv.intersect(new CompiledAutomaton(new RegExp("hello").toAutomaton()));
+    assertEquals("hello", termsEnum.next().utf8ToString());
+    assertEquals(1, termsEnum.ord());
+    assertNull(termsEnum.next());
+
     ireader.close();
     directory.close();
   }
