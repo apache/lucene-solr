@@ -25,6 +25,7 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.noggit.ObjectBuilder;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.DirectUpdateHandler2;
@@ -189,6 +190,132 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertEquals(UpdateLog.State.ACTIVE, h.getCore().getUpdateHandler().getUpdateLog().getState());
 
+    } finally {
+      DirectUpdateHandler2.commitOnClose = true;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
+    }
+
+  }
+
+  @Test
+  public void testNewDBQAndDocMatchingOldDBQDuringLogReplay() throws Exception {
+    try {
+
+      DirectUpdateHandler2.commitOnClose = false;
+      final Semaphore logReplay = new Semaphore(0);
+      final Semaphore logReplayFinish = new Semaphore(0);
+
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      };
+
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+
+      clearIndex();
+      assertU(commit());
+
+      // because we're sending updates during log replay, we can't emulate replica logic -- we need to use
+      // normal updates like a leader / single-node instance would get.
+      //
+      // (In SolrCloud mode, when a replica run recoverFromLog, replica in this time period will have state = DOWN,
+      // so It won't receive any updates.)
+      
+      updateJ(jsonAdd(sdoc("id","B0")),params());
+      updateJ(jsonAdd(sdoc("id","B1")),params()); // should be deleted by subsequent DBQ in tlog
+      updateJ(jsonAdd(sdoc("id","B2")),params()); // should be deleted by DBQ that arives during tlog replay
+      updateJ(jsonDelQ("id:B1 OR id:B3 OR id:B6"),params());
+      updateJ(jsonAdd(sdoc("id","B3")),params()); // should *NOT* be deleted by previous DBQ in tlog
+      updateJ(jsonAdd(sdoc("id","B4")),params()); // should be deleted by DBQ that arives during tlog replay
+      updateJ(jsonAdd(sdoc("id","B5")),params());
+      
+      // sanity check no updates have been applied yet (just in tlog)
+      assertJQ(req("q","*:*"),"/response/numFound==0");
+
+      h.close();
+      createCore(); // (Attempts to) kick off recovery (which is currently blocked by semaphore)
+
+      // verify that previous close didn't do a commit & that recovery should be blocked by our hook
+      assertJQ(req("q","*:*") ,"/response/numFound==0");
+
+      // begin recovery (first few items)
+      logReplay.release(TestUtil.nextInt(random(),1,6));
+      // ... but before recover is completely unblocked/finished, have a *new* DBQ arrive
+      // that should delete some items we either have just replayed, or are about to replay (or maybe both)...
+      updateJ(jsonDelQ("id:B2 OR id:B4"),params());
+      // ...and re-add a doc that would have matched a DBQ already in the tlog
+      // (which may/may-not have been replayed yet)
+      updateJ(jsonAdd(sdoc("id","B6")),params()); // should *NOT* be deleted by DBQ from tlog
+      assertU(commit());
+
+      // now completely unblock recovery
+      logReplay.release(1000);
+
+      // wait until recovery has finished
+      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+
+      // verify only the expected docs are found, even with out of order DBQ and DBQ that arived during recovery
+      assertJQ(req("q", "*:*", "fl", "id", "sort", "id asc")
+               , "/response/docs==[{'id':'B0'}, {'id':'B3'}, {'id':'B5'}, {'id':'B6'}]");
+      
+    } finally {
+      DirectUpdateHandler2.commitOnClose = true;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
+    }
+
+  }
+
+  @Test
+  public void testLogReplayWithReorderedDBQ() throws Exception {
+    try {
+
+      DirectUpdateHandler2.commitOnClose = false;
+      final Semaphore logReplay = new Semaphore(0);
+      final Semaphore logReplayFinish = new Semaphore(0);
+
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      };
+
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+
+
+      clearIndex();
+      assertU(commit());
+
+      updateJ(jsonAdd(sdoc("id","B1", "_version_","1010")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(jsonDelQ("id:B2"), params(DISTRIB_UPDATE_PARAM,FROM_LEADER, "_version_","-1017")); // This should've arrived after the 1015th update
+      updateJ(jsonAdd(sdoc("id","B2", "_version_","1015")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(jsonAdd(sdoc("id","B3", "_version_","1020")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+
+
+      assertJQ(req("q","*:*"),"/response/numFound==0");
+
+      h.close();
+      createCore();
+      // Solr should kick this off now
+      // h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
+
+      // verify that previous close didn't do a commit
+      // recovery should be blocked by our hook
+      assertJQ(req("q","*:*") ,"/response/numFound==0");
+
+      // unblock recovery
+      logReplay.release(1000);
+
+      // wait until recovery has finished
+      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+
+      assertJQ(req("q","*:*") ,"/response/numFound==2");
     } finally {
       DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
