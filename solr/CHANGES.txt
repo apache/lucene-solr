@@ -353,6 +353,9 @@ Bug Fixes
   and CloudMLTQParser included extra strings from the field definitions in the query.
   (Ere Maijala via Anshum Gupta)
 
+* SOLR-9954: Prevent against failure during failed snapshot cleanup from swallowing the actual cause
+  for the snapshot to fail. (thelabdude)
+
 Other Changes
 ----------------------
 
