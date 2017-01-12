@@ -19,7 +19,9 @@ package org.apache.solr.util.stats;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -35,13 +37,72 @@ import org.apache.http.protocol.HttpRequestExecutor;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 
+import static org.apache.solr.metrics.SolrMetricManager.mkName;
+
 /**
  * Sub-class of HttpRequestExecutor which tracks metrics interesting to solr
  * Inspired and partially copied from dropwizard httpclient library
  */
 public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor implements SolrMetricProducer {
+  public static final HttpClientMetricNameStrategy QUERYLESS_URL_AND_METHOD =
+      (scope, request) -> {
+        try {
+          final RequestLine requestLine = request.getRequestLine();
+          String schemeHostPort = null;
+          if (request instanceof HttpRequestWrapper) {
+            HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
+            if (wrapper.getTarget() != null) {
+              schemeHostPort = wrapper.getTarget().getSchemeName() + "://" + wrapper.getTarget().getHostName() + ":" + wrapper.getTarget().getPort();
+            }
+          }
+          final URIBuilder url = new URIBuilder(requestLine.getUri());
+          return mkName((schemeHostPort != null ? schemeHostPort : "") + url.removeQuery().build().toString() + "." + methodNameString(request), scope);
+        } catch (URISyntaxException e) {
+          throw new IllegalArgumentException(e);
+        }
+      };
+
+  public static final HttpClientMetricNameStrategy METHOD_ONLY =
+      (scope, request) -> mkName(methodNameString(request), scope);
+
+  public static final HttpClientMetricNameStrategy HOST_AND_METHOD =
+      (scope, request) -> {
+        try {
+          final RequestLine requestLine = request.getRequestLine();
+          String schemeHostPort = null;
+          if (request instanceof HttpRequestWrapper) {
+            HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
+            if (wrapper.getTarget() != null) {
+              schemeHostPort = wrapper.getTarget().getSchemeName() + "://" + wrapper.getTarget().getHostName() + ":" + wrapper.getTarget().getPort();
+            }
+          }
+          final URIBuilder url = new URIBuilder(requestLine.getUri());
+          return mkName((schemeHostPort != null ? schemeHostPort : "") + "." + methodNameString(request), scope);
+        } catch (URISyntaxException e) {
+          throw new IllegalArgumentException(e);
+        }
+      };
+
+  public static final Map<String, HttpClientMetricNameStrategy> KNOWN_METRIC_NAME_STRATEGIES = new HashMap<>(3);
+
+  static  {
+    KNOWN_METRIC_NAME_STRATEGIES.put("queryLessURLAndMethod", QUERYLESS_URL_AND_METHOD);
+    KNOWN_METRIC_NAME_STRATEGIES.put("hostAndMethod", HOST_AND_METHOD);
+    KNOWN_METRIC_NAME_STRATEGIES.put("methodOnly", METHOD_ONLY);
+  }
+
   protected MetricRegistry metricsRegistry;
   protected String scope;
+  protected HttpClientMetricNameStrategy nameStrategy;
+
+  public InstrumentedHttpRequestExecutor(int waitForContinue, HttpClientMetricNameStrategy nameStrategy) {
+    super(waitForContinue);
+    this.nameStrategy = nameStrategy;
+  }
+
+  public InstrumentedHttpRequestExecutor(HttpClientMetricNameStrategy nameStrategy) {
+    this.nameStrategy = nameStrategy;
+  }
 
   private static String methodNameString(HttpRequest request) {
     return request.getRequestLine().getMethod().toLowerCase(Locale.ROOT) + ".requests";
@@ -50,7 +111,7 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
   @Override
   public HttpResponse execute(HttpRequest request, HttpClientConnection conn, HttpContext context) throws IOException, HttpException {
     Timer.Context timerContext = null;
-    if (metricsRegistry != null)  {
+    if (metricsRegistry != null) {
       timerContext = timer(request).time();
     }
     try {
@@ -63,7 +124,7 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
   }
 
   private Timer timer(HttpRequest request) {
-    return metricsRegistry.timer(getNameFor(request));
+    return metricsRegistry.timer(nameStrategy.getNameFor(scope, request));
   }
 
   @Override
@@ -72,20 +133,4 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
     this.scope = scope;
   }
 
-  private String getNameFor(HttpRequest request) {
-    try {
-      final RequestLine requestLine = request.getRequestLine();
-      String schemeHostPort = null;
-      if (request instanceof HttpRequestWrapper) {
-        HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
-        if (wrapper.getTarget() != null)  {
-          schemeHostPort = wrapper.getTarget().getSchemeName() + "://" + wrapper.getTarget().getHostName() + ":" +  wrapper.getTarget().getPort();
-        }
-      }
-      final URIBuilder url = new URIBuilder(requestLine.getUri());
-      return SolrMetricManager.mkName((schemeHostPort != null ? schemeHostPort : "") + url.removeQuery().build().toString() + "." + methodNameString(request), scope);
-    } catch (URISyntaxException e) {
-      throw new IllegalArgumentException(e);
-    }
-  }
 }

@@ -708,7 +708,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
   @Override
   public Category getCategory() {
-    return Category.OTHER;
+    return Category.ADMIN;
   }
 
 

@@ -113,6 +113,7 @@ public class TokenStreamToAutomaton {
     final RollingBuffer<Position> positions = new Positions();
 
     int pos = -1;
+    int freedPos = 0;
     Position posData = null;
     int maxOffset = 0;
     while (in.incrementToken()) {
@@ -150,7 +151,15 @@ public class TokenStreamToAutomaton {
             addHoles(builder, positions, pos);
           }
         }
-        positions.freeBefore(pos);
+        while (freedPos <= pos) {
+          Position freePosData = positions.get(freedPos);
+          // don't free this position yet if we may still need to fill holes over it:
+          if (freePosData.arriving == -1 || freePosData.leaving == -1) {
+            break;
+          }
+          positions.freeBefore(freedPos);
+          freedPos++;
+        }
       }
 
       final int endPos = pos + posLengthAtt.getPositionLength();

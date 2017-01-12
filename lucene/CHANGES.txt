@@ -68,6 +68,26 @@ API Changes
 * LUCENE-7607: LeafFieldComparator.setScorer and SimpleFieldComparator.setScorer
   are declared as throwing IOException (Alan Woodward)
 
+* LUCENE-7617: Collector construction for two-pass grouping queries is
+  abstracted into a new Grouper class, which can be passed as a constructor
+  parameter to GroupingSearch.  The abstract base classes for the different
+  grouping Collectors are renamed to remove the Abstract* prefix.
+  (Alan Woodward, Martijn van Groningen)
+
+* LUCENE-7609: The expressions module now uses the DoubleValuesSource API, and 
+  no longer depends on the queries module.  Expression#getValueSource() is
+  replaced with Expression#getDoubleValuesSource(). (Alan Woodward, Adrien
+  Grand)
+
+* LUCENE-7610: The facets module now uses the DoubleValuesSource API, and
+  methods that take ValueSource parameters are deprecated (Alan Woodward)
+
+* LUCENE-7611: DocumentValueSourceDictionary now takes a LongValuesSource
+  as a parameter, and the ValueSource equivalent is deprecated (Alan Woodward)
+
+* LUCENE-7624: TermsQuery has been renamed as TermInSetQuery and moved to core.
+  (Alan Woodward)
+
 New features
 
 * LUCENE-5867: Added BooleanSimilarity. (Robert Muir, Adrien Grand)
@@ -198,6 +218,13 @@ Improvements
 * LUCENE-7401: Changed the way BKD trees pick the split dimension in order to
   ensure all dimensions are indexed. (Adrien Grand)
 
+* LUCENE-7614: Complex Phrase Query parser ignores double quotes around single token 
+  prefix, wildcard, range queries (Mikhail Khludnev)
+
+* LUCENE-7620: Added LengthGoalBreakIterator, a wrapper around another B.I. to skip breaks
+  that would create Passages that are too short.  Only for use with the UnifiedHighlighter
+  (and probably PostingsHighlighter).  (David Smiley)
+
 Optimizations
 
 * LUCENE-7568: Optimize merging when index sorting is used but the
@@ -225,8 +252,8 @@ Other
 
 * LUCENE-7534: fix smokeTestRelease.py to run on Cygwin (Mikhail Khludnev)
 
-* LUCENE-7559: UnifiedHighlighter: Make Passage more exposed to allow passage creation to
-  be customized. (David Smiley)
+* LUCENE-7559: UnifiedHighlighter: Make Passage and OffsetsEnum more exposed to allow
+  passage creation to be customized. (David Smiley)
 
 * LUCENE-7599: Simplify TestRandomChains using Java's built-in Predicate and
   Function interfaces. (Ahmet Arslan via Adrien Grand)

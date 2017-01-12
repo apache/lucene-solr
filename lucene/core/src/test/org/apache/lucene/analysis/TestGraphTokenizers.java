@@ -585,4 +585,16 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
       Operations.determinize(Operations.removeDeadStates(expected), DEFAULT_MAX_DETERMINIZED_STATES),
       Operations.determinize(Operations.removeDeadStates(actual), DEFAULT_MAX_DETERMINIZED_STATES)));
   }
+
+  public void testTokenStreamGraphWithHoles() throws Exception {
+    final TokenStream ts = new CannedTokenStream(
+      new Token[] {
+        token("abc", 1, 1),
+        token("xyz", 1, 8),
+        token("def", 1, 1),
+        token("ghi", 1, 1),
+      });
+    assertSameLanguage(Operations.union(join(s2a("abc"), SEP_A, s2a("xyz")),
+                                        join(s2a("abc"), SEP_A, HOLE_A, SEP_A, s2a("def"), SEP_A, s2a("ghi"))), ts);
+  }
 }

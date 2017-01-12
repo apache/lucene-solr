@@ -409,7 +409,12 @@ public class MoreLikeThisComponent extends SearchComponent {
   public String getDescription() {
     return "More Like This";
   }
-  
+
+  @Override
+  public Category getCategory() {
+    return Category.QUERY;
+  }
+
   @Override
   public URL[] getDocs() {
     return null;

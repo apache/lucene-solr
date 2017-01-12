@@ -74,6 +74,33 @@ public abstract class LongValuesSource {
     return fromLongField(field);
   }
 
+  /**
+   * Creates a LongValuesSource that always returns a constant value
+   */
+  public static LongValuesSource constant(long value) {
+    return new LongValuesSource() {
+      @Override
+      public LongValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+        return new LongValues() {
+          @Override
+          public long longValue() throws IOException {
+            return value;
+          }
+
+          @Override
+          public boolean advanceExact(int doc) throws IOException {
+            return true;
+          }
+        };
+      }
+
+      @Override
+      public boolean needsScores() {
+        return false;
+      }
+    };
+  }
+
   private static class FieldValuesSource extends LongValuesSource {
 
     final String field;

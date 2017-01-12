@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.queries;
+package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,23 +40,11 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BulkScorer;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.ConstantScoreScorer;
-import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -66,7 +54,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * <p>For instance in the following example, both @{code q1} and {@code q2}
  * would yield the same scores:
  * <pre class="prettyprint">
- * Query q1 = new TermsQuery(new Term("field", "foo"), new Term("field", "bar"));
+ * Query q1 = new TermInSetQuery(new Term("field", "foo"), new Term("field", "bar"));
  *
  * BooleanQuery bq = new BooleanQuery();
  * bq.add(new TermQuery(new Term("field", "foo")), Occur.SHOULD);
@@ -79,9 +67,9 @@ import org.apache.lucene.util.RamUsageEstimator;
  * over this bit set.
  * <p>NOTE: This query produces scores that are equal to its boost
  */
-public class TermsQuery extends Query implements Accountable {
+public class TermInSetQuery extends Query implements Accountable {
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(TermsQuery.class);
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(TermInSetQuery.class);
   // Same threshold as MultiTermQueryConstantScoreWrapper
   static final int BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD = 16;
 
@@ -90,10 +78,10 @@ public class TermsQuery extends Query implements Accountable {
   private final int termDataHashCode; // cached hashcode of termData
 
   /**
-   * Creates a new {@link TermsQuery} from the given collection. It
+   * Creates a new {@link TermInSetQuery} from the given collection. It
    * can contain duplicate terms and multiple fields.
    */
-  public TermsQuery(Collection<Term> terms) {
+  public TermInSetQuery(Collection<Term> terms) {
     Term[] sortedTerms = terms.toArray(new Term[terms.size()]);
     // already sorted if we are a SortedSet with natural order
     boolean sorted = terms instanceof SortedSet && ((SortedSet<Term>)terms).comparator() == null;
@@ -114,12 +102,12 @@ public class TermsQuery extends Query implements Accountable {
     termData = builder.finish();
     termDataHashCode = termData.hashCode();
   }
-  
+
   /**
-   * Creates a new {@link TermsQuery} from the given collection for
+   * Creates a new {@link TermInSetQuery} from the given collection for
    * a single field. It can contain duplicate terms.
    */
-  public TermsQuery(String field, Collection<BytesRef> terms) {
+  public TermInSetQuery(String field, Collection<BytesRef> terms) {
     BytesRef[] sortedTerms = terms.toArray(new BytesRef[terms.size()]);
     // already sorted if we are a SortedSet with natural order
     boolean sorted = terms instanceof SortedSet && ((SortedSet<BytesRef>)terms).comparator() == null;
@@ -143,18 +131,18 @@ public class TermsQuery extends Query implements Accountable {
   }
 
   /**
-   * Creates a new {@link TermsQuery} from the given {@link BytesRef} array for
+   * Creates a new {@link TermInSetQuery} from the given {@link BytesRef} array for
    * a single field.
    */
-  public TermsQuery(String field, BytesRef...terms) {
-   this(field, Arrays.asList(terms));
+  public TermInSetQuery(String field, BytesRef...terms) {
+    this(field, Arrays.asList(terms));
   }
 
   /**
-   * Creates a new {@link TermsQuery} from the given array. The array can
+   * Creates a new {@link TermInSetQuery} from the given array. The array can
    * contain duplicate terms and multiple fields.
    */
-  public TermsQuery(final Term... terms) {
+  public TermInSetQuery(final Term... terms) {
     this(Arrays.asList(terms));
   }
 
@@ -175,13 +163,13 @@ public class TermsQuery extends Query implements Accountable {
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+        equalsTo(getClass().cast(other));
   }
 
-  private boolean equalsTo(TermsQuery other) {
+  private boolean equalsTo(TermInSetQuery other) {
     // termData might be heavy to compare so check the hash code first
-    return termDataHashCode == other.termDataHashCode && 
-           termData.equals(other.termData);
+    return termDataHashCode == other.termDataHashCode &&
+        termData.equals(other.termData);
   }
 
   @Override

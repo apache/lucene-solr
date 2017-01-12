@@ -71,6 +71,11 @@ Optimizations
   string fields from the FieldCache, resulting in up to 56% better throughput for those cases.
   (yonik)
 
+* SOLR-9584: Support Solr being proxied with another endpoint than default /solr, by using relative links
+  in AdminUI javascripts (Yun Jie Zhou via janhoy)
+
+* SOLR-9941: Clear the deletes lists at UpdateLog before replaying from log. This prevents redundantly pre-applying
+  DBQs, during the log replay, to every update in the log as if the DBQs were out of order. (hossman, Ishan Chattopadhyaya)
 
 ==================  6.4.0 ==================
 
@@ -109,7 +114,7 @@ Upgrade Notes
 
 * SOLR-9708: You are encouraged to try out the UnifiedHighlighter by setting hl.method=unified and report feedback. It
   might become the default in 7.0. It's more efficient/faster than the other highlighters, especially compared to the
-  original Highlighter. That said, some options aren't supported yet, notably hl.fragsize.
+  original Highlighter. That said, some options aren't supported yet.
   It will get more features in time, especially with your input. See HighlightParams.java
   for a listing of highlight parameters annotated with which highlighters use them.
   hl.useFastVectorHighlighter is now considered deprecated in lieu of hl.method=fastVector.
@@ -124,6 +129,9 @@ Upgrade Notes
 
 New Features
 ----------------------
+* SOLR-9918: Add SkipExistingDocumentsProcessor that skips duplicate inserts and ignores updates to missing docs
+  (Tim Owen via koji)
+
 * SOLR-9293: Solrj client support for hierarchical clusters and other topics 
   marker. (Dawid Weiss)
 
@@ -201,7 +209,9 @@ New Features
 
 * SOLR-9725: Substitute properties into JdbcDataSource configuration ( Jamie Jackson, Yuri Sashevsky via Mikhail Khludnev)
 
-* SOLR-9877: SOLR-9923: Use instrumented http client and connection pool. (shalin)
+* SOLR-9877: SOLR-9923: SOLR-9948: Use instrumented http client and connection pool in HttpShardHandler and
+  UpdateShardHandler. The metrics are collected per query-less URL and method by default but it can be configured
+  to host/method and per-method as well. (shalin)
 
 * SOLR-9880: Add Ganglia, Graphite and SLF4J metrics reporters. (ab)
 
@@ -225,6 +235,16 @@ New Features
 * SOLR-7466: Enable leading wildcard in complexphrase query parser, optimize it with  ReversedWildcardFilterFactory 
   when it's provided (Mikhail Khludnev)
 
+* SOLR-9935: Add hl.fragsize support when using the UnifiedHighlighter to avoid snippets/Passages that are too small.
+  Defaults to 70. (David Smiley)
+
+* SOLR-9856: Collect metrics for shard replication and tlog replay on replicas (ab).
+
+* SOLR-9886: Add a 'enable' flag to caches to enable/disable them (Pushkar Raste, noble)
+
+* SOLR-9947: Clean up some SolrInfoMBean categories. Add an alternative hierarchical view in JMX
+  for SolrInfoMBeans, which uses similar conventions to SolrJmxReporter. (ab)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
@@ -245,7 +265,7 @@ Optimizations
   resulting in less produced garbage and 5-7% better performance.
   (yonik)
 
-* SOLR-9902: StandardDirectoryFactory should use Files API for it's move implementation. (Mark Miller)
+* SOLR-9902: StandardDirectoryFactory should use Files API for it's move implementation. (Mark Miller, Mike Drob)
 
 Bug Fixes
 ----------------------
@@ -337,6 +357,16 @@ Bug Fixes
 
 * SOLR-9503: NPE in Replica Placement Rules when using Overseer Role with other rules (Tim Owen via noble)
 
+* SOLR-9883: Example schemaless solr config files can lead to invalid tlog replays: when updates are buffered,
+  update processors ordered before DistributedUpdateProcessor, e.g. field normalization, are never run. (Steve Rowe)
+
+* SOLR-9644: SimpleMLTQParser and CloudMLTQParser did not handle field boosts properly
+  and CloudMLTQParser included extra strings from the field definitions in the query.
+  (Ere Maijala via Anshum Gupta)
+
+* SOLR-9954: Prevent against failure during failed snapshot cleanup from swallowing the actual cause
+  for the snapshot to fail. (thelabdude)
+
 Other Changes
 ----------------------
 
@@ -397,6 +427,13 @@ Other Changes
   (Tim Owen via noble)
 
 * SOLR-3990: Moves getIndexSize() from ReplicationHandler to SolrCore (Shawn Heisey)
+
+* SOLR-9944: Map the nodes function name to the GatherNodesStream (Joel Bernstein)
+
+* SOLR-9777: IndexFingerprinting should use getCombinedCoreAndDeletesKey() instead of getCoreCacheKey() for per-segment caching (Ishan Chattopadhyaya)
+
+* SOLR-9934: SolrTestCase.clearIndex has been improved to take advantage of low level test specific logic that
+  clears the index metadata more completely then a normal *:* DBQ can due to update versioning.  (hossman)
 
 ==================  6.3.0 ==================
 

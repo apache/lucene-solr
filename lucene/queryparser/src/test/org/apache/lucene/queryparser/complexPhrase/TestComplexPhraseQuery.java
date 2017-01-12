@@ -72,6 +72,12 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     checkBadQuery("\"jo* \"smith\" \""); // phrases inside phrases is bad
   }
 
+  public void testSingleTermPhrase() throws Exception {
+    checkMatches("\"joh*\" \"tom\"", "1,2,3,4"); 
+    checkMatches("+\"j*\" +\"tom\"", "4"); 
+    checkMatches("\"jo*\" \"[sma TO smZ]\" ", "1,2,3");
+    checkMatches("+\"j*hn\" +\"sm*h\"", "1,3"); 
+  }
 
   public void testUnOrderedProximitySearches() throws Exception {
 

@@ -16,6 +16,17 @@
  */
 package org.apache.lucene.facet;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetCounts;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
@@ -34,19 +45,9 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.util.ThreadInterruptedException;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 /**
  * Computes drill down and sideways counts for the provided
@@ -234,8 +235,8 @@ public class DrillSideways {
 
       if (executor != null) { // We have an executor, let use the multi-threaded version
 
-        final CollectorManager<TopFieldCollector, TopDocs> collectorManager =
-                new CollectorManager<TopFieldCollector, TopDocs>() {
+        final CollectorManager<TopFieldCollector, TopFieldDocs> collectorManager =
+                new CollectorManager<TopFieldCollector, TopFieldDocs>() {
 
                   @Override
                   public TopFieldCollector newCollector() throws IOException {
@@ -243,16 +244,16 @@ public class DrillSideways {
                   }
 
                   @Override
-                  public TopDocs reduce(Collection<TopFieldCollector> collectors) throws IOException {
-                    final TopDocs[] topDocs = new TopDocs[collectors.size()];
+                  public TopFieldDocs reduce(Collection<TopFieldCollector> collectors) throws IOException {
+                    final TopFieldDocs[] topFieldDocs = new TopFieldDocs[collectors.size()];
                     int pos = 0;
                     for (TopFieldCollector collector : collectors)
-                      topDocs[pos++] = collector.topDocs();
-                    return TopDocs.merge(topN, topDocs);
+                      topFieldDocs[pos++] = collector.topDocs();
+                    return TopDocs.merge(sort, topN, topFieldDocs);
                   }
 
                 };
-        ConcurrentDrillSidewaysResult<TopDocs> r = search(query, collectorManager);
+        ConcurrentDrillSidewaysResult<TopFieldDocs> r = search(query, collectorManager);
         return new DrillSidewaysResult(r.facets, r.collectorResult);
 
       } else {

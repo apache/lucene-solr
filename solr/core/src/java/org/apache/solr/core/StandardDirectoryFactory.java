@@ -131,13 +131,14 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     if (baseFromDir instanceof FSDirectory && baseToDir instanceof FSDirectory) {
   
       Path path1 = ((FSDirectory) baseFromDir).getDirectory().toAbsolutePath();
-      Path path2 = ((FSDirectory) baseFromDir).getDirectory().toAbsolutePath();
+      Path path2 = ((FSDirectory) baseToDir).getDirectory().toAbsolutePath();
       
       try {
         Files.move(path1.resolve(fileName), path2.resolve(fileName), StandardCopyOption.ATOMIC_MOVE);
       } catch (AtomicMoveNotSupportedException e) {
         Files.move(path1.resolve(fileName), path2.resolve(fileName));
       }
+      return;
     }
 
     super.move(fromDir, toDir, fileName, ioContext);

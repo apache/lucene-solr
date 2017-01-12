@@ -61,7 +61,7 @@ public abstract class HighlightingPluginBase implements SolrInfoMBean
   @Override
   public Category getCategory()
   {
-    return Category.HIGHLIGHTING;
+    return Category.HIGHLIGHTER;
   }
 
   @Override

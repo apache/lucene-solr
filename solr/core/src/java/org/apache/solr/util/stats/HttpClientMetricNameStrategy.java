@@ -14,40 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.facet.taxonomy;
 
-import java.io.IOException;
+package org.apache.solr.util.stats;
 
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Scorer;
+import org.apache.http.HttpRequest;
 
-class FakeScorer extends Scorer {
-
-  float score;
-  int doc = -1;
-  int freq = 1;
-
-  FakeScorer() {
-    super(null);
-  }
-
-  @Override
-  public int docID() {
-    return doc;
-  }
-
-  @Override
-  public DocIdSetIterator iterator() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public int freq() throws IOException {
-    return freq;
-  }
-
-  @Override
-  public float score() throws IOException {
-    return score;
-  }
+/**
+ * Strategy for creating metric names for HttpClient
+ * Copied from metrics-httpclient library
+ */
+public interface HttpClientMetricNameStrategy {
+  String getNameFor(String scope, HttpRequest request);
 }

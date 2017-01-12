@@ -16,11 +16,20 @@
  */
 package org.apache.lucene.search.grouping;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.*;
-
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.TreeSet;
+
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 
 /** FirstPassGroupingCollector is the first of two passes necessary
  *  to collect grouped hits.  This pass gathers the top N sorted
@@ -32,19 +41,19 @@ import java.util.*;
  *
  * @lucene.experimental
  */
-abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends SimpleCollector {
+abstract public class FirstPassGroupingCollector<T> extends SimpleCollector {
 
   private final FieldComparator<?>[] comparators;
   private final LeafFieldComparator[] leafComparators;
   private final int[] reversed;
   private final int topNGroups;
   private final boolean needsScores;
-  private final HashMap<GROUP_VALUE_TYPE, CollectedSearchGroup<GROUP_VALUE_TYPE>> groupMap;
+  private final HashMap<T, CollectedSearchGroup<T>> groupMap;
   private final int compIDXEnd;
 
   // Set once we reach topNGroups unique groups:
   /** @lucene.internal */
-  protected TreeSet<CollectedSearchGroup<GROUP_VALUE_TYPE>> orderedGroups;
+  protected TreeSet<CollectedSearchGroup<T>> orderedGroups;
   private int docBase;
   private int spareSlot;
 
@@ -61,7 +70,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
    *  @throws IOException If I/O related errors occur
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public AbstractFirstPassGroupingCollector(Sort groupSort, int topNGroups) throws IOException {
+  public FirstPassGroupingCollector(Sort groupSort, int topNGroups) throws IOException {
     if (topNGroups < 1) {
       throw new IllegalArgumentException("topNGroups must be >= 1 (got " + topNGroups + ")");
     }
@@ -102,7 +111,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
    * @param fillFields Whether to fill to {@link SearchGroup#sortValues}
    * @return top groups, starting from offset
    */
-  public Collection<SearchGroup<GROUP_VALUE_TYPE>> getTopGroups(int groupOffset, boolean fillFields) throws IOException {
+  public Collection<SearchGroup<T>> getTopGroups(int groupOffset, boolean fillFields) throws IOException {
 
     //System.out.println("FP.getTopGroups groupOffset=" + groupOffset + " fillFields=" + fillFields + " groupMap.size()=" + groupMap.size());
 
@@ -118,15 +127,15 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
       buildSortedSet();
     }
 
-    final Collection<SearchGroup<GROUP_VALUE_TYPE>> result = new ArrayList<>();
+    final Collection<SearchGroup<T>> result = new ArrayList<>();
     int upto = 0;
     final int sortFieldCount = comparators.length;
-    for(CollectedSearchGroup<GROUP_VALUE_TYPE> group : orderedGroups) {
+    for(CollectedSearchGroup<T> group : orderedGroups) {
       if (upto++ < groupOffset) {
         continue;
       }
       //System.out.println("  group=" + (group.groupValue == null ? "null" : group.groupValue.utf8ToString()));
-      SearchGroup<GROUP_VALUE_TYPE> searchGroup = new SearchGroup<>();
+      SearchGroup<T> searchGroup = new SearchGroup<>();
       searchGroup.groupValue = group.groupValue;
       if (fillFields) {
         searchGroup.sortValues = new Object[sortFieldCount];
@@ -181,9 +190,9 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
     // TODO: should we add option to mean "ignore docs that
     // don't have the group field" (instead of stuffing them
     // under null group)?
-    final GROUP_VALUE_TYPE groupValue = getDocGroupValue(doc);
+    final T groupValue = getDocGroupValue(doc);
 
-    final CollectedSearchGroup<GROUP_VALUE_TYPE> group = groupMap.get(groupValue);
+    final CollectedSearchGroup<T> group = groupMap.get(groupValue);
 
     if (group == null) {
 
@@ -198,7 +207,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
         // just keep collecting them
 
         // Add a new CollectedSearchGroup:
-        CollectedSearchGroup<GROUP_VALUE_TYPE> sg = new CollectedSearchGroup<>();
+        CollectedSearchGroup<T> sg = new CollectedSearchGroup<>();
         sg.groupValue = copyDocGroupValue(groupValue, null);
         sg.comparatorSlot = groupMap.size();
         sg.topDoc = docBase + doc;
@@ -219,7 +228,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
 
       // We already tested that the document is competitive, so replace
       // the bottom group with this new group.
-      final CollectedSearchGroup<GROUP_VALUE_TYPE> bottomGroup = orderedGroups.pollLast();
+      final CollectedSearchGroup<T> bottomGroup = orderedGroups.pollLast();
       assert orderedGroups.size() == topNGroups -1;
 
       groupMap.remove(bottomGroup.groupValue);
@@ -269,7 +278,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
     // Remove before updating the group since lookup is done via comparators
     // TODO: optimize this
 
-    final CollectedSearchGroup<GROUP_VALUE_TYPE> prevLast;
+    final CollectedSearchGroup<T> prevLast;
     if (orderedGroups != null) {
       prevLast = orderedGroups.last();
       orderedGroups.remove(group);
@@ -338,7 +347,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
    * @param doc The specified doc
    * @return the group value for the specified doc
    */
-  protected abstract GROUP_VALUE_TYPE getDocGroupValue(int doc) throws IOException;
+  protected abstract T getDocGroupValue(int doc) throws IOException;
 
   /**
    * Returns a copy of the specified group value by creating a new instance and copying the value from the specified
@@ -348,7 +357,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
    * @param reuse Optionally a reuse instance to prevent a new instance creation
    * @return a copy of the specified group value
    */
-  protected abstract GROUP_VALUE_TYPE copyDocGroupValue(GROUP_VALUE_TYPE groupValue, GROUP_VALUE_TYPE reuse);
+  protected abstract T copyDocGroupValue(T groupValue, T reuse);
 
 }
 

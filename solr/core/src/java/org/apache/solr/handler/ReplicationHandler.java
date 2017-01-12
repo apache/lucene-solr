@@ -814,6 +814,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   @Override
+  public Category getCategory() {
+    return Category.REPLICATION;
+  }
+
+  @Override
   public String getDescription() {
     return "ReplicationHandler provides replication of index and configuration files from Master to Slaves";
   }

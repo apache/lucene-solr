@@ -17,22 +17,17 @@
 package org.apache.lucene.facet.range;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.document.DoubleDocValuesField; // javadocs
-import org.apache.lucene.document.FloatDocValuesField; // javadocs
+import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.facet.Facets;
-import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
-import org.apache.lucene.queries.function.valuesource.FloatFieldSource; // javadocs
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
@@ -41,46 +36,48 @@ import org.apache.lucene.util.NumericUtils;
 
 /** {@link Facets} implementation that computes counts for
  *  dynamic double ranges from a provided {@link
- *  ValueSource}, using {@link FunctionValues#doubleVal}.  Use
- *  this for dimensions that change in real-time (e.g. a
+ *  DoubleValuesSource}.  Use this for dimensions that change in real-time (e.g. a
  *  relative time based dimension like "Past day", "Past 2
  *  days", etc.) or that change for each request (e.g.
  *  distance from the user's location, "&lt; 1 km", "&lt; 2 km",
  *  etc.).
  *
- *  <p> If you had indexed your field using {@link
- *  FloatDocValuesField} then pass {@link FloatFieldSource}
- *  as the {@link ValueSource}; if you used {@link
- *  DoubleDocValuesField} then pass {@link
- *  DoubleFieldSource} (this is the default used when you
- *  pass just a the field name).
+ *  If you have indexed your field using {@link
+ *  FloatDocValuesField}, then you should use a DoubleValuesSource
+ *  generated from {@link DoubleValuesSource#fromFloatField(String)}.
  *
  *  @lucene.experimental */
 public class DoubleRangeFacetCounts extends RangeFacetCounts {
 
-  /** Create {@code RangeFacetCounts}, using {@link
-   *  DoubleFieldSource} from the specified field. */
+  /**
+   * Create {@code RangeFacetCounts}, using {@link DoubleValues} from the specified field.
+   *
+   * N.B This assumes that the field was indexed with {@link org.apache.lucene.document.DoubleDocValuesField}.
+   * For float-valued fields, use {@link #DoubleRangeFacetCounts(String, DoubleValuesSource, FacetsCollector, DoubleRange...)}
+   */
   public DoubleRangeFacetCounts(String field, FacetsCollector hits, DoubleRange... ranges) throws IOException {
-    this(field, new DoubleFieldSource(field), hits, ranges);
+    this(field, DoubleValuesSource.fromDoubleField(field), hits, ranges);
   }
 
-  /** Create {@code RangeFacetCounts}, using the provided
-   *  {@link ValueSource}. */
-  public DoubleRangeFacetCounts(String field, ValueSource valueSource, FacetsCollector hits, DoubleRange... ranges) throws IOException {
+  /**
+   * Create {@code RangeFacetCounts} using the provided {@link DoubleValuesSource}
+   */
+  public DoubleRangeFacetCounts(String field, DoubleValuesSource valueSource, FacetsCollector hits, DoubleRange... ranges) throws IOException {
     this(field, valueSource, hits, null, ranges);
   }
 
-  /** Create {@code RangeFacetCounts}, using the provided
-   *  {@link ValueSource}, and using the provided Query as
-   *  a fastmatch: only documents passing the filter are
-   *  checked for the matching ranges.  The filter must be
-   *  random access (implement {@link DocIdSet#bits}). */
-  public DoubleRangeFacetCounts(String field, ValueSource valueSource, FacetsCollector hits, Query fastMatchQuery, DoubleRange... ranges) throws IOException {
+  /**
+   * Create {@code RangeFacetCounts}, using the provided
+   * {@link DoubleValuesSource}, and using the provided Query as
+   * a fastmatch: only documents matching the query are
+   * checked for the matching ranges.
+   */
+ public DoubleRangeFacetCounts(String field, DoubleValuesSource valueSource, FacetsCollector hits, Query fastMatchQuery, DoubleRange... ranges) throws IOException {
     super(field, ranges, fastMatchQuery);
     count(valueSource, hits.getMatchingDocs());
   }
 
-  private void count(ValueSource valueSource, List<MatchingDocs> matchingDocs) throws IOException {
+  private void count(DoubleValuesSource valueSource, List<MatchingDocs> matchingDocs) throws IOException {
 
     DoubleRange[] ranges = (DoubleRange[]) this.ranges;
 
@@ -96,7 +93,7 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
 
     int missingCount = 0;
     for (MatchingDocs hits : matchingDocs) {
-      FunctionValues fv = valueSource.getValues(Collections.emptyMap(), hits.context);
+      DoubleValues fv = valueSource.getValues(hits.context, null);
       
       totCount += hits.totalHits;
       final DocIdSetIterator fastMatchDocs;
@@ -129,8 +126,8 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
           }
         }
         // Skip missing docs:
-        if (fv.exists(doc)) {
-          counter.add(NumericUtils.doubleToSortableLong(fv.doubleVal(doc)));
+        if (fv.advanceExact(doc)) {
+          counter.add(NumericUtils.doubleToSortableLong(fv.doubleValue()));
         } else {
           missingCount++;
         }

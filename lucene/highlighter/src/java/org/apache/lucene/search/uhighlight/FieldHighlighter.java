@@ -138,7 +138,7 @@ public class FieldHighlighter {
 
     PriorityQueue<OffsetsEnum> offsetsEnumQueue = new PriorityQueue<>(offsetsEnums.size() + 1);
     for (OffsetsEnum off : offsetsEnums) {
-      off.weight = scorer.weight(contentLength, off.postingsEnum.freq());
+      off.setWeight(scorer.weight(contentLength, off.freq()));
       off.nextPosition(); // go to first position
       offsetsEnumQueue.add(off);
     }
@@ -214,7 +214,7 @@ public class FieldHighlighter {
           break;
         }
       }
-      passage.setScore(passage.getScore() + off.weight * scorer.tf(tf, passage.getEndOffset() - passage.getStartOffset()));
+      passage.setScore(passage.getScore() + off.getWeight() * scorer.tf(tf, passage.getEndOffset() - passage.getStartOffset()));
     }
 
     Passage[] passages = passageQueue.toArray(new Passage[passageQueue.size()]);

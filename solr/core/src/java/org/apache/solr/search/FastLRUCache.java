@@ -69,7 +69,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> 
     } else {
       minLimit = Integer.parseInt(str);
     }
-    if (minLimit==0) minLimit=1;
+    if (minLimit <= 0) minLimit = 1;
     if (limit <= minLimit) limit=minLimit+1;
 
     int acceptableLimit;

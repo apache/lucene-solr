@@ -24,7 +24,7 @@
     <!-- for unit tests this is set to 1 second - DO NOT USE THIS VALUE IN PRODUCTION! -->
     <int name="period">1</int>
     <str name="prefix">test</str>
-    <str name="filter">cores</str>
+    <str name="filter">CONTAINER.cores</str>
     <!-- this is only used when unit testing - DO NOT USE otherwise! -->
     <bool name="testing">true</bool>
   </reporter>

@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.expressions;
 
-import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.DoubleValuesSource;
 
 /**
  * Binds variable names in expressions to actual data.
@@ -31,14 +31,10 @@ public abstract class Bindings {
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
   protected Bindings() {}
-  
+
   /**
-   * Returns a ValueSource bound to the variable name.
+   * Returns a DoubleValuesSource bound to the variable name
    */
-  public abstract ValueSource getValueSource(String name);
-  
-  /** Returns a {@code ValueSource} over relevance scores */
-  protected final ValueSource getScoreValueSource() {
-    return new ScoreValueSource();
-  }
+  public abstract DoubleValuesSource getDoubleValuesSource(String name);
+
 }

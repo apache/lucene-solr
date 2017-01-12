@@ -150,6 +150,33 @@ public abstract class DoubleValuesSource {
   };
 
   /**
+   * Creates a DoubleValuesSource that always returns a constant value
+   */
+  public static DoubleValuesSource constant(double value) {
+    return new DoubleValuesSource() {
+      @Override
+      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+        return new DoubleValues() {
+          @Override
+          public double doubleValue() throws IOException {
+            return value;
+          }
+
+          @Override
+          public boolean advanceExact(int doc) throws IOException {
+            return true;
+          }
+        };
+      }
+
+      @Override
+      public boolean needsScores() {
+        return false;
+      }
+    };
+  }
+
+  /**
    * Returns a DoubleValues instance that wraps scores returned by a Scorer
    */
   public static DoubleValues fromScorer(Scorer scorer) {

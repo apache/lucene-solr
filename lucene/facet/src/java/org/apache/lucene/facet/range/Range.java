@@ -16,10 +16,6 @@
  */
 package org.apache.lucene.facet.range;
 
-import org.apache.lucene.facet.DrillDownQuery; // javadocs
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Query;
-
 /** Base class for a single labeled range.
  *
  *  @lucene.experimental */
@@ -34,33 +30,6 @@ public abstract class Range {
       throw new NullPointerException("label must not be null");
     }
     this.label = label;
-  }
-
-  /** Returns a new {@link Query} accepting only documents
-   *  in this range.  This query might not be very efficient
-   *  when run on its own since it is optimized towards
-   *  random-access, so it is best used either with
-   *  {@link DrillDownQuery#add(String, Query) DrillDownQuery}
-   *  or when intersected with another query that can lead the
-   *  iteration.  If the {@link ValueSource} is static, e.g. an
-   *  indexed numeric field, then it may be more efficient to use
-   *  {@link org.apache.lucene.search.PointRangeQuery}. The provided fastMatchQuery,
-   *  if non-null, will first be consulted, and only if
-   *  that is set for each document will the range then be
-   *  checked. */
-  public abstract Query getQuery(Query fastMatchQuery, ValueSource valueSource);
-
-  /** Returns a new {@link Query} accepting only documents
-   *  in this range.  This query might not be very efficient
-   *  when run on its own since it is optimized towards
-   *  random-access, so it is best used either with
-   *  {@link DrillDownQuery#add(String, Query) DrillDownQuery}
-   *  or when intersected with another query that can lead the
-   *  iteration.  If the {@link ValueSource} is static, e.g. an
-   *  indexed numeric field, then it may be more efficient to
-   *  use {@link org.apache.lucene.search.PointRangeQuery}. */
-  public Query getQuery(ValueSource valueSource) {
-    return getQuery(null, valueSource);
   }
 
   /** Invoke this for a useless range. */

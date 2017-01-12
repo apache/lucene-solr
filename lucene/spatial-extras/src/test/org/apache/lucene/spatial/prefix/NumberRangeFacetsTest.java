@@ -23,12 +23,11 @@ import java.util.Collections;
 import java.util.List;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.prefix.NumberRangePrefixTreeStrategy.Facets;
 import org.apache.lucene.spatial.prefix.tree.Cell;
@@ -40,6 +39,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.junit.Before;
 import org.junit.Test;
+import org.locationtech.spatial4j.shape.Shape;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
@@ -132,7 +132,7 @@ public class NumberRangeFacetsTest extends StrategyTestCase {
             terms.add(new Term("id", acceptDocId.toString()));
           }
 
-          topAcceptDocs = searchForDocBits(new TermsQuery(terms));
+          topAcceptDocs = searchForDocBits(new TermInSetQuery(terms));
         }
       }
 

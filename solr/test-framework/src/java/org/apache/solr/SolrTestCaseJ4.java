@@ -132,6 +132,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -1148,9 +1151,24 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     @Override
     public String toString() { return xml; }
   }
-  
+
+  /**
+   * Does a low level delete of all docs in the index. 
+   *
+   * The behavior of this method is slightly different then doing a normal <code>*:*</code> DBQ because it
+   * takes advantage of internal methods to ensure all index data is wiped, regardless of optimistic 
+   * concurrency version constraints -- making it suitable for tests that create synthetic versions, 
+   * and/or require a completely pristine index w/o any field metdata.
+   *
+   * @see #deleteByQueryAndGetVersion
+   */
   public void clearIndex() {
-    assertU(delQ("*:*"));
+    try {
+      deleteByQueryAndGetVersion("*:*", params("_version_", Long.toString(-Long.MAX_VALUE),
+                                               DISTRIB_UPDATE_PARAM,DistribPhase.FROMLEADER.toString()));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /** Send JSON update commands */

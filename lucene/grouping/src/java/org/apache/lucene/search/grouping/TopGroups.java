@@ -16,18 +16,18 @@
  */
 package org.apache.lucene.search.grouping;
 
+import java.io.IOException;
+
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldDocs;
 
-import java.io.IOException;
-
 /** Represents result returned by a grouping search.
  *
  * @lucene.experimental */
-public class TopGroups<GROUP_VALUE_TYPE> {
+public class TopGroups<T> {
   /** Number of documents matching the search */
   public final int totalHitCount;
 
@@ -38,7 +38,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
   public final Integer totalGroupCount;
 
   /** Group results in groupSort order */
-  public final GroupDocs<GROUP_VALUE_TYPE>[] groups;
+  public final GroupDocs<T>[] groups;
 
   /** How groups are sorted against each other */
   public final SortField[] groupSort;
@@ -50,7 +50,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
    *  <code>Float.NaN</code> if scores were not computed. */
   public final float maxScore;
 
-  public TopGroups(SortField[] groupSort, SortField[] withinGroupSort, int totalHitCount, int totalGroupedHitCount, GroupDocs<GROUP_VALUE_TYPE>[] groups, float maxScore) {
+  public TopGroups(SortField[] groupSort, SortField[] withinGroupSort, int totalHitCount, int totalGroupedHitCount, GroupDocs<T>[] groups, float maxScore) {
     this.groupSort = groupSort;
     this.withinGroupSort = withinGroupSort;
     this.totalHitCount = totalHitCount;
@@ -60,7 +60,7 @@ public class TopGroups<GROUP_VALUE_TYPE> {
     this.maxScore = maxScore;
   }
 
-  public TopGroups(TopGroups<GROUP_VALUE_TYPE> oldTopGroups, Integer totalGroupCount) {
+  public TopGroups(TopGroups<T> oldTopGroups, Integer totalGroupCount) {
     this.groupSort = oldTopGroups.groupSort;
     this.withinGroupSort = oldTopGroups.withinGroupSort;
     this.totalHitCount = oldTopGroups.totalHitCount;
