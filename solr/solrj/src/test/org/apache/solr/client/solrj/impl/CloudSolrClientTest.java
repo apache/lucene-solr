@@ -431,7 +431,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         for (String adminPath : adminPathToMbean.keySet()) {
           long errorsBefore = 0;
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "QUERY", adminPathToMbean.get(adminPath), true);
+            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "ADMIN", adminPathToMbean.get(adminPath), true);
             errorsBefore += numRequests;
             log.info("Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
           }
@@ -448,7 +448,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
           }
           long errorsAfter = 0;
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "QUERY", adminPathToMbean.get(adminPath), true);
+            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "ADMIN", adminPathToMbean.get(adminPath), true);
             errorsAfter += numRequests;
             log.info("Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
           }
