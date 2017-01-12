@@ -40,12 +40,16 @@ import org.apache.lucene.search.uhighlight.Passage;
 import org.apache.lucene.search.uhighlight.PassageFormatter;
 import org.apache.lucene.search.uhighlight.PassageScorer;
 import org.apache.lucene.search.uhighlight.PhraseHelper;
+import org.apache.lucene.search.uhighlight.SplittingBreakIterator;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.junit.Test;
 
+/**
+ * Helps us be aware of visibility/extensibility concerns.
+ */
 public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
 
   /**
@@ -144,7 +148,19 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
 
       @Override
       protected FieldHighlighter getFieldHighlighter(String field, Query query, Set<Term> allTerms, int maxPassages) {
-        return super.getFieldHighlighter(field, query, allTerms, maxPassages);
+        // THIS IS A COPY of the superclass impl; but use CustomFieldHighlighter
+        BytesRef[] terms = filterExtractedTerms(getFieldMatcher(field), allTerms);
+        Set<HighlightFlag> highlightFlags = getFlags(field);
+        PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
+        CharacterRunAutomaton[] automata = getAutomata(field, query, highlightFlags);
+        OffsetSource offsetSource = getOptimizedOffsetSource(field, terms, phraseHelper, automata);
+        return new CustomFieldHighlighter(field,
+            getOffsetStrategy(offsetSource, field, terms, phraseHelper, automata, highlightFlags),
+            new SplittingBreakIterator(getBreakIterator(field), UnifiedHighlighter.MULTIVAL_SEP_CHAR),
+            getScorer(field),
+            maxPassages,
+            getMaxNoHighlightPassages(field),
+            getFormatter(field));
       }
 
       @Override
@@ -185,4 +201,43 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
     assertEquals(fieldHighlighter.getField(), fieldName);
   }
 
+  /** Tests maintaining extensibility/visibility of {@link org.apache.lucene.search.uhighlight.FieldHighlighter} out of package. */
+  private class CustomFieldHighlighter extends FieldHighlighter {
+    CustomFieldHighlighter(String field, FieldOffsetStrategy fieldOffsetStrategy, BreakIterator breakIterator, PassageScorer passageScorer, int maxPassages, int maxNoHighlightPassages, PassageFormatter passageFormatter) {
+      super(field, fieldOffsetStrategy, breakIterator, passageScorer, maxPassages, maxNoHighlightPassages, passageFormatter);
+    }
+
+    @Override
+    public Object highlightFieldForDoc(IndexReader reader, int docId, String content) throws IOException {
+      return super.highlightFieldForDoc(reader, docId, content);
+    }
+
+    @Override
+    protected Passage[] highlightOffsetsEnums(List<OffsetsEnum> offsetsEnums) throws IOException {
+      // TEST OffsetsEnums & Passage visibility
+
+      // this code never runs; just for compilation
+      OffsetsEnum oe = new OffsetsEnum(null, EMPTY);
+      oe.getTerm();
+      oe.getPostingsEnum();
+      oe.freq();
+      oe.hasMorePositions();
+      oe.nextPosition();
+      oe.startOffset();
+      oe.endOffset();
+      oe.getWeight();
+      oe.setWeight(2f);
+
+      Passage p = new Passage();
+      p.setStartOffset(0);
+      p.setEndOffset(9);
+      p.setScore(1f);
+      p.addMatch(1, 2, new BytesRef());
+      p.reset();
+      p.sort();
+      //... getters are all exposed; custom PassageFormatter impls uses them
+
+      return super.highlightOffsetsEnums(offsetsEnums);
+    }
+  }
 }
