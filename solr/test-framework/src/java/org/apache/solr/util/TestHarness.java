@@ -190,7 +190,8 @@ public class TestHarness extends BaseTestHarness {
     UpdateShardHandlerConfig updateShardHandlerConfig
         = new UpdateShardHandlerConfig(UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONS,
                                        UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONSPERHOST,
-                                       30000, 30000);
+                                       30000, 30000,
+                                        UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
     // universal default metric reporter
     Map<String,String> attributes = new HashMap<>();
     attributes.put("name", "default");
