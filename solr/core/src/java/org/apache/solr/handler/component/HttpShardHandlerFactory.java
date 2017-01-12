@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -61,11 +62,14 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.stats.InstrumentedHttpClient;
+import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
 import org.apache.solr.util.stats.InstrumentedPoolingClientConnectionManager;
+import org.apache.solr.util.stats.InstrumentedHttpClient;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
 
 public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -105,6 +109,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   protected UpdateShardHandler.IdleConnectionsEvictor idleConnectionsEvictor;
 
   private String scheme = null;
+
+  private HttpClientMetricNameStrategy metricNameStrategy;
 
   private final Random r = new Random();
 
@@ -161,6 +167,13 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       this.scheme = StringUtils.removeEnd(this.scheme, "://");
     }
 
+    String strategy = getParameter(args, "metricNameStrategy", UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY, sb);
+    this.metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(strategy);
+    if (this.metricNameStrategy == null)  {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unknown metricNameStrategy: " + strategy + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());
+    }
+
     this.connectionTimeout = getParameter(args, HttpClientUtil.PROP_CONNECTION_TIMEOUT, connectionTimeout, sb);
     this.maxConnectionsPerHost = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost,sb);
     this.maxConnections = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS, maxConnections,sb);
@@ -197,7 +210,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     clientConnectionManager = new InstrumentedPoolingClientConnectionManager(SchemeRegistryFactory.createSystemDefault());
     clientConnectionManager.setDefaultMaxPerRoute(maxConnectionsPerHost);
     clientConnectionManager.setMaxTotal(maxConnections);
-    InstrumentedHttpClient httpClient = new InstrumentedHttpClient(clientConnectionManager);
+    InstrumentedHttpClient httpClient = new InstrumentedHttpClient(clientConnectionManager, metricNameStrategy);
     HttpClientUtil.configureClient(httpClient, clientParams);
     this.defaultClient = httpClient;
     this.idleConnectionsEvictor = new UpdateShardHandler.IdleConnectionsEvictor(clientConnectionManager,

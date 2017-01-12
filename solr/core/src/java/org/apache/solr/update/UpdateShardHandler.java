@@ -41,10 +41,13 @@ import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
 import org.apache.solr.util.stats.InstrumentedHttpClient;
 import org.apache.solr.util.stats.InstrumentedPoolingClientConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
 
 public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
   
@@ -81,7 +84,15 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
 
     ModifiableSolrParams clientParams = getClientParams();
     log.info("Creating UpdateShardHandler HTTP client with params: {}", clientParams);
-    InstrumentedHttpClient httpClient = new InstrumentedHttpClient(clientConnectionManager);
+    HttpClientMetricNameStrategy metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
+    if (cfg != null)  {
+      metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(cfg.getMetricNameStrategy());
+      if (metricNameStrategy == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unknown metricNameStrategy: " + cfg.getMetricNameStrategy() + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());
+      }
+    }
+    InstrumentedHttpClient httpClient = new InstrumentedHttpClient(clientConnectionManager, metricNameStrategy);
     HttpClientUtil.configureClient(httpClient, clientParams);
     client = httpClient;
     if (cfg != null)  {

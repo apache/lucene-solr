@@ -27,9 +27,9 @@ public class InstrumentedHttpClient extends DefaultHttpClient implements SolrMet
 
   protected final InstrumentedHttpRequestExecutor requestExecutor;
 
-  public InstrumentedHttpClient(ClientConnectionManager conman) {
+  public InstrumentedHttpClient(ClientConnectionManager conman, HttpClientMetricNameStrategy metricNameStrategy) {
     super(conman);
-    this.requestExecutor = new InstrumentedHttpRequestExecutor();
+    this.requestExecutor = new InstrumentedHttpRequestExecutor(metricNameStrategy);
   }
 
   @Override

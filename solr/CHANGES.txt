@@ -161,7 +161,9 @@ New Features
 
 * SOLR-8530: Add HavingStream to Streaming API and StreamingExpressions (Joel Bernstein)
 
-* SOLR-9877: SOLR-9923: Use instrumented http client and connection pool. (shalin)
+* SOLR-9877: SOLR-9923: SOLR-9948: Use instrumented http client and connection pool in HttpShardHandler and
+  UpdateShardHandler. The metrics are collected per query-less URL and method by default but it can be configured
+  to host/method and per-method as well. (shalin)
 
 * SOLR-9896: Instrument and collect metrics from query, update, core admin and core load thread pools. (shalin)
 

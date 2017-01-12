@@ -24,11 +24,13 @@ public class UpdateShardHandlerConfig {
   public static final int DEFAULT_MAXUPDATECONNECTIONSPERHOST = 100000;
   public static final int DEFAULT_UPDATECONNECTIONSEVICTORSLEEPDELAY = 5000;
   public static final int DEFAULT_MAXUPDATECONNECTIONIDLETIME = 40000;
+  public static final String DEFAULT_METRICNAMESTRATEGY = "queryLessURLAndMethod";
 
   public static final UpdateShardHandlerConfig DEFAULT
       = new UpdateShardHandlerConfig(DEFAULT_MAXUPDATECONNECTIONS, DEFAULT_MAXUPDATECONNECTIONSPERHOST,
                                      DEFAULT_DISTRIBUPDATESOTIMEOUT, DEFAULT_DISTRIBUPDATECONNTIMEOUT,
-                                      DEFAULT_UPDATECONNECTIONSEVICTORSLEEPDELAY, DEFAULT_MAXUPDATECONNECTIONIDLETIME);
+                                      DEFAULT_UPDATECONNECTIONSEVICTORSLEEPDELAY, DEFAULT_MAXUPDATECONNECTIONIDLETIME,
+                                      DEFAULT_METRICNAMESTRATEGY);
 
   private final int maxUpdateConnections;
 
@@ -38,15 +40,18 @@ public class UpdateShardHandlerConfig {
 
   private final int distributedConnectionTimeout;
 
+  private final String metricNameStrategy;
+
   private final int updateConnectionsEvictorSleepDelay;
 
   private final int maxUpdateConnectionIdleTime;
 
-  public UpdateShardHandlerConfig(int maxUpdateConnections, int maxUpdateConnectionsPerHost, int distributedSocketTimeout, int distributedConnectionTimeout, int updateConnectionsEvictorSleepDelay, int maxUpdateConnectionIdleTime) {
+  public UpdateShardHandlerConfig(int maxUpdateConnections, int maxUpdateConnectionsPerHost, int distributedSocketTimeout, int distributedConnectionTimeout, int updateConnectionsEvictorSleepDelay, int maxUpdateConnectionIdleTime, String metricNameStrategy) {
     this.maxUpdateConnections = maxUpdateConnections;
     this.maxUpdateConnectionsPerHost = maxUpdateConnectionsPerHost;
     this.distributedSocketTimeout = distributedSocketTimeout;
     this.distributedConnectionTimeout = distributedConnectionTimeout;
+    this.metricNameStrategy = metricNameStrategy;
     this.updateConnectionsEvictorSleepDelay = updateConnectionsEvictorSleepDelay;
     this.maxUpdateConnectionIdleTime = maxUpdateConnectionIdleTime;
   }
@@ -65,6 +70,10 @@ public class UpdateShardHandlerConfig {
 
   public int getDistributedConnectionTimeout() {
     return distributedConnectionTimeout;
+  }
+
+  public String getMetricNameStrategy() {
+    return metricNameStrategy;
   }
 
   public int getUpdateConnectionsEvictorSleepDelay() {
