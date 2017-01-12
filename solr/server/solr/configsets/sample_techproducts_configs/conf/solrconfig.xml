@@ -515,7 +515,7 @@
          when running solr to run with ltr enabled:
            -Dsolr.ltr.enabled=true
 
-         https://cwiki.apache.org/confluence/display/solr/Result+Reranking
+         https://cwiki.apache.org/confluence/display/solr/Learning+To+Rank
       -->
     <cache enable="${solr.ltr.enabled:false}" name="QUERY_DOC_FV"
            class="solr.search.LRUCache"
@@ -1613,7 +1613,7 @@
         when running solr to run with ltr enabled:
           -Dsolr.ltr.enabled=true
 
-        https://cwiki.apache.org/confluence/display/solr/Result+Reranking
+        https://cwiki.apache.org/confluence/display/solr/Learning+To+Rank
 
         Query parser is used to rerank top docs with a provided model
     -->
@@ -1654,7 +1654,7 @@
       when running solr to run with ltr enabled:
         -Dsolr.ltr.enabled=true
 
-      https://cwiki.apache.org/confluence/display/solr/Result+Reranking
+      https://cwiki.apache.org/confluence/display/solr/Learning+To+Rank
       -->
     <transformer enable="${solr.ltr.enabled:false}" name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
       <str name="fvCacheName">QUERY_DOC_FV</str>
