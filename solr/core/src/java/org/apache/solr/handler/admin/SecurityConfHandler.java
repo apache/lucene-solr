@@ -170,6 +170,11 @@ public class SecurityConfHandler extends RequestHandlerBase implements Permissio
     return "Edit or read security configuration";
   }
 
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
+
 
   }
 

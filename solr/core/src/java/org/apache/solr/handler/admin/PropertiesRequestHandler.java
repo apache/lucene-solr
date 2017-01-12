@@ -55,4 +55,9 @@ public class PropertiesRequestHandler extends RequestHandlerBase
   public String getDescription() {
     return "Get System Properties";
   }
+
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
 }

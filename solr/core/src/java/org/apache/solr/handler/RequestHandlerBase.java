@@ -227,7 +227,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   
   @Override
   public Category getCategory() {
-    return Category.QUERYHANDLER;
+    return Category.QUERY;
   }
 
   @Override

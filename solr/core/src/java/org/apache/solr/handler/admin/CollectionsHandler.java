@@ -335,6 +335,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return "Manage SolrCloud Collections";
   }
 
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
+
   public static final String SYSTEM_COLL = ".system";
 
   private static void createSysConfigSet(CoreContainer coreContainer) throws KeeperException, InterruptedException {

@@ -862,4 +862,9 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   public String getDescription() {
     return "A Spell Checker component";
   }
+
+  @Override
+  public Category getCategory() {
+    return Category.SPELLCHECKER;
+  }
 }

@@ -703,6 +703,11 @@ public class LukeRequestHandler extends RequestHandlerBase
   }
 
   @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
+
+  @Override
   public URL[] getDocs() {
     try {
       return new URL[] { new URL("http://wiki.apache.org/solr/LukeRequestHandler") };

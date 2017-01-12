@@ -239,7 +239,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.BUFFERING.ordinal(), state.getValue().intValue());
       Gauge<Integer> bufferedOps = (Gauge<Integer>)metrics.get("TLOG.buffered.ops");
       int initialOps = bufferedOps.getValue();
-      Meter applyingBuffered = (Meter)metrics.get("TLOG.applying_buffered.ops");
+      Meter applyingBuffered = (Meter)metrics.get("TLOG.applyingBuffered.ops");
       long initialApplyingOps = applyingBuffered.getCount();
 
       // simulate updates from a leader

@@ -806,6 +806,11 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     return "Manage Cross Data Center Replication";
   }
 
+  @Override
+  public Category getCategory() {
+    return Category.REPLICATION;
+  }
+
   /**
    * A thread subclass for executing a single
    * {@link org.apache.solr.handler.CdcrParams.CdcrAction#SHARDCHECKPOINT} action.

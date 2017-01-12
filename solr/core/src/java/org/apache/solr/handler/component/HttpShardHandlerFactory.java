@@ -420,7 +420,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    String expandedScope = SolrMetricManager.mkName(scope, SolrInfoMBean.Category.HTTP.name());
+    String expandedScope = SolrMetricManager.mkName(scope, SolrInfoMBean.Category.QUERY.name());
     clientConnectionManager.initializeMetrics(manager, registry, expandedScope);
     if (defaultClient instanceof SolrMetricProducer) {
       SolrMetricProducer solrMetricProducer = (SolrMetricProducer) defaultClient;

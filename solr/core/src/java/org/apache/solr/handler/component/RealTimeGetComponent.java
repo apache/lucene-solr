@@ -599,6 +599,11 @@ public class RealTimeGetComponent extends SearchComponent
   }
 
   @Override
+  public Category getCategory() {
+    return Category.QUERY;
+  }
+
+  @Override
   public URL[] getDocs() {
     return null;
   }

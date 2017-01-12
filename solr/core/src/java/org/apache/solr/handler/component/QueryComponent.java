@@ -1370,6 +1370,11 @@ public class QueryComponent extends SearchComponent
   }
 
   @Override
+  public Category getCategory() {
+    return Category.QUERY;
+  }
+
+  @Override
   public URL[] getDocs() {
     return null;
   }

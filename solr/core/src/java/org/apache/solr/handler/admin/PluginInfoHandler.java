@@ -90,4 +90,9 @@ public class PluginInfoHandler extends RequestHandlerBase
   public String getDescription() {
     return "Registry";
   }
+
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
 }
