@@ -128,7 +128,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoMBean {
 
   @Override
   public Category getCategory() {
-    return Category.HTTP;
+    return Category.UPDATE;
   }
 
   @Override

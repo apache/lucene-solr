@@ -155,6 +155,11 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return "A handler to return all the metrics gathered by Solr";
   }
 
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
+
   enum MetricType {
     histogram(Histogram.class),
     meter(Meter.class),

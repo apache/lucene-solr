@@ -103,7 +103,20 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     }
   }
-  public enum State { REPLAYING, BUFFERING, APPLYING_BUFFERED, ACTIVE }
+
+  // NOTE: when adding new states make sure to keep existing numbers, because external metrics
+  // monitoring may depend on these values being stable.
+  public enum State { REPLAYING(0), BUFFERING(1), APPLYING_BUFFERED(2), ACTIVE(3);
+    private final int value;
+
+    State(final int value) {
+      this.value = value;
+    }
+
+    public int getValue() {
+      return value;
+    }
+  }
 
   public static final int ADD = 0x01;
   public static final int DELETE = 0x02;
@@ -365,19 +378,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     };
     replayLogsCountGauge = () -> logs.size();
-    replayBytesGauge = () -> {
-      if (state == State.REPLAYING) {
-        return getTotalLogsSize();
-      } else {
-        return 0L;
-      }
-    };
+    replayBytesGauge = () -> getTotalLogsSize();
+
     manager.register(registry, bufferedOpsGauge, true, "ops", scope, "buffered");
     manager.register(registry, replayLogsCountGauge, true, "logs", scope, "replay", "remaining");
     manager.register(registry, replayBytesGauge, true, "bytes", scope, "replay", "remaining");
-    applyingBufferedOpsMeter = manager.meter(registry, "ops", scope, "applying_buffered");
+    applyingBufferedOpsMeter = manager.meter(registry, "ops", scope, "applyingBuffered");
     replayOpsMeter = manager.meter(registry, "ops", scope, "replay");
-    stateGauge = () -> state.ordinal();
+    stateGauge = () -> state.getValue();
     manager.register(registry, stateGauge, true, "state", scope);
   }
 

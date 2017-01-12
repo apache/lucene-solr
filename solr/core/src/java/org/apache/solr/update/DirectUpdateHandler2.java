@@ -850,11 +850,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   @Override
-  public Category getCategory() {
-    return Category.UPDATEHANDLER;
-  }
-
-  @Override
   public String getSource() {
     return null;
   }

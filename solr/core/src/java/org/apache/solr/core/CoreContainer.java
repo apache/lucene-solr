@@ -466,7 +466,7 @@ public class CoreContainer {
     coreContainerWorkExecutor = MetricUtils.instrumentedExecutorService(
         coreContainerWorkExecutor,
         metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node)),
-        SolrMetricManager.mkName("coreContainerWorkExecutor", "threadPool"));
+        SolrMetricManager.mkName("coreContainerWorkExecutor", SolrInfoMBean.Category.CONTAINER.toString(), "threadPool"));
 
     shardHandlerFactory = ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
     if (shardHandlerFactory instanceof SolrMetricProducer) {
@@ -518,11 +518,11 @@ public class CoreContainer {
     Gauge<Integer> unloadedCores = () -> solrCores.getAllCoreNames().size() - solrCores.getCoreNames().size();
 
     metricManager.register(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node),
-        loadedCores, true, "loaded", "cores");
+        loadedCores, true, "loaded", SolrInfoMBean.Category.CONTAINER.toString(), "cores");
     metricManager.register(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node),
-        lazyCores, true, "lazy", "cores");
+        lazyCores, true, "lazy",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
     metricManager.register(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node),
-        unloadedCores, true, "unloaded", "cores");
+        unloadedCores, true, "unloaded",SolrInfoMBean.Category.CONTAINER.toString(), "cores");
 
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
@@ -530,7 +530,7 @@ public class CoreContainer {
             cfg.getCoreLoadThreadCount(isZooKeeperAware()),
             new DefaultSolrThreadFactory("coreLoadExecutor")),
         metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoMBean.Group.node)),
-        SolrMetricManager.mkName("coreLoadExecutor", "threadPool"));
+        SolrMetricManager.mkName("coreLoadExecutor",SolrInfoMBean.Category.CONTAINER.toString(), "threadPool"));
     final List<Future<SolrCore>> futures = new ArrayList<>();
     try {
       List<CoreDescriptor> cds = coresLocator.discover(this);

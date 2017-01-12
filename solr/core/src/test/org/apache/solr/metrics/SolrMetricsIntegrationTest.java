@@ -51,7 +51,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   private static final String MULTIREGISTRY = "multiregistry";
   private static final String[] INITIAL_REPORTERS = {REPORTER_NAMES[0], REPORTER_NAMES[1], UNIVERSAL, SPECIFIC, MULTIGROUP, MULTIREGISTRY};
   private static final String[] RENAMED_REPORTERS = {REPORTER_NAMES[0], REPORTER_NAMES[1], UNIVERSAL, MULTIGROUP};
-  private static final SolrInfoMBean.Category HANDLER_CATEGORY = SolrInfoMBean.Category.QUERYHANDLER;
+  private static final SolrInfoMBean.Category HANDLER_CATEGORY = SolrInfoMBean.Category.QUERY;
 
   private CoreContainer cc;
   private SolrMetricManager metricManager;

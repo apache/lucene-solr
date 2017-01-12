@@ -746,6 +746,11 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
   }
 
   @Override
+  public Category getCategory() {
+    return Category.QUERY;
+  }
+
+  @Override
   public URL[] getDocs() {
     try {
       return new URL[]{

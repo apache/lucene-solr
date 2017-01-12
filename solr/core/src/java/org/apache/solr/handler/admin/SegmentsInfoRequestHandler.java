@@ -117,4 +117,9 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
   public String getDescription() {
     return "Lucene segments info.";
   }
+
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
 }

@@ -161,6 +161,11 @@ public class ConfigSetsHandler extends RequestHandlerBase {
     return "Manage SolrCloud ConfigSets";
   }
 
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
+
   enum ConfigSetOperation {
     CREATE_OP(CREATE) {
       @Override

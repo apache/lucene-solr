@@ -56,7 +56,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     NamedList<NamedList<NamedList<Object>>> diff = SolrInfoMBeanHandler.fromXML(xml);
 
     // The stats bean for SolrInfoMBeanHandler
-    NamedList stats = (NamedList)diff.get("QUERYHANDLER").get("/admin/mbeans").get("stats");
+    NamedList stats = (NamedList)diff.get("ADMIN").get("/admin/mbeans").get("stats");
     
     //System.out.println("stats:"+stats);
     assertEquals("Was: 1, Now: 2, Delta: 1", stats.get("requests"));
@@ -67,7 +67,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
         "key","org.apache.solr.handler.admin.CollectionsHandler"
     ));
     NamedList<NamedList<NamedList<Object>>> nl = SolrInfoMBeanHandler.fromXML(xml);
-    assertNotNull( nl.get("QUERYHANDLER").get("org.apache.solr.handler.admin.CollectionsHandler"));
+    assertNotNull( nl.get("ADMIN").get("org.apache.solr.handler.admin.CollectionsHandler"));
   }
 
   @Test

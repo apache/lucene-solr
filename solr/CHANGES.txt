@@ -242,6 +242,9 @@ New Features
 
 * SOLR-9886: Add a 'enable' flag to caches to enable/disable them (Pushkar Raste, noble)
 
+* SOLR-9947: Clean up some SolrInfoMBean categories. Add an alternative hierarchical view in JMX
+  for SolrInfoMBeans, which uses similar conventions to SolrJmxReporter. (ab)
+
 Optimizations
 ----------------------
 * SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have

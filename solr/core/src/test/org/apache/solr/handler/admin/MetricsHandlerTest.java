@@ -51,10 +51,10 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(((NamedList) nl.get("SEARCHER.new.errors")).get("count"));
     assertEquals(0L, ((NamedList) nl.get("SEARCHER.new.errors")).get("count"));
     nl = (NamedList) values.get("solr.node");
-    assertNotNull(nl.get("cores.loaded")); // int gauge
-    assertEquals(1, ((NamedList) nl.get("cores.loaded")).get("value"));
-    assertNotNull(nl.get("QUERYHANDLER./admin/authorization.clientErrors")); // timer type
-    assertEquals(5, ((NamedList) nl.get("QUERYHANDLER./admin/authorization.clientErrors")).size());
+    assertNotNull(nl.get("CONTAINER.cores.loaded")); // int gauge
+    assertEquals(1, ((NamedList) nl.get("CONTAINER.cores.loaded")).get("value"));
+    assertNotNull(nl.get("ADMIN./admin/authorization.clientErrors")); // timer type
+    assertEquals(5, ((NamedList) nl.get("ADMIN./admin/authorization.clientErrors")).size());
 
     resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "jvm,jetty"), resp);
@@ -91,10 +91,10 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(1, values.size());
     values = (NamedList) values.get("solr.node");
     assertNotNull(values);
-    assertNull(values.get("QUERYHANDLER./admin/authorization.errors")); // this is a timer node
+    assertNull(values.get("ADMIN./admin/authorization.errors")); // this is a timer node
 
     resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "prefix", "cores"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "prefix", "CONTAINER.cores"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
@@ -105,10 +105,10 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(3, ((NamedList)values.get("solr.node")).size());
     assertNotNull(values.get("solr.node"));
     values = (NamedList) values.get("solr.node");
-    assertNotNull(values.get("cores.lazy")); // this is a gauge node
+    assertNotNull(values.get("CONTAINER.cores.lazy")); // this is a gauge node
 
     resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "jvm", "prefix", "cores"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "jvm", "prefix", "CONTAINER.cores"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");
@@ -117,7 +117,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNull(values.get("solr.node"));
 
     resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "node", "type", "timer", "prefix", "cores"), resp);
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", "group", "node", "type", "timer", "prefix", "CONTAINER.cores"), resp);
     values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList) values.get("metrics");

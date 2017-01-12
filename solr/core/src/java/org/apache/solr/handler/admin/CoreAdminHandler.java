@@ -275,6 +275,11 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
+
+  @Override
   public Name getPermissionName(AuthorizationContext ctx) {
     String action = ctx.getParams().get(CoreAdminParams.ACTION);
     if (action == null) return CORE_READ_PERM;
