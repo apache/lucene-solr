@@ -270,6 +270,9 @@ Build
   Lucene and Solr DOAP RDF files into the Git source repository under
   dev-tools/doap/ and then pulling release dates from those files, rather than
   from JIRA. (Mano Kovacs, hossman, Steve Rowe)
+  
+* LUCENE-7596: Update Groovy to version 2.4.8 to allow building with Java 9
+  build 148+. Also update JGit version for working-copy checks. (Uwe Schindler)
 
 ======================= Lucene 6.3.0 =======================
 
