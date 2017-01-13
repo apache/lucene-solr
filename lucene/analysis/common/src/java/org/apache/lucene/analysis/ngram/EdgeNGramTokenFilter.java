@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeSource.State;
 
 /**
  * Tokenizes the given token into n-grams of given size(s).
@@ -43,7 +43,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   private int curCodePointCount;
   private int curGramSize;
   private int savePosIncr;
-  private AttributeSource attributes;
+  private State state;
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
@@ -81,15 +81,14 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           curTermLength = termAtt.length();
           curCodePointCount = Character.codePointCount(termAtt, 0, termAtt.length());
           curGramSize = minGram;
-          attributes = input.cloneAttributes();
+          state = captureState();
           savePosIncr += posIncrAtt.getPositionIncrement();
         }
       }
       if (curGramSize <= maxGram) {         // if we have hit the end of our n-gram size range, quit
         if (curGramSize <= curCodePointCount) { // if the remaining input is too short, we can't generate any n-grams
           // grab gramSize chars from front or back
-          clearAttributes();
-          attributes.copyTo(this);
+	      restoreState(state);
           // first ngram gets increment, others don't
           if (curGramSize == minGram) {
             posIncrAtt.setPositionIncrement(savePosIncr);
