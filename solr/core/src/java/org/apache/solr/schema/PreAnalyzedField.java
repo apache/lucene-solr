@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
@@ -284,6 +285,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
     private byte[] binaryValue = null;
     private PreAnalyzedParser parser;
     private IOException readerConsumptionException;
+    private int lastEndOffset;
 
     public PreAnalyzedTokenizer(PreAnalyzedParser parser) {
       // we don't pack attributes: since we are used for (de)serialization and dont want bloat.
@@ -311,6 +313,8 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
       
       AttributeSource.State state = it.next();
       restoreState(state.clone());
+      // TODO: why can't I lookup the OffsetAttribute up in ctor instead?
+      lastEndOffset = addAttribute(OffsetAttribute.class).endOffset();
       return true;
     }
 
@@ -327,6 +331,13 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
         throw e;
       }
       it = cachedStates.iterator();
+    }
+
+    @Override
+    public void end() throws IOException {
+      super.end();
+      // we must set the end offset correctly so multi-valued fields don't try to send offsets backwards:
+      addAttribute(OffsetAttribute.class).setOffset(lastEndOffset, lastEndOffset);
     }
 
     private void setReaderConsumptionException(IOException e) {

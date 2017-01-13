@@ -29,6 +29,9 @@ API Changes
 
 Bug Fixes
 
+* LUCENE-7626: IndexWriter will no longer accept broken token offsets
+  (Mike McCandless)
+
 Improvements
 
 * LUCENE-7489: Better storage of sparse doc-values fields with the default

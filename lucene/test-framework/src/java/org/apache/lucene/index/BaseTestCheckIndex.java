@@ -22,11 +22,8 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
@@ -103,22 +100,6 @@ public class BaseTestCheckIndex extends LuceneTestCase {
     
     assertTrue(checker.checkIndex(onlySegments).clean == true);
     checker.close();
-  }
-  
-  // LUCENE-4221: we have to let these thru, for now
-  public void testBogusTermVectors(Directory dir) throws IOException {
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
-    Document doc = new Document();
-    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-    ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorOffsets(true);
-    Field field = new Field("foo", "", ft);
-    field.setTokenStream(new CannedTokenStream(
-        new Token("bar", 5, 10), new Token("bar", 1, 4)
-    ));
-    doc.add(field);
-    iw.addDocument(doc);
-    iw.close();
   }
   
   public void testChecksumsOnly(Directory dir) throws IOException {

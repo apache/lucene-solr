@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsConsumer;
@@ -728,10 +729,6 @@ final class DefaultIndexingChain extends DocConsumer {
 
       final boolean analyzed = fieldType.tokenized() && docState.analyzer != null;
         
-      // only bother checking offsets if something will consume them.
-      // TODO: after we fix analyzers, also check if termVectorOffsets will be indexed.
-      final boolean checkOffsets = indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
-
       /*
        * To assist people in tracking down problems in analysis components, we wish to write the field name to the infostream
        * when we fail. We expect some caller to eventually deal with the real exception, so we don't want any 'catch' clauses,
@@ -743,6 +740,7 @@ final class DefaultIndexingChain extends DocConsumer {
         stream.reset();
         invertState.setAttributeSource(stream);
         termsHashPerField.start(field, first);
+        CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
 
         while (stream.incrementToken()) {
 
@@ -771,15 +769,13 @@ final class DefaultIndexingChain extends DocConsumer {
             invertState.numOverlap++;
           }
               
-          if (checkOffsets) {
-            int startOffset = invertState.offset + invertState.offsetAttribute.startOffset();
-            int endOffset = invertState.offset + invertState.offsetAttribute.endOffset();
-            if (startOffset < invertState.lastStartOffset || endOffset < startOffset) {
-              throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset, and offsets must not go backwards "
-                                                 + "startOffset=" + startOffset + ",endOffset=" + endOffset + ",lastStartOffset=" + invertState.lastStartOffset + " for field '" + field.name() + "'");
-            }
-            invertState.lastStartOffset = startOffset;
+          int startOffset = invertState.offset + invertState.offsetAttribute.startOffset();
+          int endOffset = invertState.offset + invertState.offsetAttribute.endOffset();
+          if (startOffset < invertState.lastStartOffset || endOffset < startOffset) {
+            throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset, and offsets must not go backwards "
+                                               + "startOffset=" + startOffset + ",endOffset=" + endOffset + ",lastStartOffset=" + invertState.lastStartOffset + " for field '" + field.name() + "'");
           }
+          invertState.lastStartOffset = startOffset;
 
           invertState.length++;
           if (invertState.length < 0) {
