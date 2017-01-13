@@ -80,6 +80,28 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
   }
 
   /**
+   * Test NGramFilterFactory on tokens with payloads
+   */
+  public void testNGramFilterPayload() throws Exception {
+    Reader reader = new StringReader("test|0.1");
+    TokenStream stream = whitespaceMockTokenizer(reader);
+    stream = tokenFilterFactory("DelimitedPayload", "encoder", "float").create(stream);
+    stream = tokenFilterFactory("NGram", "minGramSize", "1", "maxGramSize", "2").create(stream);
+
+    stream.reset();
+    while (stream.incrementToken()) {
+      PayloadAttribute payAttr = stream.getAttribute(PayloadAttribute.class);
+      assertNotNull(payAttr);
+      BytesRef payData = payAttr.getPayload();
+      assertNotNull(payData);
+      float payFloat = PayloadHelper.decodeFloat(payData.bytes);
+      assertEquals(0.1f, payFloat, 0.0f);
+    }
+    stream.end();
+    stream.close();
+  }
+
+  /**
    * Test EdgeNGramTokenizerFactory
    */
   public void testEdgeNGramTokenizer() throws Exception {
@@ -127,6 +149,9 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
         new String[] { "t", "te" });
   }
 
+  /**
+   * Test EdgeNGramFilterFactory on tokens with payloads
+   */
   public void testEdgeNGramFilterPayload() throws Exception {
     Reader reader = new StringReader("test|0.1");
     TokenStream stream = whitespaceMockTokenizer(reader);
