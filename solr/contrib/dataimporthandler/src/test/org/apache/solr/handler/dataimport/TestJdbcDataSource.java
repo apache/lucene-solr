@@ -35,11 +35,13 @@ import java.util.Properties;
 
 import javax.sql.DataSource;
 
+import org.apache.lucene.util.Constants;
 import org.apache.solr.handler.dataimport.JdbcDataSource.ResultSetIterator;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -68,6 +70,11 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
   Properties props = new Properties();
 
   String sysProp = System.getProperty("java.naming.factory.initial");
+  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    assumeFalse("SOLR-9893: EasyMock does not work with Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
+  }
 
   @Override
   @Before

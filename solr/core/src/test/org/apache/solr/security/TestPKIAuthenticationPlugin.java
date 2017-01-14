@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.http.Header;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.message.BasicHttpRequest;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
@@ -36,6 +37,8 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
 import org.easymock.EasyMock;
+import org.junit.BeforeClass;
+
 import static org.easymock.EasyMock.getCurrentArguments;
 
 public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
@@ -70,6 +73,11 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     }
   }
 
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    assumeFalse("SOLR-9893: EasyMock does not work with Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
+  }
+  
   public void test() throws Exception {
     AtomicReference<Principal> principal = new AtomicReference<>();
     String nodeName = "node_x_233";

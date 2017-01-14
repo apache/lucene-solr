@@ -437,6 +437,9 @@ Other Changes
 * SOLR-9934: SolrTestCase.clearIndex has been improved to take advantage of low level test specific logic that
   clears the index metadata more completely then a normal *:* DBQ can due to update versioning.  (hossman)
 
+* SOLR-9893: Update Mockito to version 2.6.2 for Java 9 support. Disable all legacy EasyMock tests when running
+  on Java 9 until they were migrated to Mockito. (Uwe Schindler)
+
 ==================  6.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

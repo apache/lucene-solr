@@ -31,17 +31,24 @@ import java.util.function.Function;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.http.NoHttpResponseException;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.NamedList;
 import org.easymock.EasyMock;
+import org.junit.BeforeClass;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    assumeFalse("SOLR-9893: EasyMock does not work with Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
+  }
+  
   public void testCaching() throws Exception {
     String collName = "gettingstarted";
     Set<String> livenodes = new HashSet<>();
