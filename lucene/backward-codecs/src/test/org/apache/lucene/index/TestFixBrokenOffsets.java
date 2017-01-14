@@ -70,7 +70,7 @@ public class TestFixBrokenOffsets extends LuceneTestCase {
     assertNotNull("Broken offsets index not found", resource);
     Path path = createTempDir("brokenoffsets");
     TestUtil.unzip(resource, path);
-    Directory dir = FSDirectory.open(path);
+    Directory dir = newFSDirectory(path);
 
     // OK: index is 6.3.0 so offsets not checked:
     TestUtil.checkIndex(dir);
@@ -94,6 +94,7 @@ public class TestFixBrokenOffsets extends LuceneTestCase {
       codecReaders[i] = (CodecReader) leaves.get(i).reader();
     }
     w.addIndexes(codecReaders);
+    reader.close();
     w.close();
 
     // NOT OK: broken offsets were copied into a 7.0 segment:
