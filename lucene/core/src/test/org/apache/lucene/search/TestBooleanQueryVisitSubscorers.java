@@ -108,6 +108,39 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     assertEquals(2, tfs.get(1).intValue()); // f2:search + f2:lucene
     assertEquals(2, tfs.get(2).intValue()); // f2:search + f2:lucene
   }
+
+  public void testDisjunctionMatches() throws IOException {
+    BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
+    bq1.add(new TermQuery(new Term(F1, "lucene")), Occur.SHOULD);
+    bq1.add(new PhraseQuery(F2, "search", "engine"), Occur.SHOULD);
+
+    Weight w1 = scorerSearcher.createNormalizedWeight(bq1.build(), true);
+    Scorer s1 = w1.scorer(reader.leaves().get(0));
+    assertEquals(0, s1.iterator().nextDoc());
+    assertEquals(2, s1.getMatchingChildren().size());
+
+    BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
+    bq2.add(new TermQuery(new Term(F1, "lucene")), Occur.SHOULD);
+    bq2.add(new PhraseQuery(F2, "search", "library"), Occur.SHOULD);
+
+    Weight w2 = scorerSearcher.createNormalizedWeight(bq2.build(), true);
+    Scorer s2 = w2.scorer(reader.leaves().get(0));
+    assertEquals(0, s2.iterator().nextDoc());
+    assertEquals(1, s2.getMatchingChildren().size());
+  }
+
+  public void testMinShouldMatchMatches() throws IOException {
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.add(new TermQuery(new Term(F1, "lucene")), Occur.SHOULD);
+    bq.add(new TermQuery(new Term(F2, "lucene")), Occur.SHOULD);
+    bq.add(new PhraseQuery(F2, "search", "library"), Occur.SHOULD);
+    bq.setMinimumNumberShouldMatch(2);
+
+    Weight w = scorerSearcher.createNormalizedWeight(bq.build(), true);
+    Scorer s = w.scorer(reader.leaves().get(0));
+    assertEquals(0, s.iterator().nextDoc());
+    assertEquals(2, s.getMatchingChildren().size());
+  }
   
   public void testConjunctions() throws IOException {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();

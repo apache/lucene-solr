@@ -82,6 +82,14 @@ public abstract class Scorer {
   public Collection<ChildScorer> getChildren() {
     return Collections.emptyList();
   }
+
+  /**
+   * Returns child sub-scorers that match the current document
+   * @lucene.experimental
+   */
+  public Collection<ChildScorer> getMatchingChildren() throws IOException {
+    return getChildren();
+  }
   
   /** A child Scorer and its relationship to its parent.
    * the meaning of the relationship depends upon the parent query. 
