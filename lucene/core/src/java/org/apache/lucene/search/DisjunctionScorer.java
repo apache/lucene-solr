@@ -202,4 +202,12 @@ abstract class DisjunctionScorer extends Scorer {
     return children;
   }
 
+  @Override
+  public Collection<ChildScorer> getMatchingChildren() throws IOException {
+    List<ChildScorer> children = new ArrayList<>();
+    for (DisiWrapper w = getSubMatches(); w != null; w = w.next) {
+      children.add(new ChildScorer(w.scorer, "SHOULD"));
+    }
+    return children;
+  }
 }
