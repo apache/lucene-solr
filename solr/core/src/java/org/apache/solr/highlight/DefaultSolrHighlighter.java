@@ -39,7 +39,7 @@ import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Encoder;
 import org.apache.lucene.search.highlight.Formatter;
@@ -221,7 +221,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     try {
       // It'd be nice to know if payloads are on the tokenStream but the presence of the attribute isn't a good
       // indicator.
-      final Terms terms = request.getSearcher().getSlowAtomicReader().fields().terms(fieldName);
+      final FieldTerms terms = request.getSearcher().getSlowAtomicReader().fields().terms(fieldName);
       if (terms != null) {
         defaultPayloads = terms.hasPayloads();
       }

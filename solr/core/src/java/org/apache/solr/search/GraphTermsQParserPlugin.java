@@ -25,7 +25,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BulkScorer;
@@ -221,7 +221,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
         private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
           final LeafReader reader = context.reader();
           final Fields fields = reader.fields();
-          Terms terms = fields.terms(field);
+          FieldTerms terms = fields.terms(field);
           if(terms == null) {
             return new WeightOrDocIdSet(new BitDocIdSet(new FixedBitSet(reader.maxDoc()), 0));
           }
@@ -285,7 +285,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       TermsEnum termsEnum = null;
       for (LeafReaderContext context : leaves) {
 
-        Terms terms = context.reader().terms(this.field);
+        FieldTerms terms = context.reader().terms(this.field);
         if (terms == null) {
           // field does not exist
           continue;

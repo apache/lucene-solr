@@ -29,7 +29,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowCodecReaderWrapper;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
@@ -165,7 +165,7 @@ public class SolrIndexSplitter {
     Bits liveDocs = reader.getLiveDocs();
 
     Fields fields = reader.fields();
-    Terms terms = fields==null ? null : fields.terms(field.getName());
+    FieldTerms terms = fields==null ? null : fields.terms(field.getName());
     TermsEnum termsEnum = terms==null ? null : terms.iterator();
     if (termsEnum == null) return docSets;
 

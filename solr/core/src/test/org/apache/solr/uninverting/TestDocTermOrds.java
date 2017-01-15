@@ -41,7 +41,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.legacy.LegacyIntField;
 import org.apache.lucene.legacy.LegacyLongField;
@@ -376,7 +376,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       if (prefixRef == null) {
         assertNull(MultiFields.getTerms(r, "field"));
       } else {
-        Terms terms = MultiFields.getTerms(r, "field");
+        FieldTerms terms = MultiFields.getTerms(r, "field");
         if (terms != null) {
           TermsEnum termsEnum = terms.iterator();
           TermsEnum.SeekStatus result = termsEnum.seekCeil(prefixRef);

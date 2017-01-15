@@ -143,7 +143,7 @@ public class TermsComponent extends SearchComponent {
       NamedList<Integer> fieldTerms = new NamedList<>();
       termsResult.add(field, fieldTerms);
 
-      Terms terms = lfields.terms(field);
+      FieldTerms terms = lfields.terms(field);
       if (terms == null) {
         // field does not exist
         continue;
@@ -550,7 +550,7 @@ public class TermsComponent extends SearchComponent {
       for (int i = 0; i < queryTerms.length; i++) {
         Term term = queryTerms[i];
         TermContext termContext = contextArray[i];
-        final Terms terms = fields.terms(term.field());
+        final FieldTerms terms = fields.terms(term.field());
         if (terms == null) {
           // field does not exist
           continue;

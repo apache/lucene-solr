@@ -26,7 +26,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -178,7 +178,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     BytesRef curr;
     boolean positioned;
 
-    public RangeTermsEnum(Terms terms) throws IOException {
+    public RangeTermsEnum(FieldTerms terms) throws IOException {
       if (terms == null) {
         positioned = true;
       } else {
@@ -379,7 +379,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
         return segStates[context.ord] = new SegState(filter.getDocIdSet(context, null));
       }
 
-      final Terms terms = context.reader().terms(SolrRangeQuery.this.getField());
+      final FieldTerms terms = context.reader().terms(SolrRangeQuery.this.getField());
       if (terms == null) {
         return segStates[context.ord] = new SegState((DocIdSet) null);
       }

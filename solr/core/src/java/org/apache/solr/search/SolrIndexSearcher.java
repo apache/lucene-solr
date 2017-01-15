@@ -957,7 +957,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @return the first document number containing the term
    */
   public int getFirstMatch(Term t) throws IOException {
-    Terms terms = leafReader.terms(t.field());
+    FieldTerms terms = leafReader.terms(t.field());
     if (terms == null) return -1;
     BytesRef termBytes = t.bytes();
     final TermsEnum termsEnum = terms.iterator();
@@ -983,7 +983,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final LeafReaderContext leaf = leafContexts.get(i);
       final LeafReader reader = leaf.reader();
 
-      final Terms terms = reader.terms(field);
+      final FieldTerms terms = reader.terms(field);
       if (terms == null) continue;
 
       TermsEnum te = terms.iterator();
