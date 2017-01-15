@@ -26,9 +26,11 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class CommonParamsTest extends LuceneTestCase
 {
-  public void testStart() { assertEquals(CommonParams.START, "start"); }
-  public void testStartDefault() { assertEquals(CommonParams.START_DEFAULT, 0); }
+  public void testStart() { assertEquals("start", CommonParams.START); }
+  public void testStartDefault() { assertEquals(0, CommonParams.START_DEFAULT); }
 
-  public void testRows() { assertEquals(CommonParams.ROWS, "rows"); }
-  public void testRowsDefault() { assertEquals(CommonParams.ROWS_DEFAULT, 10); }
+  public void testRows() { assertEquals("rows", CommonParams.ROWS); }
+  public void testRowsDefault() { assertEquals(10, CommonParams.ROWS_DEFAULT); }
+
+  public void testPreferLocalShards() { assertEquals("preferLocalShards", CommonParams.PREFER_LOCAL_SHARDS); }
 }

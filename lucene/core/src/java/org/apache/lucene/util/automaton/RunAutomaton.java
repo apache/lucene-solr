@@ -32,7 +32,7 @@ package org.apache.lucene.util.automaton;
 import java.util.Arrays;
 
 /**
- * Finite-state automaton with fast run operation.
+ * Finite-state automaton with fast run operation.  The initial state is always 0.
  * 
  * @lucene.experimental
  */
@@ -41,7 +41,6 @@ public abstract class RunAutomaton {
   final int maxInterval;
   final int size;
   final boolean[] accept;
-  final int initial;
   final int[] transitions; // delta(state,c) = transitions[state*points.length +
                      // getCharClass(c)]
   final int[] points; // char interval start points
@@ -53,7 +52,7 @@ public abstract class RunAutomaton {
   @Override
   public String toString() {
     StringBuilder b = new StringBuilder();
-    b.append("initial state: ").append(initial).append("\n");
+    b.append("initial state: 0\n");
     for (int i = 0; i < size; i++) {
       b.append("state " + i);
       if (accept[i]) b.append(" [accept]:\n");
@@ -90,13 +89,6 @@ public abstract class RunAutomaton {
    */
   public final boolean isAccept(int state) {
     return accept[state];
-  }
-  
-  /**
-   * Returns initial state.
-   */
-  public final int getInitialState() {
-    return initial;
   }
   
   /**
@@ -138,7 +130,6 @@ public abstract class RunAutomaton {
     a = Operations.determinize(a, maxDeterminizedStates);
     this.automaton = a;
     points = a.getStartPoints();
-    initial = 0;
     size = Math.max(1,a.getNumStates());
     accept = new boolean[size];
     transitions = new int[size * points.length];
@@ -188,7 +179,6 @@ public abstract class RunAutomaton {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + initial;
     result = prime * result + maxInterval;
     result = prime * result + points.length;
     result = prime * result + size;
@@ -201,7 +191,6 @@ public abstract class RunAutomaton {
     if (obj == null) return false;
     if (getClass() != obj.getClass()) return false;
     RunAutomaton other = (RunAutomaton) obj;
-    if (initial != other.initial) return false;
     if (maxInterval != other.maxInterval) return false;
     if (size != other.size) return false;
     if (!Arrays.equals(points, other.points)) return false;

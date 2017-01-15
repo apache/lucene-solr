@@ -88,9 +88,7 @@ public class SchemaManager {
 
     IndexSchema schema = req.getCore().getLatestSchema();
     if (schema instanceof ManagedIndexSchema && schema.isMutable()) {
-      synchronized (schema.getSchemaUpdateLock()) {
-        return doOperations(ops);
-      }
+      return doOperations(ops);
     } else {
       return singletonList(singletonMap(CommandOperation.ERR_MSGS, "schema is not editable"));
     }
@@ -107,52 +105,65 @@ public class SchemaManager {
     TimeOut timeOut = new TimeOut(timeout, TimeUnit.SECONDS);
     SolrCore core = req.getCore();
     String errorMsg = "Unable to persist managed schema. ";
-    while (!timeOut.hasTimedOut()) {
-      managedIndexSchema = getFreshManagedSchema(req.getCore());
-      for (CommandOperation op : operations) {
-        OpType opType = OpType.get(op.name);
-        if (opType != null) {
-          opType.perform(op, this);
-        } else {
-          op.addError("No such operation : " + op.name);
-        }
-      }
-      List errs = CommandOperation.captureErrors(operations);
-      if (!errs.isEmpty()) return errs;
-      SolrResourceLoader loader = req.getCore().getResourceLoader();
-      if (loader instanceof ZkSolrResourceLoader) {
-        ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
-        StringWriter sw = new StringWriter();
-        try {
-          managedIndexSchema.persist(sw);
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "unable to serialize schema");
-          //unlikely
-        }
+    List errors = Collections.emptyList();
+    int latestVersion = -1;
 
-        try {
-          int latestVersion = ZkController.persistConfigResourceToZooKeeper(zkLoader, managedIndexSchema.getSchemaZkVersion(),
-              managedIndexSchema.getResourceName(), sw.toString().getBytes(StandardCharsets.UTF_8), true);
-          waitForOtherReplicasToUpdate(timeOut, latestVersion);
-          core.setLatestSchema(managedIndexSchema);
-          return Collections.emptyList();
-        } catch (ZkController.ResourceModifiedInZkException e) {
-          log.info("Schema was modified by another node. Retrying..");
+    synchronized (req.getSchema().getSchemaUpdateLock()) {
+      while (!timeOut.hasTimedOut()) {
+        managedIndexSchema = getFreshManagedSchema(req.getCore());
+        for (CommandOperation op : operations) {
+          OpType opType = OpType.get(op.name);
+          if (opType != null) {
+            opType.perform(op, this);
+          } else {
+            op.addError("No such operation : " + op.name);
+          }
         }
-      } else {
-        try {
-          //only for non cloud stuff
-          managedIndexSchema.persistManagedSchema(false);
-          core.setLatestSchema(managedIndexSchema);
-          return Collections.emptyList();
-        } catch (SolrException e) {
-          log.warn(errorMsg);
-          return singletonList(errorMsg + e.getMessage());
+        errors = CommandOperation.captureErrors(operations);
+        if (!errors.isEmpty()) break;
+        SolrResourceLoader loader = req.getCore().getResourceLoader();
+        if (loader instanceof ZkSolrResourceLoader) {
+          ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
+          StringWriter sw = new StringWriter();
+          try {
+            managedIndexSchema.persist(sw);
+          } catch (IOException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "unable to serialize schema");
+            //unlikely
+          }
+
+          try {
+            latestVersion = ZkController.persistConfigResourceToZooKeeper
+                (zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(),
+                 sw.toString().getBytes(StandardCharsets.UTF_8), true);
+            req.getCore().getCoreDescriptor().getCoreContainer().reload(req.getCore().getName());
+            break;
+          } catch (ZkController.ResourceModifiedInZkException e) {
+            log.info("Schema was modified by another node. Retrying..");
+          }
+        } else {
+          try {
+            //only for non cloud stuff
+            managedIndexSchema.persistManagedSchema(false);
+            core.setLatestSchema(managedIndexSchema);
+          } catch (SolrException e) {
+            log.warn(errorMsg);
+            errors = singletonList(errorMsg + e.getMessage());
+          }
+          break;
         }
       }
     }
-    log.warn(errorMsg + "Timed out.");
-    return singletonList(errorMsg + "Timed out.");
+    if (req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
+      // Don't block further schema updates while waiting for a pending update to propagate to other replicas.
+      // This reduces the likelihood of a (time-limited) distributed deadlock during concurrent schema updates.
+      waitForOtherReplicasToUpdate(timeOut, latestVersion);
+    }
+    if (errors.isEmpty() && timeOut.hasTimedOut()) {
+      log.warn(errorMsg + "Timed out.");
+      errors = singletonList(errorMsg + "Timed out.");
+    }
+    return errors;
   }
 
   private void waitForOtherReplicasToUpdate(TimeOut timeOut, int latestVersion) {
@@ -226,13 +237,8 @@ public class SchemaManager {
         String type = op.getStr(TYPE);
         if (op.hasError())
           return false;
-        FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
-        if (ft == null) {
-          op.addError("No such field type '" + type + "'");
-          return false;
-        }
         try {
-          SchemaField field = SchemaField.create(name, ft, op.getValuesExcluding(NAME, TYPE));
+          SchemaField field = mgr.managedIndexSchema.newField(name, type, op.getValuesExcluding(NAME, TYPE));
           mgr.managedIndexSchema
               = mgr.managedIndexSchema.addFields(singletonList(field), Collections.emptyMap(), false);
           return true;
@@ -248,13 +254,8 @@ public class SchemaManager {
         String type = op.getStr(TYPE);
         if (op.hasError())
           return false;
-        FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
-        if (ft == null) {
-          op.addError("No such field type '" + type + "'");
-          return  false;
-        }
         try {
-          SchemaField field = SchemaField.create(name, ft, op.getValuesExcluding(NAME, TYPE));
+          SchemaField field = mgr.managedIndexSchema.newDynamicField(name, type, op.getValuesExcluding(NAME, TYPE));
           mgr.managedIndexSchema
               = mgr.managedIndexSchema.addDynamicFields(singletonList(field), Collections.emptyMap(), false);
           return true;

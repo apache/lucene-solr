@@ -32,24 +32,24 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.legacy.LegacyFieldType;
+import org.apache.lucene.legacy.LegacyIntField;
+import org.apache.lucene.legacy.LegacyNumericRangeQuery;
+import org.apache.lucene.legacy.LegacyNumericType;
+import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.EnumFieldSource;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocValuesRangeQuery;
-import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
@@ -234,8 +234,8 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
-  public FieldType.LegacyNumericType getNumericType() {
-    return FieldType.LegacyNumericType.INT;
+  public LegacyNumericType getNumericType() {
+    return LegacyNumericType.INT;
   }
 
   /**
@@ -386,18 +386,17 @@ public class EnumField extends PrimitiveFieldType {
     if (intValue == null || intValue.equals(DEFAULT_VALUE))
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown value for enum field: " + value.toString());
 
-    String intAsString =  intValue.toString();
-    final FieldType newType = new FieldType();
+    final LegacyFieldType newType = new LegacyFieldType();
 
     newType.setTokenized(field.isTokenized());
     newType.setStored(field.stored());
     newType.setOmitNorms(field.omitNorms());
-    newType.setIndexOptions(field.indexed() ? getIndexOptions(field, intAsString) : IndexOptions.NONE);
+    newType.setIndexOptions(field.indexOptions());
     newType.setStoreTermVectors(field.storeTermVector());
     newType.setStoreTermVectorOffsets(field.storeTermOffsets());
     newType.setStoreTermVectorPositions(field.storeTermPositions());
     newType.setStoreTermVectorPayloads(field.storeTermPayloads());
-    newType.setNumericType(FieldType.LegacyNumericType.INT);
+    newType.setNumericType(LegacyNumericType.INT);
     newType.setNumericPrecisionStep(DEFAULT_PRECISION_STEP);
 
     final org.apache.lucene.document.Field f;

@@ -39,8 +39,6 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   
   public static final int TIMEOUT = 45000;
 
-  private static final boolean DEBUG = false;
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   
@@ -137,10 +135,6 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    if (DEBUG) {
-      printLayout(zkServer.getZkHost());
-    }
-
     super.tearDown();
   }
   

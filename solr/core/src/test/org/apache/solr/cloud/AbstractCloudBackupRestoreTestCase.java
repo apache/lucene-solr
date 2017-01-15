@@ -1,35 +1,3 @@
-package org.apache.solr.cloud;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Random;
-import java.util.TreeMap;
-
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest.ClusterProp;
-import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ImplicitDocRouter;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.ShardParams._ROUTE_;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -46,6 +14,38 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.cloud;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+import java.util.TreeMap;
+
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest.ClusterProp;
+import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
 /**
  * This class implements the logic required to test Solr cloud backup/restore capability.
@@ -125,7 +125,22 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     }
 
     testBackupAndRestore(getCollectionName());
+    testConfigBackupOnly("conf1", getCollectionName());
     testInvalidPath(getCollectionName());
+  }
+
+  /**
+   * This test validates the backup of collection configuration using
+   *  {@linkplain CollectionAdminParams#NO_INDEX_BACKUP_STRATEGY}.
+   *
+   * @param configName The config name for the collection to be backed up.
+   * @param collectionName The name of the collection to be backed up.
+   * @throws Exception in case of errors.
+   */
+  protected void testConfigBackupOnly(String configName, String collectionName) throws Exception {
+    // This is deliberately no-op since we want to run this test only for one of the backup repository
+    // implementation (mainly to avoid redundant test execution). Currently HDFS backup repository test
+    // implements this.
   }
 
   // This test verifies the system behavior when the backup location cluster property is configured with an invalid
@@ -148,9 +163,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     try {
       backup.process(solrClient);
       fail("This request should have failed since the cluster property value for backup location property is invalid.");
-    } catch (SolrServerException ex) {
-      assertTrue(ex.getCause() instanceof RemoteSolrException);
-      assertEquals(ErrorCode.SERVER_ERROR.code, ((RemoteSolrException)ex.getCause()).code());
+    } catch (SolrException ex) {
+      assertEquals(ErrorCode.SERVER_ERROR.code, ex.code());
     }
 
     String restoreCollectionName = collectionName + "_invalidrequest";
@@ -159,9 +173,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     try {
       restore.process(solrClient);
       fail("This request should have failed since the cluster property value for backup location property is invalid.");
-    } catch (SolrServerException ex) {
-      assertTrue(ex.getCause() instanceof RemoteSolrException);
-      assertEquals(ErrorCode.SERVER_ERROR.code, ((RemoteSolrException)ex.getCause()).code());
+    } catch (SolrException ex) {
+      assertEquals(ErrorCode.SERVER_ERROR.code, ex.code());
     }
   }
 

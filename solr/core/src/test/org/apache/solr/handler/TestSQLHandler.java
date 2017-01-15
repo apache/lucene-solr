@@ -49,11 +49,6 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     sliceCount = 2;
   }
 
-  //@BeforeClass
-  //public static void beforeSuperClass() {
-    //AbstractZkTestCase.SOLRHOME = new File(SOLR_HOME());
- // }
-
   @AfterClass
   public static void afterSuperClass() {
 
@@ -67,8 +62,6 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    // we expect this time of exception as shards go up and down...
-    //ignoreException(".*");
 
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
@@ -89,6 +82,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     waitForRecoveriesToFinish(false);
     testPredicate();
     testBasicSelect();
+    testWhere();
     testMixedCaseFields();
     testBasicGrouping();
     testBasicGroupingFacets();
@@ -112,9 +106,97 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     String sql = "select a from b where c = 'd'";
     Statement statement = parser.createStatement(sql);
     SQLHandler.SQLVisitor sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
-    sqlVistor.process(statement, new Integer(0));
+    sqlVistor.process(statement, 0);
 
-    assert(sqlVistor.query.equals("(c:\"d\")"));
+    assertEquals("(c:\"d\")", sqlVistor.query);
+
+    parser = new SqlParser();
+    sql = "select a from b where c = 5";
+    statement = parser.createStatement(sql);
+    sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
+    sqlVistor.process(statement, 0);
+
+    assertEquals("(c:\"5\")", sqlVistor.query);
+
+    parser = new SqlParser();
+    sql = "select a from b where c <> 'd'";
+    statement = parser.createStatement(sql);
+    sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
+    sqlVistor.process(statement, 0);
+
+    assertEquals("(-c:\"d\")", sqlVistor.query);
+
+    parser = new SqlParser();
+    sql = "select a from b where c <> 5";
+    statement = parser.createStatement(sql);
+    sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
+    sqlVistor.process(statement, 0);
+
+    assertEquals("(-c:\"5\")", sqlVistor.query);
+
+    parser = new SqlParser();
+    sql = "select a from b where c > 'd'";
+    statement = parser.createStatement(sql);
+    sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
+    sqlVistor.process(statement, 0);
+
+    assertEquals("(c:{\"d\" TO *])", sqlVistor.query);
+
+    parser = new SqlParser();
+    sql = "select a from b where c > 5";
+    statement = parser.createStatement(sql);
+    sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
+    sqlVistor.process(statement, 0);
+
+    assertEquals("(c:{\"5\" TO *])", sqlVistor.query);
+
+    parser = new SqlParser();
+    sql = "select a from b where c >= 'd'";
+    statement = parser.createStatement(sql);
+    sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
+    sqlVistor.process(statement, 0);
+
+    assertEquals("(c:[\"d\" TO *])", sqlVistor.query);
+
+    parser = new SqlParser();
+    sql = "select a from b where c >= 5";
+    statement = parser.createStatement(sql);
+    sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
+    sqlVistor.process(statement, 0);
+
+    assertEquals("(c:[\"5\" TO *])", sqlVistor.query);
+
+    parser = new SqlParser();
+    sql = "select a from b where c < 'd'";
+    statement = parser.createStatement(sql);
+    sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
+    sqlVistor.process(statement, 0);
+
+    assertEquals("(c:[* TO \"d\"})", sqlVistor.query);
+
+    parser = new SqlParser();
+    sql = "select a from b where c < 5";
+    statement = parser.createStatement(sql);
+    sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
+    sqlVistor.process(statement, 0);
+
+    assertEquals("(c:[* TO \"5\"})", sqlVistor.query);
+
+    parser = new SqlParser();
+    sql = "select a from b where c <= 'd'";
+    statement = parser.createStatement(sql);
+    sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
+    sqlVistor.process(statement, 0);
+
+    assertEquals("(c:[* TO \"d\"])", sqlVistor.query);
+
+    parser = new SqlParser();
+    sql = "select a from b where c <= 5";
+    statement = parser.createStatement(sql);
+    sqlVistor = new SQLHandler.SQLVisitor(new StringBuilder());
+    sqlVistor.process(statement, 0);
+
+    assertEquals("(c:[* TO \"5\"])", sqlVistor.query);
 
     //Add parens
     parser = new SqlParser();
@@ -446,6 +528,141 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getLong("myId") == 1);
       assert(tuple.getLong("myInt") == 7);
       assert(tuple.get("myString").equals("a"));
+
+    } finally {
+      delete();
+    }
+  }
+
+  private void testWhere() throws Exception {
+    try {
+      CloudJettyRunner jetty = this.cloudJettys.get(0);
+
+      del("*:*");
+
+      commit();
+
+      indexDoc(sdoc("id", "1", "text", "XXXX XXXX", "str_s", "a", "field_i", "7"));
+      indexDoc(sdoc("id", "2", "text", "XXXX XXXX", "str_s", "b", "field_i", "8"));
+      indexDoc(sdoc("id", "3", "text", "XXXX XXXX", "str_s", "a", "field_i", "20"));
+      indexDoc(sdoc("id", "4", "text", "XXXX XXXX", "str_s", "b", "field_i", "11"));
+      indexDoc(sdoc("id", "5", "text", "XXXX XXXX", "str_s", "c", "field_i", "30"));
+      indexDoc(sdoc("id", "6", "text", "XXXX XXXX", "str_s", "c", "field_i", "40"));
+      indexDoc(sdoc("id", "7", "text", "XXXX XXXX", "str_s", "c", "field_i", "50"));
+      indexDoc(sdoc("id", "8", "text", "XXXX XXXX", "str_s", "c", "field_i", "60"));
+      commit();
+
+      // Equals
+      SolrParams sParams = mapParams(CommonParams.QT, "/sql",
+          "stmt", "select id from collection1 where id = 1 order by id asc");
+
+      SolrStream solrStream = new SolrStream(jetty.url, sParams);
+      List<Tuple> tuples = getTuples(solrStream);
+
+      assertEquals(1, tuples.size());
+
+      Tuple tuple = tuples.get(0);
+      assertEquals(1L, tuple.get("id"));
+
+      // Not Equals <>
+      sParams = mapParams(CommonParams.QT, "/sql",
+          "stmt", "select id from collection1 where id <> 1 order by id asc limit 10");
+
+      solrStream = new SolrStream(jetty.url, sParams);
+      tuples = getTuples(solrStream);
+
+      assertEquals(7, tuples.size());
+
+      tuple = tuples.get(0);
+      assertEquals(2L, tuple.get("id"));
+      tuple = tuples.get(1);
+      assertEquals(3L, tuple.get("id"));
+      tuple = tuples.get(2);
+      assertEquals(4L, tuple.get("id"));
+      tuple = tuples.get(3);
+      assertEquals(5L, tuple.get("id"));
+      tuple = tuples.get(4);
+      assertEquals(6L, tuple.get("id"));
+      tuple = tuples.get(5);
+      assertEquals(7L, tuple.get("id"));
+      tuple = tuples.get(6);
+      assertEquals(8L, tuple.get("id"));
+
+      // Not Equals !=
+      sParams = mapParams(CommonParams.QT, "/sql",
+          "stmt", "select id from collection1 where id != 1 order by id asc limit 10");
+
+      solrStream = new SolrStream(jetty.url, sParams);
+      tuples = getTuples(solrStream);
+
+      assertEquals(7, tuples.size());
+
+      tuple = tuples.get(0);
+      assertEquals(2L, tuple.get("id"));
+      tuple = tuples.get(1);
+      assertEquals(3L, tuple.get("id"));
+      tuple = tuples.get(2);
+      assertEquals(4L, tuple.get("id"));
+      tuple = tuples.get(3);
+      assertEquals(5L, tuple.get("id"));
+      tuple = tuples.get(4);
+      assertEquals(6L, tuple.get("id"));
+      tuple = tuples.get(5);
+      assertEquals(7L, tuple.get("id"));
+      tuple = tuples.get(6);
+      assertEquals(8L, tuple.get("id"));
+
+      // Less than
+      sParams = mapParams(CommonParams.QT, "/sql",
+          "stmt", "select id from collection1 where id < 2 order by id asc");
+
+      solrStream = new SolrStream(jetty.url, sParams);
+      tuples = getTuples(solrStream);
+
+      assertEquals(1, tuples.size());
+
+      tuple = tuples.get(0);
+      assertEquals(1L, tuple.get("id"));
+
+      // Less than equal
+      sParams = mapParams(CommonParams.QT, "/sql",
+          "stmt", "select id from collection1 where id <= 2 order by id asc");
+
+      solrStream = new SolrStream(jetty.url, sParams);
+      tuples = getTuples(solrStream);
+
+      assertEquals(2, tuples.size());
+
+      tuple = tuples.get(0);
+      assertEquals(1L, tuple.get("id"));
+      tuple = tuples.get(1);
+      assertEquals(2L, tuple.get("id"));
+
+      // Greater than
+      sParams = mapParams(CommonParams.QT, "/sql",
+          "stmt", "select id from collection1 where id > 7 order by id asc");
+
+      solrStream = new SolrStream(jetty.url, sParams);
+      tuples = getTuples(solrStream);
+
+      assertEquals(1, tuples.size());
+
+      tuple = tuples.get(0);
+      assertEquals(8L, tuple.get("id"));
+
+      // Greater than equal
+      sParams = mapParams(CommonParams.QT, "/sql",
+          "stmt", "select id from collection1 where id >= 7 order by id asc");
+
+      solrStream = new SolrStream(jetty.url, sParams);
+      tuples = getTuples(solrStream);
+
+      assertEquals(2, tuples.size());
+
+      tuple = tuples.get(0);
+      assertEquals(7L, tuple.get("id"));
+      tuple = tuples.get(1);
+      assertEquals(8L, tuple.get("id"));
 
     } finally {
       delete();

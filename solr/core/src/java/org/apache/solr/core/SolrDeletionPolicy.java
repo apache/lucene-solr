@@ -77,14 +77,10 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
    */
   @Override
   public void onInit(List<? extends IndexCommit> commits) throws IOException {
-    // SOLR-4547: log basic data at INFO, add filenames at DEBUG.
     if (commits.isEmpty()) {
       return;
     }
-    log.info("SolrDeletionPolicy.onInit: commits: {}",
-        new CommitsLoggingInfo(commits));
-    log.debug("SolrDeletionPolicy.onInit: commits: {}",
-        new CommitsLoggingDebug(commits));
+    log.debug("SolrDeletionPolicy.onInit: commits: {}", new CommitsLoggingDebug(commits));
     updateCommits(commits);
   }
 
@@ -93,11 +89,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
    */
   @Override
   public void onCommit(List<? extends IndexCommit> commits) throws IOException {
-    // SOLR-4547: log basic data at INFO, add filenames at DEBUG.
-    log.info("SolrDeletionPolicy.onCommit: commits: {}",
-        new CommitsLoggingInfo(commits));
-    log.debug("SolrDeletionPolicy.onCommit: commits: {}",
-        new CommitsLoggingDebug(commits));
+    log.debug("SolrDeletionPolicy.onCommit: commits: {}", new CommitsLoggingDebug(commits));
     updateCommits(commits);
   }
 
@@ -122,6 +114,9 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
 
     protected void appendDetails(StringBuilder sb, IndexCommit c) {
       Directory dir = c.getDirectory();
+      if (dir instanceof MetricsDirectoryFactory.MetricsDirectory) { // unwrap
+        dir = ((MetricsDirectoryFactory.MetricsDirectory) dir).getDelegate();
+      }
       if (dir instanceof FSDirectory) {
         FSDirectory fsd = (FSDirectory) dir;
         sb.append("dir=").append(fsd.getDirectory());
@@ -158,10 +153,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
     synchronized (this) {
       long maxCommitAgeTimeStamp = -1L;
       IndexCommit newest = commits.get(commits.size() - 1);
-      // SOLR-4547: Removed the filenames from this log entry because this
-      // method is only called from methods that have just logged them
-      // at DEBUG.
-      log.info("newest commit generation = " + newest.getGeneration());
+      log.debug("newest commit generation = " + newest.getGeneration());
       int singleSegKept = (newest.getSegmentCount() == 1) ? 1 : 0;
       int totalKept = 1;
 
@@ -205,6 +197,9 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
   private String getId(IndexCommit commit) {
     StringBuilder sb = new StringBuilder();
     Directory dir = commit.getDirectory();
+    if (dir instanceof MetricsDirectoryFactory.MetricsDirectory) { // unwrap
+      dir = ((MetricsDirectoryFactory.MetricsDirectory) dir).getDelegate();
+    }
 
     // For anything persistent, make something that will
     // be the same, regardless of the Directory instance.

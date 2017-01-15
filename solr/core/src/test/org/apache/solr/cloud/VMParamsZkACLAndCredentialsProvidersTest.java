@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
 import org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider;
@@ -76,6 +77,8 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     zkClient.create("/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.makePath("/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+
+    zkClient.create(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.close();
     
     clearSecuritySystemProperties();
@@ -106,7 +109,9 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      doTest(zkClient, false, false, false, false, false);
+      doTest(zkClient,
+          false, false, false, false, false,
+          false, false, false, false, false);
     } finally {
       zkClient.close();
     }
@@ -118,7 +123,9 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      doTest(zkClient, false, false, false, false, false);
+      doTest(zkClient,
+          false, false, false, false, false,
+          false, false, false, false, false);
     } finally {
       zkClient.close();
     }
@@ -130,7 +137,9 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      doTest(zkClient, true, true, true, true, true);
+      doTest(zkClient,
+          true, true, true, true, true,
+          true, true, true, true, true);
     } finally {
       zkClient.close();
     }
@@ -142,17 +151,23 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      doTest(zkClient, true, true, false, false, false);
+      doTest(zkClient,
+          true, true, false, false, false,
+          false, false, false, false, false);
     } finally {
       zkClient.close();
     }
   }
     
-  protected static void doTest(SolrZkClient zkClient, boolean getData, boolean list, boolean create, boolean setData, boolean delete) throws Exception {
+  protected static void doTest(
+      SolrZkClient zkClient,
+      boolean getData, boolean list, boolean create, boolean setData, boolean delete,
+      boolean secureGet, boolean secureList, boolean secureCreate, boolean secureSet, boolean secureDelete) throws Exception {
     doTest(zkClient, "/protectedCreateNode", getData, list, create, setData, delete);
     doTest(zkClient, "/protectedMakePathNode", getData, list, create, setData, delete);
     doTest(zkClient, "/unprotectedCreateNode", true, true, true, true, delete);
     doTest(zkClient, "/unprotectedMakePathNode", true, true, true, true, delete);
+    doTest(zkClient, SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, secureGet, secureList, secureCreate, secureSet, secureDelete);
   }
   
   protected static void doTest(SolrZkClient zkClient, String path, boolean getData, boolean list, boolean create, boolean setData, boolean delete) throws Exception {

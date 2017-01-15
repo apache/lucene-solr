@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.clustering.carrot2;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.carrot2.core.Cluster;
@@ -32,8 +33,6 @@ import org.carrot2.util.attribute.Attribute;
 import org.carrot2.util.attribute.Bindable;
 import org.carrot2.util.attribute.Input;
 import org.carrot2.util.attribute.Output;
-
-import com.google.common.collect.Lists;
 
 /**
  * A mock implementation of Carrot2 clustering algorithm for testing whether the
@@ -60,7 +59,7 @@ public class LexicalResourcesCheckClusteringAlgorithm extends
 
   @Override
   public void process() throws ProcessingException {
-    clusters = Lists.newArrayList();
+    clusters = new ArrayList<>();
     if (wordsToCheck == null) {
       return;
     }

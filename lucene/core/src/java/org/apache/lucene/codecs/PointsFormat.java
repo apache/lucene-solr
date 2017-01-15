@@ -19,6 +19,7 @@ package org.apache.lucene.codecs;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -72,38 +73,8 @@ public abstract class PointsFormat {
           }
 
           @Override
-          public void intersect(String fieldName, IntersectVisitor visitor) {
-            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
-          }
-
-          @Override
-          public byte[] getMinPackedValue(String fieldName) {
-            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
-          }
-
-          @Override
-          public byte[] getMaxPackedValue(String fieldName) {
-            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
-          }
-
-          @Override
-          public int getNumDimensions(String fieldName) {
-            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
-          }
-
-          @Override
-          public int getBytesPerDimension(String fieldName) {
-            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
-          }
-
-          @Override
-          public long size(String fieldName) {
-            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
-          }
-
-          @Override
-          public int getDocCount(String fieldName) {
-            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
+          public PointValues getValues(String field) {
+            throw new IllegalArgumentException("field=\"" + field + "\" was not indexed with points");
           }
         };
       }

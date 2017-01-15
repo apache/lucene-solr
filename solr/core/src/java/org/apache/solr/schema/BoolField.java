@@ -71,8 +71,8 @@ public class BoolField extends PrimitiveFieldType {
   }
 
   // avoid instantiating every time...
-  protected final static char[] TRUE_TOKEN = {'T'};
-  protected final static char[] FALSE_TOKEN = {'F'};
+  public final static char[] TRUE_TOKEN = {'T'};
+  public final static char[] FALSE_TOKEN = {'F'};
 
   ////////////////////////////////////////////////////////////////////////
   // TODO: look into creating my own queryParser that can more efficiently
@@ -128,11 +128,13 @@ public class BoolField extends PrimitiveFieldType {
 
   @Override
   public String toExternal(IndexableField f) {
-    if (f.binaryValue() == null) {
-      return null;
+    if (null != f.binaryValue()) {
+      return indexedToReadable(f.binaryValue().utf8ToString());
     }
-
-    return indexedToReadable(f.binaryValue().utf8ToString());
+    if (null != f.stringValue()) {
+      return indexedToReadable(f.stringValue());
+    }
+    return null;
   }
 
   @Override
@@ -243,14 +245,26 @@ class BoolFieldSource extends ValueSource {
     final int trueOrd = tord;
 
     return new BoolDocValues(this) {
+
+      private int getOrdForDoc(int doc) throws IOException {
+        if (doc > sindex.docID()) {
+          sindex.advance(doc);
+        }
+        if (doc == sindex.docID()) {
+          return sindex.ordValue();
+        } else {
+          return -1;
+        }
+      }
       @Override
-      public boolean boolVal(int doc) {
-        return sindex.getOrd(doc) == trueOrd;
+      
+      public boolean boolVal(int doc) throws IOException {
+        return getOrdForDoc(doc) == trueOrd;
       }
 
       @Override
-      public boolean exists(int doc) {
-        return sindex.getOrd(doc) != -1;
+      public boolean exists(int doc) throws IOException {
+        return getOrdForDoc(doc) != -1;
       }
 
       @Override
@@ -264,8 +278,8 @@ class BoolFieldSource extends ValueSource {
           }
 
           @Override
-          public void fillValue(int doc) {
-            int ord = sindex.getOrd(doc);
+          public void fillValue(int doc) throws IOException {
+            int ord = getOrdForDoc(doc);
             mval.value = (ord == trueOrd);
             mval.exists = (ord != -1);
           }

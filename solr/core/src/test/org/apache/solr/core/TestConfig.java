@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedHashMap;
 
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -104,6 +105,38 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertTrue("file handler should have been automatically registered", handler != null);
 
   }
+  
+ @Test
+ public void testCacheEnablingDisabling() throws Exception {
+   // ensure if cache is not defined in the config then cache is disabled 
+   SolrConfig sc = new SolrConfig(new SolrResourceLoader(TEST_PATH().resolve("collection1")), "solrconfig-defaults.xml", null);
+   assertNull(sc.filterCacheConfig);
+   assertNull(sc.queryResultCacheConfig);
+   assertNull(sc.documentCacheConfig);
+   
+   // enable all the caches via system properties and verify 
+   System.setProperty("filterCache.enabled", "true");
+   System.setProperty("queryResultCache.enabled", "true");
+   System.setProperty("documentCache.enabled", "true");
+   sc = new SolrConfig(new SolrResourceLoader(TEST_PATH().resolve("collection1")), "solrconfig-cache-enable-disable.xml", null);
+   assertNotNull(sc.filterCacheConfig);
+   assertNotNull(sc.queryResultCacheConfig);
+   assertNotNull(sc.documentCacheConfig);
+   
+   // disable all the caches via system properties and verify
+   System.setProperty("filterCache.enabled", "false");
+   System.setProperty("queryResultCache.enabled", "false");
+   System.setProperty("documentCache.enabled", "false");
+   sc = new SolrConfig(new SolrResourceLoader(TEST_PATH().resolve("collection1")), "solrconfig-cache-enable-disable.xml", null);
+   assertNull(sc.filterCacheConfig);
+   assertNull(sc.queryResultCacheConfig);
+   assertNull(sc.documentCacheConfig);
+   
+   System.clearProperty("filterCache.enabled");
+   System.clearProperty("queryResultCache.enabled");
+   System.clearProperty("documentCache.enabled");
+ }
+  
 
   // If defaults change, add test methods to cover each version
   @Test
@@ -127,6 +160,8 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     ++numDefaultsTested; assertEquals("default infoStream", InfoStream.NO_OUTPUT, sic.infoStream);
 
+    ++numDefaultsTested; assertNotNull("default metrics", sic.metricsInfo);
+
     // mergePolicyInfo and mergePolicyFactoryInfo are mutually exclusive
     // so ++ count them only once for both instead of individually
     ++numDefaultsTested; ++numNullDefaults;
@@ -147,8 +182,8 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     assertNull("non-null mergedSegmentWarmer", iwc.getMergedSegmentWarmer());
 
-    final int numDefaultsMapped = sic.toMap().size();
-    assertEquals("numDefaultsTested vs. numDefaultsMapped+numNullDefaults ="+sic.toMap().keySet(), numDefaultsTested, numDefaultsMapped+numNullDefaults);
+    final int numDefaultsMapped = sic.toMap(new LinkedHashMap<>()).size();
+    assertEquals("numDefaultsTested vs. numDefaultsMapped+numNullDefaults ="+sic.toMap(new LinkedHashMap<>()).keySet(), numDefaultsTested, numDefaultsMapped+numNullDefaults);
   }
 
 

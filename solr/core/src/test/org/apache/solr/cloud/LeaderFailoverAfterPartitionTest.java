@@ -159,7 +159,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     
     proxy0.reopen();
     
-    long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
+    long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(90, TimeUnit.SECONDS);
     while (System.nanoTime() < timeout) {
       List<Replica> activeReps = getActiveOrRecoveringReplicas(testCollectionName, "shard1");
       if (activeReps.size() >= 2) break;

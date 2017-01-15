@@ -67,22 +67,23 @@ public abstract class BBoxSimilarityValueSource extends ValueSource {
 
     return new DoubleDocValues(this) {
       @Override
-      public double doubleVal(int doc) {
+      public double doubleVal(int doc) throws IOException {
         //? limit to Rect or call getBoundingBox()? latter would encourage bad practice
         final Rectangle rect = (Rectangle) shapeValues.objectVal(doc);
         return rect==null ? 0 : score(rect, null);
       }
 
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         return shapeValues.exists(doc);
       }
 
       @Override
-      public Explanation explain(int doc) {
+      public Explanation explain(int doc) throws IOException {
         final Rectangle rect = (Rectangle) shapeValues.objectVal(doc);
-        if (rect == null)
+        if (rect == null) {
           return Explanation.noMatch("no rect");
+        }
         AtomicReference<Explanation> explanation = new AtomicReference<>();
         score(rect, explanation);
         return explanation.get();

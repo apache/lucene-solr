@@ -16,15 +16,20 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.WeakHashMap;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.solr.common.util.Cache;
+import org.apache.solr.common.util.MapBackedCache;
+import org.apache.solr.update.processor.TemplateUpdateProcessorFactory;
+
+import static org.apache.solr.update.processor.TemplateUpdateProcessorFactory.Resolved;
 
 /**
  * <p>
@@ -48,20 +53,13 @@ import java.util.regex.Pattern;
 public class VariableResolver {
   
   private static final Pattern DOT_PATTERN = Pattern.compile("[.]");
-  private static final Pattern PLACEHOLDER_PATTERN = Pattern
-      .compile("[$][{](.*?)[}]");
   private static final Pattern EVALUATOR_FORMAT_PATTERN = Pattern
       .compile("^(\\w*?)\\((.*?)\\)$");
   private Map<String,Object> rootNamespace;
   private Map<String,Evaluator> evaluators;
-  private Map<String,Resolved> cache = new WeakHashMap<>();
-  
-  class Resolved {
-    List<Integer> startIndexes = new ArrayList<>(2);
-    List<Integer> endOffsets = new ArrayList<>(2);
-    List<String> variables = new ArrayList<>(2);
-  }
-  
+  private Cache<String,Resolved> cache = new MapBackedCache<>(new WeakHashMap<>());
+  private Function<String,Object> fun = this::resolve;
+
   public static final String FUNCTIONS_NAMESPACE = "dataimporter.functions.";
   public static final String FUNCTIONS_NAMESPACE_SHORT = "dih.functions.";
   
@@ -145,48 +143,8 @@ public class VariableResolver {
    * @return the string with the placeholders replaced with their values
    */
   public String replaceTokens(String template) {
-    if (template == null) {
-      return null;
-    }
-    Resolved r = getResolved(template);
-    if (r.startIndexes != null) {
-      StringBuilder sb = new StringBuilder(template);
-      for (int i = r.startIndexes.size() - 1; i >= 0; i--) {
-        String replacement = resolve(r.variables.get(i)).toString();
-        sb.replace(r.startIndexes.get(i), r.endOffsets.get(i), replacement);
-      }
-      return sb.toString();
-    } else {
-      return template;
-    }
+    return TemplateUpdateProcessorFactory.replaceTokens(template, cache, fun);
   }
-  
-  private Resolved getResolved(String template) {
-    Resolved r = cache.get(template);
-    if (r == null) {
-      r = new Resolved();
-      Matcher m = PLACEHOLDER_PATTERN.matcher(template);
-      while (m.find()) {
-        String variable = m.group(1);
-        r.startIndexes.add(m.start(0));
-        r.endOffsets.add(m.end(0));
-        r.variables.add(variable);
-      }
-      cache.put(template, r);
-    }
-    return r;
-  }
-  /**
-   * Get a list of variables embedded in the template string.
-   */
-  public List<String> getVariables(String template) {
-    Resolved r = getResolved(template);
-    if (r == null) {
-      return Collections.emptyList();
-    }
-    return new ArrayList<>(r.variables);
-  }
-  
   public void addNamespace(String name, Map<String,Object> newMap) {
     if (newMap != null) {
       if (name != null) {
@@ -204,7 +162,11 @@ public class VariableResolver {
       }
     }
   }
-  
+
+  public List<String> getVariables(String expr) {
+    return TemplateUpdateProcessorFactory.getVariables(expr, cache);
+  }
+
   class CurrentLevel {
     final Map<String,Object> map;
     final int level;

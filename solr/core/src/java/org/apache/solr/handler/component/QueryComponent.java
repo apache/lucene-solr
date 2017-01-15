@@ -184,7 +184,7 @@ public class QueryComponent extends SearchComponent
         }
       }
 
-      rb.setSortSpec( parser.getSort(true) );
+      rb.setSortSpec( parser.getSortSpec(true) );
       rb.setQparser(parser);
 
       final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
@@ -199,10 +199,11 @@ public class QueryComponent extends SearchComponent
       if (fqs!=null && fqs.length!=0) {
         List<Query> filters = rb.getFilters();
         // if filters already exists, make a copy instead of modifying the original
-        filters = filters == null ? new ArrayList<Query>(fqs.length) : new ArrayList<>(filters);
+        filters = filters == null ? new ArrayList<>(fqs.length) : new ArrayList<>(filters);
         for (String fq : fqs) {
           if (fq != null && fq.trim().length()!=0) {
-            QParser fqp = QParser.getParser(fq, null, req);
+            QParser fqp = QParser.getParser(fq, req);
+            fqp.setIsFilter(true);
             filters.add(fqp.getQuery());
           }
         }
@@ -251,21 +252,27 @@ public class QueryComponent extends SearchComponent
     final SortSpec sortSpec = rb.getSortSpec();
 
     //TODO: move weighting of sort
-    Sort groupSort = searcher.weightSort(sortSpec.getSort());
-    if (groupSort == null) {
-      groupSort = Sort.RELEVANCE;
-    }
+    final SortSpec groupSortSpec = searcher.weightSortSpec(sortSpec, Sort.RELEVANCE);
 
     // groupSort defaults to sort
-    String groupSortStr = params.get(GroupParams.GROUP_SORT);
+    String withinGroupSortStr = params.get(GroupParams.GROUP_SORT);
     //TODO: move weighting of sort
-    Sort sortWithinGroup = groupSortStr == null ?  groupSort : searcher.weightSort(SortSpecParsing.parseSortSpec(groupSortStr, req).getSort());
-    if (sortWithinGroup == null) {
-      sortWithinGroup = Sort.RELEVANCE;
+    final SortSpec withinGroupSortSpec;
+    if (withinGroupSortStr != null) {
+      SortSpec parsedWithinGroupSortSpec = SortSpecParsing.parseSortSpec(withinGroupSortStr, req);
+      withinGroupSortSpec = searcher.weightSortSpec(parsedWithinGroupSortSpec, Sort.RELEVANCE);
+    } else {
+      withinGroupSortSpec = new SortSpec(
+          groupSortSpec.getSort(),
+          groupSortSpec.getSchemaFields(),
+          groupSortSpec.getCount(),
+          groupSortSpec.getOffset());
     }
+    withinGroupSortSpec.setOffset(params.getInt(GroupParams.GROUP_OFFSET, 0));
+    withinGroupSortSpec.setCount(params.getInt(GroupParams.GROUP_LIMIT, 1));
 
-    groupingSpec.setSortWithinGroup(sortWithinGroup);
-    groupingSpec.setGroupSort(groupSort);
+    groupingSpec.setWithinGroupSortSpec(withinGroupSortSpec);
+    groupingSpec.setGroupSortSpec(groupSortSpec);
 
     String formatStr = params.get(GroupParams.GROUP_FORMAT, Grouping.Format.grouped.name());
     Grouping.Format responseFormat;
@@ -279,10 +286,6 @@ public class QueryComponent extends SearchComponent
     groupingSpec.setFields(params.getParams(GroupParams.GROUP_FIELD));
     groupingSpec.setQueries(params.getParams(GroupParams.GROUP_QUERY));
     groupingSpec.setFunctions(params.getParams(GroupParams.GROUP_FUNC));
-    groupingSpec.setGroupOffset(params.getInt(GroupParams.GROUP_OFFSET, 0));
-    groupingSpec.setGroupLimit(params.getInt(GroupParams.GROUP_LIMIT, 1));
-    groupingSpec.setOffset(sortSpec.getOffset());
-    groupingSpec.setLimit(sortSpec.getCount());
     groupingSpec.setIncludeGroupCount(params.getBool(GroupParams.GROUP_TOTAL_COUNT, false));
     groupingSpec.setMain(params.getBool(GroupParams.GROUP_MAIN, false));
     groupingSpec.setNeedScore((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0);
@@ -414,6 +417,9 @@ public class QueryComponent extends SearchComponent
               .setTruncateGroups(groupingSpec.isTruncateGroups() && groupingSpec.getFields().length > 0)
               .setSearcher(searcher);
 
+          int docsToCollect = Grouping.getMax(groupingSpec.getWithinGroupOffset(), groupingSpec.getWithinGroupLimit(), searcher.maxDoc());
+          docsToCollect = Math.max(docsToCollect, 1);
+
           for (String field : groupingSpec.getFields()) {
             SchemaField schemaField = schema.getField(field);
             String[] topGroupsParam = params.getParams(GroupParams.GROUP_DISTRIBUTED_TOPGROUPS_PREFIX + field);
@@ -436,7 +442,7 @@ public class QueryComponent extends SearchComponent
                     .setGroupSort(groupingSpec.getGroupSort())
                     .setSortWithinGroup(groupingSpec.getSortWithinGroup())
                     .setFirstPhaseGroups(topGroups)
-                    .setMaxDocPerGroup(groupingSpec.getGroupOffset() + groupingSpec.getGroupLimit())
+                    .setMaxDocPerGroup(docsToCollect)
                     .setNeedScores(needScores)
                     .setNeedMaxScore(needScores)
                     .build()
@@ -445,7 +451,7 @@ public class QueryComponent extends SearchComponent
 
           for (String query : groupingSpec.getQueries()) {
             secondPhaseBuilder.addCommandField(new Builder()
-                .setDocsToCollect(groupingSpec.getOffset() + groupingSpec.getLimit())
+                .setDocsToCollect(docsToCollect)
                 .setSort(groupingSpec.getGroupSort())
                 .setQuery(query, rb.req)
                 .setDocSet(searcher)
@@ -473,8 +479,8 @@ public class QueryComponent extends SearchComponent
             .setDefaultFormat(groupingSpec.getResponseFormat())
             .setLimitDefault(limitDefault)
             .setDefaultTotalCount(defaultTotalCount)
-            .setDocsPerGroupDefault(groupingSpec.getGroupLimit())
-            .setGroupOffsetDefault(groupingSpec.getGroupOffset())
+            .setDocsPerGroupDefault(groupingSpec.getWithinGroupLimit())
+            .setGroupOffsetDefault(groupingSpec.getWithinGroupOffset())
             .setGetGroupedDocSet(groupingSpec.isTruncateGroups());
 
         if (groupingSpec.getFields() != null) {
@@ -613,7 +619,7 @@ public class QueryComponent extends SearchComponent
         // :TODO: would be simpler to always serialize every position of SortField[]
         if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
 
-        FieldComparator<?> comparator = null;
+        FieldComparator<?> comparator = sortField.getComparator(1,0);
         LeafFieldComparator leafComparator = null;
         Object[] vals = new Object[nDocs];
 
@@ -630,13 +636,13 @@ public class QueryComponent extends SearchComponent
             idx = ReaderUtil.subIndex(doc, leaves);
             currentLeaf = leaves.get(idx);
             if (idx != lastIdx) {
-              // we switched segments.  invalidate comparator.
-              comparator = null;
+              // we switched segments.  invalidate leafComparator.
+              lastIdx = idx;
+              leafComparator = null;
             }
           }
 
-          if (comparator == null) {
-            comparator = sortField.getComparator(1,0);
+          if (leafComparator == null) {
             leafComparator = comparator.getLeafComparator(currentLeaf);
           }
 
@@ -970,8 +976,7 @@ public class QueryComponent extends SearchComponent
 
       // Merge the docs via a priority queue so we don't have to sort *all* of the
       // documents... we only need to order the top (rows+start)
-      ShardFieldSortedHitQueue queue;
-      queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
+      final ShardFieldSortedHitQueue queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
 
       NamedList<Object> shardInfo = null;
       if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
@@ -1305,6 +1310,10 @@ public class QueryComponent extends SearchComponent
 
       String keyFieldName = rb.req.getSchema().getUniqueKeyField().getName();
       boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
+      if (rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName) != null) {
+        // if id was renamed we need to use the new name
+        keyFieldName = rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName);
+      }
 
       for (ShardResponse srsp : sreq.responses) {
         if (srsp.getException() != null) {
@@ -1330,7 +1339,6 @@ public class QueryComponent extends SearchComponent
           continue;
         }
         SolrDocumentList docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
-
         for (SolrDocument doc : docs) {
           Object id = doc.getFieldValue(keyFieldName);
           ShardDoc sdoc = rb.resultIds.get(id.toString());
@@ -1359,6 +1367,11 @@ public class QueryComponent extends SearchComponent
   @Override
   public String getDescription() {
     return "query";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.QUERY;
   }
 
   @Override

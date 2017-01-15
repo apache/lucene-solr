@@ -1,5 +1,4 @@
-<?xml version="1.0" ?>
-
+<?xml version="1.0" encoding="UTF-8" ?>
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -16,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-                                                           
+
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
@@ -33,47 +32,26 @@
   <updateHandler>
     <updateLog enable="true">
       <str name="dir">${solr.ulog.dir:}</str>
-    </updateLog> 
+    </updateLog>
   </updateHandler>
 
   <requestHandler name="standard" class="solr.StandardRequestHandler">
     <bool name="httpCaching">true</bool>
   </requestHandler>
 
-
-  <requestHandler name="/update" class="solr.UpdateRequestHandler">
+  <initParams path="/update/**">
     <lst name="defaults">
       <str name="update.chain">add-unknown-fields-to-the-schema</str>
     </lst>
-  </requestHandler>
+  </initParams>
 
-  <query>
-    <!-- custom cache currently used by block join -->
-    <cache name="perSegFilter"
-           class="solr.search.LRUCache"
-           size="10"
-           initialSize="0"
-           autowarmCount="10"
-           regenerator="solr.NoOpRegenerator" />
-  </query>
-
-  <!-- Add unknown fields to the schema
-  
-       An example field type guessing update processor that will
-       attempt to parse string-typed field values as Booleans, Longs,
-       Doubles, or Dates, and then add schema fields with the guessed
-       field types.  
-       
-       This requires that the schema is both managed and mutable, by
-       declaring schemaFactory as ManagedIndexSchemaFactory, with
-       mutable specified as true. 
-       
-       See http://wiki.apache.org/solr/GuessingFieldTypes
-    -->
   <updateRequestProcessorChain name="add-unknown-fields-to-the-schema">
-    <processor class="solr.LogUpdateProcessorFactory"/>
-    <processor class="solr.DistributedUpdateProcessorFactory" />
+    <processor class="solr.UUIDUpdateProcessorFactory" />
     <processor class="solr.RemoveBlankFieldUpdateProcessorFactory"/>
+    <processor class="solr.FieldNameMutatingUpdateProcessorFactory">
+      <str name="pattern">[^\w-\.]</str>
+      <str name="replacement">_</str>
+    </processor>
     <processor class="solr.ParseBooleanFieldUpdateProcessorFactory"/>
     <processor class="solr.ParseLongFieldUpdateProcessorFactory"/>
     <processor class="solr.ParseDoubleFieldUpdateProcessorFactory"/>
@@ -119,7 +97,8 @@
         <str name="fieldType">tdouble</str>
       </lst>
     </processor>
+    <processor class="solr.LogUpdateProcessorFactory"/>
+    <processor class="solr.DistributedUpdateProcessorFactory" />
     <processor class="solr.RunUpdateProcessorFactory"/>
   </updateRequestProcessorChain>
-
 </config>

@@ -106,7 +106,9 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
       SnowballFilter.class, // this is called SnowballPorterFilterFactory
       PatternKeywordMarkerFilter.class,
       SetKeywordMarkerFilter.class,
-      UnicodeWhitespaceTokenizer.class // a supported option via WhitespaceTokenizerFactory
+      UnicodeWhitespaceTokenizer.class, // a supported option via WhitespaceTokenizerFactory
+      org.apache.lucene.analysis.StopFilter.class, // class from core, but StopFilterFactory creates one from this module
+      org.apache.lucene.analysis.LowerCaseFilter.class // class from core, but LowerCaseFilterFactory creates one from this module
     );
   }
 

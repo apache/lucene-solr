@@ -387,7 +387,7 @@
     -->
 
 
-    <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+    <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
     <field name="signatureField" type="string" indexed="true" stored="false"/>
 
     <field name="s_multi" type="string" indexed="true" stored="true" docValues="true" multiValued="true"/>

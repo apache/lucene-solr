@@ -51,7 +51,7 @@ public class MinMaxStatsCollector implements StatsCollector{
     value = valueFiller.getValue();
   }
   
-  public void collect(int doc) {
+  public void collect(int doc) throws IOException {
     valueFiller.fillValue(doc);
     if( value.exists ){
       valueCount += 1;

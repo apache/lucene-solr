@@ -184,6 +184,20 @@ limitations under the License.
   background-image: url( ../../img/ico/cross-1.png );
 }
 
+#content #cloud #file-content #toggle.plus
+{
+  font-style: italic;
+  padding-left: 17px;
+  background-image: url( ../../img/ico/toggle-small-expand.png );
+}
+
+#content #cloud #file-content #toggle.minus
+{
+  font-style: italic;
+  padding-left: 17px;
+  background-image: url( ../../img/ico/toggle-small.png );
+}
+
 #content #cloud #file-content #data
 {
   border-top: 1px solid #c0c0c0;

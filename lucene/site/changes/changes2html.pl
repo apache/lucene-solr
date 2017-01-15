@@ -24,8 +24,6 @@
 use strict;
 use warnings;
 
-# JIRA REST API documentation: <http://docs.atlassian.com/jira/REST/latest/>
-my $project_info_url = 'https://issues.apache.org/jira/rest/api/2/project';
 my $jira_url_prefix = 'http://issues.apache.org/jira/browse/';
 my $github_pull_request_prefix = 'https://github.com/apache/lucene-solr/pull/';
 my $bugzilla_url_prefix = 'http://issues.apache.org/bugzilla/show_bug.cgi?id=';
@@ -45,7 +43,7 @@ my @releases = ();
 my @lines = <STDIN>;                        # Get all input at once
 
 #
-# Cmdline args:  <LUCENE|SOLR>  <JIRA-release-dates-json>  <lucene-javadoc-url>(only from Solr)
+# Cmdline args:  <LUCENE|SOLR>  <project-DOAP-rdf-file>  <lucene-javadoc-url>(only from Solr)
 #
 my $product = $ARGV[0];
 my %release_dates = &setup_release_dates($ARGV[1]);
@@ -804,10 +802,6 @@ sub get_release_date {
     # Handle '1.2 RC6', which should be '1.2 final'
     $release = '1.2 final' if ($release eq '1.2 RC6');
 
-    if (not exists($release_dates{$release})) {
-      $release =~ s/\.0\.0/\.0/;
-    }
-
     $reldate = ( exists($release_dates{$release}) 
                ? $release_dates{$release}
                : 'unknown');
@@ -825,59 +819,52 @@ sub get_release_date {
 # Returns a list of alternating release names and dates, for use in populating
 # the %release_dates hash.
 #
-# Pulls release dates via the JIRA REST API.  JIRA does not list
-# X.Y RCZ releases independently from releases X.Y, so the RC dates
-# as well as those named "final" are included below.
+# Pulls release dates from the project DOAP file.
 #
 sub setup_release_dates {
-  my %release_dates;
+  my %release_dates = ();
   my $file = shift;
-  if (uc($product) eq 'LUCENE') {
-    %release_dates
-       = ( '0.01' => '2000-03-30',      '0.04' => '2000-04-19',
-           '1.0' => '2000-10-04',       '1.01b' => '2001-06-02',
-           '1.2 RC1' => '2001-10-02',   '1.2 RC2' => '2001-10-19',
-           '1.2 RC3' => '2002-01-27',   '1.2 RC4' => '2002-02-14',
-           '1.2 RC5' => '2002-05-14',   '1.2 final' => '2002-06-13',
-           '1.3 RC1' => '2003-03-24',   '1.3 RC2' => '2003-10-22',
-           '1.3 RC3' => '2003-11-25',   '1.3 final' => '2003-12-26',
-           '1.4 RC1' => '2004-03-29',   '1.4 RC2' => '2004-03-30',
-           '1.4 RC3' => '2004-05-11',   '1.4 final' => '2004-07-01',
-           '1.4.1' => '2004-08-02',     '1.4.2' => '2004-10-01',
-           '1.4.3' => '2004-12-07',     '1.9 RC1' => '2006-02-21',
-           '1.9 final' => '2006-02-27', '1.9.1' => '2006-03-02',
-           '2.0.0' => '2006-05-26',     '2.1.0' => '2007-02-14',
-           '2.2.0' => '2007-06-19',     '2.3.0' => '2008-01-21',
-           '2.3.1' => '2008-02-22',     '2.3.2' => '2008-05-05',
-           '2.4.0' => '2008-10-06',     '2.4.1' => '2009-03-09',
-           '2.9.0' => '2009-09-23',     '2.9.1' => '2009-11-06',
-           '3.0.0' => '2009-11-25');
-  }
+print STDERR "file: $file\n";
+  open(FILE, "<$file") || die "could not open $file: $!";
+  my $version_list = <FILE>;
+  my $created_list = <FILE>;
+  close(FILE);
 
-  my $project_info_json = readFile($file);
-  my $project_info = json2perl($project_info_json);
-  for my $version (@{$project_info->{versions}}) {
-    if ($version->{releaseDate}) {
-      my $date = substr($version->{releaseDate}, 0, 10);
-      my $version_name = $version->{name};
-      $release_dates{$version->{name}} = $date;
-      if ($version_name =~ /^\d+\.\d+$/) {
-        my $full_version_name = "$version->{name}.0";
-        $release_dates{$full_version_name} = $date;
-      }
+  $version_list =~ s/^\s+|\s+$//g;
+  my @versions = split /\s*,\s*/, $version_list;
+  $created_list =~ s/^\s+|\s+$//g;
+  my @created = split /\s*,\s*/, $created_list; 
+
+  if (scalar(@versions) != scalar(@created)) {
+    die $file . " contains" . scalar(@versions) . " versions but " . scalar(@created) . " creation dates.";
+  }
+  my $date;
+  for my $pos (0..$#versions) {
+    $date = normalize_date($created[$pos]);
+    $release_dates{$versions[$pos]} = $date;
+    if ($versions[$pos] =~ /^([1-9]\d*\.\d+)([^.0-9].*|$)/) {
+      my $padded_version_name = "$1.0$2";             # Alias w/trailing ".0"
+      $release_dates{$padded_version_name} = $date;
+    } elsif ($versions[$pos] =~ /\.0(?=[^.0-9]|$)/) {
+      my $trimmed_version_name = $versions[$pos];
+      $trimmed_version_name =~ s/\.0(?=[^.0-9]|$)//;  # Alias w/o trailing ".0"
+      $release_dates{$trimmed_version_name} = $date;
     }
   }
   return %release_dates;
 }
 
-sub readFile {
-  my $file = shift;
-  open(F, '<'.$file) || die "could not open $file: $!";
-  local $/ = undef;
-  my $project_info_json = <F>;
-  close(F);
-  return $project_info_json;
+#
+# normalize_date
+#
+# Left-zero-pads month and day-of-month to 2 digits in dates of format YYYY-(M)M-(D)D
+#
+sub normalize_date {
+  my $date = shift;
+  my ($year, $month, $dom) = $date =~ /^(2\d\d\d)-(\d+)-(\d+)$/;
+  return sprintf("%04d-%02d-%02d", $year, $month, $dom);
 }
+
 
 #
 # setup_month_regex
@@ -1036,25 +1023,6 @@ sub setup_lucene_bugzilla_jira_map {
            36219 => 424, 36241 => 425, 36242 => 426, 36292 => 427,
            36296 => 428, 36333 => 429, 36622 => 430, 36623 => 431,
            36628 => 432);
-}
-
-#
-# json2perl
-#
-# Converts a JSON string to the equivalent Perl data structure
-#
-sub json2perl {
-  my $json_string = shift;
-  $json_string =~ s/(:\s*)(true|false)/$1"$2"/g;
-  $json_string =~ s/":/",/g;
-  $json_string =~ s/\'/\\'/g;
-  $json_string =~ s/\"/\'/g;
-  my $project_info = eval $json_string;
-  die "ERROR eval'ing munged JSON string ||$json_string||: $@\n"
-    if ($@);
-  die "ERROR empty value after eval'ing JSON string ||$json_string||\n"
-    unless $project_info;
-  return $project_info;
 }
 
 1;

@@ -150,7 +150,7 @@ public  class LeaderElector {
       try {
         String watchedNode = holdElectionPath + "/" + toWatch;
         zkClient.getData(watchedNode, watcher = new ElectionWatcher(context.leaderSeqPath, watchedNode, getSeq(context.leaderSeqPath), context), null, true);
-        log.info("Watching path {} to know if I could be the leader", watchedNode);
+        log.debug("Watching path {} to know if I could be the leader", watchedNode);
       } catch (KeeperException.SessionExpiredException e) {
         throw e;
       } catch (KeeperException.NoNodeException e) {
@@ -238,14 +238,14 @@ public  class LeaderElector {
     while (cont) {
       try {
         if(joinAtHead){
-          log.info("Node {} trying to join election at the head", id);
+          log.debug("Node {} trying to join election at the head", id);
           List<String> nodes = OverseerTaskProcessor.getSortedElectionNodes(zkClient, shardsElectZkPath);
           if(nodes.size() <2){
             leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
                 CreateMode.EPHEMERAL_SEQUENTIAL, false);
           } else {
             String firstInLine = nodes.get(1);
-            log.info("The current head: {}", firstInLine);
+            log.debug("The current head: {}", firstInLine);
             Matcher m = LEADER_SEQ.matcher(firstInLine);
             if (!m.matches()) {
               throw new IllegalStateException("Could not find regex match in:"
@@ -259,7 +259,7 @@ public  class LeaderElector {
               CreateMode.EPHEMERAL_SEQUENTIAL, false);
         }
 
-        log.info("Joined leadership election with path: {}", leaderSeqPath);
+        log.debug("Joined leadership election with path: {}", leaderSeqPath);
         context.leaderSeqPath = leaderSeqPath;
         cont = false;
       } catch (ConnectionLossException e) {
@@ -333,7 +333,7 @@ public  class LeaderElector {
         return;
       }
       if (canceled) {
-        log.info("This watcher is not active anymore {}", myNode);
+        log.debug("This watcher is not active anymore {}", myNode);
         try {
           zkClient.delete(myNode, -1, true);
         } catch (KeeperException.NoNodeException nne) {
@@ -347,7 +347,9 @@ public  class LeaderElector {
         // am I the next leader?
         checkIfIamLeader(context, true);
       } catch (Exception e) {
-        log.warn("", e);
+        if (!zkClient.isClosed()) {
+          log.warn("", e);
+        }
       }
     }
   }
@@ -358,8 +360,13 @@ public  class LeaderElector {
   public void setup(final ElectionContext context) throws InterruptedException,
       KeeperException {
     String electZKPath = context.electionPath + LeaderElector.ELECTION_NODE;
-    
-    zkCmdExecutor.ensureExists(electZKPath, zkClient);
+    if (context instanceof OverseerElectionContext) {
+      zkCmdExecutor.ensureExists(electZKPath, zkClient);
+    } else {
+      // we use 2 param so that replica won't create /collection/{collection} if it doesn't exist
+      zkCmdExecutor.ensureExists(electZKPath, (byte[])null, CreateMode.PERSISTENT, zkClient, 2);
+    }
+
     this.context = context;
   }
   

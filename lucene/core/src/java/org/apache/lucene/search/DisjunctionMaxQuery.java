@@ -141,7 +141,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       boolean match = false;
-      float max = 0.0f, sum = 0.0f;
+      float max = Float.NEGATIVE_INFINITY, sum = 0.0f;
       List<Explanation> subs = new ArrayList<>();
       for (Weight wt : weights) {
         Explanation e = wt.explain(context, doc);

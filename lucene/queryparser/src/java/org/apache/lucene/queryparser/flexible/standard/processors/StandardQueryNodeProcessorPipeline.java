@@ -53,8 +53,6 @@ public class StandardQueryNodeProcessorPipeline extends
     add(new RegexpQueryNodeProcessor());
     add(new MatchAllDocsQueryNodeProcessor());
     add(new OpenRangeQueryNodeProcessor());
-    add(new LegacyNumericQueryNodeProcessor());
-    add(new LegacyNumericRangeQueryNodeProcessor());
     add(new PointQueryNodeProcessor());
     add(new PointRangeQueryNodeProcessor());
     add(new TermRangeQueryNodeProcessor());

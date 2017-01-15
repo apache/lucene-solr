@@ -230,7 +230,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     
     try {
       // Create a new core, this should call all the firstSearcherListeners
-      newCore = cores.create("core1", cd.getInstanceDir(), ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"));
+      newCore = cores.create("core1", cd.getInstanceDir(), ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"), false);
       
       //validate that the new core was created with the correct solrconfig
       assertNotNull(newCore.getSearchComponent("mock"));
@@ -280,7 +280,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     boolean coreCreated = false;
     try {
       // Create a new core, this should call all the firstSearcherListeners
-      newCore = cores.create("core1", cd.getInstanceDir(), ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"));
+      newCore = cores.create("core1", cd.getInstanceDir(), ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"), false);
       coreCreated = true;
       
       //validate that the new core was created with the correct solrconfig
@@ -346,7 +346,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     try {
       System.setProperty("tests.solr.useColdSearcher", "true");
       // Create a new core, this should call all the firstSearcherListeners
-      newCore = cores.create("core1", cd.getInstanceDir(), ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"));
+      newCore = cores.create("core1", cd.getInstanceDir(), ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"), false);
       coreCreated = true;
       
       //validate that the new core was created with the correct solrconfig

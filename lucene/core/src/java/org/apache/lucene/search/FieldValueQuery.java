@@ -20,13 +20,15 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Objects;
 
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.util.Bits;
 
 /**
  * A {@link Query} that matches documents that have a value for a given field
- * as reported by {@link LeafReader#getDocsWithField(String)}.
+ * as reported by doc values iterators.
  */
 public final class FieldValueQuery extends Query {
 
@@ -60,14 +62,41 @@ public final class FieldValueQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new RandomAccessWeight(this, boost) {
-
+    return new ConstantScoreWeight(this, boost) {
       @Override
-      protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
-        return context.reader().getDocsWithField(field);
-      }
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        FieldInfos fieldInfos = context.reader().getFieldInfos();
+        FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+        if (fieldInfo == null) {
+          return null;
+        }
+        DocValuesType dvType = fieldInfo.getDocValuesType();
+        LeafReader reader = context.reader();
+        DocIdSetIterator iterator;
+        switch(dvType) {
+        case NONE:
+          return null;
+        case NUMERIC:
+          iterator = reader.getNumericDocValues(field);
+          break;
+        case BINARY:
+          iterator = reader.getBinaryDocValues(field);
+          break;
+        case SORTED:
+          iterator = reader.getSortedDocValues(field);
+          break;
+        case SORTED_NUMERIC:
+          iterator = reader.getSortedNumericDocValues(field);
+          break;
+        case SORTED_SET:
+          iterator = reader.getSortedSetDocValues(field);
+          break;
+        default:
+          throw new AssertionError();
+        }
 
+        return new ConstantScoreScorer(this, score(), iterator);
+      }
     };
   }
-
 }

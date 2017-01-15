@@ -21,8 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
+import java.util.Objects;
 
-import com.google.common.base.Preconditions;
 import com.google.common.io.Files;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -64,8 +64,7 @@ public class SolrLocator {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected SolrLocator(MorphlineContext context) {
-    Preconditions.checkNotNull(context);
-    this.context = context;
+    this.context = Objects.requireNonNull(context);
   }
 
   public SolrLocator(Config config, MorphlineContext context) {

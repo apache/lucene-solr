@@ -42,11 +42,13 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -65,7 +67,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   protected final CoreContainer coreContainer;
   protected final Map<String, Map<String, TaskObject>> requestStatusMap;
 
-  protected final ExecutorService parallelExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(50,
+  protected ExecutorService parallelExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(50,
       new DefaultSolrThreadFactory("parallelCoreAdminExecutor"));
 
   protected static int MAX_TRACKED_REQUESTS = 100;
@@ -109,6 +111,13 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "CoreAdminHandler should not be configured in solrconf.xml\n" +
                     "it is a special Handler configured directly by the RequestDispatcher");
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+    super.initializeMetrics(manager, registryName, scope);
+    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, manager.registry(registryName),
+        SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(),scope, "threadPool"));
   }
 
   /**
@@ -266,6 +275,11 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
+
+  @Override
   public Name getPermissionName(AuthorizationContext ctx) {
     String action = ctx.getParams().get(CoreAdminParams.ACTION);
     if (action == null) return CORE_READ_PERM;
@@ -362,7 +376,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     }
 
     void call() throws Exception {
-      op.call(this);
+      op.execute(this);
     }
 
   }
@@ -374,7 +388,10 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   /**
    * used by the INVOKE action of core admin handler
    */
-  public static interface Invocable {
-    public Map<String, Object> invoke(SolrQueryRequest req);
+  public interface Invocable {
+    Map<String, Object> invoke(SolrQueryRequest req);
+  }
+  interface CoreAdminOp {
+    void execute(CallInfo it) throws Exception;
   }
 }

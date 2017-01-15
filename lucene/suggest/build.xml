@@ -30,22 +30,18 @@
 
   <path id="classpath">
     <pathelement path="${analyzers-common.jar}"/>
-    <pathelement path="${misc.jar}"/>
-    <pathelement path="${queries.jar}"/>
     <path refid="base.classpath"/>
   </path>
 
-  <target name="javadocs" depends="javadocs-queries,javadocs-misc,compile-core,check-javadocs-uptodate"
+  <target name="javadocs" depends="compile-core,check-javadocs-uptodate"
           unless="javadocs-uptodate-${name}">
     <invoke-module-javadoc>
       <links>
         <link href="../analyzers-common"/>
-        <link href="../queries"/>
-        <link href="../misc"/>
       </links>
     </invoke-module-javadoc>
   </target>
 
-  <target name="compile-core" depends="jar-expressions, jar-misc, jar-analyzers-common, common.compile-core" />
+  <target name="compile-core" depends="jar-expressions, jar-analyzers-common, common.compile-core" />
 
 </project>

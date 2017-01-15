@@ -76,6 +76,15 @@ import org.apache.solr.search.TermsQParserPlugin;
  * its' native parameters like <code>collection, shards</code> for subquery, eg<br>
  *  <code>q=*:*&amp;fl=*,foo:[subquery]&amp;foo.q=cloud&amp;foo.collection=departments</code>
  *
+ * <h3>When used in Real Time Get</h3>
+ * <p>
+ * When used in the context of a Real Time Get, the <i>values</i> from each document that are used 
+ * in the qubquery are the "real time" values (possibly from the transaction log), but the query 
+ * itself is still executed against the currently open searcher.  Note that this means if a 
+ * document is updated but not yet committed, an RTG request for that document that uses 
+ * <code>[subquery]</code> could include the older (committed) version of that document, 
+ * with differnet field values, in the subquery results.
+ * </p>
  */
 public class SubQueryAugmenterFactory extends TransformerFactory{
 
@@ -208,7 +217,6 @@ class SubQueryAugmenter extends DocTransformer {
       
       if (vals != null) {
         StringBuilder rez = new StringBuilder();
-        int i = 0;
         for (Iterator iterator = vals.iterator(); iterator.hasNext();) {
           Object object = (Object) iterator.next();
           rez.append(convertFieldValue(object));
@@ -303,6 +311,14 @@ class SubQueryAugmenter extends DocTransformer {
   public String getName() {
     return name;
   }
+  
+  /**
+   * Returns false -- this transformer does use an IndexSearcher, but it does not (neccessarily) need 
+   * the searcher from the ResultContext of the document being returned.  Instead we use the current 
+   * "live" searcher for the specified core.
+   */
+  @Override
+  public boolean needsSolrIndexSearcher() { return false; }
 
   @Override
   public void transform(SolrDocument doc, int docid, float score) {

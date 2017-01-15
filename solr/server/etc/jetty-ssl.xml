@@ -13,6 +13,8 @@
   <Set name="TrustStorePassword"><Property name="solr.jetty.truststore.password" default="secret"/></Set>
   <Set name="NeedClientAuth"><Property name="solr.jetty.ssl.needClientAuth" default="false"/></Set>
   <Set name="WantClientAuth"><Property name="solr.jetty.ssl.wantClientAuth" default="false"/></Set>
+  <Set name="KeyStoreType"><Property name="solr.jetty.keystore.type" default="JKS"/></Set>
+  <Set name="TrustStoreType"><Property name="solr.jetty.truststore.type" default="JKS"/></Set>
   <Set name="excludeProtocols">
     <Array type="java.lang.String">
       <Item>SSLv3</Item>

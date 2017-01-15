@@ -31,7 +31,6 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
@@ -51,6 +50,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 
 import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 public class TestFieldCacheVsDocValues extends LuceneTestCase {
   
@@ -200,10 +200,11 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
     TestUtil.checkReader(ar);
 
-    BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field", false);
+    BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field");
     for(int docID=0;docID<docBytes.size();docID++) {
       Document doc = ar.document(docID);
-      BytesRef bytes = s.get(docID);
+      assertEquals(docID, s.nextDoc());
+      BytesRef bytes = s.binaryValue();
       byte[] expected = docBytes.get(Integer.parseInt(doc.get("id")));
       assertEquals(expected.length, bytes.length);
       assertEquals(new BytesRef(expected), bytes);
@@ -272,13 +273,13 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     w.close();
 
     LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
-    TestUtil.checkReader(ar
-                         );
+    TestUtil.checkReader(ar);
 
-    BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field", false);
+    BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field");
     for(int docID=0;docID<docBytes.size();docID++) {
+      assertEquals(docID, s.nextDoc());
       Document doc = ar.document(docID);
-      BytesRef bytes = s.get(docID);
+      BytesRef bytes = s.binaryValue();
       byte[] expected = docBytes.get(Integer.parseInt(doc.get("id")));
       assertEquals(expected.length, bytes.length);
       assertEquals(new BytesRef(expected), bytes);
@@ -487,7 +488,35 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
   }
   
   private void assertEquals(int maxDoc, SortedDocValues expected, SortedDocValues actual) throws Exception {
-    assertEquals(maxDoc, DocValues.singleton(expected), DocValues.singleton(actual));
+    // can be null for the segment if no docs actually had any SortedDocValues
+    // in this case FC.getDocTermsOrds returns EMPTY
+    if (actual == null) {
+      assertEquals(expected.getValueCount(), 0);
+      return;
+    }
+    assertEquals(expected.getValueCount(), actual.getValueCount());
+
+    // compare ord lists
+    while (true) {
+      int docID = expected.nextDoc();
+      if (docID == NO_MORE_DOCS) {
+        assertEquals(NO_MORE_DOCS, actual.nextDoc());
+        break;
+      }
+      assertEquals(docID, actual.nextDoc());
+      assertEquals(expected.ordValue(), actual.ordValue());
+      assertEquals(expected.binaryValue(), actual.binaryValue());
+    }
+    
+    // compare ord dictionary
+    for (long i = 0; i < expected.getValueCount(); i++) {
+      final BytesRef expectedBytes = BytesRef.deepCopyOf(expected.lookupOrd((int) i));
+      final BytesRef actualBytes = actual.lookupOrd((int) i);
+      assertEquals(expectedBytes, actualBytes);
+    }
+    
+    // compare termsenum
+    assertEquals(expected.getValueCount(), expected.termsEnum(), actual.termsEnum());
   }
   
   private void assertEquals(int maxDoc, SortedSetDocValues expected, SortedSetDocValues actual) throws Exception {
@@ -498,10 +527,12 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       return;
     }
     assertEquals(expected.getValueCount(), actual.getValueCount());
-    // compare ord lists
-    for (int i = 0; i < maxDoc; i++) {
-      expected.setDocument(i);
-      actual.setDocument(i);
+    while (true) {
+      int docID = expected.nextDoc();
+      assertEquals(docID, actual.nextDoc());
+      if (docID == NO_MORE_DOCS) {
+        break;
+      }
       long expectedOrd;
       while ((expectedOrd = expected.nextOrd()) != NO_MORE_ORDS) {
         assertEquals(expectedOrd, actual.nextOrd());

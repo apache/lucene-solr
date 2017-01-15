@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /** 
@@ -32,25 +31,82 @@ public final class DocValues {
   private DocValues() {}
 
   /** 
-   * An empty BinaryDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document 
+   * An empty {@link BinaryDocValues} which returns no documents
    */
   public static final BinaryDocValues emptyBinary() {
-    final BytesRef empty = new BytesRef();
     return new BinaryDocValues() {
+      private int doc = -1;
+      
       @Override
-      public BytesRef get(int docID) {
-        return empty;
+      public int advance(int target) {
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        doc = target;
+        return false;
+      }
+      
+      @Override
+      public int docID() {
+        return doc;
+      }
+      
+      @Override
+      public int nextDoc() {
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public long cost() {
+        return 0;
+      }
+
+      @Override
+      public BytesRef binaryValue() {
+        assert false;
+        return null;
       }
     };
   }
 
   /** 
-   * An empty NumericDocValues which returns zero for every document 
+   * An empty NumericDocValues which returns no documents
    */
   public static final NumericDocValues emptyNumeric() {
     return new NumericDocValues() {
+      private int doc = -1;
+      
       @Override
-      public long get(int docID) {
+      public int advance(int target) {
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        doc = target;
+        return false;
+      }
+      
+      @Override
+      public int docID() {
+        return doc;
+      }
+      
+      @Override
+      public int nextDoc() {
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public long cost() {
+        return 0;
+      }
+
+      @Override
+      public long longValue() {
+        assert false;
         return 0;
       }
     };
@@ -59,11 +115,64 @@ public final class DocValues {
   /** 
    * An empty SortedDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document 
    */
+  public static final LegacySortedDocValues emptyLegacySorted() {
+    final BytesRef empty = new BytesRef();
+    return new LegacySortedDocValues() {
+      @Override
+      public int getOrd(int docID) {
+        return -1;
+      }
+
+      @Override
+      public BytesRef lookupOrd(int ord) {
+        return empty;
+      }
+
+      @Override
+      public int getValueCount() {
+        return 0;
+      }
+    };
+  }
+
+  /** 
+   * An empty SortedDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document
+   */
   public static final SortedDocValues emptySorted() {
     final BytesRef empty = new BytesRef();
     return new SortedDocValues() {
+      
+      private int doc = -1;
+      
       @Override
-      public int getOrd(int docID) {
+      public int advance(int target) {
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        doc = target;
+        return false;
+      }
+      
+      @Override
+      public int docID() {
+        return doc;
+      }
+      
+      @Override
+      public int nextDoc() {
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public long cost() {
+        return 0;
+      }
+
+      @Override
+      public int ordValue() {
+        assert false;
         return -1;
       }
 
@@ -83,26 +192,111 @@ public final class DocValues {
    * An empty SortedNumericDocValues which returns zero values for every document 
    */
   public static final SortedNumericDocValues emptySortedNumeric(int maxDoc) {
-    return singleton(emptyNumeric(), new Bits.MatchNoBits(maxDoc));
+    return new SortedNumericDocValues() {
+      
+      private int doc = -1;
+      
+      @Override
+      public int advance(int target) {
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        doc = target;
+        return false;
+      }
+      
+      @Override
+      public int docID() {
+        return doc;
+      }
+      
+      @Override
+      public int nextDoc() {
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public long cost() {
+        return 0;
+      }
+
+      @Override
+      public int docValueCount() {
+        throw new IllegalStateException();
+      }
+
+      @Override
+      public long nextValue() {
+        throw new IllegalStateException();
+      }
+    };
   }
 
   /** 
-   * An empty SortedDocValues which returns {@link SortedSetDocValues#NO_MORE_ORDS} for every document 
+   * An empty SortedDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document
    */
-  public static final RandomAccessOrds emptySortedSet() {
-    return singleton(emptySorted());
+  public static final SortedSetDocValues emptySortedSet() {
+    final BytesRef empty = new BytesRef();
+    return new SortedSetDocValues() {
+      
+      private int doc = -1;
+      
+      @Override
+      public int advance(int target) {
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        doc = target;
+        return false;
+      }
+      
+      @Override
+      public int docID() {
+        return doc;
+      }
+      
+      @Override
+      public int nextDoc() {
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public long cost() {
+        return 0;
+      }
+
+      @Override
+      public long nextOrd() {
+        assert false;
+        return NO_MORE_ORDS;
+      }
+
+      @Override
+      public BytesRef lookupOrd(long ord) {
+        return empty;
+      }
+
+      @Override
+      public long getValueCount() {
+        return 0;
+      }
+    };
   }
-  
+
   /** 
-   * Returns a multi-valued view over the provided SortedDocValues 
+   * Returns a multi-valued view over the provided SortedDocValues
    */
-  public static RandomAccessOrds singleton(SortedDocValues dv) {
+  public static SortedSetDocValues singleton(SortedDocValues dv) {
     return new SingletonSortedSetDocValues(dv);
   }
   
   /** 
    * Returns a single-valued view of the SortedSetDocValues, if it was previously
-   * wrapped with {@link #singleton(SortedDocValues)}, or null. 
+   * wrapped with {@link #singleton(SortedDocValues)}, or null.
    */
   public static SortedDocValues unwrapSingleton(SortedSetDocValues dv) {
     if (dv instanceof SingletonSortedSetDocValues) {
@@ -114,8 +308,7 @@ public final class DocValues {
   
   /** 
    * Returns a single-valued view of the SortedNumericDocValues, if it was previously
-   * wrapped with {@link #singleton(NumericDocValues, Bits)}, or null. 
-   * @see #unwrapSingletonBits(SortedNumericDocValues)
+   * wrapped with {@link #singleton(NumericDocValues)}, or null.
    */
   public static NumericDocValues unwrapSingleton(SortedNumericDocValues dv) {
     if (dv instanceof SingletonSortedNumericDocValues) {
@@ -125,76 +318,11 @@ public final class DocValues {
     }
   }
   
-  /** 
-   * Returns the documents with a value for the SortedNumericDocValues, if it was previously
-   * wrapped with {@link #singleton(NumericDocValues, Bits)}, or null. 
-   */
-  public static Bits unwrapSingletonBits(SortedNumericDocValues dv) {
-    if (dv instanceof SingletonSortedNumericDocValues) {
-      return ((SingletonSortedNumericDocValues)dv).getDocsWithField();
-    } else {
-      return null;
-    }
-  }
-  
   /**
    * Returns a multi-valued view over the provided NumericDocValues
    */
-  public static SortedNumericDocValues singleton(NumericDocValues dv, Bits docsWithField) {
-    return new SingletonSortedNumericDocValues(dv, docsWithField);
-  }
-  
-  /**
-   * Returns a Bits representing all documents from <code>dv</code> that have a value.
-   */
-  public static Bits docsWithValue(final SortedDocValues dv, final int maxDoc) {
-    return new Bits() {
-      @Override
-      public boolean get(int index) {
-        return dv.getOrd(index) >= 0;
-      }
-
-      @Override
-      public int length() {
-        return maxDoc;
-      }
-    };
-  }
-  
-  /**
-   * Returns a Bits representing all documents from <code>dv</code> that have a value.
-   */
-  public static Bits docsWithValue(final SortedSetDocValues dv, final int maxDoc) {
-    return new Bits() {
-      @Override
-      public boolean get(int index) {
-        dv.setDocument(index);
-        return dv.nextOrd() != SortedSetDocValues.NO_MORE_ORDS;
-      }
-
-      @Override
-      public int length() {
-        return maxDoc;
-      }
-    };
-  }
-  
-  /**
-   * Returns a Bits representing all documents from <code>dv</code> that have a value.
-   */
-  public static Bits docsWithValue(final SortedNumericDocValues dv, final int maxDoc) {
-    return new Bits() {
-      @Override
-      public boolean get(int index) {
-        dv.setDocument(index);
-        return dv.count() != 0;
-      }
-
-      @Override
-      public int length() {
-        return maxDoc;
-      }
-    };
+  public static SortedNumericDocValues singleton(NumericDocValues dv) {
+    return new SingletonSortedNumericDocValues(dv);
   }
   
   // some helpers, for transition from fieldcache apis.
@@ -215,7 +343,7 @@ public final class DocValues {
   }
   
   /**
-   * Returns NumericDocValues for the field, or {@link #emptyNumeric()} if it has none. 
+   * Returns NumericDocValues for the field, or {@link #emptyNumeric()} if it has none.
    * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.
    * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
    * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link DocValuesType#NUMERIC}.
@@ -232,7 +360,7 @@ public final class DocValues {
   }
   
   /**
-   * Returns BinaryDocValues for the field, or {@link #emptyBinary} if it has none. 
+   * Returns BinaryDocValues for the field, or {@link #emptyBinary} if it has none.
    * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.
    * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
    * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link DocValuesType#BINARY}
@@ -252,7 +380,7 @@ public final class DocValues {
   }
   
   /**
-   * Returns SortedDocValues for the field, or {@link #emptySorted} if it has none. 
+   * Returns SortedDocValues for the field, or {@link #emptySorted} if it has none.
    * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.
    * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
    * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link DocValuesType#SORTED}.
@@ -269,7 +397,7 @@ public final class DocValues {
   }
   
   /**
-   * Returns SortedNumericDocValues for the field, or {@link #emptySortedNumeric} if it has none. 
+   * Returns SortedNumericDocValues for the field, or {@link #emptySortedNumeric} if it has none.
    * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.
    * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
    * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link DocValuesType#SORTED_NUMERIC}
@@ -284,8 +412,7 @@ public final class DocValues {
         checkField(reader, field, DocValuesType.SORTED_NUMERIC, DocValuesType.NUMERIC);
         return emptySortedNumeric(reader.maxDoc());
       }
-      Bits bits = reader.getDocsWithField(field);
-      return singleton(single, bits);
+      return singleton(single);
     }
     return dv;
   }
@@ -306,29 +433,8 @@ public final class DocValues {
         checkField(reader, field, DocValuesType.SORTED, DocValuesType.SORTED_SET);
         return emptySortedSet();
       }
-      return singleton(sorted);
+      dv = singleton(sorted);
     }
     return dv;
-  }
-  
-  /**
-   * Returns Bits for the field, or {@link Bits} matching nothing if it has none. 
-   * @return bits instance, or an empty instance if {@code field} does not exist in this reader.
-   * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
-   * @throws IOException if an I/O error occurs.
-   */
-  public static Bits getDocsWithField(LeafReader reader, String field) throws IOException {
-    Bits dv = reader.getDocsWithField(field);
-    if (dv == null) {
-      assert DocValuesType.values().length == 6; // we just don't want NONE
-      checkField(reader, field, DocValuesType.BINARY, 
-                            DocValuesType.NUMERIC, 
-                            DocValuesType.SORTED, 
-                            DocValuesType.SORTED_NUMERIC, 
-                            DocValuesType.SORTED_SET);
-      return new Bits.MatchNoBits(reader.maxDoc());
-    } else {
-      return dv;
-    }
   }
 }

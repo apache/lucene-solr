@@ -64,7 +64,7 @@ public abstract class AbstractDelegatingStatsCollector implements StatsCollector
     return delegate.getFunction();
   }
   
-  public void collect(int doc) {
+  public void collect(int doc) throws IOException {
     delegate.collect(doc);
   }
   

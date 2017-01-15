@@ -64,15 +64,15 @@ public class ReciprocalFloatFunction extends ValueSource {
     final FunctionValues vals = source.getValues(context, readerContext);
     return new FloatDocValues(this) {
       @Override
-      public float floatVal(int doc) {
+      public float floatVal(int doc) throws IOException {
         return a/(m*vals.floatVal(doc) + b);
       }
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         return vals.exists(doc);
       }
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return Float.toString(a) + "/("
                 + m + "*float(" + vals.toString(doc) + ')'
                 + '+' + b + ')';

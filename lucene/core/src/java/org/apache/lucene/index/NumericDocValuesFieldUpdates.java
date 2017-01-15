@@ -31,7 +31,8 @@ import org.apache.lucene.util.packed.PagedMutable;
  * @lucene.experimental
  */
 class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
-  
+
+  // TODO: can't this just be NumericDocValues now?  avoid boxing the long value...
   final static class Iterator extends DocValuesFieldUpdates.Iterator {
     private final int size;
     private final PagedGrowableWriter values;

@@ -1,5 +1,3 @@
-package org.apache.solr.core.backup.repository;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,14 +15,20 @@ package org.apache.solr.core.backup.repository;
  * limitations under the License.
  */
 
+package org.apache.solr.core.backup.repository;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Objects;
 
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -37,9 +41,9 @@ import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.apache.solr.store.hdfs.HdfsDirectory.HdfsIndexInput;
 
-import com.google.common.base.Preconditions;
-
 public class HdfsBackupRepository implements BackupRepository {
+  private static final String HDFS_UMASK_MODE_PARAM = "solr.hdfs.permissions.umask-mode";
+
   private HdfsDirectoryFactory factory;
   private Configuration hdfsConfig = null;
   private FileSystem fileSystem = null;
@@ -57,7 +61,13 @@ public class HdfsBackupRepository implements BackupRepository {
     factory.init(args);
     this.hdfsConfig = factory.getConf();
 
-    String hdfsSolrHome = (String) Preconditions.checkNotNull(args.get(HdfsDirectoryFactory.HDFS_HOME),
+    // Configure the umask mode if specified.
+    if (args.get(HDFS_UMASK_MODE_PARAM) != null) {
+      String umaskVal = (String)args.get(HDFS_UMASK_MODE_PARAM);
+      this.hdfsConfig.set(FsPermission.UMASK_LABEL, umaskVal);
+    }
+
+    String hdfsSolrHome = (String) Objects.requireNonNull(args.get(HdfsDirectoryFactory.HDFS_HOME),
         "Please specify " + HdfsDirectoryFactory.HDFS_HOME + " property.");
     Path path = new Path(hdfsSolrHome);
     while (path != null) { // Compute the path of root file-system (without requiring an additional system property).
@@ -88,11 +98,31 @@ public class HdfsBackupRepository implements BackupRepository {
   }
 
   @Override
-  public URI createURI(String... pathComponents) {
-    Path result = baseHdfsPath;
-    for (String p : pathComponents) {
-      result = new Path(result, p);
+  public URI createURI(String location) {
+    Objects.requireNonNull(location);
+
+    URI result = null;
+    try {
+      result = new URI(location);
+      if (!result.isAbsolute()) {
+        result = resolve(this.baseHdfsPath.toUri(), location);
+      }
+    } catch (URISyntaxException ex) {
+      result = resolve(this.baseHdfsPath.toUri(), location);
     }
+
+    return result;
+  }
+
+  @Override
+  public URI resolve(URI baseUri, String... pathComponents) {
+    Preconditions.checkArgument(baseUri.isAbsolute());
+
+    Path result = new Path(baseUri);
+    for (String path : pathComponents) {
+      result = new Path(result, path);
+    }
+
     return result.toUri();
   }
 

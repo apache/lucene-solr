@@ -33,6 +33,7 @@ import java.io.InputStream;
  */
 public class CoreParser implements QueryBuilder {
 
+  protected String defaultField;
   protected Analyzer analyzer;
   protected QueryParser parser;
   protected QueryBuilderFactory queryFactory;
@@ -59,6 +60,7 @@ public class CoreParser implements QueryBuilder {
   }
 
   protected CoreParser(String defaultField, Analyzer analyzer, QueryParser parser) {
+    this.defaultField = defaultField;
     this.analyzer = analyzer;
     this.parser = parser;
 
@@ -69,7 +71,6 @@ public class CoreParser implements QueryBuilder {
     queryFactory.addBuilder("TermsQuery", new TermsQueryBuilder(analyzer));
     queryFactory.addBuilder("MatchAllDocsQuery", new MatchAllDocsQueryBuilder());
     queryFactory.addBuilder("BooleanQuery", new BooleanQueryBuilder(queryFactory));
-    queryFactory.addBuilder("LegacyNumericRangeQuery", new LegacyNumericRangeQueryBuilder());
     queryFactory.addBuilder("PointRangeQuery", new PointRangeQueryBuilder());
     queryFactory.addBuilder("RangeQuery", new RangeQueryBuilder());
     queryFactory.addBuilder("DisjunctionMaxQuery", new DisjunctionMaxQueryBuilder(queryFactory));

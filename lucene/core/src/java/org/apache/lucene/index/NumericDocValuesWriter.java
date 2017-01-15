@@ -18,61 +18,53 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
+
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /** Buffers up pending long per doc, then flushes when
  *  segment flushes. */
 class NumericDocValuesWriter extends DocValuesWriter {
 
-  private final static long MISSING = 0L;
-
   private PackedLongValues.Builder pending;
+  private PackedLongValues finalValues;
   private final Counter iwBytesUsed;
   private long bytesUsed;
-  private FixedBitSet docsWithField;
+  private DocsWithFieldSet docsWithField;
   private final FieldInfo fieldInfo;
+  private int lastDocID = -1;
 
   public NumericDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
-    docsWithField = new FixedBitSet(64);
-    bytesUsed = pending.ramBytesUsed() + docsWithFieldBytesUsed();
+    docsWithField = new DocsWithFieldSet();
+    bytesUsed = pending.ramBytesUsed() + docsWithField.ramBytesUsed();
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
     iwBytesUsed.addAndGet(bytesUsed);
   }
 
   public void addValue(int docID, long value) {
-    if (docID < pending.size()) {
+    if (docID <= lastDocID) {
       throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
     }
 
-    // Fill in any holes:
-    for (int i = (int)pending.size(); i < docID; ++i) {
-      pending.add(MISSING);
-    }
-
     pending.add(value);
-    docsWithField = FixedBitSet.ensureCapacity(docsWithField, docID);
-    docsWithField.set(docID);
-    
+    docsWithField.add(docID);
+
     updateBytesUsed();
-  }
-  
-  private long docsWithFieldBytesUsed() {
-    // size of the long[] + some overhead
-    return RamUsageEstimator.sizeOf(docsWithField.getBits()) + 64;
+
+    lastDocID = docID;
   }
 
   private void updateBytesUsed() {
-    final long newBytesUsed = pending.ramBytesUsed() + docsWithFieldBytesUsed();
+    final long newBytesUsed = pending.ramBytesUsed() + docsWithField.ramBytesUsed();
     iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
     bytesUsed = newBytesUsed;
   }
@@ -82,63 +74,105 @@ class NumericDocValuesWriter extends DocValuesWriter {
   }
 
   @Override
-  public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
+  Sorter.DocComparator getDocComparator(int maxDoc, SortField sortField) throws IOException {
+    assert finalValues == null;
+    finalValues = pending.build();
+    final BufferedNumericDocValues docValues =
+        new BufferedNumericDocValues(finalValues, docsWithField.iterator());
+    return Sorter.getDocComparator(maxDoc, sortField, () -> null, () -> docValues);
+  }
 
-    final int maxDoc = state.segmentInfo.maxDoc();
-    final PackedLongValues values = pending.build();
+  static SortingLeafReader.CachedNumericDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, NumericDocValues oldDocValues) throws IOException {
+    FixedBitSet docsWithField = new FixedBitSet(maxDoc);
+    long[] values = new long[maxDoc];
+    while (true) {
+      int docID = oldDocValues.nextDoc();
+      if (docID == NO_MORE_DOCS) {
+        break;
+      }
+      int newDocID = sortMap.oldToNew(docID);
+      docsWithField.set(newDocID);
+      values[newDocID] = oldDocValues.longValue();
+    }
+    return new SortingLeafReader.CachedNumericDVs(values, docsWithField);
+  }
+
+  @Override
+  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer dvConsumer) throws IOException {
+    final PackedLongValues values;
+    if (finalValues == null) {
+      values = pending.build();
+    } else {
+      values = finalValues;
+    }
+
+    final SortingLeafReader.CachedNumericDVs sorted;
+    if (sortMap != null) {
+      NumericDocValues oldValues = new BufferedNumericDocValues(values, docsWithField.iterator());
+      sorted = sortDocValues(state.segmentInfo.maxDoc(), sortMap, oldValues);
+    } else {
+      sorted = null;
+    }
 
     dvConsumer.addNumericField(fieldInfo,
-                               new Iterable<Number>() {
+                               new EmptyDocValuesProducer() {
                                  @Override
-                                 public Iterator<Number> iterator() {
-                                   return new NumericIterator(maxDoc, values, docsWithField);
+                                 public NumericDocValues getNumeric(FieldInfo fieldInfo) {
+                                   if (fieldInfo != NumericDocValuesWriter.this.fieldInfo) {
+                                     throw new IllegalArgumentException("wrong fieldInfo");
+                                   }
+                                   if (sorted == null) {
+                                     return new BufferedNumericDocValues(values, docsWithField.iterator());
+                                   } else {
+                                     return new SortingLeafReader.SortingNumericDocValues(sorted);
+                                   }
                                  }
                                });
   }
 
   // iterates over the values we have in ram
-  private static class NumericIterator implements Iterator<Number> {
+  private static class BufferedNumericDocValues extends NumericDocValues {
     final PackedLongValues.Iterator iter;
-    final FixedBitSet docsWithField;
-    final int size;
-    final int maxDoc;
-    int upto;
-    
-    NumericIterator(int maxDoc, PackedLongValues values, FixedBitSet docsWithFields) {
-      this.maxDoc = maxDoc;
+    final DocIdSetIterator docsWithField;
+    private long value;
+
+    BufferedNumericDocValues(PackedLongValues values, DocIdSetIterator docsWithFields) {
       this.iter = values.iterator();
-      this.size = (int) values.size();
       this.docsWithField = docsWithFields;
     }
-    
+
     @Override
-    public boolean hasNext() {
-      return upto < maxDoc;
+    public int docID() {
+      return docsWithField.docID();
     }
 
     @Override
-    public Number next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
+    public int nextDoc() throws IOException {
+      int docID = docsWithField.nextDoc();
+      if (docID != NO_MORE_DOCS) {
+        value = iter.next();
       }
-      Long value;
-      if (upto < size) {
-        long v = iter.next();
-        if (docsWithField.get(upto)) {
-          value = v;
-        } else {
-          value = null;
-        }
-      } else {
-        value = null;
-      }
-      upto++;
-      return value;
+      return docID;
     }
 
     @Override
-    public void remove() {
+    public int advance(int target) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      return docsWithField.cost();
+    }
+
+    @Override
+    public long longValue() {
+      return value;
     }
   }
 }

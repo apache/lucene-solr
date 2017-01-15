@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.HashMap;
+
+import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -37,6 +39,7 @@ public class StreamContext implements Serializable{
   public int workerID;
   public int numWorkers;
   private SolrClientCache clientCache;
+  private ModelCache modelCache;
   private StreamFactory streamFactory;
 
   public Object get(Object key) {
@@ -55,8 +58,16 @@ public class StreamContext implements Serializable{
     this.clientCache = clientCache;
   }
 
+  public void setModelCache(ModelCache modelCache) {
+    this.modelCache = modelCache;
+  }
+
   public SolrClientCache getSolrClientCache() {
     return this.clientCache;
+  }
+
+  public ModelCache getModelCache() {
+    return this.modelCache;
   }
 
   public void setStreamFactory(StreamFactory streamFactory) {

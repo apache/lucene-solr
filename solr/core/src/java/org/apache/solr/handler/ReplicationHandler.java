@@ -87,6 +87,7 @@ import org.apache.solr.core.SolrDeletionPolicy;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
+import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -299,9 +300,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         rsp.add("message","No slave configured");
       }
     } else if (command.equalsIgnoreCase(CMD_ABORT_FETCH)) {
-      IndexFetcher fetcher = currentIndexFetcher;
-      if (fetcher != null){
-        fetcher.abortFetch();
+      if (abortFetch()){
         rsp.add(STATUS, OK_STATUS);
       } else {
         rsp.add(STATUS,ERR_STATUS);
@@ -317,6 +316,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (CMD_DISABLE_REPL.equalsIgnoreCase(command)) {
       replicationEnabled.set(false);
       rsp.add(STATUS, OK_STATUS);
+    }
+  }
+
+  public boolean abortFetch() {
+    IndexFetcher fetcher = currentIndexFetcher;
+    if (fetcher != null){
+      fetcher.abortFetch();
+      return true;
+    } else {
+      return false;
     }
   }
 
@@ -434,14 +443,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       location = core.getDataDir();
     }
 
+    URI locationUri = repo.createURI(location);
+
     //If name is not provided then look for the last unnamed( the ones with the snapshot.timestamp format)
     //snapshot folder since we allow snapshots to be taken without providing a name. Pick the latest timestamp.
     if (name == null) {
-      URI basePath = repo.createURI(location);
-      String[] filePaths = repo.listAll(basePath);
+      String[] filePaths = repo.listAll(locationUri);
       List<OldBackupDirectory> dirs = new ArrayList<>();
       for (String f : filePaths) {
-        OldBackupDirectory obd = new OldBackupDirectory(basePath, f);
+        OldBackupDirectory obd = new OldBackupDirectory(locationUri, f);
         if (obd.getTimestamp().isPresent()) {
           dirs.add(obd);
         }
@@ -456,7 +466,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       name = "snapshot." + name;
     }
 
-    RestoreCore restoreCore = new RestoreCore(repo, core, location, name);
+    RestoreCore restoreCore = new RestoreCore(repo, core, locationUri, name);
     try {
       MDC.put("RestoreCore.core", core.getName());
       MDC.put("RestoreCore.backupLocation", location);
@@ -512,11 +522,24 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         numberToKeep = Integer.MAX_VALUE;
       }
 
-      IndexDeletionPolicyWrapper delPolicy = core.getDeletionPolicy();
-      IndexCommit indexCommit = delPolicy.getLatestCommit();
+      IndexCommit indexCommit = null;
+      String commitName = params.get(CoreAdminParams.COMMIT_NAME);
+      if (commitName != null) {
+        SolrSnapshotMetaDataManager snapshotMgr = core.getSnapshotMetaDataManager();
+        Optional<IndexCommit> commit = snapshotMgr.getIndexCommitByName(commitName);
+        if(commit.isPresent()) {
+          indexCommit = commit.get();
+        } else {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to find an index commit with name " + commitName +
+              " for core " + core.getName());
+        }
+      } else {
+        IndexDeletionPolicyWrapper delPolicy = core.getDeletionPolicy();
+        indexCommit = delPolicy.getLatestCommit();
 
-      if (indexCommit == null) {
-        indexCommit = req.getSearcher().getIndexReader().getIndexCommit();
+        if (indexCommit == null) {
+          indexCommit = req.getSearcher().getIndexReader().getIndexCommit();
+        }
       }
 
       String location = params.get(CoreAdminParams.BACKUP_LOCATION);
@@ -539,7 +562,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
 
       // small race here before the commit point is saved
-      SnapShooter snapShooter = new SnapShooter(repo, core, location, params.get(NAME));
+      URI locationUri = repo.createURI(location);
+      SnapShooter snapShooter = new SnapShooter(repo, core, locationUri, params.get(NAME), commitName);
       snapShooter.validateCreateSnapshot();
       snapShooter.createSnapAsync(indexCommit, numberToKeep, (nl) -> snapShootDetails = nl);
 
@@ -644,7 +668,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(CMD_GET_FILE_LIST, result);
 
     // fetch list of tlog files only if cdcr is activated
-    if (core.getUpdateHandler().getUpdateLog() != null && core.getUpdateHandler().getUpdateLog() instanceof CdcrUpdateLog) {
+    if (solrParams.getBool(TLOG_FILES, true) && core.getUpdateHandler().getUpdateLog() != null
+        && core.getUpdateHandler().getUpdateLog() instanceof CdcrUpdateLog) {
       try {
         List<Map<String, Object>> tlogfiles = getTlogFileList(commit);
         LOG.info("Adding tlog files to list: " + tlogfiles);
@@ -788,20 +813,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     numTimesReplicated++;
   }
 
-  long getIndexSize() {
-    Directory dir;
-    long size = 0;
-    try {
-      dir = core.getDirectoryFactory().get(core.getIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-      try {
-        size = core.getDirectoryFactory().size(dir);
-      } finally {
-        core.getDirectoryFactory().release(dir);
-      }
-    } catch (IOException e) {
-      SolrException.log(LOG, "IO error while trying to get the size of the Directory", e);
-    }
-    return size;
+  @Override
+  public Category getCategory() {
+    return Category.REPLICATION;
   }
 
   @Override
@@ -830,7 +844,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public NamedList getStatistics() {
     NamedList list = super.getStatistics();
     if (core != null) {
-      list.add("indexSize", NumberUtils.readableSize(getIndexSize()));
+      list.add("indexSize", NumberUtils.readableSize(core.getIndexSize()));
       CommitVersionInfo vInfo = (core != null && !core.isClosed()) ? getIndexVersion(): null;
       list.add("indexVersion", null == vInfo ? 0 : vInfo.version);
       list.add(GENERATION, null == vInfo ? 0 : vInfo.generation);
@@ -882,7 +896,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     NamedList<Object> master = new SimpleOrderedMap<>();
     NamedList<Object> slave = new SimpleOrderedMap<>();
 
-    details.add("indexSize", NumberUtils.readableSize(getIndexSize()));
+    details.add("indexSize", NumberUtils.readableSize(core.getIndexSize()));
     details.add("indexPath", core.getIndexDir());
     details.add(CMD_SHOW_COMMITS, getCommits());
     details.add("isMaster", String.valueOf(isMaster));
@@ -1411,7 +1425,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       sLen = params.get(LEN);
       compress = params.get(COMPRESSION);
       useChecksum = params.getBool(CHECKSUM, false);
-      indexGen = params.getLong(GENERATION, null);
+      indexGen = params.getLong(GENERATION);
       if (useChecksum) {
         checksum = new Adler32();
       }

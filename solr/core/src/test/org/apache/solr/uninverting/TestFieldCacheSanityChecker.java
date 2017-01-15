@@ -21,14 +21,14 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LegacyDoubleField;
-import org.apache.lucene.document.LegacyFloatField;
-import org.apache.lucene.document.LegacyIntField;
-import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.legacy.LegacyDoubleField;
+import org.apache.lucene.legacy.LegacyFloatField;
+import org.apache.lucene.legacy.LegacyIntField;
+import org.apache.lucene.legacy.LegacyLongField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
@@ -94,11 +94,11 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getNumerics(readerA, "theDouble", FieldCache.LEGACY_DOUBLE_PARSER, false);
-    cache.getNumerics(readerAclone, "theDouble", FieldCache.LEGACY_DOUBLE_PARSER, false);
-    cache.getNumerics(readerB, "theDouble", FieldCache.LEGACY_DOUBLE_PARSER, false);
+    cache.getNumerics(readerA, "theDouble", FieldCache.LEGACY_DOUBLE_PARSER);
+    cache.getNumerics(readerAclone, "theDouble", FieldCache.LEGACY_DOUBLE_PARSER);
+    cache.getNumerics(readerB, "theDouble", FieldCache.LEGACY_DOUBLE_PARSER);
 
-    cache.getNumerics(readerX, "theInt", FieldCache.LEGACY_INT_PARSER, false);
+    cache.getNumerics(readerX, "theInt", FieldCache.LEGACY_INT_PARSER);
 
     // // // 
 
@@ -117,8 +117,8 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getNumerics(readerX, "theInt", FieldCache.LEGACY_INT_PARSER, false);
-    cache.getTerms(readerX, "theInt", false);
+    cache.getNumerics(readerX, "theInt", FieldCache.LEGACY_INT_PARSER);
+    cache.getTerms(readerX, "theInt");
 
     // // // 
 
@@ -140,9 +140,9 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getTerms(readerA, "theInt", false);
-    cache.getTerms(readerB, "theInt", false);
-    cache.getTerms(readerX, "theInt", false);
+    cache.getTerms(readerA, "theInt");
+    cache.getTerms(readerB, "theInt");
+    cache.getTerms(readerX, "theInt");
 
 
     // // // 

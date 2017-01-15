@@ -19,27 +19,36 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
+import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.graph.GatherNodesStream;
 import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
+import org.apache.solr.client.solrj.io.ops.AndOperation;
 import org.apache.solr.client.solrj.io.ops.ConcatOperation;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
+import org.apache.solr.client.solrj.io.ops.EqualsOperation;
+import org.apache.solr.client.solrj.io.ops.GreaterThanEqualToOperation;
+import org.apache.solr.client.solrj.io.ops.GreaterThanOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
+import org.apache.solr.client.solrj.io.ops.LessThanEqualToOperation;
+import org.apache.solr.client.solrj.io.ops.LessThanOperation;
+import org.apache.solr.client.solrj.io.ops.NotOperation;
+import org.apache.solr.client.solrj.io.ops.OrOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.stream.*;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
@@ -49,9 +58,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -64,10 +73,11 @@ import org.slf4j.LoggerFactory;
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
   static SolrClientCache clientCache = new SolrClientCache();
+  static ModelCache modelCache = null;
   private StreamFactory streamFactory = new StreamFactory();
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
-  private Map<String, DaemonStream> daemons = new HashMap();
+  private Map<String, DaemonStream> daemons = Collections.synchronizedMap(new HashMap());
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
@@ -86,8 +96,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
      *  </lst>
      * */
 
-    String defaultCollection = null;
-    String defaultZkhost     = null;
+    String defaultCollection;
+    String defaultZkhost;
     CoreContainer coreContainer = core.getCoreDescriptor().getCoreContainer();
     this.coreName = core.getName();
 
@@ -96,6 +106,9 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       defaultZkhost = core.getCoreDescriptor().getCoreContainer().getZkController().getZkServerAddress();
       streamFactory.withCollectionZkHost(defaultCollection, defaultZkhost);
       streamFactory.withDefaultZkHost(defaultZkhost);
+      modelCache = new ModelCache(250,
+                                  defaultZkhost,
+                                  clientCache);
     }
 
      streamFactory
@@ -105,6 +118,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("update", UpdateStream.class)
       .withFunctionName("jdbc", JDBCStream.class)
       .withFunctionName("topic", TopicStream.class)
+      .withFunctionName("commit", CommitStream.class)
+      .withFunctionName("random", RandomStream.class)
       
       // decorator streams
       .withFunctionName("merge", MergeStream.class)
@@ -122,12 +137,20 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("intersect", IntersectStream.class)
       .withFunctionName("complement", ComplementStream.class)
       .withFunctionName("sort", SortStream.class)
+      .withFunctionName("train", TextLogitStream.class)
+      .withFunctionName("features", FeaturesSelectionStream.class)
       .withFunctionName("daemon", DaemonStream.class)
       .withFunctionName("shortestPath", ShortestPathStream.class)
       .withFunctionName("gatherNodes", GatherNodesStream.class)
+      .withFunctionName("nodes", GatherNodesStream.class)
       .withFunctionName("select", SelectStream.class)
-         .withFunctionName("scoreNodes", ScoreNodesStream.class)
-
+      .withFunctionName("scoreNodes", ScoreNodesStream.class)
+      .withFunctionName("model", ModelStream.class)
+      .withFunctionName("classify", ClassifyStream.class)
+      .withFunctionName("fetch", FetchStream.class)
+      .withFunctionName("executor", ExecutorStream.class)
+      .withFunctionName("null", NullStream.class)
+      .withFunctionName("priority", PriorityStream.class)
       // metrics
       .withFunctionName("min", MinMetric.class)
       .withFunctionName("max", MaxMetric.class)
@@ -141,17 +164,23 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       
       // stream reduction operations
       .withFunctionName("group", GroupOperation.class)
-      .withFunctionName("distinct", DistinctOperation.class);
+      .withFunctionName("distinct", DistinctOperation.class)
+      .withFunctionName("having", HavingStream.class)
+      .withFunctionName("and", AndOperation.class)
+      .withFunctionName("or", OrOperation.class)
+      .withFunctionName("not", NotOperation.class)
+      .withFunctionName("gt", GreaterThanOperation.class)
+      .withFunctionName("lt", LessThanOperation.class)
+      .withFunctionName("eq", EqualsOperation.class)
+      .withFunctionName("lteq", LessThanEqualToOperation.class)
+      .withFunctionName("gteq", GreaterThanEqualToOperation.class);
 
-    // This pulls all the overrides and additions from the config
-    Object functionMappingsObj = initArgs.get("streamFunctions");
-    if(null != functionMappingsObj){
-      NamedList<?> functionMappings = (NamedList<?>)functionMappingsObj;
-      for(Entry<String,?> functionMapping : functionMappings){
-        Class<?> clazz = core.getResourceLoader().findClass((String)functionMapping.getValue(), Expressible.class);
-        streamFactory.withFunctionName(functionMapping.getKey(), clazz);
-      }
-    }
+     // This pulls all the overrides and additions from the config
+     List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
+     for (PluginInfo pluginInfo : pluginInfos) {
+       Class<? extends Expressible> clazz = core.getResourceLoader().findClass(pluginInfo.className, Expressible.class);
+       streamFactory.withFunctionName(pluginInfo.name, clazz);
+     }
         
     core.addCloseHook(new CloseHook() {
       @Override
@@ -176,7 +205,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       return;
     }
 
-    TupleStream tupleStream = null;
+    TupleStream tupleStream;
 
     try {
       tupleStream = this.streamFactory.constructStream(params.get("expr"));
@@ -194,7 +223,9 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     context.workerID = worker;
     context.numWorkers = numWorkers;
     context.setSolrClientCache(clientCache);
+    context.setModelCache(modelCache);
     context.put("core", this.coreName);
+    context.put("solr-core", req.getCore());
     tupleStream.setStreamContext(context);
     
     // if asking for explanation then go get it
@@ -207,6 +238,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       if(daemons.containsKey(daemonStream.getId())) {
         daemons.remove(daemonStream.getId()).close();
       }
+      daemonStream.setDaemons(daemons);
       daemonStream.open();  //This will start the deamonStream
       daemons.put(daemonStream.getId(), daemonStream);
       rsp.add("result-set", new DaemonResponseStream("Deamon:"+daemonStream.getId()+" started on "+coreName));
@@ -451,5 +483,4 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       return tuple;
     }
   }
-
 }

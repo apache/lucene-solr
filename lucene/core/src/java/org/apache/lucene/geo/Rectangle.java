@@ -186,4 +186,33 @@ public class Rectangle {
 
     return new Rectangle(minLat, maxLat, minLon, maxLon);
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    Rectangle rectangle = (Rectangle) o;
+
+    if (Double.compare(rectangle.minLat, minLat) != 0) return false;
+    if (Double.compare(rectangle.minLon, minLon) != 0) return false;
+    if (Double.compare(rectangle.maxLat, maxLat) != 0) return false;
+    return Double.compare(rectangle.maxLon, maxLon) == 0;
+
+  }
+
+  @Override
+  public int hashCode() {
+    int result;
+    long temp;
+    temp = Double.doubleToLongBits(minLat);
+    result = (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(minLon);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(maxLat);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(maxLon);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    return result;
+  }
 }

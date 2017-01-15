@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -108,7 +109,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
      * @throws TooManyClauses if the new number of clauses exceeds the maximum clause number
      */
     public Builder add(BooleanClause clause) {
-      add(clause.getQuery(), clause.getOccur());
+      if (clauses.size() >= maxClauseCount) {
+        throw new TooManyClauses();
+      }
+      clauses.add(clause);
       return this;
     }
 
@@ -119,11 +123,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
      * @throws TooManyClauses if the new number of clauses exceeds the maximum clause number
      */
     public Builder add(Query query, Occur occur) {
-      if (clauses.size() >= maxClauseCount) {
-        throw new TooManyClauses();
-      }
-      clauses.add(new BooleanClause(query, occur));
-      return this;
+      return add(new BooleanClause(query, occur));
     }
 
     /** Create a new {@link BooleanQuery} based on the parameters that have
@@ -272,6 +272,18 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
     }
 
+    // Check whether some clauses are both required and excluded
+    final Collection<Query> mustNotClauses = clauseSets.get(Occur.MUST_NOT);
+    if (!mustNotClauses.isEmpty()) {
+      final Predicate<Query> p = clauseSets.get(Occur.MUST)::contains;
+      if (mustNotClauses.stream().anyMatch(p.or(clauseSets.get(Occur.FILTER)::contains))) {
+        return new MatchNoDocsQuery("FILTER or MUST clause also in MUST_NOT");
+      }
+      if (mustNotClauses.contains(new MatchAllDocsQuery())) {
+        return new MatchNoDocsQuery("MUST_NOT clause is MatchAllDocsQuery");
+      }
+    }
+
     // remove FILTER clauses that are also MUST clauses
     // or that match all documents
     if (clauseSets.get(Occur.MUST).size() > 0 && clauseSets.get(Occur.FILTER).size() > 0) {
@@ -292,6 +304,35 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         return builder.build();
       }
     }
+
+    // convert FILTER clauses that are also SHOULD clauses to MUST clauses
+    if (clauseSets.get(Occur.SHOULD).size() > 0 && clauseSets.get(Occur.FILTER).size() > 0) {
+      final Collection<Query> filters = clauseSets.get(Occur.FILTER);
+      final Collection<Query> shoulds = clauseSets.get(Occur.SHOULD);
+
+      Set<Query> intersection = new HashSet<>(filters);
+      intersection.retainAll(shoulds);
+
+      if (intersection.isEmpty() == false) {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        int minShouldMatch = getMinimumNumberShouldMatch();
+
+        for (BooleanClause clause : clauses) {
+          if (intersection.contains(clause.getQuery())) {
+            if (clause.getOccur() == Occur.SHOULD) {
+              builder.add(new BooleanClause(clause.getQuery(), Occur.MUST));
+              minShouldMatch--;
+            }
+          } else {
+            builder.add(clause);
+          }
+        }
+
+        builder.setMinimumNumberShouldMatch(Math.max(0, minShouldMatch));
+        return builder.build();
+      }
+    }
+
 
     // Rewrite queries whose single scoring clause is a MUST clause on a
     // MatchAllDocsQuery to a ConstantScoreQuery

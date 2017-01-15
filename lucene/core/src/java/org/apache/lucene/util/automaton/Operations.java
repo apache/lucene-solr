@@ -370,10 +370,8 @@ final public class Operations {
   }
 
   /** Returns true if these two automata accept exactly the
-   *  same language.  This is a costly computation!  Note
-   *  also that a1 and a2 will be determinized as a side
-   *  effect.  Both automata must be determinized and have
-   *  no dead states! */
+   *  same language.  This is a costly computation!  Both automata
+   *  must be determinized and have no dead states! */
   public static boolean sameLanguage(Automaton a1, Automaton a2) {
     if (a1 == a2) {
       return true;

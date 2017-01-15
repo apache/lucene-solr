@@ -105,7 +105,7 @@ final class LatLonPointDistanceQuery extends Query {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
-        PointValues values = reader.getPointValues();
+        PointValues values = reader.getPointValues(field);
         if (values == null) {
           // No docs in this segment had any points fields
           return null;
@@ -120,7 +120,7 @@ final class LatLonPointDistanceQuery extends Query {
         // matching docids
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
-        values.intersect(field,
+        values.intersect(
                          new IntersectVisitor() {
 
                            DocIdSetBuilder.BulkAdder adder;

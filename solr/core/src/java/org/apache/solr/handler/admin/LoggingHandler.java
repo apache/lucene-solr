@@ -156,4 +156,10 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
   public String getDescription() {
     return "Logging Handler";
   }
+
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
+
 }

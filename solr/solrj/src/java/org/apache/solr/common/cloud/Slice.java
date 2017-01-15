@@ -21,8 +21,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
@@ -81,7 +84,16 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
      * shard in that state still receives update requests from the parent shard
      * leader, however does not participate in distributed search.
      */
-    RECOVERY;
+    RECOVERY,
+
+    /**
+     * Sub-shards of a split shard are put in that state when the split is deemed failed
+     * by the overseer even though all replicas are active because either the leader node is
+     * no longer live or has a different ephemeral owner (zk session id). Such conditions can potentially
+     * lead to data loss. See SOLR-9438 for details. A shard in that state will neither receive
+     * update requests from the parent shard leader, nor participate in distributed search.
+     */
+    RECOVERY_FAILED;
     
     @Override
     public String toString() {
@@ -207,6 +219,13 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
    */
   public Collection<Replica> getReplicas() {
     return replicas.values();
+  }
+
+  /**
+   * Gets all replicas that match a predicate
+   */
+  public List<Replica> getReplicas(Predicate<Replica> pred) {
+    return replicas.values().stream().filter(pred).collect(Collectors.toList());
   }
 
   /**

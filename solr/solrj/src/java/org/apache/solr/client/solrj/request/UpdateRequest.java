@@ -218,6 +218,13 @@ public class UpdateRequest extends AbstractUpdateRequest {
     return this;
   }
 
+  public UpdateRequest withRoute(String route) {
+    if (params == null)
+      params = new ModifiableSolrParams();
+    params.set(ROUTE, route);
+    return this;
+  }
+
   public UpdateResponse commit(SolrClient client, String collection) throws IOException, SolrServerException {
     if (params == null)
       params = new ModifiableSolrParams();
@@ -524,4 +531,5 @@ public class UpdateRequest extends AbstractUpdateRequest {
   public void lastDocInBatch() {
     isLastDocInBatch = true;
   }
+
 }

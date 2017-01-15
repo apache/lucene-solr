@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.index;
 
+import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -27,8 +28,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
+import org.junit.Ignore;
 
 /**
  * Test that uses a default/lucene Implementation of {@link QueryTimeout}
@@ -92,6 +92,7 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
    * Tests timing out of TermsEnum iterations
    * @throws Exception on error
    */
+  @Ignore("this test relies on wall clock time and sometimes false fails")
   public void testExitableFilterIndexReader() throws Exception {
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())));

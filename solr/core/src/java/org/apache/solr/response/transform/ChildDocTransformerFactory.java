@@ -77,7 +77,7 @@ public class ChildDocTransformerFactory extends TransformerFactory {
 
     BitSetProducer parentsFilter = null;
     try {
-      Query parentFilterQuery = QParser.getParser( parentFilter, null, req).getQuery();
+      Query parentFilterQuery = QParser.getParser( parentFilter, req).getQuery();
       parentsFilter = new QueryBitSetProducer(new QueryWrapperFilter(parentFilterQuery));
     } catch (SyntaxError syntaxError) {
       throw new SolrException( ErrorCode.BAD_REQUEST, "Failed to create correct parent filter query" );
@@ -86,7 +86,7 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     Query childFilterQuery = null;
     if(childFilter != null) {
       try {
-        childFilterQuery = QParser.getParser( childFilter, null, req).getQuery();
+        childFilterQuery = QParser.getParser( childFilter, req).getQuery();
       } catch (SyntaxError syntaxError) {
         throw new SolrException( ErrorCode.BAD_REQUEST, "Failed to create correct child filter query" );
       }

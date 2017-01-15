@@ -17,6 +17,7 @@
 package org.apache.solr.update;
 
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.ConcurrentMergeScheduler;
@@ -27,6 +28,7 @@ import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.TestMergePolicyConfig;
@@ -152,7 +154,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     }
     assertNotNull(solrIndexConfig.mergeSchedulerInfo);
 
-    Map<String, Object> m = solrIndexConfig.toMap();
+    Map<String, Object> m = solrIndexConfig.toMap(new LinkedHashMap<>());
     int mSizeExpected = 0;
 
     ++mSizeExpected; assertTrue(m.get("useCompoundFile") instanceof Boolean);
@@ -180,21 +182,22 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
       assertFalse(Boolean.valueOf(m.get("infoStreamEnabled").toString()).booleanValue());
     }
     
-    ++mSizeExpected; assertTrue(m.get("mergeScheduler") instanceof Map);
+    ++mSizeExpected; assertTrue(m.get("mergeScheduler") instanceof MapSerializable);
     if (solrConfigFileName.equals(solrConfigFileNameTieredMergePolicyFactory) ||
         solrConfigFileName.equals(solrConfigFileNameWarmerRandomMergePolicyFactory)) {
       assertNull(m.get("mergePolicy"));
-      ++mSizeExpected; assertTrue(m.get("mergePolicyFactory") instanceof Map);
+      ++mSizeExpected; assertTrue(m.get("mergePolicyFactory") instanceof MapSerializable);
     } else {
-      ++mSizeExpected; assertTrue(m.get("mergePolicy") instanceof Map);
+      ++mSizeExpected; assertTrue(m.get("mergePolicy") instanceof MapSerializable);
       assertNull(m.get("mergePolicyFactory"));
     }
     if (solrConfigFileName.equals(solrConfigFileNameWarmerRandomMergePolicy) ||
         solrConfigFileName.equals(solrConfigFileNameWarmerRandomMergePolicyFactory)) {
-      ++mSizeExpected; assertTrue(m.get("mergedSegmentWarmer") instanceof Map);
+      ++mSizeExpected; assertTrue(m.get("mergedSegmentWarmer") instanceof MapSerializable);
     } else {
       assertNull(m.get("mergedSegmentWarmer"));
     }
+    ++mSizeExpected; assertNotNull(m.get("metrics"));
 
     assertEquals(mSizeExpected, m.size());
   }

@@ -46,7 +46,6 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -320,7 +319,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           method.addHeader("User-Agent", HttpSolrClient.AGENT);
           method.addHeader("Content-Type", contentType);
 
-          response = client.getHttpClient().execute(method, HttpClientUtil.createNewHttpClientRequestContext());
+          response = client.getHttpClient()
+              .execute(method, HttpClientUtil.createNewHttpClientRequestContext());
           rspBody = response.getEntity().getContent();
           int statusCode = response.getStatusLine().getStatusCode();
           if (statusCode != HttpStatus.SC_OK) {
@@ -329,7 +329,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
             msg.append("\n\n\n\n");
             msg.append("request: ").append(method.getURI());
 
-            SolrException solrExc = new SolrException(ErrorCode.getErrorCode(statusCode), msg.toString());
+            SolrException solrExc;
+            NamedList<String> metadata = null;
             // parse out the metadata from the SolrException
             try {
               String encoding = "UTF-8"; // default
@@ -342,11 +343,21 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
               NamedList<Object> resp = client.parser.processResponse(rspBody, encoding);
               NamedList<Object> error = (NamedList<Object>) resp.get("error");
               if (error != null) {
-                solrExc.setMetadata((NamedList<String>) error.get("metadata"));
+                metadata = (NamedList<String>) error.get("metadata");
+                String remoteMsg = (String) error.get("msg");
+                if (remoteMsg != null) {
+                  msg.append("\nRemote error message: ");
+                  msg.append(remoteMsg);
+                }
               }
             } catch (Exception exc) {
               // don't want to fail to report error if parsing the response fails
               log.warn("Failed to parse error response from " + client.getBaseURL() + " due to: " + exc);
+            } finally {
+              solrExc = new HttpSolrClient.RemoteSolrException(client.getBaseURL(), statusCode, msg.toString(), null);
+              if (metadata != null) {
+                solrExc.setMetadata(metadata);
+              }
             }
 
             handleError(solrExc);

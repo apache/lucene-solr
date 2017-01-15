@@ -19,45 +19,50 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSelector;
+import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 /** Buffers up pending long[] per doc, sorts, then flushes when segment flushes. */
 class SortedNumericDocValuesWriter extends DocValuesWriter {
   private PackedLongValues.Builder pending; // stream of all values
   private PackedLongValues.Builder pendingCounts; // count of values per doc
+  private DocsWithFieldSet docsWithField;
   private final Counter iwBytesUsed;
   private long bytesUsed; // this only tracks differences in 'pending' and 'pendingCounts'
   private final FieldInfo fieldInfo;
-  private int currentDoc;
+  private int currentDoc = -1;
   private long currentValues[] = new long[8];
   private int currentUpto = 0;
+
+  private PackedLongValues finalValues;
+  private PackedLongValues finalValuesCount;
 
   public SortedNumericDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
     pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
     pendingCounts = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
-    bytesUsed = pending.ramBytesUsed() + pendingCounts.ramBytesUsed();
+    docsWithField = new DocsWithFieldSet();
+    bytesUsed = pending.ramBytesUsed() + pendingCounts.ramBytesUsed() + docsWithField.ramBytesUsed() + RamUsageEstimator.sizeOf(currentValues);
     iwBytesUsed.addAndGet(bytesUsed);
   }
 
-  public void addValue(int docID, long value) {    
+  public void addValue(int docID, long value) {
+    assert docID >= currentDoc;
     if (docID != currentDoc) {
       finishCurrentDoc();
-    }
-
-    // Fill in any holes:
-    while(currentDoc < docID) {
-      pendingCounts.add(0); // no values
-      currentDoc++;
+      currentDoc = docID;
     }
 
     addOneValue(value);
@@ -66,6 +71,9 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
   
   // finalize currentDoc: this sorts the values in the current doc
   private void finishCurrentDoc() {
+    if (currentDoc == -1) {
+      return;
+    }
     Arrays.sort(currentValues, 0, currentUpto);
     for (int i = 0; i < currentUpto; i++) {
       pending.add(currentValues[i]);
@@ -73,17 +81,13 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
     // record the number of values for this doc
     pendingCounts.add(currentUpto);
     currentUpto = 0;
-    currentDoc++;
+
+    docsWithField.add(currentDoc);
   }
 
   @Override
   public void finish(int maxDoc) {
     finishCurrentDoc();
-    
-    // fill in any holes
-    for (int i = currentDoc; i < maxDoc; i++) {
-      pendingCounts.add(0); // no values
-    }
   }
 
   private void addOneValue(long value) {
@@ -96,86 +100,135 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
   }
   
   private void updateBytesUsed() {
-    final long newBytesUsed = pending.ramBytesUsed() + pendingCounts.ramBytesUsed() + RamUsageEstimator.sizeOf(currentValues);
+    final long newBytesUsed = pending.ramBytesUsed() + pendingCounts.ramBytesUsed() + docsWithField.ramBytesUsed() + RamUsageEstimator.sizeOf(currentValues);
     iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
     bytesUsed = newBytesUsed;
   }
 
   @Override
-  public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
-    final int maxDoc = state.segmentInfo.maxDoc();
-    assert pendingCounts.size() == maxDoc;
-    final PackedLongValues values = pending.build();
-    final PackedLongValues valueCounts = pendingCounts.build();
+  Sorter.DocComparator getDocComparator(int maxDoc, SortField sortField) throws IOException {
+    assert sortField instanceof SortedNumericSortField;
+    assert finalValues == null && finalValuesCount == null;
+    finalValues = pending.build();
+    finalValuesCount = pendingCounts.build();
+    final SortedNumericDocValues docValues =
+        new BufferedSortedNumericDocValues(finalValues, finalValuesCount, docsWithField.iterator());
+    SortedNumericSortField sf = (SortedNumericSortField) sortField;
+    return Sorter.getDocComparator(maxDoc, sf, () -> null,
+        () -> SortedNumericSelector.wrap(docValues, sf.getSelector(), sf.getNumericType()));
+  }
+
+  private long[][] sortDocValues(int maxDoc, Sorter.DocMap sortMap, SortedNumericDocValues oldValues) throws IOException {
+    long[][] values = new long[maxDoc][];
+    int docID;
+    while ((docID = oldValues.nextDoc()) != NO_MORE_DOCS) {
+      int newDocID = sortMap.oldToNew(docID);
+      long[] docValues = new long[oldValues.docValueCount()];
+      for (int i = 0; i < docValues.length; i++) {
+        docValues[i] = oldValues.nextValue();
+      }
+      values[newDocID] = docValues;
+    }
+    return values;
+  }
+
+  @Override
+  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer dvConsumer) throws IOException {
+    final PackedLongValues values;
+    final PackedLongValues valueCounts;
+    if (finalValues == null) {
+      values = pending.build();
+      valueCounts = pendingCounts.build();
+    } else {
+      values = finalValues;
+      valueCounts = finalValuesCount;
+    }
+
+    final long[][] sorted;
+    if (sortMap != null) {
+      sorted = sortDocValues(state.segmentInfo.maxDoc(), sortMap,
+          new BufferedSortedNumericDocValues(values, valueCounts, docsWithField.iterator()));
+    } else {
+      sorted = null;
+    }
 
     dvConsumer.addSortedNumericField(fieldInfo,
-                              // doc -> valueCount
-                              new Iterable<Number>() {
-                                @Override
-                                public Iterator<Number> iterator() {
-                                  return new CountIterator(valueCounts);
-                                }
-                              },
-
-                              // values
-                              new Iterable<Number>() {
-                                @Override
-                                public Iterator<Number> iterator() {
-                                  return new ValuesIterator(values);
-                                }
-                              });
+                                     new EmptyDocValuesProducer() {
+                                       @Override
+                                       public SortedNumericDocValues getSortedNumeric(FieldInfo fieldInfoIn) {
+                                         if (fieldInfoIn != fieldInfo) {
+                                           throw new IllegalArgumentException("wrong fieldInfo");
+                                         }
+                                         final SortedNumericDocValues buf =
+                                             new BufferedSortedNumericDocValues(values, valueCounts, docsWithField.iterator());
+                                         if (sorted == null) {
+                                           return buf;
+                                         } else {
+                                           return new SortingLeafReader.SortingSortedNumericDocValues(buf, sorted);
+                                         }
+                                       }
+                                     });
   }
-  
-  // iterates over the values for each doc we have in ram
-  private static class ValuesIterator implements Iterator<Number> {
-    final PackedLongValues.Iterator iter;
 
-    ValuesIterator(PackedLongValues values) {
-      iter = values.iterator();
+  private static class BufferedSortedNumericDocValues extends SortedNumericDocValues {
+    final PackedLongValues.Iterator valuesIter;
+    final PackedLongValues.Iterator valueCountsIter;
+    final DocIdSetIterator docsWithField;
+    private int valueCount;
+    private int valueUpto;
+
+    public BufferedSortedNumericDocValues(PackedLongValues values, PackedLongValues valueCounts, DocIdSetIterator docsWithField) {
+      valuesIter = values.iterator();
+      valueCountsIter = valueCounts.iterator();
+      this.docsWithField = docsWithField;
     }
 
     @Override
-    public boolean hasNext() {
-      return iter.hasNext();
+    public int docID() {
+      return docsWithField.docID();
     }
 
     @Override
-    public Number next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
+    public int nextDoc() throws IOException {
+      for (int i = valueUpto; i < valueCount; ++i) {
+        valuesIter.next();
       }
-      return iter.next();
+
+      int docID = docsWithField.nextDoc();
+      if (docID != NO_MORE_DOCS) {
+        valueCount = Math.toIntExact(valueCountsIter.next());
+        valueUpto = 0;
+      }
+      return docID;
     }
 
     @Override
-    public void remove() {
+    public int advance(int target) {
       throw new UnsupportedOperationException();
     }
-  }
-  
-  private static class CountIterator implements Iterator<Number> {
-    final PackedLongValues.Iterator iter;
-
-    CountIterator(PackedLongValues valueCounts) {
-      this.iter = valueCounts.iterator();
-    }
 
     @Override
-    public boolean hasNext() {
-      return iter.hasNext();
-    }
-
-    @Override
-    public Number next() {
-      if (!hasNext()) {
-        throw new NoSuchElementException();
-      }
-      return iter.next();
-    }
-
-    @Override
-    public void remove() {
+    public boolean advanceExact(int target) throws IOException {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int docValueCount() {
+      return valueCount;
+    }
+
+    @Override
+    public long nextValue() {
+      if (valueUpto == valueCount) {
+        throw new IllegalStateException();
+      }
+      valueUpto++;
+      return valuesIter.next();
+    }
+
+    @Override
+    public long cost() {
+      return docsWithField.cost();
     }
   }
 }

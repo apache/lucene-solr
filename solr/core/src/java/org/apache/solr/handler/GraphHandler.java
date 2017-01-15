@@ -1,5 +1,3 @@
-package org.apache.solr.handler;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.solr.handler;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -80,8 +80,8 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
      *  </lst>
      * */
 
-    String defaultCollection = null;
-    String defaultZkhost     = null;
+    String defaultCollection;
+    String defaultZkhost;
     CoreContainer coreContainer = core.getCoreDescriptor().getCoreContainer();
     this.coreName = core.getName();
 
@@ -117,8 +117,10 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
         .withFunctionName("topic", TopicStream.class)
         .withFunctionName("shortestPath", ShortestPathStream.class)
         .withFunctionName("gatherNodes", GatherNodesStream.class)
+        .withFunctionName("nodes", GatherNodesStream.class)
         .withFunctionName("sort", SortStream.class)
-            .withFunctionName("scoreNodes", ScoreNodesStream.class)
+        .withFunctionName("scoreNodes", ScoreNodesStream.class)
+        .withFunctionName("random", RandomStream.class)
 
         // metrics
         .withFunctionName("min", MinMetric.class)
@@ -140,7 +142,8 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     if(null != functionMappingsObj){
       NamedList<?> functionMappings = (NamedList<?>)functionMappingsObj;
       for(Entry<String,?> functionMapping : functionMappings){
-        Class<?> clazz = core.getResourceLoader().findClass((String)functionMapping.getValue(), Expressible.class);
+        Class<? extends Expressible> clazz = core.getResourceLoader().findClass((String)functionMapping.getValue(),
+            Expressible.class);
         streamFactory.withFunctionName(functionMapping.getKey(), clazz);
       }
     }

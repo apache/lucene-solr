@@ -34,6 +34,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.codahale.metrics.Snapshot;
+import com.codahale.metrics.Timer;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -52,9 +54,6 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.stats.Snapshot;
-import org.apache.solr.util.stats.Timer;
-import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -77,8 +76,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final int TIMEOUT = 30000;
-  private static final boolean DEBUG = false;
-  
+
   private List<Overseer> overseers = new ArrayList<>();
   private List<ZkStateReader> readers = new ArrayList<>();
   private List<HttpShardHandlerFactory> httpShardHandlerFactorys = new ArrayList<>();
@@ -130,6 +128,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         }
       }
       deleteNode(ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName);
+      zkStateReader.close();
       zkClient.close();
     }
     
@@ -285,11 +284,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       assertNotNull(reader.getLeaderUrl(collection, "shard3", 15000));
       
     } finally {
-      if (DEBUG) {
-        if (zkController != null) {
-          zkClient.printLayoutToStdOut();
-        }
-      }
       close(zkClient);
       if (zkController != null) {
         zkController.close();
@@ -359,11 +353,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       assertNotNull(reader.getLeaderUrl("collection2", "shard3", 15000));
       
     } finally {
-      if (DEBUG) {
-        if (zkController != null) {
-          zkClient.printLayoutToStdOut();
-        }
-      }
       close(zkClient);
       if (zkController != null) {
         zkController.close();
@@ -498,11 +487,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
 
     } finally {
-      if (DEBUG) {
-        if (controllers[0] != null) {
-          zkClient.printLayoutToStdOut();
-        }
-      }
       close(zkClient);
       close(overseerClient);
       close(reader);
@@ -1042,7 +1026,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       q.offer(Utils.toJSON(m));
 
       Timer t = new Timer();
-      TimerContext context = t.time();
+      Timer.Context context = t.time();
       try {
         overseerClient = electNewOverseer(server.getZkAddress());
         assertTrue(overseers.size() > 0);
@@ -1087,16 +1071,19 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   private void printTimingStats(Timer timer) {
     Snapshot snapshot = timer.getSnapshot();
-    log.info("\t totalTime: {}", timer.getSum());
-    log.info("\t avgRequestsPerMinute: {}", timer.getMeanRate());
-    log.info("\t 5minRateRequestsPerMinute: {}", timer.getFiveMinuteRate());
-    log.info("\t 15minRateRequestsPerMinute: {}", timer.getFifteenMinuteRate());
-    log.info("\t avgTimePerRequest: {}", timer.getMean());
-    log.info("\t medianRequestTime: {}", snapshot.getMedian());
-    log.info("\t 75thPctlRequestTime: {}", snapshot.get75thPercentile());
-    log.info("\t 95thPctlRequestTime: {}", snapshot.get95thPercentile());
-    log.info("\t 99thPctlRequestTime: {}", snapshot.get99thPercentile());
-    log.info("\t 999thPctlRequestTime: {}", snapshot.get999thPercentile());
+    log.info("\t avgRequestsPerSecond: {}", timer.getMeanRate());
+    log.info("\t 5minRateRequestsPerSecond: {}", timer.getFiveMinuteRate());
+    log.info("\t 15minRateRequestsPerSecond: {}", timer.getFifteenMinuteRate());
+    log.info("\t avgTimePerRequest: {}", nsToMs(snapshot.getMean()));
+    log.info("\t medianRequestTime: {}", nsToMs(snapshot.getMedian()));
+    log.info("\t 75thPcRequestTime: {}", nsToMs(snapshot.get75thPercentile()));
+    log.info("\t 95thPcRequestTime: {}", nsToMs(snapshot.get95thPercentile()));
+    log.info("\t 99thPcRequestTime: {}", nsToMs(snapshot.get99thPercentile()));
+    log.info("\t 999thPcRequestTime: {}", nsToMs(snapshot.get999thPercentile()));
+  }
+
+  private static long nsToMs(double ns) {
+    return TimeUnit.NANOSECONDS.convert((long)ns, TimeUnit.MILLISECONDS);
   }
 
   private void close(MockZKController mockController) {

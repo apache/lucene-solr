@@ -23,7 +23,8 @@ limitations under the License.
 
       <div id="file-content" class="clearfix">
 
-        <div id="prop" ng-show="znode.prop && showData">
+        <a id="toggle" ng-click="showProps = !showProps" ng-show="showData" ng-class="showProps ? 'minus' : 'plus'">Metadata</a>
+        <div id="prop" ng-show="znode.prop && showData && showProps">
           <ul>
             <li ng-class="{odd:$odd}" ng-repeat="(key, prop) in znode.prop">
               <dl class="clearfix">

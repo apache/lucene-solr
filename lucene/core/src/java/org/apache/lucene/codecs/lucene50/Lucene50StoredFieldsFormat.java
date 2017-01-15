@@ -176,7 +176,7 @@ public final class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
   @Override
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context) throws IOException {
     String previous = si.putAttribute(MODE_KEY, mode.name());
-    if (previous != null) {
+    if (previous != null && previous.equals(mode.name()) == false) {
       throw new IllegalStateException("found existing value for " + MODE_KEY + " for segment: " + si.name +
                                       "old=" + previous + ", new=" + mode.name());
     }

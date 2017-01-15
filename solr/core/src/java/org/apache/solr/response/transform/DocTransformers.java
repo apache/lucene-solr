@@ -76,4 +76,16 @@ public class DocTransformers extends DocTransformer
       a.transform( doc, docid, score);
     }
   }
+
+  /** Returns true if and only if at least 1 child transformer returns true */
+  @Override
+  public boolean needsSolrIndexSearcher() {
+    for( DocTransformer kid : children ) {
+      if (kid.needsSolrIndexSearcher()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
 }

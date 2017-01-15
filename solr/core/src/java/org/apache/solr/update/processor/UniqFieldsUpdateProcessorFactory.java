@@ -22,6 +22,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
+
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
 
 /**
  * Removes duplicate values found in fields matching the specified conditions.  
@@ -46,10 +49,8 @@ import org.apache.solr.core.SolrCore;
 public class UniqFieldsUpdateProcessorFactory extends FieldValueSubsetUpdateProcessorFactory {
 
   @Override
-  public FieldMutatingUpdateProcessor.FieldNameSelector 
-    getDefaultSelector(final SolrCore core) {
-    
-    return FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
+  public FieldNameSelector getDefaultSelector(SolrCore core) {
+    return SELECT_NO_FIELDS;
   }
 
   @Override

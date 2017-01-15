@@ -17,7 +17,10 @@
 package org.apache.lucene.search;
 
 
+import java.io.IOException;
+
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FilterNumericDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.util.NumericUtils;
@@ -78,17 +81,17 @@ public class SortedNumericSelector {
     // undo the numericutils sortability
     switch(numericType) {
       case FLOAT:
-        return new NumericDocValues() {
+        return new FilterNumericDocValues(view) {
           @Override
-          public long get(int docID) {
-            return NumericUtils.sortableFloatBits((int) view.get(docID));
+          public long longValue() throws IOException {
+            return NumericUtils.sortableFloatBits((int) in.longValue());
           }
         };
       case DOUBLE:
-        return new NumericDocValues() {
+        return new FilterNumericDocValues(view) {
           @Override
-          public long get(int docID) {
-            return NumericUtils.sortableDoubleBits(view.get(docID));
+          public long longValue() throws IOException {
+            return NumericUtils.sortableDoubleBits(in.longValue());
           }
         };
       default:
@@ -99,39 +102,111 @@ public class SortedNumericSelector {
   /** Wraps a SortedNumericDocValues and returns the first value (min) */
   static class MinValue extends NumericDocValues {
     final SortedNumericDocValues in;
+    private long value;
     
     MinValue(SortedNumericDocValues in) {
       this.in = in;
     }
 
     @Override
-    public long get(int docID) {
-      in.setDocument(docID);
-      if (in.count() == 0) {
-        return 0; // missing
-      } else {
-        return in.valueAt(0);
-      }
+    public int docID() {
+      return in.docID();
     }
-  }
-  
+
+    @Override
+    public int nextDoc() throws IOException {
+      int docID = in.nextDoc();
+      if (docID != NO_MORE_DOCS) {
+        value = in.nextValue();
+      }
+      return docID;
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      int docID = in.advance(target);
+      if (docID != NO_MORE_DOCS) {
+        value = in.nextValue();
+      }
+      return docID;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (in.advanceExact(target)) {
+        value = in.nextValue();
+        return true;
+      }
+      return false;
+    }
+
+    @Override
+    public long cost() {
+      return in.cost();
+    }
+
+    @Override
+    public long longValue() {
+      return value;
+    }
+  }    
+
   /** Wraps a SortedNumericDocValues and returns the last value (max) */
   static class MaxValue extends NumericDocValues {
     final SortedNumericDocValues in;
+    private long value;
     
     MaxValue(SortedNumericDocValues in) {
       this.in = in;
     }
 
     @Override
-    public long get(int docID) {
-      in.setDocument(docID);
-      final int count = in.count();
-      if (count == 0) {
-        return 0; // missing
-      } else {
-        return in.valueAt(count-1);
+    public int docID() {
+      return in.docID();
+    }
+
+    private void setValue() throws IOException {
+      int count = in.docValueCount();
+      for(int i=0;i<count;i++) {
+        value = in.nextValue();
       }
     }
-  }
+
+    @Override
+    public int nextDoc() throws IOException {
+      int docID = in.nextDoc();
+      if (docID != NO_MORE_DOCS) {
+        setValue();
+      }
+      return docID;
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      int docID = in.advance(target);
+      if (docID != NO_MORE_DOCS) {
+        setValue();
+      }
+      return docID;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (in.advanceExact(target)) {
+        setValue();
+        return true;
+      }
+      return false;
+    }
+
+    @Override
+    public long cost() {
+      return in.cost();
+    }
+
+    @Override
+    public long longValue() {
+      return value;
+    }
+  }    
 }

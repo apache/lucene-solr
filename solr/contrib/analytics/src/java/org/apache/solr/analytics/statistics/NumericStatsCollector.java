@@ -16,6 +16,7 @@
  */
 package org.apache.solr.analytics.statistics;
 
+import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.queries.function.ValueSource;
@@ -33,7 +34,7 @@ public class NumericStatsCollector extends MinMaxStatsCollector {
     super(source, statsList);
   }
   
-  public void collect(int doc) {
+  public void collect(int doc) throws IOException {
     super.collect(doc);
     double value = function.doubleVal(doc);
     sum += value;

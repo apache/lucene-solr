@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.DOMUtil;
 import org.w3c.dom.Node;
@@ -33,7 +34,7 @@ import static org.apache.solr.schema.FieldType.CLASS_NAME;
  * An Object which represents a Plugin of any type 
  *
  */
-public class PluginInfo implements MapSerializable{
+public class PluginInfo implements MapSerializable {
   public final String name, className, type;
   public final NamedList initArgs;
   public final Map<String, String> attributes;
@@ -110,6 +111,7 @@ public class PluginInfo implements MapSerializable{
     if (type != null) sb.append("type = " + type + ",");
     if (name != null) sb.append("name = " + name + ",");
     if (className != null) sb.append("class = " + className + ",");
+    if (attributes != null && attributes.size() > 0) sb.append("attributes = " + attributes + ",");
     if (initArgs != null && initArgs.size() > 0) sb.append("args = " + initArgs);
     sb.append("}");
     return sb.toString();
@@ -128,21 +130,23 @@ public class PluginInfo implements MapSerializable{
     List<PluginInfo> l = getChildren(type);
     return  l.isEmpty() ? null:l.get(0);
   }
- public Map<String,Object> toMap(){
-    LinkedHashMap m = new LinkedHashMap(attributes);
+
+  public Map<String, Object> toMap(Map<String, Object> map) {
+    map.putAll(attributes);
+    Map m = map;
     if(initArgs!=null ) m.putAll(initArgs.asMap(3));
     if(children != null){
       for (PluginInfo child : children) {
         Object old = m.get(child.name);
         if(old == null){
-          m.put(child.name, child.toMap());
+          m.put(child.name, child.toMap(new LinkedHashMap<>()));
         } else if (old instanceof List) {
           List list = (List) old;
-          list.add(child.toMap());
+          list.add(child.toMap(new LinkedHashMap<>()));
         }  else {
           ArrayList l = new ArrayList();
           l.add(old);
-          l.add(child.toMap());
+          l.add(child.toMap(new LinkedHashMap<>()));
           m.put(child.name,l);
         }
       }
@@ -178,7 +182,8 @@ public class PluginInfo implements MapSerializable{
 
   }
   public PluginInfo copy() {
-    PluginInfo result = new PluginInfo(type, attributes, initArgs.clone(), children);
+    PluginInfo result = new PluginInfo(type, attributes,
+        initArgs != null ? initArgs.clone() : null, children);
     result.isFromSolrConfig = isFromSolrConfig;
     return result;
   }

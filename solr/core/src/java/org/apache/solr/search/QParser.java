@@ -32,11 +32,17 @@ import java.util.*;
  *
  */
 public abstract class QParser {
+  /** @lucene.experimental  */
+  public static final int FLAG_FILTER = 0x01;
+
   protected String qstr;
   protected SolrParams params;
   protected SolrParams localParams;
   protected SolrQueryRequest req;
   protected int recurseCount;
+
+  /** @lucene.experimental  */
+  protected int flags;
 
   protected Query query;
 
@@ -83,6 +89,28 @@ public abstract class QParser {
     this.req = req;
   }
 
+  /** @lucene.experimental  */
+  public void setFlags(int flags) {
+    this.flags = flags;
+  }
+
+  /** @lucene.experimental  */
+  public int getFlags() {
+    return flags;
+  }
+
+  /** @lucene.experimental Query is in the context of a filter, where scores don't matter */
+  public boolean isFilter() {
+    return (flags & FLAG_FILTER) != 0;
+  }
+
+  /** @lucene.experimental  */
+  public void setIsFilter(boolean isFilter) {
+    if (isFilter)
+      flags |= FLAG_FILTER;
+    else
+      flags &= ~FLAG_FILTER;
+  }
 
   private static void addTag(Map<Object,Collection<Object>> tagMap, Object key, Object val) {
     Collection<Object> lst = tagMap.get(key);
@@ -201,6 +229,7 @@ public abstract class QParser {
       defaultType = localParams.get(QueryParsing.DEFTYPE);
     }
     QParser nestedParser = getParser(q, defaultType, getReq());
+    nestedParser.flags = this.flags;  // TODO: this would be better passed in to the constructor... change to a ParserContext object?
     nestedParser.recurseCount = recurseCount;
     recurseCount--;
     return nestedParser;
@@ -209,8 +238,18 @@ public abstract class QParser {
   /**
    * @param useGlobalParams look up sort, start, rows in global params if not in local params
    * @return the sort specification
+   * @deprecated Use the not misleadingly named getSortSpec() function instead.
    */
+  @Deprecated
   public SortSpec getSort(boolean useGlobalParams) throws SyntaxError {
+    return getSortSpec(useGlobalParams);
+  }
+
+  /**
+   * @param useGlobalParams look up sort, start, rows in global params if not in local params
+   * @return the sort specification
+   */
+  public SortSpec getSortSpec(boolean useGlobalParams) throws SyntaxError {
     getQuery(); // ensure query is parsed first
 
     String sortStr = null;
@@ -261,6 +300,17 @@ public abstract class QParser {
 
   public void addDebugInfo(NamedList<Object> debugInfo) {
     debugInfo.add("QParser", this.getClass().getSimpleName());
+  }
+
+  /** Create a <code>QParser</code> to parse <code>qstr</code>,
+   * using the "lucene" (QParserPlugin.DEFAULT_QTYPE) query parser.
+   * The query parser may be overridden by local parameters in the query
+   * string itself.  For example if
+   * qstr=<code>{!prefix f=myfield}foo</code>
+   * then the prefix query parser will be used.
+   */
+  public static QParser getParser(String qstr, SolrQueryRequest req) throws SyntaxError {
+    return getParser(qstr, QParserPlugin.DEFAULT_QTYPE, req);
   }
 
   /** Create a <code>QParser</code> to parse <code>qstr</code>,

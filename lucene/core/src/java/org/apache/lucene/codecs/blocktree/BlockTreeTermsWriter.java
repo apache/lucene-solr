@@ -48,7 +48,6 @@ import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
-import org.apache.lucene.util.packed.PackedInts;
 
 /*
   TODO:
@@ -456,8 +455,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
       final Builder<BytesRef> indexBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1,
                                                            0, 0, true, false, Integer.MAX_VALUE,
-                                                           outputs, false,
-                                                           PackedInts.COMPACT, true, 15);
+                                                           outputs, true, 15);
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
       //}

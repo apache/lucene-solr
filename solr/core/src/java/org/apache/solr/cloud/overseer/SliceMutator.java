@@ -164,9 +164,10 @@ public class SliceMutator {
       log.info("Update shard state " + key + " to " + message.getStr(key));
       Map<String, Object> props = slice.shallowCopy();
       
-      if (Slice.State.getState((String) props.get(ZkStateReader.STATE_PROP)) == Slice.State.RECOVERY
-          && Slice.State.getState(message.getStr(key)) == Slice.State.ACTIVE) {
+      if (Slice.State.getState(message.getStr(key)) == Slice.State.ACTIVE) {
         props.remove(Slice.PARENT);
+        props.remove("shard_parent_node");
+        props.remove("shard_parent_zk_session");
       }
       props.put(ZkStateReader.STATE_PROP, message.getStr(key));
       Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props);
@@ -183,7 +184,6 @@ public class SliceMutator {
     String routeKey = message.getStr("routeKey");
     String range = message.getStr("range");
     String targetCollection = message.getStr("targetCollection");
-    String targetShard = message.getStr("targetShard");
     String expireAt = message.getStr("expireAt");
 
     DocCollection collection = clusterState.getCollection(collectionName);

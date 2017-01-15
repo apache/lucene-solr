@@ -43,6 +43,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexOptions;
 
 /**
  * Creates {@link Document} objects. Uses a {@link ContentSource} to generate
@@ -58,6 +59,8 @@ import org.apache.lucene.document.TextField;
  * (default <b>true</b>).
  * <li><b>doc.body.tokenized</b> - specifies whether the
  * body field should be tokenized (default = <b>doc.tokenized</b>).
+ * <li><b>doc.body.offsets</b> - specifies whether to add offsets into the postings index
+ *  for the body field.  It is useful for highlighting.  (default <b>false</b>)
  * <li><b>doc.tokenized.norms</b> - specifies whether norms should be stored in
  * the index or not. (default <b>false</b>).
  * <li><b>doc.body.tokenized.norms</b> - specifies whether norms should be
@@ -424,6 +427,7 @@ public class DocMaker implements Closeable {
     boolean bodyTokenized = config.get("doc.body.tokenized", tokenized);
     boolean norms = config.get("doc.tokenized.norms", false);
     boolean bodyNorms = config.get("doc.body.tokenized.norms", true);
+    boolean bodyOffsets = config.get("doc.body.offsets", false);
     boolean termVec = config.get("doc.term.vector", false);
     boolean termVecPositions = config.get("doc.term.vector.positions", false);
     boolean termVecOffsets = config.get("doc.term.vector.offsets", false);
@@ -441,6 +445,9 @@ public class DocMaker implements Closeable {
     bodyValType.setStored(bodyStored);
     bodyValType.setTokenized(bodyTokenized);
     bodyValType.setOmitNorms(!bodyNorms);
+    if (bodyTokenized && bodyOffsets) {
+      bodyValType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    }
     bodyValType.setStoreTermVectors(termVec);
     bodyValType.setStoreTermVectorPositions(termVecPositions);
     bodyValType.setStoreTermVectorOffsets(termVecOffsets);

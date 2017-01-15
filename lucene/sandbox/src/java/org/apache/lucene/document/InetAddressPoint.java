@@ -41,7 +41,7 @@ import org.apache.lucene.util.StringHelper;
  *   <li>{@link #newExactQuery(String, InetAddress)} for matching an exact network address.
  *   <li>{@link #newPrefixQuery(String, InetAddress, int)} for matching a network based on CIDR prefix.
  *   <li>{@link #newRangeQuery(String, InetAddress, InetAddress)} for matching arbitrary network address ranges.
- *   <li>{@link #newSetQuery(String, InetAddress...)} for matching a set of 1D values.
+ *   <li>{@link #newSetQuery(String, InetAddress...)} for matching a set of network addresses.
  * </ul>
  * <p>
  * This field supports both IPv4 and IPv6 addresses: IPv4 addresses are converted

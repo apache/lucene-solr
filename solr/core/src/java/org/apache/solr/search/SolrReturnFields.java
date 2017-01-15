@@ -35,9 +35,11 @@ import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.response.transform.ValueSourceAugmenter;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -64,6 +66,7 @@ public class SolrReturnFields extends ReturnFields {
   protected DocTransformer transformer;
   protected boolean _wantsScore = false;
   protected boolean _wantsAllFields = false;
+  protected Map<String,String> renameFields = Collections.emptyMap();
 
   public SolrReturnFields() {
     _wantsAllFields = true;
@@ -129,6 +132,9 @@ public class SolrReturnFields extends ReturnFields {
       }
       augmenters.addTransformer( new RenameFieldTransformer( from, to, copy ) );
     }
+    if (rename.size() > 0 ) {
+      renameFields = rename.asShallowMap();
+    }
     if( !_wantsAllFields && !globs.isEmpty() ) {
       // TODO??? need to fill up the fields with matching field names in the index
       // and add them to okFieldNames?
@@ -143,6 +149,11 @@ public class SolrReturnFields extends ReturnFields {
     else if( augmenters.size() > 1 ) {
       transformer = augmenters;
     }
+  }
+
+  @Override
+  public Map<String,String> getFieldRenames() {
+    return renameFields;
   }
 
   // like getId, but also accepts dashes for legacy fields

@@ -51,11 +51,13 @@
     <dependency org="org.slf4j" name="slf4j-log4j12" rev="${/org.slf4j/slf4j-log4j12}" conf="compile"/>
     <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="compile"/>
 
+    <!-- TODO: Nuke those 2 deps, please!!!! -->
     <dependency org="org.easymock" name="easymock" rev="${/org.easymock/easymock}" conf="test"/>
     <dependency org="cglib" name="cglib-nodep" rev="${/cglib/cglib-nodep}" conf="test"/>
-    <dependency org="org.objenesis" name="objenesis" rev="${/org.objenesis/objenesis}" conf="test"/>
 
     <dependency org="org.mockito" name="mockito-core" rev="${/org.mockito/mockito-core}" conf="test"/>
+    <dependency org="net.bytebuddy" name="byte-buddy" rev="${/net.bytebuddy/byte-buddy}" conf="test"/>
+    <dependency org="org.objenesis" name="objenesis" rev="${/org.objenesis/objenesis}" conf="test"/>
 
     <dependency org="com.fasterxml.jackson.core" name="jackson-core" rev="${/com.fasterxml.jackson.core/jackson-core}" conf="compile"/>
     <dependency org="com.fasterxml.jackson.core" name="jackson-databind" rev="${/com.fasterxml.jackson.core/jackson-databind}" conf="test"/>
@@ -93,8 +95,8 @@
     <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="test.DfsMiniCluster"/>
     <dependency org="io.netty" name="netty-all" rev="${/io.netty/netty-all}" conf="test.DfsMiniCluster"/>
     <dependency org="org.apache.htrace" name="htrace-core" rev="${/org.apache.htrace/htrace-core}" conf="test.DfsMiniCluster"/>
-    <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="${/org.codehaus.jackson/jackson-core-asl}" conf="test.DfsMiniCluster" />
-    <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="${/org.codehaus.jackson/jackson-mapper-asl}" conf="test.DfsMiniCluster" />
+    <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="${/org.codehaus.jackson/jackson-core-asl}" conf="compile" />
+    <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="${/org.codehaus.jackson/jackson-mapper-asl}" conf="compile" />
  
     <!-- Hadoop MiniKdc Dependencies-->
     <dependency org="org.apache.hadoop" name="hadoop-minikdc" rev="${/org.apache.hadoop/hadoop-minikdc}" conf="test.MiniKdc"/>
@@ -133,6 +135,10 @@
     <dependency org="org.bouncycastle" name="bcprov-jdk15" rev="${/org.bouncycastle/bcprov-jdk15}" conf="test.MiniKdc"/>
     <dependency org="antlr" name="antlr" rev="${/antlr/antlr}" conf="test.MiniKdc"/>
     <dependency org="net.sf.ehcache" name="ehcache-core" rev="${/net.sf.ehcache/ehcache-core}" conf="test.MiniKdc"/>
+
+    <dependency org="org.apache.curator" name="curator-framework" rev="${/org.apache.curator/curator-framework}" conf="compile"/>
+    <dependency org="org.apache.curator" name="curator-client" rev="${/org.apache.curator/curator-client}" conf="compile"/>
+    <dependency org="org.apache.curator" name="curator-recipes" rev="${/org.apache.curator/curator-recipes}" conf="compile"/>
 
     <!-- StatsComponents percentiles Dependencies-->
     <dependency org="com.tdunning" name="t-digest" rev="${/com.tdunning/t-digest}" conf="compile->*"/>

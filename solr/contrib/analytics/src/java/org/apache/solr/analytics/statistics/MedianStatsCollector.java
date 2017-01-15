@@ -16,6 +16,7 @@
  */
 package org.apache.solr.analytics.statistics;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -52,7 +53,7 @@ public class MedianStatsCollector extends AbstractDelegatingStatsCollector{
   }
   
   @Override
-  public void collect(int doc) {
+  public void collect(int doc) throws IOException {
     super.collect(doc);
     if (value.exists) {
       values.add(function.doubleVal(doc));

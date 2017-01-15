@@ -16,8 +16,11 @@
  */
 package org.apache.solr.security;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
+import javax.servlet.FilterChain;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -26,12 +29,6 @@ import java.security.PublicKey;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
@@ -57,6 +54,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 
 public class PKIAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
@@ -89,12 +88,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to compare against time in header")
   @Override
-  public void doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
+  public boolean doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
 
     String requestURI = ((HttpServletRequest) request).getRequestURI();
     if (requestURI.endsWith(PATH)) {
       filterChain.doFilter(request, response);
-      return;
+      return true;
     }
     long receivedTime = System.currentTimeMillis();
     String header = ((HttpServletRequest) request).getHeader(HEADER);
@@ -102,14 +101,14 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       //this must not happen
       log.error("No SolrAuth header present");
       filterChain.doFilter(request, response);
-      return;
+      return true;
     }
 
     List<String> authInfo = StrUtils.splitWS(header, false);
     if (authInfo.size() < 2) {
       log.error("Invalid SolrAuth Header {}", header);
       filterChain.doFilter(request, response);
-      return;
+      return true;
     }
 
     String nodeName = authInfo.get(0);
@@ -119,12 +118,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     if (decipher == null) {
       log.error("Could not decipher a header {} . No principal set", header);
       filterChain.doFilter(request, response);
-      return;
+      return true;
     }
     if ((receivedTime - decipher.timestamp) > MAX_VALIDITY) {
       log.error("Invalid key request timestamp: {} , received timestamp: {} , TTL: {}", decipher.timestamp, receivedTime, MAX_VALIDITY);
         filterChain.doFilter(request, response);
-        return;
+        return true;
     }
 
     final Principal principal = "$".equals(decipher.userName) ?
@@ -132,6 +131,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
         new BasicUserPrincipal(decipher.userName);
 
     filterChain.doFilter(getWrapper((HttpServletRequest) request, principal), response);
+    return true;
   }
 
   private static HttpServletRequestWrapper getWrapper(final HttpServletRequest request, final Principal principal) {
@@ -197,7 +197,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     try {
       String uri = url + PATH + "?wt=json&omitHeader=true";
       log.debug("Fetching fresh public key from : {}",uri);
-      HttpResponse rsp = cores.getUpdateShardHandler().getHttpClient().execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
+      HttpResponse rsp = cores.getUpdateShardHandler().getHttpClient()
+          .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
       byte[] bytes = EntityUtils.toByteArray(rsp.getEntity());
       Map m = (Map) Utils.fromJSON(bytes);
       String key = (String) m.get("key");
@@ -234,6 +235,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       public String getDescription() {
         return "Return the public key of this server";
       }
+
+      @Override
+      public Category getCategory() {
+        return Category.ADMIN;
+      }
+
     };
   }
 

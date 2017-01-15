@@ -89,16 +89,14 @@ public abstract class PointValues {
   /** Return the cumulated number of points across all leaves of the given
    * {@link IndexReader}. Leaves that do not have points for the given field
    * are ignored.
-   *  @see PointValues#size(String) */
+   *  @see PointValues#size() */
   public static long size(IndexReader reader, String field) throws IOException {
     long size = 0;
     for (LeafReaderContext ctx : reader.leaves()) {
-      FieldInfo info = ctx.reader().getFieldInfos().fieldInfo(field);
-      if (info == null || info.getPointDimensionCount() == 0) {
-        continue;
+      PointValues values = ctx.reader().getPointValues(field);
+      if (values != null) {
+        size += values.size();
       }
-      PointValues values = ctx.reader().getPointValues();
-      size += values.size(field);
     }
     return size;
   }
@@ -106,16 +104,14 @@ public abstract class PointValues {
   /** Return the cumulated number of docs that have points across all leaves
    * of the given {@link IndexReader}. Leaves that do not have points for the
    * given field are ignored.
-   *  @see PointValues#getDocCount(String) */
+   *  @see PointValues#getDocCount() */
   public static int getDocCount(IndexReader reader, String field) throws IOException {
     int count = 0;
     for (LeafReaderContext ctx : reader.leaves()) {
-      FieldInfo info = ctx.reader().getFieldInfos().fieldInfo(field);
-      if (info == null || info.getPointDimensionCount() == 0) {
-        continue;
+      PointValues values = ctx.reader().getPointValues(field);
+      if (values != null) {
+        count += values.getDocCount();
       }
-      PointValues values = ctx.reader().getPointValues();
-      count += values.getDocCount(field);
     }
     return count;
   }
@@ -123,24 +119,23 @@ public abstract class PointValues {
   /** Return the minimum packed values across all leaves of the given
    * {@link IndexReader}. Leaves that do not have points for the given field
    * are ignored.
-   *  @see PointValues#getMinPackedValue(String) */
+   *  @see PointValues#getMinPackedValue() */
   public static byte[] getMinPackedValue(IndexReader reader, String field) throws IOException {
     byte[] minValue = null;
     for (LeafReaderContext ctx : reader.leaves()) {
-      FieldInfo info = ctx.reader().getFieldInfos().fieldInfo(field);
-      if (info == null || info.getPointDimensionCount() == 0) {
+      PointValues values = ctx.reader().getPointValues(field);
+      if (values == null) {
         continue;
       }
-      PointValues values = ctx.reader().getPointValues();
-      byte[] leafMinValue = values.getMinPackedValue(field);
+      byte[] leafMinValue = values.getMinPackedValue();
       if (leafMinValue == null) {
         continue;
       }
       if (minValue == null) {
         minValue = leafMinValue.clone();
       } else {
-        final int numDimensions = values.getNumDimensions(field);
-        final int numBytesPerDimension = values.getBytesPerDimension(field);
+        final int numDimensions = values.getNumDimensions();
+        final int numBytesPerDimension = values.getBytesPerDimension();
         for (int i = 0; i < numDimensions; ++i) {
           int offset = i * numBytesPerDimension;
           if (StringHelper.compare(numBytesPerDimension, leafMinValue, offset, minValue, offset) < 0) {
@@ -155,24 +150,23 @@ public abstract class PointValues {
   /** Return the maximum packed values across all leaves of the given
    * {@link IndexReader}. Leaves that do not have points for the given field
    * are ignored.
-   *  @see PointValues#getMaxPackedValue(String) */
+   *  @see PointValues#getMaxPackedValue() */
   public static byte[] getMaxPackedValue(IndexReader reader, String field) throws IOException {
     byte[] maxValue = null;
     for (LeafReaderContext ctx : reader.leaves()) {
-      FieldInfo info = ctx.reader().getFieldInfos().fieldInfo(field);
-      if (info == null || info.getPointDimensionCount() == 0) {
+      PointValues values = ctx.reader().getPointValues(field);
+      if (values == null) {
         continue;
       }
-      PointValues values = ctx.reader().getPointValues();
-      byte[] leafMaxValue = values.getMaxPackedValue(field);
+      byte[] leafMaxValue = values.getMaxPackedValue();
       if (leafMaxValue == null) {
         continue;
       }
       if (maxValue == null) {
         maxValue = leafMaxValue.clone();
       } else {
-        final int numDimensions = values.getNumDimensions(field);
-        final int numBytesPerDimension = values.getBytesPerDimension(field);
+        final int numDimensions = values.getNumDimensions();
+        final int numBytesPerDimension = values.getBytesPerDimension();
         for (int i = 0; i < numDimensions; ++i) {
           int offset = i * numBytesPerDimension;
           if (StringHelper.compare(numBytesPerDimension, leafMaxValue, offset, maxValue, offset) > 0) {
@@ -224,23 +218,23 @@ public abstract class PointValues {
   /** Finds all documents and points matching the provided visitor.
    *  This method does not enforce live documents, so it's up to the caller
    *  to test whether each document is deleted, if necessary. */
-  public abstract void intersect(String fieldName, IntersectVisitor visitor) throws IOException;
+  public abstract void intersect(IntersectVisitor visitor) throws IOException;
 
   /** Returns minimum value for each dimension, packed, or null if {@link #size} is <code>0</code> */
-  public abstract byte[] getMinPackedValue(String fieldName) throws IOException;
+  public abstract byte[] getMinPackedValue() throws IOException;
 
   /** Returns maximum value for each dimension, packed, or null if {@link #size} is <code>0</code> */
-  public abstract byte[] getMaxPackedValue(String fieldName) throws IOException;
+  public abstract byte[] getMaxPackedValue() throws IOException;
 
   /** Returns how many dimensions were indexed */
-  public abstract int getNumDimensions(String fieldName) throws IOException;
+  public abstract int getNumDimensions() throws IOException;
 
   /** Returns the number of bytes per dimension */
-  public abstract int getBytesPerDimension(String fieldName) throws IOException;
+  public abstract int getBytesPerDimension() throws IOException;
 
-  /** Returns the total number of indexed points across all documents in this field. */
-  public abstract long size(String fieldName);
+  /** Returns the total number of indexed points across all documents. */
+  public abstract long size();
 
-  /** Returns the total number of documents that have indexed at least one point for this field. */
-  public abstract int getDocCount(String fieldName);
+  /** Returns the total number of documents that have indexed at least one point. */
+  public abstract int getDocCount();
 }

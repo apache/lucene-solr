@@ -28,10 +28,7 @@ import java.util.Set;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.LegacyIntField;
-import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
@@ -43,9 +40,12 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.legacy.LegacyFieldType;
+import org.apache.lucene.legacy.LegacyIntField;
+import org.apache.lucene.legacy.LegacyLongField;
+import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
@@ -75,11 +75,11 @@ public class TestUninvertingReader extends LuceneTestCase {
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
     
-    v.setDocument(0);
+    assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
-    v.setDocument(1);
+    assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
@@ -117,11 +117,11 @@ public class TestUninvertingReader extends LuceneTestCase {
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
     
-    v.setDocument(0);
+    assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
-    v.setDocument(1);
+    assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
@@ -158,11 +158,11 @@ public class TestUninvertingReader extends LuceneTestCase {
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
     
-    v.setDocument(0);
+    assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
-    v.setDocument(1);
+    assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
@@ -199,11 +199,11 @@ public class TestUninvertingReader extends LuceneTestCase {
     SortedSetDocValues v = ar.getSortedSetDocValues("foo");
     assertEquals(2, v.getValueCount());
     
-    v.setDocument(0);
+    assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
     
-    v.setDocument(1);
+    assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
@@ -224,7 +224,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     final Directory dir = newDirectory();
     final IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     
-    final FieldType NO_TRIE_TYPE = new FieldType(LegacyIntField.TYPE_NOT_STORED);
+    final LegacyFieldType NO_TRIE_TYPE = new LegacyFieldType(LegacyIntField.TYPE_NOT_STORED);
     NO_TRIE_TYPE.setNumericPrecisionStep(Integer.MAX_VALUE);
 
     final Map<String,Type> UNINVERT_MAP = new LinkedHashMap<String,Type>();

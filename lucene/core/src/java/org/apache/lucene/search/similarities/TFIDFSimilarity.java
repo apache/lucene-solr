@@ -484,16 +484,14 @@ public abstract class TFIDFSimilarity extends Similarity {
    *         for each term.
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
-    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
-    float idf = 0.0f;
+    double idf = 0d; // sum into a double before casting into a float
     List<Explanation> subs = new ArrayList<>();
     for (final TermStatistics stat : termStats ) {
-      final long df = stat.docFreq();
-      final float termIdf = idf(df, docCount);
-      subs.add(Explanation.match(termIdf, "idf(docFreq=" + df + ", docCount=" + docCount + ")"));
-      idf += termIdf;
+      Explanation idfExplain = idfExplain(collectionStats, stat);
+      subs.add(idfExplain);
+      idf += idfExplain.getValue();
     }
-    return Explanation.match(idf, "idf(), sum of:", subs);
+    return Explanation.match((float) idf, "idf(), sum of:", subs);
   }
 
   /** Computes a score factor based on a term's document frequency (the number
@@ -592,10 +590,20 @@ public abstract class TFIDFSimilarity extends Similarity {
     }
     
     @Override
-    public float score(int doc, float freq) {
+    public float score(int doc, float freq) throws IOException {
       final float raw = tf(freq) * weightValue; // compute tf(f)*weight
-      
-      return norms == null ? raw : raw * decodeNormValue(norms.get(doc));  // normalize for field
+
+      if (norms == null) {
+        return raw;
+      } else {
+        long normValue;
+        if (norms.advanceExact(doc)) {
+          normValue = norms.longValue();
+        } else {
+          normValue = 0;
+        }
+        return raw * decodeNormValue(normValue);  // normalize for field
+      }
     }
     
     @Override
@@ -609,7 +617,7 @@ public abstract class TFIDFSimilarity extends Similarity {
     }
 
     @Override
-    public Explanation explain(int doc, Explanation freq) {
+    public Explanation explain(int doc, Explanation freq) throws IOException {
       return explainScore(doc, freq, stats, norms);
     }
   }
@@ -632,10 +640,17 @@ public abstract class TFIDFSimilarity extends Similarity {
     }
   }  
 
-  private Explanation explainField(int doc, Explanation freq, IDFStats stats, NumericDocValues norms) {
+  private Explanation explainField(int doc, Explanation freq, IDFStats stats, NumericDocValues norms) throws IOException {
     Explanation tfExplanation = Explanation.match(tf(freq.getValue()), "tf(freq="+freq.getValue()+"), with freq of:", freq);
+    float norm;
+    if (norms != null && norms.advanceExact(doc)) {
+      norm = decodeNormValue(norms.longValue());
+    } else {
+      norm = 1f;
+    }
+    
     Explanation fieldNormExpl = Explanation.match(
-        norms != null ? decodeNormValue(norms.get(doc)) : 1.0f,
+        norm,
         "fieldNorm(doc=" + doc + ")");
 
     return Explanation.match(
@@ -644,7 +659,7 @@ public abstract class TFIDFSimilarity extends Similarity {
         tfExplanation, stats.idf, fieldNormExpl);
   }
 
-  private Explanation explainScore(int doc, Explanation freq, IDFStats stats, NumericDocValues norms) {
+  private Explanation explainScore(int doc, Explanation freq, IDFStats stats, NumericDocValues norms) throws IOException {
     Explanation queryExpl = Explanation.match(stats.boost, "boost");
     Explanation fieldExpl = explainField(doc, freq, stats, norms);
     if (stats.boost == 1f) {

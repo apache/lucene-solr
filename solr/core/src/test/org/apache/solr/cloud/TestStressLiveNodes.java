@@ -132,7 +132,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   public void testStress() throws Exception {
 
     // do many iters, so we have "bursts" of adding nodes that we then check
-    final int numIters = atLeast(1000);
+    final int numIters = atLeast(TEST_NIGHTLY ? 1000 : 100);
     for (int iter = 0; iter < numIters; iter++) {
 
       // sanity check that ZK says there is in fact 1 live node

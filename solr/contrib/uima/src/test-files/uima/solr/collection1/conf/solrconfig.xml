@@ -632,64 +632,9 @@
       <str name="update.chain">uima</str>
     </lst>
   </requestHandler>
-
-
-  <!--
-    Analysis request handler. Since Solr 1.3. Use to return how a
-    document is analyzed. Useful for debugging and as a token server for
-    other types of applications. This is deprecated in favor of the
-    improved DocumentAnalysisRequestHandler and
-    FieldAnalysisRequestHandler <requestHandler name="/analysis"
-    class="solr.AnalysisRequestHandler" />
-  -->
-
-  <!--
-    An analysis handler that provides a breakdown of the analysis
-    process of provided docuemnts. This handler expects a (single)
-    content stream with the following format: <docs> <doc> <field
-    name="id">1</field> <field name="name">The Name</field> <field
-    name="text">The Text Value</field> <doc> <doc>...</doc>
-    <doc>...</doc> ... </docs> Note: Each document must contain a field
-    which serves as the unique key. This key is used in the returned
-    response to assoicate an analysis breakdown to the analyzed
-    document. Like the FieldAnalysisRequestHandler, this handler also
-    supports query analysis by sending either an "analysis.query" or "q"
-    request paraemter that holds the query text to be analyized. It also
-    supports the "analysis.showmatch" parameter which when set to true,
-    all field tokens that match the query tokens will be marked as a
-    "match".
-  -->
-  <requestHandler name="/analysis/document"
-    class="solr.DocumentAnalysisRequestHandler" />
-
-  <!--
-    RequestHandler that provides much the same functionality as
-    analysis.jsp. Provides the ability to specify multiple field types
-    and field names in the same request and outputs index-time and
-    query-time analysis for each of them. Request parameters are:
-    analysis.fieldname - The field name whose analyzers are to be used
-    analysis.fieldtype - The field type whose analyzers are to be used
-    analysis.fieldvalue - The text for index-time analysis q (or
-    analysis.q) - The text for query time analysis analysis.showmatch
-    (true|false) - When set to true and when query analysis is
-    performed, the produced tokens of the field value analysis will be
-    marked as "matched" for every token that is produces by the query
-    analysis
-  -->
-  <requestHandler name="/analysis/field" class="solr.FieldAnalysisRequestHandler" />
-
-
   <!-- CSV update handler, loaded on demand -->
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler"
     startup="lazy" />
-
-  <!-- Echo the request contents back to the client -->
-  <requestHandler name="/debug/dump" class="solr.DumpRequestHandler">
-    <lst name="defaults">
-      <str name="echoParams">explicit</str> <!-- for all params (including the default etc) use: 'all' -->
-      <str name="echoHandler">true</str>
-    </lst>
-  </requestHandler>
 
   <!--
     An example dedup update processor that creates the "id" field on the

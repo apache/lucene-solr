@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.search.join;
 
+import java.io.IOException;
+import java.util.Set;
+
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -24,6 +27,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
@@ -31,9 +35,6 @@ import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
-
-import java.io.IOException;
-import java.util.Set;
 
 final class GlobalOrdinalsWithScoreQuery extends Query {
 
@@ -102,13 +103,10 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
         '}';
   }
 
-  final class W extends Weight {
-
-    private final Weight approximationWeight;
+  final class W extends FilterWeight {
 
     W(Query query, Weight approximationWeight) {
-      super(query);
-      this.approximationWeight = approximationWeight;
+      super(query, approximationWeight);
     }
 
     @Override
@@ -120,11 +118,11 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
       if (values == null) {
         return Explanation.noMatch("Not a match");
       }
-
-      int segmentOrd = values.getOrd(doc);
-      if (segmentOrd == -1) {
+      if (values.advance(doc) != doc) {
         return Explanation.noMatch("Not a match");
       }
+
+      int segmentOrd = values.ordValue();
       BytesRef joinValue = values.lookupOrd(segmentOrd);
 
       int ord;
@@ -148,7 +146,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
         return null;
       }
 
-      Scorer approximationScorer = approximationWeight.scorer(context);
+      Scorer approximationScorer = in.scorer(context);
       if (approximationScorer == null) {
         return null;
       } else if (globalOrds != null) {
@@ -177,8 +175,12 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
 
         @Override
         public boolean matches() throws IOException {
-          final long segmentOrd = values.getOrd(approximation.docID());
-          if (segmentOrd != -1) {
+          int docID = approximation.docID();
+          if (docID > values.docID()) {
+            values.advance(docID);
+          }
+          if (docID == values.docID()) {
+            final long segmentOrd = values.ordValue();
             final int globalOrd = (int) segmentOrdToGlobalOrdLookup.get(segmentOrd);
             if (collector.match(globalOrd)) {
               score = collector.score(globalOrd);
@@ -211,8 +213,12 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
 
         @Override
         public boolean matches() throws IOException {
-          final int segmentOrd = values.getOrd(approximation.docID());
-          if (segmentOrd != -1) {
+          int docID = approximation.docID();
+          if (docID > values.docID()) {
+            values.advance(docID);
+          }
+          if (docID == values.docID()) {
+            final int segmentOrd = values.ordValue();
             if (collector.match(segmentOrd)) {
               score = collector.score(segmentOrd);
               return true;

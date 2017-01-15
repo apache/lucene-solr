@@ -1,0 +1,18 @@
+[{
+  "name" : "user_device_smartphone",
+  "class":"org.apache.solr.ltr.feature.ValueFeature",
+  "params" : {
+    "value": "${user_device_smartphone}"
+  }
+},
+  {
+    "name" : "user_device_tablet",
+    "class":"org.apache.solr.ltr.feature.ValueFeature",
+    "params" : {
+      "value": "${user_device_tablet}"
+    }
+  }
+
+
+
+]

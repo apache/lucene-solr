@@ -38,6 +38,11 @@ public class BlockCache {
   private final int numberOfBlocksPerBank;
   private final int maxEntries;
   private final Metrics metrics;
+  private volatile OnRelease onRelease;
+  
+  public static interface OnRelease {
+    public void release(BlockCacheKey blockCacheKey);
+  }
   
   public BlockCache(Metrics metrics, boolean directAllocation, long totalMemory) {
     this(metrics, directAllocation, totalMemory, _128M);
@@ -69,7 +74,7 @@ public class BlockCache {
     }
 
     RemovalListener<BlockCacheKey,BlockCacheLocation> listener = 
-        notification -> releaseLocation(notification.getValue());
+        notification -> releaseLocation(notification.getKey(), notification.getValue());
     cache = Caffeine.newBuilder()
         .removalListener(listener)
         .maximumSize(maxEntries)
@@ -81,7 +86,7 @@ public class BlockCache {
     cache.invalidate(key);
   }
   
-  private void releaseLocation(BlockCacheLocation location) {
+  private void releaseLocation(BlockCacheKey blockCacheKey, BlockCacheLocation location) {
     if (location == null) {
       return;
     }
@@ -90,6 +95,9 @@ public class BlockCache {
     location.setRemoved(true);
     locks[bankId].clear(block);
     lockCounters[bankId].decrementAndGet();
+    if (onRelease != null) {
+      onRelease.release(blockCacheKey);
+    }
     metrics.blockCacheEviction.incrementAndGet();
     metrics.blockCacheSize.decrementAndGet();
   }
@@ -199,5 +207,9 @@ public class BlockCache {
   
   public int getSize() {
     return cache.asMap().size();
+  }
+
+  void setOnRelease(OnRelease onRelease) {
+    this.onRelease = onRelease;
   }
 }

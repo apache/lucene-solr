@@ -19,7 +19,6 @@ package org.apache.solr.common.util;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Set;
-
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.SolrException;
@@ -67,6 +66,16 @@ public class RetryUtil {
       }
     }
     return false;
+  }
+
+  public static void retryUntil(String errorMessage, int retries, long pauseTime, TimeUnit pauseUnit, BooleanRetryCmd cmd)
+      throws InterruptedException {
+    while (retries-- > 0) {
+      if (cmd.execute())
+        return;
+      pauseUnit.sleep(pauseTime);
+    }
+    throw new SolrException(ErrorCode.SERVER_ERROR, errorMessage);
   }
   
   public static void retryOnBoolean(long timeoutms, long intervalms, BooleanRetryCmd cmd) {

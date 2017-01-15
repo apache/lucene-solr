@@ -23,6 +23,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -44,6 +45,7 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.Watcher;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.junit.After;
@@ -102,9 +104,10 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     }
     
   }
-  
+
   @BeforeClass
   public static void setUpOnce() throws Exception {
+    assumeFalse("SOLR-9893: EasyMock does not work with Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
     workQueueMock = createMock(OverseerTaskQueue.class);
     runningMapMock = createMock(DistributedMap.class);
     completedMapMock = createMock(DistributedMap.class);
@@ -114,7 +117,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     zkStateReaderMock = createMock(ZkStateReader.class);
     clusterStateMock = createMock(ClusterState.class);
     solrZkClientMock = createMock(SolrZkClient.class);
-
   }
   
   @AfterClass
@@ -143,9 +145,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     reset(zkStateReaderMock);
     reset(clusterStateMock);
     reset(solrZkClientMock);
-    underTest = new OverseerCollectionConfigSetProcessorToBeTested(zkStateReaderMock,
-        "1234", shardHandlerFactoryMock, ADMIN_PATH, workQueueMock, runningMapMock,
-        completedMapMock, failureMapMock);
+
     zkMap.clear();
     collectionsSet.clear();
   }
@@ -157,12 +157,12 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   }
   
   protected Set<String> commonMocks(int liveNodesCount) throws Exception {
-
     shardHandlerFactoryMock.getShardHandler();
     expectLastCall().andAnswer(() -> {
       log.info("SHARDHANDLER");
       return shardHandlerMock;
     }).anyTimes();
+    
     workQueueMock.peekTopN(EasyMock.anyInt(), anyObject(Predicate.class), EasyMock.anyLong());
     expectLastCall().andAnswer(() -> {
       Object result;
@@ -203,12 +203,12 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     
     workQueueMock.poll();
     expectLastCall().andAnswer(() -> queue.poll()).anyTimes();
-
-    zkStateReaderMock.getClusterState();
-    expectLastCall().andAnswer(() -> clusterStateMock).anyTimes();
     
     zkStateReaderMock.getZkClient();
     expectLastCall().andAnswer(() -> solrZkClientMock).anyTimes();
+    
+    zkStateReaderMock.getClusterState();
+    expectLastCall().andAnswer(() -> clusterStateMock).anyTimes();
 
     zkStateReaderMock.updateClusterState();
 
@@ -258,6 +258,18 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     }).anyTimes();
 
     solrZkClientMock.makePath(anyObject(String.class), anyObject(byte[].class), anyObject(CreateMode.class), anyBoolean());
+    expectLastCall().andAnswer(() -> {
+      String key = (String) getCurrentArguments()[0];
+      return key;
+    }).anyTimes();
+    
+    solrZkClientMock.makePath(anyObject(String.class), anyObject(byte[].class), anyObject(CreateMode.class), anyObject(Watcher.class), anyBoolean());
+    expectLastCall().andAnswer(() -> {
+      String key = (String) getCurrentArguments()[0];
+      return key;
+    }).anyTimes();
+    
+    solrZkClientMock.makePath(anyObject(String.class), anyObject(byte[].class), anyObject(CreateMode.class), anyObject(Watcher.class), anyBoolean(), anyBoolean(), anyInt());
     expectLastCall().andAnswer(() -> {
       String key = (String) getCurrentArguments()[0];
       return key;
@@ -518,12 +530,17 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           replicationFactor);
     }
     
-    replay(workQueueMock);
     replay(solrZkClientMock);
     replay(zkStateReaderMock);
+    replay(workQueueMock);
     replay(clusterStateMock);
     replay(shardHandlerFactoryMock);
     replay(shardHandlerMock);
+    
+    
+    underTest = new OverseerCollectionConfigSetProcessorToBeTested(zkStateReaderMock,
+        "1234", shardHandlerFactoryMock, ADMIN_PATH, workQueueMock, runningMapMock,
+        completedMapMock, failureMapMock);
 
 
     log.info("clusterstate " + clusterStateMock.hashCode());

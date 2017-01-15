@@ -16,42 +16,42 @@
  */
 package org.apache.solr.cloud.hdfs;
 
-import java.io.IOException;
-
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.RecoveryZkTest;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import com.carrotsearch.randomizedtesting.annotations.Nightly;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
 @Slow
-@Nightly
+//@Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@LogLevel("org.apache.solr.update.HdfsTransactionLog=DEBUG")
 public class HdfsRecoveryZkTest extends RecoveryZkTest {
+
   private static MiniDFSCluster dfsCluster;
   
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
     System.setProperty("solr.hdfs.blockcache.blocksperbank", "2048");
+
+    ZkConfigManager configManager = new ZkConfigManager(zkClient());
+    configManager.uploadConfigDir(configset("cloud-hdfs"), "conf");
+
+    System.setProperty("solr.hdfs.home", HdfsTestUtil.getDataDir(dfsCluster, "data"));
   }
   
   @AfterClass
   public static void teardownClass() throws Exception {
+    cluster.shutdown(); // need to close before the MiniDFSCluster
     HdfsTestUtil.teardownClass(dfsCluster);
     dfsCluster = null;
-  }
-
-  
-  @Override
-  protected String getDataDir(String dataDir) throws IOException {
-    return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
 
 }

@@ -68,6 +68,7 @@ function print_usage() {
   echo "    -host <host> (default: localhost)"
   echo "    -p or -port <port> (default: 8983)"
   echo "    -commit yes|no (default: yes)"
+  echo "    -u or -user <user:pass> (sets BasicAuth credentials)"
   # optimize intentionally omitted, but can be used as '-optimize yes' (default: no)
   echo ""
   echo "  Web crawl options:"
@@ -155,13 +156,23 @@ while [ $# -gt 0 ]; do
             ARGS+=("<add/>")
           fi
         fi
-      else
-        key="${1:1}"
+      elif [[ ("$1" == "-u" || "$1" == "-user") ]]; then
         shift
-#       echo "$1: PROP"
-        PROPS+=("-D$key=$1")
-        if [[ "$key" == "url" ]]; then
-          SOLR_URL=$1
+        PROPS+=("-Dbasicauth=$1")
+      else
+        if [[ "$1" == -D* ]] ; then
+          PROPS+=("$1")
+          if [[ "${1:2:4}" == "url=" ]]; then
+            SOLR_URL=${1:6}
+          fi
+        else          
+          key="${1:1}"
+          shift
+  #       echo "$1: PROP"
+          PROPS+=("-D$key=$1")
+          if [[ "$key" == "url" ]]; then
+            SOLR_URL=$1
+          fi
         fi
       fi
     else

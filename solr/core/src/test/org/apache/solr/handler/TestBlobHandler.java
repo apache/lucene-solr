@@ -16,6 +16,15 @@
  */
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -42,15 +51,6 @@ import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.lang.invoke.MethodHandles;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
@@ -81,6 +81,14 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
           "requestHandler",
           "/blob",
           "class")));
+      map = TestSolrConfigHandlerConcurrent.getAsMap(baseUrl + "/.system/schema/fields/blob", cloudClient);
+      assertNotNull(map);
+      assertEquals("blob", getObjectByPath(map, true, Arrays.asList(
+          "field",
+          "name")));
+      assertEquals("bytes", getObjectByPath(map, true, Arrays.asList(
+          "field",
+          "type")));
 
       byte[] bytarr = new byte[1024];
       for (int i = 0; i < bytarr.length; i++) bytarr[i] = (byte) (i % 127);

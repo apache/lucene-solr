@@ -28,6 +28,10 @@ import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.zookeeper.Watcher.Event.KeeperState.AuthFailed;
+import static org.apache.zookeeper.Watcher.Event.KeeperState.Disconnected;
+import static org.apache.zookeeper.Watcher.Event.KeeperState.Expired;
+
 public class ConnectionManager implements Watcher {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -100,13 +104,14 @@ public class ConnectionManager implements Watcher {
 
   @Override
   public void process(WatchedEvent event) {
-    if (log.isInfoEnabled()) {
-      log.info("Watcher " + this + " name:" + name + " got event " + event
-          + " path:" + event.getPath() + " type:" + event.getType());
+    if (event.getState() == AuthFailed || event.getState() == Disconnected || event.getState() == Expired) {
+      log.warn("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
+    } else {
+      log.debug("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
     }
     
     if (isClosed) {
-      log.info("Client->ZooKeeper status change trigger but we are already closed");
+      log.debug("Client->ZooKeeper status change trigger but we are already closed");
       return;
     }
     
@@ -115,12 +120,12 @@ public class ConnectionManager implements Watcher {
     if (state == KeeperState.SyncConnected) {
       connected();
       connectionStrategy.connected();
-    } else if (state == KeeperState.Expired) {
+    } else if (state == Expired) {
       // we don't call disconnected here, because we know we are expired
       connected = false;
       likelyExpiredState = LikelyExpiredState.EXPIRED;
       
-      log.info("Our previous ZooKeeper session was expired. Attempting to reconnect to recover relationship with ZooKeeper...");
+      log.warn("Our previous ZooKeeper session was expired. Attempting to reconnect to recover relationship with ZooKeeper...");
       
       if (beforeReconnect != null) {
         try {
@@ -131,7 +136,7 @@ public class ConnectionManager implements Watcher {
       }
       
       do {
-        // This loop will break iff a valid connection is made. If a connection is not made then it will repeat and
+        // This loop will break if a valid connection is made. If a connection is not made then it will repeat and
         // try again to create a new connection.
         try {
           connectionStrategy.reconnect(zkServerAddress,
@@ -176,7 +181,7 @@ public class ConnectionManager implements Watcher {
       } while (!isClosed);
       log.info("Connected:" + connected);
     } else if (state == KeeperState.Disconnected) {
-      log.info("zkClient has disconnected");
+      log.warn("zkClient has disconnected");
       disconnected();
       connectionStrategy.disconnected();
     } else if (state == KeeperState.AuthFailed) {
@@ -209,7 +214,7 @@ public class ConnectionManager implements Watcher {
 
   public synchronized void waitForConnected(long waitForConnection)
       throws TimeoutException {
-    log.info("Waiting for client to connect to ZooKeeper");
+    log.debug("Waiting for client to connect to ZooKeeper");
     long expire = System.nanoTime() + TimeUnit.NANOSECONDS.convert(waitForConnection, TimeUnit.MILLISECONDS);
     long left = 1;
     while (!connected && left > 0) {
@@ -227,7 +232,7 @@ public class ConnectionManager implements Watcher {
     if (!connected) {
       throw new TimeoutException("Could not connect to ZooKeeper " + zkServerAddress + " within " + waitForConnection + " ms");
     }
-    log.info("Client is connected to ZooKeeper");
+    log.debug("Client is connected to ZooKeeper");
   }
 
   public synchronized void waitForDisconnected(long timeout)

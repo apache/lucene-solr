@@ -24,8 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.MapWriter.EntryWriter;
+import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
@@ -50,7 +54,19 @@ public class JSONResponseWriter implements QueryResponseWriter {
 
   @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    JSONWriter w = new JSONWriter(writer, req, rsp);
+    final SolrParams params = req.getParams();
+    final String wrapperFunction = params.get(JSONWriter.JSON_WRAPPER_FUNCTION);
+    final String namedListStyle = params.get(JSONWriter.JSON_NL_STYLE, JSONWriter.JSON_NL_FLAT).intern();
+
+    final JSONWriter w;
+    if (namedListStyle.equals(JSONWriter.JSON_NL_ARROFNTV)) {
+      w = new ArrayOfNameTypeValueJSONWriter(
+          writer, req, rsp, wrapperFunction, namedListStyle, true);
+    } else {
+      w = new JSONWriter(
+          writer, req, rsp, wrapperFunction, namedListStyle);
+    }
+
     try {
       w.writeResponse();
     } finally {
@@ -62,31 +78,45 @@ public class JSONResponseWriter implements QueryResponseWriter {
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return contentType;
   }
+
+  public static PushWriter getPushWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
+    return new JSONWriter(writer, req, rsp);
+  }
+
 }
 
 class JSONWriter extends TextResponseWriter {
   protected String wrapperFunction;
-  private String namedListStyle;
+  final protected String namedListStyle;
 
-  private static final String JSON_NL_STYLE="json.nl";
-  private static final String JSON_NL_MAP="map";
-  private static final String JSON_NL_FLAT="flat";
-  private static final String JSON_NL_ARROFARR="arrarr";
-  private static final String JSON_NL_ARROFMAP="arrmap";
-  private static final String JSON_WRAPPER_FUNCTION="json.wrf";
+  static final String JSON_NL_STYLE="json.nl";
+  static final int    JSON_NL_STYLE_COUNT = 5; // for use by JSONWriterTest
+
+  static final String JSON_NL_MAP="map";
+  static final String JSON_NL_FLAT="flat";
+  static final String JSON_NL_ARROFARR="arrarr";
+  static final String JSON_NL_ARROFMAP="arrmap";
+  static final String JSON_NL_ARROFNTV="arrntv";
+
+  static final String JSON_WRAPPER_FUNCTION="json.wrf";
 
   public JSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
+    this(writer, req, rsp,
+        req.getParams().get(JSON_WRAPPER_FUNCTION),
+        req.getParams().get(JSON_NL_STYLE, JSON_NL_FLAT).intern());
+  }
+
+  public JSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp,
+                    String wrapperFunction, String namedListStyle) {
     super(writer, req, rsp);
-    namedListStyle = req.getParams().get(JSON_NL_STYLE, JSON_NL_FLAT).intern();
-    wrapperFunction = req.getParams().get(JSON_WRAPPER_FUNCTION);
+    this.wrapperFunction = wrapperFunction;
+    this.namedListStyle = namedListStyle;
   }
 
   public void writeResponse() throws IOException {
     if(wrapperFunction!=null) {
         writer.write(wrapperFunction + "(");
     }
-    Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
-    if(omitHeader != null && omitHeader) rsp.removeResponseHeader();
     writeNamedList(null, rsp.getValues());
     if(wrapperFunction!=null) {
         writer.write(')');
@@ -158,9 +188,10 @@ class JSONWriter extends TextResponseWriter {
   }
 
   /** Represents a NamedList directly as a JSON Object (essentially a Map)
-   * repeating any keys if they are repeated in the NamedList.  null is mapped
-   * to "".
+   * repeating any keys if they are repeated in the NamedList.
+   * null key is mapped to "".
    */ 
+  // NamedList("a"=1,"bar"="foo",null=3,null=null) => {"a":1,"bar":"foo","":3,"":null}
   protected void writeNamedListAsMapWithDups(String name, NamedList val) throws IOException {
     int sz = val.size();
     writeMapOpener(sz);
@@ -183,7 +214,7 @@ class JSONWriter extends TextResponseWriter {
   }
 
   // Represents a NamedList directly as an array of JSON objects...
-  // NamedList("a"=1,"b"=2,null=3) => [{"a":1},{"b":2},3]
+  // NamedList("a"=1,"b"=2,null=3,null=null) => [{"a":1},{"b":2},3,null]
   protected void writeNamedListAsArrMap(String name, NamedList val) throws IOException {
     int sz = val.size();
     indent();
@@ -218,7 +249,7 @@ class JSONWriter extends TextResponseWriter {
   }
 
   // Represents a NamedList directly as an array of JSON objects...
-  // NamedList("a"=1,"b"=2,null=3) => [["a",1],["b",2],[null,3]]
+  // NamedList("a"=1,"b"=2,null=3,null=null) => [["a",1],["b",2],[null,3],[null,null]]
   protected void writeNamedListAsArrArr(String name, NamedList val) throws IOException {
     int sz = val.size();
     indent();
@@ -262,10 +293,10 @@ class JSONWriter extends TextResponseWriter {
 
   // Represents a NamedList directly as an array with keys/values
   // interleaved.
-  // NamedList("a"=1,"b"=2,null=3) => ["a",1,"b",2,null,3]
+  // NamedList("a"=1,"b"=2,null=3,null=null) => ["a",1,"b",2,null,3,null,null]
   protected void writeNamedListAsFlat(String name, NamedList val) throws IOException {
     int sz = val.size();
-    writeArrayOpener(sz);
+    writeArrayOpener(sz*2);
     incLevel();
 
     for (int i=0; i<sz; i++) {
@@ -300,6 +331,9 @@ class JSONWriter extends TextResponseWriter {
       writeNamedListAsArrArr(name,val);
     } else if (namedListStyle==JSON_NL_ARROFMAP) {
       writeNamedListAsArrMap(name,val);
+    } else if (namedListStyle==JSON_NL_ARROFNTV) {
+      throw new UnsupportedOperationException(namedListStyle
+          + " namedListStyle must only be used with "+ArrayOfNameTypeValueJSONWriter.class.getSimpleName());
     }
   }
 
@@ -482,6 +516,53 @@ class JSONWriter extends TextResponseWriter {
     }
   }
 
+  @Override
+  public void writeIterator(IteratorWriter val) throws IOException {
+    writeArrayOpener(-1);
+    incLevel();
+    val.writeIter(new IteratorWriter.ItemWriter() {
+      boolean first = true;
+
+      @Override
+      public IteratorWriter.ItemWriter add(Object o) throws IOException {
+        if (!first) {
+          JSONWriter.this.indent();
+          JSONWriter.this.writeArraySeparator();
+        }
+        JSONWriter.this.writeVal(null, o);
+        first = false;
+        return this;
+      }
+    });
+    decLevel();
+    writeArrayCloser();
+  }
+
+  @Override
+  public void writeMap(MapWriter val)
+      throws IOException {
+    writeMapOpener(-1);
+    incLevel();
+
+    val.writeMap(new EntryWriter() {
+      boolean isFirst = true;
+
+      @Override
+      public EntryWriter put(String k, Object v) throws IOException {
+        if (isFirst) {
+          isFirst = false;
+        } else {
+          JSONWriter.this.writeMapSeparator();
+        }
+        if (doIndent) JSONWriter.this.indent();
+        JSONWriter.this.writeKey(k, true);
+        JSONWriter.this.writeVal(k, v);
+        return this;
+      }
+    });
+    decLevel();
+    writeMapCloser();
+  }
 
   @Override
   public void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
@@ -516,8 +597,20 @@ class JSONWriter extends TextResponseWriter {
   }
 
   @Override
+  public void writeArray(String name, List l) throws IOException {
+    writeArrayOpener(l.size());
+    writeJsonIter(l.iterator());
+    writeArrayCloser();
+  }
+
+  @Override
   public void writeArray(String name, Iterator val) throws IOException {
     writeArrayOpener(-1); // no trivial way to determine array size
+    writeJsonIter(val);
+    writeArrayCloser();
+  }
+
+  private void writeJsonIter(Iterator val) throws IOException {
     incLevel();
     boolean first=true;
     while( val.hasNext() ) {
@@ -529,7 +622,6 @@ class JSONWriter extends TextResponseWriter {
       first=false;
     }
     decLevel();
-    writeArrayCloser();
   }
 
   //
@@ -580,6 +672,166 @@ class JSONWriter extends TextResponseWriter {
     out.append(hexdigits[(ch)     & 0xf]);
   }
 
+}
+
+/**
+ * Writes NamedLists directly as an array of NameTypeValue JSON objects...
+ * NamedList("a"=1,"b"=null,null=3,null=null) =>
+ *      [{"name":"a","type":"int","value":1},
+ *       {"name":"b","type":"null","value":null},
+ *       {"name":null,"type":"int","value":3},
+ *       {"name":null,"type":"null","value":null}]
+ * NamedList("a"=1,"bar"="foo",null=3.4f) =>
+ *      [{"name":"a","type":"int","value":1},
+ *      {"name":"bar","type":"str","value":"foo"},
+ *      {"name":null,"type":"float","value":3.4}]
+ */
+class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
+  protected boolean writeTypeAndValueKey = false;
+  private final boolean writeNullName;
+
+  public ArrayOfNameTypeValueJSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp,
+                                        String wrapperFunction, String namedListStyle, boolean writeNullName) {
+    super(writer, req, rsp, wrapperFunction, namedListStyle);
+    this.writeNullName = writeNullName;
+  }
+
+  @Override
+  public void writeNamedList(String name, NamedList val) throws IOException {
+
+    if (val instanceof SimpleOrderedMap) {
+      super.writeNamedList(name, val);
+      return;
+    }
+
+    final int sz = val.size();
+    indent();
+
+    writeArrayOpener(sz);
+    incLevel();
+
+    boolean first = true;
+    for (int i=0; i<sz; i++) {
+      if (first) {
+        first = false;
+      } else {
+        writeArraySeparator();
+      }
+
+      indent();
+
+      final String elementName = val.getName(i);
+      final Object elementVal = val.getVal(i);
+
+      /*
+       * JSONWriter's writeNamedListAsArrMap turns NamedList("bar"="foo") into [{"foo":"bar"}]
+       * but we here wish to turn it into [ {"name":"bar","type":"str","value":"foo"} ] instead.
+       *
+       * So first we write the <code>{"name":"bar",</code> portion ...
+       */
+      writeMapOpener(-1);
+      if (elementName != null || writeNullName) {
+        writeKey("name", false);
+        writeVal("name", elementName);
+        writeMapSeparator();
+      }
+
+      /*
+       * ... and then we write the <code>"type":"str","value":"foo"}</code> portion.
+       */
+      writeTypeAndValueKey = true;
+      writeVal(null, elementVal); // passing null since writeVal doesn't actually use name (and we already wrote elementName above)
+      if (writeTypeAndValueKey) {
+        throw new RuntimeException("writeTypeAndValueKey should have been reset to false by writeVal('"+elementName+"','"+elementVal+"')");
+      }
+      writeMapCloser();
+    }
+
+    decLevel();
+    writeArrayCloser();
+  }
+
+  protected void ifNeededWriteTypeAndValueKey(String type) throws IOException {
+    if (writeTypeAndValueKey) {
+      writeTypeAndValueKey = false;
+      writeKey("type", false);
+      writeVal("type", type);
+      writeMapSeparator();
+      writeKey("value", false);
+    }
+  }
+
+  @Override
+  public void writeInt(String name, String val) throws IOException {
+    ifNeededWriteTypeAndValueKey("int");
+    super.writeInt(name, val);
+  }
+
+  @Override
+  public void writeLong(String name, String val) throws IOException {
+    ifNeededWriteTypeAndValueKey("long");
+    super.writeLong(name, val);
+  }
+
+  @Override
+  public void writeFloat(String name, String val) throws IOException {
+    ifNeededWriteTypeAndValueKey("float");
+    super.writeFloat(name, val);
+  }
+
+  @Override
+  public void writeDouble(String name, String val) throws IOException {
+    ifNeededWriteTypeAndValueKey("double");
+    super.writeDouble(name, val);
+  }
+
+  @Override
+  public void writeBool(String name, String val) throws IOException {
+    ifNeededWriteTypeAndValueKey("bool");
+    super.writeBool(name, val);
+  }
+
+  @Override
+  public void writeDate(String name, String val) throws IOException {
+    ifNeededWriteTypeAndValueKey("date");
+    super.writeDate(name, val);
+  }
+
+  @Override
+  public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
+    ifNeededWriteTypeAndValueKey("str");
+    super.writeStr(name, val, needsEscaping);
+  }
+
+  @Override
+  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx) throws IOException {
+    ifNeededWriteTypeAndValueKey("doc");
+    super.writeSolrDocument(name, doc, returnFields, idx);
+  }
+
+  @Override
+  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore) throws IOException {
+    ifNeededWriteTypeAndValueKey("doclist");
+    super.writeStartDocumentList(name, start, size, numFound, maxScore);
+  }
+
+  @Override
+  public void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
+    ifNeededWriteTypeAndValueKey("map");
+    super.writeMap(name, val, excludeOuter, isFirstVal);
+  }
+
+  @Override
+  public void writeArray(String name, Iterator val) throws IOException {
+    ifNeededWriteTypeAndValueKey("array");
+    super.writeArray(name, val);
+  }
+
+  @Override
+  public void writeNull(String name) throws IOException {
+    ifNeededWriteTypeAndValueKey("null");
+    super.writeNull(name);
+  }
 }
 
 abstract class NaNFloatWriter extends JSONWriter {

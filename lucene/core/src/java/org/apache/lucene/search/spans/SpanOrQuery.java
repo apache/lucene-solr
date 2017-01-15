@@ -161,7 +161,7 @@ public final class SpanOrQuery extends SpanQuery {
       if (subSpans.size() == 0) {
         return null;
       } else if (subSpans.size() == 1) {
-        return new ScoringWrapperSpans(subSpans.get(0), getSimScorer(context));
+        return subSpans.get(0);
       }
 
       DisiPriorityQueue byDocQueue = new DisiPriorityQueue(subSpans.size());

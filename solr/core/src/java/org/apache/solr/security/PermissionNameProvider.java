@@ -1,5 +1,3 @@
-package org.apache.solr.security;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.solr.security;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.security;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -46,6 +46,7 @@ public interface PermissionNameProvider {
     SCHEMA_EDIT_PERM("schema-edit", "*"),
     SECURITY_EDIT_PERM("security-edit", null),
     SECURITY_READ_PERM("security-read", null),
+    METRICS_READ_PERM("metrics-read", null),
     ALL("all", unmodifiableSet(new HashSet<>(asList("*", null))))
     ;
     final String name;

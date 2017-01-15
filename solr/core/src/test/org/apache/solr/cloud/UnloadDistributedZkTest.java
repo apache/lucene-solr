@@ -68,10 +68,6 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     testUnloadLotsOfCores(); // long
     
     testUnloadShardAndCollection();
-    
-    if (DEBUG) {
-      super.printLayout();
-    }
   }
 
   private void checkCoreNamePresenceAndSliceCount(String collectionName, String coreName,

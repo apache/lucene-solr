@@ -367,7 +367,12 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
           for (currentDoc = currentDoc+1; currentDoc < maxDoc; currentDoc++) {
             currentMatched = 0;
             score = 0;
-            dv.setDocument(currentDoc);
+            if (currentDoc > dv.docID()) {
+              dv.advance(currentDoc);
+            }
+            if (currentDoc != dv.docID()) {
+              continue;
+            }
             long ord;
             while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
               if (ords.contains(ord)) {

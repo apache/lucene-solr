@@ -604,7 +604,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
         QueryFacetAccumulator qAcc = new QueryFacetAccumulator(this,qfr.getName(),query);
         final Query q;
         try {
-          q = QParser.getParser(query, null, queryRequest).getQuery();
+          q = QParser.getParser(query, queryRequest).getQuery();
         } catch( SyntaxError e ){
           throw new SolrException(ErrorCode.BAD_REQUEST,"Invalid query '"+query+"'",e);
         }

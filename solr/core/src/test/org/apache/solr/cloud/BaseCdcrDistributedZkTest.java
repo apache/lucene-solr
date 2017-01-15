@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -49,12 +50,14 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.CdcrParams;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -68,6 +71,8 @@ import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
+import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
 
 /**
  * <p>
@@ -588,6 +593,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       }
     }
 
+    this.waitForRecoveriesToFinish(temporaryCollection,zkStateReader, true);
     // delete the temporary collection - we will create our own collections later
     this.deleteCollection(temporaryCollection);
     this.waitForCollectionToDisappear(temporaryCollection);
@@ -664,6 +670,14 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
               break nextJetty;
             }
           }
+        }
+      }
+
+      List<CloudJettyRunner> oldRunners = this.cloudJettys.putIfAbsent(collection, cloudJettys);
+      if (oldRunners != null)  {
+        // must close resources for the old entries
+        for (CloudJettyRunner oldRunner : oldRunners) {
+          IOUtils.closeQuietly(oldRunner.client);
         }
       }
 
@@ -751,6 +765,18 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       return s;
     } catch (Exception ex) {
       throw new RuntimeException(ex);
+    }
+  }
+
+  protected void waitForBootstrapToComplete(String collectionName, String shardId) throws Exception {
+    NamedList rsp;// we need to wait until bootstrap is complete otherwise the replicator thread will never start
+    TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS);
+    while (!timeOut.hasTimedOut())  {
+      rsp = invokeCdcrAction(shardToLeaderJetty.get(collectionName).get(shardId), CdcrParams.CdcrAction.BOOTSTRAP_STATUS);
+      if (rsp.get(RESPONSE_STATUS).toString().equals(COMPLETED))  {
+        break;
+      }
+      Thread.sleep(1000);
     }
   }
 

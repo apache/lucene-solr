@@ -34,6 +34,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Attribute;
@@ -184,22 +185,22 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       
       assertEquals("term "+i, output[i], termAtt.toString());
       if (startOffsets != null) {
-        assertEquals("startOffset "+i, startOffsets[i], offsetAtt.startOffset());
+        assertEquals("startOffset " + i + " term=" + termAtt, startOffsets[i], offsetAtt.startOffset());
       }
       if (endOffsets != null) {
-        assertEquals("endOffset "+i, endOffsets[i], offsetAtt.endOffset());
+        assertEquals("endOffset " + i + " term=" + termAtt, endOffsets[i], offsetAtt.endOffset());
       }
       if (types != null) {
-        assertEquals("type "+i, types[i], typeAtt.type());
+        assertEquals("type " + i + " term=" + termAtt, types[i], typeAtt.type());
       }
       if (posIncrements != null) {
-        assertEquals("posIncrement "+i, posIncrements[i], posIncrAtt.getPositionIncrement());
+        assertEquals("posIncrement " + i + " term=" + termAtt, posIncrements[i], posIncrAtt.getPositionIncrement());
       }
       if (posLengths != null) {
-        assertEquals("posLength "+i, posLengths[i], posLengthAtt.getPositionLength());
+        assertEquals("posLength " + i + " term=" + termAtt, posLengths[i], posLengthAtt.getPositionLength());
       }
       if (keywordAtts != null) {
-        assertEquals("keywordAtt " + i, keywordAtts[i], keywordAtt.isKeyword());
+        assertEquals("keywordAtt " + i + " term=" + termAtt, keywordAtts[i], keywordAtt.isKeyword());
       }
       
       // we can enforce some basic things about a few attributes even if the caller doesn't check:
@@ -207,13 +208,13 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         final int startOffset = offsetAtt.startOffset();
         final int endOffset = offsetAtt.endOffset();
         if (finalOffset != null) {
-          assertTrue("startOffset must be <= finalOffset", startOffset <= finalOffset.intValue());
-          assertTrue("endOffset must be <= finalOffset: got endOffset=" + endOffset + " vs finalOffset=" + finalOffset.intValue(),
+          assertTrue("startOffset (= " + startOffset + ") must be <= finalOffset (= " + finalOffset + ") term=" + termAtt, startOffset <= finalOffset.intValue());
+          assertTrue("endOffset must be <= finalOffset: got endOffset=" + endOffset + " vs finalOffset=" + finalOffset.intValue() + " term=" + termAtt,
                      endOffset <= finalOffset.intValue());
         }
 
         if (offsetsAreCorrect) {
-          assertTrue("offsets must not go backwards startOffset=" + startOffset + " is < lastStartOffset=" + lastStartOffset, offsetAtt.startOffset() >= lastStartOffset);
+          assertTrue("offsets must not go backwards startOffset=" + startOffset + " is < lastStartOffset=" + lastStartOffset + " term=" + termAtt, offsetAtt.startOffset() >= lastStartOffset);
           lastStartOffset = offsetAtt.startOffset();
         }
 
@@ -235,7 +236,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
             // We've seen a token leaving from this position
             // before; verify the startOffset is the same:
             //System.out.println("  + vs " + pos + " -> " + startOffset);
-            assertEquals("pos=" + pos + " posLen=" + posLength + " token=" + termAtt, posToStartOffset.get(pos).intValue(), startOffset);
+            assertEquals(i + " inconsistent startOffset: pos=" + pos + " posLen=" + posLength + " token=" + termAtt, posToStartOffset.get(pos).intValue(), startOffset);
           }
 
           final int endPos = pos + posLength;
@@ -248,7 +249,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
             // We've seen a token arriving to this position
             // before; verify the endOffset is the same:
             //System.out.println("  + ve " + endPos + " -> " + endOffset);
-            assertEquals("pos=" + pos + " posLen=" + posLength + " token=" + termAtt, posToEndOffset.get(endPos).intValue(), endOffset);
+            assertEquals("inconsistent endOffset " + i + " pos=" + pos + " posLen=" + posLength + " token=" + termAtt, posToEndOffset.get(endPos).intValue(), endOffset);
           }
         }
       }
@@ -350,16 +351,19 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
     checkResetException(a, input);
+    checkAnalysisConsistency(random(), a, true, input);
     assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, null, input.length());
   }
   
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[]) throws IOException {
     checkResetException(a, input);
+    checkAnalysisConsistency(random(), a, true, input);
     assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length());
   }
 
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[], boolean offsetsAreCorrect) throws IOException {
     checkResetException(a, input);
+    checkAnalysisConsistency(random(), a, true, input, offsetsAreCorrect);
     assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length(), offsetsAreCorrect);
   }
   
@@ -377,6 +381,10 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
 
   public static void assertAnalyzesToPositions(Analyzer a, String input, String[] output, int[] posIncrements, int[] posLengths) throws IOException {
     assertAnalyzesTo(a, input, output, null, null, null, posIncrements, posLengths);
+  }
+
+  public static void assertAnalyzesToPositions(Analyzer a, String input, String[] output, String[] types, int[] posIncrements, int[] posLengths) throws IOException {
+    assertAnalyzesTo(a, input, output, null, null, types, posIncrements, posLengths);
   }
   
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[]) throws IOException {
@@ -598,7 +606,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     try {
       for (int i = 0; i < iterations; i++) {
         String text;
-        
+
         if (random.nextInt(10) == 7) {
           // real data from linedocs
           text = docs.nextDoc().get("body");
@@ -622,13 +630,13 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
           // synthetic
           text = TestUtil.randomAnalysisString(random, maxWordLength, simple);
         }
-        
+
         try {
           checkAnalysisConsistency(random, a, useCharFilter, text, offsetsAreCorrect, currentField);
           if (iw != null) {
             if (random.nextInt(7) == 0) {
               // pile up a multivalued field
-              FieldType ft = field.fieldType();
+              IndexableFieldType ft = field.fieldType();
               currentField = new Field("dummy", bogus, ft);
               doc.add(currentField);
             } else {
@@ -768,7 +776,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
           } catch (IllegalStateException ise) {
             // Catch & ignore MockTokenizer's
             // anger...
-            if ("end() called before incrementToken() returned false!".equals(ise.getMessage())) {
+            if (ise.getMessage().contains("end() called in wrong state=")) {
               // OK
             } else {
               throw ise;
@@ -793,7 +801,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
           } catch (IllegalStateException ise) {
             // Catch & ignore MockTokenizer's
             // anger...
-            if ("end() called before incrementToken() returned false!".equals(ise.getMessage())) {
+            if (ise.getMessage().contains("end() called in wrong state=")) {
               // OK
             } else {
               throw ise;

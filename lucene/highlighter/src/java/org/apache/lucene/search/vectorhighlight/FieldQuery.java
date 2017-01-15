@@ -36,7 +36,9 @@ import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
 
 /**
@@ -119,6 +121,12 @@ public class FieldQuery {
       if( !flatQueries.contains( sourceQuery ) )
         flatQueries.add( sourceQuery );
     }
+    else if ( sourceQuery instanceof SynonymQuery ){
+      SynonymQuery synQuery = (SynonymQuery) sourceQuery;
+      for( Term term : synQuery.getTerms()) {
+        flatten( new TermQuery(term), reader, flatQueries, boost);
+      }
+    }
     else if( sourceQuery instanceof PhraseQuery ){
       PhraseQuery pq = (PhraseQuery)sourceQuery;
       if( pq.getTerms().length == 1 )
@@ -136,6 +144,11 @@ public class FieldQuery {
       final Query q = ((CustomScoreQuery) sourceQuery).getSubQuery();
       if (q != null) {
         flatten( q, reader, flatQueries, boost);
+      }
+    } else if (sourceQuery instanceof ToParentBlockJoinQuery) {
+      Query childQuery = ((ToParentBlockJoinQuery) sourceQuery).getChildQuery();
+      if (childQuery != null) {
+        flatten(childQuery, reader, flatQueries, boost);
       }
     } else if (reader != null) {
       Query query = sourceQuery;

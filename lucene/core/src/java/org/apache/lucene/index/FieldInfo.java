@@ -145,6 +145,8 @@ public final class FieldInfo {
     if (this.pointDimensionCount == 0 && dimensionCount != 0) {
       this.pointDimensionCount = dimensionCount;
       this.pointNumBytes = dimensionNumBytes;
+    } else if (dimensionCount != 0 && (this.pointDimensionCount != dimensionCount || this.pointNumBytes != dimensionNumBytes)) {
+      throw new IllegalArgumentException("cannot change field \"" + name + "\" from points dimensionCount=" + this.pointDimensionCount + ", numBytes=" + this.pointNumBytes + " to inconsistent dimensionCount=" + dimensionCount + ", numBytes=" + dimensionNumBytes);
     }
 
     if (this.indexOptions != IndexOptions.NONE) { // if updated field data is not for indexing, leave the updates out
@@ -187,6 +189,8 @@ public final class FieldInfo {
 
     pointDimensionCount = count;
     pointNumBytes = numBytes;
+
+    assert checkConsistency();
   }
 
   /** Return point dimension count */

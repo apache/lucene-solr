@@ -132,26 +132,6 @@ public class TestCoreParser extends LuceneTestCase {
     Query q = parse("NestedBooleanQuery.xml");
     dumpResults("Nested Boolean query", q, 5);
   }
-
-  public void testNumericRangeQueryXML() throws ParserException, IOException {
-    Query q = parse("LegacyNumericRangeQuery.xml");
-    dumpResults("LegacyNumericRangeQuery", q, 5);
-  }
-
-  public void testNumericRangeQueryXMLWithoutLowerTerm() throws ParserException, IOException {
-    Query q = parse("LegacyNumericRangeQueryWithoutLowerTerm.xml");
-    dumpResults("LegacyNumericRangeQueryWithoutLowerTerm", q, 5);
-  }
-
-  public void testNumericRangeQueryXMLWithoutUpperTerm() throws ParserException, IOException {
-    Query q = parse("LegacyNumericRangeQueryWithoutUpperTerm.xml");
-    dumpResults("LegacyNumericRangeQueryWithoutUpperTerm", q, 5);
-  }
-
-  public void testNumericRangeQueryXMLWithoutRange() throws ParserException, IOException {
-    Query q = parse("LegacyNumericRangeQueryWithoutRange.xml");
-    dumpResults("LegacyNumericRangeQueryWithoutRange", q, 5);
-  }
   
   public void testPointRangeQuery() throws ParserException, IOException {
     Query q = parse("PointRangeQuery.xml");

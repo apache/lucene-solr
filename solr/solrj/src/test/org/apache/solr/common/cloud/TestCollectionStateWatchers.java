@@ -1,5 +1,3 @@
-package org.apache.solr.common.cloud;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,10 +15,12 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
+package org.apache.solr.common.cloud;
+
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -81,6 +81,31 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     });
   }
 
+  private static void waitFor(String message, long timeout, TimeUnit unit, Callable<Boolean> predicate)
+      throws InterruptedException, ExecutionException {
+    Future<Boolean> future = executor.submit(() -> {
+      try {
+        while (true) {
+          if (predicate.call())
+            return true;
+          TimeUnit.MILLISECONDS.sleep(10);
+        }
+      }
+      catch (InterruptedException e) {
+        return false;
+      }
+    });
+    try {
+      if (future.get(timeout, unit) == true) {
+        return;
+      }
+    }
+    catch (TimeoutException e) {
+      // pass failure message on
+    }
+    future.cancel(true);
+    fail(message);
+  }
 
   @Test
   public void testSimpleCollectionWatch() throws Exception {
@@ -113,9 +138,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     cluster.stopJettySolrRunner(random().nextInt(cluster.getJettySolrRunners().size()));
     assertTrue("CollectionStateWatcher was never notified of cluster change", latch.await(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS));
 
-    Set<CollectionStateWatcher> watchers = client.getZkStateReader().getStateWatchers("testcollection");
-    assertTrue("CollectionStateWatcher wasn't cleared after completion",
-        watchers == null || watchers.size() == 0);
+    waitFor("CollectionStateWatcher wasn't cleared after completion", 1, TimeUnit.SECONDS,
+        () -> client.getZkStateReader().getStateWatchers("testcollection").isEmpty());
 
   }
 
@@ -144,8 +168,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
     assertTrue("CollectionStateWatcher isn't called when registering for already-watched collection",
         latch.await(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS));
-    assertEquals("CollectionStateWatcher should be removed",
-        1, client.getZkStateReader().getStateWatchers("currentstate").size());
+    waitFor("CollectionStateWatcher should be removed", 1, TimeUnit.SECONDS,
+        () -> client.getZkStateReader().getStateWatchers("currentstate").size() == 1);
   }
 
   @Test
@@ -189,9 +213,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     expectThrows(TimeoutException.class, () -> {
       client.waitForState("nosuchcollection", 1, TimeUnit.SECONDS, ((liveNodes, collectionState) -> false));
     });
-    Set<CollectionStateWatcher> watchers = client.getZkStateReader().getStateWatchers("nosuchcollection");
-    assertTrue("Watchers for collection should be removed after timeout",
-        watchers == null || watchers.size() == 0);
+    waitFor("Watchers for collection should be removed after timeout", 1, TimeUnit.SECONDS,
+        () -> client.getZkStateReader().getStateWatchers("nosuchcollection").isEmpty());
 
   }
 
@@ -229,24 +252,24 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   }
 
   @Test
-  public void testWatcherIsRemovedAfterTimeout() {
+  public void testWatcherIsRemovedAfterTimeout() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     assertTrue("There should be no watchers for a non-existent collection!",
-        client.getZkStateReader().getStateWatchers("no-such-collection") == null);
+        client.getZkStateReader().getStateWatchers("no-such-collection").isEmpty());
 
     expectThrows(TimeoutException.class, () -> {
       client.waitForState("no-such-collection", 10, TimeUnit.MILLISECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
     });
 
-    Set<CollectionStateWatcher> watchers = client.getZkStateReader().getStateWatchers("no-such-collection");
-    assertTrue("Watchers for collection should be removed after timeout",
-        watchers == null || watchers.size() == 0);
+    waitFor("Watchers for collection should be removed after timeout", 1, TimeUnit.SECONDS,
+        () -> client.getZkStateReader().getStateWatchers("no-such-collection").isEmpty());
 
   }
 
   @Test
   public void testDeletionsTriggerWatches() throws Exception {
-    cluster.createCollection("tobedeleted", 1, 1, "config", new HashMap<>());
+    CollectionAdminRequest.createCollection("tobedeleted", "config", 1, 1)
+        .process(cluster.getSolrClient());
     Future<Boolean> future = waitInBackground("tobedeleted", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, (l, c) -> c == null);
 
     CollectionAdminRequest.deleteCollection("tobedeleted").process(cluster.getSolrClient());
@@ -259,7 +282,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
     final CloudSolrClient client = cluster.getSolrClient();
 
-    Future<Boolean> future = waitInBackground("stateformat1", 10, TimeUnit.SECONDS,
+    Future<Boolean> future = waitInBackground("stateformat1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
 
     CollectionAdminRequest.createCollection("stateformat1", "config", 1, 1).setStateFormat(1)

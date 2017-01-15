@@ -30,6 +30,8 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.TestUtil;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 /**
  * Just like the default but with additional asserts.
  */
@@ -61,15 +63,19 @@ public class AssertingNormsFormat extends NormsFormat {
     }
 
     @Override
-    public void addNormsField(FieldInfo field, Iterable<Number> values) throws IOException {
-      int count = 0;
-      for (Number v : values) {
-        assert v != null;
-        count++;
+    public void addNormsField(FieldInfo field, NormsProducer valuesProducer) throws IOException {
+      NumericDocValues values = valuesProducer.getNorms(field);
+
+      int docID;
+      int lastDocID = -1;
+      while ((docID = values.nextDoc()) != NO_MORE_DOCS) {
+        assert docID >= 0 && docID < maxDoc;
+        assert docID > lastDocID;
+        lastDocID = docID;
+        long value = values.longValue();
       }
-      assert count == maxDoc;
-      TestUtil.checkIterator(values.iterator(), maxDoc, false);
-      in.addNormsField(field, values);
+
+      in.addNormsField(field, valuesProducer);
     }
     
     @Override

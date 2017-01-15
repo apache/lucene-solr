@@ -640,7 +640,7 @@ public class GetMavenDependenciesTask extends Task {
       // Pattern.compile("(lucene|solr)/build/(.*)/classes/java");
       String artifact = matcher.group(2);
       artifact = artifact.replace('/', '-');
-      artifact = artifact.replace("(?<!solr-)analysis-", "analyzers-");
+      artifact = artifact.replaceAll("(?<!solr-)analysis-", "analyzers-");
       if ("lucene".equals(matcher.group(1))) {
         artifactId.append("lucene-");
       }

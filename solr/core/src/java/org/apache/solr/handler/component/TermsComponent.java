@@ -136,7 +136,7 @@ public class TermsComponent extends SearchComponent {
     boolean raw = params.getBool(TermsParams.TERMS_RAW, false);
 
 
-    final LeafReader indexReader = rb.req.getSearcher().getLeafReader();
+    final LeafReader indexReader = rb.req.getSearcher().getSlowAtomicReader();
     Fields lfields = indexReader.fields();
 
     for (String field : fields) {
@@ -583,5 +583,10 @@ public class TermsComponent extends SearchComponent {
   @Override
   public String getDescription() {
     return "A Component for working with Term Enumerators";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.QUERY;
   }
 }

@@ -18,13 +18,10 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Random;
-import java.util.Set;
-
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 
 /**
  * A {@link Query} that adds random approximations to its scorers.
@@ -70,30 +67,18 @@ public class RandomApproximationQuery extends Query {
     return new RandomApproximationWeight(weight, new Random(random.nextLong()));
   }
 
-  private static class RandomApproximationWeight extends Weight {
+  private static class RandomApproximationWeight extends FilterWeight {
 
-    private final Weight weight;
     private final Random random;
 
     RandomApproximationWeight(Weight weight, Random random) {
-      super(weight.getQuery());
-      this.weight = weight;
+      super(weight);
       this.random = random;
     }
 
     @Override
-    public void extractTerms(Set<Term> terms) {
-      weight.extractTerms(terms);
-    }
-
-    @Override
-    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      return weight.explain(context, doc);
-    }
-
-    @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      final Scorer scorer = weight.scorer(context);
+      final Scorer scorer = in.scorer(context);
       if (scorer == null) {
         return null;
       }
@@ -200,7 +185,7 @@ public class RandomApproximationQuery extends Query {
       if (disi.docID() == NO_MORE_DOCS) {
         return doc = NO_MORE_DOCS;
       }
-      return doc = RandomInts.randomIntBetween(random, target, disi.docID());
+      return doc = RandomNumbers.randomIntBetween(random, target, disi.docID());
     }
 
     @Override

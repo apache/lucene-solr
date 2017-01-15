@@ -77,7 +77,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
   //Tests that idf ranking is not favouring rare mis-spellings over a strong edit-distance match
   public void testClosestEditDistanceMatchComesFirst() throws Throwable {
     FuzzyLikeThisQuery flt = new FuzzyLikeThisQuery(10, analyzer);
-    flt.addTerms("smith", "name", 0.3f, 1);
+    flt.addTerms("smith", "name", 2, 1);
     Query q = flt.rewrite(searcher.getIndexReader());
     HashSet<Term> queryTerms = new HashSet<>();
     searcher.createWeight(q, true, 1f).extractTerms(queryTerms);
@@ -94,7 +94,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
   //Test multiple input words are having variants produced
   public void testMultiWord() throws Throwable {
     FuzzyLikeThisQuery flt = new FuzzyLikeThisQuery(10, analyzer);
-    flt.addTerms("jonathin smoth", "name", 0.3f, 1);
+    flt.addTerms("jonathin smoth", "name", 2, 1);
     Query q = flt.rewrite(searcher.getIndexReader());
     HashSet<Term> queryTerms = new HashSet<>();
     searcher.createWeight(q, true, 1f).extractTerms(queryTerms);
@@ -110,8 +110,8 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
   // LUCENE-4809
   public void testNonExistingField() throws Throwable {
     FuzzyLikeThisQuery flt = new FuzzyLikeThisQuery(10, analyzer);
-    flt.addTerms("jonathin smoth", "name", 0.3f, 1);
-    flt.addTerms("jonathin smoth", "this field does not exist", 0.3f, 1);
+    flt.addTerms("jonathin smoth", "name", 2, 1);
+    flt.addTerms("jonathin smoth", "this field does not exist", 2, 1);
     // don't fail here just because the field doesn't exits
     Query q = flt.rewrite(searcher.getIndexReader());
     HashSet<Term> queryTerms = new HashSet<>();
@@ -129,7 +129,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
   //Test bug found when first query word does not match anything
   public void testNoMatchFirstWordBug() throws Throwable {
     FuzzyLikeThisQuery flt = new FuzzyLikeThisQuery(10, analyzer);
-    flt.addTerms("fernando smith", "name", 0.3f, 1);
+    flt.addTerms("fernando smith", "name", 2, 1);
     Query q = flt.rewrite(searcher.getIndexReader());
     HashSet<Term> queryTerms = new HashSet<>();
     searcher.createWeight(q, true, 1f).extractTerms(queryTerms);
@@ -144,9 +144,9 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
   public void testFuzzyLikeThisQueryEquals() {
     Analyzer analyzer = new MockAnalyzer(random());
     FuzzyLikeThisQuery fltq1 = new FuzzyLikeThisQuery(10, analyzer);
-    fltq1.addTerms("javi", "subject", 0.5f, 2);
+    fltq1.addTerms("javi", "subject", 2, 2);
     FuzzyLikeThisQuery fltq2 = new FuzzyLikeThisQuery(10, analyzer);
-    fltq2.addTerms("javi", "subject", 0.5f, 2);
+    fltq2.addTerms("javi", "subject", 2, 2);
     assertEquals("FuzzyLikeThisQuery with same attributes is not equal", fltq1,
         fltq2);
   }

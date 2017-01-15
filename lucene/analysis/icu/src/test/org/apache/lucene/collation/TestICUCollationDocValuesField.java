@@ -117,7 +117,8 @@ public class TestICUCollationDocValuesField extends LuceneTestCase {
       Document doc = is.doc(docID);
       String s = doc.getField("field").stringValue();
       boolean collatorAccepts = collator.compare(s, startPoint) >= 0 && collator.compare(s, endPoint) <= 0;
-      BytesRef br = dvs.get(docID);
+      assertEquals(docID, dvs.nextDoc());
+      BytesRef br = dvs.binaryValue();
       boolean luceneAccepts = br.compareTo(startBR) >= 0 && br.compareTo(endBR) <= 0;
       assertEquals(collatorAccepts, luceneAccepts);
     }

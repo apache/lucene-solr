@@ -19,13 +19,11 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.RetryUtil;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,68 +31,53 @@ import org.slf4j.LoggerFactory;
 /**
  * Verifies cluster state remains consistent after collection reload.
  */
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-public class CollectionReloadTest extends AbstractFullDistribZkTestBase {
+public class CollectionReloadTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public CollectionReloadTest() {
-    super();
-    sliceCount = 1;
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(1)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
   }
   
   @Test
   public void testReloadedLeaderStateAfterZkSessionLoss() throws Exception {
-    waitForThingsToLevelOut(30000);
 
     log.info("testReloadedLeaderStateAfterZkSessionLoss initialized OK ... running test logic");
 
-    String testCollectionName = "c8n_1x1";
-    String shardId = "shard1";
-    createCollectionRetry(testCollectionName, 1, 1, 1);
-    cloudClient.setDefaultCollection(testCollectionName);
+    final String testCollectionName = "c8n_1x1";
+    CollectionAdminRequest.createCollection(testCollectionName, "conf", 1, 1)
+        .process(cluster.getSolrClient());
 
-    Replica leader = getShardLeader(testCollectionName, shardId, 30 /* timeout secs */);
+    Replica leader
+        = cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "shard1", DEFAULT_TIMEOUT);
 
-    // reload collection and wait to see the core report it has been reloaded
-    boolean wasReloaded = reloadCollection(leader, testCollectionName);
-    assertTrue("Collection '"+testCollectionName+"' failed to reload within a reasonable amount of time!",
-        wasReloaded);
+    long coreStartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+    CollectionAdminRequest.reloadCollection(testCollectionName).process(cluster.getSolrClient());
 
-    // cause session loss
-    chaosMonkey.expireSession(getJettyOnPort(getReplicaPort(leader)));
+    RetryUtil.retryUntil("Timed out waiting for core to reload", 30, 1000, TimeUnit.MILLISECONDS, () -> {
+      long restartTime = 0;
+      try {
+        restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+      } catch (Exception e) {
+        log.warn("Exception getting core start time: {}", e.getMessage());
+        return false;
+      }
+      return restartTime > coreStartTime;
+    });
 
-    // TODO: have to wait a while for the node to get marked down after ZK session loss
-    // but tests shouldn't be so timing dependent!
-    Thread.sleep(15000);
+    final int initialStateVersion = getCollectionState(testCollectionName).getZNodeVersion();
 
-    // wait up to 15 seconds to see the replica in the active state
-    String replicaState = null;
-    int timeoutSecs = 15;
-    long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutSecs, TimeUnit.SECONDS);
-    while (System.nanoTime() < timeout) {
-      // state of leader should be active after session loss recovery - see SOLR-7338
-      cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName);
-      ClusterState cs = cloudClient.getZkStateReader().getClusterState();
-      Slice slice = cs.getSlice(testCollectionName, shardId);
-      replicaState = slice.getReplica(leader.getName()).getStr(ZkStateReader.STATE_PROP);
-      if ("active".equals(replicaState))
-        break;
+    cluster.expireZkSession(cluster.getReplicaJetty(leader));
 
-      Thread.sleep(1000);
-    }
-    assertEquals("Leader state should be active after recovering from ZK session loss, but after " +
-        timeoutSecs + " seconds, it is " + replicaState, "active", replicaState);
-
-    // try to clean up
-    try {
-      new CollectionAdminRequest.Delete()
-              .setCollectionName(testCollectionName).process(cloudClient);
-    } catch (Exception e) {
-      // don't fail the test
-      log.warn("Could not delete collection {} after test completed", testCollectionName);
-    }
+    waitForState("Timed out waiting for core to re-register as ACTIVE after session expiry", testCollectionName, (n, c) -> {
+      log.info("Collection state: {}", c.toString());
+      Replica expiredReplica = c.getReplica(leader.getName());
+      return expiredReplica.getState() == Replica.State.ACTIVE && c.getZNodeVersion() > initialStateVersion;
+    });
 
     log.info("testReloadedLeaderStateAfterZkSessionLoss succeeded ... shutting down now!");
   }

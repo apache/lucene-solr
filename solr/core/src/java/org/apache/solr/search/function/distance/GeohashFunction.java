@@ -53,12 +53,12 @@ public class GeohashFunction extends ValueSource {
     return new FunctionValues() {
 
       @Override
-      public String strVal(int doc) {
+      public String strVal(int doc) throws IOException {
         return GeohashUtils.encodeLatLon(latDV.doubleVal(doc), lonDV.doubleVal(doc));
       }
 
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append(name()).append('(');
         sb.append(latDV.toString(doc)).append(',').append(lonDV.toString(doc));

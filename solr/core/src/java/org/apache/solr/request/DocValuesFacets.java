@@ -21,7 +21,7 @@ import java.util.List;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
@@ -69,15 +69,15 @@ public class DocValuesFacets {
     final SortedSetDocValues si; // for term lookups only
     OrdinalMap ordinalMap = null; // for mapping per-segment ords to global ones
     if (multiValued) {
-      si = searcher.getLeafReader().getSortedSetDocValues(fieldName);
-      if (si instanceof MultiSortedSetDocValues) {
+      si = searcher.getSlowAtomicReader().getSortedSetDocValues(fieldName);
+      if (si instanceof MultiDocValues.MultiSortedSetDocValues) {
         ordinalMap = ((MultiSortedSetDocValues)si).mapping;
       }
     } else {
-      SortedDocValues single = searcher.getLeafReader().getSortedDocValues(fieldName);
+      SortedDocValues single = searcher.getSlowAtomicReader().getSortedDocValues(fieldName);
       si = single == null ? null : DocValues.singleton(single);
-      if (single instanceof MultiSortedDocValues) {
-        ordinalMap = ((MultiSortedDocValues)single).mapping;
+      if (single instanceof MultiDocValues.MultiSortedDocValues) {
+        ordinalMap = ((MultiDocValues.MultiSortedDocValues)single).mapping;
       }
     }
     if (si == null) {
@@ -173,16 +173,17 @@ public class DocValuesFacets {
         int min=mincount-1;  // the smallest value in the top 'N' values
         for (int i=(startTermIndex==-1)?1:0; i<nTerms; i++) {
           int c = counts[i];
-          if (contains != null) {
-            final BytesRef term = si.lookupOrd(startTermIndex+i);
-            if (!SimpleFacets.contains(term.utf8ToString(), contains, ignoreCase)) {
-              continue;
-            }
-          }
           if (c>min) {
             // NOTE: we use c>min rather than c>=min as an optimization because we are going in
             // index order, so we already know that the keys are ordered.  This can be very
             // important if a lot of the counts are repeated (like zero counts would be).
+
+            if (contains != null) {
+              final BytesRef term = si.lookupOrd(startTermIndex+i);
+              if (!SimpleFacets.contains(term.utf8ToString(), contains, ignoreCase)) {
+                continue;
+              }
+            }
 
             // smaller term numbers sort higher, so subtract the term number instead
             long pair = (((long)c)<<32) + (Integer.MAX_VALUE - i);
@@ -272,7 +273,12 @@ public class DocValuesFacets {
     final LongValues ordmap = map == null ? null : map.getGlobalOrds(subIndex);
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      int term = si.getOrd(doc);
+      int term;
+      if (si.advanceExact(doc)) {
+        term = si.ordValue();
+      } else {
+        term = -1;
+      }
       if (map != null && term >= 0) {
         term = (int) ordmap.get(term);
       }
@@ -293,7 +299,11 @@ public class DocValuesFacets {
     
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      segCounts[1+si.getOrd(doc)]++;
+      if (si.advanceExact(doc)) {
+        segCounts[1+si.ordValue()]++;
+      } else {
+        segCounts[0]++;
+      }
     }
     
     // migrate to global ords (if necessary)
@@ -319,23 +329,19 @@ public class DocValuesFacets {
     final LongValues ordMap = map == null ? null : map.getGlobalOrds(subIndex);
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      si.setDocument(doc);
-      // strange do-while to collect the missing count (first ord is NO_MORE_ORDS)
-      int term = (int) si.nextOrd();
-      if (term < 0) {
-        if (startTermIndex == -1) {
-          counts[0]++; // missing count
-        }
-        continue;
+      if (si.advanceExact(doc)) {
+        // strange do-while to collect the missing count (first ord is NO_MORE_ORDS)
+        int term = (int) si.nextOrd();
+        do {
+          if (map != null) {
+            term = (int) ordMap.get(term);
+          }
+          int arrIdx = term-startTermIndex;
+          if (arrIdx>=0 && arrIdx<counts.length) counts[arrIdx]++;
+        } while ((term = (int) si.nextOrd()) >= 0);
+      } else if (startTermIndex == -1) {
+        counts[0]++; // missing count
       }
-      
-      do {
-        if (map != null) {
-          term = (int) ordMap.get(term);
-        }
-        int arrIdx = term-startTermIndex;
-        if (arrIdx>=0 && arrIdx<counts.length) counts[arrIdx]++;
-      } while ((term = (int) si.nextOrd()) >= 0);
     }
   }
   
@@ -351,14 +357,13 @@ public class DocValuesFacets {
     
     int doc;
     while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      si.setDocument(doc);
-      int term = (int) si.nextOrd();
-      if (term < 0) {
-        counts[0]++; // missing
-      } else {
+      if (si.advanceExact(doc)) {
+        int term = (int) si.nextOrd();
         do {
           segCounts[1+term]++;
         } while ((term = (int)si.nextOrd()) >= 0);
+      } else {
+        counts[0]++; // missing
       }
     }
     

@@ -182,6 +182,17 @@ public class TestDrillDownQuery extends FacetTestCase {
     assertEquals(10, docs.totalHits);
   }
   
+  public void testZeroLimit() throws IOException {
+    IndexSearcher searcher = newSearcher(reader);
+    DrillDownQuery q = new DrillDownQuery(config);
+    q.add("b", "1");
+    int limit = 0;
+    FacetsCollector facetCollector = new FacetsCollector();
+    FacetsCollector.search(searcher, q, limit, facetCollector);
+    Facets facets = getTaxonomyFacetCounts(taxo, config, facetCollector, config.getDimConfig("b").indexFieldName);
+    assertNotNull(facets.getTopChildren(10, "b"));
+  }
+  
   public void testScoring() throws IOException {
     // verify that drill-down queries do not modify scores
     IndexSearcher searcher = newSearcher(reader);

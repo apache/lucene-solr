@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.legacy.LegacyFieldType;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.spatial.bbox.BBoxOverlapRatioValueSource;
 import org.apache.lucene.spatial.bbox.BBoxStrategy;
@@ -141,7 +142,11 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     
     //and annoyingly this Field isn't going to have a docValues format because Solr uses a separate Field for that
     if (solrNumField.hasDocValues()) {
-      luceneType = new org.apache.lucene.document.FieldType(luceneType);
+      if (luceneType instanceof LegacyFieldType) {
+        luceneType = new LegacyFieldType((LegacyFieldType)luceneType);
+      } else {
+        luceneType = new org.apache.lucene.document.FieldType(luceneType);
+      }
       luceneType.setDocValuesType(DocValuesType.NUMERIC);
     }
     return new BBoxStrategy(ctx, fieldName, luceneType);

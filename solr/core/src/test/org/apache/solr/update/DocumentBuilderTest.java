@@ -360,15 +360,18 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
       NumericDocValues fooNorms = reader.getNormValues("foo_t");
       NumericDocValues textNorms =  reader.getNormValues("text");
 
+      assertEquals(docid, titleNorms.advance(docid));
       assertEquals(expectedNorm(sim, 2, TITLE_BOOST * DOC_BOOST),
-                   titleNorms.get(docid));
+                   titleNorms.longValue());
 
+      assertEquals(docid, fooNorms.advance(docid));
       assertEquals(expectedNorm(sim, 8-3, FOO_BOOST * DOC_BOOST),
-                   fooNorms.get(docid));
+                   fooNorms.longValue());
 
+      assertEquals(docid, textNorms.advance(docid));
       assertEquals(expectedNorm(sim, 2 + 8-3, 
                                 TITLE_BOOST * FOO_BOOST * DOC_BOOST),
-                   textNorms.get(docid));
+                   textNorms.longValue());
 
     } finally {
       req.close();

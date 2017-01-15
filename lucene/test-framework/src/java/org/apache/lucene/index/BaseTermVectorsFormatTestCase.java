@@ -200,10 +200,6 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
     int i = 0;
 
     public RandomTokenStream(int len, String[] sampleTerms, BytesRef[] sampleTermBytes) {
-      this(len, sampleTerms, sampleTermBytes, rarely());
-    }
-
-    public RandomTokenStream(int len, String[] sampleTerms, BytesRef[] sampleTermBytes, boolean offsetsGoBackwards) {
       terms = new String[len];
       termBytes = new BytesRef[len];
       positionsIncrements = new int[len];
@@ -216,17 +212,12 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
         terms[i] = sampleTerms[o];
         termBytes[i] = sampleTermBytes[o];
         positionsIncrements[i] = TestUtil.nextInt(random(), i == 0 ? 1 : 0, 10);
-        if (offsetsGoBackwards) {
-          startOffsets[i] = random().nextInt();
-          endOffsets[i] = random().nextInt();
+        if (i == 0) {
+          startOffsets[i] = TestUtil.nextInt(random(), 0, 1 << 16);
         } else {
-          if (i == 0) {
-            startOffsets[i] = TestUtil.nextInt(random(), 0, 1 << 16);
-          } else {
-            startOffsets[i] = startOffsets[i-1] + TestUtil.nextInt(random(), 0, rarely() ? 1 << 16 : 20);
-          }
-          endOffsets[i] = startOffsets[i] + TestUtil.nextInt(random(), 0, rarely() ? 1 << 10 : 20);
+          startOffsets[i] = startOffsets[i-1] + TestUtil.nextInt(random(), 0, rarely() ? 1 << 16 : 20);
         }
+        endOffsets[i] = startOffsets[i] + TestUtil.nextInt(random(), 0, rarely() ? 1 << 10 : 20);
       }
 
       for (int i = 0; i < len; ++i) {

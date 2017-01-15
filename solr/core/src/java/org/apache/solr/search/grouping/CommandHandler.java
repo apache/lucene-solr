@@ -31,7 +31,7 @@ import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
-import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.term.TermAllGroupHeadsCollector;
 import org.apache.solr.common.util.NamedList;
@@ -170,7 +170,7 @@ public class CommandHandler {
     SchemaField sf = searcher.getSchema().getField(field);
     FieldType fieldType = sf.getType();
     
-    final AbstractAllGroupHeadsCollector allGroupHeadsCollector;
+    final AllGroupHeadsCollector allGroupHeadsCollector;
     if (fieldType.getNumericType() != null) {
       ValueSource vs = fieldType.getValueSource(sf, null);
       allGroupHeadsCollector = new FunctionAllGroupHeadsCollector(vs, new HashMap(), firstCommand.getSortWithinGroup());

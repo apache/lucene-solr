@@ -20,6 +20,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
+import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.DELETE_VALUE_SINGLETON;
+import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.valueMutator;
+
 /**
  * Removes any values found which are CharSequence with a length of 0. 
  * (ie: empty strings) 
@@ -54,16 +57,13 @@ public final class RemoveBlankFieldUpdateProcessorFactory extends FieldMutatingU
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
-    return new FieldValueMutatingUpdateProcessor(getSelector(), next) {
-      @Override
-      protected Object mutateValue(final Object src) {
-        if (src instanceof CharSequence 
-            && 0 == ((CharSequence)src).length()) {
-          return DELETE_VALUE_SINGLETON;
-        }
-        return src;
+    return valueMutator(getSelector(), next, src -> {
+      if (src instanceof CharSequence
+          && 0 == ((CharSequence) src).length()) {
+        return DELETE_VALUE_SINGLETON;
       }
-    };
+      return src;
+    });
   }
 }
 

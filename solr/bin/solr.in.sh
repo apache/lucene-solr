@@ -13,37 +13,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Settings here will override settings in existing env vars or in bin/solr.  The default shipped state
+# of this file is completely commented.
+
 # By default the script will use JAVA_HOME to determine which java
 # to use, but you can set a specific path for Solr to use without
 # affecting other Java applications on your server/workstation.
 #SOLR_JAVA_HOME=""
 
+# This controls the number of seconds that the solr script will wait for
+# Solr to stop gracefully or Solr to start.  If the graceful stop fails,
+# the script will forcibly stop Solr.  If the start fails, the script will
+# give up waiting and display the last few lines of the logfile.
+#SOLR_STOP_WAIT="180"
+
 # Increase Java Heap as needed to support your indexing / query needs
-SOLR_HEAP="512m"
+#SOLR_HEAP="512m"
 
 # Expert: If you want finer control over memory options, specify them directly
 # Comment out SOLR_HEAP if you are using this though, that takes precedence
 #SOLR_JAVA_MEM="-Xms512m -Xmx512m"
 
 # Enable verbose GC logging
-GC_LOG_OPTS="-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails \
--XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime"
+#GC_LOG_OPTS="-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails \
+#-XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime"
 
 # These GC settings have shown to work well for a number of common Solr workloads
-GC_TUNE="-XX:NewRatio=3 \
--XX:SurvivorRatio=4 \
--XX:TargetSurvivorRatio=90 \
--XX:MaxTenuringThreshold=8 \
--XX:+UseConcMarkSweepGC \
--XX:+UseParNewGC \
--XX:ConcGCThreads=4 -XX:ParallelGCThreads=4 \
--XX:+CMSScavengeBeforeRemark \
--XX:PretenureSizeThreshold=64m \
--XX:+UseCMSInitiatingOccupancyOnly \
--XX:CMSInitiatingOccupancyFraction=50 \
--XX:CMSMaxAbortablePrecleanTime=6000 \
--XX:+CMSParallelRemarkEnabled \
--XX:+ParallelRefProcEnabled"
+#GC_TUNE="-XX:NewRatio=3 -XX:SurvivorRatio=4    etc.
 
 # Set the ZooKeeper connection string if using an external ZooKeeper ensemble
 # e.g. host1:2181,host2:2181/chroot
@@ -63,13 +59,10 @@ GC_TUNE="-XX:NewRatio=3 \
 # Set to true to activate the JMX RMI connector to allow remote JMX client applications
 # to monitor the JVM hosting Solr; set to "false" to disable that behavior
 # (false is recommended in production environments)
-ENABLE_REMOTE_JMX_OPTS="false"
+#ENABLE_REMOTE_JMX_OPTS="false"
 
 # The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
 # RMI_PORT=18983
-
-# Set the thread stack size
-SOLR_OPTS="$SOLR_OPTS -Xss256k"
 
 # Anything you add to the SOLR_OPTS variable will be included in the java
 # start command line as-is, in ADDITION to other options. If you specify the
@@ -91,9 +84,12 @@ SOLR_OPTS="$SOLR_OPTS -Xss256k"
 # so you can point the script to use a different log4j.properties file
 #LOG4J_PROPS=/var/solr/log4j.properties
 
-# Location where Solr should write logs to; should agree with the file appender
-# settings in server/resources/log4j.properties
-#SOLR_LOGS_DIR=
+# Changes the logging level. Valid values: ALL, TRACE, DEBUG, INFO, WARN, ERROR, FATAL, OFF. Default is INFO
+# This is an alternative to changing the rootLogger in log4j.properties
+#SOLR_LOG_LEVEL=INFO
+
+# Location where Solr should write logs to. Absolute or relative to solr start dir
+#SOLR_LOGS_DIR=logs
 
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT=8983
@@ -102,8 +98,10 @@ SOLR_OPTS="$SOLR_OPTS -Xss256k"
 # Be sure to update the paths to the correct keystore for your environment
 #SOLR_SSL_KEY_STORE=/home/shalin/work/oss/shalin-lusolr/solr/server/etc/solr-ssl.keystore.jks
 #SOLR_SSL_KEY_STORE_PASSWORD=secret
+#SOLR_SSL_KEY_STORE_TYPE=JKS
 #SOLR_SSL_TRUST_STORE=/home/shalin/work/oss/shalin-lusolr/solr/server/etc/solr-ssl.keystore.jks
 #SOLR_SSL_TRUST_STORE_PASSWORD=secret
+#SOLR_SSL_TRUST_STORE_TYPE=JKS
 #SOLR_SSL_NEED_CLIENT_AUTH=false
 #SOLR_SSL_WANT_CLIENT_AUTH=false
 
@@ -111,12 +109,14 @@ SOLR_OPTS="$SOLR_OPTS -Xss256k"
 # otherwise keep them commented and the above values will automatically be set for HTTP clients
 #SOLR_SSL_CLIENT_KEY_STORE=
 #SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
+#SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 #SOLR_SSL_CLIENT_TRUST_STORE=
 #SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
+#SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
 # Settings for authentication
-#SOLR_AUTHENTICATION_CLIENT_CONFIGURER=
-#SOLR_AUTHENTICATION_OPTS=
+#SOLR_AUTHENTICATION_CLIENT_BUILDER=
+#SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
 
 # Settings for ZK ACL
 #SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider \

@@ -1,5 +1,3 @@
-package org.apache.solr.core.backup.repository;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,15 +15,20 @@ package org.apache.solr.core.backup.repository;
  * limitations under the License.
  */
 
+package org.apache.solr.core.backup.repository;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Objects;
+
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -57,12 +60,31 @@ public class LocalFileSystemRepository implements BackupRepository {
   }
 
   @Override
-  public URI createURI(String... pathComponents) {
+  public URI createURI(String location) {
+    Objects.requireNonNull(location);
+
+    URI result = null;
+    try {
+      result = new URI(location);
+      if (!result.isAbsolute()) {
+        result = Paths.get(location).toUri();
+      }
+    } catch (URISyntaxException ex) {
+      result = Paths.get(location).toUri();
+    }
+
+    return result;
+  }
+
+  @Override
+  public URI resolve(URI baseUri, String... pathComponents) {
     Preconditions.checkArgument(pathComponents.length > 0);
-    Path result = Paths.get(pathComponents[0]);
-    for (int i = 1; i < pathComponents.length; i++) {
+
+    Path result = Paths.get(baseUri);
+    for (int i = 0; i < pathComponents.length; i++) {
       result = result.resolve(pathComponents[i]);
     }
+
     return result.toUri();
   }
 

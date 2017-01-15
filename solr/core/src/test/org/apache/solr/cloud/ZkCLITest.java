@@ -51,9 +51,7 @@ import org.slf4j.LoggerFactory;
 // files - there are a lot of them to upload
 public class ZkCLITest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  private static final boolean VERBOSE = false;
-  
+
   protected ZkTestServer zkServer;
   
   protected String zkDir;
@@ -363,9 +361,6 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    if (VERBOSE) {
-      printLayout(zkServer.getZkHost());
-    }
     zkClient.close();
     zkServer.shutdown();
     super.tearDown();

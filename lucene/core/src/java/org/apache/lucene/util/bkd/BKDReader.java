@@ -17,28 +17,28 @@
 package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.PointValues.IntersectVisitor;
-import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.index.PointValues;
+import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.MathUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 
 /** Handles intersection of an multi-dimensional shape in byte[] space with a block KD-tree previously written with {@link BKDWriter}.
  *
  * @lucene.experimental */
 
-public class BKDReader implements Accountable {
+public final class BKDReader extends PointValues implements Accountable {
   // Packed array of byte[] holding all split values in the full binary tree:
-  final private byte[] splitPackedValues; 
-  final long[] leafBlockFPs;
-  final private int leafNodeOffset;
+  final int leafNodeOffset;
   final int numDims;
   final int bytesPerDim;
+  final int numLeaves;
   final IndexInput in;
   final int maxPointsInLeafNode;
   final byte[] minPackedValue;
@@ -48,16 +48,25 @@ public class BKDReader implements Accountable {
   final int version;
   protected final int packedBytesLength;
 
+  // Used for 6.4.0+ index format:
+  final byte[] packedIndex;
+
+  // Used for Legacy (pre-6.4.0) index format, to hold a compact form of the index:
+  final private byte[] splitPackedValues; 
+  final int bytesPerIndexEntry;
+  final long[] leafBlockFPs;
+
   /** Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned */
   public BKDReader(IndexInput in) throws IOException {
     version = CodecUtil.checkHeader(in, BKDWriter.CODEC_NAME, BKDWriter.VERSION_START, BKDWriter.VERSION_CURRENT);
     numDims = in.readVInt();
     maxPointsInLeafNode = in.readVInt();
     bytesPerDim = in.readVInt();
+    bytesPerIndexEntry = numDims == 1 && version >= BKDWriter.VERSION_IMPLICIT_SPLIT_DIM_1D ? bytesPerDim : bytesPerDim + 1;
     packedBytesLength = numDims * bytesPerDim;
 
     // Read index:
-    int numLeaves = in.readVInt();
+    numLeaves = in.readVInt();
     assert numLeaves > 0;
     leafNodeOffset = numLeaves;
 
@@ -67,193 +76,386 @@ public class BKDReader implements Accountable {
     in.readBytes(minPackedValue, 0, packedBytesLength);
     in.readBytes(maxPackedValue, 0, packedBytesLength);
 
+    for(int dim=0;dim<numDims;dim++) {
+      if (StringHelper.compare(bytesPerDim, minPackedValue, dim*bytesPerDim, maxPackedValue, dim*bytesPerDim) > 0) {
+        throw new CorruptIndexException("minPackedValue " + new BytesRef(minPackedValue) + " is > maxPackedValue " + new BytesRef(maxPackedValue) + " for dim=" + dim, in);
+      }
+    }
+    
     pointCount = in.readVLong();
     docCount = in.readVInt();
 
-    splitPackedValues = new byte[(1+bytesPerDim)*numLeaves];
-
-    // TODO: don't write split packed values[0]!
-    in.readBytes(splitPackedValues, 0, splitPackedValues.length);
-
-    // Read the file pointers to the start of each leaf block:
-    long[] leafBlockFPs = new long[numLeaves];
-    long lastFP = 0;
-    for(int i=0;i<numLeaves;i++) {
-      long delta = in.readVLong();
-      leafBlockFPs[i] = lastFP + delta;
-      lastFP += delta;
-    }
-
-    // Possibly rotate the leaf block FPs, if the index not fully balanced binary tree (only happens
-    // if it was created by BKDWriter.merge).  In this case the leaf nodes may straddle the two bottom
-    // levels of the binary tree:
-    if (numDims == 1 && numLeaves > 1) {
-      //System.out.println("BKDR: numLeaves=" + numLeaves);
-      int levelCount = 2;
-      while (true) {
-        //System.out.println("  cycle levelCount=" + levelCount);
-        if (numLeaves >= levelCount && numLeaves <= 2*levelCount) {
-          int lastLevel = 2*(numLeaves - levelCount);
-          assert lastLevel >= 0;
-          /*
-          System.out.println("BKDR: lastLevel=" + lastLevel + " vs " + levelCount);
-          System.out.println("FPs before:");
-          for(int i=0;i<leafBlockFPs.length;i++) {
-            System.out.println("  " + i + " " + leafBlockFPs[i]);
-          }
-          */
-          if (lastLevel != 0) {
-            // Last level is partially filled, so we must rotate the leaf FPs to match.  We do this here, after loading
-            // at read-time, so that we can still delta code them on disk at write:
-            //System.out.println("BKDR: now rotate index");
-            long[] newLeafBlockFPs = new long[numLeaves];
-            System.arraycopy(leafBlockFPs, lastLevel, newLeafBlockFPs, 0, leafBlockFPs.length - lastLevel);
-            System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, leafBlockFPs.length - lastLevel, lastLevel);
-            leafBlockFPs = newLeafBlockFPs;
-          }
-          /*
-          System.out.println("FPs:");
-          for(int i=0;i<leafBlockFPs.length;i++) {
-            System.out.println("  " + i + " " + leafBlockFPs[i]);
-          }
-          */
-          break;
-        }
-
-        levelCount *= 2;
-      }
-    }
-
-    this.leafBlockFPs = leafBlockFPs;
-    this.in = in;
-  }
-
-  /** Called by consumers that have their own on-disk format for the index (e.g. SimpleText) */
-  protected BKDReader(IndexInput in, int numDims, int maxPointsInLeafNode, int bytesPerDim, long[] leafBlockFPs, byte[] splitPackedValues,
-                      byte[] minPackedValue, byte[] maxPackedValue, long pointCount, int docCount) throws IOException {
-    this.in = in;
-    this.numDims = numDims;
-    this.maxPointsInLeafNode = maxPointsInLeafNode;
-    this.bytesPerDim = bytesPerDim;
-    packedBytesLength = numDims * bytesPerDim;
-    this.leafNodeOffset = leafBlockFPs.length;
-    this.leafBlockFPs = leafBlockFPs;
-    this.splitPackedValues = splitPackedValues;
-    this.minPackedValue = minPackedValue;
-    this.maxPackedValue = maxPackedValue;
-    this.pointCount = pointCount;
-    this.docCount = docCount;
-    this.version = BKDWriter.VERSION_CURRENT;
-    assert minPackedValue.length == packedBytesLength;
-    assert maxPackedValue.length == packedBytesLength;
-  }
-
-  private static class VerifyVisitor implements IntersectVisitor {
-    byte[] cellMinPacked;
-    byte[] cellMaxPacked;
-    byte[] lastPackedValue;
-    final int numDims;
-    final int bytesPerDim;
-    final int maxDoc;
-
-    public VerifyVisitor(int numDims, int bytesPerDim, int maxDoc) {
-      this.numDims = numDims;
-      this.bytesPerDim = bytesPerDim;
-      this.maxDoc = maxDoc;
-    }
-
-    @Override
-    public void visit(int docID) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void visit(int docID, byte[] packedValue) {
-      if (docID < 0 || docID >= maxDoc) {
-        throw new RuntimeException("docID=" + docID + " is out of bounds of 0.." + maxDoc);
-      }
-      for(int dim=0;dim<numDims;dim++) {
-        if (StringHelper.compare(bytesPerDim, cellMinPacked, dim*bytesPerDim, packedValue, dim*bytesPerDim) > 0) {
-          throw new RuntimeException("value=" + new BytesRef(packedValue, dim*bytesPerDim, bytesPerDim) + " for docID=" + docID + " dim=" + dim + " is less than this leaf block's minimum=" + new BytesRef(cellMinPacked, dim*bytesPerDim, bytesPerDim));
-        }
-        if (StringHelper.compare(bytesPerDim, cellMaxPacked, dim*bytesPerDim, packedValue, dim*bytesPerDim) < 0) {
-          throw new RuntimeException("value=" + new BytesRef(packedValue, dim*bytesPerDim, bytesPerDim) + " for docID=" + docID + " dim=" + dim + " is greater than this leaf block's maximum=" + new BytesRef(cellMaxPacked, dim*bytesPerDim, bytesPerDim));
-        }
-      }
-
-      if (numDims == 1) {
-        // With only 1D, all values should always be in sorted order
-        if (lastPackedValue == null) {
-          lastPackedValue = Arrays.copyOf(packedValue, packedValue.length);
-        } else if (StringHelper.compare(bytesPerDim, lastPackedValue, 0, packedValue, 0) > 0) {
-          throw new RuntimeException("value=" + new BytesRef(packedValue) + " for docID=" + docID + " dim=0" + " sorts before last value=" + new BytesRef(lastPackedValue));
-        } else {
-          System.arraycopy(packedValue, 0, lastPackedValue, 0, bytesPerDim);
-        }
-      }
-    }
-
-    @Override
-    public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-      throw new UnsupportedOperationException();
-    }
-  }
-
-  /** Only used for debugging, to make sure all values in each leaf block fall within the range expected by the index */
-  // TODO: maybe we can get this into CheckIndex?
-  public void verify(int maxDoc) throws IOException {
-    //System.out.println("BKDR.verify this=" + this);
-    // Visits every doc in every leaf block and confirms that
-    // their values agree with the index:
-    byte[] rootMinPacked = new byte[packedBytesLength];
-    byte[] rootMaxPacked = new byte[packedBytesLength];
-    Arrays.fill(rootMaxPacked, (byte) 0xff);
-    verify(getIntersectState(new VerifyVisitor(numDims, bytesPerDim, maxDoc)), 1, rootMinPacked, rootMaxPacked);
-  }
-
-  private void verify(IntersectState state, int nodeID, byte[] cellMinPacked, byte[] cellMaxPacked) throws IOException {
-
-    if (nodeID >= leafNodeOffset) {
-      int leafID = nodeID - leafNodeOffset;
-
-      // In the unbalanced case it's possible the left most node only has one child:
-      if (leafID < leafBlockFPs.length) {
-        //System.out.println("CHECK nodeID=" + nodeID + " leaf=" + (nodeID-leafNodeOffset) + " offset=" + leafNodeOffset + " fp=" + leafBlockFPs[leafID]);
-        //System.out.println("BKDR.verify leafID=" + leafID + " nodeID=" + nodeID + " fp=" + leafBlockFPs[leafID] + " min=" + new BytesRef(cellMinPacked) + " max=" + new BytesRef(cellMaxPacked));
-
-        // Leaf node: check that all values are in fact in bounds:
-        VerifyVisitor visitor = (VerifyVisitor) state.visitor;
-        visitor.cellMinPacked = cellMinPacked;
-        visitor.cellMaxPacked = cellMaxPacked;
-
-        int count = readDocIDs(state.in, leafBlockFPs[leafID], state.scratchDocIDs);
-        visitDocValues(state.commonPrefixLengths, state.scratchPackedValue, state.in, state.scratchDocIDs, count, state.visitor);
-      } else {
-        //System.out.println("BKDR.verify skip leafID=" + leafID);
-      }
+    if (version >= BKDWriter.VERSION_PACKED_INDEX) {
+      int numBytes = in.readVInt();
+      packedIndex = new byte[numBytes];
+      in.readBytes(packedIndex, 0, numBytes);
+      leafBlockFPs = null;
+      splitPackedValues = null;
     } else {
-      // Non-leaf node:
+      // legacy un-packed index
 
-      int address = nodeID * (bytesPerDim+1);
-      int splitDim = splitPackedValues[address] & 0xff;
-      assert splitDim < numDims;
+      splitPackedValues = new byte[bytesPerIndexEntry*numLeaves];
 
-      byte[] splitPackedValue = new byte[packedBytesLength];
+      in.readBytes(splitPackedValues, 0, splitPackedValues.length);
 
-      // Recurse on left sub-tree:
-      System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedBytesLength);
-      System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
-      verify(state,
-             2*nodeID,
-             cellMinPacked, splitPackedValue);
+      // Read the file pointers to the start of each leaf block:
+      long[] leafBlockFPs = new long[numLeaves];
+      long lastFP = 0;
+      for(int i=0;i<numLeaves;i++) {
+        long delta = in.readVLong();
+        leafBlockFPs[i] = lastFP + delta;
+        lastFP += delta;
+      }
 
-      // Recurse on right sub-tree:
-      System.arraycopy(cellMinPacked, 0, splitPackedValue, 0, packedBytesLength);
-      System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
-      verify(state,
-             2*nodeID+1,
-             splitPackedValue, cellMaxPacked);
+      // Possibly rotate the leaf block FPs, if the index not fully balanced binary tree (only happens
+      // if it was created by BKDWriter.merge or OneDimWriter).  In this case the leaf nodes may straddle the two bottom
+      // levels of the binary tree:
+      if (numDims == 1 && numLeaves > 1) {
+        int levelCount = 2;
+        while (true) {
+          if (numLeaves >= levelCount && numLeaves <= 2*levelCount) {
+            int lastLevel = 2*(numLeaves - levelCount);
+            assert lastLevel >= 0;
+            if (lastLevel != 0) {
+              // Last level is partially filled, so we must rotate the leaf FPs to match.  We do this here, after loading
+              // at read-time, so that we can still delta code them on disk at write:
+              long[] newLeafBlockFPs = new long[numLeaves];
+              System.arraycopy(leafBlockFPs, lastLevel, newLeafBlockFPs, 0, leafBlockFPs.length - lastLevel);
+              System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, leafBlockFPs.length - lastLevel, lastLevel);
+              leafBlockFPs = newLeafBlockFPs;
+            }
+            break;
+          }
+
+          levelCount *= 2;
+        }
+      }
+      
+      this.leafBlockFPs = leafBlockFPs;
+      packedIndex = null;
     }
+
+    this.in = in;
+  }
+
+  long getMinLeafBlockFP() {
+    if (packedIndex != null) {
+      return new ByteArrayDataInput(packedIndex).readVLong();
+    } else {
+      long minFP = Long.MAX_VALUE;
+      for(long fp : leafBlockFPs) {
+        minFP = Math.min(minFP, fp);
+      }
+      return minFP;
+    }
+  }
+
+  /** Used to walk the in-heap index
+   *
+   * @lucene.internal */
+  public abstract class IndexTree implements Cloneable {
+    protected int nodeID;
+    // level is 1-based so that we can do level-1 w/o checking each time:
+    protected int level;
+    protected int splitDim;
+    protected final byte[][] splitPackedValueStack;
+
+    protected IndexTree() {
+      int treeDepth = getTreeDepth();
+      splitPackedValueStack = new byte[treeDepth+1][];
+      nodeID = 1;
+      level = 1;
+      splitPackedValueStack[level] = new byte[packedBytesLength];
+    }      
+
+    public void pushLeft() {
+      nodeID *= 2;
+      level++;
+      if (splitPackedValueStack[level] == null) {
+        splitPackedValueStack[level] = new byte[packedBytesLength];
+      }
+    }
+
+    /** Clone, but you are not allowed to pop up past the point where the clone happened. */
+    public abstract IndexTree clone();
+    
+    public void pushRight() {
+      nodeID = nodeID * 2 + 1;
+      level++;
+      if (splitPackedValueStack[level] == null) {
+        splitPackedValueStack[level] = new byte[packedBytesLength];
+      }
+    }
+
+    public void pop() {
+      nodeID /= 2;
+      level--;
+      splitDim = -1;
+      //System.out.println("  pop nodeID=" + nodeID);
+    }
+
+    public boolean isLeafNode() {
+      return nodeID >= leafNodeOffset;
+    }
+
+    public boolean nodeExists() {
+      return nodeID - leafNodeOffset < leafNodeOffset;
+    }
+
+    public int getNodeID() {
+      return nodeID;
+    }
+
+    public byte[] getSplitPackedValue() {
+      assert isLeafNode() == false;
+      assert splitPackedValueStack[level] != null: "level=" + level;
+      return splitPackedValueStack[level];
+    }
+                                                       
+    /** Only valid after pushLeft or pushRight, not pop! */
+    public int getSplitDim() {
+      assert isLeafNode() == false;
+      return splitDim;
+    }
+
+    /** Only valid after pushLeft or pushRight, not pop! */
+    public abstract BytesRef getSplitDimValue();
+    
+    /** Only valid after pushLeft or pushRight, not pop! */
+    public abstract long getLeafBlockFP();
+  }
+
+  /** Reads the original simple yet heap-heavy index format */
+  private final class LegacyIndexTree extends IndexTree {
+
+    private long leafBlockFP;
+    private final byte[] splitDimValue = new byte[bytesPerDim];
+    private final BytesRef scratch = new BytesRef();
+
+    public LegacyIndexTree() {
+      setNodeData();
+      scratch.bytes = splitDimValue;
+      scratch.length = bytesPerDim;
+    }
+
+    @Override
+    public LegacyIndexTree clone() {
+      LegacyIndexTree index = new LegacyIndexTree();
+      index.nodeID = nodeID;
+      index.level = level;
+      index.splitDim = splitDim;
+      index.leafBlockFP = leafBlockFP;
+      index.splitPackedValueStack[index.level] = splitPackedValueStack[index.level].clone();
+
+      return index;
+    }
+    
+    @Override
+    public void pushLeft() {
+      super.pushLeft();
+      setNodeData();
+    }
+    
+    @Override
+    public void pushRight() {
+      super.pushRight();
+      setNodeData();
+    }
+
+    private void setNodeData() {
+      if (isLeafNode()) {
+        leafBlockFP = leafBlockFPs[nodeID - leafNodeOffset];
+        splitDim = -1;
+      } else {
+        leafBlockFP = -1;
+        int address = nodeID * bytesPerIndexEntry;
+        if (numDims == 1) {
+          splitDim = 0;
+          if (version < BKDWriter.VERSION_IMPLICIT_SPLIT_DIM_1D) {
+            // skip over wastefully encoded 0 splitDim:
+            assert splitPackedValues[address] == 0;
+            address++;
+          }
+        } else {
+          splitDim = splitPackedValues[address++] & 0xff;
+        }
+        System.arraycopy(splitPackedValues, address, splitDimValue, 0, bytesPerDim);
+      }
+    }
+
+    @Override
+    public long getLeafBlockFP() {
+      assert isLeafNode();
+      return leafBlockFP;
+    }
+
+    @Override
+    public BytesRef getSplitDimValue() {
+      assert isLeafNode() == false;
+      return scratch;
+    }
+
+    @Override
+    public void pop() {
+      super.pop();
+      leafBlockFP = -1;
+    }
+  }
+
+  /** Reads the new packed byte[] index format which can be up to ~63% smaller than the legacy index format on 20M NYC taxis tests.  This
+   *  format takes advantage of the limited access pattern to the BKD tree at search time, i.e. starting at the root node and recursing
+   *  downwards one child at a time. */
+  private final class PackedIndexTree extends IndexTree {
+    // used to read the packed byte[]
+    private final ByteArrayDataInput in;
+    // holds the minimum (left most) leaf block file pointer for each level we've recursed to:
+    private final long[] leafBlockFPStack;
+    // holds the address, in the packed byte[] index, of the left-node of each level:
+    private final int[] leftNodePositions;
+    // holds the address, in the packed byte[] index, of the right-node of each level:
+    private final int[] rightNodePositions;
+    // holds the splitDim for each level:
+    private final int[] splitDims;
+    // true if the per-dim delta we read for the node at this level is a negative offset vs. the last split on this dim; this is a packed
+    // 2D array, i.e. to access array[level][dim] you read from negativeDeltas[level*numDims+dim].  this will be true if the last time we
+    // split on this dimension, we next pushed to the left sub-tree:
+    private final boolean[] negativeDeltas;
+    // holds the packed per-level split values; the intersect method uses this to save the cell min/max as it recurses:
+    private final byte[][] splitValuesStack;
+    // scratch value to return from getPackedValue:
+    private final BytesRef scratch;
+
+    public PackedIndexTree() {
+      int treeDepth = getTreeDepth();
+      leafBlockFPStack = new long[treeDepth+1];
+      leftNodePositions = new int[treeDepth+1];
+      rightNodePositions = new int[treeDepth+1];
+      splitValuesStack = new byte[treeDepth+1][];
+      splitDims = new int[treeDepth+1];
+      negativeDeltas = new boolean[numDims*(treeDepth+1)];
+
+      in = new ByteArrayDataInput(packedIndex);
+      splitValuesStack[0] = new byte[packedBytesLength];
+      readNodeData(false);
+      scratch = new BytesRef();
+      scratch.length = bytesPerDim;
+    }
+
+    @Override
+    public PackedIndexTree clone() {
+      PackedIndexTree index = new PackedIndexTree();
+      index.nodeID = nodeID;
+      index.level = level;
+      index.splitDim = splitDim;
+      index.leafBlockFPStack[level] = leafBlockFPStack[level];
+      index.leftNodePositions[level] = leftNodePositions[level];
+      index.rightNodePositions[level] = rightNodePositions[level];
+      index.splitValuesStack[index.level] = splitValuesStack[index.level].clone();
+      System.arraycopy(negativeDeltas, level*numDims, index.negativeDeltas, level*numDims, numDims);
+      index.splitDims[level] = splitDims[level];
+      return index;
+    }
+
+    @Override
+    public void pushLeft() {
+      int nodePosition = leftNodePositions[level];
+      super.pushLeft();
+      System.arraycopy(negativeDeltas, (level-1)*numDims, negativeDeltas, level*numDims, numDims);
+      assert splitDim != -1;
+      negativeDeltas[level*numDims+splitDim] = true;
+      in.setPosition(nodePosition);
+      readNodeData(true);
+    }
+    
+    @Override
+    public void pushRight() {
+      int nodePosition = rightNodePositions[level];
+      super.pushRight();
+      System.arraycopy(negativeDeltas, (level-1)*numDims, negativeDeltas, level*numDims, numDims);
+      assert splitDim != -1;
+      negativeDeltas[level*numDims+splitDim] = false;
+      in.setPosition(nodePosition);
+      readNodeData(false);
+    }
+
+    @Override
+    public void pop() {
+      super.pop();
+      splitDim = splitDims[level];
+    }
+
+    @Override
+    public long getLeafBlockFP() {
+      assert isLeafNode(): "nodeID=" + nodeID + " is not a leaf";
+      return leafBlockFPStack[level];
+    }
+
+    @Override
+    public BytesRef getSplitDimValue() {
+      assert isLeafNode() == false;
+      scratch.bytes = splitValuesStack[level];
+      scratch.offset = splitDim * bytesPerDim;
+      return scratch;
+    }
+
+    private void readNodeData(boolean isLeft) {
+
+      leafBlockFPStack[level] = leafBlockFPStack[level-1];
+
+      // read leaf block FP delta
+      if (isLeft == false) {
+        leafBlockFPStack[level] += in.readVLong();
+      }
+
+      if (isLeafNode()) {
+        splitDim = -1;
+      } else {
+
+        // read split dim, prefix, firstDiffByteDelta encoded as int:
+        int code = in.readVInt();
+        splitDim = code % numDims;
+        splitDims[level] = splitDim;
+        code /= numDims;
+        int prefix = code % (1+bytesPerDim);
+        int suffix = bytesPerDim - prefix;
+
+        if (splitValuesStack[level] == null) {
+          splitValuesStack[level] = new byte[packedBytesLength];
+        }
+        System.arraycopy(splitValuesStack[level-1], 0, splitValuesStack[level], 0, packedBytesLength);
+        if (suffix > 0) {
+          int firstDiffByteDelta = code / (1+bytesPerDim);
+          if (negativeDeltas[level*numDims + splitDim]) {
+            firstDiffByteDelta = -firstDiffByteDelta;
+          }
+          int oldByte = splitValuesStack[level][splitDim*bytesPerDim+prefix] & 0xFF;
+          splitValuesStack[level][splitDim*bytesPerDim+prefix] = (byte) (oldByte + firstDiffByteDelta);
+          in.readBytes(splitValuesStack[level], splitDim*bytesPerDim+prefix+1, suffix-1);
+        } else {
+          // our split value is == last split value in this dim, which can happen when there are many duplicate values
+        }
+
+        int leftNumBytes;
+        if (nodeID * 2 < leafNodeOffset) {
+          leftNumBytes = in.readVInt();
+        } else {
+          leftNumBytes = 0;
+        }
+
+        leftNodePositions[level] = in.getPosition();
+        rightNodePositions[level] = leftNodePositions[level] + leftNumBytes;
+      }
+    }
+  }
+
+  private int getTreeDepth() {
+    // First +1 because all the non-leave nodes makes another power
+    // of 2; e.g. to have a fully balanced tree with 4 leaves you
+    // need a depth=3 tree:
+
+    // Second +1 because MathUtil.log computes floor of the logarithm; e.g.
+    // with 5 leaves you need a depth=4 tree:
+    return MathUtil.log(numLeaves, 2) + 2;
   }
 
   /** Used to track all state for a single call to {@link #intersect}. */
@@ -264,57 +466,73 @@ public class BKDReader implements Accountable {
     final int[] commonPrefixLengths;
 
     final IntersectVisitor visitor;
+    public final IndexTree index;
 
     public IntersectState(IndexInput in, int numDims,
                           int packedBytesLength,
                           int maxPointsInLeafNode,
-                          IntersectVisitor visitor) {
+                          IntersectVisitor visitor,
+                          IndexTree indexVisitor) {
       this.in = in;
       this.visitor = visitor;
       this.commonPrefixLengths = new int[numDims];
       this.scratchDocIDs = new int[maxPointsInLeafNode];
       this.scratchPackedValue = new byte[packedBytesLength];
+      this.index = indexVisitor;
     }
   }
 
   public void intersect(IntersectVisitor visitor) throws IOException {
-    intersect(getIntersectState(visitor), 1, minPackedValue, maxPackedValue);
+    intersect(getIntersectState(visitor), minPackedValue, maxPackedValue);
   }
 
   /** Fast path: this is called when the query box fully encompasses all cells under this node. */
-  private void addAll(IntersectState state, int nodeID) throws IOException {
+  private void addAll(IntersectState state) throws IOException {
     //System.out.println("R: addAll nodeID=" + nodeID);
 
-    if (nodeID >= leafNodeOffset) {
+    if (state.index.isLeafNode()) {
       //System.out.println("ADDALL");
-      visitDocIDs(state.in, leafBlockFPs[nodeID-leafNodeOffset], state.visitor);
+      if (state.index.nodeExists()) {
+        visitDocIDs(state.in, state.index.getLeafBlockFP(), state.visitor);
+      }
       // TODO: we can assert that the first value here in fact matches what the index claimed?
     } else {
-      addAll(state, 2*nodeID);
-      addAll(state, 2*nodeID+1);
+      state.index.pushLeft();
+      addAll(state);
+      state.index.pop();
+
+      state.index.pushRight();
+      addAll(state);
+      state.index.pop();
     }
   }
 
   /** Create a new {@link IntersectState} */
   public IntersectState getIntersectState(IntersectVisitor visitor) {
+    IndexTree index;
+    if (packedIndex != null) {
+      index = new PackedIndexTree();
+    } else {
+      index = new LegacyIndexTree();
+    }
     return new IntersectState(in.clone(), numDims,
                               packedBytesLength,
                               maxPointsInLeafNode,
-                              visitor);
+                              visitor,
+                              index);
   }
 
   /** Visits all docIDs and packed values in a single leaf block */
-  public void visitLeafBlockValues(int nodeID, IntersectState state) throws IOException {
-    int leafID = nodeID - leafNodeOffset;
+  public void visitLeafBlockValues(IndexTree index, IntersectState state) throws IOException {
 
     // Leaf node; scan and filter all points in this block:
-    int count = readDocIDs(state.in, leafBlockFPs[leafID], state.scratchDocIDs);
+    int count = readDocIDs(state.in, index.getLeafBlockFP(), state.scratchDocIDs);
 
     // Again, this time reading values and checking with the visitor
     visitDocValues(state.commonPrefixLengths, state.scratchPackedValue, state.in, state.scratchDocIDs, count, state.visitor);
   }
 
-  protected void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor) throws IOException {
+  private void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor) throws IOException {
     // Leaf node
     in.seek(blockFP);
 
@@ -329,7 +547,7 @@ public class BKDReader implements Accountable {
     }
   }
 
-  protected int readDocIDs(IndexInput in, long blockFP, int[] docIDs) throws IOException {
+  int readDocIDs(IndexInput in, long blockFP, int[] docIDs) throws IOException {
     in.seek(blockFP);
 
     // How many points are stored in this leaf cell:
@@ -344,7 +562,7 @@ public class BKDReader implements Accountable {
     return count;
   }
 
-  protected void visitDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
+  void visitDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
     visitor.grow(count);
 
     readCommonPrefixes(commonPrefixLengths, scratchPackedValue, in);
@@ -413,13 +631,10 @@ public class BKDReader implements Accountable {
     }
   }
 
-  private void intersect(IntersectState state,
-                         int nodeID,
-                         byte[] cellMinPacked, byte[] cellMaxPacked)
-    throws IOException {
+  private void intersect(IntersectState state, byte[] cellMinPacked, byte[] cellMaxPacked) throws IOException {
 
     /*
-    System.out.println("\nR: intersect nodeID=" + nodeID);
+    System.out.println("\nR: intersect nodeID=" + state.index.getNodeID());
     for(int dim=0;dim<numDims;dim++) {
       System.out.println("  dim=" + dim + "\n    cellMin=" + new BytesRef(cellMinPacked, dim*bytesPerDim, bytesPerDim) + "\n    cellMax=" + new BytesRef(cellMaxPacked, dim*bytesPerDim, bytesPerDim));
     }
@@ -429,24 +644,18 @@ public class BKDReader implements Accountable {
 
     if (r == Relation.CELL_OUTSIDE_QUERY) {
       // This cell is fully outside of the query shape: stop recursing
-      return;
     } else if (r == Relation.CELL_INSIDE_QUERY) {
       // This cell is fully inside of the query shape: recursively add all points in this cell without filtering
-      addAll(state, nodeID);
-      return;
-    } else {
-      // The cell crosses the shape boundary, or the cell fully contains the query, so we fall through and do full filtering
-    }
-
-    if (nodeID >= leafNodeOffset) {
+      addAll(state);
+      // The cell crosses the shape boundary, or the cell fully contains the query, so we fall through and do full filtering:
+    } else if (state.index.isLeafNode()) {
+      
       // TODO: we can assert that the first value here in fact matches what the index claimed?
-
-      int leafID = nodeID - leafNodeOffset;
       
       // In the unbalanced case it's possible the left most node only has one child:
-      if (leafID < leafBlockFPs.length) {
+      if (state.index.nodeExists()) {
         // Leaf node; scan and filter all points in this block:
-        int count = readDocIDs(state.in, leafBlockFPs[leafID], state.scratchDocIDs);
+        int count = readDocIDs(state.in, state.index.getLeafBlockFP(), state.scratchDocIDs);
 
         // Again, this time reading values and checking with the visitor
         visitDocValues(state.commonPrefixLengths, state.scratchPackedValue, state.in, state.scratchDocIDs, count, state.visitor);
@@ -455,67 +664,73 @@ public class BKDReader implements Accountable {
     } else {
       
       // Non-leaf node: recurse on the split left and right nodes
-
-      // TODO: save the unused 1 byte prefix (it's always 0) in the 1d case here:
-      int address = nodeID * (bytesPerDim+1);
-      int splitDim = splitPackedValues[address] & 0xff;
+      int splitDim = state.index.getSplitDim();
+      assert splitDim >= 0: "splitDim=" + splitDim;
       assert splitDim < numDims;
 
-      // TODO: can we alloc & reuse this up front?
+      byte[] splitPackedValue = state.index.getSplitPackedValue();
+      BytesRef splitDimValue = state.index.getSplitDimValue();
+      assert splitDimValue.length == bytesPerDim;
+      //System.out.println("  splitDimValue=" + splitDimValue + " splitDim=" + splitDim);
 
-      // TODO: can we alloc & reuse this up front?
-      byte[] splitPackedValue = new byte[packedBytesLength];
+      // make sure cellMin <= splitValue <= cellMax:
+      assert StringHelper.compare(bytesPerDim, cellMinPacked, splitDim*bytesPerDim, splitDimValue.bytes, splitDimValue.offset) <= 0: "bytesPerDim=" + bytesPerDim + " splitDim=" + splitDim + " numDims=" + numDims;
+      assert StringHelper.compare(bytesPerDim, cellMaxPacked, splitDim*bytesPerDim, splitDimValue.bytes, splitDimValue.offset) >= 0: "bytesPerDim=" + bytesPerDim + " splitDim=" + splitDim + " numDims=" + numDims;
 
       // Recurse on left sub-tree:
       System.arraycopy(cellMaxPacked, 0, splitPackedValue, 0, packedBytesLength);
-      System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
-      intersect(state,
-                2*nodeID,
-                cellMinPacked, splitPackedValue);
+      System.arraycopy(splitDimValue.bytes, splitDimValue.offset, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      state.index.pushLeft();
+      intersect(state, cellMinPacked, splitPackedValue);
+      state.index.pop();
+
+      // Restore the split dim value since it may have been overwritten while recursing:
+      System.arraycopy(splitPackedValue, splitDim*bytesPerDim, splitDimValue.bytes, splitDimValue.offset, bytesPerDim);
 
       // Recurse on right sub-tree:
       System.arraycopy(cellMinPacked, 0, splitPackedValue, 0, packedBytesLength);
-      System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
-      intersect(state,
-                2*nodeID+1,
-                splitPackedValue, cellMaxPacked);
+      System.arraycopy(splitDimValue.bytes, splitDimValue.offset, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+      state.index.pushRight();
+      intersect(state, splitPackedValue, cellMaxPacked);
+      state.index.pop();
     }
-  }
-
-  /** Copies the split value for this node into the provided byte array */
-  public void copySplitValue(int nodeID, byte[] splitPackedValue) {
-    int address = nodeID * (bytesPerDim+1);
-    int splitDim = splitPackedValues[address] & 0xff;
-    assert splitDim < numDims;
-    System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
   }
 
   @Override
   public long ramBytesUsed() {
-    return splitPackedValues.length +
-      leafBlockFPs.length * Long.BYTES;
+    if (packedIndex != null) {
+      return packedIndex.length;
+    } else {
+      return RamUsageEstimator.sizeOf(splitPackedValues) + RamUsageEstimator.sizeOf(leafBlockFPs);
+    }
   }
 
+  @Override
   public byte[] getMinPackedValue() {
     return minPackedValue.clone();
   }
 
+  @Override
   public byte[] getMaxPackedValue() {
     return maxPackedValue.clone();
   }
 
+  @Override
   public int getNumDimensions() {
     return numDims;
   }
 
+  @Override
   public int getBytesPerDimension() {
     return bytesPerDim;
   }
 
-  public long getPointCount() {
+  @Override
+  public long size() {
     return pointCount;
   }
 
+  @Override
   public int getDocCount() {
     return docCount;
   }

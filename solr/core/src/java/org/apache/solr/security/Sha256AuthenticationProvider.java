@@ -64,7 +64,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     credentials = new LinkedHashMap<>();
     Map<String,String> users = (Map<String,String>) pluginConfig.get("credentials");
     if (users == null) {
-      log.warn("No users configured yet");
+      log.debug("No users configured yet");
       return;
     }
     for (Map.Entry<String, String> e : users.entrySet()) {

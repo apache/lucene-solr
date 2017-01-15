@@ -115,15 +115,15 @@ public class ScaleFloatFunction extends ValueSource {
 
     return new FloatDocValues(this) {
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         return vals.exists(doc);
       }
       @Override
-      public float floatVal(int doc) {
+      public float floatVal(int doc) throws IOException {
         return (vals.floatVal(doc) - minSource) * scale + min;
       }
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return "scale(" + vals.toString(doc) + ",toMin=" + min + ",toMax=" + max
                 + ",fromMin=" + minSource
                 + ",fromMax=" + maxSource

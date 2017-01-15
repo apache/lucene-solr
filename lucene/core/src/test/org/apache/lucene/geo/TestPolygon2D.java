@@ -103,7 +103,8 @@ public class TestPolygon2D extends LuceneTestCase {
   
   /** If polygon.contains(box) returns true, then any point in that box should return true as well */
   public void testContainsRandom() throws Exception {
-    for (int i = 0; i < 1000; i++) {
+    int iters = atLeast(50);
+    for (int i = 0; i < iters; i++) {
       Polygon polygon = nextPolygon();
       Polygon2D impl = Polygon2D.create(polygon);
       
@@ -175,7 +176,8 @@ public class TestPolygon2D extends LuceneTestCase {
   
   /** If polygon.intersects(box) returns false, then any point in that box should return false as well */
   public void testIntersectRandom() {
-    for (int i = 0; i < 100; i++) {
+    int iters = atLeast(10);
+    for (int i = 0; i < iters; i++) {
       Polygon polygon = nextPolygon();
       Polygon2D impl = Polygon2D.create(polygon);
       
@@ -268,7 +270,8 @@ public class TestPolygon2D extends LuceneTestCase {
   
   /** Tests current impl against original algorithm */
   public void testContainsAgainstOriginal() {
-    for (int i = 0; i < 1000; i++) {
+    int iters = atLeast(100);
+    for (int i = 0; i < iters; i++) {
       Polygon polygon = nextPolygon();
       // currently we don't generate these, but this test does not want holes.
       while (polygon.getHoles().length > 0) {

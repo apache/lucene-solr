@@ -85,12 +85,14 @@ public class XPathEntityProcessor extends EntityProcessorBase {
   protected int blockingQueueSize = 1000;
 
   protected Thread publisherThread;
+
+  protected boolean reinitXPathReader = true;
   
   @Override
   @SuppressWarnings("unchecked")
   public void init(Context context) {
     super.init(context);
-    if (xpathReader == null)
+    if (reinitXPathReader)
       initXpathReader(context.getVariableResolver());
     pk = context.getEntityAttribute("pk");
     dataSource = context.getDataSource();
@@ -99,6 +101,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
   }
 
   private void initXpathReader(VariableResolver resolver) {
+    reinitXPathReader = false;
     useSolrAddXml = Boolean.parseBoolean(context
             .getEntityAttribute(USE_SOLR_ADD_SCHEMA));
     streamRows = Boolean.parseBoolean(context
@@ -147,11 +150,12 @@ public class XPathEntityProcessor extends EntityProcessorBase {
       xpathReader.addField("name", "/add/doc/field/@name", true);
       xpathReader.addField("value", "/add/doc/field", true);
     } else {
-      String forEachXpath = context.getEntityAttribute(FOR_EACH);
+      String forEachXpath = context.getResolvedEntityAttribute(FOR_EACH);
       if (forEachXpath == null)
         throw new DataImportHandlerException(SEVERE,
                 "Entity : " + context.getEntityAttribute("name")
                         + " must have a 'forEach' attribute");
+      if (forEachXpath.equals(context.getEntityAttribute(FOR_EACH))) reinitXPathReader = true;
 
       try {
         xpathReader = new XPathRecordReader(forEachXpath);
@@ -164,6 +168,10 @@ public class XPathEntityProcessor extends EntityProcessorBase {
           }
           String xpath = field.get(XPATH);
           xpath = context.replaceTokens(xpath);
+          //!xpath.equals(field.get(XPATH) means the field xpath has a template
+          //in that case ensure that the XPathRecordReader is reinitialized
+          //for each xml
+          if (!xpath.equals(field.get(XPATH)) && !context.isRootEntity()) reinitXPathReader = true;
           xpathReader.addField(field.get(DataImporter.COLUMN),
                   xpath,
                   Boolean.parseBoolean(field.get(DataImporter.MULTI_VALUED)),
@@ -315,13 +323,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
         rowIterator = getRowIterator(data, s);
       } else {
         try {
-          xpathReader.streamRecords(data, new XPathRecordReader.Handler() {
-            @Override
-            @SuppressWarnings("unchecked")
-            public void handle(Map<String, Object> record, String xpath) {
-              rows.add(readRow(record, xpath));
-            }
-          });
+          xpathReader.streamRecords(data, (record, xpath) -> rows.add(readRow(record, xpath)));
         } catch (Exception e) {
           String msg = "Parsing failed for xml, url:" + s + " rows processed:" + rows.size();
           if (rows.size() > 0) msg += " last row: " + rows.get(rows.size() - 1);
@@ -425,25 +427,21 @@ public class XPathEntityProcessor extends EntityProcessorBase {
       @Override
       public void run() {
         try {
-          xpathReader.streamRecords(data, new XPathRecordReader.Handler() {
-            @Override
-            @SuppressWarnings("unchecked")
-            public void handle(Map<String, Object> record, String xpath) {
-              if (isEnd.get()) {
-                throwExp.set(false);
-                //To end the streaming . otherwise the parsing will go on forever
-                //though consumer has gone away
-                throw new RuntimeException("BREAK");
-              }
-              Map<String, Object> row;
-              try {
-                row = readRow(record, xpath);
-              } catch (Exception e) {
-                isEnd.set(true);
-                return;
-              }
-              offer(row);
+          xpathReader.streamRecords(data, (record, xpath) -> {
+            if (isEnd.get()) {
+              throwExp.set(false);
+              //To end the streaming . otherwise the parsing will go on forever
+              //though consumer has gone away
+              throw new RuntimeException("BREAK");
             }
+            Map<String, Object> row;
+            try {
+              row = readRow(record, xpath);
+            } catch (Exception e) {
+              isEnd.set(true);
+              return;
+            }
+            offer(row);
           });
         } catch (Exception e) {
           if(throwExp.get()) exp.set(e);

@@ -27,7 +27,6 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 
 /**
  * A QueryParser which constructs queries to search multiple fields.
@@ -154,10 +153,10 @@ public class MultiFieldQueryParser extends QueryParser
       for (int i = 0; i < fields.length; i++) {
         Query q = super.getFieldQuery(fields[i], queryText, quoted);
         if (q != null) {
-          if (q instanceof TermQuery) {
-            maxTerms = Math.max(1, maxTerms);
-          } else if (q instanceof BooleanQuery) {
+          if (q instanceof BooleanQuery) {
             maxTerms = Math.max(maxTerms, ((BooleanQuery)q).clauses().size());
+          } else {
+            maxTerms = Math.max(1, maxTerms);
           }
           fieldQueries[i] = q;
         }

@@ -88,11 +88,6 @@ public abstract class FilterCodecReader extends CodecReader {
   }
 
   @Override
-  public PointValues getPointValues() {
-    return in.getPointValues();
-  }
-
-  @Override
   public int numDocs() {
     return in.numDocs();
   }

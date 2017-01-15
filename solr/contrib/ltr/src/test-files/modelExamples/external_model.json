@@ -1,0 +1,12 @@
+{
+    "class":"org.apache.solr.ltr.model.LinearModel",
+    "name":"externalmodel",
+    "features":[
+        { "name": "matchedTitle"}
+    ],
+    "params":{
+        "weights": {
+            "matchedTitle": 0.999
+        }
+    }
+}

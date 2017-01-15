@@ -45,7 +45,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -53,26 +52,8 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.CompositeReader;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.MultiDocValues;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.*;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -202,7 +183,9 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
         if (normValues != null) {
           // mem idx always computes norms on the fly
           assertNotNull(memNormValues);
-          assertEquals(normValues.get(0), memNormValues.get(0));
+          assertEquals(0, normValues.nextDoc());
+          assertEquals(0, memNormValues.nextDoc());
+          assertEquals(normValues.longValue(), memNormValues.longValue());
         }
           
         assertNotNull(memTerms);
@@ -457,9 +440,6 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     Document doc = new Document();
     long randomLong = random().nextLong();
     doc.add(new NumericDocValuesField("numeric", randomLong));
-    if (random().nextBoolean()) {
-      doc.add(new LegacyLongField("numeric", randomLong, Field.Store.NO));
-    }
     int numValues = atLeast(5);
     for (int i = 0; i < numValues; i++) {
       randomLong = random().nextLong();
@@ -467,9 +447,6 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       if (random().nextBoolean()) {
         // randomly duplicate field/value
         doc.add(new SortedNumericDocValuesField("sorted_numeric", randomLong));
-      }
-      if (random().nextBoolean()) {
-        doc.add(new LegacyLongField("numeric", randomLong, Field.Store.NO));
       }
     }
     BytesRef randomTerm = new BytesRef(randomTerm());
@@ -510,32 +487,38 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
 
     NumericDocValues numericDocValues = leafReader.getNumericDocValues("numeric");
     NumericDocValues controlNumericDocValues = controlLeafReader.getNumericDocValues("numeric");
-    assertEquals(controlNumericDocValues.get(0), numericDocValues.get(0));
+    assertEquals(0, numericDocValues.nextDoc());
+    assertEquals(0, controlNumericDocValues.nextDoc());
+    assertEquals(controlNumericDocValues.longValue(), numericDocValues.longValue());
 
     SortedNumericDocValues sortedNumericDocValues = leafReader.getSortedNumericDocValues("sorted_numeric");
-    sortedNumericDocValues.setDocument(0);
+    assertEquals(0, sortedNumericDocValues.nextDoc());
     SortedNumericDocValues controlSortedNumericDocValues = controlLeafReader.getSortedNumericDocValues("sorted_numeric");
-    controlSortedNumericDocValues.setDocument(0);
-    assertEquals(controlSortedNumericDocValues.count(), sortedNumericDocValues.count());
-    for (int i = 0; i < controlSortedNumericDocValues.count(); i++) {
-      assertEquals(controlSortedNumericDocValues.valueAt(i), sortedNumericDocValues.valueAt(i));
+    assertEquals(0, controlSortedNumericDocValues.nextDoc());
+    assertEquals(controlSortedNumericDocValues.docValueCount(), sortedNumericDocValues.docValueCount());
+    for (int i = 0; i < controlSortedNumericDocValues.docValueCount(); i++) {
+      assertEquals(controlSortedNumericDocValues.nextValue(), sortedNumericDocValues.nextValue());
     }
 
     BinaryDocValues binaryDocValues = leafReader.getBinaryDocValues("binary");
     BinaryDocValues controlBinaryDocValues = controlLeafReader.getBinaryDocValues("binary");
-    assertEquals(controlBinaryDocValues.get(0), binaryDocValues.get(0));
+    assertEquals(0, binaryDocValues.nextDoc());
+    assertEquals(0, controlBinaryDocValues.nextDoc());
+    assertEquals(controlBinaryDocValues.binaryValue(), binaryDocValues.binaryValue());
 
     SortedDocValues sortedDocValues = leafReader.getSortedDocValues("sorted");
     SortedDocValues controlSortedDocValues = controlLeafReader.getSortedDocValues("sorted");
     assertEquals(controlSortedDocValues.getValueCount(), sortedDocValues.getValueCount());
-    assertEquals(controlSortedDocValues.get(0), sortedDocValues.get(0));
-    assertEquals(controlSortedDocValues.getOrd(0), sortedDocValues.getOrd(0));
+    assertEquals(0, sortedDocValues.nextDoc());
+    assertEquals(0, controlSortedDocValues.nextDoc());
+    assertEquals(controlSortedDocValues.binaryValue(), sortedDocValues.binaryValue());
+    assertEquals(controlSortedDocValues.ordValue(), sortedDocValues.ordValue());
     assertEquals(controlSortedDocValues.lookupOrd(0), sortedDocValues.lookupOrd(0));
 
     SortedSetDocValues sortedSetDocValues = leafReader.getSortedSetDocValues("sorted_set");
-    sortedSetDocValues.setDocument(0);
+    assertEquals(0, sortedSetDocValues.nextDoc());
     SortedSetDocValues controlSortedSetDocValues = controlLeafReader.getSortedSetDocValues("sorted_set");
-    controlSortedSetDocValues.setDocument(0);
+    assertEquals(0, controlSortedSetDocValues.nextDoc());
     assertEquals(controlSortedSetDocValues.getValueCount(), sortedSetDocValues.getValueCount());
     for (long controlOrd = controlSortedSetDocValues.nextOrd(); controlOrd != SortedSetDocValues.NO_MORE_ORDS;
          controlOrd = controlSortedSetDocValues.nextOrd()) {
@@ -570,7 +553,11 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     IndexReader controlIndexReader = DirectoryReader.open(dir);
     LeafReader controlLeafReader =  controlIndexReader.leaves().get(0).reader();
 
-    assertEquals(controlLeafReader.getNormValues("text").get(0), leafReader.getNormValues("text").get(0));
+    NumericDocValues norms = controlLeafReader.getNormValues("text");
+    assertEquals(0, norms.nextDoc());
+    NumericDocValues norms2 = leafReader.getNormValues("text");
+    assertEquals(0, norms2.nextDoc());
+    assertEquals(norms.longValue(), norms2.longValue());
 
     controlIndexReader.close();
     dir.close();

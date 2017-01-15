@@ -19,14 +19,13 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 
@@ -52,18 +51,37 @@ public class FloatFieldSource extends FieldCacheSource {
   
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-    final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
-    final Bits valid = DocValues.getDocsWithField(readerContext.reader(), field);
 
+    final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
+    
     return new FloatDocValues(this) {
+      int lastDocID;
+
+      private float getValueForDoc(int doc) throws IOException {
+        if (doc < lastDocID) {
+          throw new IllegalArgumentException("docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
+        }
+        lastDocID = doc;
+        int curDocID = arr.docID();
+        if (doc > curDocID) {
+          curDocID = arr.advance(doc);
+        }
+        if (doc == curDocID) {
+          return Float.intBitsToFloat((int)arr.longValue());
+        } else {
+          return 0f;
+        }
+      }
+      
       @Override
-      public float floatVal(int doc) {
-        return Float.intBitsToFloat((int)arr.get(doc));
+      public float floatVal(int doc) throws IOException {
+        return getValueForDoc(doc);
       }
 
       @Override
-      public boolean exists(int doc) {
-        return arr.get(doc) != 0 || valid.get(doc);
+      public boolean exists(int doc) throws IOException {
+        getValueForDoc(doc);
+        return arr.docID() == doc;
       }
 
       @Override
@@ -77,9 +95,9 @@ public class FloatFieldSource extends FieldCacheSource {
           }
 
           @Override
-          public void fillValue(int doc) {
+          public void fillValue(int doc) throws IOException {
             mval.value = floatVal(doc);
-            mval.exists = mval.value != 0 || valid.get(doc);
+            mval.exists = arr.docID() == doc;
           }
         };
       }

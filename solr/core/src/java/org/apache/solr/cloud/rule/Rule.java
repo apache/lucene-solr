@@ -25,7 +25,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
-import static org.apache.solr.cloud.rule.ImplicitSnitch.CORES;
+import static org.apache.solr.common.cloud.rule.ImplicitSnitch.CORES;
 import static org.apache.solr.cloud.rule.Rule.MatchStatus.CANNOT_ASSIGN_FAIL;
 import static org.apache.solr.cloud.rule.Rule.MatchStatus.NODE_CAN_BE_ASSIGNED;
 import static org.apache.solr.cloud.rule.Rule.MatchStatus.NOT_APPLICABLE;
@@ -202,7 +202,7 @@ public class Rule {
 
       @Override
       public boolean canMatch(Object ruleVal, Object testVal) {
-        return compareNum(ruleVal, testVal) == 1;
+        return testVal != null && compareNum(ruleVal, testVal) == 1;
       }
 
     },
@@ -214,7 +214,7 @@ public class Rule {
 
       @Override
       public boolean canMatch(Object ruleVal, Object testVal) {
-        return compareNum(ruleVal, testVal) == -1;
+        return testVal != null && compareNum(ruleVal, testVal) == -1;
       }
 
       @Override

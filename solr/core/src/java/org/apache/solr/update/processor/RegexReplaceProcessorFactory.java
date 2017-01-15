@@ -16,18 +16,18 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.core.SolrCore;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
-
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import java.util.regex.PatternSyntaxException;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
+import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.valueMutator;
 
 
 /**
@@ -130,15 +130,12 @@ public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProce
   public UpdateRequestProcessor getInstance(SolrQueryRequest request,
                                             SolrQueryResponse response,
                                             UpdateRequestProcessor next) {
-    return new FieldValueMutatingUpdateProcessor(getSelector(), next) {
-      @Override
-      protected Object mutateValue(final Object src) {
-        if (src instanceof CharSequence) {
-          CharSequence txt = (CharSequence)src;
-          return pattern.matcher(txt).replaceAll(replacement);
-        }
-        return src;
+    return valueMutator(getSelector(), next, src -> {
+      if (src instanceof CharSequence) {
+        CharSequence txt = (CharSequence) src;
+        return pattern.matcher(txt).replaceAll(replacement);
       }
-    };
+      return src;
+    });
   }
 }

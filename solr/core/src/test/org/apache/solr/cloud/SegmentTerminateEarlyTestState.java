@@ -22,6 +22,7 @@ import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Random;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -47,7 +48,12 @@ class SegmentTerminateEarlyTestState {
   Integer maxTimestampMM = null;
 
   int numDocs = 0;
+  final Random rand;
 
+  public SegmentTerminateEarlyTestState(Random rand) {
+    this.rand = rand;
+  }
+  
   void addDocuments(CloudSolrClient cloudSolrClient,
       int numCommits, int numDocsPerCommit, boolean optimize) throws Exception {
     for (int cc = 1; cc <= numCommits; ++cc) {
@@ -56,7 +62,7 @@ class SegmentTerminateEarlyTestState {
         final Integer docKey = new Integer(numDocs);
         SolrInputDocument doc = new SolrInputDocument();
         doc.setField(keyField, ""+docKey);
-        final int MM = TestMiniSolrCloudCluster.random().nextInt(60); // minutes
+        final int MM = rand.nextInt(60); // minutes
         if (minTimestampMM == null || MM <= minTimestampMM.intValue()) {
           if (minTimestampMM != null && MM < minTimestampMM.intValue()) {
             minTimestampDocKeys.clear();
@@ -116,7 +122,7 @@ class SegmentTerminateEarlyTestState {
     query.setFields(keyField, oddField, timestampField);
     final int rowsWanted = 1;
     query.setRows(rowsWanted);
-    final Boolean shardsInfoWanted = (TestMiniSolrCloudCluster.random().nextBoolean() ? null : new Boolean(TestMiniSolrCloudCluster.random().nextBoolean()));
+    final Boolean shardsInfoWanted = (rand.nextBoolean() ? null : new Boolean(rand.nextBoolean()));
     if (shardsInfoWanted != null) {
       query.set(ShardParams.SHARDS_INFO, shardsInfoWanted.booleanValue());
     }
@@ -163,7 +169,7 @@ class SegmentTerminateEarlyTestState {
     query.setSort(timestampField, SolrQuery.ORDER.desc);
     query.setFields(keyField, oddField, timestampField);
     query.setRows(1);
-    final Boolean shardsInfoWanted = (TestMiniSolrCloudCluster.random().nextBoolean() ? null : new Boolean(TestMiniSolrCloudCluster.random().nextBoolean()));
+    final Boolean shardsInfoWanted = (rand.nextBoolean() ? null : new Boolean(rand.nextBoolean()));
     if (shardsInfoWanted != null) {
       query.set(ShardParams.SHARDS_INFO, shardsInfoWanted.booleanValue());
     }

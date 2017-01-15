@@ -101,7 +101,7 @@ public final class CSVUtil {
     String result = original;
     
     if (result.indexOf('\"') >= 0) {
-      result.replace("\"", ESCAPED_QUOTE);
+      result = result.replace("\"", ESCAPED_QUOTE);
     }
     if(result.indexOf(COMMA) >= 0) {
       result = "\"" + result + "\"";

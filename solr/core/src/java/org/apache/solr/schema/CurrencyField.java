@@ -35,6 +35,7 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -180,14 +181,11 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
     f.add(currencyField.createField(value.getCurrencyCode(), currencyField.indexed() && !currencyField.omitNorms() ? boost : 1F));
 
     if (field.stored()) {
-      org.apache.lucene.document.FieldType customType = new org.apache.lucene.document.FieldType();
-      assert !customType.omitNorms();
-      customType.setStored(true);
       String storedValue = externalVal.toString().trim();
       if (storedValue.indexOf(",") < 0) {
         storedValue += "," + defaultCurrency;
       }
-      f.add(createField(field.getName(), storedValue, customType, 1F));
+      f.add(createField(field.getName(), storedValue, StoredField.TYPE, 1F));
     }
 
     return f;
@@ -398,35 +396,35 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
       final double divisor = Math.pow(10D, targetCurrency.getDefaultFractionDigits());
       return new FunctionValues() {
         @Override
-        public boolean exists(int doc) {
+        public boolean exists(int doc) throws IOException {
           return amounts.exists(doc);
         }
         @Override
-        public long longVal(int doc) {
+        public long longVal(int doc) throws IOException {
           return (long) doubleVal(doc);
         }
         @Override
-        public int intVal(int doc) {
+        public int intVal(int doc) throws IOException {
           return (int) doubleVal(doc);
         }
 
         @Override
-        public double doubleVal(int doc) {
+        public double doubleVal(int doc) throws IOException {
           return CurrencyValue.convertAmount(rate, sourceCurrencyCode, amounts.longVal(doc), targetCurrency.getCurrencyCode()) / divisor;
         }
 
         @Override
-        public float floatVal(int doc) {
+        public float floatVal(int doc) throws IOException {
           return CurrencyValue.convertAmount(rate, sourceCurrencyCode, amounts.longVal(doc), targetCurrency.getCurrencyCode()) / ((float)divisor);
         }
 
         @Override
-        public String strVal(int doc) {
+        public String strVal(int doc) throws IOException {
           return Double.toString(doubleVal(doc));
         }
 
         @Override
-        public String toString(int doc) {
+        public String toString(int doc) throws IOException {
           return name() + '(' + strVal(doc) + ')';
         }
       };
@@ -514,7 +512,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
         private int targetCurrencyOrd = -1;
         private boolean initializedCache;
 
-        private String getDocCurrencyCode(int doc, int currencyOrd) {
+        private String getDocCurrencyCode(int doc, int currencyOrd) throws IOException {
           if (currencyOrd < MAX_CURRENCIES_TO_CACHE) {
             String currency = currencyOrdToCurrencyCache[currencyOrd];
 
@@ -537,7 +535,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
           }
         }
         /** throws a (Server Error) SolrException if the code is not valid */
-        private Currency getDocCurrency(int doc, int currencyOrd) {
+        private Currency getDocCurrency(int doc, int currencyOrd) throws IOException {
           String code = getDocCurrencyCode(doc, currencyOrd);
           Currency c = getCurrency(code);
           if (null == c) {
@@ -549,12 +547,12 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
         }
 
         @Override
-        public boolean exists(int doc) {
+        public boolean exists(int doc) throws IOException {
           return amounts.exists(doc);
         }
         
         @Override
-        public long longVal(int doc) {
+        public long longVal(int doc) throws IOException {
           long amount = amounts.longVal(doc);
           // bail fast using whatever amounts defaults to if no value
           // (if we don't do this early, currencyOrd may be < 0, 
@@ -607,27 +605,27 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
         }
 
         @Override
-        public int intVal(int doc) {
+        public int intVal(int doc) throws IOException {
           return (int) longVal(doc);
         }
 
         @Override
-        public double doubleVal(int doc) {
+        public double doubleVal(int doc) throws IOException {
           return (double) longVal(doc);
         }
 
         @Override
-        public float floatVal(int doc) {
+        public float floatVal(int doc) throws IOException {
           return (float) longVal(doc);
         }
 
         @Override
-        public String strVal(int doc) {
+        public String strVal(int doc) throws IOException {
           return Long.toString(longVal(doc));
         }
 
         @Override
-        public String toString(int doc) {
+        public String toString(int doc) throws IOException {
           return name() + '(' + amounts.toString(doc) + ',' + currencies.toString(doc) + ')';
         }
       };
@@ -787,7 +785,7 @@ class FileExchangeRateProvider implements ExchangeRateProvider {
     InputStream is = null;
     Map<String, Map<String, Double>> tmpRates = new HashMap<>();
     try {
-      log.info("Reloading exchange rates from file "+this.currencyConfigFile);
+      log.debug("Reloading exchange rates from file "+this.currencyConfigFile);
 
       is = loader.openResource(currencyConfigFile);
       javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();

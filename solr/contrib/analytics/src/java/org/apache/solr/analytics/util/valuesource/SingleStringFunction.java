@@ -44,20 +44,20 @@ public abstract class SingleStringFunction extends ValueSource {
   }
 
   abstract String name();
-  abstract CharSequence func(int doc, FunctionValues vals);
+  abstract CharSequence func(int doc, FunctionValues vals) throws IOException;
 
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues vals =  source.getValues(context, readerContext);
     return new StrDocValues(this) {
       @Override
-      public String strVal(int doc) {
+      public String strVal(int doc) throws IOException {
         CharSequence cs = func(doc, vals);
         return cs != null ? cs.toString() : null;
       }
       
       @Override
-      public boolean bytesVal(int doc, BytesRefBuilder bytes) {
+      public boolean bytesVal(int doc, BytesRefBuilder bytes) throws IOException {
         CharSequence cs = func(doc, vals);
         if( cs != null ){
           bytes.copyChars(func(doc,vals));
@@ -69,17 +69,17 @@ public abstract class SingleStringFunction extends ValueSource {
       }
 
       @Override
-      public Object objectVal(int doc) {
+      public Object objectVal(int doc) throws IOException {
         return strVal(doc);
       }
       
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         return vals.exists(doc);
       }
 
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return name() + '(' + strVal(doc) + ')';
       }
 
@@ -94,7 +94,7 @@ public abstract class SingleStringFunction extends ValueSource {
           }
 
           @Override
-          public void fillValue(int doc) {
+          public void fillValue(int doc) throws IOException {
             mval.exists = bytesVal(doc, mval.value);
           }
         };

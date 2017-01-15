@@ -63,7 +63,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.Config;
-import org.apache.solr.core.MapSerializable;
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -462,14 +462,11 @@ public class IndexSchema {
       final XPath xpath = schemaConf.getXPath();
       String expression = stepsToPath(SCHEMA, AT + NAME);
       Node nd = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+      String coreName = getCoreName("null");
       StringBuilder sb = new StringBuilder();
       // Another case where the initialization from the test harness is different than the "real world"
       sb.append("[");
-      if (loader.getCoreProperties() != null) {
-        sb.append(loader.getCoreProperties().getProperty(SOLR_CORE_NAME));
-      } else {
-        sb.append("null");
-      }
+      sb.append(coreName);
       sb.append("] ");
       if (nd==null) {
         sb.append("schema has no name!");
@@ -537,18 +534,20 @@ public class IndexSchema {
             throw new SolrException(ErrorCode.SERVER_ERROR, msg);
           }
         }
-        log.info("default search field in schema is "+defaultSearchFieldName);
+        log.warn("[{}] default search field in schema is {}. WARNING: Deprecated, please use 'df' on request instead.",
+            coreName, defaultSearchFieldName);
       }
 
       //                      /schema/solrQueryParser/@defaultOperator
       expression = stepsToPath(SCHEMA, SOLR_QUERY_PARSER, AT + DEFAULT_OPERATOR);
       node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
       if (node==null) {
-        log.debug("using default query parser operator (OR)");
+        log.debug("Default query parser operator not set in Schema");
       } else {
         isExplicitQueryParserDefaultOperator = true;
         queryParserDefaultOperator=node.getNodeValue().trim();
-        log.info("query parser default operator is "+queryParserDefaultOperator);
+        log.warn("[{}] query parser default operator is {}. WARNING: Deprecated, please use 'q.op' on request instead.",
+            coreName, queryParserDefaultOperator);
       }
 
       //                      /schema/uniqueKey/text()
@@ -577,8 +576,7 @@ public class IndexSchema {
         }
         uniqueKeyFieldName=uniqueKeyField.getName();
         uniqueKeyFieldType=uniqueKeyField.getType();
-        log.info("unique key field: "+uniqueKeyFieldName);
-      
+
         // Unless the uniqueKeyField is marked 'required=false' then make sure it exists
         if( Boolean.FALSE != explicitRequiredProp.get( uniqueKeyFieldName ) ) {
           uniqueKeyField.required = true;
@@ -606,8 +604,18 @@ public class IndexSchema {
 
     // create the field analyzers
     refreshAnalyzers();
+
+    log.info("Loaded schema {}/{} with uniqueid field {}", name, version, uniqueKeyFieldName);
   }
-  
+
+  private String getCoreName(String defaultVal) {
+    if (loader != null && loader.getCoreProperties() != null) {
+      return loader.getCoreProperties().getProperty(SOLR_CORE_NAME, defaultVal);
+    } else {
+      return defaultVal;
+    }
+  }
+
   protected void postReadInform() {
     //Run the callbacks on SchemaAware now that everything else is done
     for (SchemaAware aware : schemaAware) {
@@ -1489,7 +1497,7 @@ public class IndexSchema {
 
 
     @Override
-    public Map<String, Object> toMap() {
+    public Map<String, Object> toMap(Map<String, Object> map) {
       return Stream.of(Handler.values())
           .filter(it -> name == null || it.nameLower.equals(name))
           .map(it -> new Pair<>(it.realName, it.fun.apply(this)))
@@ -1500,12 +1508,14 @@ public class IndexSchema {
               (v1, v2) -> v2,
               LinkedHashMap::new));
     }
-    public static Map<String,String> nameMapping = Collections.unmodifiableMap(Stream.of(Handler.values())
-        .collect(Collectors.toMap(Handler::getNameLower , Handler::getRealName)));
   }
 
+  public static Map<String,String> nameMapping = Collections.unmodifiableMap(Stream.of(SchemaProps.Handler.values())
+      .collect(Collectors.toMap(SchemaProps.Handler::getNameLower , SchemaProps.Handler::getRealName)));
+
+
   public Map<String, Object> getNamedPropertyValues(String name, SolrParams params) {
-    return new SchemaProps(name, params, this).toMap();
+    return new SchemaProps(name, params, this).toMap(new LinkedHashMap<>());
 
   }
 

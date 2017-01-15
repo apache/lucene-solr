@@ -28,8 +28,8 @@ import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.facet.DrillDownQuery;
-import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.DrillSideways;
+import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetTestCase;
@@ -46,13 +46,11 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
-import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
-import org.apache.lucene.queries.function.valuesource.LongFieldSource;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
@@ -437,7 +435,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       } else {
         fastMatchQuery = null;
       }
-      ValueSource vs = new LongFieldSource("field");
+      LongValuesSource vs = LongValuesSource.fromLongField("field");
       Facets facets = new LongRangeFacetCounts("field", vs, sfc, fastMatchQuery, ranges);
       FacetResult result = facets.getTopChildren(10, "field");
       assertEquals(numRange, result.labelValues.length);
@@ -580,7 +578,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       } else {
         fastMatchFilter = null;
       }
-      ValueSource vs = new DoubleFieldSource("field");
+      DoubleValuesSource vs = DoubleValuesSource.fromDoubleField("field");
       Facets facets = new DoubleRangeFacetCounts("field", vs, sfc, fastMatchFilter, ranges);
       FacetResult result = facets.getTopChildren(10, "field");
       assertEquals(numRange, result.labelValues.length);
@@ -708,7 +706,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
   }
 
-  public void testCustomDoublesValueSource() throws Exception {
+  public void testCustomDoubleValuesSource() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     
@@ -720,33 +718,30 @@ public class TestRangeFacetCounts extends FacetTestCase {
     // Test wants 3 docs in one segment:
     writer.forceMerge(1);
 
-    final ValueSource vs = new ValueSource() {
-        @SuppressWarnings("rawtypes")
-        @Override
-        public FunctionValues getValues(Map ignored, LeafReaderContext ignored2) {
-          return new DoubleDocValues(null) {
-            @Override
-            public double doubleVal(int doc) {
-              return doc+1;
-            }
-          };
-        }
+    final DoubleValuesSource vs = new DoubleValuesSource() {
 
-        @Override
-        public boolean equals(Object o) {
-          return o != null && getClass() == o.getClass();
-        }
+      @Override
+      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+        return new DoubleValues() {
+          int doc = -1;
+          @Override
+          public double doubleValue() throws IOException {
+            return doc + 1;
+          }
 
-        @Override
-        public int hashCode() {
-          return getClass().hashCode();
-        }
+          @Override
+          public boolean advanceExact(int doc) throws IOException {
+            this.doc = doc;
+            return true;
+          }
+        };
+      }
 
-        @Override
-        public String description() {
-          throw new UnsupportedOperationException();
-        }
-      };
+      @Override
+      public boolean needsScores() {
+        return false;
+      }
+    };
 
     FacetsConfig config = new FacetsConfig();
     

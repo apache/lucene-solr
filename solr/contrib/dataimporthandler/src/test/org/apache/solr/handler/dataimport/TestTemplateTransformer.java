@@ -69,5 +69,43 @@ public class TestTemplateTransformer extends AbstractDataImportHandlerTestCase {
     assertEquals("Mr Mangar, Shalin Shekhar", row.get("mrname"));
     assertEquals(mails,row.get("emails"));
   }
+    
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testTransformRowMultiValue() {
+    List fields = new ArrayList();
+    fields.add(createMap("column", "year"));
+    fields.add(createMap("column", "month"));
+    fields.add(createMap("column", "day"));
+      
+    // create three variations of date format
+    fields.add(createMap( "column", "date",
+                          TemplateTransformer.TEMPLATE,
+                          "${e.day} ${e.month}, ${e.year}" ));
+    fields.add(createMap( "column", "date",
+                          TemplateTransformer.TEMPLATE,
+                          "${e.month} ${e.day}, ${e.year}" ));
+    fields.add(createMap("column", "date",
+                          TemplateTransformer.TEMPLATE,
+                          "${e.year}-${e.month}-${e.day}" ));
+      
+    Map row = createMap( "year", "2016",
+                         "month", "Apr",
+                         "day", "30" );
+    VariableResolver resolver = new VariableResolver();
+    resolver.addNamespace("e", row);
+    Map<String, String> entityAttrs = createMap("date", "e");
+      
+    Context context = getContext(null, resolver,
+                                 null, Context.FULL_DUMP, fields, entityAttrs);
+    new TemplateTransformer().transformRow(row, context);
+    assertTrue( row.get( "date" ) instanceof List );
+    
+    List<Object> dates = (List<Object>)row.get( "date" );
+    assertEquals( dates.size(), 3 );
+    assertEquals( dates.get(0).toString(), "30 Apr, 2016" );
+    assertEquals( dates.get(1).toString(), "Apr 30, 2016" );
+    assertEquals( dates.get(2).toString(), "2016-Apr-30" );
+  }
 
 }

@@ -265,6 +265,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     return writer.numDocs() - 1;
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-7161")
   public void testMultiFieldShouldReturnPerFieldBooleanQuery() throws Exception {
     IndexReader reader = null;
     Directory dir = newDirectory();

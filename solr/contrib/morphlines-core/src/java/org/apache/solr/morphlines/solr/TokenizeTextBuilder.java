@@ -21,6 +21,7 @@ import java.io.Reader;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -35,7 +36,6 @@ import org.kitesdk.morphline.api.MorphlineContext;
 import org.kitesdk.morphline.api.MorphlineRuntimeException;
 import org.kitesdk.morphline.api.Record;
 import org.kitesdk.morphline.base.AbstractCommand;
-import com.google.common.base.Preconditions;
 import com.typesafe.config.Config;
 
 /**
@@ -79,11 +79,9 @@ public final class TokenizeTextBuilder implements CommandBuilder {
       if (fieldType == null) {
         throw new MorphlineCompilationException("Missing Solr field type in schema.xml for name: " + solrFieldType, config);
       }
-      this.analyzer = fieldType.getIndexAnalyzer();
-      Preconditions.checkNotNull(analyzer);
+      this.analyzer = Objects.requireNonNull(fieldType.getIndexAnalyzer());
       // register CharTermAttribute for later (implicit) reuse
-      this.token = analyzer.tokenStream("content", reader).addAttribute(CharTermAttribute.class);
-      Preconditions.checkNotNull(token);
+      this.token = Objects.requireNonNull(analyzer.tokenStream("content", reader).addAttribute(CharTermAttribute.class));
       validateArguments();
     }
 

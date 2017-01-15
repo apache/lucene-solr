@@ -33,7 +33,7 @@ public interface StatsCollector {
    * Collect values from the value source and add to statistics.
    * @param doc Document to collect from
    */
-  void collect(int doc);
+  void collect(int doc) throws IOException;
   
   /**
    * @param context The context to read documents from.

@@ -16,17 +16,131 @@
  */
 package org.apache.solr.search.facet;
 
-//
-// The FacetMerger code is in the prototype stage, and this is the reason that
-// many implementations are all in this file.  They can be moved to separate
-// files after the interfaces are locked down more.
-//
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Map;
+
+import static org.apache.solr.search.facet.FacetRequest.RefineMethod.SIMPLE;
+
+
 public abstract class FacetMerger {
   public abstract void merge(Object facetResult, Context mcontext);
+
+  // FIXME
+  //  public abstract Map<String,Object> getRefinement(Context mcontext);
+  public Map<String,Object> getRefinement(Context mcontext) {
+    return null;
+  }
+  public abstract void finish(Context mcontext);
   public abstract Object getMergedResult();
 
+  // This class lets mergers know overall context such as what shard is being merged
+  // and what buckets have been seen by what shard.
   public static class Context {
     // FacetComponentState state;  // todo: is this needed?
-    Object root;
+    final int numShards;
+    private final BitSet sawShard = new BitSet(); // [bucket0_shard0, bucket0_shard1, bucket0_shard2,  bucket1_shard0, bucket1_shard1, bucket1_shard2]
+    private Map<String,Integer> shardmap = new HashMap<>();
+
+    public Context(int numShards) {
+      this.numShards = numShards;
+    }
+
+    Object root;  // per-shard response
+    int maxBucket;  // the current max bucket across all bucket types... incremented as we encounter more
+    int shardNum = -1;  // TODO: keep same mapping across multiple phases...
+    boolean bucketWasMissing;
+
+    public void newShard(String shard) {
+      Integer prev = shardmap.put(shard, ++shardNum);
+      assert prev == null;
+      this.bucketWasMissing = false;
+    }
+
+    public void setShard(String shard) {
+      this.shardNum = shardmap.get(shard);
+    }
+
+    public int getNewBucketNumber() {
+      return maxBucket++;
+    }
+
+    public void setShardFlag(int bucketNum) {
+      // rely on normal bitset expansion (uses a doubling strategy)
+      sawShard.set( bucketNum * numShards + shardNum );
+    }
+
+    public boolean getShardFlag(int bucketNum) {
+      return sawShard.get( bucketNum * numShards + shardNum );
+    }
+
+    public boolean bucketWasMissing() {
+      return bucketWasMissing;
+    }
+
+    public boolean setBucketWasMissing(boolean newVal) {
+      boolean oldVal = bucketWasMissing();
+      bucketWasMissing = newVal;
+      return oldVal;
+    }
+
+    private Map<FacetRequest, Collection<String>> refineSubMap = new IdentityHashMap<>(4);
+    public Collection<String> getSubsWithRefinement(FacetRequest freq) {
+      if (freq.getSubFacets().isEmpty()) return Collections.emptyList();
+      Collection<String> subs = refineSubMap.get(freq);
+      if (subs != null) return subs;
+
+      for (Map.Entry<String,FacetRequest> entry : freq.subFacets.entrySet()) {
+        Collection<String> childSubs = getSubsWithRefinement(entry.getValue());
+        if (childSubs.size() > 0 || entry.getValue().getRefineMethod() == SIMPLE) {
+          if (subs == null) {
+            subs = new ArrayList<>(freq.getSubFacets().size());
+          }
+          subs.add(entry.getKey());
+        }
+      }
+
+      if (subs == null) {
+        subs = Collections.emptyList();
+      }
+      refineSubMap.put(freq, subs);
+      return subs;
+    }
+
+
+    private Map<FacetRequest, Collection<String>> partialSubsMap = new IdentityHashMap<>(4);
+    public Collection<String> getSubsWithPartial(FacetRequest freq) {
+      if (freq.getSubFacets().isEmpty()) return Collections.emptyList();
+      Collection<String> subs = partialSubsMap.get(freq);
+      if (subs != null) return subs;
+
+      subs = null;
+      for (Map.Entry<String,FacetRequest> entry : freq.subFacets.entrySet()) {
+        Collection<String> childSubs = getSubsWithPartial(entry.getValue());
+        if (childSubs.size() > 0 || entry.getValue().returnsPartial()) {
+          if (subs == null) {
+            subs = new ArrayList<>(freq.getSubFacets().size());
+          }
+          subs.add(entry.getKey());
+        }
+      }
+
+      if (subs == null) {
+        subs = Collections.emptyList();
+      }
+      partialSubsMap.put(freq, subs);
+      return subs;
+    }
+
+
   }
+
+
+
 }
+
+

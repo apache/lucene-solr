@@ -59,10 +59,18 @@ public class CollectionMutator {
       String shardRange = message.getStr(ZkStateReader.SHARD_RANGE_PROP);
       String shardState = message.getStr(ZkStateReader.SHARD_STATE_PROP);
       String shardParent = message.getStr(ZkStateReader.SHARD_PARENT_PROP);
+      String shardParentZkSession = message.getStr("shard_parent_zk_session");
+      String shardParentNode = message.getStr("shard_parent_node");
       sliceProps.put(Slice.RANGE, shardRange);
       sliceProps.put(ZkStateReader.STATE_PROP, shardState);
       if (shardParent != null) {
         sliceProps.put(Slice.PARENT, shardParent);
+      }
+      if (shardParentZkSession != null) {
+        sliceProps.put("shard_parent_zk_session", shardParentZkSession);
+      }
+      if (shardParentNode != null)  {
+        sliceProps.put("shard_parent_node", shardParentNode);
       }
       collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps));
       return new ZkWriteCommand(collectionName, collection);

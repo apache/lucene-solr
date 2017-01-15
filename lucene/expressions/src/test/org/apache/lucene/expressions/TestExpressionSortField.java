@@ -31,7 +31,7 @@ public class TestExpressionSortField extends LuceneTestCase {
     bindings.add(new SortField("popularity", SortField.Type.INT));
     
     SortField sf = expr.getSortField(bindings, true);
-    assertEquals("<expr \"sqrt(_score) + ln(popularity)\">!", sf.toString());
+    assertEquals("<expr(sqrt(_score) + ln(popularity))>!", sf.toString());
   }
   
   public void testEquals() throws Exception {

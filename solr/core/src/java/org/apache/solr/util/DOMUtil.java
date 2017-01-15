@@ -79,6 +79,11 @@ public class DOMUtil {
     return getAttr(nd.getAttributes(), name);
   }
 
+  public static String getAttrOrDefault(Node nd, String name, String def) {
+    String attr = getAttr(nd.getAttributes(), name);
+    return attr == null ? def : attr;
+  }
+
   public static String getAttr(NamedNodeMap attrs, String name, String missing_err) {
     Node attr = attrs==null? null : attrs.getNamedItem(name);
     if (attr==null) {

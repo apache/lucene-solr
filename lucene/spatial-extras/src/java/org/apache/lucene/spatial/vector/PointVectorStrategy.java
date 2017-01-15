@@ -20,16 +20,18 @@ import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.legacy.LegacyDoubleField;
+import org.apache.lucene.legacy.LegacyFieldType;
+import org.apache.lucene.legacy.LegacyNumericRangeQuery;
+import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.FunctionRangeQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
@@ -85,7 +87,7 @@ public class PointVectorStrategy extends SpatialStrategy {
   public static FieldType DEFAULT_FIELDTYPE;
 
   @Deprecated
-  public static FieldType LEGACY_FIELDTYPE;
+  public static LegacyFieldType LEGACY_FIELDTYPE;
   static {
     // Default: pointValues + docValues
     FieldType type = new FieldType();
@@ -95,14 +97,14 @@ public class PointVectorStrategy extends SpatialStrategy {
     type.freeze();
     DEFAULT_FIELDTYPE = type;
     // Legacy default: legacyNumerics
-    type = new FieldType();
-    type.setIndexOptions(IndexOptions.DOCS);
-    type.setNumericType(FieldType.LegacyNumericType.DOUBLE);
-    type.setNumericPrecisionStep(8);// same as solr default
-    type.setDocValuesType(DocValuesType.NONE);//no docValues!
-    type.setStored(false);
-    type.freeze();
-    LEGACY_FIELDTYPE = type;
+    LegacyFieldType legacyType = new LegacyFieldType();
+    legacyType.setIndexOptions(IndexOptions.DOCS);
+    legacyType.setNumericType(LegacyNumericType.DOUBLE);
+    legacyType.setNumericPrecisionStep(8);// same as solr default
+    legacyType.setDocValuesType(DocValuesType.NONE);//no docValues!
+    legacyType.setStored(false);
+    legacyType.freeze();
+    LEGACY_FIELDTYPE = legacyType;
   }
 
   public static final String SUFFIX_X = "__x";
@@ -116,7 +118,7 @@ public class PointVectorStrategy extends SpatialStrategy {
   private final boolean hasDocVals;
   private final boolean hasPointVals;
   // equiv to "hasLegacyNumerics":
-  private final FieldType legacyNumericFieldType; // not stored; holds precision step.
+  private final LegacyFieldType legacyNumericFieldType; // not stored; holds precision step.
 
   /**
    * Create a new {@link PointVectorStrategy} instance that uses {@link DoublePoint} and {@link DoublePoint#newRangeQuery}
@@ -157,16 +159,17 @@ public class PointVectorStrategy extends SpatialStrategy {
     if ((this.hasPointVals = fieldType.pointDimensionCount() > 0)) {
       numPairs++;
     }
-    if (fieldType.indexOptions() != IndexOptions.NONE && fieldType.numericType() != null) {
+    if (fieldType.indexOptions() != IndexOptions.NONE && fieldType instanceof LegacyFieldType && ((LegacyFieldType)fieldType).numericType() != null) {
       if (hasPointVals) {
         throw new IllegalArgumentException("pointValues and LegacyNumericType are mutually exclusive");
       }
-      if (fieldType.numericType() != FieldType.LegacyNumericType.DOUBLE) {
-        throw new IllegalArgumentException(getClass() + " does not support " + fieldType.numericType());
+      final LegacyFieldType legacyType = (LegacyFieldType) fieldType;
+      if (legacyType.numericType() != LegacyNumericType.DOUBLE) {
+        throw new IllegalArgumentException(getClass() + " does not support " + legacyType.numericType());
       }
       numPairs++;
-      legacyNumericFieldType = new FieldType(LegacyDoubleField.TYPE_NOT_STORED);
-      legacyNumericFieldType.setNumericPrecisionStep(fieldType.numericPrecisionStep());
+      legacyNumericFieldType = new LegacyFieldType(LegacyDoubleField.TYPE_NOT_STORED);
+      legacyNumericFieldType.setNumericPrecisionStep(legacyType.numericPrecisionStep());
       legacyNumericFieldType.freeze();
     } else {
       legacyNumericFieldType = null;

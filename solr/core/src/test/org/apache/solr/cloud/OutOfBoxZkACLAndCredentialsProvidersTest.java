@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
@@ -77,6 +78,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     zkClient.makePath("/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.create("/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.makePath("/unprotectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+    zkClient.create(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.close();
 
     log.info("####SETUP_END " + getTestName());
@@ -93,7 +95,9 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   public void testOutOfBoxSolrZkClient() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient, true, true, true, true, true);
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient,
+          true, true, true, true, true,
+          true, true, true, true, true);
     } finally {
       zkClient.close();
     }
@@ -110,6 +114,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
       assertTrue(verifiedList.contains("/solr/unprotectedMakePathNode"));
       assertTrue(verifiedList.contains("/solr/protectedMakePathNode"));
       assertTrue(verifiedList.contains("/solr/protectedCreateNode"));
+      assertTrue(verifiedList.contains("/solr" + SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH));
     } finally {
       zkClient.close();
     }

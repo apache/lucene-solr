@@ -38,7 +38,7 @@ public abstract class MultiDoubleFunction extends ValueSource {
   }
 
   abstract protected String name();
-  abstract protected double func(int doc, FunctionValues[] valsArr);
+  abstract protected double func(int doc, FunctionValues[] valsArr) throws IOException;
 
   @Override
   public String description() {
@@ -66,12 +66,12 @@ public abstract class MultiDoubleFunction extends ValueSource {
 
     return new DoubleDocValues(this) {
       @Override
-      public double doubleVal(int doc) {
+      public double doubleVal(int doc) throws IOException {
         return func(doc, valsArr);
       }
       
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         boolean exists = true;
         for (FunctionValues val : valsArr) {
           exists = exists & val.exists(doc);
@@ -80,7 +80,7 @@ public abstract class MultiDoubleFunction extends ValueSource {
       }
        
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append(name()).append('(');
         boolean firstTime=true;

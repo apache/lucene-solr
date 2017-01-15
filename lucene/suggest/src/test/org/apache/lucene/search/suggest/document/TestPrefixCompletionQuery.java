@@ -24,9 +24,12 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -34,11 +37,12 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.suggest.BitsProducer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 import static org.apache.lucene.search.suggest.document.TestSuggestField.Entry;
 import static org.apache.lucene.search.suggest.document.TestSuggestField.assertSuggestions;
 import static org.apache.lucene.search.suggest.document.TestSuggestField.iwcWithSuggestField;
@@ -81,30 +85,21 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     @Override
     public Bits getBits(final LeafReaderContext context) throws IOException {
       final int maxDoc = context.reader().maxDoc();
+      FixedBitSet bits = new FixedBitSet(maxDoc);
       final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
-      return new Bits() {
-
-        @Override
-        public boolean get(int doc) {
-          values.setDocument(doc);
-          final int count = values.count();
-          for (int i = 0; i < count; ++i) {
-            final long v = values.valueAt(i);
-            if (v >= min && v <= max) {
-              return true;
-            }
+      int docID;
+      while ((docID = values.nextDoc()) != NO_MORE_DOCS) {
+        final int count = values.docValueCount();
+        for (int i = 0; i < count; ++i) {
+          final long v = values.nextValue();
+          if (v >= min && v <= max) {
+            bits.set(docID);
+            break;
           }
-          return false;
         }
-
-        @Override
-        public int length() {
-          return maxDoc;
-        }
-        
-      };
+      }
+      return bits;
     }
-
   }
 
   public Directory dir;
@@ -119,7 +114,6 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     dir.close();
   }
 
-  @Test
   public void testSimple() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
@@ -148,7 +142,6 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     iw.close();
   }
 
-  @Test
   public void testMostlyFilteredOutDocuments() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
@@ -195,7 +188,6 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     iw.close();
   }
 
-  @Test
   public void testDocFiltering() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
@@ -237,7 +229,6 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     iw.close();
   }
 
-  @Test
   public void testAnalyzerWithoutPreservePosAndSep() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
     CompletionAnalyzer completionAnalyzer = new CompletionAnalyzer(analyzer, false, false);
@@ -261,7 +252,6 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     iw.close();
   }
 
-  @Test
   public void testAnalyzerWithSepAndNoPreservePos() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
     CompletionAnalyzer completionAnalyzer = new CompletionAnalyzer(analyzer, true, false);
@@ -285,7 +275,6 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     iw.close();
   }
 
-  @Test
   public void testAnalyzerWithPreservePosAndNoSep() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
     CompletionAnalyzer completionAnalyzer = new CompletionAnalyzer(analyzer, false, true);
@@ -309,4 +298,43 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     iw.close();
   }
 
+  public void testGhostField() throws Exception {
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriter iw = new IndexWriter(dir, iwcWithSuggestField(analyzer, "suggest_field", "suggest_field2", "suggest_field3"));
+
+    Document document = new Document();
+    document.add(new StringField("id", "0", Field.Store.NO));
+    document.add(new SuggestField("suggest_field", "apples", 3));
+    iw.addDocument(document);
+    // need another document so whole segment isn't deleted
+    iw.addDocument(new Document());
+    iw.commit();
+
+    document = new Document();
+    document.add(new StringField("id", "1", Field.Store.NO));
+    document.add(new SuggestField("suggest_field2", "apples", 3));
+    iw.addDocument(document);
+    iw.commit();
+
+    iw.deleteDocuments(new Term("id", "0"));
+    // first force merge is OK
+    iw.forceMerge(1);
+    
+    // second force merge causes MultiFields to include "suggest_field" in its iteration, yet a null Terms is returned (no documents have
+    // this field anymore)
+    iw.addDocument(new Document());
+    iw.forceMerge(1);
+
+    DirectoryReader reader = DirectoryReader.open(iw);
+    SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
+
+    PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "app"));
+    assertEquals(0, indexSearcher.suggest(query, 3).totalHits);
+
+    query = new PrefixCompletionQuery(analyzer, new Term("suggest_field2", "app"));
+    assertSuggestions(indexSearcher.suggest(query, 3), new Entry("apples", 3));
+
+    reader.close();
+    iw.close();
+  }
 }

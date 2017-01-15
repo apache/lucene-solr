@@ -611,7 +611,7 @@ public class RestManager {
                    StorageIO storageIO) 
       throws SolrException
   {
-    log.info("Initializing RestManager with initArgs: "+initArgs);
+    log.debug("Initializing RestManager with initArgs: "+initArgs);
 
     if (storageIO == null)
       throw new IllegalArgumentException(
@@ -630,7 +630,7 @@ public class RestManager {
     managed.put(SCHEMA_BASE_PATH+MANAGED_ENDPOINT, endpoint);
             
     // init registered managed resources
-    log.info("Initializing {} registered ManagedResources", registry.registered.size());
+    log.debug("Initializing {} registered ManagedResources", registry.registered.size());
     for (ManagedResourceRegistration reg : registry.registered.values()) {
       // keep track of this for lookups during request processing
       managed.put(reg.resourceId, createManagedResource(reg));

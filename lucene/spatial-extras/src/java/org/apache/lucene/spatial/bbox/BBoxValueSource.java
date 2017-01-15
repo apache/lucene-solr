@@ -16,18 +16,17 @@
  */
 package org.apache.lucene.spatial.bbox;
 
-import org.locationtech.spatial4j.shape.Rectangle;
+import java.io.IOException;
+import java.util.Map;
+
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.util.Bits;
-
-import java.io.IOException;
-import java.util.Map;
+import org.locationtech.spatial4j.shape.Rectangle;
 
 /**
  * A ValueSource in which the indexed Rectangle is returned from
@@ -56,41 +55,62 @@ class BBoxValueSource extends ValueSource {
     final NumericDocValues maxX = DocValues.getNumeric(reader, strategy.field_maxX);
     final NumericDocValues maxY = DocValues.getNumeric(reader, strategy.field_maxY);
 
-    final Bits validBits = DocValues.getDocsWithField(reader, strategy.field_minX);//could have chosen any field
     //reused
     final Rectangle rect = strategy.getSpatialContext().makeRectangle(0,0,0,0);
 
     return new FunctionValues() {
+      private int lastDocID = -1;
+
+      private double getDocValue(NumericDocValues values, int doc) throws IOException {
+        int curDocID = values.docID();
+        if (doc > curDocID) {
+          curDocID = values.advance(doc);
+        }
+        if (doc == curDocID) {
+          return Double.longBitsToDouble(values.longValue());
+        } else {
+          return 0.0;
+        }
+      }
+
       @Override
-      public Object objectVal(int doc) {
-        if (!validBits.get(doc)) {
+      public Object objectVal(int doc) throws IOException {
+        if (doc < lastDocID) {
+          throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + doc);
+        }
+        lastDocID = doc;
+
+        double minXValue = getDocValue(minX, doc);
+        if (minX.docID() != doc) {
           return null;
         } else {
-          rect.reset(
-              Double.longBitsToDouble(minX.get(doc)), Double.longBitsToDouble(maxX.get(doc)),
-              Double.longBitsToDouble(minY.get(doc)), Double.longBitsToDouble(maxY.get(doc)));
+          double minYValue = getDocValue(minY, doc);
+          double maxXValue = getDocValue(maxX, doc);
+          double maxYValue = getDocValue(maxY, doc);
+          rect.reset(minXValue, maxXValue, minYValue, maxYValue);
           return rect;
         }
       }
 
       @Override
-      public String strVal(int doc) {//TODO support WKT output once Spatial4j does
+      public String strVal(int doc) throws IOException {//TODO support WKT output once Spatial4j does
         Object v = objectVal(doc);
         return v == null ? null : v.toString();
       }
 
       @Override
-      public boolean exists(int doc) {
-        return validBits.get(doc);
+      public boolean exists(int doc) throws IOException {
+        getDocValue(minX, doc);
+        return minX.docID() == doc;
       }
 
       @Override
-      public Explanation explain(int doc) {
+      public Explanation explain(int doc) throws IOException {
         return Explanation.match(Float.NaN, toString(doc));
       }
 
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return description() + '=' + strVal(doc);
       }
     };

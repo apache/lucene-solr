@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -28,32 +27,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse;
-
-import org.apache.solr.cloud.SolrCloudTestCase;
-
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-
 import org.apache.solr.search.TestPseudoReturnFields;
-
-import org.apache.lucene.util.TestUtil;
-
-import org.apache.commons.lang.StringUtils;
-
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
-/** @see TestPseudoReturnFields */
+/** 
+ * @see TestPseudoReturnFields 
+ * @see TestRandomFlRTGCloud
+ */
 public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
@@ -81,10 +78,10 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     Map<String, String> collectionProperties = new HashMap<>();
     collectionProperties.put("config", "solrconfig-tlog.xml");
     collectionProperties.put("schema", "schema-psuedo-fields.xml");
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
+        .setProperties(collectionProperties)
+        .process(cluster.getSolrClient());
 
-    assertNotNull(cluster.createCollection(COLLECTION_NAME, numShards, repFactor,
-                                           configName, null, null, collectionProperties));
-    
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
 
@@ -101,11 +98,17 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     assertEquals(0, CLOUD_CLIENT.add(sdoc("id", "46", "val_i", "3", "ssto", "X", "subject", "ggg")).getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());;
     
-    // uncommitted doc in transaction log
+  }
+  
+  @Before
+  private void addUncommittedDoc99() throws Exception {
+    // uncommitted doc in transaction log at start of every test
+    // Even if an RTG causes ulog to re-open realtime searcher, next test method
+    // will get another copy of doc 99 in the ulog
     assertEquals(0, CLOUD_CLIENT.add(sdoc("id", "99", "val_i", "1", "ssto", "X",
                                           "subject", "uncommitted")).getStatus());
   }
-
+  
   @AfterClass
   private static void afterClass() throws Exception {
     CLOUD_CLIENT.close(); CLOUD_CLIENT = null;
@@ -167,13 +170,12 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     assertEquals(""+doc, 10L, doc.getFieldValue("val2_ss"));
   }
   
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9286")
   public void testMultiValuedRTG() throws Exception {
     SolrDocument doc = null;
 
     // check same results as testMultiValued via RTG (committed doc)
     doc = getRandClient(random()).getById("42", params("fl","val_ss:val_i, val2_ss:10, subject"));
-    assertEquals(""+doc, 2, doc.size());
+    assertEquals(""+doc, 3, doc.size());
     assertEquals(""+doc, 1, doc.getFieldValue("val_ss"));
     assertEquals(""+doc, 10L, doc.getFieldValue("val2_ss"));
     assertEquals(""+doc, "aaa", doc.getFieldValue("subject"));
@@ -214,6 +216,21 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         
       }
     }
+  }
+  
+  public void testFilterAndOneRealFieldRTG() throws Exception {
+    SolrParams params = params("fl","id,val_i",
+                               "fq","{!field f='subject' v=$my_var}",
+                               "my_var","uncommitted");
+    SolrDocumentList docs = getRandClient(random()).getById(Arrays.asList("42","99"), params);
+    final String msg = params + " => " + docs;
+    assertEquals(msg, 1, docs.size());
+    assertEquals(msg, 1, docs.getNumFound());
+    
+    SolrDocument doc = docs.get(0);
+    assertEquals(msg, 2, doc.size());
+    assertEquals(msg, "99", doc.getFieldValue("id"));
+    assertEquals(msg, 1, doc.getFieldValue("val_i"));
   }
 
   public void testScoreAndAllRealFields() throws Exception {
@@ -301,7 +318,6 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     }
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9286")
   public void testFunctionsRTG() throws Exception {
     // if we use RTG (committed or otherwise) functions should behave the same
     for (String id : Arrays.asList("42","99")) {
@@ -331,7 +347,6 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     }
   }
   
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9286")
   public void testFunctionsAndExplicitRTG() throws Exception {
     // shouldn't matter if we use RTG (committed or otherwise)
     for (String id : Arrays.asList("42","99")) {
@@ -379,7 +394,6 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     }
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9286")
   public void testFunctionsAndScoreRTG() throws Exception {
 
     // if we use RTG (committed or otherwise) score should be ignored
@@ -575,40 +589,35 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     }
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9289")
   public void testDocIdAugmenterRTG() throws Exception {
-    // NOTE: once this test is fixed to pass, testAugmentersRTG should also be updated to test [docid]
-
-    // TODO: in single node, [docid] is silently ignored for uncommited docs (see SOLR-9288) ...
-    // here we see even more confusing:  [docid] is silently ignored for both committed & uncommited docs
-    
-    // behavior shouldn't matter if we are committed or uncommitted
+    // for an uncommitted doc, we should get -1
     for (String id : Arrays.asList("42","99")) {
       SolrDocument doc = getRandClient(random()).getById(id, params("fl","[docid]"));
       String msg = id + ": fl=[docid] => " + doc;
       assertEquals(msg, 1, doc.size());
       assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
+      assertTrue(msg, -1 <= ((Integer)doc.getFieldValue("[docid]")).intValue());
     }
   }
   
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9286")
   public void testAugmentersRTG() throws Exception {
     // behavior shouldn't matter if we are committed or uncommitted
     for (String id : Arrays.asList("42","99")) {
-      // NOTE: once testDocIdAugmenterRTG can pass, [docid] should be tested here as well.
-      for (SolrParams p : Arrays.asList(params("fl","[shard],[explain],x_alias:[value v=10 t=int]"),
-                                        params("fl","[shard]","fl","[explain],x_alias:[value v=10 t=int]"),
-                                        params("fl","[shard]","fl","[explain]","fl","x_alias:[value v=10 t=int]"))) {
+      for (SolrParams p : Arrays.asList
+             (params("fl","[docid],[shard],[explain],x_alias:[value v=10 t=int]"),
+              params("fl","[docid],[shard]","fl","[explain],x_alias:[value v=10 t=int]"),
+              params("fl","[docid]","fl","[shard]","fl","[explain]","fl","x_alias:[value v=10 t=int]"))) {
         
         SolrDocument doc = getRandClient(random()).getById(id, p);
         String msg = id + ": " + p + " => " + doc;
         
-        assertEquals(msg, 2, doc.size());
-        // assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer); // TODO
+        assertEquals(msg, 3, doc.size());
         assertTrue(msg, doc.getFieldValue("[shard]") instanceof String);
         // RTG: [explain] should be ignored
         assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
         assertEquals(msg, 10, doc.getFieldValue("x_alias"));
+        assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
+        assertTrue(msg, -1 <= ((Integer)doc.getFieldValue("[docid]")).intValue());
       }
     }
   }
@@ -632,23 +641,22 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     }
   }
   
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9286")
   public void testAugmentersAndExplicitRTG() throws Exception {
     // behavior shouldn't matter if we are committed or uncommitted
     for (String id : Arrays.asList("42","99")) {
-      // NOTE: once testDocIdAugmenterRTG can pass, [docid] should be tested here as well.
-      for (SolrParams p : Arrays.asList(params("fl","id,[explain],x_alias:[value v=10 t=int]"),
-                                        params("fl","id","fl","[explain],x_alias:[value v=10 t=int]"),
-                                        params("fl","id","fl","[explain]","fl","x_alias:[value v=10 t=int]"))) {
+      for (SolrParams p : Arrays.asList(params("fl","id,[docid],[explain],x_alias:[value v=10 t=int]"),
+                                        params("fl","id,[docid]","fl","[explain],x_alias:[value v=10 t=int]"),
+                                        params("fl","id","fl","[docid]","fl","[explain]","fl","x_alias:[value v=10 t=int]"))) {
         SolrDocument doc = getRandClient(random()).getById(id, p);
         String msg = id + ": " + p + " => " + doc;
         
-        assertEquals(msg, 2, doc.size());
+        assertEquals(msg, 3, doc.size());
         assertTrue(msg, doc.getFieldValue("id") instanceof String);
-        // assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer); // TODO
         // RTG: [explain] should be missing (ignored)
         assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
         assertEquals(msg, 10, doc.getFieldValue("x_alias"));
+        assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
+        assertTrue(msg, -1 <= ((Integer)doc.getFieldValue("[docid]")).intValue());
       }
     }
   }
@@ -685,32 +693,29 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     }
   }
   
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9286")
   public void testAugmentersAndScoreRTG() throws Exception {
     // if we use RTG (committed or otherwise) score should be ignored
     for (String id : Arrays.asList("42","99")) {
-      // NOTE: once testDocIdAugmenterRTG can pass, [docid] should be tested here as well.
       SolrDocument doc = getRandClient(random()).getById(id, params("fl","x_alias:[value v=10 t=int],score"));
       String msg = id + " => " + doc;
       
       assertEquals(msg, 1, doc.size());
-      // assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer); // TODO
       assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
       assertEquals(msg, 10, doc.getFieldValue("x_alias"));
 
-      for (SolrParams p : Arrays.asList(params("fl","x_alias:[value v=10 t=int],[explain],score"),
-                                        params("fl","x_alias:[value v=10 t=int],[explain]","fl","score"),
-                                        params("fl","x_alias:[value v=10 t=int]","fl","[explain]","fl","score"))) {
+      for (SolrParams p : Arrays.asList(params("fl","d_alias:[docid],x_alias:[value v=10 t=int],[explain],score"),
+                                        params("fl","d_alias:[docid],x_alias:[value v=10 t=int],[explain]","fl","score"),
+                                        params("fl","d_alias:[docid]","fl","x_alias:[value v=10 t=int]","fl","[explain]","fl","score"))) {
         
         doc = getRandClient(random()).getById(id, p);
         msg = id + ": " + p + " => " + doc;
         
-        assertEquals(msg, 1, doc.size());
-        assertTrue(msg, doc.getFieldValue("id") instanceof String);
-        // assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer); // TODO
+        assertEquals(msg, 2, doc.size());
         assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
         assertEquals(msg, 10, doc.getFieldValue("x_alias"));
         // RTG: [explain] and score should be missing (ignored)
+        assertTrue(msg, doc.getFieldValue("d_alias") instanceof Integer);
+        assertTrue(msg, -1 <= ((Integer)doc.getFieldValue("d_alias")).intValue());
       }
     }
   }
@@ -755,8 +760,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
 
     // NOTE: 'ssto' is the missing one
     final List<String> fl = Arrays.asList
-      // NOTE: once testDocIdAugmenterRTG can pass, [docid] should be tested here as well.
-      ("id","[explain]","score","val_*","subj*");
+      ("id","[docid]","[explain]","score","val_*","subj*");
     
     final int iters = atLeast(random, 10);
     for (int i = 0; i< iters; i++) {
@@ -775,12 +779,13 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
           SolrDocument doc = getRandClient(random()).getById(id, params);
           String msg = id + ": " + params + " => " + doc;
         
-          assertEquals(msg, 3, doc.size());
+          assertEquals(msg, 4, doc.size());
           assertTrue(msg, doc.getFieldValue("id") instanceof String);
-          // assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer); // TODO
           assertTrue(msg, doc.getFieldValue("val_i") instanceof Integer);
           assertEquals(msg, 1, doc.getFieldValue("val_i"));
           assertTrue(msg, doc.getFieldValue("subject") instanceof String);
+          assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
+          assertTrue(msg, -1 <= ((Integer)doc.getFieldValue("[docid]")).intValue());
           // RTG: [explain] and score should be missing (ignored)
         }
       }

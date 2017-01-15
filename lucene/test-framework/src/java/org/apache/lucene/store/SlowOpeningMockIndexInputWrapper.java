@@ -28,7 +28,7 @@ class SlowOpeningMockIndexInputWrapper extends MockIndexInputWrapper {
 
   public SlowOpeningMockIndexInputWrapper(MockDirectoryWrapper dir,
       String name, IndexInput delegate) throws IOException {
-    super(dir, name, delegate);
+    super(dir, name, delegate, null);
     try {
       Thread.sleep(50);
     } catch (InterruptedException ie) {

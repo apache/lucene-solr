@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
@@ -33,7 +35,7 @@ public class SumFloatFunction extends MultiFloatFunction {
   }
 
   @Override
-  protected float func(int doc, FunctionValues[] valsArr) {
+  protected float func(int doc, FunctionValues[] valsArr) throws IOException {
     float val = 0.0f;
     for (FunctionValues vals : valsArr) {
       val += vals.floatVal(doc);

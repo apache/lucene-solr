@@ -23,7 +23,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
-import org.apache.lucene.util.packed.PackedInts;
 
 // TODO: could we somehow stream an FST to disk while we
 // build it?
@@ -69,10 +68,6 @@ public class Builder<T> {
   private final int shareMaxTailLength;
 
   private final IntsRefBuilder lastInput = new IntsRefBuilder();
-  
-  // for packing
-  private final boolean doPackFST;
-  private final float acceptableOverheadRatio;
 
   // NOTE: cutting this over to ArrayList instead loses ~6%
   // in build performance on 9.8M Wikipedia terms; so we
@@ -99,11 +94,10 @@ public class Builder<T> {
   /**
    * Instantiates an FST/FSA builder without any pruning. A shortcut
    * to {@link #Builder(FST.INPUT_TYPE, int, int, boolean,
-   * boolean, int, Outputs, boolean, float,
-   * boolean, int)} with pruning options turned off.
+   * boolean, int, Outputs, boolean, int)} with pruning options turned off.
    */
   public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
-    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, false, PackedInts.COMPACT, true, 15);
+    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
   }
 
   /**
@@ -143,11 +137,6 @@ public class Builder<T> {
    *    FSA, use {@link NoOutputs#getSingleton()} and {@link NoOutputs#getNoOutput()} as the
    *    singleton output object.
    *
-   * @param doPackFST Pass true to create a packed FST.
-   * 
-   * @param acceptableOverheadRatio How to trade speed for space when building the FST. This option
-   *    is only relevant when doPackFST is true. @see PackedInts#getMutable(int, int, float)
-   *
    * @param allowArrayArcs Pass false to disable the array arc optimization
    *    while building the FST; this will make the resulting
    *    FST smaller but slower to traverse.
@@ -159,16 +148,13 @@ public class Builder<T> {
    */
   public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
                  boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
-                 boolean doPackFST, float acceptableOverheadRatio, boolean allowArrayArcs,
-                 int bytesPageBits) {
+                 boolean allowArrayArcs, int bytesPageBits) {
     this.minSuffixCount1 = minSuffixCount1;
     this.minSuffixCount2 = minSuffixCount2;
     this.doShareNonSingletonNodes = doShareNonSingletonNodes;
     this.shareMaxTailLength = shareMaxTailLength;
-    this.doPackFST = doPackFST;
-    this.acceptableOverheadRatio = acceptableOverheadRatio;
     this.allowArrayArcs = allowArrayArcs;
-    fst = new FST<>(inputType, outputs, doPackFST, acceptableOverheadRatio, bytesPageBits);
+    fst = new FST<>(inputType, outputs, bytesPageBits);
     bytes = fst.bytes;
     assert bytes != null;
     if (doShareSuffix) {
@@ -496,11 +482,7 @@ public class Builder<T> {
     //if (DEBUG) System.out.println("  builder.finish root.isFinal=" + root.isFinal + " root.output=" + root.output);
     fst.finish(compileNode(root, lastInput.length()).node);
 
-    if (doPackFST) {
-      return fst.pack(this, 3, Math.max(10, (int) (getNodeCount()/4)), acceptableOverheadRatio);
-    } else {
-      return fst;
-    }
+    return fst;
   }
 
   private void compileAllTargets(UnCompiledNode<T> node, int tailLength) throws IOException {

@@ -130,4 +130,9 @@ public class ThreadDumpHandler extends RequestHandlerBase
   public String getDescription() {
     return "Thread Dump";
   }
+
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
 }

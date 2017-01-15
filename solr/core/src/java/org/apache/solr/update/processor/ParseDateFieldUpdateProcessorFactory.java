@@ -16,6 +16,13 @@
  */
 package org.apache.solr.update.processor;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
+
 import org.apache.commons.lang.LocaleUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -30,13 +37,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
 
 /**
  * <p>
@@ -165,13 +165,10 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
   public FieldMutatingUpdateProcessor.FieldNameSelector
   getDefaultSelector(final SolrCore core) {
 
-    return new FieldMutatingUpdateProcessor.FieldNameSelector() {
-      @Override
-      public boolean shouldMutate(final String fieldName) {
-        final IndexSchema schema = core.getLatestSchema();
-        FieldType type = schema.getFieldTypeNoEx(fieldName);
-        return (null == type) || type instanceof DateValueFieldType;
-      }
+    return fieldName -> {
+      final IndexSchema schema = core.getLatestSchema();
+      FieldType type = schema.getFieldTypeNoEx(fieldName);
+      return (null == type) || type instanceof DateValueFieldType;
     };
   }
 }

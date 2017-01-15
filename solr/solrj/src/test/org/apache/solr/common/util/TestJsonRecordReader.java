@@ -16,11 +16,6 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.RecordingJSONParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
@@ -30,6 +25,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.util.RecordingJSONParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class TestJsonRecordReader extends SolrTestCaseJ4 {
@@ -129,18 +130,32 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
         "    \"nested_inside\" : \"check check check 1\"\n" +
         "  }\n" +
         "}";
+
     String json2 =
         " {\n" +
             "  \"id\" : \"345\",\n" +
+            "  \"payload\": \""+ StringUtils.repeat("0123456789", 819) +
+            "\",\n" +
             "  \"description\": \"Testing /json/docs srcField 2\",\n" +
             "\n" +
             "  \"nested_data\" : {\n" +
             "    \"nested_inside\" : \"check check check 2\"\n" +
             "  }\n" +
             "}";
-    JsonRecordReader streamer = JsonRecordReader.getInst("/", Arrays.asList("id:/id"));
-    RecordingJSONParser parser = new RecordingJSONParser(new StringReader(json + json2));
 
+    String json3 =
+        " {\n" +
+            "  \"id\" : \"678\",\n" +
+            "  \"description\": \"Testing /json/docs srcField 3\",\n" +
+            "\n" +
+            "  \"nested_data\" : {\n" +
+            "    \"nested_inside\" : \"check check check 3\"\n" +
+            "  }\n" +
+            "}";
+
+
+    JsonRecordReader streamer = JsonRecordReader.getInst("/", Arrays.asList("id:/id"));
+    RecordingJSONParser parser = new RecordingJSONParser(new StringReader(json + json2 + json3));
 
     streamer.streamRecords(parser, new JsonRecordReader.Handler() {
       int count = 0;
@@ -162,6 +177,12 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
           assertEquals(m.get("description"), "Testing /json/docs srcField 2");
           assertEquals(((Map) m.get("nested_data")).get("nested_inside"), "check check check 2");
         }
+        if (count++ == 3) {
+          assertEquals(m.get("id"), "678");
+          assertEquals(m.get("description"), "Testing /json/docs srcField 3");
+          assertEquals(((Map) m.get("nested_data")).get("nested_inside"), "check check check 3");
+        }
+
       }
     });
 

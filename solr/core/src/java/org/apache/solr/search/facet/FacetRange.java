@@ -36,7 +36,7 @@ import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.util.DateMathParser;
 
-public class FacetRange extends FacetRequest {
+public class FacetRange extends FacetRequestSorted {
   String field;
   Object start;
   Object end;
@@ -44,8 +44,12 @@ public class FacetRange extends FacetRequest {
   boolean hardend = false;
   EnumSet<FacetParams.FacetRangeInclude> include;
   EnumSet<FacetParams.FacetRangeOther> others;
-  long mincount = 0;
 
+  {
+    // defaults
+    mincount = 0;
+    limit = -1;
+  }
 
   @Override
   public FacetProcessor createFacetProcessor(FacetContext fcontext) {
@@ -91,11 +95,6 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     effectiveMincount = fcontext.isShard() ? (freq.mincount > 0 ? 1 : 0) : freq.mincount;
     sf = fcontext.searcher.getSchema().getField(freq.field);
     response = getRangeCounts();
-  }
-
-  @Override
-  public Object getResponse() {
-    return response;
   }
 
   private static class Range {

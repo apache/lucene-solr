@@ -24,17 +24,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.State;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.MockDirectoryFactory;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTestCase {
   
@@ -43,7 +50,6 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   private static final String ZK_HOST = "zkHost";
   private static final String ZOOKEEPER_FORCE_SYNC = "zookeeper.forceSync";
   protected static final String DEFAULT_COLLECTION = "collection1";
-  private static final boolean DEBUG = false;
   protected ZkTestServer zkServer;
   private AtomicInteger homeCount = new AtomicInteger();
 
@@ -223,6 +229,31 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
     log.info("Collection has disappeared - collection: " + collection);
   }
+  
+  static void waitForNewLeader(CloudSolrClient cloudClient, String shardName, Replica oldLeader, TimeOut timeOut)
+      throws Exception {
+    log.info("Will wait for a node to become leader for {} secs", timeOut.timeLeft(SECONDS));
+    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
+
+    for (; ; ) {
+      ClusterState clusterState = zkStateReader.getClusterState();
+      DocCollection coll = clusterState.getCollection("collection1");
+      Slice slice = coll.getSlice(shardName);
+      if (slice.getLeader() != null && !slice.getLeader().equals(oldLeader) && slice.getState() == State.ACTIVE) {
+        log.info("Old leader {}, new leader. New leader got elected in {} ms", oldLeader, slice.getLeader(),timeOut.timeElapsed(MILLISECONDS) );
+        break;
+      }
+
+      if (timeOut.hasTimedOut()) {
+        Diagnostics.logThreadDumps("Could not find new leader in specified timeout");
+        zkStateReader.getZkClient().printLayoutToStdOut();
+        fail("Could not find new leader even after waiting for " + timeOut.timeElapsed(MILLISECONDS) + "ms");
+      }
+
+      Thread.sleep(100);
+    }
+  }
 
   public static void verifyReplicaStatus(ZkStateReader reader, String collection, String shard, String coreNodeName, Replica.State expectedState) throws InterruptedException {
     int maxIterations = 100;
@@ -269,9 +300,6 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   
   @Override
   public void distribTearDown() throws Exception {
-    if (DEBUG) {
-      printLayout();
-    }
     System.clearProperty(ZK_HOST);
     System.clearProperty("collection");
     System.clearProperty(ENABLE_UPDATE_LOG);

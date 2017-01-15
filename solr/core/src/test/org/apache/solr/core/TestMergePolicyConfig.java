@@ -24,6 +24,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
@@ -126,6 +127,25 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     assertNumSegments(h.getCore(), 1);
     // we've now forced a merge, and the MP ratio should be in play
     assertCompoundSegments(h.getCore(), false);
+  }
+
+  public void testNoMergePolicyFactoryConfig() throws Exception {
+    initCore("solrconfig-nomergepolicyfactory.xml","schema-minimal.xml");
+    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
+    NoMergePolicy mergePolicy = assertAndCast(NoMergePolicy.class,
+        iwc.getMergePolicy());
+
+    assertCommitSomeNewDocs();
+
+    assertCommitSomeNewDocs();
+    assertNumSegments(h.getCore(), 2);
+
+    assertU(optimize());
+    assertNumSegments(h.getCore(), 2);
+    deleteCore();
+    initCore("solrconfig-nomergepolicyfactory.xml","schema-minimal.xml");
+    iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
+    assertEquals(mergePolicy, iwc.getMergePolicy());
   }
 
   public void testLogMergePolicyConfig() throws Exception {

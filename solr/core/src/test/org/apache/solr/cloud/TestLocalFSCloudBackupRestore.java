@@ -1,7 +1,3 @@
-package org.apache.solr.cloud;
-
-import org.junit.BeforeClass;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +14,9 @@ import org.junit.BeforeClass;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.cloud;
+
+import org.junit.BeforeClass;
 
 /**
  * This class implements the tests for local file-system integration for Solr backup/restore capability.
@@ -25,12 +24,20 @@ import org.junit.BeforeClass;
  * such file-system would be exposed via local file-system API.
  */
 public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
+  private static String backupLocation;
 
   @BeforeClass
   public static void setupClass() throws Exception {
     configureCluster(NUM_SHARDS)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
+
+    boolean whitespacesInPath = random().nextBoolean();
+    if (whitespacesInPath) {
+      backupLocation = createTempDir("my backup").toAbsolutePath().toString();
+    } else {
+      backupLocation = createTempDir("mybackup").toAbsolutePath().toString();
+    }
   }
 
   @Override
@@ -45,6 +52,6 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
 
   @Override
   public String getBackupLocation() {
-    return createTempDir().toFile().getAbsolutePath();
+    return backupLocation;
   }
 }

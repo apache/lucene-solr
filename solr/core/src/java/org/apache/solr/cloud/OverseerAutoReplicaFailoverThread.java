@@ -89,6 +89,8 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
 
   private final int workLoopDelay;
   private final int waitAfterExpiration;
+
+  private volatile Thread thread;
   
   public OverseerAutoReplicaFailoverThread(CloudConfig config, ZkStateReader zkStateReader,
       UpdateShardHandler updateShardHandler) {
@@ -98,7 +100,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
     this.waitAfterExpiration = config.getAutoReplicaFailoverWaitAfterExpiration();
     int badNodeExpiration = config.getAutoReplicaFailoverBadNodeExpiration();
     
-    log.info(
+    log.debug(
         "Starting "
             + this.getClass().getSimpleName()
             + " autoReplicaFailoverWorkLoopDelay={} autoReplicaFailoverWaitAfterExpiration={} autoReplicaFailoverBadNodeExpiration={}",
@@ -118,7 +120,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
   
   @Override
   public void run() {
-    
+    this.thread = Thread.currentThread();
     while (!this.isClosed) {
       // work loop
       log.debug("do " + this.getClass().getSimpleName() + " work loop");
@@ -136,7 +138,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
         try {
           Thread.sleep(workLoopDelay);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          return;
         }
       }
     }
@@ -479,6 +481,10 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
   @Override
   public void close() {
     isClosed = true;
+    Thread lThread = thread;
+    if (lThread != null) {
+      lThread.interrupt();
+    }
   }
   
   public boolean isClosed() {

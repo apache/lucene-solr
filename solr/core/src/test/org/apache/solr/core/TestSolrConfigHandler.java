@@ -22,6 +22,7 @@ import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,8 +36,12 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.DumpRequestHandler;
 import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.handler.TestSolrConfigHandlerConcurrent;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.SolrCache;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -168,7 +173,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   public static void runConfigCommand(RestTestHarness harness, String uri, String payload) throws IOException {
     String json = SolrTestCaseJ4.json(payload);
-    log.info("going to send config command. path {} , payload: ", uri, payload);
+    log.info("going to send config command. path {} , payload: {}", uri, payload);
     String response = harness.post(uri, json);
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(response, map.get("errors"));
@@ -449,7 +454,56 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertEquals(2, initArgs.size());
     assertTrue(((Map)initArgs.get(0)).containsKey("suggester"));
     assertTrue(((Map)initArgs.get(1)).containsKey("suggester"));
-    System.out.println(map);
+
+    payload = "{\n" +
+        "'add-requesthandler' : { 'name' : '/dump101', 'class': " +
+        "'" + CacheTest.class.getName() + "' " +
+        ", 'startup' : 'lazy'}\n" +
+        "}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+
+    testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config/overlay?wt=json",
+        cloudSolrClient,
+        Arrays.asList("overlay", "requestHandler", "/dump101", "startup"),
+        "lazy",
+        10);
+
+    payload = "{\n" +
+        "'add-cache' : {name:'lfuCacheDecayFalse', class:'solr.search.LFUCache', size:10 ,initialSize:9 , timeDecay:false }," +
+        "'add-cache' : {name: 'perSegFilter', class: 'solr.search.LRUCache', size:10, initialSize:0 , autowarmCount:10}}";
+    runConfigCommand(writeHarness, "/config?wt=json", payload);
+
+    map = testForResponseElement(writeHarness,
+        testServerBaseUrl,
+        "/config/overlay?wt=json",
+        cloudSolrClient,
+        Arrays.asList("overlay", "cache", "lfuCacheDecayFalse", "class"),
+        "solr.search.LFUCache",
+        10);
+    assertEquals("solr.search.LRUCache",getObjectByPath(map, true, ImmutableList.of("overlay", "cache", "perSegFilter", "class")));
+
+    map = getRespMap("/dump101?cacheNames=lfuCacheDecayFalse&cacheNames=perSegFilter&wt=json", writeHarness);
+    assertEquals("Actual output "+ Utils.toJSONString(map), "org.apache.solr.search.LRUCache",getObjectByPath(map, true, ImmutableList.of( "caches", "perSegFilter")));
+    assertEquals("Actual output "+ Utils.toJSONString(map), "org.apache.solr.search.LFUCache",getObjectByPath(map, true, ImmutableList.of( "caches", "lfuCacheDecayFalse")));
+
+  }
+
+  public static class CacheTest extends DumpRequestHandler {
+    @Override
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+      super.handleRequestBody(req, rsp);
+      String[] caches = req.getParams().getParams("cacheNames");
+      if(caches != null && caches.length>0){
+        HashMap m = new HashMap();
+        rsp.add("caches", m);
+        for (String c : caches) {
+          SolrCache cache = req.getSearcher().getCache(c);
+          if(cache != null) m.put(c, cache.getClass().getName());
+        }
+      }
+    }
   }
 
   public static Map testForResponseElement(RestTestHarness harness,

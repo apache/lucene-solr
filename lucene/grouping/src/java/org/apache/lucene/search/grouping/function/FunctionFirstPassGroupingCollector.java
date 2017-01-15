@@ -20,19 +20,19 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
+import org.apache.lucene.search.grouping.FirstPassGroupingCollector;
 import org.apache.lucene.util.mutable.MutableValue;
 
 import java.io.IOException;
 import java.util.Map;
 
 /**
- * Concrete implementation of {@link AbstractFirstPassGroupingCollector} that groups based on
+ * Concrete implementation of {@link FirstPassGroupingCollector} that groups based on
  * {@link ValueSource} instances.
  *
  * @lucene.experimental
  */
-public class FunctionFirstPassGroupingCollector extends AbstractFirstPassGroupingCollector<MutableValue> {
+public class FunctionFirstPassGroupingCollector extends FirstPassGroupingCollector<MutableValue> {
 
   private final ValueSource groupByVS;
   private final Map<?, ?> vsContext;
@@ -61,7 +61,7 @@ public class FunctionFirstPassGroupingCollector extends AbstractFirstPassGroupin
   }
 
   @Override
-  protected MutableValue getDocGroupValue(int doc) {
+  protected MutableValue getDocGroupValue(int doc) throws IOException {
     filler.fillValue(doc);
     return mval;
   }

@@ -198,7 +198,7 @@ public class ICUCollationField extends FieldType {
    * Read custom rules from a file, and create a RuleBasedCollator
    * The file cannot support comments, as # might be in the rules!
    */
-  private Collator createFromRules(String fileName, ResourceLoader loader) {
+  static Collator createFromRules(String fileName, ResourceLoader loader) {
     InputStream input = null;
     try {
      input = loader.openResource(fileName);

@@ -41,7 +41,8 @@ public class PrefixQuery extends AutomatonQuery {
 
   /** Build an automaton accepting all terms with the specified prefix. */
   public static Automaton toAutomaton(BytesRef prefix) {
-    Automaton automaton = new Automaton();
+    final int numStatesAndTransitions = prefix.length+1;
+    final Automaton automaton = new Automaton(numStatesAndTransitions, numStatesAndTransitions);
     int lastState = automaton.createState();
     for(int i=0;i<prefix.length;i++) {
       int state = automaton.createState();
@@ -66,7 +67,7 @@ public class PrefixQuery extends AutomatonQuery {
     StringBuilder buffer = new StringBuilder();
     if (!getField().equals(field)) {
       buffer.append(getField());
-      buffer.append(":");
+      buffer.append(':');
     }
     buffer.append(term.text());
     buffer.append('*');

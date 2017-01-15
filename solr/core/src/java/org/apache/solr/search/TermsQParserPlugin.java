@@ -20,13 +20,13 @@ import java.util.Arrays;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocValuesTermsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -60,7 +60,7 @@ public class TermsQParserPlugin extends QParserPlugin {
     termsFilter {
       @Override
       Filter makeFilter(String fname, BytesRef[] bytesRefs) {
-        return new QueryWrapperFilter(new TermsQuery(fname, bytesRefs));
+        return new QueryWrapperFilter(new TermInSetQuery(fname, bytesRefs));
       }
     },
     booleanQuery {

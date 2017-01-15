@@ -16,7 +16,8 @@
  */
 package org.apache.lucene.search.join;
 
-import org.apache.lucene.index.DocValues;
+import java.io.IOException;
+
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -96,42 +97,138 @@ public class BlockJoinSelector {
    *  one value per parent among its {@code children} using the configured
    *  {@code selection} type. */
   public static SortedDocValues wrap(final SortedDocValues values, Type selection, BitSet parents, BitSet children) {
+    if (values.docID() != -1) {
+      throw new IllegalArgumentException("values iterator was already consumed: values.docID=" + values.docID());
+    }
     return new SortedDocValues() {
 
+      private int ord = -1;
+      private int docID = -1;
+
       @Override
-      public int getOrd(int docID) {
-        assert parents.get(docID) : "this selector may only be used on parent documents";
+      public int docID() {
+        return docID;
+      }
 
-        if (docID == 0) {
-          // no children
-          return -1;
-        }
-
-        final int firstChild = parents.prevSetBit(docID - 1) + 1;
-
-        int ord = -1;
-        for (int child = children.nextSetBit(firstChild); child < docID; child = children.nextSetBit(child + 1)) {
-          final int childOrd = values.getOrd(child);
-          switch (selection) {
-            case MIN:
-              if (ord == -1) {
-                ord = childOrd;
-              } else if (childOrd != -1) {
-                ord = Math.min(ord, childOrd);
-              }
-              break;
-            case MAX:
-              ord = Math.max(ord, childOrd);
-              break;
-            default:
-              throw new AssertionError();
+      @Override
+      public int nextDoc() throws IOException {
+        assert docID != NO_MORE_DOCS;
+        
+        if (values.docID() == -1) {
+          if (values.nextDoc() == NO_MORE_DOCS) {
+            docID = NO_MORE_DOCS;
+            return docID;
           }
         }
+
+        if (values.docID() == NO_MORE_DOCS) {
+          docID = NO_MORE_DOCS;
+          return docID;
+        }
+        
+        int nextParentDocID = parents.nextSetBit(values.docID());
+        ord = values.ordValue();
+
+        while (true) {
+          int childDocID = values.nextDoc();
+          assert childDocID != nextParentDocID;
+          if (childDocID > nextParentDocID) {
+            break;
+          }
+          if (children.get(childDocID) == false) {
+            continue;
+          }
+          if (selection == Type.MIN) {
+            ord = Math.min(ord, values.ordValue());
+          } else if (selection == Type.MAX) {
+            ord = Math.max(ord, values.ordValue());
+          } else {
+            throw new AssertionError();
+          }
+        }
+
+        docID = nextParentDocID;
+        return docID;
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        if (target >= parents.length()) {
+          docID = NO_MORE_DOCS;
+          return docID;
+        }
+        if (target == 0) {
+          assert docID() == -1;
+          return nextDoc();
+        }
+        int prevParentDocID = parents.prevSetBit(target-1);
+        if (values.docID() <= prevParentDocID) {
+          values.advance(prevParentDocID+1);
+        }
+        return nextDoc();
+      }
+
+      @Override
+      public boolean advanceExact(int targetParentDocID) throws IOException {
+        if (targetParentDocID < docID) {
+          throw new IllegalArgumentException("target must be after the current document: current=" + docID + " target=" + targetParentDocID);
+        }
+        int previousDocId = docID;
+        docID = targetParentDocID;
+        if (targetParentDocID == previousDocId) {
+          return ord != -1;
+        }
+        docID = targetParentDocID;
+        ord = -1;
+        if (parents.get(targetParentDocID) == false) {
+          return false;
+        }
+        int prevParentDocId = docID == 0 ? -1 : parents.prevSetBit(docID - 1);
+        int childDoc = values.docID();
+        if (childDoc <= prevParentDocId) {
+          childDoc = values.advance(prevParentDocId + 1);
+        }
+        if (childDoc >= docID) {
+          return false;
+        }
+        
+        boolean hasValue = false;
+        for (int doc = values.docID(); doc < docID; doc = values.nextDoc()) {
+          if (children.get(doc)) {
+            ord = values.ordValue();
+            hasValue = true;
+            values.nextDoc();
+            break;
+          }
+        }
+        if (hasValue == false) {
+          return false;
+        }
+
+        for (int doc = values.docID(); doc < docID; doc = values.nextDoc()) {
+          if (children.get(doc)) {
+            switch (selection) {
+              case MIN:
+                ord = Math.min(ord, values.ordValue());
+                break;
+              case MAX:
+                ord = Math.max(ord, values.ordValue());
+                break;
+              default:
+                throw new AssertionError();
+            }
+          }
+        }
+        return true;
+      }
+
+      @Override
+      public int ordValue() {
         return ord;
       }
 
       @Override
-      public BytesRef lookupOrd(int ord) {
+      public BytesRef lookupOrd(int ord) throws IOException {
         return values.lookupOrd(ord);
       }
 
@@ -140,6 +237,10 @@ public class BlockJoinSelector {
         return values.getValueCount();
       }
 
+      @Override
+      public long cost() {
+        return values.cost();
+      }
     };
   }
 
@@ -158,53 +259,150 @@ public class BlockJoinSelector {
       default:
         throw new AssertionError();
     }
-    return wrap(values, DocValues.docsWithValue(sortedNumerics, parents.length()), selection, parents, children);
+    return wrap(values, selection, parents, children);
   }
 
-  /** Wraps the provided {@link NumericDocValues} in order to only select
-   *  one value per parent among its {@code children} using the configured
-   *  {@code selection} type. */
-  public static NumericDocValues wrap(final NumericDocValues values, Bits docsWithValue, Type selection, BitSet parents, BitSet children) {
+  /** Wraps the provided {@link NumericDocValues}, iterating over only
+   *  child documents, in order to only select one value per parent among
+   *  its {@code children} using the configured {@code selection} type. */
+  public static NumericDocValues wrap(final NumericDocValues values, Type selection, BitSet parents, BitSet children) {
     return new NumericDocValues() {
 
-      @Override
-      public long get(int docID) {
-        assert parents.get(docID) : "this selector may only be used on parent documents";
+      private int parentDocID = -1;
+      private long value;
 
-        if (docID == 0) {
-          // no children
-          return 0;
+      @Override
+      public int nextDoc() throws IOException {
+
+        if (parentDocID == -1) {
+          values.nextDoc();
         }
 
-        final int firstChild = parents.prevSetBit(docID - 1) + 1;
+        while (true) {
 
-        long value = 0;
+          // TODO: make this crazy loop more efficient
+
+          int childDocID = values.docID();
+          if (childDocID == NO_MORE_DOCS) {
+            parentDocID = NO_MORE_DOCS;
+            return parentDocID;
+          }
+          if (children.get(childDocID) == false) {
+            values.nextDoc();
+            continue;
+          }
+
+          assert parents.get(childDocID) == false;
+        
+          parentDocID = parents.nextSetBit(childDocID);
+          value = values.longValue();
+
+          while (true) {
+            childDocID = values.nextDoc();
+            assert childDocID != parentDocID;
+            if (childDocID > parentDocID) {
+              break;
+            }
+
+            switch (selection) {
+            case MIN:
+              value = Math.min(value, values.longValue());
+              break;
+            case MAX:
+              value = Math.max(value, values.longValue());
+              break;
+            default:
+              throw new AssertionError();
+            }
+          }
+
+          break;
+        }
+
+        return parentDocID;
+      }
+
+      @Override
+      public int advance(int targetParentDocID) throws IOException {
+        if (targetParentDocID <= parentDocID) {
+          throw new IllegalArgumentException("target must be after the current document: current=" + parentDocID + " target=" + targetParentDocID);
+        }
+
+        if (targetParentDocID == 0) {
+          return nextDoc();
+        }
+        
+        int firstChild = parents.prevSetBit(targetParentDocID - 1) + 1;
+        if (values.advance(firstChild) == NO_MORE_DOCS) {
+          parentDocID = NO_MORE_DOCS;
+          return parentDocID;
+        } else {
+          return nextDoc();
+        }
+      }
+
+      @Override
+      public boolean advanceExact(int targetParentDocID) throws IOException {
+        if (targetParentDocID <= parentDocID) {
+          throw new IllegalArgumentException("target must be after the current document: current=" + parentDocID + " target=" + targetParentDocID);
+        }
+        parentDocID = targetParentDocID;
+        if (parents.get(targetParentDocID) == false) {
+          return false;
+        }
+        int prevParentDocId = parentDocID == 0 ? -1 : parents.prevSetBit(parentDocID - 1);
+        int childDoc = values.docID();
+        if (childDoc <= prevParentDocId) {
+          childDoc = values.advance(prevParentDocId + 1);
+        }
+        if (childDoc >= parentDocID) {
+          return false;
+        }
+        
         boolean hasValue = false;
+        for (int doc = values.docID(); doc < parentDocID; doc = values.nextDoc()) {
+          if (children.get(doc)) {
+            value = values.longValue();
+            hasValue = true;
+            values.nextDoc();
+            break;
+          }
+        }
+        if (hasValue == false) {
+          return false;
+        }
 
-        for (int child = children.nextSetBit(firstChild); child < docID; child = children.nextSetBit(child + 1)) {
-          final long childValue = values.get(child);
-          final boolean childHasValue = value != 0 || docsWithValue.get(child);
-
-          if (hasValue == false) {
-            value = childValue;
-            hasValue = childHasValue;
-          } else if (childHasValue) {
+        for (int doc = values.docID(); doc < parentDocID; doc = values.nextDoc()) {
+          if (children.get(doc)) {
             switch (selection) {
               case MIN:
-                value = Math.min(value, childValue);
+                value = Math.min(value, values.longValue());
                 break;
               case MAX:
-                value = Math.max(value, childValue);
+                value = Math.max(value, values.longValue());
                 break;
               default:
                 throw new AssertionError();
             }
           }
         }
-
-        return value;
+        return true;
       }
 
+      @Override
+      public long longValue() {
+        return value;
+      }
+      
+      @Override
+      public int docID() {
+        return parentDocID;
+      }      
+
+      @Override
+      public long cost() {
+        return values.cost();
+      }      
     };
   }
 

@@ -54,11 +54,6 @@ class FacetQueryProcessor extends FacetProcessor<FacetQuery> {
   }
 
   @Override
-  public Object getResponse() {
-    return response;
-  }
-
-  @Override
   public void process() throws IOException {
     super.process();
     response = new SimpleOrderedMap<>();

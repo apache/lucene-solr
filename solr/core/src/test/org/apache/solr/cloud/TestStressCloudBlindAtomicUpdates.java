@@ -19,29 +19,30 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.FieldType;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldTypeResponse;
 import org.apache.solr.common.SolrDocument;
@@ -52,13 +53,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.TestInjection;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,6 +94,14 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
    * larger index is used (so tested docs are more likeely to be spread out in multiple segments)
    */
   private static int DOC_ID_INCR;
+
+  /**
+   * The TestInjection configuration to be used for the current test method.
+   *
+   * Value is set by {@link #clearCloudCollection}, and used by {@link #startTestInjection} -- but only once 
+   * initial index seeding has finished (we're focusing on testing atomic updates, not basic indexing).
+   */
+  private String testInjection = null;
   
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {
@@ -117,16 +122,14 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
-    
-    Map<String, String> collectionProperties = new HashMap<>();
-    collectionProperties.put("config", "solrconfig-tlog.xml");
-    collectionProperties.put("schema", "schema-minimal-atomic-stress.xml");
 
-    assertNotNull(cluster.createCollection(COLLECTION_NAME, numShards, repFactor,
-                                           configName, null, null, collectionProperties));
-    
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
+        .withProperty("config", "solrconfig-tlog.xml")
+        .withProperty("schema", "schema-minimal-atomic-stress.xml")
+        .process(CLOUD_CLIENT);
 
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
@@ -161,9 +164,17 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     assertEquals(0, CLOUD_CLIENT.optimize().getStatus());
 
     TestInjection.reset();
-
+    
     final int injectionPercentage = (int)Math.ceil(atLeast(1) / 2);
-    final String testInjection = usually() ? "false:0" : ("true:" + injectionPercentage);
+    testInjection = usually() ? "false:0" : ("true:" + injectionPercentage);
+  }
+
+  /**
+   * Assigns {@link #testInjection} to various TestInjection variables.  Calling this 
+   * method multiple times in the same method should always result in the same setting being applied 
+   * (even if {@link TestInjection#reset} was called in between.
+   */
+  private void startTestInjection() {
     log.info("TestInjection: fail replica, update pause, tlog pauses: " + testInjection);
     TestInjection.failReplicaRequests = testInjection;
     TestInjection.updateLogReplayRandomPause = testInjection;
@@ -249,10 +260,13 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     
     
     // sanity check index contents
+    waitForRecoveriesToFinish(CLOUD_CLIENT);
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
     assertEquals(numDocsInIndex,
                  CLOUD_CLIENT.query(params("q", "*:*")).getResults().getNumFound());
 
+    startTestInjection();
+    
     // spin up parallel workers to hammer updates
     List<Future<Worker>> results = new ArrayList<Future<Worker>>(NUM_THREADS);
     for (int workerId = 0; workerId < NUM_THREADS; workerId++) {
@@ -301,7 +315,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       // sometimes include an fq on the expected value to ensure the updated values
       // are "visible" for searching
       final SolrParams p = (0 != TestUtil.nextInt(random(), 0,15))
-        ? params() : params("fq",numericFieldName + ":" + expect);
+        ? params() : params("fq",numericFieldName + ":\"" + expect + "\"");
       SolrDocument doc = getRandClient(random()).getById(docId, p);
       
       final boolean foundWithFilter = (null != doc);

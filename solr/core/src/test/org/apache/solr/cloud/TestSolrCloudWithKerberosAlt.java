@@ -17,15 +17,12 @@
 package org.apache.solr.cloud;
 
 import java.io.File;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Locale;
 import java.util.Properties;
 
-import javax.security.auth.login.Configuration;
-
 import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
@@ -49,6 +46,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
@@ -67,7 +66,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "Solr logs to JUL")
 public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
 
-  private final Configuration originalConfig = Configuration.getConfiguration();
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final int NUM_SERVERS;
   protected final int NUM_SHARDS;
   protected final int REPLICATION_FACTOR;
@@ -78,10 +77,8 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
     REPLICATION_FACTOR = 1;
   }
 
-  private MiniKdc kdc;
+  private KerberosTestServices kerberosTestServices;
 
-  private Locale savedLocale; // in case locale is broken and we need to fill in a working locale
-  
   @Rule
   public TestRule solrTestRules = RuleChain
       .outerRule(new SystemPropertiesRestoreRule());
@@ -98,7 +95,6 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
 
   @Override
   public void setUp() throws Exception {
-    savedLocale = KerberosTestUtil.overrideLocaleIfNotSpportedByMiniKdc();
     super.setUp();
     setupMiniKdc();
   }
@@ -106,12 +102,15 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
   private void setupMiniKdc() throws Exception {
     System.setProperty("solr.jaas.debug", "true");
     String kdcDir = createTempDir()+File.separator+"minikdc";
-    kdc = KerberosTestUtil.getKdc(new File(kdcDir));
-    File keytabFile = new File(kdcDir, "keytabs");
-    String solrServerPrincipal = "HTTP/127.0.0.1";
     String solrClientPrincipal = "solr";
-    kdc.start();
-    kdc.createPrincipal(keytabFile, solrServerPrincipal, solrClientPrincipal);
+    File keytabFile = new File(kdcDir, "keytabs");
+    kerberosTestServices = KerberosTestServices.builder()
+        .withKdc(new File(kdcDir))
+        .withJaasConfiguration(solrClientPrincipal, keytabFile, "SolrClient")
+        .build();
+    String solrServerPrincipal = "HTTP/127.0.0.1";
+    kerberosTestServices.start();
+    kerberosTestServices.getKdc().createPrincipal(keytabFile, solrServerPrincipal, solrClientPrincipal);
 
     String jaas = "SolrClient {\n"
         + " com.sun.security.auth.module.Krb5LoginModule required\n"
@@ -124,9 +123,6 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
         + " principal=\"" + solrClientPrincipal + "\";\n"
         + "};";
 
-    Configuration conf = new KerberosTestUtil.JaasConfiguration(solrClientPrincipal, keytabFile, "SolrClient");
-    Configuration.setConfiguration(conf);
-
     String jaasFilePath = kdcDir+File.separator+"jaas-client.conf";
     FileUtils.write(new File(jaasFilePath), jaas, StandardCharsets.UTF_8);
     System.setProperty("java.security.auth.login.config", jaasFilePath);
@@ -135,6 +131,9 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
     System.setProperty("solr.kerberos.principal", solrServerPrincipal);
     System.setProperty("solr.kerberos.keytab", keytabFile.getAbsolutePath());
     System.setProperty("authenticationPlugin", "org.apache.solr.security.KerberosPlugin");
+    boolean enableDt = random().nextBoolean();
+    log.info("Enable delegation token: " + enableDt);
+    System.setProperty("solr.kerberos.delegation.token.enabled", new Boolean(enableDt).toString());
     // Extracts 127.0.0.1 from HTTP/127.0.0.1@EXAMPLE.COM
     System.setProperty("solr.kerberos.name.rules", "RULE:[1:$1@$0](.*EXAMPLE.COM)s/@.*//"
         + "\nRULE:[2:$2@$0](.*EXAMPLE.COM)s/@.*//"
@@ -173,8 +172,7 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
 
       // create collection
       String configName = "solrCloudCollectionConfig";
-      File configDir = new File(SolrTestCaseJ4.TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
-      miniCluster.uploadConfigDir(configDir, configName);
+      miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
       CollectionAdminRequest.Create createRequest = new CollectionAdminRequest.Create();
       createRequest.setCollectionName(collectionName);
@@ -240,11 +238,7 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
     System.clearProperty("authenticationPlugin");
     System.clearProperty("solr.kerberos.name.rules");
     System.clearProperty("solr.jaas.debug");
-    Configuration.setConfiguration(this.originalConfig);
-    if (kdc != null) {
-      kdc.stop();
-    }
-    Locale.setDefault(savedLocale);
+    kerberosTestServices.stop();
     super.tearDown();
   }
 }

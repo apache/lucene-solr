@@ -67,7 +67,7 @@ public class HaversineFunction extends ValueSource {
    * @param doc  The doc to score
    * @return The haversine distance formula
    */
-  protected double distance(int doc, FunctionValues p1DV, FunctionValues p2DV) {
+  protected double distance(int doc, FunctionValues p1DV, FunctionValues p2DV) throws IOException {
 
     double[] p1D = new double[2];
     double[] p2D = new double[2];
@@ -99,11 +99,11 @@ public class HaversineFunction extends ValueSource {
     final FunctionValues vals2 = p2.getValues(context, readerContext);
     return new DoubleDocValues(this) {
       @Override
-      public double doubleVal(int doc) {
+      public double doubleVal(int doc) throws IOException {
         return distance(doc, vals1, vals2);
       }
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append(name()).append('(');
         sb.append(vals1.toString(doc)).append(',').append(vals2.toString(doc));

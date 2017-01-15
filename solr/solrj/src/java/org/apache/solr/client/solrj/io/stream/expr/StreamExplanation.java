@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.stream.expr;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -54,13 +55,13 @@ public class StreamExplanation extends Explanation {
     children.add(child);
   }
   
-  public Map<String,Object> toMap(){
-    Map<String,Object> map = super.toMap();
+  public Map<String,Object> toMap(Map<String,Object> map){
+    map = super.toMap(map);
     
     if(null != children && 0 != children.size()){
       List<Map<String,Object>> childrenMaps = new ArrayList<Map<String,Object>>();
       for(Explanation child : children){
-        childrenMaps.add(child.toMap());
+        childrenMaps.add(child.toMap(new LinkedHashMap<>()));
       }
       map.put("children", childrenMaps);
     }

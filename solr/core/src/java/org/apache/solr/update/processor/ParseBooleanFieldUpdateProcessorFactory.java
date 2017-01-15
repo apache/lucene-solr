@@ -16,6 +16,12 @@
  */
 package org.apache.solr.update.processor;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -25,12 +31,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Set;
+import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
 /**
  * <p>
@@ -141,16 +142,11 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
    *           or if the matched field's type is BoolField
    */
   @Override
-  public FieldMutatingUpdateProcessor.FieldNameSelector
-  getDefaultSelector(final SolrCore core) {
-
-    return new FieldMutatingUpdateProcessor.FieldNameSelector() {
-      @Override
-      public boolean shouldMutate(final String fieldName) {
-        final IndexSchema schema = core.getLatestSchema();
-        FieldType type = schema.getFieldTypeNoEx(fieldName);
-        return (null == type) || (type instanceof BoolField);
-      }
+  public FieldNameSelector getDefaultSelector(final SolrCore core) {
+    return fieldName -> {
+      final IndexSchema schema = core.getLatestSchema();
+      FieldType type = schema.getFieldTypeNoEx(fieldName);
+      return (null == type) || (type instanceof BoolField);
     };
   }
 }

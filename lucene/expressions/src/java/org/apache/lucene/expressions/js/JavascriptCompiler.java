@@ -39,7 +39,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.js.JavascriptParser.ExpressionContext;
-import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.util.IOUtils;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
@@ -93,13 +93,13 @@ public final class JavascriptCompiler {
   private static final String COMPILED_EXPRESSION_INTERNAL = COMPILED_EXPRESSION_CLASS.replace('.', '/');
   
   static final Type EXPRESSION_TYPE = Type.getType(Expression.class);
-  static final Type FUNCTION_VALUES_TYPE = Type.getType(FunctionValues.class);
+  static final Type FUNCTION_VALUES_TYPE = Type.getType(DoubleValues.class);
 
   private static final org.objectweb.asm.commons.Method
     EXPRESSION_CTOR = getAsmMethod(void.class, "<init>", String.class, String[].class),
-    EVALUATE_METHOD = getAsmMethod(double.class, "evaluate", int.class, FunctionValues[].class);
+    EVALUATE_METHOD = getAsmMethod(double.class, "evaluate", DoubleValues[].class);
 
-  static final org.objectweb.asm.commons.Method DOUBLE_VAL_METHOD = getAsmMethod(double.class, "doubleVal", int.class);
+  static final org.objectweb.asm.commons.Method DOUBLE_VAL_METHOD = getAsmMethod(double.class, "doubleValue");
   
   /** create an ASM Method object from return type, method name, and parameters. */
   private static org.objectweb.asm.commons.Method getAsmMethod(Class<?> rtype, String name, Class<?>... ptypes) {
@@ -154,9 +154,9 @@ public final class JavascriptCompiler {
    * use the FunctionValues class.
    */
   @SuppressWarnings({"unused", "null"})
-  private static void unusedTestCompile() {
-    FunctionValues f = null;
-    double ret = f.doubleVal(2);
+  private static void unusedTestCompile() throws IOException {
+    DoubleValues f = null;
+    double ret = f.doubleValue();
   }
   
   /**
@@ -325,10 +325,9 @@ public final class JavascriptCompiler {
             externalsMap.put(text, index);
           }
 
-          gen.loadArg(1);
+          gen.loadArg(0);
           gen.push(index);
           gen.arrayLoad(FUNCTION_VALUES_TYPE);
-          gen.loadArg(0);
           gen.invokeVirtual(FUNCTION_VALUES_TYPE, DOUBLE_VAL_METHOD);
           gen.cast(Type.DOUBLE_TYPE, typeStack.peek());
         } else {

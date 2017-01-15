@@ -24,7 +24,6 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.document.IntPoint;    // javadocs
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.DocIdSetBuilder;
@@ -108,7 +107,7 @@ public abstract class PointRangeQuery extends Query {
       private DocIdSet buildMatchingDocIdSet(LeafReader reader, PointValues values) throws IOException {
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
-        values.intersect(field,
+        values.intersect(
             new IntersectVisitor() {
 
               DocIdSetBuilder.BulkAdder adder;
@@ -171,27 +170,24 @@ public abstract class PointRangeQuery extends Query {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
-        PointValues values = reader.getPointValues();
+
+        PointValues values = reader.getPointValues(field);
         if (values == null) {
-          // No docs in this segment indexed any points
+          // No docs in this segment/field indexed any points
           return null;
         }
-        FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
-        if (fieldInfo == null) {
-          // No docs in this segment indexed this field at all
-          return null;
+
+        if (values.getNumDimensions() != numDims) {
+          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims=" + values.getNumDimensions() + " but this query has numDims=" + numDims);
         }
-        if (fieldInfo.getPointDimensionCount() != numDims) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims=" + fieldInfo.getPointDimensionCount() + " but this query has numDims=" + numDims);
-        }
-        if (bytesPerDim != fieldInfo.getPointNumBytes()) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() + " but this query has bytesPerDim=" + bytesPerDim);
+        if (bytesPerDim != values.getBytesPerDimension()) {
+          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + values.getBytesPerDimension() + " but this query has bytesPerDim=" + bytesPerDim);
         }
 
         boolean allDocsMatch;
-        if (values.getDocCount(field) == reader.maxDoc()) {
-          final byte[] fieldPackedLower = values.getMinPackedValue(field);
-          final byte[] fieldPackedUpper = values.getMaxPackedValue(field);
+        if (values.getDocCount() == reader.maxDoc()) {
+          final byte[] fieldPackedLower = values.getMinPackedValue();
+          final byte[] fieldPackedUpper = values.getMaxPackedValue();
           allDocsMatch = true;
           for (int i = 0; i < numDims; ++i) {
             int offset = i * bytesPerDim;

@@ -20,7 +20,7 @@ package org.apache.lucene.codecs.compressing;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 public abstract class AbstractTestLZ4CompressionMode extends AbstractTestCompressionMode {
 
@@ -88,7 +88,7 @@ public abstract class AbstractTestLZ4CompressionMode extends AbstractTestCompres
 
   public void testLongMatchs() throws IOException {
     // match length >= 20
-    final byte[] decompressed = new byte[RandomInts.randomIntBetween(random(), 300, 1024)];
+    final byte[] decompressed = new byte[RandomNumbers.randomIntBetween(random(), 300, 1024)];
     for (int i = 0; i < decompressed.length; ++i) {
       decompressed[i] = (byte) i;
     }
@@ -97,10 +97,10 @@ public abstract class AbstractTestLZ4CompressionMode extends AbstractTestCompres
 
   public void testLongLiterals() throws IOException {
     // long literals (length >= 16) which are not the last literals
-    final byte[] decompressed = randomArray(RandomInts.randomIntBetween(random(), 400, 1024), 256);
+    final byte[] decompressed = randomArray(RandomNumbers.randomIntBetween(random(), 400, 1024), 256);
     final int matchRef = random().nextInt(30);
-    final int matchOff = RandomInts.randomIntBetween(random(), decompressed.length - 40, decompressed.length - 20);
-    final int matchLength = RandomInts.randomIntBetween(random(), 4, 10);
+    final int matchOff = RandomNumbers.randomIntBetween(random(), decompressed.length - 40, decompressed.length - 20);
+    final int matchLength = RandomNumbers.randomIntBetween(random(), 4, 10);
     System.arraycopy(decompressed, matchRef, decompressed, matchOff, matchLength);
     test(decompressed);
   }

@@ -70,7 +70,7 @@ final class PointInGeo3DShapeQuery extends Query {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
-        PointValues values = reader.getPointValues();
+        PointValues values = reader.getPointValues(field);
         if (values == null) {
           return null;
         }
@@ -99,7 +99,7 @@ final class PointInGeo3DShapeQuery extends Query {
 
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
-        values.intersect(field, new PointInShapeIntersectVisitor(result, shape, shapeBounds));
+        values.intersect(new PointInShapeIntersectVisitor(result, shape, shapeBounds));
 
         return new ConstantScoreScorer(this, score(), result.build().iterator());
       }

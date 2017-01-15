@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.facet;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,11 +36,48 @@ import org.apache.solr.search.QueryContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 
+import static org.apache.solr.search.facet.FacetRequest.RefineMethod.NONE;
+
 
 public abstract class FacetRequest {
+
+  public static enum SortDirection {
+    asc(-1) ,
+    desc(1);
+
+    private final int multiplier;
+    private SortDirection(int multiplier) {
+      this.multiplier = multiplier;
+    }
+
+    // asc==-1, desc==1
+    public int getMultiplier() {
+      return multiplier;
+    }
+  }
+
+  public static enum RefineMethod {
+    NONE,
+    SIMPLE;
+    // NONE is distinct from null since we may want to know if refinement was explicitly turned off.
+    public static FacetRequest.RefineMethod fromObj(Object method) {
+      if (method == null) return null;
+      if (method instanceof  Boolean) {
+        return ((Boolean)method) ? SIMPLE : NONE;
+      }
+      if ("simple".equals(method)) {
+        return SIMPLE;
+      } else if ("none".equals(method)) {
+        return NONE;
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown RefineMethod method " + method);
+      }
+    }
+  }
+
+
   protected Map<String,AggValueSource> facetStats;  // per-bucket statistics
-  protected Map<String,FacetRequest> subFacets;     // list of facets
-  protected List<String> filters;
+  protected Map<String,FacetRequest> subFacets;     // per-bucket sub-facets
   protected boolean processEmpty;
   protected Domain domain;
 
@@ -48,7 +86,18 @@ public abstract class FacetRequest {
     public List<String> excludeTags;
     public boolean toParent;
     public boolean toChildren;
-    public String parents;
+    public String parents; // identifies the parent filter... the full set of parent documents for any block join operation
+    public List<Object> filters; // list of symbolic filters (JSON query format)
+
+    // True if a starting set of documents can be mapped onto a different set of documents not originally in the starting set.
+    public boolean canTransformDomain() {
+      return toParent || toChildren || excludeTags != null;
+    }
+
+    // Can this domain become non-empty if the input domain is empty?  This does not check any sub-facets (see canProduceFromEmpty for that)
+    public boolean canBecomeNonEmpty() {
+      return excludeTags != null;
+    }
   }
 
   public FacetRequest() {
@@ -62,6 +111,31 @@ public abstract class FacetRequest {
 
   public Map<String, FacetRequest> getSubFacets() {
     return subFacets;
+  }
+
+  /** Returns null if unset */
+  public RefineMethod getRefineMethod() {
+    return null;
+  }
+
+  public boolean doRefine() {
+    return !(getRefineMethod()==null || getRefineMethod()==NONE);
+  }
+
+  /** Returns true if this facet can return just some of the facet buckets that match all the criteria.
+   * This is normally true only for facets with a limit.
+   */
+  public boolean returnsPartial() {
+    return false;
+  }
+
+  /** Returns true if this facet, or any sub-facets can produce results from an empty domain. */
+  public boolean canProduceFromEmpty() {
+    if (domain != null && domain.canBecomeNonEmpty()) return true;
+    for (FacetRequest freq : subFacets.values()) {
+      if (freq.canProduceFromEmpty()) return true;
+    }
+    return false;
   }
 
   public void addStat(String key, AggValueSource stat) {
@@ -304,23 +378,38 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
 
       Map<String,Object> domainMap = (Map<String,Object>) m.get("domain");
       if (domainMap != null) {
+        FacetRequest.Domain domain = getDomain();
+
         excludeTags = getStringList(domainMap, "excludeTags");
         if (excludeTags != null) {
-          getDomain().excludeTags = excludeTags;
+          domain.excludeTags = excludeTags;
         }
 
         String blockParent = (String)domainMap.get("blockParent");
         String blockChildren = (String)domainMap.get("blockChildren");
 
         if (blockParent != null) {
-          getDomain().toParent = true;
-          getDomain().parents = blockParent;
+          domain.toParent = true;
+          domain.parents = blockParent;
         } else if (blockChildren != null) {
-          getDomain().toChildren = true;
-          getDomain().parents = blockChildren;
+          domain.toChildren = true;
+          domain.parents = blockChildren;
         }
 
-      }
+        Object filterOrList = domainMap.get("filter");
+        if (filterOrList != null) {
+          assert domain.filters == null;
+          if (filterOrList instanceof List) {
+            domain.filters = (List<Object>)filterOrList;
+          } else {
+            domain.filters = new ArrayList<>(1);
+            domain.filters.add(filterOrList);
+          }
+        }
+
+
+      } // end "domain"
+
 
     }
   }
@@ -478,7 +567,8 @@ class FacetQueryParser extends FacetParser<FacetQuery> {
     // TODO: substats that are from defaults!!!
 
     if (qstring != null) {
-      QParser parser = QParser.getParser(qstring, null, getSolrRequest());
+      QParser parser = QParser.getParser(qstring, getSolrRequest());
+      parser.setIsFilter(true);
       facet.q = parser.getQuery();
     }
 
@@ -532,6 +622,7 @@ class FacetFieldParser extends FacetParser<FacetField> {
       facet.field = getField(m);
       facet.offset = getLong(m, "offset", facet.offset);
       facet.limit = getLong(m, "limit", facet.limit);
+      facet.overrequest = (int) getLong(m, "overrequest", facet.overrequest);
       if (facet.limit == 0) facet.offset = 0;  // normalize.  an offset with a limit of non-zero isn't useful.
       facet.mincount = getLong(m, "mincount", facet.mincount);
       facet.missing = getBoolean(m, "missing", facet.missing);
@@ -540,6 +631,9 @@ class FacetFieldParser extends FacetParser<FacetField> {
       facet.allBuckets = getBoolean(m, "allBuckets", facet.allBuckets);
       facet.method = FacetField.FacetMethod.fromString(getString(m, "method", null));
       facet.cacheDf = (int)getLong(m, "cacheDf", facet.cacheDf);
+
+      // TODO: pull up to higher level?
+      facet.refine = FacetField.RefineMethod.fromObj(m.get("refine"));
 
       facet.perSeg = (Boolean)m.get("perSeg");
 
@@ -562,18 +656,18 @@ class FacetFieldParser extends FacetParser<FacetField> {
   private void parseSort(Object sort) {
     if (sort == null) {
       facet.sortVariable = "count";
-      facet.sortDirection = FacetField.SortDirection.desc;
+      facet.sortDirection = FacetRequest.SortDirection.desc;
     } else if (sort instanceof String) {
       String sortStr = (String)sort;
       if (sortStr.endsWith(" asc")) {
         facet.sortVariable = sortStr.substring(0, sortStr.length()-" asc".length());
-        facet.sortDirection = FacetField.SortDirection.asc;
+        facet.sortDirection = FacetRequest.SortDirection.asc;
       } else if (sortStr.endsWith(" desc")) {
         facet.sortVariable = sortStr.substring(0, sortStr.length()-" desc".length());
-        facet.sortDirection = FacetField.SortDirection.desc;
+        facet.sortDirection = FacetRequest.SortDirection.desc;
       } else {
         facet.sortVariable = sortStr;
-        facet.sortDirection = "index".equals(facet.sortVariable) ? FacetField.SortDirection.asc : FacetField.SortDirection.desc;  // default direction for "index" is ascending
+        facet.sortDirection = "index".equals(facet.sortVariable) ? FacetRequest.SortDirection.asc : FacetRequest.SortDirection.desc;  // default direction for "index" is ascending
       }
     } else {
      // sort : { myvar : 'desc' }
@@ -583,7 +677,7 @@ class FacetFieldParser extends FacetParser<FacetField> {
       String k = entry.getKey();
       Object v = entry.getValue();
       facet.sortVariable = k;
-      facet.sortDirection = FacetField.SortDirection.valueOf(v.toString());
+      facet.sortDirection = FacetRequest.SortDirection.valueOf(v.toString());
     }
 
   }

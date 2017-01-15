@@ -29,6 +29,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 public class TestOmitNorms extends LuceneTestCase {
   // Tests whether the DocumentWriter correctly enable the
   // omitNorms bit in the FieldInfo
@@ -302,8 +304,21 @@ public class TestOmitNorms extends LuceneTestCase {
     if (norms1 == null) {
       assertNull(norms2);
     } else {
-      for(int docID=0;docID<ir1.maxDoc();docID++) {
-        assertEquals(norms1.get(docID), norms2.get(docID));
+      while (true) {
+        int norms1DocID = norms1.nextDoc();
+        int norms2DocID = norms2.nextDoc();
+        while (norms1DocID < norms2DocID) {
+          assertEquals(0, norms1.longValue());
+          norms1DocID = norms1.nextDoc();
+        }
+        while (norms2DocID < norms1DocID) {
+          assertEquals(0, norms2.longValue());
+          norms2DocID = norms2.nextDoc();
+        }
+        if (norms1.docID() == NO_MORE_DOCS) {
+          break;
+        }
+        assertEquals(norms1.longValue(), norms2.longValue());
       }
     }
     ir1.close();

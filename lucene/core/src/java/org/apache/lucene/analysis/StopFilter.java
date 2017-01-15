@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.CharArraySet;
 /**
  * Removes stop words from a token stream.
  */
-public final class StopFilter extends FilteringTokenFilter {
+public class StopFilter extends FilteringTokenFilter {
 
   private final CharArraySet stopWords;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);

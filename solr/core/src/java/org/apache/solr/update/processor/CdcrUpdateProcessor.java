@@ -96,11 +96,11 @@ public class CdcrUpdateProcessor extends DistributedUpdateProcessor {
     ModifiableSolrParams result = super.filterParams(params);
     if (params.get(CDCR_UPDATE) != null) {
       result.set(CDCR_UPDATE, "");
-      if (params.get(DistributedUpdateProcessor.VERSION_FIELD) == null) {
-        log.warn("+++ cdcr.update but no version field, params are: " + params);
-      } else {
-        log.info("+++ cdcr.update version present, params are: " + params);
-      }
+//      if (params.get(DistributedUpdateProcessor.VERSION_FIELD) == null) {
+//        log.warn("+++ cdcr.update but no version field, params are: " + params);
+//      } else {
+//        log.info("+++ cdcr.update version present, params are: " + params);
+//      }
       result.set(DistributedUpdateProcessor.VERSION_FIELD, params.get(DistributedUpdateProcessor.VERSION_FIELD));
     }
 

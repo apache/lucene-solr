@@ -21,6 +21,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
 import java.util.Locale;
 
@@ -67,16 +68,11 @@ public abstract class ParseNumericFieldUpdateProcessorFactory extends FieldMutat
    * @param core Where to get the current schema from
    */
   @Override
-  public FieldMutatingUpdateProcessor.FieldNameSelector
-  getDefaultSelector(final SolrCore core) {
-
-    return new FieldMutatingUpdateProcessor.FieldNameSelector() {
-      @Override
-      public boolean shouldMutate(final String fieldName) {
-        final IndexSchema schema = core.getLatestSchema();
-        FieldType type = schema.getFieldTypeNoEx(fieldName);
-        return (null == type) || isSchemaFieldTypeCompatible(type);
-      }
+  public FieldNameSelector getDefaultSelector(final SolrCore core) {
+    return fieldName -> {
+      final IndexSchema schema = core.getLatestSchema();
+      FieldType type = schema.getFieldTypeNoEx(fieldName);
+      return (null == type) || isSchemaFieldTypeCompatible(type);
     };
   }
 }

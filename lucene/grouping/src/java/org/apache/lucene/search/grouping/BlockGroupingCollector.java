@@ -135,7 +135,7 @@ public class BlockGroupingCollector extends SimpleCollector {
 
   // Called when we transition to another group; if the
   // group is competitive we insert into the group queue
-  private void processGroup() {
+  private void processGroup() throws IOException {
     totalGroupCount++;
     //System.out.println("    processGroup ord=" + lastGroupOrd + " competes=" + groupCompetes + " count=" + subDocUpto + " groupDoc=" + topGroupDoc);
     if (groupCompetes) {

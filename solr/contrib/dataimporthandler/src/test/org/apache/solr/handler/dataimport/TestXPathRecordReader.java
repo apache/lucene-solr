@@ -16,12 +16,12 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.junit.Test;
-
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.Test;
 
 /**
  * <p> Test for XPathRecordReader </p>
@@ -138,13 +138,10 @@ public class TestXPathRecordReader extends AbstractDataImportHandlerTestCase {
 
     final List<Map<String, Object>> a = new ArrayList<>();
     final List<Map<String, Object>> x = new ArrayList<>();
-    rr.streamRecords(new StringReader(xml), new XPathRecordReader.Handler() {
-      @Override
-      public void handle(Map<String, Object> record, String xpath) {
-        if (record == null) return;
-        if (xpath.equals("/root/a")) a.add(record);
-        if (xpath.equals("/root/x")) x.add(record);
-      }
+    rr.streamRecords(new StringReader(xml), (record, xpath) -> {
+      if (record == null) return;
+      if (xpath.equals("/root/a")) a.add(record);
+      if (xpath.equals("/root/x")) x.add(record);
     });
 
     assertEquals(1, a.size());

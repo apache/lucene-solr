@@ -98,7 +98,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     return sb.toString();
   }
 
-  void singleTest(String field, String funcTemplate, List<String> args, float... results) {
+  protected void singleTest(String field, String funcTemplate, List<String> args, float... results) {
     String parseableQuery = func(field, funcTemplate);
 
     List<String> nargs = new ArrayList<>(Arrays.asList("q", parseableQuery
@@ -793,4 +793,69 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     }
   }
 
-}
+  @Test
+  public void testNumericComparisons() throws Exception {
+    assertU(adoc("id", "1", "age_i", "35"));
+    assertU(adoc("id", "2", "age_i", "25"));
+    assertU(commit());
+
+    // test weighting of functions
+    assertJQ(req("q", "id:1", "fl", "a:gt(age_i,30),b:lt(age_i,30)")
+        , "/response/docs/[0]=={'a':true,'b':false}");
+
+    assertJQ(req("q", "id:1", "fl", "a:exists(gt(foo_i,30))")
+        , "/response/docs/[0]=={'a':false}");
+
+    singleTest("age_i", "if(gt(age_i,30),5,2)",
+               /*id*/1, /*score*/5,
+               /*id*/2, /*score*/2);
+
+    singleTest("age_i", "if(lt(age_i,30),5,2)",
+               /*id*/1, /*score*/2,
+               /*id*/2, /*score*/5);
+
+    singleTest("age_i", "if(lt(age_i,34.5),5,2)",
+               /*id*/1, /*score*/2,
+               /*id*/2, /*score*/5);
+
+    singleTest("age_i", "if(lte(age_i,35),5,2)",
+               /*id*/1, /*score*/5,
+               /*id*/2, /*score*/5);
+
+    singleTest("age_i", "if(gte(age_i,25),5,2)",
+               /*id*/1, /*score*/5,
+               /*id*/2, /*score*/5);
+
+    singleTest("age_i", "if(lte(age_i,25),5,2)",
+               /*id*/1, /*score*/2,
+               /*id*/2, /*score*/5);
+
+    singleTest("age_i", "if(gte(age_i,35),5,2)",
+               /*id*/1, /*score*/5,
+               /*id*/2, /*score*/2);
+
+
+    singleTest("age_i", "if(eq(age_i,30),5,2)",
+               /*id*/1, /*score*/2,
+               /*id*/2, /*score*/2);
+
+    singleTest("age_i", "if(eq(age_i,35),5,2)",
+               /*id*/1, /*score*/5,
+               /*id*/2, /*score*/2);
+  }
+
+  public void testLongComparisons() {
+    assertU(adoc("id", "1", "number_of_atoms_in_universe_l", Long.toString(Long.MAX_VALUE)));
+    assertU(adoc("id", "2", "number_of_atoms_in_universe_l", Long.toString(Long.MAX_VALUE - 1)));
+    assertU(commit());
+
+    singleTest("number_of_atoms_in_universe_l", "if(gt(number_of_atoms_in_universe_l," + Long.toString(Long.MAX_VALUE - 1) + "),5,2)",
+               /*id*/1, /*score*/5,
+               /*id*/2, /*score*/2);
+
+    singleTest("number_of_atoms_in_universe_l", "if(lt(number_of_atoms_in_universe_l," + Long.toString(Long.MAX_VALUE) + "),5,2)",
+               /*id*/2, /*score*/5,
+               /*id*/1, /*score*/2);
+  }
+
+  }

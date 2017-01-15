@@ -42,6 +42,7 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -65,6 +66,9 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 /**
  * A simple utility class for posting raw updates to a Solr server, 
  * has a main method so it can be run on the command line.
@@ -86,6 +90,7 @@ public class SimplePostTool {
   private static final int MAX_WEB_DEPTH = 10;
   private static final String DEFAULT_CONTENT_TYPE = "application/xml";
   private static final String DEFAULT_FILE_TYPES = "xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log";
+  private static final String BASIC_AUTH = "basicauth";
 
   static final String DATA_MODE_FILES = "files";
   static final String DATA_MODE_ARGS = "args";
@@ -233,6 +238,15 @@ public class SimplePostTool {
       }
       urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
+      String user = null;
+      if (url.getUserInfo() != null && url.getUserInfo().trim().length() > 0) {
+        user = url.getUserInfo().split(":")[0];
+      } else if (System.getProperty(BASIC_AUTH) != null) {
+        user = System.getProperty(BASIC_AUTH).trim().split(":")[0];
+      }
+      if (user != null)
+        info("Basic Authentication enabled, user=" + user);
+      
       boolean auto = isOn(System.getProperty("auto", DEFAULT_AUTO));
       String type = System.getProperty("type");
       String format = System.getProperty("format");
@@ -385,6 +399,7 @@ public class SimplePostTool {
      "  -Dtype=<content-type> (default=" + DEFAULT_CONTENT_TYPE + ")\n"+
      "  -Dhost=<host> (default: " + DEFAULT_POST_HOST+ ")\n"+
      "  -Dport=<port> (default: " + DEFAULT_POST_PORT+ ")\n"+
+     "  -Dbasicauth=<user:pass> (sets Basic Authentication credentials)\n"+
      "  -Dauto=yes|no (default=" + DEFAULT_AUTO + ")\n"+
      "  -Drecursive=yes|no|<depth> (default=" + DEFAULT_RECURSIVE + ")\n"+
      "  -Ddelay=<seconds> (default=0 for files, 10 for web)\n"+
@@ -851,14 +866,13 @@ public class SimplePostTool {
     try {
       if(mockMode) return;
       HttpURLConnection urlc = (HttpURLConnection) url.openConnection();
-      if (url.getUserInfo() != null) {
-        String encoding = Base64.getEncoder().encodeToString(url.getUserInfo().getBytes(StandardCharsets.US_ASCII));
-        urlc.setRequestProperty("Authorization", "Basic " + encoding);
-      }
+      basicAuth(urlc);
       urlc.connect();
       checkResponseCode(urlc);
     } catch (IOException e) {
-      warn("An error occurred posting data to "+url+". Please check that Solr is running.");
+      warn("An error occurred getting data from "+url+". Please check that Solr is running.");
+    } catch (Exception e) {
+      warn("An error occurred getting data from "+url+". Message: " + e.getMessage());
     }
   }
 
@@ -886,10 +900,7 @@ public class SimplePostTool {
         urlc.setUseCaches(false);
         urlc.setAllowUserInteraction(false);
         urlc.setRequestProperty("Content-type", type);
-        if (url.getUserInfo() != null) {
-          String encoding = Base64.getEncoder().encodeToString(url.getUserInfo().getBytes(StandardCharsets.US_ASCII));
-          urlc.setRequestProperty("Authorization", "Basic " + encoding);
-        }
+        basicAuth(urlc);
         if (null != length) {
           urlc.setFixedLengthStreamingMode(length);
         } else {
@@ -899,13 +910,14 @@ public class SimplePostTool {
       } catch (IOException e) {
         fatal("Connection error (is Solr running at " + solrUrl + " ?): " + e);
         success = false;
+      } catch (Exception e) {
+        fatal("POST failed with error " + e.getMessage());
       }
-      
+
       try (final OutputStream out = urlc.getOutputStream()) {
         pipe(data, out);
       } catch (IOException e) {
         fatal("IOException while posting data: " + e);
-        success = false;
       }
       
       try {
@@ -916,14 +928,29 @@ public class SimplePostTool {
       } catch (IOException e) {
         warn("IOException while reading response: " + e);
         success = false;
+      } catch (GeneralSecurityException e) {
+        fatal("Looks like Solr is secured and would not let us in. Try with another user in '-u' parameter");
       }
     } finally {
       if (urlc!=null) urlc.disconnect();
     }
     return success;
   }
-  
-  private static boolean checkResponseCode(HttpURLConnection urlc) throws IOException {
+
+  private static void basicAuth(HttpURLConnection urlc) throws Exception {
+    if (urlc.getURL().getUserInfo() != null) {
+      String encoding = Base64.getEncoder().encodeToString(urlc.getURL().getUserInfo().getBytes(US_ASCII));
+      urlc.setRequestProperty("Authorization", "Basic " + encoding);
+    } else if (System.getProperty(BASIC_AUTH) != null) {
+      String basicauth = System.getProperty(BASIC_AUTH).trim();
+      if (!basicauth.contains(":")) {
+        throw new Exception("System property '"+BASIC_AUTH+"' must be of format user:pass");
+      }
+      urlc.setRequestProperty("Authorization", "Basic " + Base64.getEncoder().encodeToString(basicauth.getBytes(UTF_8)));
+    }
+  }
+
+  private static boolean checkResponseCode(HttpURLConnection urlc) throws IOException, GeneralSecurityException {
     if (urlc.getResponseCode() >= 400) {
       warn("Solr returned an error #" + urlc.getResponseCode() + 
             " (" + urlc.getResponseMessage() + ") for url: " + urlc.getURL());
@@ -947,6 +974,12 @@ public class SimplePostTool {
           }
           warn(response.toString().trim());
         }
+      }
+      if (urlc.getResponseCode() == 401) {
+        throw new GeneralSecurityException("Solr requires authentication (response 401). Please try again with '-u' option");
+      }
+      if (urlc.getResponseCode() == 403) {
+        throw new GeneralSecurityException("You are not authorized to perform this action against Solr. (response 403)");
       }
       return false;
     }

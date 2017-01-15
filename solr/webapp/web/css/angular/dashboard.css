@@ -123,11 +123,6 @@ limitations under the License.
   margin-top: 10px;
 }
 
-#content #dashboard #admin-extra
-{
-  float: left;
-}
-
 #content #dashboard #healthcheck
 {
   float: right;
@@ -152,7 +147,6 @@ limitations under the License.
 #content #dashboard #replication.master h2 { background-image: url( ../../img/ico/node-master.png ); }
 #content #dashboard #replication.slave h2 { background-image: url( ../../img/ico/node-slave.png ); }
 #content #dashboard #instance h2 { background-image: url( ../../img/ico/server.png ); }
-#content #dashboard #admin-extra h2 { background-image: url( ../../img/ico/plus-button.png ); }
 #content #dashboard #collection h2 { background-image: url( ../../img/ico/book-open-text.png ); }
 #content #dashboard #shards h2 { background-image: url( ../../img/ico/documents-stack.png ); }
 

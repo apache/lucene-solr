@@ -19,10 +19,8 @@ package org.apache.lucene.spatial.prefix;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Shape;
-import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
@@ -31,10 +29,12 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
  * A basic implementation of {@link PrefixTreeStrategy} using a large
- * {@link TermsQuery} of all the cells from
+ * {@link TermInSetQuery} of all the cells from
  * {@link SpatialPrefixTree#getTreeCellIterator(org.locationtech.spatial4j.shape.Shape, int)}.
  * It only supports the search of indexed Point shapes.
  * <p>
@@ -105,7 +105,7 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
     }
     //unfortunately TermsQuery will needlessly sort & dedupe
     //TODO an automatonQuery might be faster?
-    return new TermsQuery(getFieldName(), terms);
+    return new TermInSetQuery(getFieldName(), terms);
   }
 
 }

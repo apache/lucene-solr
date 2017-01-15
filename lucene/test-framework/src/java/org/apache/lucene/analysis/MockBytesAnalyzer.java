@@ -30,7 +30,7 @@ public final class MockBytesAnalyzer extends Analyzer {
   }
 
   @Override
-  protected AttributeFactory attributeFactory() {
+  protected AttributeFactory attributeFactory(String fieldName) {
     return MockUTF16TermAttributeImpl.UTF16_TERM_ATTRIBUTE_FACTORY;
   }
 }

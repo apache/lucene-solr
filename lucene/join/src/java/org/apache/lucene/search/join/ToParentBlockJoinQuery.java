@@ -20,12 +20,10 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
-import java.util.Set;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -124,21 +122,14 @@ public class ToParentBlockJoinQuery extends Query {
     return childQuery;
   }
 
-  private static class BlockJoinWeight extends Weight {
-    private final Weight childWeight;
+  private static class BlockJoinWeight extends FilterWeight {
     private final BitSetProducer parentsFilter;
     private final ScoreMode scoreMode;
 
     public BlockJoinWeight(Query joinQuery, Weight childWeight, BitSetProducer parentsFilter, ScoreMode scoreMode) {
-      super(joinQuery);
-      this.childWeight = childWeight;
+      super(joinQuery, childWeight);
       this.parentsFilter = parentsFilter;
       this.scoreMode = scoreMode;
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      childWeight.extractTerms(terms);
     }
 
     // NOTE: acceptDocs applies (and is checked) only in the
@@ -146,7 +137,7 @@ public class ToParentBlockJoinQuery extends Query {
     @Override
     public Scorer scorer(LeafReaderContext readerContext) throws IOException {
 
-      final Scorer childScorer = childWeight.scorer(readerContext);
+      final Scorer childScorer = in.scorer(readerContext);
       if (childScorer == null) {
         // No matches
         return null;
@@ -174,7 +165,7 @@ public class ToParentBlockJoinQuery extends Query {
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       BlockJoinScorer scorer = (BlockJoinScorer) scorer(context);
       if (scorer != null && scorer.iterator().advance(doc) == doc) {
-        return scorer.explain(context, childWeight);
+        return scorer.explain(context, in);
       }
       return Explanation.noMatch("Not a match");
     }
@@ -212,7 +203,7 @@ public class ToParentBlockJoinQuery extends Query {
     public abstract int[] swapChildDocs(int[] other);
   }
   
-  static class BlockJoinScorer extends ChildrenMatchesScorer{
+  static class BlockJoinScorer extends ChildrenMatchesScorer {
     private final Scorer childScorer;
     private final BitSet parentBits;
     private final ScoreMode scoreMode;
@@ -292,9 +283,7 @@ public class ToParentBlockJoinQuery extends Query {
 
           // Parent & child docs are supposed to be
           // orthogonal:
-          if (nextChildDoc == parentDoc) {
-            throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
-          }
+          checkOrthogonal(nextChildDoc, parentDoc);
 
           //System.out.println("  parentDoc=" + parentDoc);
           assert parentDoc != DocIdSetIterator.NO_MORE_DOCS;
@@ -335,9 +324,7 @@ public class ToParentBlockJoinQuery extends Query {
 
           // Parent & child docs are supposed to be
           // orthogonal:
-          if (nextChildDoc == parentDoc) {
-            throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
-          }
+          checkOrthogonal(nextChildDoc, parentDoc);
 
           switch(scoreMode) {
           case Avg:
@@ -390,9 +377,7 @@ public class ToParentBlockJoinQuery extends Query {
           }
 
           // Parent & child docs are supposed to be orthogonal:
-          if (nextChildDoc == prevParentDoc) {
-            throw new IllegalStateException("child query must only match non-parent docs, but parent docID=" + nextChildDoc + " matched childScorer=" + childScorer.getClass());
-          }
+          checkOrthogonal(nextChildDoc, prevParentDoc);
 
           final int nd = nextDoc();
           //System.out.println("  return nextParentDoc=" + nd);
@@ -409,6 +394,15 @@ public class ToParentBlockJoinQuery extends Query {
           return childIt.cost();
         }
       };
+    }
+
+    private void checkOrthogonal(int childDoc, int parentDoc) {
+      if (childDoc==parentDoc) {
+        throw new IllegalStateException("Child query must not match same docs with parent filter. "
+             + "Combine them as must clauses (+) to find a problem doc. "
+             + "docId=" + nextChildDoc + ", " + childScorer.getClass());
+        
+      }
     }
 
     @Override

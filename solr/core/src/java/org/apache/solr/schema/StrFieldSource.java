@@ -45,8 +45,8 @@ public class StrFieldSource extends FieldCacheSource {
       }
 
       @Override
-      public int ordVal(int doc) {
-        return termsIndex.getOrd(doc);
+      public int ordVal(int doc) throws IOException {
+        return getOrdForDoc(doc);
       }
 
       @Override
@@ -55,12 +55,12 @@ public class StrFieldSource extends FieldCacheSource {
       }
 
       @Override
-      public Object objectVal(int doc) {
+      public Object objectVal(int doc) throws IOException {
         return strVal(doc);
       }
 
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return description() + '=' + strVal(doc);
       }
     };

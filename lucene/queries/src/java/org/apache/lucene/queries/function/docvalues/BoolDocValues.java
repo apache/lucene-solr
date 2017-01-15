@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.queries.function.docvalues;
 
+import java.io.IOException;
+
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.mutable.MutableValue;
@@ -33,50 +35,50 @@ public abstract class BoolDocValues extends FunctionValues {
   }
 
   @Override
-  public abstract boolean boolVal(int doc);
+  public abstract boolean boolVal(int doc) throws IOException;
 
   @Override
-  public byte byteVal(int doc) {
+  public byte byteVal(int doc) throws IOException {
     return boolVal(doc) ? (byte)1 : (byte)0;
   }
 
   @Override
-  public short shortVal(int doc) {
+  public short shortVal(int doc) throws IOException {
     return boolVal(doc) ? (short)1 : (short)0;
   }
 
   @Override
-  public float floatVal(int doc) {
+  public float floatVal(int doc) throws IOException {
     return boolVal(doc) ? (float)1 : (float)0;
   }
 
   @Override
-  public int intVal(int doc) {
+  public int intVal(int doc) throws IOException {
     return boolVal(doc) ? 1 : 0;
   }
 
   @Override
-  public long longVal(int doc) {
+  public long longVal(int doc) throws IOException {
     return boolVal(doc) ? (long)1 : (long)0;
   }
 
   @Override
-  public double doubleVal(int doc) {
+  public double doubleVal(int doc) throws IOException {
     return boolVal(doc) ? (double)1 : (double)0;
   }
 
   @Override
-  public String strVal(int doc) {
+  public String strVal(int doc) throws IOException {
     return Boolean.toString(boolVal(doc));
   }
 
   @Override
-  public Object objectVal(int doc) {
+  public Object objectVal(int doc) throws IOException {
     return exists(doc) ? boolVal(doc) : null;
   }
 
   @Override
-  public String toString(int doc) {
+  public String toString(int doc) throws IOException {
     return vs.description() + '=' + strVal(doc);
   }
 
@@ -91,7 +93,7 @@ public abstract class BoolDocValues extends FunctionValues {
       }
 
       @Override
-      public void fillValue(int doc) {
+      public void fillValue(int doc) throws IOException {
         mval.value = boolVal(doc);
         mval.exists = exists(doc);
       }

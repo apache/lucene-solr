@@ -29,12 +29,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NoLockFactory;
@@ -567,5 +570,31 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
         }
       }
     }
+  }
+  
+  // perform an atomic rename if possible
+  public void renameWithOverwrite(Directory dir, String fileName, String toName) throws IOException {
+    String hdfsDirPath = getPath(dir);
+    FileContext fileContext = FileContext.getFileContext(getConf());
+    fileContext.rename(new Path(hdfsDirPath + "/" + fileName), new Path(hdfsDirPath + "/" + toName), Options.Rename.OVERWRITE);
+  }
+  
+  @Override
+  public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
+    
+    Directory baseFromDir = getBaseDir(fromDir);
+    Directory baseToDir = getBaseDir(toDir);
+    
+    if (baseFromDir instanceof HdfsDirectory && baseToDir instanceof HdfsDirectory) {
+      Path dir1 = ((HdfsDirectory) baseFromDir).getHdfsDirPath();
+      Path dir2 = ((HdfsDirectory) baseToDir).getHdfsDirPath();
+      Path file1 = new Path(dir1, fileName);
+      Path file2 = new Path(dir2, fileName);
+      FileContext fileContext = FileContext.getFileContext(getConf());
+      fileContext.rename(file1, file2);
+      return;
+    }
+
+    super.move(fromDir, toDir, fileName, ioContext);
   }
 }

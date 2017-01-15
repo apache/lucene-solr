@@ -127,7 +127,7 @@ public abstract class LogWatcher<E> {
   public static LogWatcher newRegisteredLogWatcher(LogWatcherConfig config, SolrResourceLoader loader) {
 
     if (!config.isEnabled()) {
-      log.info("A LogWatcher is not enabled");
+      log.debug("A LogWatcher is not enabled");
       return null;
     }
 
@@ -135,7 +135,7 @@ public abstract class LogWatcher<E> {
 
     if (logWatcher != null) {
       if (config.getWatcherSize() > 0) {
-        log.info("Registering Log Listener [{}]", logWatcher.getName());
+        log.debug("Registering Log Listener [{}]", logWatcher.getName());
         logWatcher.registerListener(config.asListenerConfig());
       }
     }
@@ -150,7 +150,7 @@ public abstract class LogWatcher<E> {
 
     try {
       slf4jImpl = StaticLoggerBinder.getSingleton().getLoggerFactoryClassStr();
-      log.info("SLF4J impl is " + slf4jImpl);
+      log.debug("SLF4J impl is " + slf4jImpl);
       if (fname == null) {
         if ("org.slf4j.impl.Log4jLoggerFactory".equals(slf4jImpl)) {
           fname = "Log4j";
@@ -168,7 +168,7 @@ public abstract class LogWatcher<E> {
     }
 
     if (fname == null) {
-      log.info("No LogWatcher configured");
+      log.debug("No LogWatcher configured");
       return null;
     }
 

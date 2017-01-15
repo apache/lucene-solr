@@ -99,7 +99,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
     }
 
-    protected final void setBottom(int slot) {
+    protected final void setBottom(int slot) throws IOException {
       for (LeafFieldComparator comparator : comparators) {
         comparator.setBottom(slot);
       }

@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.expressions;
 
-import org.apache.lucene.expressions.js.JavascriptCompiler; // javadocs
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.expressions.js.JavascriptCompiler;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.SortField;
 
@@ -63,26 +63,25 @@ public abstract class Expression {
   }
 
   /**
-   * Evaluates the expression for the given document.
+   * Evaluates the expression for the current document.
    *
-   * @param document <code>docId</code> of the document to compute a value for
-   * @param functionValues {@link FunctionValues} for each element of {@link #variables}.
+   * @param functionValues {@link DoubleValues} for each element of {@link #variables}.
    * @return The computed value of the expression for the given document.
    */
-  public abstract double evaluate(int document, FunctionValues[] functionValues);
+  public abstract double evaluate(DoubleValues[] functionValues);
 
   /**
-   * Get a value source which can compute the value of this expression in the context of the given bindings.
+   * Get a DoubleValuesSource which can compute the value of this expression in the context of the given bindings.
    * @param bindings Bindings to use for external values in this expression
-   * @return A value source which will evaluate this expression when used
+   * @return A DoubleValuesSource which will evaluate this expression when used
    */
-  public ValueSource getValueSource(Bindings bindings) {
+  public DoubleValuesSource getDoubleValuesSource(Bindings bindings) {
     return new ExpressionValueSource(bindings, this);
   }
   
   /** Get a sort field which can be used to rank documents by this expression. */
   public SortField getSortField(Bindings bindings, boolean reverse) {
-    return getValueSource(bindings).getSortField(reverse);
+    return getDoubleValuesSource(bindings).getSortField(reverse);
   }
 
   /** Get a {@link Rescorer}, to rescore first-pass hits

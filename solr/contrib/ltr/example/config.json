@@ -1,0 +1,17 @@
+{
+  "host":                     "localhost",
+  "port":                     8983,
+  "collection":               "techproducts",
+  "requestHandler":           "query",
+  "q":                        "*:*",
+  "efiParams":                "efi.user_query='$USERQUERY'",
+  "userQueriesFile":          "user_queries.txt",
+  "trainingFile":             "exampleTrainingFile.txt",
+  "trainedModelFile":         "exampleTrainedModel.txt",
+  "trainingLibraryLocation":  "liblinear/train",
+  "trainingLibraryOptions":   "-q",
+  "solrFeaturesFile":         "exampleFeatures.json",
+  "solrFeatureStoreName":     "exampleFeatureStore",
+  "solrModelFile":            "exampleModel.json",
+  "solrModelName":            "exampleModel"
+}

@@ -99,7 +99,7 @@ public abstract class SpanWeight extends Weight {
       i++;
     }
     CollectionStatistics collectionStats = searcher.collectionStatistics(query.getField());
-    return searcher.getSimilarity(true).computeWeight(boost, collectionStats, termStats);
+    return similarity.computeWeight(boost, collectionStats, termStats);
   }
 
   /**

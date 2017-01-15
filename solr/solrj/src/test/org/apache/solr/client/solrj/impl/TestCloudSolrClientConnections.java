@@ -68,7 +68,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
     try {
       CloudSolrClient client = cluster.getSolrClient();
       try {
-        client.uploadConfig(configPath, "testconfig");
+        ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(configPath, "testconfig");
         fail("Requests to a non-running cluster should throw a SolrException");
       } catch (SolrException e) {
         assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
@@ -77,7 +77,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
       cluster.startJettySolrRunner();
       client.connect(20, TimeUnit.SECONDS);
 
-      client.uploadConfig(configPath, "testconfig");
+      ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(configPath, "testconfig");
 
       ZkConfigManager configManager = new ZkConfigManager(client.getZkStateReader().getZkClient());
       assertTrue("List of uploaded configs does not contain 'testconfig'", configManager.listConfigs().contains("testconfig"));

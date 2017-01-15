@@ -31,7 +31,6 @@ import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /** Encapsulates multiple producers when there are docvalues updates as one producer */
@@ -126,13 +125,6 @@ class SegmentDocValuesProducer extends DocValuesProducer {
     DocValuesProducer dvProducer = dvProducersByField.get(field.name);
     assert dvProducer != null;
     return dvProducer.getSortedSet(field);
-  }
-
-  @Override
-  public Bits getDocsWithField(FieldInfo field) throws IOException {
-    DocValuesProducer dvProducer = dvProducersByField.get(field.name);
-    assert dvProducer != null;
-    return dvProducer.getDocsWithField(field);
   }
 
   @Override

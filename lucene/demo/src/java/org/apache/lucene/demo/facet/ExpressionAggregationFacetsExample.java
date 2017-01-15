@@ -103,7 +103,7 @@ public class ExpressionAggregationFacetsExample {
     FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     // Retrieve results
-    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, expr.getValueSource(bindings));
+    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, expr.getDoubleValuesSource(bindings));
     FacetResult result = facets.getTopChildren(10, "A");
     
     indexReader.close();

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.analytics.util.valuesource;
 
+import java.io.IOException;
+
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.analytics.util.AnalyticsParams;
@@ -40,7 +42,7 @@ public class PowDoubleFunction extends DualDoubleFunction {
   }
 
   @Override
-  protected double func(int doc, FunctionValues aVals, FunctionValues bVals) {
+  protected double func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
     return Math.pow(aVals.doubleVal(doc), bVals.doubleVal(doc));
   }
 }

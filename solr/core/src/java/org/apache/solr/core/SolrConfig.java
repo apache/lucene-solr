@@ -17,8 +17,17 @@
 package org.apache.solr.core;
 
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathConstants;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.util.Utils.makeMap;
+import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
+import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
+import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
+import static org.apache.solr.core.SolrConfig.PluginOpts.NOOP;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,15 +37,29 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.common.collect.ImmutableList;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPathConstants;
+
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.util.Version;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.IOUtils;
@@ -49,6 +72,7 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.FastLRUCache;
 import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.servlet.SolrRequestParsers;
@@ -67,16 +91,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.util.Utils.makeMap;
-import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
-import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
-import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
-import static org.apache.solr.core.SolrConfig.PluginOpts.NOOP;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
+import com.google.common.collect.ImmutableList;
 
 
 /**
@@ -91,7 +106,7 @@ public class SolrConfig extends Config implements MapSerializable {
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
   private RequestParams requestParams;
 
-  public static enum PluginOpts {
+  public enum PluginOpts {
     MULTI_OK,
     REQUIRE_NAME,
     REQUIRE_NAME_IN_OVERLAY,
@@ -216,7 +231,7 @@ public class SolrConfig extends Config implements MapSerializable {
     indexConfig = new SolrIndexConfig(this, "indexConfig", null);
 
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", BooleanQuery.getMaxClauseCount());
-    log.info("Using Lucene MatchVersion: " + luceneMatchVersion);
+    log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
 
     // Warn about deprecated / discontinued parameters
     // boolToFilterOptimizer has had no effect since 3.1
@@ -254,7 +269,6 @@ public class SolrConfig extends Config implements MapSerializable {
     dataDir = get("dataDir", null);
     if (dataDir != null && dataDir.length() == 0) dataDir = null;
 
-    userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");
 
     org.apache.solr.search.SolrIndexSearcher.initRegenerators(this);
 
@@ -273,9 +287,19 @@ public class SolrConfig extends Config implements MapSerializable {
     } else {
       jmxConfig = new JmxConfiguration(false, null, null, null);
     }
-    maxWarmingSearchers = getInt("query/maxWarmingSearchers", Integer.MAX_VALUE);
+    maxWarmingSearchers = getInt("query/maxWarmingSearchers", 1);
     slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", -1);
     for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
+
+    Map<String, CacheConfig> userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");
+    List<PluginInfo> caches = getPluginInfos(SolrCache.class.getName());
+    if (!caches.isEmpty()) {
+      for (PluginInfo c : caches) {
+        userCacheConfigs.put(c.name, CacheConfig.getConfig(this, "cache", c.attributes, null));
+      }
+    }
+    this.userCacheConfigs = Collections.unmodifiableMap(userCacheConfigs);
+
     updateHandlerInfo = loadUpdatehandlerInfo();
 
     multipartUploadLimitKB = getInt(
@@ -306,17 +330,19 @@ public class SolrConfig extends Config implements MapSerializable {
     }
 
     solrRequestParsers = new SolrRequestParsers(this);
-    log.info("Loaded SolrConfig: " + name);
+    log.debug("Loaded SolrConfig: {}", name);
   }
 
   public static final List<SolrPluginInfo> plugins = ImmutableList.<SolrPluginInfo>builder()
       .add(new SolrPluginInfo(SolrRequestHandler.class, SolrRequestHandler.TYPE, REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK, LAZY))
       .add(new SolrPluginInfo(QParserPlugin.class, "queryParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
+      .add(new SolrPluginInfo(Expressible.class, "expressible", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(QueryResponseWriter.class, "queryResponseWriter", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK, LAZY))
       .add(new SolrPluginInfo(ValueSourceParser.class, "valueSourceParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(TransformerFactory.class, "transformer", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(SearchComponent.class, "searchComponent", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(UpdateRequestProcessorFactory.class, "updateProcessor", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
+      .add(new SolrPluginInfo(SolrCache.class, "cache", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
           // TODO: WTF is up with queryConverter???
           // it apparently *only* works as a singleton? - SOLR-4304
           // and even then -- only if there is a single SpellCheckComponent
@@ -387,7 +413,7 @@ public class SolrConfig extends Config implements MapSerializable {
       int version = 0; // will be always 0 for file based resourceLoader
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-        log.info("config overlay loaded . version : {} ", version);
+        log.debug("Config overlay loaded. version : {} ", version);
       }
       isr = new InputStreamReader(in, StandardCharsets.UTF_8);
       Map m = (Map) ObjectBuilder.getVal(new JSONParser(isr));
@@ -457,7 +483,7 @@ public class SolrConfig extends Config implements MapSerializable {
   public final CacheConfig queryResultCacheConfig;
   public final CacheConfig documentCacheConfig;
   public final CacheConfig fieldValueCacheConfig;
-  public final CacheConfig[] userCacheConfigs;
+  public final Map<String, CacheConfig> userCacheConfigs;
   // SolrIndexSearcher - more...
   public final boolean useFilterForSortedQuery;
   public final int queryResultWindowSize;
@@ -516,8 +542,7 @@ public class SolrConfig extends Config implements MapSerializable {
     }
 
     @Override
-    public Map<String, Object> toMap() {
-      LinkedHashMap map = new LinkedHashMap();
+    public Map<String, Object> toMap(Map<String, Object> map) {
       map.put("agentId", agentId);
       map.put("serviceUrl", serviceUrl);
       map.put("rootName", rootName);
@@ -540,7 +565,7 @@ public class SolrConfig extends Config implements MapSerializable {
         = Pattern.compile("\\bmax-age=(\\d+)");
 
     @Override
-    public Map<String, Object> toMap() {
+    public Map<String, Object> toMap(Map<String, Object> map) {
       return makeMap("never304", never304,
           "etagSeed", etagSeed,
           "lastModFrom", lastModFrom.name().toLowerCase(Locale.ROOT),
@@ -654,7 +679,7 @@ public class SolrConfig extends Config implements MapSerializable {
 
 
     @Override
-    public Map<String, Object> toMap() {
+    public Map<String, Object> toMap(Map<String, Object> map) {
       LinkedHashMap result = new LinkedHashMap();
       result.put("indexWriter", makeMap("closeWaitsForMerges", indexWriterCloseWaitsForMerges));
       result.put("commitWithin", makeMap("softCommit", commitWithinSoftCommit));
@@ -729,7 +754,7 @@ public class SolrConfig extends Config implements MapSerializable {
     NodeList nodes = (NodeList) evaluate("lib", XPathConstants.NODESET);
     if (nodes == null || nodes.getLength() == 0) return;
 
-    log.info("Adding specified lib dirs to ClassLoader");
+    log.debug("Adding specified lib dirs to ClassLoader");
     SolrResourceLoader loader = getResourceLoader();
     List<URL> urls = new ArrayList<>();
 
@@ -820,11 +845,10 @@ public class SolrConfig extends Config implements MapSerializable {
   }
 
   @Override
-  public Map<String, Object> toMap() {
-    LinkedHashMap result = new LinkedHashMap();
+  public Map<String, Object> toMap(Map<String, Object> result) {
     if (getZnodeVersion() > -1) result.put(ZNODEVER, getZnodeVersion());
     result.put("luceneMatchVersion", luceneMatchVersion);
-    result.put("updateHandler", getUpdateHandlerInfo().toMap());
+    result.put("updateHandler", getUpdateHandlerInfo());
     Map m = new LinkedHashMap();
     result.put("query", m);
     m.put("useFilterForSortedQuery", useFilterForSortedQuery);
@@ -832,7 +856,7 @@ public class SolrConfig extends Config implements MapSerializable {
     m.put("queryResultMaxDocsCached", queryResultMaxDocsCached);
     m.put("enableLazyFieldLoading", enableLazyFieldLoading);
     m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
-    if (jmxConfig != null) result.put("jmx", jmxConfig.toMap());
+    if (jmxConfig != null) result.put("jmx", jmxConfig);
     for (SolrPluginInfo plugin : plugins) {
       List<PluginInfo> infos = getPluginInfos(plugin.clazz.getName());
       if (infos == null || infos.isEmpty()) continue;
@@ -840,16 +864,16 @@ public class SolrConfig extends Config implements MapSerializable {
       tag = tag.replace("/", "");
       if (plugin.options.contains(PluginOpts.REQUIRE_NAME)) {
         LinkedHashMap items = new LinkedHashMap();
-        for (PluginInfo info : infos) items.put(info.name, info.toMap());
+        for (PluginInfo info : infos) items.put(info.name, info);
         for (Map.Entry e : overlay.getNamedPlugins(plugin.tag).entrySet()) items.put(e.getKey(), e.getValue());
         result.put(tag, items);
       } else {
         if (plugin.options.contains(MULTI_OK)) {
-          ArrayList<Map> l = new ArrayList<>();
-          for (PluginInfo info : infos) l.add(info.toMap());
+          ArrayList<MapSerializable> l = new ArrayList<>();
+          for (PluginInfo info : infos) l.add(info);
           result.put(tag, l);
         } else {
-          result.put(tag, infos.get(0).toMap());
+          result.put(tag, infos.get(0));
         }
 
       }
@@ -858,15 +882,15 @@ public class SolrConfig extends Config implements MapSerializable {
 
 
     addCacheConfig(m, filterCacheConfig, queryResultCacheConfig, documentCacheConfig, fieldValueCacheConfig);
-    if (jmxConfig != null) result.put("jmx", jmxConfig.toMap());
+    if (jmxConfig != null) result.put("jmx", jmxConfig);
     m = new LinkedHashMap();
     result.put("requestDispatcher", m);
     m.put("handleSelect", handleSelect);
-    if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig.toMap());
+    if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig);
     m.put("requestParsers", makeMap("multipartUploadLimitKB", multipartUploadLimitKB,
         "formUploadLimitKB", formUploadLimitKB,
         "addHttpRequestToContext", addHttpRequestToContext));
-    if (indexConfig != null) result.put("indexConfig", indexConfig.toMap());
+    if (indexConfig != null) result.put("indexConfig", indexConfig);
 
     m = new LinkedHashMap();
     result.put("peerSync", m);
@@ -879,7 +903,7 @@ public class SolrConfig extends Config implements MapSerializable {
 
   private void addCacheConfig(Map queryMap, CacheConfig... cache) {
     if (cache == null) return;
-    for (CacheConfig config : cache) if (config != null) queryMap.put(config.getNodeName(), config.toMap());
+    for (CacheConfig config : cache) if (config != null) queryMap.put(config.getNodeName(), config);
 
   }
 
@@ -911,7 +935,7 @@ public class SolrConfig extends Config implements MapSerializable {
 
   public RequestParams refreshRequestParams() {
     requestParams = RequestParams.getFreshRequestParams(getResourceLoader(), requestParams);
-    log.info("current version of requestparams : {}", requestParams.getZnodeVersion());
+    log.debug("current version of requestparams : {}", requestParams.getZnodeVersion());
     return requestParams;
   }
 

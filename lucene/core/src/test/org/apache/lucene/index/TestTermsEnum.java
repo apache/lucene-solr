@@ -170,7 +170,7 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   private boolean accepts(CompiledAutomaton c, BytesRef b) {
-    int state = c.runAutomaton.getInitialState();
+    int state = 0;
     for(int idx=0;idx<b.length;idx++) {
       assertTrue(state != -1);
       state = c.runAutomaton.step(state, b.bytes[b.offset+idx] & 0xff);
@@ -224,7 +224,12 @@ public class TestTermsEnum extends LuceneTestCase {
     final IndexReader r = w.getReader();
     w.close();
 
-    final NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
+    int[] docIDToID = new int[r.maxDoc()];
+    NumericDocValues values = MultiDocValues.getNumericValues(r, "id");
+    for(int i=0;i<r.maxDoc();i++) {
+      assertEquals(i, values.nextDoc());
+      docIDToID[i] = (int) values.longValue();
+    }
 
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
 
@@ -286,7 +291,7 @@ public class TestTermsEnum extends LuceneTestCase {
           System.out.println("\nTEST: iter2=" + iter2 + " startTerm=" + (startTerm == null ? "<null>" : startTerm.utf8ToString()));
 
           if (startTerm != null) {
-            int state = c.runAutomaton.getInitialState();
+            int state = 0;
             for(int idx=0;idx<startTerm.length;idx++) {
               final int label = startTerm.bytes[startTerm.offset+idx] & 0xff;
               System.out.println("  state=" + state + " label=" + label);
@@ -327,7 +332,7 @@ public class TestTermsEnum extends LuceneTestCase {
           postingsEnum = TestUtil.docs(random(), te, postingsEnum, PostingsEnum.NONE);
           final int docID = postingsEnum.nextDoc();
           assertTrue(docID != DocIdSetIterator.NO_MORE_DOCS);
-          assertEquals(docIDToID.get(docID), termToID.get(expected).intValue());
+          assertEquals(docIDToID[docID], termToID.get(expected).intValue());
           do {
             loc++;
           } while (loc < termsArray.length && !acceptTermsSet.contains(termsArray[loc]));
@@ -992,5 +997,31 @@ public class TestTermsEnum extends LuceneTestCase {
       w.close();
     }
     dir.close();
+  }
+
+  // LUCENE-7576
+  public void testIntersectRegexp() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    doc.add(newStringField("field", "foobar", Field.Store.NO));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    Fields fields = MultiFields.getFields(r);
+    CompiledAutomaton automaton = new CompiledAutomaton(new RegExp("do_not_match_anything").toAutomaton());
+    Terms terms = fields.terms("field");
+    String message = expectThrows(IllegalArgumentException.class, () -> {terms.intersect(automaton, null);}).getMessage();
+    assertEquals("please use CompiledAutomaton.getTermsEnum instead", message);
+    r.close();
+    w.close();
+    d.close();
+  }
+
+  // LUCENE-7576
+  public void testInvalidAutomatonTermsEnum() throws Exception {
+    expectThrows(IllegalArgumentException.class,
+                 () -> {
+                   new AutomatonTermsEnum(TermsEnum.EMPTY, new CompiledAutomaton(Automata.makeString("foo")));
+                 });
   }
 }

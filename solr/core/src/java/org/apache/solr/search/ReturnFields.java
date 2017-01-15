@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.response.transform.DocTransformer;
@@ -52,6 +53,12 @@ public abstract class ReturnFields {
    * @return Set of field names or <code>null</code> (all fields).
    */
   public abstract Set<String> getRequestedFieldNames();
+
+  /**
+   * Get the fields which have been renamed
+   * @return a mapping of renamed fields
+   */
+  public abstract Map<String,String> getFieldRenames();
 
   /** Returns <code>true</code> if the specified field should be returned. */
   public abstract boolean wantsField(String name);

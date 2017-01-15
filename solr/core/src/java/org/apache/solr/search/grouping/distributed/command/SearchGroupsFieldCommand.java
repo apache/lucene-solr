@@ -19,8 +19,8 @@ package org.apache.solr.search.grouping.distributed.command;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
-import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
+import org.apache.lucene.search.grouping.AllGroupsCollector;
+import org.apache.lucene.search.grouping.FirstPassGroupingCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupsCollector;
 import org.apache.lucene.search.grouping.function.FunctionFirstPassGroupingCollector;
@@ -81,8 +81,8 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   private final int topNGroups;
   private final boolean includeGroupCount;
 
-  private AbstractFirstPassGroupingCollector firstPassGroupingCollector;
-  private AbstractAllGroupsCollector allGroupsCollector;
+  private FirstPassGroupingCollector firstPassGroupingCollector;
+  private AllGroupsCollector allGroupsCollector;
 
   private SearchGroupsFieldCommand(SchemaField field, Sort groupSort, int topNGroups, boolean includeGroupCount) {
     this.field = field;
@@ -117,7 +117,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   }
 
   @Override
-  public SearchGroupsFieldCommandResult result() {
+  public SearchGroupsFieldCommandResult result() throws IOException {
     final Collection<SearchGroup<BytesRef>> topGroups;
     if (firstPassGroupingCollector != null) {
       if (field.getType().getNumericType() != null) {

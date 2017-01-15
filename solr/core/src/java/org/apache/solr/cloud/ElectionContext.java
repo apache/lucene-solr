@@ -42,6 +42,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.CreateMode;
@@ -81,14 +82,14 @@ public abstract class ElectionContext implements Closeable {
   public void cancelElection() throws InterruptedException, KeeperException {
     if (leaderSeqPath != null) {
       try {
-        log.info("Canceling election {}", leaderSeqPath);
+        log.debug("Canceling election {}", leaderSeqPath);
         zkClient.delete(leaderSeqPath, -1, true);
       } catch (NoNodeException e) {
         // fine
-        log.info("cancelElection did not find election node to remove {}", leaderSeqPath);
+        log.debug("cancelElection did not find election node to remove {}", leaderSeqPath);
       }
     } else {
-      log.info("cancelElection skipped as this context has not been initialized");
+      log.debug("cancelElection skipped as this context has not been initialized");
     }
   }
 
@@ -124,17 +125,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     this.zkClient = zkStateReader.getZkClient();
     this.shardId = shardId;
     this.collection = collection;
-
-    try {
-      new ZkCmdExecutor(zkStateReader.getZkClient().getZkClientTimeout())
-          .ensureExists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection,
-              zkClient);
-    } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    }
   }
   
   @Override
@@ -147,14 +137,14 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           // We do this by using a multi and ensuring the parent znode of the leader registration node
           // matches the version we expect - there is a setData call that increments the parent's znode
           // version whenever a leader registers.
-          log.info("Removing leader registration node on cancel: {} {}", leaderPath, leaderZkNodeParentVersion);
+          log.debug("Removing leader registration node on cancel: {} {}", leaderPath, leaderZkNodeParentVersion);
           List<Op> ops = new ArrayList<>(2);
           ops.add(Op.check(new Path(leaderPath).getParent().toString(), leaderZkNodeParentVersion));
           ops.add(Op.delete(leaderPath, -1));
           zkClient.multi(ops, true);
         } catch (KeeperException.NoNodeException nne) {
           // no problem
-          log.info("No leader registration node found to remove: {}", leaderPath);
+          log.debug("No leader registration node found to remove: {}", leaderPath);
         } catch (KeeperException.BadVersionException bve) {
           log.info("Cannot remove leader registration node because the current registered node is not ours: {}", leaderPath);
           // no problem
@@ -174,14 +164,21 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
       throws KeeperException, InterruptedException, IOException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
+    
+    if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true)) {
+      log.info("Will not register as leader because collection appears to be gone.");
+      return;
+    }
+    
     String parent = new Path(leaderPath).getParent().toString();
     ZkCmdExecutor zcmd = new ZkCmdExecutor(30000);
-    zcmd.ensureExists(parent, zkClient);
+    // only if /collections/{collection} exists already do we succeed in creating this path
+    zcmd.ensureExists(parent, (byte[])null, CreateMode.PERSISTENT, zkClient, 2);
 
     try {
       RetryUtil.retryOnThrowable(NodeExistsException.class, 60000, 5000, () -> {
         synchronized (lock) {
-          log.info("Creating leader registration node {} after winning as {}", leaderPath, leaderSeqPath);
+          log.debug("Creating leader registration node {} after winning as {}", leaderPath, leaderSeqPath);
           List<Op> ops = new ArrayList<>(2);
 
           // We use a multi operation to get the parent nodes version, which will
@@ -288,8 +285,12 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
     ActionThrottle lt;
     try (SolrCore core = cc.getCore(coreName)) {
-      if (core == null) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+      if (core == null ) {
+        if (cc.isShutDown()) {
+          return;
+        } else {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+        }
       }
       MDCLoggingContext.setCore(core);
       lt = core.getUpdateHandler().getSolrCoreState().getLeaderThrottle();
@@ -302,7 +303,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       
       int leaderVoteWait = cc.getZkController().getLeaderVoteWait();
       
-      log.info("Running the leader process for shard={} and weAreReplacement={} and leaderVoteWait={}", shardId, weAreReplacement, leaderVoteWait);
+      log.debug("Running the leader process for shard={} and weAreReplacement={} and leaderVoteWait={}", shardId, weAreReplacement, leaderVoteWait);
       // clear the leader in clusterstate
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
           ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection);
@@ -325,9 +326,13 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       try (SolrCore core = cc.getCore(coreName)) {
         
         if (core == null) {
-          cancelElection();
-          throw new SolrException(ErrorCode.SERVER_ERROR,
-              "SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+          if (!zkController.getCoreContainer().isShutDown())  {
+            cancelElection();
+            throw new SolrException(ErrorCode.SERVER_ERROR,
+                "SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+          } else  {
+            return;
+          }
         }
         
         // should I be leader?
@@ -351,13 +356,15 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
           }
         }
-        
+
+        PeerSync.PeerSyncResult result = null;
         boolean success = false;
         try {
-          success = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
+          result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
+          success = result.isSuccess();
         } catch (Exception e) {
           SolrException.log(log, "Exception while trying to sync", e);
-          success = false;
+          result = PeerSync.PeerSyncResult.failure();
         }
         
         UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
@@ -374,10 +381,15 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           if (!hasRecentUpdates) {
             // we failed sync, but we have no versions - we can't sync in that case
             // - we were active
-            // before, so become leader anyway
-            log.info(
-                "We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
-            success = true;
+            // before, so become leader anyway if no one else has any versions either
+            if (result.getOtherHasVersions().orElse(false))  {
+              log.info("We failed sync, but we have no versions - we can't sync in that case. But others have some versions, so we should not become leader");
+              success = false;
+            } else  {
+              log.info(
+                  "We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
+              success = true;
+            }
           }
         }
         
@@ -463,7 +475,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             : clusterState.getReplica(collection, leaderProps.getStr(ZkStateReader.CORE_NODE_NAME_PROP));
         if (rep != null && rep.getState() != Replica.State.ACTIVE
             && rep.getState() != Replica.State.RECOVERING) {
-          log.info("We have become the leader after core registration but are not in an ACTIVE state - publishing ACTIVE");
+          log.debug("We have become the leader after core registration but are not in an ACTIVE state - publishing ACTIVE");
           zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
         }
       }
@@ -635,7 +647,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
       
       if (found >= slices.getReplicasMap().size()) {
-        log.info("All replicas are ready to participate in election.");
+        log.debug("All replicas are ready to participate in election.");
         return true;
       }
       
@@ -652,7 +664,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       throws InterruptedException, KeeperException, IOException {
     // remove our ephemeral and re join the election
     if (cc.isShutDown()) {
-      log.info("Not rejoining election because CoreContainer is closed");
+      log.debug("Not rejoining election because CoreContainer is closed");
       return;
     }
     
@@ -666,10 +678,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   }
 
   private boolean shouldIBeLeader(ZkNodeProps leaderProps, SolrCore core, boolean weAreReplacement) {
-    log.info("Checking if I should try and be the leader.");
+    log.debug("Checking if I should try and be the leader.");
     
     if (isClosed) {
-      log.info("Bailing on leader process because we have been closed");
+      log.debug("Bailing on leader process because we have been closed");
       return false;
     }
     
@@ -680,10 +692,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     }
     
     if (core.getCoreDescriptor().getCloudDescriptor().getLastPublished() == Replica.State.ACTIVE) {
-      log.info("My last published State was Active, it's okay to be the leader.");
+      log.debug("My last published State was Active, it's okay to be the leader.");
       return true;
     }
-    log.info("My last published State was "
+    log.debug("My last published State was "
         + core.getCoreDescriptor().getCloudDescriptor().getLastPublished()
         + ", I won't be the leader.");
     // TODO: and if no one is a good candidate?

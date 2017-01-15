@@ -1,5 +1,3 @@
-package org.apache.solr.handler;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,12 +15,18 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
+package org.apache.solr.handler;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
@@ -63,5 +67,38 @@ public class BackupRestoreUtils extends LuceneTestCase {
 
     assertEquals(0, response.getStatus());
     assertEquals(nDocs, response.getResults().getNumFound());
+  }
+
+  public static void runCoreAdminCommand(String baseUrl, String coreName, String action, Map<String,String> params) throws IOException {
+    StringBuilder builder = new StringBuilder();
+    builder.append(baseUrl);
+    builder.append("/admin/cores?action=");
+    builder.append(action);
+    builder.append("&core=");
+    builder.append(coreName);
+    for (Map.Entry<String,String> p : params.entrySet()) {
+      builder.append("&");
+      builder.append(p.getKey());
+      builder.append("=");
+      builder.append(p.getValue());
+    }
+    String masterUrl = builder.toString();
+    executeHttpRequest(masterUrl);
+  }
+
+  public static void runReplicationHandlerCommand(String baseUrl, String coreName, String action, String repoName, String backupName) throws IOException {
+    String masterUrl = baseUrl + "/" + coreName + ReplicationHandler.PATH + "?command=" + action + "&repository="+repoName+"&name="+backupName;
+    executeHttpRequest(masterUrl);
+  }
+
+  static void executeHttpRequest(String requestUrl) throws IOException {
+    InputStream stream = null;
+    try {
+      URL url = new URL(requestUrl);
+      stream = url.openStream();
+      stream.close();
+    } finally {
+      IOUtils.closeQuietly(stream);
+    }
   }
 }

@@ -25,16 +25,16 @@ import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 
+import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -119,7 +119,7 @@ public class DistributedQueue {
    * @return data at the first element of the queue, or null.
    */
   public byte[] peek() throws KeeperException, InterruptedException {
-    TimerContext time = stats.time(dir + "_peek");
+    Timer.Context time = stats.time(dir + "_peek");
     try {
       return firstElement();
     } finally {
@@ -147,7 +147,7 @@ public class DistributedQueue {
    */
   public byte[] peek(long wait) throws KeeperException, InterruptedException {
     Preconditions.checkArgument(wait > 0);
-    TimerContext time;
+    Timer.Context time;
     if (wait == Long.MAX_VALUE) {
       time = stats.time(dir + "_peek_wait_forever");
     } else {
@@ -177,7 +177,7 @@ public class DistributedQueue {
    * @return Head of the queue or null.
    */
   public byte[] poll() throws KeeperException, InterruptedException {
-    TimerContext time = stats.time(dir + "_poll");
+    Timer.Context time = stats.time(dir + "_poll");
     try {
       return removeFirst();
     } finally {
@@ -191,7 +191,7 @@ public class DistributedQueue {
    * @return The former head of the queue
    */
   public byte[] remove() throws NoSuchElementException, KeeperException, InterruptedException {
-    TimerContext time = stats.time(dir + "_remove");
+    Timer.Context time = stats.time(dir + "_remove");
     try {
       byte[] result = removeFirst();
       if (result == null) {
@@ -210,7 +210,7 @@ public class DistributedQueue {
    */
   public byte[] take() throws KeeperException, InterruptedException {
     // Same as for element. Should refactor this.
-    TimerContext timer = stats.time(dir + "_take");
+    Timer.Context timer = stats.time(dir + "_take");
     updateLock.lockInterruptibly();
     try {
       while (true) {
@@ -234,7 +234,7 @@ public class DistributedQueue {
    * element to become visible.
    */
   public void offer(byte[] data) throws KeeperException, InterruptedException {
-    TimerContext time = stats.time(dir + "_offer");
+    Timer.Context time = stats.time(dir + "_offer");
     try {
       while (true) {
         try {
@@ -330,7 +330,7 @@ public class DistributedQueue {
       updateLock.lockInterruptibly();
       try {
         for (String child : knownChildren) {
-          if (acceptFilter.apply(child)) {
+          if (acceptFilter.test(child)) {
             foundChildren.add(child);
           }
         }

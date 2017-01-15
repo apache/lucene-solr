@@ -20,13 +20,11 @@ package org.apache.lucene.expressions;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Rescorer;
@@ -49,12 +47,27 @@ class ExpressionRescorer extends SortRescorer {
   private final Expression expression;
   private final Bindings bindings;
 
-  /** Uses the provided {@link ValueSource} to assign second
+  /** Uses the provided {@link Expression} to assign second
    *  pass scores. */
   public ExpressionRescorer(Expression expression, Bindings bindings) {
     super(new Sort(expression.getSortField(bindings, true)));
     this.expression = expression;
     this.bindings = bindings;
+  }
+
+  private static DoubleValues scores(int doc, float score) {
+    return new DoubleValues() {
+      @Override
+      public double doubleValue() throws IOException {
+        return score;
+      }
+
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        assert doc == target;
+        return true;
+      }
+    };
   }
 
   @Override
@@ -65,18 +78,14 @@ class ExpressionRescorer extends SortRescorer {
     int subReader = ReaderUtil.subIndex(docID, leaves);
     LeafReaderContext readerContext = leaves.get(subReader);
     int docIDInSegment = docID - readerContext.docBase;
-    Map<String,Object> context = new HashMap<>();
 
-    FakeScorer fakeScorer = new FakeScorer();
-    fakeScorer.score = firstPassExplanation.getValue();
-    fakeScorer.doc = docIDInSegment;
-
-    context.put("scorer", fakeScorer);
+    DoubleValues scores = scores(docIDInSegment, firstPassExplanation.getValue());
 
     List<Explanation> subs = new ArrayList<>(Arrays.asList(superExpl.getDetails()));
     for(String variable : expression.variables) {
-      subs.add(Explanation.match((float) bindings.getValueSource(variable).getValues(context, readerContext).doubleVal(docIDInSegment),
-                                       "variable \"" + variable + "\""));
+      DoubleValues dv = bindings.getDoubleValuesSource(variable).getValues(readerContext, scores);
+      if (dv.advanceExact(docIDInSegment))
+        subs.add(Explanation.match((float) dv.doubleValue(), "variable \"" + variable + "\""));
     }
 
     return Explanation.match(superExpl.getValue(), superExpl.getDescription(), subs);

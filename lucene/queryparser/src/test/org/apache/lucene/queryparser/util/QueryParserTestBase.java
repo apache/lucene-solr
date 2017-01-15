@@ -38,6 +38,7 @@ import org.apache.lucene.index.Term;
 //import org.apache.lucene.queryparser.classic.ParseException;
 //import org.apache.lucene.queryparser.classic.QueryParser;
 //import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 //import org.apache.lucene.queryparser.classic.QueryParserTokenManager;
 import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
@@ -328,6 +329,9 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   
     PhraseQuery expected = new PhraseQuery("field", "中", "国");
     CommonQueryParserConfiguration qp = getParserConfig(analyzer);
+    if (qp instanceof QueryParser) { // Always true, since TestStandardQP overrides this method
+      ((QueryParser)qp).setSplitOnWhitespace(true); // LUCENE-7533
+    }
     setAutoGeneratePhraseQueries(qp, true);
     assertEquals(expected, getQuery("中国",qp));
   }

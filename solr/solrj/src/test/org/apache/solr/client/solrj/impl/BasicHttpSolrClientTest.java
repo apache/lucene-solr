@@ -54,6 +54,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
@@ -76,6 +77,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
@@ -816,6 +818,35 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       // so it passes the verification step.
       req.setQueryParams(setOf("requestOnly", "both", "neither"));
       verifyServletState(client, req);
+    }
+  }
+
+  @Test
+  public void testInvariantParams() throws IOException {
+    try(HttpSolrClient createdClient = new HttpSolrClient.Builder()
+        .withBaseSolrUrl(jetty.getBaseUrl().toString())
+        .withInvariantParams(SolrTestCaseJ4.params("param", "value"))
+        .build()) {
+      assertEquals("value", createdClient.getInvariantParams().get("param"));
+    }
+
+    try(HttpSolrClient createdClient = new HttpSolrClient.Builder()
+        .withBaseSolrUrl(jetty.getBaseUrl().toString())
+        .withInvariantParams(SolrTestCaseJ4.params("fq", "fq1", "fq", "fq2"))
+        .build()) {
+      assertEquals(2, createdClient.getInvariantParams().getParams("fq").length);
+    }
+
+    try(HttpSolrClient createdClient = new HttpSolrClient.Builder()
+        .withBaseSolrUrl(jetty.getBaseUrl().toString())
+        .withDelegationToken("mydt")
+        .withInvariantParams(SolrTestCaseJ4.params(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM, "mydt"))
+        .build()) {
+      fail();
+    } catch(Exception ex) {
+      if (!ex.getMessage().equals("parameter "+ DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM +" is redefined.")) {
+        throw ex;
+      }
     }
   }
 }

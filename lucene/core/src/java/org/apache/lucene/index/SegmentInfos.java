@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -119,10 +120,6 @@ import org.apache.lucene.util.Version;
  */
 public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo> {
 
-  /** The file format version for the segments_N codec header, since 5.0+ */
-  public static final int VERSION_50 = 4;
-  /** The file format version for the segments_N codec header, since 5.1+ */
-  public static final int VERSION_51 = 5; // use safe maps
   /** Adds the {@link Version} that committed this segments_N file, as well as the {@link Version} of the oldest segment, since 5.3+ */
   public static final int VERSION_53 = 6;
 
@@ -281,7 +278,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     long generation = generationFromSegmentsFileName(segmentFileName);
     //System.out.println(Thread.currentThread() + ": SegmentInfos.readCommit " + segmentFileName);
     try (ChecksumIndexInput input = directory.openChecksumInput(segmentFileName, IOContext.READ)) {
-      return readCommit(directory, input, generation);
+      try {
+        return readCommit(directory, input, generation);
+      } catch (EOFException e) {
+        throw new CorruptIndexException("Unexpected end of file while reading index.", input, e);
+      }
     }
   }
 
@@ -294,7 +295,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     if (magic != CodecUtil.CODEC_MAGIC) {
       throw new IndexFormatTooOldException(input, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
     }
-    int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_50, VERSION_CURRENT);
+    int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_53, VERSION_CURRENT);
     byte id[] = new byte[StringHelper.ID_LENGTH];
     input.readBytes(id, 0, id.length);
     CodecUtil.checkIndexHeaderSuffix(input, Long.toString(generation, Character.MAX_RADIX));
@@ -351,11 +352,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       long fieldInfosGen = input.readLong();
       long dvGen = input.readLong();
       SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, delGen, fieldInfosGen, dvGen);
-      if (format >= VERSION_51) {
-        siPerCommit.setFieldInfosFiles(input.readSetOfStrings());
-      } else {
-        siPerCommit.setFieldInfosFiles(Collections.unmodifiableSet(input.readStringSet()));
-      }
+      siPerCommit.setFieldInfosFiles(input.readSetOfStrings());
       final Map<Integer,Set<String>> dvUpdateFiles;
       final int numDVFields = input.readInt();
       if (numDVFields == 0) {
@@ -363,11 +360,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       } else {
         Map<Integer,Set<String>> map = new HashMap<>(numDVFields);
         for (int i = 0; i < numDVFields; i++) {
-          if (format >= VERSION_51) {
-            map.put(input.readInt(), input.readSetOfStrings());
-          } else {
-            map.put(input.readInt(), Collections.unmodifiableSet(input.readStringSet()));
-          }
+          map.put(input.readInt(), input.readSetOfStrings());
         }
         dvUpdateFiles = Collections.unmodifiableMap(map);
       }
@@ -381,11 +374,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       }
     }
 
-    if (format >= VERSION_51) {
-      infos.userData = input.readMapOfStrings();
-    } else {
-      infos.userData = Collections.unmodifiableMap(input.readStringStringMap());
-    }
+    infos.userData = input.readMapOfStrings();
 
     CodecUtil.checkFooter(input);
 

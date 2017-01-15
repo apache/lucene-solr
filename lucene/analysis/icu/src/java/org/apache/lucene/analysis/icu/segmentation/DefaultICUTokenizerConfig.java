@@ -63,9 +63,12 @@ public class DefaultICUTokenizerConfig extends ICUTokenizerConfig {
   // the same as ROOT, except no dictionary segmentation for cjk
   private static final BreakIterator defaultBreakIterator = 
     readBreakIterator("Default.brk");
+  private static final BreakIterator myanmarSyllableIterator = 
+    readBreakIterator("MyanmarSyllable.brk");
   
   // TODO: deprecate this boolean? you only care if you are doing super-expert stuff...
   private final boolean cjkAsWords;
+  private final boolean myanmarAsWords;
   
   /** 
    * Creates a new config. This object is lightweight, but the first
@@ -74,9 +77,12 @@ public class DefaultICUTokenizerConfig extends ICUTokenizerConfig {
    *                   otherwise text will be segmented according to UAX#29 defaults.
    *                   If this is true, all Han+Hiragana+Katakana words will be tagged as
    *                   IDEOGRAPHIC.
+   * @param myanmarAsWords true if Myanmar text should undergo dictionary-based segmentation,
+   *                       otherwise it will be tokenized as syllables.
    */
-  public DefaultICUTokenizerConfig(boolean cjkAsWords) { 
+  public DefaultICUTokenizerConfig(boolean cjkAsWords, boolean myanmarAsWords) { 
     this.cjkAsWords = cjkAsWords;
+    this.myanmarAsWords = myanmarAsWords;
   }
   
   @Override
@@ -88,6 +94,12 @@ public class DefaultICUTokenizerConfig extends ICUTokenizerConfig {
   public BreakIterator getBreakIterator(int script) {
     switch(script) {
       case UScript.JAPANESE: return (BreakIterator)cjkBreakIterator.clone();
+      case UScript.MYANMAR: 
+        if (myanmarAsWords) {
+          return (BreakIterator)defaultBreakIterator.clone();
+        } else {
+          return (BreakIterator)myanmarSyllableIterator.clone();
+        }
       default: return (BreakIterator)defaultBreakIterator.clone();
     }
   }

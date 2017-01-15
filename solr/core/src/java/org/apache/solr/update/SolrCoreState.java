@@ -70,7 +70,7 @@ public abstract class SolrCoreState {
     
     if (close) {
       try {
-        log.info("Closing SolrCoreState");
+        log.debug("Closing SolrCoreState");
         close(closer);
       } catch (Exception e) {
         log.error("Error closing SolrCoreState", e);
@@ -163,4 +163,6 @@ public abstract class SolrCoreState {
       super(s);
     }
   }
+
+  public abstract Lock getRecoveryLock();
 }

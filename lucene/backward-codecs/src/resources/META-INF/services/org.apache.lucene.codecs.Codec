@@ -13,7 +13,5 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-org.apache.lucene.codecs.lucene50.Lucene50Codec
-org.apache.lucene.codecs.lucene53.Lucene53Codec
-org.apache.lucene.codecs.lucene54.Lucene54Codec
 org.apache.lucene.codecs.lucene60.Lucene60Codec
+org.apache.lucene.codecs.lucene62.Lucene62Codec

@@ -19,7 +19,13 @@ package org.apache.solr.search;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.noggit.ObjectBuilder;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.DirectUpdateHandler2;
@@ -55,7 +61,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
   // TODO: fix this test to not require FSDirectory
   static String savedFactory;
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
@@ -72,18 +78,11 @@ public class TestRecovery extends SolrTestCaseJ4 {
     }
   }
 
-
-  // since we make up fake versions in these tests, we can get messed up by a DBQ with a real version
-  // since Solr can think following updates were reordered.
-  @Override
-  public void clearIndex() {
-    try {
-      deleteByQueryAndGetVersion("*:*", params("_version_", Long.toString(-Long.MAX_VALUE), DISTRIB_UPDATE_PARAM,FROM_LEADER));
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+  private Map<String, Metric> getMetrics() {
+    SolrMetricManager manager = h.getCoreContainer().getMetricManager();
+    MetricRegistry registry = manager.registry(h.getCore().getCoreMetricManager().getRegistryName());
+    return registry.getMetrics();
   }
-
 
   @Test
   public void testLogReplay() throws Exception {
@@ -120,6 +119,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       h.close();
       createCore();
+
+      Map<String, Metric> metrics = getMetrics(); // live map view
+
       // Solr should kick this off now
       // h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
 
@@ -129,6 +131,17 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       // make sure we can still access versions after a restart
       assertJQ(req("qt","/get", "getVersions",""+versions.size()),"/versions==" + versions);
+
+      assertEquals(UpdateLog.State.REPLAYING, h.getCore().getUpdateHandler().getUpdateLog().getState());
+      // check metrics
+      Gauge<Integer> state = (Gauge<Integer>)metrics.get("TLOG.state");
+      assertEquals(UpdateLog.State.REPLAYING.ordinal(), state.getValue().intValue());
+      Gauge<Integer> replayingLogs = (Gauge<Integer>)metrics.get("TLOG.replay.remaining.logs");
+      assertTrue(replayingLogs.getValue().intValue() > 0);
+      Gauge<Long> replayingDocs = (Gauge<Long>)metrics.get("TLOG.replay.remaining.bytes");
+      assertTrue(replayingDocs.getValue().longValue() > 0);
+      Meter replayDocs = (Meter)metrics.get("TLOG.replay.ops");
+      long initialOps = replayDocs.getCount();
 
       // unblock recovery
       logReplay.release(1000);
@@ -140,6 +153,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
 
       assertJQ(req("q","*:*") ,"/response/numFound==3");
+
+      assertEquals(5L, replayDocs.getCount() - initialOps);
+      assertEquals(UpdateLog.State.ACTIVE.ordinal(), state.getValue().intValue());
 
       // make sure we can still access versions after recovery
       assertJQ(req("qt","/get", "getVersions",""+versions.size()) ,"/versions==" + versions);
@@ -183,6 +199,132 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testNewDBQAndDocMatchingOldDBQDuringLogReplay() throws Exception {
+    try {
+
+      DirectUpdateHandler2.commitOnClose = false;
+      final Semaphore logReplay = new Semaphore(0);
+      final Semaphore logReplayFinish = new Semaphore(0);
+
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      };
+
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+
+      clearIndex();
+      assertU(commit());
+
+      // because we're sending updates during log replay, we can't emulate replica logic -- we need to use
+      // normal updates like a leader / single-node instance would get.
+      //
+      // (In SolrCloud mode, when a replica run recoverFromLog, replica in this time period will have state = DOWN,
+      // so It won't receive any updates.)
+      
+      updateJ(jsonAdd(sdoc("id","B0")),params());
+      updateJ(jsonAdd(sdoc("id","B1")),params()); // should be deleted by subsequent DBQ in tlog
+      updateJ(jsonAdd(sdoc("id","B2")),params()); // should be deleted by DBQ that arives during tlog replay
+      updateJ(jsonDelQ("id:B1 OR id:B3 OR id:B6"),params());
+      updateJ(jsonAdd(sdoc("id","B3")),params()); // should *NOT* be deleted by previous DBQ in tlog
+      updateJ(jsonAdd(sdoc("id","B4")),params()); // should be deleted by DBQ that arives during tlog replay
+      updateJ(jsonAdd(sdoc("id","B5")),params());
+      
+      // sanity check no updates have been applied yet (just in tlog)
+      assertJQ(req("q","*:*"),"/response/numFound==0");
+
+      h.close();
+      createCore(); // (Attempts to) kick off recovery (which is currently blocked by semaphore)
+
+      // verify that previous close didn't do a commit & that recovery should be blocked by our hook
+      assertJQ(req("q","*:*") ,"/response/numFound==0");
+
+      // begin recovery (first few items)
+      logReplay.release(TestUtil.nextInt(random(),1,6));
+      // ... but before recover is completely unblocked/finished, have a *new* DBQ arrive
+      // that should delete some items we either have just replayed, or are about to replay (or maybe both)...
+      updateJ(jsonDelQ("id:B2 OR id:B4"),params());
+      // ...and re-add a doc that would have matched a DBQ already in the tlog
+      // (which may/may-not have been replayed yet)
+      updateJ(jsonAdd(sdoc("id","B6")),params()); // should *NOT* be deleted by DBQ from tlog
+      assertU(commit());
+
+      // now completely unblock recovery
+      logReplay.release(1000);
+
+      // wait until recovery has finished
+      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+
+      // verify only the expected docs are found, even with out of order DBQ and DBQ that arived during recovery
+      assertJQ(req("q", "*:*", "fl", "id", "sort", "id asc")
+               , "/response/docs==[{'id':'B0'}, {'id':'B3'}, {'id':'B5'}, {'id':'B6'}]");
+      
+    } finally {
+      DirectUpdateHandler2.commitOnClose = true;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
+    }
+
+  }
+
+  @Test
+  public void testLogReplayWithReorderedDBQ() throws Exception {
+    try {
+
+      DirectUpdateHandler2.commitOnClose = false;
+      final Semaphore logReplay = new Semaphore(0);
+      final Semaphore logReplayFinish = new Semaphore(0);
+
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      };
+
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+
+
+      clearIndex();
+      assertU(commit());
+
+      updateJ(jsonAdd(sdoc("id","B1", "_version_","1010")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(jsonDelQ("id:B2"), params(DISTRIB_UPDATE_PARAM,FROM_LEADER, "_version_","-1017")); // This should've arrived after the 1015th update
+      updateJ(jsonAdd(sdoc("id","B2", "_version_","1015")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(jsonAdd(sdoc("id","B3", "_version_","1020")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+
+
+      assertJQ(req("q","*:*"),"/response/numFound==0");
+
+      h.close();
+      createCore();
+      // Solr should kick this off now
+      // h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
+
+      // verify that previous close didn't do a commit
+      // recovery should be blocked by our hook
+      assertJQ(req("q","*:*") ,"/response/numFound==0");
+
+      // unblock recovery
+      logReplay.release(1000);
+
+      // wait until recovery has finished
+      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+
+      assertJQ(req("q","*:*") ,"/response/numFound==2");
+    } finally {
+      DirectUpdateHandler2.commitOnClose = true;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
+    }
+
+  }
+
+  @Test
   public void testBuffering() throws Exception {
 
     DirectUpdateHandler2.commitOnClose = false;
@@ -208,15 +350,24 @@ public class TestRecovery extends SolrTestCaseJ4 {
       clearIndex();
       assertU(commit());
 
+      Map<String, Metric> metrics = getMetrics();
+
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
+
       Future<UpdateLog.RecoveryInfo> rinfoFuture = ulog.applyBufferedUpdates();
       assertTrue(rinfoFuture == null);
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
 
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
+      Gauge<Integer> state = (Gauge<Integer>)metrics.get("TLOG.state");
+      assertEquals(UpdateLog.State.BUFFERING.ordinal(), state.getValue().intValue());
+      Gauge<Integer> bufferedOps = (Gauge<Integer>)metrics.get("TLOG.buffered.ops");
+      int initialOps = bufferedOps.getValue();
+      Meter applyingBuffered = (Meter)metrics.get("TLOG.applyingBuffered.ops");
+      long initialApplyingOps = applyingBuffered.getCount();
 
       // simulate updates from a leader
       updateJ(jsonAdd(sdoc("id","B1", "_version_","1010")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
@@ -248,6 +399,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
           ,"=={'doc':null}"
       );
 
+      assertEquals(6, bufferedOps.getValue().intValue() - initialOps);
 
       rinfoFuture = ulog.applyBufferedUpdates();
       assertTrue(rinfoFuture != null);
@@ -259,6 +411,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       UpdateLog.RecoveryInfo rinfo = rinfoFuture.get();
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
 
+      assertEquals(6L, applyingBuffered.getCount() - initialApplyingOps);
 
       assertJQ(req("qt","/get", "getVersions","6")
           ,"=={'versions':[-2010,1030,1020,-1017,1015,1010]}"
@@ -325,6 +478,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(1, recInfo.deleteByQuery);
 
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
+
+      assertEquals(0, bufferedOps.getValue().intValue());
     } finally {
       DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;

@@ -46,7 +46,7 @@ import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
-import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
@@ -223,7 +223,7 @@ public class Grouping {
   }
 
   public void addQueryCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
-    QParser parser = QParser.getParser(groupByStr, null, request);
+    QParser parser = QParser.getParser(groupByStr, request);
     Query gq = parser.getQuery();
     Grouping.CommandQuery gc = new CommandQuery();
     gc.query = gq;
@@ -323,7 +323,7 @@ public class Grouping {
       cmd.prepare();
     }
 
-    AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = null;
+    AllGroupHeadsCollector<?> allGroupHeadsCollector = null;
     List<Collector> collectors = new ArrayList<>(commands.size());
     for (Command cmd : commands) {
       Collector collector = cmd.createFirstPassCollector();
@@ -459,10 +459,10 @@ public class Grouping {
    *
    * @param offset The offset
    * @param len    The number of documents to return
-   * @param max    The number of document to return if len < 0 or if offset + len < 0
+   * @param max    The number of document to return if len &lt; 0 or if offset + len &gt; 0
    * @return offset + len if len equals zero or higher. Otherwise returns max
    */
-  int getMax(int offset, int len, int max) {
+  public static int getMax(int offset, int len, int max) {
     int v = len < 0 ? max : offset + len;
     if (v < 0 || v > max) v = max;
     return v;
@@ -513,7 +513,7 @@ public class Grouping {
    * Note: Maybe the creating the response structure should be done in something like a ReponseBuilder???
    * Warning NOT thread save!
    */
-  public abstract class Command<GROUP_VALUE_TYPE> {
+  public abstract class Command<T> {
 
     public String key;       // the name to use for this group in the response
     public Sort withinGroupSort;   // the sort of the documents *within* a single group.
@@ -527,7 +527,7 @@ public class Grouping {
     public boolean main;     // use as the main result in simple format (grouped.main=true param)
     public TotalCount totalCount = TotalCount.ungrouped;
 
-    TopGroups<GROUP_VALUE_TYPE> result;
+    TopGroups<T> result;
 
 
     /**
@@ -565,7 +565,7 @@ public class Grouping {
      * @return a collector that is able to return the most relevant document of all groups.
      * @throws IOException If I/O related errors occur
      */
-    public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
+    public AllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
       return null;
     }
 
@@ -774,7 +774,7 @@ public class Grouping {
      * {@inheritDoc}
      */
     @Override
-    public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
+    public AllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
       Sort sortWithinGroup = withinGroupSort != null ? withinGroupSort : Sort.RELEVANCE;
       return TermAllGroupHeadsCollector.create(groupBy, sortWithinGroup);
     }
@@ -992,7 +992,7 @@ public class Grouping {
     }
 
     @Override
-    public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
+    public AllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
       Sort sortWithinGroup = withinGroupSort != null ? withinGroupSort : Sort.RELEVANCE;
       return new FunctionAllGroupHeadsCollector(groupBy, context, sortWithinGroup);
     }

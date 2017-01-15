@@ -351,7 +351,7 @@ public class CompiledAutomaton {
 
     //if (DEBUG) System.out.println("CA.floor input=" + input.utf8ToString());
 
-    int state = runAutomaton.getInitialState();
+    int state = 0;
 
     // Special case empty string:
     if (input.length == 0) {

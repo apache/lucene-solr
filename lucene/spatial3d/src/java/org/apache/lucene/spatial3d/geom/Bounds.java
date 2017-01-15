@@ -121,4 +121,11 @@ public interface Bounds {
    */
   public Bounds noBottomLatitudeBound();
   
+  /** Signal that there is no bound whatsoever.
+   * The bound is limited only by the constraints of the
+   * planet.
+   *@return the updated Bounds object.,
+   */
+  public Bounds noBound(final PlanetModel planetModel);
+  
 }

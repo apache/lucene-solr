@@ -30,7 +30,10 @@ import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.rule.ReplicaAssigner.Position;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.rule.Snitch;
+import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -82,7 +85,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null ).getNodeMappings();
     assertNotNull(mapping);
 
-    rules = parseRules("[{role:'!overseer'}]" );
+    rules = parseRules("[{role:'!overseer'}, {'freedisk':'>1'}]" );
     Map<String, Object> snitchSession = new HashMap<>();
     List<String> preferredOverseerNodes = ImmutableList.of("127.0.0.1:49947_", "127.0.0.1:49952_");
     ReplicaAssigner replicaAssigner = new ReplicaAssigner(
@@ -91,8 +94,8 @@ public class RuleEngineTest extends SolrTestCaseJ4{
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null) {
 
       @Override
-      protected SnitchContext getSnitchCtx(String node, SnitchInfoImpl info) {
-        return new SnitchContext(info, node, snitchSession){
+      protected SnitchContext getSnitchCtx(String node, SnitchInfoImpl info, CoreContainer cc) {
+        return new ServerSnitchContext(info, node, snitchSession,cc){
           @Override
           public Map getZkJson(String path) {
             if(ZkStateReader.ROLES.equals(path)){
@@ -100,8 +103,10 @@ public class RuleEngineTest extends SolrTestCaseJ4{
             }
             return null;
           }
+
         };
       }
+
     };
     mapping = replicaAssigner.getNodeMappings();
     assertNotNull(mapping);

@@ -30,7 +30,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.request.SmileWriterTest;
+import org.apache.solr.response.SmileWriterTest;
 import org.apache.solr.search.json.TestJsonRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

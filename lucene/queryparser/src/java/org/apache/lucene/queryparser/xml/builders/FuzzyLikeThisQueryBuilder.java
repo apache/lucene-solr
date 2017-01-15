@@ -21,8 +21,8 @@ import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.apache.lucene.sandbox.queries.FuzzyLikeThisQuery;
-import org.apache.lucene.sandbox.queries.SlowFuzzyQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.Query;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -33,7 +33,7 @@ import org.w3c.dom.NodeList;
 public class FuzzyLikeThisQueryBuilder implements QueryBuilder {
 
   private static final int DEFAULT_MAX_NUM_TERMS = 50;
-  private static final float DEFAULT_MIN_SIMILARITY = SlowFuzzyQuery.defaultMinSimilarity;
+  private static final float DEFAULT_MIN_SIMILARITY = FuzzyQuery.defaultMinSimilarity;
   private static final int DEFAULT_PREFIX_LENGTH = 1;
   private static final boolean DEFAULT_IGNORE_TF = false;
 

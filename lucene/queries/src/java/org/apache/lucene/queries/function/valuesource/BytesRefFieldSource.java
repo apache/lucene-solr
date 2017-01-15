@@ -19,14 +19,14 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
@@ -48,21 +48,42 @@ public class BytesRefFieldSource extends FieldCacheSource {
     // TODO: do it cleaner?
     if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.BINARY) {
       final BinaryDocValues binaryValues = DocValues.getBinary(readerContext.reader(), field);
-      final Bits docsWithField = DocValues.getDocsWithField(readerContext.reader(), field);
       return new FunctionValues() {
+        int lastDocID = -1;
 
-        @Override
-        public boolean exists(int doc) {
-          return docsWithField.get(doc);
+        private BytesRef getValueForDoc(int doc) throws IOException {
+          if (doc < lastDocID) {
+            throw new IllegalArgumentException("docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
+          }
+          lastDocID = doc;
+          int curDocID = binaryValues.docID();
+          if (doc > curDocID) {
+            curDocID = binaryValues.advance(doc);
+          }
+          if (doc == curDocID) {
+            return binaryValues.binaryValue();
+          } else {
+            return null;
+          }
         }
 
         @Override
-        public boolean bytesVal(int doc, BytesRefBuilder target) {
-          target.copyBytes(binaryValues.get(doc));
-          return target.length() > 0;
+        public boolean exists(int doc) throws IOException {
+          return getValueForDoc(doc) != null;
         }
 
-        public String strVal(int doc) {
+        @Override
+        public boolean bytesVal(int doc, BytesRefBuilder target) throws IOException {
+          BytesRef value = getValueForDoc(doc);
+          if (value == null || value.length == 0) {
+            return false;
+          } else {
+            target.copyBytes(value);
+            return true;
+          }
+        }
+
+        public String strVal(int doc) throws IOException {
           final BytesRefBuilder bytes = new BytesRefBuilder();
           return bytesVal(doc, bytes)
               ? bytes.get().utf8ToString()
@@ -70,12 +91,12 @@ public class BytesRefFieldSource extends FieldCacheSource {
         }
 
         @Override
-        public Object objectVal(int doc) {
+        public Object objectVal(int doc) throws IOException {
           return strVal(doc);
         }
 
         @Override
-        public String toString(int doc) {
+        public String toString(int doc) throws IOException {
           return description() + '=' + strVal(doc);
         }
 
@@ -90,10 +111,13 @@ public class BytesRefFieldSource extends FieldCacheSource {
             }
 
             @Override
-            public void fillValue(int doc) {
-              mval.exists = docsWithField.get(doc);
+            public void fillValue(int doc) throws IOException {
+              BytesRef value = getValueForDoc(doc);
+              mval.exists = value != null;
               mval.value.clear();
-              mval.value.copyBytes(binaryValues.get(doc));
+              if (value != null) {
+                mval.value.copyBytes(value);
+              }
             }
           };
         }
@@ -108,12 +132,12 @@ public class BytesRefFieldSource extends FieldCacheSource {
         }
 
         @Override
-        public Object objectVal(int doc) {
+        public Object objectVal(int doc) throws IOException {
           return strVal(doc);
         }
 
         @Override
-        public String toString(int doc) {
+        public String toString(int doc) throws IOException {
           return description() + '=' + strVal(doc);
         }
       };

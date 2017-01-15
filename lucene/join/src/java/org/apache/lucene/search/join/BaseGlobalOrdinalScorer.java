@@ -16,13 +16,13 @@
  */
 package org.apache.lucene.search.join;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
-
-import java.io.IOException;
 
 abstract class BaseGlobalOrdinalScorer extends Scorer {
 

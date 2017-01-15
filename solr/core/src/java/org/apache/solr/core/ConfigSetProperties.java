@@ -51,7 +51,7 @@ public class ConfigSetProperties {
     try {
       reader = new InputStreamReader(loader.openResource(name), StandardCharsets.UTF_8);
     } catch (SolrResourceNotFoundException ex) {
-      log.info("Did not find ConfigSet properties, assuming default properties: " + ex.getMessage());
+      log.debug("Did not find ConfigSet properties, assuming default properties: " + ex.getMessage());
       return null;
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load reader for ConfigSet properties: " + name, ex);
@@ -70,7 +70,7 @@ public class ConfigSetProperties {
       Object object = ObjectBuilder.getVal(jsonParser);
       if (!(object instanceof Map)) {
         final String objectClass = object == null ? "null" : object.getClass().getName();
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid JSON type " + object.getClass().getName() + ", expected Map");
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid JSON type " + objectClass + ", expected Map");
       }
       return new NamedList((Map)object);
     } catch (Exception ex) {

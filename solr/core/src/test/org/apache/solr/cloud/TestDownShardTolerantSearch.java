@@ -16,13 +16,15 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,41 +36,47 @@ import static org.hamcrest.CoreMatchers.is;
  * and also asserts that a meaningful exception is thrown when shards.tolerant=false
  * See SOLR-7566
  */
-public class TestDownShardTolerantSearch extends AbstractFullDistribZkTestBase {
+public class TestDownShardTolerantSearch extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public TestDownShardTolerantSearch() {
-    sliceCount = 2;
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(2)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
   }
 
   @Test
-  @ShardsFixed(num = 2)
   public void searchingShouldFailWithoutTolerantSearchSetToTrue() throws Exception {
-    waitForRecoveriesToFinish(true);
 
-    indexAbunchOfDocs();
-    commit();
-    QueryResponse response = cloudClient.query(new SolrQuery("*:*").setRows(1));
+    CollectionAdminRequest.createCollection("tolerant", "conf", 2, 1)
+        .process(cluster.getSolrClient());
+
+    UpdateRequest update = new UpdateRequest();
+    for (int i = 0; i < 100; i++) {
+      update.add("id", Integer.toString(i));
+    }
+    update.commit(cluster.getSolrClient(), "tolerant");
+
+    QueryResponse response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1));
     assertThat(response.getStatus(), is(0));
-    assertThat(response.getResults().getNumFound(), is(66L));
+    assertThat(response.getResults().getNumFound(), is(100L));
 
-    ChaosMonkey.kill(shardToJetty.get(SHARD1).get(0));
+    cluster.stopJettySolrRunner(0);
 
-    response = cloudClient.query(new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
+    response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
     assertThat(response.getStatus(), is(0));
     assertTrue(response.getResults().getNumFound() > 0);
 
     try {
-      cloudClient.query(new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, false));
+      cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, false));
       fail("Request should have failed because we killed shard1 jetty");
     } catch (SolrServerException e) {
       log.info("error from server", e);
       assertNotNull(e.getCause());
       assertTrue("Error message from server should have the name of the down shard",
-          e.getCause().getMessage().contains(SHARD1));
-    } catch (IOException e) {
-      e.printStackTrace();
+          e.getCause().getMessage().contains("shard"));
     }
   }
 }

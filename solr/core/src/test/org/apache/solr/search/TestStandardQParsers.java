@@ -79,4 +79,13 @@ public class TestStandardQParsers extends LuceneTestCase {
 
   }
 
+  /**
+   * Test that "lucene" is the default query parser.
+   */
+  @Test
+  public void testDefaultQType() throws Exception {
+    assertEquals(LuceneQParserPlugin.NAME, QParserPlugin.DEFAULT_QTYPE);
+    assertEquals("lucene", LuceneQParserPlugin.NAME);
+  }
+
 }

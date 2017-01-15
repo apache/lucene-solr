@@ -212,7 +212,7 @@ limitations under the License.
             </h2>
           </div>
 
-          <div class="partial" ng-show="partialState">
+          <div class="partial" ng-show="display.partialState">
 
             <p>Because your Index is empty, we do not have enough Information about this Field</p>
 
@@ -220,11 +220,11 @@ limitations under the License.
 
           <dl class="options clearfix">
 
-            <dt class="field-type">Field-Type:</dt>
-            <dd class="field-type">{{analysis.data.className}}</dd>
+            <dt class="field-type" ng-show="analysis.data.className">Field-Type:</dt>
+            <dd class="field-type" ng-show="analysis.data.className">{{analysis.data.className}}</dd>
 
-            <dt class="similarity" ng-show="display.similarity">Similarity:</dt>
-            <dd class="similarity" ng-show="display.similarity">{{ display.similarity.details }} ({{ similarity.className }}) </dd>
+            <dt class="similarity" ng-show="display.similarity.className">Similarity:</dt>
+            <dd class="similarity" ng-show="display.similarity.className" data-tip="{{ display.similarity.className }}">{{ display.similarity.details }}</dd>
 
             <dt class="position-increment-gap" ng-show="display.positionIncrementGap"><abbr title="Position Increment Gap">PI Gap</abbr>:</dt>
             <dd class="position-increment-gap" ng-show="display.positionIncrementGap">{{ display.positionIncrementGap }}</dd>
@@ -287,7 +287,7 @@ limitations under the License.
 
         </div>
 
-        <div class="terminfo-holder loaded clearfix" ng-class="{disabled: noTermData}" ng-show="is.field">
+        <div class="terminfo-holder loaded clearfix" ng-class="{disabled: noTermData}" ng-show="is.field && !display.partialState">
 
           <div class="trigger">
 
@@ -437,6 +437,9 @@ limitations under the License.
 
         <dt class="default-search-field" ng-class="{active: isDefaultSearchField}" ng-show="defaultSearchField">Default Search Field</dt>
         <dd class="default-search-field" ng-class="{active: isDefaultSearchField}"><a ng-href="#/{{core}}/schema?field={{defaultSearchField}}">{{defaultSearchField}}</a></dd>
+
+        <dt class="similarity" ng-class="{active: similarity.className}">Global Similarity:</dt>
+        <dd class="similarity" ng-class="{active: similarity.className}" data-tip="{{ similarity.className }}">{{ similarity.details }}</dd>
 
       </dl>
 

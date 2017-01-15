@@ -24,6 +24,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -189,10 +190,10 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
       // create collection
       String collectionName = "testSolrCloudCollection";
       String configName = "solrCloudCollectionConfig";
-      File configDir = new File(SolrTestCaseJ4.TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
-      miniCluster.uploadConfigDir(configDir, configName);
-      miniCluster.createCollection(collectionName, NUM_SHARDS, REPLICATION_FACTOR, configName, null); 
-   
+      miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), configName);
+      CollectionAdminRequest.createCollection(collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR)
+          .process(miniCluster.getSolrClient());
+
       // Send distributed and non-distributed ping query
       SolrPingWithDistrib reqDistrib = new SolrPingWithDistrib();
       reqDistrib.setDistrib(true);
@@ -205,9 +206,6 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
       rsp = reqNonDistrib.process(cloudSolrClient, collectionName);
       assertEquals(0, rsp.getStatus());   
       assertTrue(rsp.getResponseHeader().getBooleanArg(("zkConnected")));
-
-      // delete the collection we created earlier
-      miniCluster.deleteCollection(collectionName);
 
     }
     finally {

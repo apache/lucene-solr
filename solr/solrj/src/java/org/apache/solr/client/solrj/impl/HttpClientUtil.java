@@ -55,6 +55,7 @@ import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
+import org.apache.http.protocol.HttpRequestExecutor;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -198,7 +199,12 @@ public class HttpClientUtil {
    *          configuration (no additional configuration) is created. 
    */
   public static CloseableHttpClient createClient(SolrParams params) {
-    return createClient(params, new PoolingHttpClientConnectionManager(schemaRegistryProvider.getSchemaRegistry()));
+    return createClient(params, createPoolingConnectionManager());
+  }
+
+  /** test usage subject to change @lucene.experimental */ 
+  static PoolingHttpClientConnectionManager createPoolingConnectionManager() {
+    return new PoolingHttpClientConnectionManager(schemaRegistryProvider.getSchemaRegistry());
   }
   
   public static CloseableHttpClient createClient(SolrParams params, PoolingHttpClientConnectionManager cm) {
@@ -208,22 +214,18 @@ public class HttpClientUtil {
     
     return createClient(params, cm, false);
   }
-  
-  /**
-   * Creates new http client by using the provided configuration.
-   * 
-   */
-  public static CloseableHttpClient createClient(final SolrParams params, PoolingHttpClientConnectionManager cm, boolean sharedConnectionManager) {
+
+  public static CloseableHttpClient createClient(final SolrParams params, PoolingHttpClientConnectionManager cm, boolean sharedConnectionManager, HttpRequestExecutor httpRequestExecutor)  {
     final ModifiableSolrParams config = new ModifiableSolrParams(params);
     if (logger.isDebugEnabled()) {
       logger.debug("Creating new http client, config:" + config);
     }
- 
+
     cm.setMaxTotal(params.getInt(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000));
     cm.setDefaultMaxPerRoute(params.getInt(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 10000));
     cm.setValidateAfterInactivity(Integer.getInteger(VALIDATE_AFTER_INACTIVITY, VALIDATE_AFTER_INACTIVITY_DEFAULT));
 
-    
+
     HttpClientBuilder newHttpClientBuilder = HttpClientBuilder.create();
 
     if (sharedConnectionManager) {
@@ -231,7 +233,7 @@ public class HttpClientUtil {
     } else {
       newHttpClientBuilder.setConnectionManagerShared(false);
     }
-    
+
     ConnectionKeepAliveStrategy keepAliveStrat = new ConnectionKeepAliveStrategy() {
       @Override
       public long getKeepAliveDuration(HttpResponse response, HttpContext context) {
@@ -251,16 +253,28 @@ public class HttpClientUtil {
     }
 
     newHttpClientBuilder.addInterceptorLast(new DynamicInterceptor());
-    
+
     newHttpClientBuilder = newHttpClientBuilder.setKeepAliveStrategy(keepAliveStrat)
         .evictIdleConnections((long) Integer.getInteger(EVICT_IDLE_CONNECTIONS, EVICT_IDLE_CONNECTIONS_DEFAULT), TimeUnit.MILLISECONDS);
-    
+
+    if (httpRequestExecutor != null)  {
+      newHttpClientBuilder.setRequestExecutor(httpRequestExecutor);
+    }
+
     HttpClientBuilder builder = setupBuilder(newHttpClientBuilder, params);
-    
+
     HttpClient httpClient = builder.setConnectionManager(cm).build();
-    
+
     assert ObjectReleaseTracker.track(httpClient);
     return (CloseableHttpClient) httpClient;
+  }
+  
+  /**
+   * Creates new http client by using the provided configuration.
+   * 
+   */
+  public static CloseableHttpClient createClient(final SolrParams params, PoolingHttpClientConnectionManager cm, boolean sharedConnectionManager) {
+    return createClient(params, cm, sharedConnectionManager, null);
   }
   
   private static HttpClientBuilder setupBuilder(HttpClientBuilder builder, SolrParams config) {
@@ -396,10 +410,14 @@ public class HttpClientUtil {
   }
 
   /**
-   * 
+   * Create a HttpClientContext object and {@link HttpClientContext#setUserToken(Object)}
+   * to an internal singleton. It allows to reuse underneath {@link HttpClient} 
+   * in connection pools if client authentication is enabled.
    */
   public static HttpClientContext createNewHttpClientRequestContext() {
-    return httpClientRequestContextBuilder.createContext();
+    HttpClientContext context = httpClientRequestContextBuilder.createContext(HttpSolrClient.cacheKey);
+
+    return context;
   }
   
   public static Builder createDefaultRequestConfigBuilder() {

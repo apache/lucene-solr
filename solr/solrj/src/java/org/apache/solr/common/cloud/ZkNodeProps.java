@@ -20,6 +20,7 @@ import org.apache.solr.common.util.Utils;
 import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +39,17 @@ public class ZkNodeProps implements JSONWriter.Writable {
     this.propMap = propMap;
     // TODO: store an unmodifiable map, but in a way that guarantees not to wrap more than once.
     // Always wrapping introduces a memory leak.
+  }
+
+  public ZkNodeProps plus(String key , Object val) {
+    return plus(Collections.singletonMap(key,val));
+  }
+
+  public ZkNodeProps plus(Map<String, Object> newVals) {
+    LinkedHashMap<String, Object> copy = new LinkedHashMap<>(propMap);
+    if (newVals == null || newVals.isEmpty()) return new ZkNodeProps(copy);
+    copy.putAll(newVals);
+    return new ZkNodeProps(copy);
   }
 
 

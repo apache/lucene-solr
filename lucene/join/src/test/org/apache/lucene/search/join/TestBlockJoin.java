@@ -187,7 +187,73 @@ public class TestBlockJoin extends LuceneTestCase {
     dir.close();
   }
 
+  // You must use ToParentBlockJoinSearcher if you want to do BQ SHOULD queries:
+  public void testBQShouldJoinedChild() throws Exception {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
+    final List<Document> docs = new ArrayList<>();
+
+    docs.add(makeJob("java", 2007));
+    docs.add(makeJob("python", 2010));
+    docs.add(makeResume("Lisa", "United Kingdom"));
+    w.addDocuments(docs);
+
+    docs.clear();
+    docs.add(makeJob("ruby", 2005));
+    docs.add(makeJob("java", 2006));
+    docs.add(makeResume("Frank", "United States"));
+    w.addDocuments(docs);
+
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher s = new ToParentBlockJoinIndexSearcher(r);
+    //IndexSearcher s = newSearcher(r, false);
+    //IndexSearcher s = new IndexSearcher(r);
+
+    // Create a filter that defines "parent" documents in the index - in this case resumes
+    BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("docType", "resume")));
+    CheckJoinIndex.check(r, parentsFilter);
+
+    // Define child document criteria (finds an example of relevant work experience)
+    BooleanQuery.Builder childQuery = new BooleanQuery.Builder();
+    childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
+    childQuery.add(new BooleanClause(IntPoint.newRangeQuery("year", 2006, 2011), Occur.MUST));
+
+    // Define parent document criteria (find a resident in the UK)
+    Query parentQuery = new TermQuery(new Term("country", "United Kingdom"));
+
+    // Wrap the child document query to 'join' any matches
+    // up to corresponding parent:
+    ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery.build(), parentsFilter, ScoreMode.Avg);
+
+    // Combine the parent and nested child queries into a single query for a candidate
+    BooleanQuery.Builder fullQuery = new BooleanQuery.Builder();
+    fullQuery.add(new BooleanClause(parentQuery, Occur.SHOULD));
+    fullQuery.add(new BooleanClause(childJoinQuery, Occur.SHOULD));
+
+    ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(Sort.RELEVANCE, 1, true, true);
+    s.search(fullQuery.build(), c);
+    TopGroups<Integer> results = c.getTopGroups(childJoinQuery, null, 0, 10, 0, true);
+    assertEquals(1, results.totalGroupedHitCount);
+    assertEquals(1, results.groups.length);
+
+    final GroupDocs<Integer> group = results.groups[0];
+    assertEquals(1, group.totalHits);
+    assertFalse(Float.isNaN(group.score));
+
+    Document childDoc = s.doc(group.scoreDocs[0].doc);
+    //System.out.println("  doc=" + group.scoreDocs[0].doc);
+    assertEquals("java", childDoc.get("skill"));
+    assertNotNull(group.groupValue);
+    Document parentDoc = s.doc(group.groupValue);
+    assertEquals("Lisa", parentDoc.get("name"));
+    
+    
+    r.close();
+    dir.close();
+  }
+  
   public void testSimple() throws Exception {
 
     final Directory dir = newDirectory();

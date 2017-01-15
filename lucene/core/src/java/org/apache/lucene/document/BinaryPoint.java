@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PointInSetQuery;
@@ -121,7 +122,7 @@ public final class BinaryPoint extends Field {
   }
 
   /** Expert API */
-  public BinaryPoint(String name, byte[] packedPoint, FieldType type) {
+  public BinaryPoint(String name, byte[] packedPoint, IndexableFieldType type) {
     super(name, packedPoint, type);
     if (packedPoint.length != type.pointDimensionCount() * type.pointNumBytes()) {
       throw new IllegalArgumentException("packedPoint is length=" + packedPoint.length + " but type.pointDimensionCount()=" + type.pointDimensionCount() + " and type.pointNumBytes()=" + type.pointNumBytes());

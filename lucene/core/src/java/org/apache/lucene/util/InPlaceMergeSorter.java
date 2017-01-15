@@ -33,8 +33,8 @@ public abstract class InPlaceMergeSorter extends Sorter {
   }
 
   void mergeSort(int from, int to) {
-    if (to - from < INSERTION_SORT_THRESHOLD) {
-      insertionSort(from, to);
+    if (to - from < BINARY_SORT_THRESHOLD) {
+      binarySort(from, to);
     } else {
       final int mid = (from + to) >>> 1;
       mergeSort(from, mid);

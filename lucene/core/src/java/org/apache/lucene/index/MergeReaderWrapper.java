@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.lucene.index;
 
 import java.io.IOException;
 
@@ -161,21 +161,6 @@ class MergeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public Bits getDocsWithField(String field) throws IOException {
-    ensureOpen();
-    FieldInfo fi = getFieldInfos().fieldInfo(field);
-    if (fi == null) {
-      // Field does not exist
-      return null;
-    }
-    if (fi.getDocValuesType() == DocValuesType.NONE) {
-      // Field was not indexed with doc values
-      return null;
-    }
-    return docValues.getDocsWithField(fi);
-  }
-
-  @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
     FieldInfo fi = getFieldInfos().fieldInfo(field);
@@ -212,8 +197,8 @@ class MergeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
-    return in.getPointValues();
+  public PointValues getPointValues(String fieldName) throws IOException {
+    return in.getPointValues(fieldName);
   }
 
   @Override

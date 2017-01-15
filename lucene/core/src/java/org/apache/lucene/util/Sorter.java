@@ -23,7 +23,7 @@ import java.util.Comparator;
  * @lucene.internal */
 public abstract class Sorter {
 
-  static final int INSERTION_SORT_THRESHOLD = 20;
+  static final int BINARY_SORT_THRESHOLD = 20;
 
   /** Sole constructor, used for inheritance. */
   protected Sorter() {}
@@ -35,6 +35,20 @@ public abstract class Sorter {
 
   /** Swap values at slots <code>i</code> and <code>j</code>. */
   protected abstract void swap(int i, int j);
+
+  private int pivotIndex;
+
+  /** Save the value at slot <code>i</code> so that it can later be used as a
+   * pivot, see {@link #comparePivot(int)}. */
+  protected void setPivot(int i) {
+    pivotIndex = i;
+  }
+
+  /** Compare the pivot with the slot at <code>j</code>, similarly to
+   *  {@link #compare(int, int) compare(i, j)}. */
+  protected int comparePivot(int j) {
+    return compare(pivotIndex, j);
+  }
 
   /** Sort the slice which starts at <code>from</code> (inclusive) and ends at
    *  <code>to</code> (exclusive). */
@@ -163,54 +177,41 @@ public abstract class Sorter {
     }
   }
 
-  void insertionSort(int from, int to) {
-    for (int i = from + 1; i < to; ++i) {
-      for (int j = i; j > from; --j) {
-        if (compare(j - 1, j) > 0) {
-          swap(j - 1, j);
-        } else {
-          break;
-        }
-      }
-    }
-  }
-
+  /**
+   * A binary sort implementation. This performs {@code O(n*log(n))} comparisons
+   * and {@code O(n^2)} swaps. It is typically used by more sophisticated
+   * implementations as a fall-back when the numbers of items to sort has become
+   * less than {@value #BINARY_SORT_THRESHOLD}.
+   */
   void binarySort(int from, int to) {
     binarySort(from, to, from + 1);
   }
 
   void binarySort(int from, int to, int i) {
     for ( ; i < to; ++i) {
+      setPivot(i);
       int l = from;
       int h = i - 1;
       while (l <= h) {
         final int mid = (l + h) >>> 1;
-        final int cmp = compare(i, mid);
+        final int cmp = comparePivot(mid);
         if (cmp < 0) {
           h = mid - 1;
         } else {
           l = mid + 1;
         }
       }
-      switch (i - l) {
-      case 2:
-        swap(l + 1, l + 2);
-        swap(l, l + 1);
-        break;
-      case 1:
-        swap(l, l + 1);
-        break;
-      case 0:
-        break;
-      default:
-        for (int j = i; j > l; --j) {
-          swap(j - 1, j);
-        }
-        break;
+      for (int j = i; j > l; --j) {
+        swap(j - 1, j);
       }
     }
   }
 
+  /**
+   * Use heap sort to sort items between {@code from} inclusive and {@code to}
+   * exclusive. This runs in {@code O(n*log(n))} and is used as a fall-back by
+   * {@link IntroSorter}.
+   */
   void heapSort(int from, int to) {
     if (to - from <= 1) {
       return;

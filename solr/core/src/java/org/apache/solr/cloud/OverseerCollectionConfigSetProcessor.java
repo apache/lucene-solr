@@ -16,6 +16,10 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -83,12 +87,20 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
         zkStateReader, myId, shardHandlerFactory, adminPath, stats, overseer, overseerNodePrioritizer);
     final OverseerConfigSetMessageHandler configMessageHandler = new OverseerConfigSetMessageHandler(
         zkStateReader);
-    return message -> {
-      String operation = message.getStr(Overseer.QUEUE_OPERATION);
-      if (operation != null && operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
-        return configMessageHandler;
+    return new OverseerMessageHandlerSelector() {
+      @Override
+      public void close() throws IOException {
+        IOUtils.closeQuietly(collMessageHandler);
       }
-      return collMessageHandler;
+
+      @Override
+      public OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message) {
+        String operation = message.getStr(Overseer.QUEUE_OPERATION);
+        if (operation != null && operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
+          return configMessageHandler;
+        }
+        return collMessageHandler;
+      }
     };
   }
 }

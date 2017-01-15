@@ -84,7 +84,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     IllegalStateException expected = expectThrows(IllegalStateException.class, () -> {
       indexSearcher.search(blockJoinQuery, 1);
     });
-    assertTrue(expected.getMessage() != null && expected.getMessage().contains("child query must only match non-parent docs"));
+    assertTrue(expected.getMessage() != null && expected.getMessage().contains("Child query must not match same docs with parent filter"));
   }
 
   public void testAdvanceValidationForToParentBjq() throws Exception {
@@ -103,7 +103,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     IllegalStateException expected = expectThrows(IllegalStateException.class, () -> {
       indexSearcher.search(conjunctionQuery.build(), 1);
     });
-    assertTrue(expected.getMessage() != null && expected.getMessage().contains("child query must only match non-parent docs"));
+    assertTrue(expected.getMessage() != null && expected.getMessage().contains("Child query must not match same docs with parent filter"));
   }
 
   public void testNextDocValidationForToChildBjq() throws Exception {

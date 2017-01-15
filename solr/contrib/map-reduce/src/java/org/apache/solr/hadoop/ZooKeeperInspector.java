@@ -16,6 +16,15 @@
  */
 package org.apache.solr.hadoop;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
 import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.cloud.ZkController;
@@ -34,15 +43,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 
 /**
  * Extracts SolrCloud information from ZooKeeper.
@@ -78,8 +78,7 @@ final class ZooKeeperInspector {
     }
     SolrZkClient zkClient = getZkClient(zkHost);
     
-    try {
-      ZkStateReader zkStateReader = new ZkStateReader(zkClient);
+    try (ZkStateReader zkStateReader = new ZkStateReader(zkClient)) {
       try {
         // first check for alias
         collection = checkForAlias(zkClient, collection);

@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+import java.io.ByteArrayInputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.OnReconnect;
@@ -30,10 +34,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
-
-import java.io.ByteArrayInputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.TimeUnit;
 
 /** Keeps a ManagedIndexSchema up-to-date when changes are made to the serialized managed schema in ZooKeeper */
 public class ZkIndexSchemaReader implements OnReconnect {
@@ -57,7 +57,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
       public void preClose(SolrCore core) {
         CoreContainer cc = core.getCoreDescriptor().getCoreContainer();
         if (cc.isZooKeeperAware()) {
-          log.info("Removing ZkIndexSchemaReader OnReconnect listener as core "+core.getName()+" is shutting down.");
+          log.debug("Removing ZkIndexSchemaReader OnReconnect listener as core "+core.getName()+" is shutting down.");
           ZkIndexSchemaReader.this.isRemoved = true;
           cc.getZkController().removeOnReconnectListener(ZkIndexSchemaReader.this);
         }

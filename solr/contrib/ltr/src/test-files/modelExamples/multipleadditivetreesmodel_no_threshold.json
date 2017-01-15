@@ -1,0 +1,24 @@
+{
+    "class":"org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+    "name":"multipleadditivetreesmodel_no_threshold",
+    "features":[
+        { "name": "matchedTitle"},
+        { "name": "constantScoreToForceMultipleAdditiveTreesScoreAllDocs"}
+    ],
+    "params":{
+        "trees": [
+            {
+                "weight" : "1f",
+                "root": {
+                    "feature": "matchedTitle",
+                    "left" : {
+                        "value" : "-100"
+                    },
+                    "right": {
+                        "value" : "75"
+                    }
+                }
+            }
+        ]
+    }
+}

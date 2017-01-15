@@ -122,6 +122,11 @@ public class CdcrParams {
   public final static String COUNTER_DELETES = "deletes";
 
   /**
+   * Counter for Bootstrap operations *
+   */
+  public final static String COUNTER_BOOTSTRAP = "bootstraps";
+
+  /**
    * A list of errors per target collection *
    */
   public final static String ERRORS = "errors";
@@ -165,7 +170,10 @@ public class CdcrParams {
     LASTPROCESSEDVERSION,
     QUEUES,
     OPS,
-    ERRORS;
+    ERRORS,
+    BOOTSTRAP,
+    BOOTSTRAP_STATUS,
+    CANCEL_BOOTSTRAP;
 
     public static CdcrAction get(String p) {
       if (p != null) {

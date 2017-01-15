@@ -47,8 +47,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   @Override
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
     Resolver resolver = new Resolver(req, response.getReturnFields());
-    Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
-    if (omitHeader != null && omitHeader) response.removeResponseHeader();
+    if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) response.removeResponseHeader();
     new JavaBinCodec(resolver).setWritableDocFields(resolver).marshal(response.getValues(), out);
   }
 

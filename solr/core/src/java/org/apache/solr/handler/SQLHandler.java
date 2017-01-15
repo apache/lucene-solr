@@ -55,7 +55,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -79,24 +78,22 @@ import com.facebook.presto.sql.parser.SqlParser;
 
 public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , PermissionNameProvider {
 
-  private static String defaultZkhost = null;
-  private static String defaultWorkerCollection = null;
-  private static List<String> remove;
-
-  static {
-    remove = new ArrayList();
-    remove.add("count(*)");
-  }
-
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public void inform(SolrCore core) {
+  private static String defaultZkhost = null;
+  private static String defaultWorkerCollection = null;
 
+  static final String sqlNonCloudErrorMsg = "/sql handler only works in Solr Cloud mode";
+
+  private boolean isCloud = false;
+
+  public void inform(SolrCore core) {
     CoreContainer coreContainer = core.getCoreDescriptor().getCoreContainer();
 
     if(coreContainer.isZooKeeperAware()) {
       defaultZkhost = core.getCoreDescriptor().getCoreContainer().getZkController().getZkServerAddress();
       defaultWorkerCollection = core.getCoreDescriptor().getCollectionName();
+      isCloud = true;
     }
   }
 
@@ -112,7 +109,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     String sql = params.get("stmt");
     int numWorkers = params.getInt("numWorkers", 1);
     String workerCollection = params.get("workerCollection", defaultWorkerCollection);
-    String workerZkhost = params.get("workerZkhost",defaultZkhost);
+    String workerZkhost = params.get("workerZkhost", defaultZkhost);
     String mode = params.get("aggregationMode", "map_reduce");
     StreamContext context = new StreamContext();
 
@@ -120,6 +117,10 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     boolean includeMetadata = params.getBool("includeMetadata", false);
 
     try {
+
+      if(!isCloud) {
+        throw new IllegalStateException(sqlNonCloudErrorMsg);
+      }
 
       if(sql == null) {
         throw new Exception("stmt parameter cannot be null");
@@ -917,6 +918,10 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     }
 
     protected Void visitComparisonExpression(ComparisonExpression node, StringBuilder buf) {
+      if (!(node.getLeft() instanceof StringLiteral || node.getLeft() instanceof QualifiedNameReference)) {
+        throw new RuntimeException("Left side of comparison must be a literal.");
+      }
+
       String field = getPredicateField(node.getLeft());
       String value = node.getRight().toString();
       value = stripSingleQuotes(value);
@@ -926,7 +931,49 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
         value = '"'+value+'"';
       }
 
-      buf.append('(').append(field + ":" + value).append(')');
+      String lowerBound;
+      String upperBound;
+      String lowerValue;
+      String upperValue;
+
+      ComparisonExpression.Type t = node.getType();
+      switch(t) {
+        case NOT_EQUAL:
+          buf.append('(').append('-').append(field).append(":").append(value).append(')');
+          return null;
+        case EQUAL:
+          buf.append('(').append(field).append(":").append(value).append(')');
+          return null;
+        case LESS_THAN:
+          lowerBound = "[";
+          upperBound = "}";
+          lowerValue = "*";
+          upperValue = value;
+          buf.append('(').append(field).append(":").append(lowerBound).append(lowerValue).append(" TO ").append(upperValue).append(upperBound).append(')');
+          return null;
+        case LESS_THAN_OR_EQUAL:
+          lowerBound = "[";
+          upperBound = "]";
+          lowerValue = "*";
+          upperValue = value;
+          buf.append('(').append(field).append(":").append(lowerBound).append(lowerValue).append(" TO ").append(upperValue).append(upperBound).append(')');
+          return null;
+        case GREATER_THAN:
+          lowerBound = "{";
+          upperBound = "]";
+          lowerValue = value;
+          upperValue = "*";
+          buf.append('(').append(field).append(":").append(lowerBound).append(lowerValue).append(" TO ").append(upperValue).append(upperBound).append(')');
+          return null;
+        case GREATER_THAN_OR_EQUAL:
+          lowerBound = "[";
+          upperBound = "]";
+          lowerValue = value;
+          upperValue = "*";
+          buf.append('(').append(field).append(":").append(lowerBound).append(lowerValue).append(" TO ").append(upperValue).append(upperBound).append(')');
+          return null;
+      }
+
       return null;
     }
   }
@@ -1514,9 +1561,9 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
       CloudSolrClient cloudSolrClient = this.context.getSolrClientCache().getCloudSolrClient(this.zkHost);
       cloudSolrClient.connect();
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-      Map<String, DocCollection> collections = zkStateReader.getClusterState().getCollectionsMap();
+      Set<String> collections = zkStateReader.getClusterState().getCollectionStates().keySet();
       if (collections.size() != 0) {
-        this.tables.addAll(collections.keySet());
+        this.tables.addAll(collections);
       }
       Collections.sort(this.tables);
     }

@@ -19,10 +19,13 @@ package org.apache.solr.update.processor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
-
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
+
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
+import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.valueMutator;
 
 /**
  * Truncates any CharSequence values found in fields matching the specified 
@@ -75,28 +78,23 @@ public final class TruncateFieldUpdateProcessorFactory
   }
 
   @Override
-  public FieldMutatingUpdateProcessor.FieldNameSelector 
-    getDefaultSelector(final SolrCore core) {
-
-    return FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
+  public FieldNameSelector getDefaultSelector(final SolrCore core) {
+    return SELECT_NO_FIELDS;
   }
   
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
-    return new FieldValueMutatingUpdateProcessor(getSelector(), next) {
-      @Override
-      protected Object mutateValue(final Object src) {
-        if (src instanceof CharSequence) {
-          CharSequence s = (CharSequence)src;
-          if (maxLength < s.length()) {
-            return s.subSequence(0, maxLength);
-          }
+    return valueMutator(getSelector(), next, src -> {
+      if (src instanceof CharSequence) {
+        CharSequence s = (CharSequence) src;
+        if (maxLength < s.length()) {
+          return s.subSequence(0, maxLength);
         }
-        return src;
       }
-    };
+      return src;
+    });
   }
 }
 

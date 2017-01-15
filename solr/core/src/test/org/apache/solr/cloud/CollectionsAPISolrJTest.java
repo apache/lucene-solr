@@ -16,70 +16,47 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.codec.binary.StringUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.client.solrj.response.CoreAdminResponse;
-import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.cloud.ReplicaPropertiesBase.verifyUniqueAcrossCollection;
-
 @LuceneTestCase.Slow
-public class CollectionsAPISolrJTest extends AbstractFullDistribZkTestBase {
+public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
-  @Test
-  public void test() throws Exception {
-    testCreateAndDeleteCollection();
-    testCreateAndDeleteShard();
-    testReloadCollection();
-    testCreateAndDeleteAlias();
-    testSplitShard();
-    testCreateCollectionWithPropertyParam();
-    testAddAndDeleteReplica();
-    testClusterProp();
-    testAddAndRemoveRole();
-    testOverseerStatus();
-    testList();
-    testAddAndDeleteReplicaProp();
-    testBalanceShardUnique();
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(4)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
   }
 
-  protected void testCreateAndDeleteCollection() throws Exception {
+  @Test
+  public void testCreateAndDeleteCollection() throws Exception {
     String collectionName = "solrj_test";
-    CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create()
-            .setCollectionName(collectionName)
-            .setNumShards(2)
-            .setReplicationFactor(2)
-            .setConfigName("conf1")
-            .setRouterField("myOwnField")
-            .setStateFormat(1);
-
-    CollectionAdminResponse response = createCollectionRequest.process(cloudClient);
+    CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+        .setStateFormat(1)
+        .process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
@@ -91,57 +68,44 @@ public class CollectionsAPISolrJTest extends AbstractFullDistribZkTestBase {
       assertTrue(status.get("QTime") > 0);
     }
 
-    cloudClient.setDefaultCollection(collectionName);
-    CollectionAdminRequest.Delete deleteCollectionRequest = new CollectionAdminRequest.Delete()
-            .setCollectionName(collectionName);
-    response = deleteCollectionRequest.process(cloudClient);
+    response = CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String,NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
-    assertNull("Deleted collection " + collectionName + "still exists",
-        cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collectionName));
     assertEquals(4, nodesStatus.size());
-    
+
+    waitForState("Expected " + collectionName + " to disappear from cluster state", collectionName, (n, c) -> c == null);
+
     // Test Creating a collection with new stateformat.
     collectionName = "solrj_newstateformat";
-    createCollectionRequest = new CollectionAdminRequest.Create()
-            .setCollectionName(collectionName)
-            .setNumShards(2)
-            .setConfigName("conf1")
-            .setStateFormat(2);
 
-    response = createCollectionRequest.process(cloudClient);
+    response = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+        .setStateFormat(2)
+        .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
 
-    waitForRecoveriesToFinish(collectionName, false);
-    assertTrue("Collection state does not exist",
-        cloudClient.getZkStateReader().getZkClient()
-            .exists(ZkStateReader.getCollectionPath(collectionName), true));
+    waitForState("Expected " + collectionName + " to appear in cluster state", collectionName, (n, c) -> c != null);
 
   }
-  
-  protected void testCreateAndDeleteShard() throws IOException, SolrServerException {
+
+  @Test
+  public void testCreateAndDeleteShard() throws IOException, SolrServerException {
+
     // Create an implicit collection
     String collectionName = "solrj_implicit";
-    CollectionAdminResponse response = new CollectionAdminRequest.Create()
-            .setCollectionName(collectionName)
-            .setShards("shardA,shardB")
-            .setConfigName("conf1")
-            .setRouterName("implicit").process(cloudClient);
+    CollectionAdminResponse response
+        = CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardA,shardB", 1)
+        .process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
     assertEquals(2, coresStatus.size());
 
-    cloudClient.setDefaultCollection(collectionName);
     // Add a shard to the implicit collection
-    response = new CollectionAdminRequest
-        .CreateShard()
-            .setCollectionName(collectionName)
-            .setShardName("shardC").process(cloudClient);
+    response = CollectionAdminRequest.createShard(collectionName, "shardC").process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
@@ -149,57 +113,38 @@ public class CollectionsAPISolrJTest extends AbstractFullDistribZkTestBase {
     assertEquals(1, coresStatus.size());
     assertEquals(0, (int) coresStatus.get(collectionName + "_shardC_replica1").get("status"));
 
-    CollectionAdminRequest.DeleteShard deleteShardRequest = new CollectionAdminRequest
-        .DeleteShard()
-            .setCollectionName(collectionName)
-            .setShardName("shardC");
-    response = deleteShardRequest.process(cloudClient);
+    response = CollectionAdminRequest.deleteShard(collectionName, "shardC").process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
     assertEquals(1, nodesStatus.size());
   }
-  
-  protected void testReloadCollection() throws IOException, SolrServerException {
-    cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
-    CollectionAdminRequest.Reload reloadCollectionRequest = new CollectionAdminRequest.Reload()
-            .setCollectionName("collection1");
-    CollectionAdminResponse response = reloadCollectionRequest.process(cloudClient);
 
+  @Test
+  public void testCreateAndDeleteAlias() throws IOException, SolrServerException {
+
+    final String collection = "aliasedCollection";
+    CollectionAdminRequest.createCollection(collection, "conf", 1, 1).process(cluster.getSolrClient());
+
+    CollectionAdminResponse response
+        = CollectionAdminRequest.createAlias("solrj_alias", collection).process(cluster.getSolrClient());
+    assertEquals(0, response.getStatus());
+
+    response = CollectionAdminRequest.deleteAlias("solrj_alias").process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
   }
-  
-  protected void testCreateAndDeleteAlias() throws IOException, SolrServerException {
-    CollectionAdminRequest.CreateAlias createAliasRequest = new CollectionAdminRequest
-        .CreateAlias()
-            .setAliasName("solrj_alias")
-            .setAliasedCollections(DEFAULT_COLLECTION);
-    CollectionAdminResponse response = createAliasRequest.process(cloudClient);
 
-    assertEquals(0, response.getStatus());
+  @Test
+  public void testSplitShard() throws Exception {
 
-    CollectionAdminRequest.DeleteAlias deleteAliasRequest = new CollectionAdminRequest.DeleteAlias()
-            .setAliasName("solrj_alias");
-    deleteAliasRequest.process(cloudClient);
-    
-    assertEquals(0, response.getStatus());
-  }
-  
-  protected void testSplitShard() throws Exception {
-    String collectionName = "solrj_test_splitshard";
-    cloudClient.setDefaultCollection(collectionName);
-    
-    CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create()
-            .setConfigName("conf1")
-            .setNumShards(2)
-            .setCollectionName(collectionName);
-    createCollectionRequest.process(cloudClient);
-    
-    CollectionAdminRequest.SplitShard splitShardRequest = new CollectionAdminRequest.SplitShard()
-            .setCollectionName(collectionName)
-            .setShardName("shard1");
-    CollectionAdminResponse response = splitShardRequest.process(cloudClient);
+    final String collectionName = "solrj_test_splitshard";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+
+    CollectionAdminResponse response = CollectionAdminRequest.splitShard(collectionName)
+        .setShardName("shard1")
+        .process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
@@ -207,267 +152,204 @@ public class CollectionsAPISolrJTest extends AbstractFullDistribZkTestBase {
     assertEquals(0, (int) coresStatus.get(collectionName + "_shard1_0_replica1").get("status"));
     assertEquals(0, (int) coresStatus.get(collectionName + "_shard1_1_replica1").get("status"));
 
-    waitForRecoveriesToFinish(collectionName, false);
-    waitForThingsToLevelOut(10);
+    waitForState("Expected all shards to be active and parent shard to be removed", collectionName, (n, c) -> {
+      if (c.getSlice("shard1").getState() == Slice.State.ACTIVE)
+        return false;
+      for (Replica r : c.getReplicas()) {
+        if (r.isActive(n) == false)
+          return false;
+      }
+      return true;
+    });
     
     // Test splitting using split.key
-    splitShardRequest = new CollectionAdminRequest.SplitShard()
-            .setCollectionName(collectionName)
-            .setSplitKey("b!");
-    response = splitShardRequest.process(cloudClient);
+    response = CollectionAdminRequest.splitShard(collectionName)
+        .setSplitKey("b!")
+        .process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
 
-    waitForRecoveriesToFinish(collectionName, false);
-    waitForThingsToLevelOut(10);
-    
-    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
-    Collection<Slice> slices = clusterState.getActiveSlices(collectionName);
-    assertEquals("ClusterState: "+ clusterState.getActiveSlices(collectionName), 5, slices.size());  
+    waitForState("Expected 5 slices to be active", collectionName, (n, c) -> c.getActiveSlices().size() == 5);
     
   }
 
-  private void testCreateCollectionWithPropertyParam() throws Exception {
+  @Test
+  public void testCreateCollectionWithPropertyParam() throws Exception {
+
     String collectionName = "solrj_test_core_props";
     
-    File tmpDir = createTempDir("testPropertyParamsForCreate").toFile();
-    File dataDir = new File(tmpDir, "dataDir-" + TestUtil.randomSimpleString(random(), 1, 5));
-    File ulogDir = new File(tmpDir, "ulogDir-" + TestUtil.randomSimpleString(random(), 1, 5));
+    Path tmpDir = createTempDir("testPropertyParamsForCreate");
+    Path dataDir = tmpDir.resolve("dataDir-" + TestUtil.randomSimpleString(random(), 1, 5));
+    Path ulogDir = tmpDir.resolve("ulogDir-" + TestUtil.randomSimpleString(random(), 1, 5));
 
-    Properties properties = new Properties();
-    properties.put(CoreAdminParams.DATA_DIR, dataDir.getAbsolutePath());
-    properties.put(CoreAdminParams.ULOG_DIR, ulogDir.getAbsolutePath());
+    CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
+        .withProperty(CoreAdminParams.DATA_DIR, dataDir.toString())
+        .withProperty(CoreAdminParams.ULOG_DIR, ulogDir.toString())
+        .process(cluster.getSolrClient());
 
-    CollectionAdminRequest.Create createReq = new CollectionAdminRequest.Create()
-            .setCollectionName(collectionName)
-            .setNumShards(1)
-            .setConfigName("conf1")
-            .setProperties(properties);
-
-    CollectionAdminResponse response = createReq.process(cloudClient);
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
     assertEquals(1, coresStatus.size());
 
-    DocCollection testCollection = cloudClient.getZkStateReader()
-        .getClusterState().getCollection(collectionName);
+    DocCollection testCollection = getCollectionState(collectionName);
 
     Replica replica1 = testCollection.getReplica("core_node1");
+    CoreStatus coreStatus = getCoreStatus(replica1);
 
-    try (HttpSolrClient client = getHttpSolrClient(replica1.getStr("base_url"))) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), client);
-      NamedList<Object> coreStatus = status.getCoreStatus(replica1.getStr("core"));
-      String dataDirStr = (String) coreStatus.get("dataDir");
-      assertEquals("Data dir does not match param given in property.dataDir syntax",
-          new File(dataDirStr).getAbsolutePath(), dataDir.getAbsolutePath());
-    }
+    assertEquals(Paths.get(coreStatus.getDataDirectory()).toString(), dataDir.toString());
 
-    CollectionAdminRequest.Delete deleteCollectionRequest = new CollectionAdminRequest.Delete();
-    deleteCollectionRequest.setCollectionName(collectionName);
-    deleteCollectionRequest.process(cloudClient);
   }
 
-  private void testAddAndDeleteReplica() throws Exception {
-    String collectionName = "solrj_replicatests";
-    createCollection(collectionName, cloudClient, 1, 2);
+  @Test
+  public void testAddAndDeleteReplica() throws Exception {
 
-    cloudClient.setDefaultCollection(collectionName);
+    final String collectionName = "solrj_replicatests";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
+        .process(cluster.getSolrClient());
 
-    String newReplicaName = Assign.assignNode(cloudClient.getZkStateReader().getClusterState().getCollection(collectionName));
-    ArrayList<String> nodeList = new ArrayList<>(cloudClient.getZkStateReader().getClusterState().getLiveNodes());
+    String newReplicaName = Assign.assignNode(getCollectionState(collectionName));
+    ArrayList<String> nodeList
+        = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes());
     Collections.shuffle(nodeList, random());
-    CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica()
-            .setCollectionName(collectionName)
-            .setShardName("shard1")
-            .setNode(nodeList.get(0));
-    CollectionAdminResponse response = addReplica.process(cloudClient);
+    final String node = nodeList.get(0);
+
+    CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+        .setNode(node)
+        .process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
 
-    TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS);
-    Replica newReplica = null;
-
-    while (! timeout.hasTimedOut() && newReplica == null) {
-      Slice slice = cloudClient.getZkStateReader().getClusterState().getSlice(collectionName, "shard1");
-      newReplica = slice.getReplica(newReplicaName);
-    }
-
-    assertNotNull(newReplica);
-
-    assertEquals("Replica should be created on the right node",
-        cloudClient.getZkStateReader().getBaseUrlForNodeName(nodeList.get(0)),
-        newReplica.getStr(ZkStateReader.BASE_URL_PROP)
-    );
+    waitForState("Expected to see replica " + newReplicaName + " on node " + node, collectionName, (n, c) -> {
+      Replica r = c.getSlice("shard1").getReplica(newReplicaName);
+      return r != null && r.getNodeName().equals(node);
+    });
     
     // Test DELETEREPLICA
-    CollectionAdminRequest.DeleteReplica deleteReplicaRequest = new CollectionAdminRequest.DeleteReplica()
-            .setCollectionName(collectionName)
-            .setShardName("shard1")
-            .setReplica(newReplicaName);
-    response = deleteReplicaRequest.process(cloudClient);
-
+    response = CollectionAdminRequest.deleteReplica(collectionName, "shard1", newReplicaName)
+        .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
 
-    timeout = new TimeOut(3, TimeUnit.SECONDS);
+    waitForState("Expected replica " + newReplicaName + " to vanish from cluster state", collectionName,
+        (n, c) -> c.getSlice("shard1").getReplica(newReplicaName) == null);
 
-    while (! timeout.hasTimedOut() && newReplica != null) {
-      Slice slice = cloudClient.getZkStateReader().getClusterState().getSlice(collectionName, "shard1");
-      newReplica = slice.getReplica(newReplicaName);
-    }
-
-    assertNull(newReplica);
   }
 
-  private void testClusterProp() throws InterruptedException, IOException, SolrServerException {
-    CollectionAdminRequest.ClusterProp clusterPropRequest = new CollectionAdminRequest.ClusterProp()
-            .setPropertyName(ZkStateReader.LEGACY_CLOUD)
-            .setPropertyValue("false");
-    CollectionAdminResponse response = clusterPropRequest.process(cloudClient);
+  @Test
+  public void testClusterProp() throws InterruptedException, IOException, SolrServerException {
+
+    CollectionAdminResponse response = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false")
+        .process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
 
-    TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS);
-    boolean changed = false;
-    
-    while(! timeout.hasTimedOut()){
-      Thread.sleep(10);
-      changed = Objects.equals("false",
-          cloudClient.getZkStateReader().getClusterProperty(ZkStateReader.LEGACY_CLOUD, "none"));
-      if(changed) break;
-    }
-    assertTrue("The Cluster property wasn't set", changed);
+    ClusterProperties props = new ClusterProperties(zkClient());
+    assertEquals("Cluster property was not set", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "true"), "false");
     
     // Unset ClusterProp that we set.
-    clusterPropRequest = new CollectionAdminRequest.ClusterProp()
-            .setPropertyName(ZkStateReader.LEGACY_CLOUD)
-            .setPropertyValue(null);
-    clusterPropRequest.process(cloudClient);
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
+    assertEquals("Cluster property was not unset", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "true"), "true");
 
-    timeout = new TimeOut(3, TimeUnit.SECONDS);
-    changed = false;
-    while(! timeout.hasTimedOut()) {
-      Thread.sleep(10);
-      changed = (cloudClient.getZkStateReader().getClusterProperty(ZkStateReader.LEGACY_CLOUD, (String) null) == null);
-      if(changed)  
-        break;
-    }
-    assertTrue("The Cluster property wasn't unset", changed);
   }
 
-  private void testAddAndRemoveRole() throws InterruptedException, IOException, SolrServerException {
-    cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
-    Replica replica = cloudClient.getZkStateReader().getLeaderRetry(DEFAULT_COLLECTION, SHARD1);
-    CollectionAdminRequest.AddRole addRoleRequest = new CollectionAdminRequest.AddRole()
-            .setNode(replica.getNodeName())
-            .setRole("overseer");
-    addRoleRequest.process(cloudClient);
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testAddAndRemoveRole() throws InterruptedException, IOException, SolrServerException {
 
-    CollectionAdminRequest.ClusterStatus clusterStatusRequest = new CollectionAdminRequest.ClusterStatus()
-            .setCollectionName(DEFAULT_COLLECTION);
-    CollectionAdminResponse response = clusterStatusRequest.process(cloudClient);
+    String node = cluster.getRandomJetty(random()).getNodeName();
+
+    CollectionAdminRequest.addRole(node, "overseer").process(cluster.getSolrClient());
+
+    CollectionAdminResponse response = CollectionAdminRequest.getClusterStatus().process(cluster.getSolrClient());
 
     NamedList<Object> rsp = response.getResponse();
-    NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
-    assertNotNull("Cluster state should not be null", cluster);
-    Map<String, Object> roles = (Map<String, Object>) cluster.get("roles");
+    NamedList<Object> cs = (NamedList<Object>) rsp.get("cluster");
+    assertNotNull("Cluster state should not be null", cs);
+    Map<String, Object> roles = (Map<String, Object>) cs.get("roles");
     assertNotNull("Role information should not be null", roles);
     List<String> overseer = (List<String>) roles.get("overseer");
     assertNotNull(overseer);
     assertEquals(1, overseer.size());
-    assertTrue(overseer.contains(replica.getNodeName()));
+    assertTrue(overseer.contains(node));
     
     // Remove role
-    new CollectionAdminRequest.RemoveRole()
-            .setNode(replica.getNodeName())
-            .setRole("overseer")
-            .process(cloudClient);
+    CollectionAdminRequest.removeRole(node, "overseer").process(cluster.getSolrClient());
 
-    clusterStatusRequest = new CollectionAdminRequest.ClusterStatus();
-    clusterStatusRequest.setCollectionName(DEFAULT_COLLECTION);
-    response = clusterStatusRequest.process(cloudClient);
-
+    response = CollectionAdminRequest.getClusterStatus().process(cluster.getSolrClient());
     rsp = response.getResponse();
-    cluster = (NamedList<Object>) rsp.get("cluster");
-    assertNotNull("Cluster state should not be null", cluster);
-    roles = (Map<String, Object>) cluster.get("roles");
+    cs = (NamedList<Object>) rsp.get("cluster");
+    assertNotNull("Cluster state should not be null", cs);
+    roles = (Map<String, Object>) cs.get("roles");
     assertNotNull("Role information should not be null", roles);
     overseer = (List<String>) roles.get("overseer");
-    assertFalse(overseer.contains(replica.getNodeName()));
+    assertFalse(overseer.contains(node));
   }
-  
-  private void testOverseerStatus() throws IOException, SolrServerException {
-    CollectionAdminResponse response = new CollectionAdminRequest.OverseerStatus().process(cloudClient);
+
+  @Test
+  public void testOverseerStatus() throws IOException, SolrServerException {
+    CollectionAdminResponse response = new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
     assertNotNull("overseer_operations shouldn't be null", response.getResponse().get("overseer_operations"));
   }
-  
-  private void testList() throws IOException, SolrServerException {
-    CollectionAdminResponse response = new CollectionAdminRequest.List().process(cloudClient);
+
+  @Test
+  public void testList() throws IOException, SolrServerException {
+    CollectionAdminResponse response = new CollectionAdminRequest.List().process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
     assertNotNull("collection list should not be null", response.getResponse().get("collections"));
   }
-  
-  private void testAddAndDeleteReplicaProp() throws InterruptedException, IOException, SolrServerException {
-    Replica replica = cloudClient.getZkStateReader().getLeaderRetry(DEFAULT_COLLECTION, SHARD1);
-    CollectionAdminResponse response = new CollectionAdminRequest.AddReplicaProp()
-            .setCollectionName(DEFAULT_COLLECTION)
-            .setShardName(SHARD1)
-            .setReplica(replica.getName())
-            .setPropertyName("preferredleader")
-            .setPropertyValue("true").process(cloudClient);
+
+  @Test
+  public void testAddAndDeleteReplicaProp() throws InterruptedException, IOException, SolrServerException {
+
+    final String collection = "replicaProperties";
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
+        .process(cluster.getSolrClient());
+
+    final Replica replica = getCollectionState(collection).getLeader("shard1");
+    CollectionAdminResponse response
+        = CollectionAdminRequest.addReplicaProperty(collection, "shard1", replica.getName(), "preferredleader", "true")
+        .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
 
-    TimeOut timeout = new TimeOut(20, TimeUnit.SECONDS);
-    String propertyValue = null;
-    
-    String replicaName = replica.getName();
-    while (! timeout.hasTimedOut()) {
-      ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
-      replica = clusterState.getReplica(DEFAULT_COLLECTION, replicaName);
-      propertyValue = replica.getStr("property.preferredleader"); 
-      if(StringUtils.equals("true", propertyValue))
-        break;
-      Thread.sleep(50);
-    }
-    
-    assertEquals("Replica property was not updated, Latest value: " +
-        cloudClient.getZkStateReader().getClusterState().getReplica(DEFAULT_COLLECTION, replicaName),
-        "true",
-        propertyValue);
+    waitForState("Expecting property 'preferredleader' to appear on replica " + replica.getName(), collection,
+        (n, c) -> "true".equals(c.getReplica(replica.getName()).getStr("property.preferredleader")));
 
-    response = new CollectionAdminRequest.DeleteReplicaProp()
-            .setCollectionName(DEFAULT_COLLECTION)
-            .setShardName(SHARD1)
-            .setReplica(replicaName)
-            .setPropertyName("property.preferredleader").process(cloudClient);
+    response = CollectionAdminRequest.deleteReplicaProperty(collection, "shard1", replica.getName(), "property.preferredleader")
+        .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
 
-    timeout = new TimeOut(20, TimeUnit.SECONDS);
-    boolean updated = false;
-
-    while (! timeout.hasTimedOut()) {
-      ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
-      replica = clusterState.getReplica(DEFAULT_COLLECTION, replicaName);
-      updated = replica.getStr("property.preferredleader") == null;
-      if(updated)
-        break;
-      Thread.sleep(50);
-    }
-
-    assertTrue("Replica property was not removed", updated);
+    waitForState("Expecting property 'preferredleader' to be removed from replica " + replica.getName(), collection,
+        (n, c) -> c.getReplica(replica.getName()).getStr("property.preferredleader") == null);
     
   }
-  
-  private void testBalanceShardUnique() throws IOException,
+
+  @Test
+  public void testBalanceShardUnique() throws IOException,
       SolrServerException, KeeperException, InterruptedException {
-    CollectionAdminResponse response = new CollectionAdminRequest.BalanceShardUnique()
-            .setCollection(DEFAULT_COLLECTION)
-            .setPropertyName("preferredLeader").process(cloudClient);
+
+    final String collection = "balancedProperties";
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
+        .process(cluster.getSolrClient());
+
+    CollectionAdminResponse response = CollectionAdminRequest.balanceReplicaProperty(collection, "preferredLeader")
+        .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
 
-    verifyUniqueAcrossCollection(cloudClient, DEFAULT_COLLECTION, "property.preferredleader");    
+    waitForState("Expecting 'preferredleader' property to be balanced across all shards", collection, (n, c) -> {
+      for (Slice slice : c) {
+        int count = 0;
+        for (Replica replica : slice) {
+          if ("true".equals(replica.getStr("property.preferredleader")))
+            count += 1;
+        }
+        if (count != 1)
+          return false;
+      }
+      return true;
+    });
+
   }
 }

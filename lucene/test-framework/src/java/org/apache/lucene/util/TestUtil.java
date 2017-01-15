@@ -53,8 +53,8 @@ import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
-import org.apache.lucene.codecs.lucene54.Lucene54DocValuesFormat;
-import org.apache.lucene.codecs.lucene62.Lucene62Codec;
+import org.apache.lucene.codecs.lucene70.Lucene70Codec;
+import org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -100,7 +100,7 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.junit.Assert;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 /**
@@ -177,11 +177,14 @@ public final class TestUtil {
       assert hasNext;
       T v = iterator.next();
       assert allowNull || v != null;
-      try {
-        iterator.remove();
-        throw new AssertionError("broken iterator (supports remove): " + iterator);
-      } catch (UnsupportedOperationException expected) {
-        // ok
+      // for the first element, check that remove is not supported
+      if (i == 0) {
+        try {
+          iterator.remove();
+          throw new AssertionError("broken iterator (supports remove): " + iterator);
+        } catch (UnsupportedOperationException expected) {
+          // ok
+        }
       }
     }
     assert !iterator.hasNext();
@@ -331,9 +334,9 @@ public final class TestUtil {
     CheckIndex.testLiveDocs(codecReader, infoStream, true);
     CheckIndex.testFieldInfos(codecReader, infoStream, true);
     CheckIndex.testFieldNorms(codecReader, infoStream, true);
-    CheckIndex.testPostings(codecReader, infoStream, false, true);
+    CheckIndex.testPostings(codecReader, infoStream, false, true, Version.LUCENE_7_0_0);
     CheckIndex.testStoredFields(codecReader, infoStream, true);
-    CheckIndex.testTermVectors(codecReader, infoStream, false, crossCheckTermVectors, true);
+    CheckIndex.testTermVectors(codecReader, infoStream, false, crossCheckTermVectors, true, Version.LUCENE_7_0_0);
     CheckIndex.testDocValues(codecReader, infoStream, true);
     CheckIndex.testPoints(codecReader, infoStream, true);
     
@@ -374,8 +377,7 @@ public final class TestUtil {
           if (reader.getBinaryDocValues(info.name) != null ||
               reader.getNumericDocValues(info.name) != null ||
               reader.getSortedDocValues(info.name) != null || 
-              reader.getSortedSetDocValues(info.name) != null || 
-              reader.getDocsWithField(info.name) != null) {
+              reader.getSortedSetDocValues(info.name) != null) {
             throw new RuntimeException("field: " + info.name + " has docvalues but should omit them!");
           }
           break;
@@ -427,7 +429,7 @@ public final class TestUtil {
 
   /** start and end are BOTH inclusive */
   public static int nextInt(Random r, int start, int end) {
-    return RandomInts.randomIntBetween(r, start, end);
+    return RandomNumbers.randomIntBetween(r, start, end);
   }
 
   /** start and end are BOTH inclusive */
@@ -578,7 +580,7 @@ public final class TestUtil {
     final StringBuilder regexp = new StringBuilder(maxLength);
     for (int i = nextInt(r, 0, maxLength); i > 0; i--) {
       if (r.nextBoolean()) {
-        regexp.append((char) RandomInts.randomIntBetween(r, 'a', 'z'));
+        regexp.append((char) RandomNumbers.randomIntBetween(r, 'a', 'z'));
       } else {
         regexp.append(RandomPicks.randomFrom(r, ops));
       }
@@ -911,7 +913,7 @@ public final class TestUtil {
    * This may be different than {@link Codec#getDefault()} because that is randomized. 
    */
   public static Codec getDefaultCodec() {
-    return new Lucene62Codec();
+    return new Lucene70Codec();
   }
   
   /** 
@@ -944,7 +946,7 @@ public final class TestUtil {
    * Returns the actual default docvalues format (e.g. LuceneMNDocValuesFormat for this version of Lucene.
    */
   public static DocValuesFormat getDefaultDocValuesFormat() {
-    return new Lucene54DocValuesFormat();
+    return new Lucene70DocValuesFormat();
   }
 
   // TODO: generalize all 'test-checks-for-crazy-codecs' to

@@ -36,7 +36,7 @@ public class ByteRunAutomaton extends RunAutomaton {
    * Returns true if the given byte array is accepted by this automaton
    */
   public boolean run(byte[] s, int offset, int length) {
-    int p = initial;
+    int p = 0;
     int l = offset + length;
     for (int i = offset; i < l; i++) {
       p = step(p, s[i] & 0xFF);

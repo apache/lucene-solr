@@ -405,4 +405,18 @@ public class GeoCircleTest extends LuceneTestCase {
     assertTrue(solid.isWithin(gp));
   }
   
+  @Test
+  public void testBoundsFailureCase2() {
+    final GeoCircle gc = GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, -2.7574435614238194E-13, 0.0, 1.5887859182593391);
+    final GeoPoint gp = new GeoPoint(PlanetModel.WGS84, 0.7980359504429014, 1.5964981068121482);
+    final XYZBounds bounds = new XYZBounds();
+    gc.getBounds(bounds);
+    System.out.println("Bounds = "+bounds);
+    System.out.println("Point = "+gp);
+    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, bounds.getMinimumX(), bounds.getMaximumX(), bounds.getMinimumY(), bounds.getMaximumY(), bounds.getMinimumZ(), bounds.getMaximumZ());
+    
+    assert gc.isWithin(gp)?solid.isWithin(gp):true;
+    
+  }
+  
 }

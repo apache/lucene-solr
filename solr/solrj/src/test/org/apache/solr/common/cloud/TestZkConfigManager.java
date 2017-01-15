@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkTestServer;
@@ -30,6 +29,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -69,7 +69,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       ZkConfigManager configManager = new ZkConfigManager(zkClient);
       assertEquals(0, configManager.listConfigs().size());
 
-      byte[] testdata = "test data".getBytes(Charsets.UTF_8);
+      byte[] testdata = "test data".getBytes(StandardCharsets.UTF_8);
 
       Path tempConfig = createTempDir("config");
       Files.createFile(tempConfig.resolve("file1"));
@@ -102,7 +102,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       assertArrayEquals(testdata, checkdata);
 
       // uploading to the same config overwrites
-      byte[] overwritten = "new test data".getBytes(Charsets.UTF_8);
+      byte[] overwritten = "new test data".getBytes(StandardCharsets.UTF_8);
       Files.write(tempConfig.resolve("file1"), overwritten);
       configManager.uploadConfigDir(tempConfig, "testconfig");
 
@@ -147,7 +147,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       @Override
       protected Collection<ZkCredentials> createCredentials() {
         List<ZkCredentials> credentials = new ArrayList<>();
-        credentials.add(new ZkCredentials("digest", (readOnlyUsername + ":" + readOnlyPassword).getBytes(Charsets.UTF_8)));
+        credentials.add(new ZkCredentials("digest", (readOnlyUsername + ":" + readOnlyPassword).getBytes(StandardCharsets.UTF_8)));
         return credentials;
       }
     };
@@ -156,7 +156,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       @Override
       protected Collection<ZkCredentials> createCredentials() {
         List<ZkCredentials> credentials = new ArrayList<>();
-        credentials.add(new ZkCredentials("digest", (writeableUsername + ":" + writeablePassword).getBytes(Charsets.UTF_8)));
+        credentials.add(new ZkCredentials("digest", (writeableUsername + ":" + writeablePassword).getBytes(StandardCharsets.UTF_8)));
         return credentials;
       }
     };

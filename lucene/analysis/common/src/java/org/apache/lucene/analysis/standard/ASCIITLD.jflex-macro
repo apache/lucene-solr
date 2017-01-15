@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 // Generated from IANA Root Zone Database <http://www.internic.net/zones/root.zone>
 // file version from Friday, December 6, 2013 4:34:10 AM UTC
 // generated on Friday, December 6, 2013 3:21:59 PM UTC
@@ -363,4 +364,3 @@ ASCIITLD = "." (
 	| [zZ][mM]
 	| [zZ][wW]
 	) "."?   // Accept trailing root (empty) domain
-

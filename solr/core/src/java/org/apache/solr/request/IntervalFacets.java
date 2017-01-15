@@ -25,12 +25,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
-import org.apache.lucene.document.FieldType.LegacyNumericType;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FilterNumericDocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
@@ -156,7 +157,17 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         if (o2.start == null) {
           return 1;
         }
-        return o1.start.compareTo(o2.start);
+        int startComparison = o1.start.compareTo(o2.start);
+        if (startComparison == 0) {
+          if (o1.startOpen != o2.startOpen) {
+            if (!o1.startOpen) {
+              return -1;
+            } else {
+              return 1;
+            }
+          }
+        }
+        return startComparison;
       }
     });
     return sortedIntervals;
@@ -182,7 +193,6 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     final Iterator<LeafReaderContext> ctxIt = leaves.iterator();
     LeafReaderContext ctx = null;
     NumericDocValues longs = null;
-    Bits docsWithField = null;
     for (DocIterator docsIt = docs.iterator(); docsIt.hasNext(); ) {
       final int doc = docsIt.nextDoc();
       if (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc()) {
@@ -198,24 +208,22 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             longs = DocValues.getNumeric(ctx.reader(), fieldName);
             break;
           case FLOAT:
-            final NumericDocValues floats = DocValues.getNumeric(ctx.reader(), fieldName);
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs = new NumericDocValues() {
+            longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
               @Override
-              public long get(int docID) {
-                long bits = floats.get(docID);
+              public long longValue() throws IOException {
+                long bits = super.longValue();
                 if (bits < 0) bits ^= 0x7fffffffffffffffL;
                 return bits;
               }
             };
             break;
           case DOUBLE:
-            final NumericDocValues doubles = DocValues.getNumeric(ctx.reader(), fieldName);
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs = new NumericDocValues() {
+            longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
               @Override
-              public long get(int docID) {
-                long bits = doubles.get(docID);
+              public long longValue() throws IOException {
+                long bits = super.longValue();
                 if (bits < 0) bits ^= 0x7fffffffffffffffL;
                 return bits;
               }
@@ -224,11 +232,13 @@ public class IntervalFacets implements Iterable<FacetInterval> {
           default:
             throw new AssertionError();
         }
-        docsWithField = DocValues.getDocsWithField(ctx.reader(), schemaField.getName());
       }
-      long v = longs.get(doc - ctx.docBase);
-      if (v != 0 || docsWithField.get(doc - ctx.docBase)) {
-        accumIntervalWithValue(v);
+      int valuesDocID = longs.docID();
+      if (valuesDocID < doc - ctx.docBase) {
+        valuesDocID = longs.advance(doc - ctx.docBase);
+      }
+      if (valuesDocID == doc - ctx.docBase) {
+        accumIntervalWithValue(longs.longValue());
       }
     }
   }
@@ -279,14 +289,17 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       if (bits != null && bits.get(doc) == false) {
         continue;
       }
-      ssdv.setDocument(doc);
-      long currOrd;
-      int currentInterval = 0;
-      while ((currOrd = ssdv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-        boolean evaluateNextInterval = true;
-        while (evaluateNextInterval && currentInterval < intervals.length) {
-          IntervalCompareResult result = intervals[currentInterval].includes(currOrd);
-          switch (result) {
+      if (doc > ssdv.docID()) {
+        ssdv.advance(doc);
+      }
+      if (doc == ssdv.docID()) {
+        long currOrd;
+        int currentInterval = 0;
+        while ((currOrd = ssdv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+          boolean evaluateNextInterval = true;
+          while (evaluateNextInterval && currentInterval < intervals.length) {
+            IntervalCompareResult result = intervals[currentInterval].includes(currOrd);
+            switch (result) {
             case INCLUDED:
               /*
                * Increment the current interval and move to the next one using
@@ -308,6 +321,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
                */
               currentInterval++;
               break;
+            }
           }
         }
       }
@@ -324,9 +338,11 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       if (bits != null && bits.get(doc) == false) {
         continue;
       }
-      int ord = sdv.getOrd(doc);
-      if (ord >= 0) {
-        accumInterval(ord);
+      if (doc > sdv.docID()) {
+        sdv.advance(doc);
+      }
+      if (doc == sdv.docID()) {
+        accumInterval(sdv.ordValue());
       }
     }
   }
@@ -620,7 +636,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      *
      * @param sdv DocValues for the current reader
      */
-    public void updateContext(SortedDocValues sdv) {
+    public void updateContext(SortedDocValues sdv) throws IOException {
       if (start == null) {
         /*
          * Unset start. All ordinals will be greater than -1.
@@ -683,7 +699,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      *
      * @param sdv DocValues for the current reader
      */
-    public void updateContext(SortedSetDocValues sdv) {
+    public void updateContext(SortedSetDocValues sdv) throws IOException {
       if (start == null) {
         /*
          * Unset start. All ordinals will be greater than -1.

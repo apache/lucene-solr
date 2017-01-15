@@ -377,7 +377,7 @@ public class TokenSourcesTest extends BaseTokenStreamTestCase {
     }
 
     final BaseTermVectorsFormatTestCase.RandomTokenStream rTokenStream =
-        new BaseTermVectorsFormatTestCase.RandomTokenStream(TestUtil.nextInt(random(), 1, 10), terms, termBytes, false);
+        new BaseTermVectorsFormatTestCase.RandomTokenStream(TestUtil.nextInt(random(), 1, 10), terms, termBytes);
     //check to see if the token streams might have non-deterministic testable result
     final boolean storeTermVectorPositions = random().nextBoolean();
     final int[] startOffsets = rTokenStream.getStartOffsets();

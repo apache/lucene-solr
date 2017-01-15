@@ -20,7 +20,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.apache.solr.schema.IndexSchema;
 
@@ -29,8 +30,6 @@ import org.kitesdk.morphline.api.CommandBuilder;
 import org.kitesdk.morphline.api.MorphlineContext;
 import org.kitesdk.morphline.api.Record;
 import org.kitesdk.morphline.base.AbstractCommand;
-import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
 import com.typesafe.config.Config;
 
 /**
@@ -68,10 +67,14 @@ public final class SanitizeUnknownSolrFieldsBuilder implements CommandBuilder {
       Config solrLocatorConfig = getConfigs().getConfig(config, "solrLocator");
       SolrLocator locator = new SolrLocator(solrLocatorConfig, context);
       LOG.debug("solrLocator: {}", locator);
-      this.schema = locator.getIndexSchema();
-      Preconditions.checkNotNull(schema);
-      LOG.trace("Solr schema: \n{}", Joiner.on("\n").join(new TreeMap(schema.getFields()).values()));
-      
+      this.schema = Objects.requireNonNull(locator.getIndexSchema());
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("Solr schema: \n" +
+            schema.getFields().entrySet().stream().sorted(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue).map(Object::toString).collect(Collectors.joining("\n"))
+        );
+      }
+
       String str = getConfigs().getString(config, "renameToPrefix", "").trim();
       this.renameToPrefix = str.length() > 0 ? str : null;  
       validateArguments();

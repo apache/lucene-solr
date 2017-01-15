@@ -16,11 +16,38 @@
  */
 package org.apache.solr.common.params;
 
-public abstract class CollectionAdminParams {
+import java.util.Arrays;
+import java.util.Collection;
+
+public interface CollectionAdminParams {
 
   /* Param used by DELETESTATUS call to clear all stored responses */
-  public static final String FLUSH = "flush";
+  String FLUSH = "flush";
 
-  public static final String COLLECTION = "collection";
+  String COLLECTION = "collection";
+
+  String COUNT_PROP = "count";
+
+
+  /**
+   * A parameter to specify the name of the index backup strategy to be used.
+   */
+  public static final String INDEX_BACKUP_STRATEGY = "indexBackup";
+
+  /**
+   * This constant defines the index backup strategy based on copying index files to desired location.
+   */
+  public static final String COPY_FILES_STRATEGY = "copy-files";
+
+  /**
+   * This constant defines the strategy to not copy index files (useful for meta-data only backup).
+   */
+  public static final String NO_INDEX_BACKUP_STRATEGY = "none";
+
+  /**
+   * This constant defines a list of valid index backup strategies.
+   */
+  public static final Collection<String> INDEX_BACKUP_STRATEGIES =
+      Arrays.asList(COPY_FILES_STRATEGY, NO_INDEX_BACKUP_STRATEGY);
 
 }

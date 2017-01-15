@@ -1003,13 +1003,14 @@ public class Plane extends Vector {
    * D - MINIMUM_RESOLUTION.  Both are examined and intersection points determined.
    */
   protected void findIntersectionBounds(final PlanetModel planetModel, final Bounds boundsInfo, final Plane q, final Membership... bounds) {
+    //System.out.println("Finding intersection bounds");
     // Unnormalized, unchecked...
     final double lineVectorX = y * q.z - z * q.y;
     final double lineVectorY = z * q.x - x * q.z;
     final double lineVectorZ = x * q.y - y * q.x;
     if (Math.abs(lineVectorX) < MINIMUM_RESOLUTION && Math.abs(lineVectorY) < MINIMUM_RESOLUTION && Math.abs(lineVectorZ) < MINIMUM_RESOLUTION) {
       // Degenerate case: parallel planes
-      //System.err.println(" planes are parallel - no intersection");
+      //System.out.println(" planes are parallel - no intersection");
       return;
     }
 
@@ -1037,9 +1038,10 @@ public class Plane extends Vector {
     final double denomXZ = this.x * q.z - this.z * q.x;
     final double denomXY = this.x * q.y - this.y * q.x;
     if (Math.abs(denomYZ) >= Math.abs(denomXZ) && Math.abs(denomYZ) >= Math.abs(denomXY)) {
+      //System.out.println("X biggest");
       // X is the biggest, so our point will have x0 = 0.0
       if (Math.abs(denomYZ) < MINIMUM_RESOLUTION_SQUARED) {
-        //System.err.println(" Denominator is zero: no intersection");
+        //System.out.println(" Denominator is zero: no intersection");
         return;
       }
       final double denom = 1.0 / denomYZ;
@@ -1061,9 +1063,10 @@ public class Plane extends Vector {
         0.0, (-(this.D-MINIMUM_RESOLUTION) * q.z - this.z * -(q.D-MINIMUM_RESOLUTION)) * denom, (this.y * -(q.D-MINIMUM_RESOLUTION) + (this.D-MINIMUM_RESOLUTION) * q.y) * denom,
         bounds);
     } else if (Math.abs(denomXZ) >= Math.abs(denomXY) && Math.abs(denomXZ) >= Math.abs(denomYZ)) {
+      //System.out.println("Y biggest");
       // Y is the biggest, so y0 = 0.0
       if (Math.abs(denomXZ) < MINIMUM_RESOLUTION_SQUARED) {
-        //System.err.println(" Denominator is zero: no intersection");
+        //System.out.println(" Denominator is zero: no intersection");
         return;
       }
       final double denom = 1.0 / denomXZ;
@@ -1084,9 +1087,10 @@ public class Plane extends Vector {
         (-(this.D-MINIMUM_RESOLUTION) * q.z - this.z * -(q.D-MINIMUM_RESOLUTION)) * denom, 0.0, (this.x * -(q.D-MINIMUM_RESOLUTION) + (this.D-MINIMUM_RESOLUTION) * q.x) * denom,
         bounds);
     } else {
+      //System.out.println("Z biggest");
       // Z is the biggest, so Z0 = 0.0
       if (Math.abs(denomXY) < MINIMUM_RESOLUTION_SQUARED) {
-        //System.err.println(" Denominator is zero: no intersection");
+        //System.out.println(" Denominator is zero: no intersection");
         return;
       }
       final double denom = 1.0 / denomXY;
@@ -1178,6 +1182,10 @@ public class Plane extends Vector {
       if (point2Valid) {
         boundsInfo.addPoint(new GeoPoint(point2X, point2Y, point2Z));
       }
+    } else {
+      // If we can't intersect line with world, then it's outside the world, so
+      // we have to assume everything is included.
+      boundsInfo.noBound(planetModel);
     }
   }
 
@@ -1351,8 +1359,6 @@ public class Plane extends Vector {
       // m * [- 2*A*ab^2*r + 2*A^2*ab^2*r*q + 2*B^2*ab^2*r*q + 2*C^2*c^2*r*q] +
       // [ab^2 - 2*A*ab^2*q + A^2*ab^2*q^2 + B^2*ab^2*q^2 + C^2*c^2*q^2]  =  0
       
-      //System.err.println("    computing X bound");
-      
       // Useful subexpressions for this bound
       final double q = A*abSquared*k;
       final double qSquared = q * q;
@@ -1392,29 +1398,33 @@ public class Plane extends Vector {
           assert Math.abs(a * m1 * m1 + b * m1 + c) < MINIMUM_RESOLUTION;
           final double m2 = (-b - sqrtResult) * commonDenom;
           assert Math.abs(a * m2 * m2 + b * m2 + c) < MINIMUM_RESOLUTION;
-          final double l1 = r * m1 + q;
-          final double l2 = r * m2 + q;
-          // x = ((1 - l*A) * ab^2 ) / (2 * m)
-          // y = (-l*B * ab^2) / ( 2 * m)
-          // z = (-l*C * c^2)/ (2 * m)
-          final double denom1 = 0.5 / m1;
-          final double denom2 = 0.5 / m2;
-          final GeoPoint thePoint1 = new GeoPoint((1.0-l1*A) * abSquared * denom1, -l1*B * abSquared * denom1, -l1*C * cSquared * denom1);
-          final GeoPoint thePoint2 = new GeoPoint((1.0-l2*A) * abSquared * denom2, -l2*B * abSquared * denom2, -l2*C * cSquared * denom2);
-          //Math is not quite accurate enough for this
-          //assert planetModel.pointOnSurface(thePoint1): "Point1: "+thePoint1+"; Planetmodel="+planetModel+"; A="+A+" B="+B+" C="+C+" D="+D+" planetfcn="+
-          //  (thePoint1.x*thePoint1.x*planetModel.inverseAb*planetModel.inverseAb + thePoint1.y*thePoint1.y*planetModel.inverseAb*planetModel.inverseAb + thePoint1.z*thePoint1.z*planetModel.inverseC*planetModel.inverseC);
-          //assert planetModel.pointOnSurface(thePoint2): "Point1: "+thePoint2+"; Planetmodel="+planetModel+"; A="+A+" B="+B+" C="+C+" D="+D+" planetfcn="+
-          //  (thePoint2.x*thePoint2.x*planetModel.inverseAb*planetModel.inverseAb + thePoint2.y*thePoint2.y*planetModel.inverseAb*planetModel.inverseAb + thePoint2.z*thePoint2.z*planetModel.inverseC*planetModel.inverseC);
-          //assert evaluateIsZero(thePoint1): "Evaluation of point1: "+evaluate(thePoint1);
-          //assert evaluateIsZero(thePoint2): "Evaluation of point2: "+evaluate(thePoint2);
-          addPoint(boundsInfo, bounds, thePoint1);
-          addPoint(boundsInfo, bounds, thePoint2);
+          if (Math.abs(m1) >= MINIMUM_RESOLUTION || Math.abs(m2) >= MINIMUM_RESOLUTION) {
+            final double l1 = r * m1 + q;
+            final double l2 = r * m2 + q;
+            // x = ((1 - l*A) * ab^2 ) / (2 * m)
+            // y = (-l*B * ab^2) / ( 2 * m)
+            // z = (-l*C * c^2)/ (2 * m)
+            final double denom1 = 0.5 / m1;
+            final double denom2 = 0.5 / m2;
+            final GeoPoint thePoint1 = new GeoPoint((1.0-l1*A) * abSquared * denom1, -l1*B * abSquared * denom1, -l1*C * cSquared * denom1);
+            final GeoPoint thePoint2 = new GeoPoint((1.0-l2*A) * abSquared * denom2, -l2*B * abSquared * denom2, -l2*C * cSquared * denom2);
+            //Math is not quite accurate enough for this
+            //assert planetModel.pointOnSurface(thePoint1): "Point1: "+thePoint1+"; Planetmodel="+planetModel+"; A="+A+" B="+B+" C="+C+" D="+D+" planetfcn="+
+            //  (thePoint1.x*thePoint1.x*planetModel.inverseAb*planetModel.inverseAb + thePoint1.y*thePoint1.y*planetModel.inverseAb*planetModel.inverseAb + thePoint1.z*thePoint1.z*planetModel.inverseC*planetModel.inverseC);
+            //assert planetModel.pointOnSurface(thePoint2): "Point1: "+thePoint2+"; Planetmodel="+planetModel+"; A="+A+" B="+B+" C="+C+" D="+D+" planetfcn="+
+            //  (thePoint2.x*thePoint2.x*planetModel.inverseAb*planetModel.inverseAb + thePoint2.y*thePoint2.y*planetModel.inverseAb*planetModel.inverseAb + thePoint2.z*thePoint2.z*planetModel.inverseC*planetModel.inverseC);
+            //assert evaluateIsZero(thePoint1): "Evaluation of point1: "+evaluate(thePoint1);
+            //assert evaluateIsZero(thePoint2): "Evaluation of point2: "+evaluate(thePoint2);
+            addPoint(boundsInfo, bounds, thePoint1);
+            addPoint(boundsInfo, bounds, thePoint2);
+          } else {
+            // This is a plane of the form A=n B=0 C=0.  We can set a bound only by noting the D value.
+            boundsInfo.addXValue(-D/A);
+          }
         } else {
           // No solutions
         }
       } else if (Math.abs(b) > MINIMUM_RESOLUTION_SQUARED) {
-        //System.err.println("Not x quadratic");
         // a = 0, so m = - c / b
         final double m = -c / b;
         final double l = r * m + q;
@@ -1561,24 +1571,29 @@ public class Plane extends Vector {
           assert Math.abs(a * m1 * m1 + b * m1 + c) < MINIMUM_RESOLUTION;
           final double m2 = (-b - sqrtResult) * commonDenom;
           assert Math.abs(a * m2 * m2 + b * m2 + c) < MINIMUM_RESOLUTION;
-          final double l1 = r * m1 + q;
-          final double l2 = r * m2 + q;
-          // x = (-l*A * ab^2 ) / (2 * m)
-          // y = ((1.0-l*B) * ab^2) / ( 2 * m)
-          // z = (-l*C * c^2)/ (2 * m)
-          final double denom1 = 0.5 / m1;
-          final double denom2 = 0.5 / m2;
-          final GeoPoint thePoint1 = new GeoPoint(-l1*A * abSquared * denom1, (1.0-l1*B) * abSquared * denom1, -l1*C * cSquared * denom1);
-          final GeoPoint thePoint2 = new GeoPoint(-l2*A * abSquared * denom2, (1.0-l2*B) * abSquared * denom2, -l2*C * cSquared * denom2);
-          //Math is not quite accurate enough for this
-          //assert planetModel.pointOnSurface(thePoint1): "Point1: "+thePoint1+"; Planetmodel="+planetModel+"; A="+A+" B="+B+" C="+C+" D="+D+" planetfcn="+
-          //  (thePoint1.x*thePoint1.x*planetModel.inverseAb*planetModel.inverseAb + thePoint1.y*thePoint1.y*planetModel.inverseAb*planetModel.inverseAb + thePoint1.z*thePoint1.z*planetModel.inverseC*planetModel.inverseC);
-          //assert planetModel.pointOnSurface(thePoint2): "Point2: "+thePoint2+"; Planetmodel="+planetModel+"; A="+A+" B="+B+" C="+C+" D="+D+" planetfcn="+
-          //  (thePoint2.x*thePoint2.x*planetModel.inverseAb*planetModel.inverseAb + thePoint2.y*thePoint2.y*planetModel.inverseAb*planetModel.inverseAb + thePoint2.z*thePoint2.z*planetModel.inverseC*planetModel.inverseC);
-          //assert evaluateIsZero(thePoint1): "Evaluation of point1: "+evaluate(thePoint1);
-          //assert evaluateIsZero(thePoint2): "Evaluation of point2: "+evaluate(thePoint2);
-          addPoint(boundsInfo, bounds, thePoint1);
-          addPoint(boundsInfo, bounds, thePoint2);
+          if (Math.abs(m1) >= MINIMUM_RESOLUTION || Math.abs(m2) >= MINIMUM_RESOLUTION) {
+            final double l1 = r * m1 + q;
+            final double l2 = r * m2 + q;
+            // x = (-l*A * ab^2 ) / (2 * m)
+            // y = ((1.0-l*B) * ab^2) / ( 2 * m)
+            // z = (-l*C * c^2)/ (2 * m)
+            final double denom1 = 0.5 / m1;
+            final double denom2 = 0.5 / m2;
+            final GeoPoint thePoint1 = new GeoPoint(-l1*A * abSquared * denom1, (1.0-l1*B) * abSquared * denom1, -l1*C * cSquared * denom1);
+            final GeoPoint thePoint2 = new GeoPoint(-l2*A * abSquared * denom2, (1.0-l2*B) * abSquared * denom2, -l2*C * cSquared * denom2);
+            //Math is not quite accurate enough for this
+            //assert planetModel.pointOnSurface(thePoint1): "Point1: "+thePoint1+"; Planetmodel="+planetModel+"; A="+A+" B="+B+" C="+C+" D="+D+" planetfcn="+
+            //  (thePoint1.x*thePoint1.x*planetModel.inverseAb*planetModel.inverseAb + thePoint1.y*thePoint1.y*planetModel.inverseAb*planetModel.inverseAb + thePoint1.z*thePoint1.z*planetModel.inverseC*planetModel.inverseC);
+            //assert planetModel.pointOnSurface(thePoint2): "Point2: "+thePoint2+"; Planetmodel="+planetModel+"; A="+A+" B="+B+" C="+C+" D="+D+" planetfcn="+
+            //  (thePoint2.x*thePoint2.x*planetModel.inverseAb*planetModel.inverseAb + thePoint2.y*thePoint2.y*planetModel.inverseAb*planetModel.inverseAb + thePoint2.z*thePoint2.z*planetModel.inverseC*planetModel.inverseC);
+            //assert evaluateIsZero(thePoint1): "Evaluation of point1: "+evaluate(thePoint1);
+            //assert evaluateIsZero(thePoint2): "Evaluation of point2: "+evaluate(thePoint2);
+            addPoint(boundsInfo, bounds, thePoint1);
+            addPoint(boundsInfo, bounds, thePoint2);
+          } else {
+            // This is a plane of the form A=0 B=n C=0.  We can set a bound only by noting the D value.
+            boundsInfo.addYValue(-D/B);
+          }
         } else {
           // No solutions
         }

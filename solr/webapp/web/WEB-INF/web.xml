@@ -164,4 +164,21 @@
     <welcome-file>index.html</welcome-file>
   </welcome-file-list>
 
+  <!-- Get rid of error message -->
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>Disable TRACE</web-resource-name>
+      <url-pattern>/</url-pattern>
+      <http-method>TRACE</http-method>
+    </web-resource-collection>
+    <auth-constraint/>
+  </security-constraint>
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>Enable everything but TRACE</web-resource-name>
+      <url-pattern>/</url-pattern>
+      <http-method-omission>TRACE</http-method-omission>
+    </web-resource-collection>
+  </security-constraint>
+
 </web-app>

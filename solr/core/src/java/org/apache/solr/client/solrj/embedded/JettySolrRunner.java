@@ -38,6 +38,8 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.eclipse.jetty.server.Connector;
@@ -293,6 +295,10 @@ public class JettySolrRunner {
     return getSolrDispatchFilter().getCores();
   }
 
+  public String getNodeName() {
+    return getCoreContainer().getZkController().getNodeName();
+  }
+
   public boolean isRunning() {
     return server.isRunning();
   }
@@ -307,9 +313,24 @@ public class JettySolrRunner {
   /**
    * Start the Jetty server
    *
+   * If the server has been started before, it will restart using the same port
+   *
    * @throws Exception if an error occurs on startup
    */
   public void start() throws Exception {
+    start(true);
+  }
+
+  /**
+   * Start the Jetty server
+   *
+   * @param reusePort when true, will start up on the same port as used by any
+   *                  previous runs of this JettySolrRunner.  If false, will use
+   *                  the port specified by the server's JettyConfig.
+   *
+   * @throws Exception if an error occurs on startup
+   */
+  public void start(boolean reusePort) throws Exception {
     // Do not let Jetty/Solr pollute the MDC for this thread
     Map<String, String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
@@ -317,7 +338,8 @@ public class JettySolrRunner {
       // if started before, make a new server
       if (startedBefore) {
         waitOnSolr = false;
-        init(lastPort);
+        int port = reusePort ? lastPort : this.config.port;
+        init(port);
       } else {
         startedBefore = true;
       }
@@ -435,6 +457,10 @@ public class JettySolrRunner {
       throw new  IllegalStateException
         ("Java could not make sense of protocol: " + protocol, e);
     }
+  }
+
+  public SolrClient newClient() {
+    return new HttpSolrClient.Builder(getBaseUrl().toString()).build();
   }
 
   public DebugFilter getDebugFilter() {

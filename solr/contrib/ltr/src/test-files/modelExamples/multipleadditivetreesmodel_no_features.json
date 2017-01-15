@@ -1,0 +1,14 @@
+{
+    "class":"org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+    "name":"multipleadditivetreesmodel_no_features",
+    "params":{
+        "trees": [
+            {
+                "weight" : "2f",
+                "root": {
+                    "value" : "-10"
+                }
+            }
+        ]
+    }
+}

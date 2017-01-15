@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.apache.solr.common.SolrException;
 
@@ -425,7 +426,12 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
       @Override
       public T put(String  key, T value) {
-        NamedList.this.add(key, value);
+        int idx = NamedList.this.indexOf(key, 0);
+        if (idx == -1) {
+          NamedList.this.add(key, value);
+        } else {
+          NamedList.this.setVal(idx, value);
+        }
         return  null;
       }
 
@@ -436,8 +442,15 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
       @Override
       public void putAll(Map m) {
-        NamedList.this.addAll(m);
-
+        boolean isEmpty = isEmpty();
+        for (Object o : m.entrySet()) {
+          Map.Entry e = (Entry) o;
+          if (isEmpty) {// we know that there are no duplicates
+            add((String) e.getKey(), (T) e.getValue());
+          } else {
+            put(e.getKey() == null ? null : e.getKey().toString(), (T) e.getValue());
+          }
+        }
       }
 
       @Override
@@ -461,6 +474,11 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       public Set<Entry<String,T>> entrySet() {
         //TODO implement more efficiently
         return NamedList.this.asMap(1).entrySet();
+      }
+
+      @Override
+      public void forEach(BiConsumer action) {
+        NamedList.this.forEach(action);
       }
     };
   }
@@ -778,5 +796,12 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     if (!(obj instanceof NamedList)) return false;
     NamedList<?> nl = (NamedList<?>) obj;
     return this.nvPairs.equals(nl.nvPairs);
+  }
+
+  public void forEach(BiConsumer<String, T> action) {
+    int sz = size();
+    for (int i = 0; i < sz; i++) {
+      action.accept(getName(i), getVal(i));
+    }
   }
 }

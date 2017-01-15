@@ -307,37 +307,37 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
     }
 
     @Override
-    public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
+    public void intersect(IntersectVisitor visitor) throws IOException {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public byte[] getMinPackedValue(String fieldName) throws IOException {
+    public byte[] getMinPackedValue() throws IOException {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public byte[] getMaxPackedValue(String fieldName) throws IOException {
+    public byte[] getMaxPackedValue() throws IOException {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public int getNumDimensions(String fieldName) throws IOException {
+    public int getNumDimensions() throws IOException {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public int getBytesPerDimension(String fieldName) throws IOException {
+    public int getBytesPerDimension() throws IOException {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public long size(String fieldName) {
+    public long size() {
       return numPoints;
     }
 
     @Override
-    public int getDocCount(String fieldName) {
+    public int getDocCount() {
       return docCount;
     }
 

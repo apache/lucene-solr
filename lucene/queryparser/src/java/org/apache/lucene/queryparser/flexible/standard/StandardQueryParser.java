@@ -29,7 +29,6 @@ import org.apache.lucene.queryparser.flexible.core.QueryParserHelper;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.standard.builders.StandardQueryTreeBuilder;
 import org.apache.lucene.queryparser.flexible.standard.config.FuzzyConfig;
-import org.apache.lucene.queryparser.flexible.standard.config.LegacyNumericConfig;
 import org.apache.lucene.queryparser.flexible.standard.config.PointsConfig;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
@@ -291,24 +290,6 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
 
     fuzzyConfig.setPrefixLength(fuzzyPrefixLength);
     
-  }
-  
-  /**
-   * Sets field configuration for legacy numeric fields
-   * @deprecated Index with points instead and use {@link #setPointsConfigMap(Map)}
-   */
-  @Deprecated
-  public void setLegacyNumericConfigMap(Map<String,LegacyNumericConfig> legacyNumericConfigMap) {
-    getQueryConfigHandler().set(ConfigurationKeys.LEGACY_NUMERIC_CONFIG_MAP, legacyNumericConfigMap);
-  }
-  
-  /**
-   * Gets field configuration for legacy numeric fields
-   * @deprecated Index with points instead and use {@link #getPointsConfigMap()}
-   */
-  @Deprecated
-  public Map<String,LegacyNumericConfig> getLegacyNumericConfigMap() {
-    return getQueryConfigHandler().get(ConfigurationKeys.LEGACY_NUMERIC_CONFIG_MAP);
   }
   
   public void setPointsConfigMap(Map<String,PointsConfig> pointsConfigMap) {

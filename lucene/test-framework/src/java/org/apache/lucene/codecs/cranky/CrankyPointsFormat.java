@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -114,46 +115,67 @@ class CrankyPointsFormat extends PointsFormat {
     }
 
     @Override
-    public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
-      if (random.nextInt(100) == 0) {
-        throw new IOException("Fake IOException");
+    public PointValues getValues(String fieldName) throws IOException {
+      final PointValues delegate = this.delegate.getValues(fieldName);
+      if (delegate == null) {
+        return null;
       }
-      delegate.intersect(fieldName, visitor);
-      if (random.nextInt(100) == 0) {
-        throw new IOException("Fake IOException");
-      }  
-    }
+      return new PointValues() {
 
-    @Override
-    public byte[] getMinPackedValue(String fieldName) throws IOException {
-      if (random.nextInt(100) == 0) {
-        throw new IOException("Fake IOException");
-      }
-      return delegate.getMinPackedValue(fieldName);
-    }
+        @Override
+        public void intersect(IntersectVisitor visitor) throws IOException {
+          if (random.nextInt(100) == 0) {
+            throw new IOException("Fake IOException");
+          }
+          delegate.intersect(visitor);
+          if (random.nextInt(100) == 0) {
+            throw new IOException("Fake IOException");
+          }  
+        }
 
-    @Override
-    public byte[] getMaxPackedValue(String fieldName) throws IOException {
-      if (random.nextInt(100) == 0) {
-        throw new IOException("Fake IOException");
-      }
-      return delegate.getMaxPackedValue(fieldName);
-    }
+        @Override
+        public byte[] getMinPackedValue() throws IOException {
+          if (random.nextInt(100) == 0) {
+            throw new IOException("Fake IOException");
+          }
+          return delegate.getMinPackedValue();
+        }
 
-    @Override
-    public int getNumDimensions(String fieldName) throws IOException {
-      if (random.nextInt(100) == 0) {
-        throw new IOException("Fake IOException");
-      }
-      return delegate.getNumDimensions(fieldName);
-    }
+        @Override
+        public byte[] getMaxPackedValue() throws IOException {
+          if (random.nextInt(100) == 0) {
+            throw new IOException("Fake IOException");
+          }
+          return delegate.getMaxPackedValue();
+        }
 
-    @Override
-    public int getBytesPerDimension(String fieldName) throws IOException {
-      if (random.nextInt(100) == 0) {
-        throw new IOException("Fake IOException");
-      }
-      return delegate.getBytesPerDimension(fieldName);
+        @Override
+        public int getNumDimensions() throws IOException {
+          if (random.nextInt(100) == 0) {
+            throw new IOException("Fake IOException");
+          }
+          return delegate.getNumDimensions();
+        }
+
+        @Override
+        public int getBytesPerDimension() throws IOException {
+          if (random.nextInt(100) == 0) {
+            throw new IOException("Fake IOException");
+          }
+          return delegate.getBytesPerDimension();
+        }
+
+        @Override
+        public long size() {
+          return delegate.size();
+        }
+
+        @Override
+        public int getDocCount() {
+          return delegate.getDocCount();
+        }
+
+      };
     }
 
     @Override
@@ -167,16 +189,6 @@ class CrankyPointsFormat extends PointsFormat {
     @Override
     public long ramBytesUsed() {
       return delegate.ramBytesUsed();
-    }
-
-    @Override
-    public long size(String fieldName) {
-      return delegate.size(fieldName);
-    }
-
-    @Override
-    public int getDocCount(String fieldName) {
-      return delegate.getDocCount(fieldName);
     }
   }
 }

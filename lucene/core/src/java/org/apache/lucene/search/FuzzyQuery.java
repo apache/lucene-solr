@@ -31,7 +31,7 @@ import org.apache.lucene.util.automaton.LevenshteinAutomata;
  * though you can explicitly choose classic Levenshtein by passing <code>false</code>
  * to the <code>transpositions</code> parameter.
  * 
- * <p>This query uses {@link MultiTermQuery.TopTermsScoringBooleanQueryRewrite}
+ * <p>This query uses {@link MultiTermQuery.TopTermsBlendedFreqScoringRewrite}
  * as default. So terms will be collected and scored according to their
  * edit distance. Only the top terms are used for building the {@link BooleanQuery}.
  * It is not recommended to change the rewrite mode for fuzzy queries.

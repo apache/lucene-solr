@@ -40,7 +40,6 @@ import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.packed.PackedInts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -273,25 +272,14 @@ public class FSTTester<T> {
       System.out.println("\nTEST: prune1=" + prune1 + " prune2=" + prune2);
     }
 
-    final boolean willRewrite = random.nextBoolean();
-
     final Builder<T> builder = new Builder<>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4,
                                               prune1, prune2,
                                               prune1==0 && prune2==0,
                                               allowRandomSuffixSharing ? random.nextBoolean() : true,
                                               allowRandomSuffixSharing ? TestUtil.nextInt(random, 1, 10) : Integer.MAX_VALUE,
                                               outputs,
-                                              willRewrite,
-                                              PackedInts.DEFAULT,
                                               true,
                                               15);
-    if (LuceneTestCase.VERBOSE) {
-      if (willRewrite) {
-        System.out.println("TEST: packed FST");
-      } else {
-        System.out.println("TEST: non-packed FST");
-      }
-    }
 
     for(InputOutput<T> pair : pairs) {
       if (pair.output instanceof List) {
@@ -306,7 +294,7 @@ public class FSTTester<T> {
     }
     FST<T> fst = builder.finish();
 
-    if (random.nextBoolean() && fst != null && !willRewrite) {
+    if (random.nextBoolean() && fst != null) {
       IOContext context = LuceneTestCase.newIOContext(random);
       IndexOutput out = dir.createOutput("fst.bin", context);
       fst.save(out);

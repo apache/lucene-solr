@@ -102,7 +102,7 @@ public abstract class RollingBuffer<T extends RollingBuffer.Resettable> {
       nextPos++;
       count++;
     }
-    assert inBounds(pos);
+    assert inBounds(pos): "pos=" + pos + " nextPos=" + nextPos + " count=" + count;
     final int index = getIndex(pos);
     //System.out.println("  pos=" + pos + " nextPos=" + nextPos + " -> index=" + index);
     //assert buffer[index].pos == pos;
@@ -110,9 +110,14 @@ public abstract class RollingBuffer<T extends RollingBuffer.Resettable> {
   }
 
   /** Returns the maximum position looked up, or -1 if no
-  *  position has been looked up sinc reset/init.  */
+  *   position has been looked up since reset/init.  */
   public int getMaxPos() {
     return nextPos-1;
+  }
+
+  /** Returns how many active positions are in the buffer. */
+  public int getBufferSize() {
+    return count;
   }
 
   public void freeBefore(int pos) {

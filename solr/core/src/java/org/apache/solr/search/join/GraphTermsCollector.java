@@ -89,14 +89,18 @@ class GraphTermsCollector extends SimpleCollector implements Collector {
   
   private void addEdgeIdsToResult(int doc) throws IOException {
     // set the doc to pull the edges ids for.
-    docTermOrds.setDocument(doc);
-    BytesRef edgeValue = new BytesRef();
-    long ord;
-    while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-      // TODO: handle non string type fields.
-      edgeValue = docTermOrds.lookupOrd(ord);
-      // add the edge id to the collector terms.
-      collectorTerms.add(edgeValue);
+    if (doc > docTermOrds.docID()) {
+      docTermOrds.advance(doc);
+    }
+    if (doc == docTermOrds.docID()) {
+      BytesRef edgeValue = new BytesRef();
+      long ord;
+      while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        // TODO: handle non string type fields.
+        edgeValue = docTermOrds.lookupOrd(ord);
+        // add the edge id to the collector terms.
+        collectorTerms.add(edgeValue);
+      }
     }
   }
   

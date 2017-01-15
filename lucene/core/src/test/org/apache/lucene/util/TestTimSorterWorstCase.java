@@ -23,7 +23,7 @@ import java.util.List;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.packed.PackedInts;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 @Slow
 public class TestTimSorterWorstCase extends LuceneTestCase {
@@ -33,9 +33,9 @@ public class TestTimSorterWorstCase extends LuceneTestCase {
     // but not so big we blow up available heap.
     final int length;
     if (TEST_NIGHTLY) {
-      length = RandomInts.randomIntBetween(random(), 140000000, 400000000);
+      length = RandomNumbers.randomIntBetween(random(), 140000000, 400000000);
     } else {
-      length = RandomInts.randomIntBetween(random(), 140000000, 200000000);
+      length = RandomNumbers.randomIntBetween(random(), 140000000, 200000000);
     }
     final PackedInts.Mutable arr = generateWorstCaseArray(length);
     new TimSorter(0) {

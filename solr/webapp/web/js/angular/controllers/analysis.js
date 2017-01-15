@@ -76,9 +76,17 @@ solrAdminApp.controller('AnalysisController',
 
           for (key in tokenhash) {
             if (key == "match" || key=="positionHistory") {
-              //@ todo do something
+              //skip, to not display these keys in the UI
             } else {
-              token.keys.push({name:key, value:tokenhash[key]});
+              var tokenInfo = new Object();
+              tokenInfo.name = key;
+              tokenInfo.value = tokenhash[key];
+              if ('text' === key || 'raw_bytes' === key ) {
+                if (tokenhash.match) {
+                  tokenInfo.extraclass = 'match'; //to highlight matching text strings
+                }
+              }
+              token.keys.push(tokenInfo);
             }
           }
           tokens.push(token);

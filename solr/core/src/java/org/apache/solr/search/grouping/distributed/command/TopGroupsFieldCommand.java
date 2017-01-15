@@ -19,7 +19,7 @@ package org.apache.solr.search.grouping.distributed.command;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector;
+import org.apache.lucene.search.grouping.SecondPassGroupingCollector;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
@@ -106,7 +106,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   private final int maxDocPerGroup;
   private final boolean needScores;
   private final boolean needMaxScore;
-  private AbstractSecondPassGroupingCollector secondPassCollector;
+  private SecondPassGroupingCollector secondPassCollector;
 
   private TopGroupsFieldCommand(SchemaField field,
                                 Sort groupSort,

@@ -54,12 +54,22 @@ public abstract class DelegatingAnalyzerWrapper extends AnalyzerWrapper {
   protected final TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
     return super.wrapComponents(fieldName, components);
   }
-  
+
+  @Override
+  protected final TokenStream wrapTokenStreamForNormalization(String fieldName, TokenStream in) {
+    return super.wrapTokenStreamForNormalization(fieldName, in);
+  }
+
   @Override
   protected final Reader wrapReader(String fieldName, Reader reader) {
     return super.wrapReader(fieldName, reader);
   }
-  
+
+  @Override
+  protected final Reader wrapReaderForNormalization(String fieldName, Reader reader) {
+    return super.wrapReaderForNormalization(fieldName, reader);
+  }
+
   private static final class DelegatingReuseStrategy extends ReuseStrategy {
     DelegatingAnalyzerWrapper wrapper;
     private final ReuseStrategy fallbackStrategy;

@@ -18,18 +18,15 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.cloud.DefaultZkACLProvider;
 import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
+import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
 import org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider;
 import org.apache.solr.common.cloud.ZkACLProvider;
 import org.apache.solr.common.cloud.ZkCredentialsProvider;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
-import org.apache.zookeeper.data.Id;
-import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -40,7 +37,6 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -88,6 +84,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
         "readonlyACLUsername", "readonlyACLPassword").getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     zkClient.create("/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.makePath("/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+    zkClient.create(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.close();
     
     zkClient = new SolrZkClientFactoryUsingCompletelyNewProviders(null, null, 
@@ -114,7 +111,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     SolrZkClient zkClient = new SolrZkClientFactoryUsingCompletelyNewProviders(null, null, 
         null, null).getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient, false, false, false, false, false);
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient,
+          false, false, false, false, false,
+          false, false, false, false, false);
     } finally {
       zkClient.close();
     }
@@ -125,7 +124,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     SolrZkClient zkClient = new SolrZkClientFactoryUsingCompletelyNewProviders("connectAndAllACLUsername", "connectAndAllACLPasswordWrong", 
         null, null).getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient, false, false, false, false, false);
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient,
+          false, false, false, false, false,
+          false, false, false, false, false);
     } finally {
       zkClient.close();
     }
@@ -136,7 +137,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     SolrZkClient zkClient = new SolrZkClientFactoryUsingCompletelyNewProviders("connectAndAllACLUsername", "connectAndAllACLPassword", 
         null, null).getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient, true, true, true, true, true);
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient,
+          true, true, true, true, true,
+          true, true, true, true, true);
     } finally {
       zkClient.close();
     }
@@ -147,7 +150,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     SolrZkClient zkClient = new SolrZkClientFactoryUsingCompletelyNewProviders("readonlyACLUsername", "readonlyACLPassword",
         null, null).getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient, true, true, false, false, false);
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient,
+          true, true, false, false, false,
+          false, false, false, false, false);
     } finally {
       zkClient.close();
     }
@@ -159,7 +164,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     
     SolrZkClient zkClient = new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient, false, false, false, false, false);
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient,
+          false, false, false, false, false,
+          false, false, false, false, false);
     } finally {
       zkClient.close();
     }
@@ -171,7 +178,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     
     SolrZkClient zkClient = new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient, false, false, false, false, false);
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient,
+          false, false, false, false, false,
+          false, false, false, false, false);
     } finally {
       zkClient.close();
     }
@@ -183,7 +192,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     
     SolrZkClient zkClient = new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient, true, true, true, true, true);
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient,
+          true, true, true, true, true,
+          true, true, true, true, true);
     } finally {
       zkClient.close();
     }
@@ -195,7 +206,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     
     SolrZkClient zkClient = new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient, true, true, false, false, false);
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient,
+          true, true, false, false, false,
+          false, false, false, false, false);
     } finally {
       zkClient.close();
     }
@@ -240,28 +253,18 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
         @Override
         public ZkACLProvider createZkACLProvider() {
-          return new DefaultZkACLProvider() {
+          return new VMParamsAllAndReadonlyDigestZkACLProvider() {
             @Override
-            protected List<ACL> createGlobalACLsToAdd() {
-              try {
-                List<ACL> result = new ArrayList<ACL>();
-            
-                if (!StringUtils.isEmpty(digestUsername) && !StringUtils.isEmpty(digestPassword)) {
-                  result.add(new ACL(ZooDefs.Perms.ALL, new Id("digest", DigestAuthenticationProvider.generateDigest(digestUsername + ":" + digestPassword))));
-                }
-            
-                if (!StringUtils.isEmpty(digestReadonlyUsername) && !StringUtils.isEmpty(digestReadonlyPassword)) {
-                  result.add(new ACL(ZooDefs.Perms.READ, new Id("digest", DigestAuthenticationProvider.generateDigest(digestReadonlyUsername + ":" + digestReadonlyPassword))));
-                }
-                
-                if (result.isEmpty()) {
-                  result = ZooDefs.Ids.OPEN_ACL_UNSAFE;
-                }
-                
-                return result;
-              } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
-              }
+            protected List<ACL> createNonSecurityACLsToAdd() {
+              return createACLsToAdd(true, digestUsername, digestPassword, digestReadonlyUsername, digestReadonlyPassword);
+            }
+
+            /**
+             * @return Set of ACLs to return security-related znodes
+             */
+            @Override
+            protected List<ACL> createSecurityACLsToAdd() {
+              return createACLsToAdd(false, digestUsername, digestPassword, digestReadonlyUsername, digestReadonlyPassword);
             }
           };
         }

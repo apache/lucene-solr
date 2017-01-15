@@ -56,6 +56,7 @@ final class SegmentCoreReaders {
   final TermVectorsReader termVectorsReaderOrig;
   final PointsReader pointsReader;
   final Directory cfsReader;
+  final String segment;
   /** 
    * fieldinfos for this core: means gen=-1.
    * this is the exact fieldinfos these codec components saw at write.
@@ -97,6 +98,8 @@ final class SegmentCoreReaders {
         cfsReader = null;
         cfsDir = dir;
       }
+
+      segment = si.info.name;
 
       coreFieldInfos = codec.fieldInfosFormat().read(cfsDir, si.info, "", context);
       
@@ -191,5 +194,10 @@ final class SegmentCoreReaders {
   
   void removeCoreClosedListener(CoreClosedListener listener) {
     coreClosedListeners.remove(listener);
+  }
+
+  @Override
+  public String toString() {
+    return "SegmentCoreReader(" + segment + ")";
   }
 }

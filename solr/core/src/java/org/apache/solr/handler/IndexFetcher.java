@@ -305,6 +305,9 @@ public class IndexFetcher {
       long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
       long latestGeneration = (Long) response.get(GENERATION);
 
+      LOG.info("Master's generation: " + latestGeneration);
+      LOG.info("Master's version: " + latestVersion);
+
       // TODO: make sure that getLatestCommit only returns commit points for the main index (i.e. no side-car indexes)
       IndexCommit commit = solrCore.getDeletionPolicy().getLatestCommit();
       if (commit == null) {
@@ -323,6 +326,7 @@ public class IndexFetcher {
         }
       }
 
+      LOG.info("Slave's generation: " + commit.getGeneration());
 
       if (latestVersion == 0L) {
         if (forceReplication && commit.getGeneration() != 0) {
@@ -350,8 +354,6 @@ public class IndexFetcher {
         successfulInstall = true;
         return true;
       }
-      LOG.info("Master's generation: " + latestGeneration);
-      LOG.info("Slave's generation: " + commit.getGeneration());
       LOG.info("Starting replication process");
       // get the list of files first
       fetchFileList(latestGeneration);
@@ -431,11 +433,15 @@ public class IndexFetcher {
           } finally {
             writer.decref();
           }
-          solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
         }
         boolean reloadCore = false;
 
         try {
+          // we have to be careful and do this after we know isFullCopyNeeded won't be flipped
+          if (!isFullCopyNeeded) {
+            solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
+          }
+
           LOG.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
           successfulInstall = false;
 
@@ -468,9 +474,9 @@ public class IndexFetcher {
                 // let the system know we are changing dir's and the old one
                 // may be closed
                 if (indexDir != null) {
-                  LOG.info("removing old index directory " + indexDir);
                   solrCore.getDirectoryFactory().doneWithDirectory(indexDir);
-                  solrCore.getDirectoryFactory().remove(indexDir);
+                  // Cleanup all index files not associated with any *named* snapshot.
+                  solrCore.deleteNonSnapshotIndexFiles(indexDirPath);
                 }
               }
 
@@ -679,15 +685,19 @@ public class IndexFetcher {
         sb = readToStringBuilder(replicationTime, props.getProperty(REPLICATION_FAILED_AT_LIST));
         props.setProperty(REPLICATION_FAILED_AT_LIST, sb.toString());
       }
-
-      final IndexOutput out = dir.createOutput(REPLICATION_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
+      
+      
+      String tmpFileName = REPLICATION_PROPERTIES + "." + System.nanoTime();
+      final IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
       Writer outFile = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
       try {
         props.store(outFile, "Replication details");
-        dir.sync(Collections.singleton(REPLICATION_PROPERTIES));
+        dir.sync(Collections.singleton(tmpFileName));
       } finally {
         IOUtils.closeQuietly(outFile);
       }
+      
+      solrCore.getDirectoryFactory().renameWithOverwrite(dir, tmpFileName, REPLICATION_PROPERTIES);
     } catch (Exception e) {
       LOG.warn("Exception while updating statistics", e);
     } finally {
@@ -738,14 +748,14 @@ public class IndexFetcher {
   }
 
   private void openNewSearcherAndUpdateCommitPoint() throws IOException {
-    SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
-        new ModifiableSolrParams());
-
     RefCounted<SolrIndexSearcher> searcher = null;
     IndexCommit commitPoint;
+    // must get the latest solrCore object because the one we have might be closed because of a reload
+    // todo stop keeping solrCore around
+    SolrCore core = solrCore.getCoreDescriptor().getCoreContainer().getCore(solrCore.getName());
     try {
       Future[] waitSearcher = new Future[1];
-      searcher = solrCore.getSearcher(true, true, waitSearcher, true);
+      searcher = core.getSearcher(true, true, waitSearcher, true);
       if (waitSearcher[0] != null) {
         try {
           waitSearcher[0].get();
@@ -755,10 +765,10 @@ public class IndexFetcher {
       }
       commitPoint = searcher.get().getIndexReader().getIndexCommit();
     } finally {
-      req.close();
       if (searcher != null) {
         searcher.decref();
       }
+      core.close();
     }
 
     // update the commit point in replication handler
@@ -1200,24 +1210,23 @@ public class IndexFetcher {
           IOUtils.closeQuietly(is);
         }
       }
-      try {
-        dir.deleteFile(IndexFetcher.INDEX_PROPERTIES);
-      } catch (IOException e) {
-        // no problem
-      }
-      final IndexOutput out = dir.createOutput(IndexFetcher.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
+
+      String tmpFileName = IndexFetcher.INDEX_PROPERTIES + "." + System.nanoTime();
+      final IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
       p.put("index", tmpIdxDirName);
       Writer os = null;
       try {
         os = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
-        p.store(os, IndexFetcher.INDEX_PROPERTIES);
-        dir.sync(Collections.singleton(INDEX_PROPERTIES));
+        p.store(os, tmpFileName);
+        dir.sync(Collections.singleton(tmpFileName));
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Unable to write " + IndexFetcher.INDEX_PROPERTIES, e);
       } finally {
         IOUtils.closeQuietly(os);
       }
+      
+      solrCore.getDirectoryFactory().renameWithOverwrite(dir, tmpFileName, IndexFetcher.INDEX_PROPERTIES);
       return true;
 
     } catch (IOException e1) {

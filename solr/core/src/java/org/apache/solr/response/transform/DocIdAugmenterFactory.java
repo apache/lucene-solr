@@ -21,7 +21,10 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- *
+ * Augments the document with a <code>[docid]</code> integer containing it's current
+ * (internal) id in the lucene index.  May be <code>-1</code> if this document did not come from the 
+ * index (ie: a RealTimeGet from  the transaction log)
+ * 
  * @since solr 4.0
  */
 public class DocIdAugmenterFactory extends TransformerFactory
@@ -49,9 +52,8 @@ class DocIdAugmenter extends DocTransformer
 
   @Override
   public void transform(SolrDocument doc, int docid, float score) {
-    if( docid >= 0 ) {
-      doc.setField( name, docid );
-    }
+    assert -1 <= docid;
+    doc.setField( name, docid );
   }
 }
 

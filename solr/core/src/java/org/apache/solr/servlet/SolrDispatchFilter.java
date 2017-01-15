@@ -16,6 +16,7 @@
  */
 package org.apache.solr.servlet;
 
+import javax.management.MBeanServer;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -33,19 +34,30 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.codahale.metrics.jvm.BufferPoolMetricSet;
+import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.HttpClient;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -53,11 +65,15 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.metrics.OperatingSystemMetricSet;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
+import org.apache.solr.util.SolrFileCleaningTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,10 +126,27 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
   public static final String SOLRHOME_ATTRIBUTE = "solr.solr.home";
 
+  public static final String SOLR_LOG_MUTECONSOLE = "solr.log.muteconsole";
+
+  public static final String SOLR_LOG_LEVEL = "solr.log.level";
+
   @Override
   public void init(FilterConfig config) throws ServletException
   {
-    log.info("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
+    log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
+
+    SolrRequestParsers.fileCleaningTracker = new SolrFileCleaningTracker();
+    
+    StartupLoggingUtils.checkLogDir();
+    logWelcomeBanner();
+    String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
+    if (muteConsole != null && !Arrays.asList("false","0","off","no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
+      StartupLoggingUtils.muteConsole();
+    }
+    String logLevel = System.getProperty(SOLR_LOG_LEVEL);
+    if (logLevel != null) {
+      StartupLoggingUtils.changeLogLevel(logLevel);
+    }
 
     String exclude = config.getInitParameter("excludePatterns");
     if(exclude != null) {
@@ -134,7 +167,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       this.cores = createCoreContainer(solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome),
                                        extraProperties);
       this.httpClient = cores.getUpdateShardHandler().getHttpClient();
-      log.info("user.dir=" + System.getProperty("user.dir"));
+      setupJvmMetrics();
+      log.debug("user.dir=" + System.getProperty("user.dir"));
     }
     catch( Throwable t ) {
       // catch this so our filter still works
@@ -145,7 +179,50 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
     }
 
-    log.info("SolrDispatchFilter.init() done");
+    log.trace("SolrDispatchFilter.init() done");
+  }
+
+  private void setupJvmMetrics()  {
+    MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
+    SolrMetricManager metricManager = cores.getMetricManager();
+    try {
+      String registry = SolrMetricManager.getRegistryName(SolrInfoMBean.Group.jvm);
+      metricManager.registerAll(registry, new BufferPoolMetricSet(platformMBeanServer), true, "buffers");
+      metricManager.registerAll(registry, new ClassLoadingGaugeSet(), true, "classes");
+      metricManager.registerAll(registry, new OperatingSystemMetricSet(platformMBeanServer), true, "os");
+      metricManager.registerAll(registry, new GarbageCollectorMetricSet(), true, "gc");
+      metricManager.registerAll(registry, new MemoryUsageGaugeSet(), true, "memory");
+      metricManager.registerAll(registry, new ThreadStatesGaugeSet(), true, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
+    } catch (Exception e) {
+      log.warn("Error registering JVM metrics", e);
+    }
+  }
+
+  private void logWelcomeBanner() {
+    log.info(" ___      _       Welcome to Apache Solr™ version {}", solrVersion());
+    log.info("/ __| ___| |_ _   Starting in {} mode on port {}", isCloudMode() ? "cloud" : "standalone", getSolrPort());
+    log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty("solr.install.dir"));
+    log.info("|___/\\___/_|_|    Start time: {}", Instant.now().toString());
+  }
+
+  private String solrVersion() {
+    String specVer = Version.LATEST.toString();
+    try {
+      String implVer = SolrCore.class.getPackage().getImplementationVersion();
+      return (specVer.equals(implVer.split(" ")[0])) ? specVer : implVer;
+    } catch (Exception e) {
+      return specVer;
+    }
+  }
+
+  private String getSolrPort() {
+    return System.getProperty("jetty.port");
+  }
+
+  /* We are in cloud mode if Java option zkRun exists OR zkHost exists and is non-empty */
+  private boolean isCloudMode() {
+    return ((System.getProperty("zkHost") != null && !StringUtils.isEmpty(System.getProperty("zkHost")))
+    || System.getProperty("zkRun") != null);
   }
 
   /**
@@ -194,6 +271,17 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   @Override
   public void destroy() {
+    try {
+      FileCleaningTracker fileCleaningTracker = SolrRequestParsers.fileCleaningTracker;
+      if (fileCleaningTracker != null) {
+        fileCleaningTracker.exitWhenFinished();
+      }
+    } catch (Exception e) {
+      log.warn("Exception closing FileCleaningTracker", e);
+    } finally {
+      SolrRequestParsers.fileCleaningTracker = null;
+    }
+
     if (cores != null) {
       try {
         cores.shutdown();
@@ -296,31 +384,39 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
 
   private boolean authenticateRequest(ServletRequest request, ServletResponse response, final AtomicReference<ServletRequest> wrappedRequest) throws IOException {
+    boolean requestContinues = false;
     final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
     AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
     if (authenticationPlugin == null) {
       return true;
     } else {
-      //special case when solr is securing inter-node requests
+      // /admin/info/key must be always open. see SOLR-9188
+      // tests work only w/ getPathInfo
+      //otherwise it's just enough to have getServletPath()
+      if (PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getServletPath()) ||
+          PKIAuthenticationPlugin.PATH.equals(((HttpServletRequest) request).getPathInfo())) return true;
       String header = ((HttpServletRequest) request).getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
         authenticationPlugin = cores.getPkiAuthenticationPlugin();
       try {
         log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
         // upon successful authentication, this should call the chain's next filter.
-        authenticationPlugin.doAuthenticate(request, response, new FilterChain() {
-          public void doFilter(ServletRequest req, ServletResponse rsp) throws IOException, ServletException {
-            isAuthenticated.set(true);
-            wrappedRequest.set(req);
-          }
+        requestContinues = authenticationPlugin.doAuthenticate(request, response, (req, rsp) -> {
+          isAuthenticated.set(true);
+          wrappedRequest.set(req);
         });
       } catch (Exception e) {
-        e.printStackTrace();
+        log.info("Error authenticating", e);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error during request authentication, ", e);
       }
     }
-    // failed authentication?
-    if (!isAuthenticated.get()) {
+    // requestContinues is an optional short circuit, thus we still need to check isAuthenticated.
+    // This is because the AuthenticationPlugin doesn't always have enough information to determine if
+    // it should short circuit, e.g. the Kerberos Authentication Filter will send an error and not
+    // call later filters in chain, but doesn't throw an exception.  We could force each Plugin
+    // to implement isAuthenticated to simplify the check here, but that just moves the complexity to
+    // multiple code paths.
+    if (!requestContinues || !isAuthenticated.get()) {
       response.flushBuffer();
       return false;
     }

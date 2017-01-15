@@ -16,10 +16,21 @@
  */
 package org.apache.solr.schema;
 
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReader;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -30,15 +41,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class DocValuesTest extends SolrTestCaseJ4 {
 
@@ -74,7 +76,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
       final RefCounted<SolrIndexSearcher> searcherRef = core.openNewSearcher(true, true);
       final SolrIndexSearcher searcher = searcherRef.get();
       try {
-        final LeafReader reader = searcher.getLeafReader();
+        final LeafReader reader = searcher.getSlowAtomicReader();
         assertEquals(1, reader.numDocs());
         final FieldInfos infos = reader.getFieldInfos();
         assertEquals(DocValuesType.NUMERIC, infos.fieldInfo("floatdv").getDocValuesType());
@@ -84,12 +86,24 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         assertEquals(DocValuesType.SORTED, infos.fieldInfo("stringdv").getDocValuesType());
         assertEquals(DocValuesType.SORTED, infos.fieldInfo("booldv").getDocValuesType());
 
-        assertEquals((long) Float.floatToIntBits(1), reader.getNumericDocValues("floatdv").get(0));
-        assertEquals(2L, reader.getNumericDocValues("intdv").get(0));
-        assertEquals(Double.doubleToLongBits(3), reader.getNumericDocValues("doubledv").get(0));
-        assertEquals(4L, reader.getNumericDocValues("longdv").get(0));
-        assertEquals("solr", reader.getSortedDocValues("stringdv").get(0).utf8ToString());
-        assertEquals("T", reader.getSortedDocValues("booldv").get(0).utf8ToString());
+        NumericDocValues dvs = reader.getNumericDocValues("floatdv");
+        assertEquals(0, dvs.nextDoc());
+        assertEquals((long) Float.floatToIntBits(1), dvs.longValue());
+        dvs = reader.getNumericDocValues("intdv");
+        assertEquals(0, dvs.nextDoc());
+        assertEquals(2L, dvs.longValue());
+        dvs = reader.getNumericDocValues("doubledv");
+        assertEquals(0, dvs.nextDoc());
+        assertEquals(Double.doubleToLongBits(3), dvs.longValue());
+        dvs = reader.getNumericDocValues("longdv");
+        assertEquals(0, dvs.nextDoc());
+        assertEquals(4L, dvs.longValue());
+        SortedDocValues sdv = reader.getSortedDocValues("stringdv");
+        assertEquals(0, sdv.nextDoc());
+        assertEquals("solr", sdv.binaryValue().utf8ToString());
+        sdv = reader.getSortedDocValues("booldv");
+        assertEquals(0, sdv.nextDoc());
+        assertEquals("T", sdv.binaryValue().utf8ToString());
 
         final IndexSchema schema = core.getLatestSchema();
         final SchemaField floatDv = schema.getField("floatdv");
@@ -98,20 +112,20 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         final SchemaField longDv = schema.getField("longdv");
         final SchemaField boolDv = schema.getField("booldv");
 
-        FunctionValues values = floatDv.getType().getValueSource(floatDv, null).getValues(null, searcher.getLeafReader().leaves().get(0));
+        FunctionValues values = floatDv.getType().getValueSource(floatDv, null).getValues(null, searcher.getSlowAtomicReader().leaves().get(0));
         assertEquals(1f, values.floatVal(0), 0f);
         assertEquals(1f, values.objectVal(0));
-        values = intDv.getType().getValueSource(intDv, null).getValues(null, searcher.getLeafReader().leaves().get(0));
+        values = intDv.getType().getValueSource(intDv, null).getValues(null, searcher.getSlowAtomicReader().leaves().get(0));
         assertEquals(2, values.intVal(0));
         assertEquals(2, values.objectVal(0));
-        values = doubleDv.getType().getValueSource(doubleDv, null).getValues(null, searcher.getLeafReader().leaves().get(0));
+        values = doubleDv.getType().getValueSource(doubleDv, null).getValues(null, searcher.getSlowAtomicReader().leaves().get(0));
         assertEquals(3d, values.doubleVal(0), 0d);
         assertEquals(3d, values.objectVal(0));
-        values = longDv.getType().getValueSource(longDv, null).getValues(null, searcher.getLeafReader().leaves().get(0));
+        values = longDv.getType().getValueSource(longDv, null).getValues(null, searcher.getSlowAtomicReader().leaves().get(0));
         assertEquals(4L, values.longVal(0));
         assertEquals(4L, values.objectVal(0));
         
-        values = boolDv.getType().getValueSource(boolDv, null).getValues(null, searcher.getLeafReader().leaves().get(0));
+        values = boolDv.getType().getValueSource(boolDv, null).getValues(null, searcher.getSlowAtomicReader().leaves().get(0));
         assertEquals("true", values.strVal(0));
         assertEquals(true, values.objectVal(0));
 

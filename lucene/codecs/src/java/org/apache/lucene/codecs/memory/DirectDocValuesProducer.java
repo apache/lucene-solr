@@ -28,18 +28,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.RandomAccessOrds;
-import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.*;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -284,15 +274,16 @@ class DirectDocValuesProducer extends DocValuesProducer {
   @Override
   public synchronized NumericDocValues getNumeric(FieldInfo field) throws IOException {
     NumericRawValues instance = numericInstances.get(field.name);
+    NumericEntry ne = numerics.get(field.name);
     if (instance == null) {
       // Lazy load
-      instance = loadNumeric(numerics.get(field.name));
+      instance = loadNumeric(ne);
       if (!merging) {
         numericInstances.put(field.name, instance);
         ramBytesUsed.addAndGet(instance.ramBytesUsed());
       }
     }
-    return instance.numerics;
+    return new LegacyNumericDocValuesWrapper(getMissingBits(field, ne.missingOffset, ne.missingBytes), instance.numerics);
   }
   
   private NumericRawValues loadNumeric(NumericEntry entry) throws IOException {
@@ -305,7 +296,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
         final byte[] values = new byte[entry.count];
         data.readBytes(values, 0, entry.count);
         ret.bytesUsed = RamUsageEstimator.sizeOf(values);
-        ret.numerics = new NumericDocValues() {
+        ret.numerics = new LegacyNumericDocValues() {
           @Override
           public long get(int idx) {
             return values[idx];
@@ -321,7 +312,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
           values[i] = data.readShort();
         }
         ret.bytesUsed = RamUsageEstimator.sizeOf(values);
-        ret.numerics = new NumericDocValues() {
+        ret.numerics = new LegacyNumericDocValues() {
           @Override
           public long get(int idx) {
             return values[idx];
@@ -337,7 +328,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
           values[i] = data.readInt();
         }
         ret.bytesUsed = RamUsageEstimator.sizeOf(values);
-        ret.numerics = new NumericDocValues() {
+        ret.numerics = new LegacyNumericDocValues() {
           @Override
           public long get(int idx) {
             return values[idx];
@@ -353,7 +344,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
           values[i] = data.readLong();
         }
         ret.bytesUsed = RamUsageEstimator.sizeOf(values);
-        ret.numerics = new NumericDocValues() {
+        ret.numerics = new LegacyNumericDocValues() {
           @Override
           public long get(int idx) {
             return values[idx];
@@ -367,8 +358,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
   }
 
-  @Override
-  public synchronized BinaryDocValues getBinary(FieldInfo field) throws IOException {
+  private synchronized LegacyBinaryDocValues getLegacyBinary(FieldInfo field) throws IOException {
     BinaryRawValues instance = binaryInstances.get(field.name);
     if (instance == null) {
       // Lazy load
@@ -381,7 +371,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
     final byte[] bytes = instance.bytes;
     final int[] address = instance.address;
 
-    return new BinaryDocValues() {
+    return new LegacyBinaryDocValues() {
       final BytesRef term = new BytesRef();
 
       @Override
@@ -392,6 +382,12 @@ class DirectDocValuesProducer extends DocValuesProducer {
         return term;
       }
     };
+  }
+  
+  @Override
+  public synchronized BinaryDocValues getBinary(FieldInfo field) throws IOException {
+    BinaryEntry be = binaries.get(field.name);
+    return new LegacyBinaryDocValuesWrapper(getMissingBits(field, be.missingOffset, be.missingBytes), getLegacyBinary(field));
   }
   
   private BinaryRawValues loadBinary(BinaryEntry entry) throws IOException {
@@ -428,11 +424,11 @@ class DirectDocValuesProducer extends DocValuesProducer {
         }
       }
     }
-    return newSortedInstance(instance.docToOrd.numerics, getBinary(field), entry.values.count);
+    return new LegacySortedDocValuesWrapper(newSortedInstance(instance.docToOrd.numerics, getLegacyBinary(field), entry.values.count), maxDoc);
   }
   
-  private SortedDocValues newSortedInstance(final NumericDocValues docToOrd, final BinaryDocValues values, final int count) {
-    return new SortedDocValues() {
+  private LegacySortedDocValues newSortedInstance(final LegacyNumericDocValues docToOrd, final LegacyBinaryDocValues values, final int count) {
+    return new LegacySortedDocValues() {
 
       @Override
       public int getOrd(int docID) {
@@ -477,14 +473,14 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
     
     if (entry.docToAddress == null) {
-      final NumericDocValues single = instance.values.numerics;
+      final LegacyNumericDocValues single = instance.values.numerics;
       final Bits docsWithField = getMissingBits(field, entry.values.missingOffset, entry.values.missingBytes);
-      return DocValues.singleton(single, docsWithField);
+      return DocValues.singleton(new LegacyNumericDocValuesWrapper(docsWithField, single));
     } else {
-      final NumericDocValues docToAddress = instance.docToAddress.numerics;
-      final NumericDocValues values = instance.values.numerics;
+      final LegacyNumericDocValues docToAddress = instance.docToAddress.numerics;
+      final LegacyNumericDocValues values = instance.values.numerics;
       
-      return new SortedNumericDocValues() {
+      return new LegacySortedNumericDocValuesWrapper(new LegacySortedNumericDocValues() {
         int valueStart;
         int valueLimit;
         
@@ -503,7 +499,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
         public int count() {
           return valueLimit - valueStart;
         }
-      };
+        }, maxDoc);
     }
   }
   
@@ -530,15 +526,15 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
 
     if (instance.docToOrdAddress == null) {
-      SortedDocValues sorted = newSortedInstance(instance.ords.numerics, getBinary(field), entry.values.count);
-      return DocValues.singleton(sorted);
+      LegacySortedDocValues sorted = newSortedInstance(instance.ords.numerics, getLegacyBinary(field), entry.values.count);
+      return DocValues.singleton(new LegacySortedDocValuesWrapper(sorted, maxDoc));
     } else {
-      final NumericDocValues docToOrdAddress = instance.docToOrdAddress.numerics;
-      final NumericDocValues ords = instance.ords.numerics;
-      final BinaryDocValues values = getBinary(field);
+      final LegacyNumericDocValues docToOrdAddress = instance.docToOrdAddress.numerics;
+      final LegacyNumericDocValues ords = instance.ords.numerics;
+      final LegacyBinaryDocValues values = getLegacyBinary(field);
       
       // Must make a new instance since the iterator has state:
-      return new RandomAccessOrds() {
+      return new LegacySortedSetDocValuesWrapper(new LegacySortedSetDocValues() {
         int ordStart;
         int ordUpto;
         int ordLimit;
@@ -568,20 +564,10 @@ class DirectDocValuesProducer extends DocValuesProducer {
           return entry.values.count;
         }
         
-        @Override
-        public long ordAt(int index) {
-          return ords.get(ordStart + index);
-        }
-        
-        @Override
-        public int cardinality() {
-          return ordLimit - ordStart;
-        }
-        
         // Leave lookupTerm to super's binary search
         
         // Leave termsEnum to super
-      };
+        }, maxDoc);
     }
   }
   
@@ -620,26 +606,6 @@ class DirectDocValuesProducer extends DocValuesProducer {
     }
   }
   
-  @Override
-  public Bits getDocsWithField(FieldInfo field) throws IOException {
-    switch(field.getDocValuesType()) {
-      case SORTED_SET:
-        return DocValues.docsWithValue(getSortedSet(field), maxDoc);
-      case SORTED_NUMERIC:
-        return DocValues.docsWithValue(getSortedNumeric(field), maxDoc);
-      case SORTED:
-        return DocValues.docsWithValue(getSorted(field), maxDoc);
-      case BINARY:
-        BinaryEntry be = binaries.get(field.name);
-        return getMissingBits(field, be.missingOffset, be.missingBytes);
-      case NUMERIC:
-        NumericEntry ne = numerics.get(field.name);
-        return getMissingBits(field, ne.missingOffset, ne.missingBytes);
-      default: 
-        throw new AssertionError();
-    }
-  }
-
   @Override
   public synchronized DocValuesProducer getMergeInstance() throws IOException {
     return new DirectDocValuesProducer(this);
@@ -680,7 +646,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
   }
   
   static class NumericRawValues implements Accountable {
-    NumericDocValues numerics;
+    LegacyNumericDocValues numerics;
     long bytesUsed;
     
     @Override

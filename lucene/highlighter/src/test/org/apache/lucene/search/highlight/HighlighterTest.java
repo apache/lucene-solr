@@ -33,6 +33,7 @@ import java.util.StringTokenizer;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CachingTokenFilter;
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -94,7 +95,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
-import org.junit.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -1340,6 +1340,22 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   }
 
+  public void testNotRewriteMultiTermQuery() throws IOException {
+    // field "bar": (not the field we ultimately want to extract)
+    MultiTermQuery mtq = new TermRangeQuery("bar", new BytesRef("aa"), new BytesRef("zz"), true, true) ;
+    WeightedSpanTermExtractor extractor = new WeightedSpanTermExtractor() {
+      @Override
+      protected void extract(Query query, float boost, Map<String, WeightedSpanTerm> terms) throws IOException {
+        assertEquals(mtq, query);
+        super.extract(query, boost, terms);
+      }
+    };
+    extractor.setExpandMultiTermQuery(true);
+    extractor.setMaxDocCharsToAnalyze(51200);
+    extractor.getWeightedSpanTerms(
+        mtq, 3, new CannedTokenStream(new Token("aa",0,2), new Token("bb", 2,4)), "foo"); // field "foo"
+  }
+
   public void testGetBestSingleFragmentWithWeights() throws Exception {
 
     TestHighlightRunner helper = new TestHighlightRunner() {
@@ -1580,30 +1596,39 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     helper.start();
   }
 
-  @Test
   public void testHighlighterWithPhraseQuery() throws IOException, InvalidTokenOffsetsException {
+    final String fieldName = "substring";
 
+    final PhraseQuery query = new PhraseQuery(fieldName, new BytesRef[] { new BytesRef("uchu") });
+
+    assertHighlighting(query, new SimpleHTMLFormatter("<b>", "</b>"), "Buchung", "B<b>uchu</b>ng", fieldName);
+  }
+
+  public void testHighlighterWithMultiPhraseQuery() throws IOException, InvalidTokenOffsetsException {
+    final String fieldName = "substring";
+
+    final MultiPhraseQuery mpq = new MultiPhraseQuery.Builder()
+        .add(new Term(fieldName, "uchu")).build();
+
+    assertHighlighting(mpq, new SimpleHTMLFormatter("<b>", "</b>"), "Buchung", "B<b>uchu</b>ng", fieldName);
+  }
+
+  private void assertHighlighting(Query query, Formatter formatter, String text, String expected, String fieldName)
+      throws IOException, InvalidTokenOffsetsException {
     final Analyzer analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         return new TokenStreamComponents(new NGramTokenizer(4, 4));
       }
     };
-    final String fieldName = "substring";
-
-    final List<BytesRef> list = new ArrayList<>();
-    list.add(new BytesRef("uchu"));
-    final PhraseQuery query = new PhraseQuery(fieldName, list.toArray(new BytesRef[list.size()]));
 
     final QueryScorer fragmentScorer = new QueryScorer(query, fieldName);
-    final SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
 
     final Highlighter highlighter = new Highlighter(formatter, fragmentScorer);
     highlighter.setTextFragmenter(new SimpleFragmenter(100));
-    final String fragment = highlighter.getBestFragment(analyzer, fieldName, "Buchung");
+    final String fragment = highlighter.getBestFragment(analyzer, fieldName, text);
 
-    assertEquals("B<b>uchu</b>ng",fragment);
-
+    assertEquals(expected, fragment);
   }
 
   public void testUnRewrittenQuery() throws Exception {

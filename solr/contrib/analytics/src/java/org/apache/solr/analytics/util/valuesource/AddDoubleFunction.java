@@ -16,6 +16,8 @@
  */
 package org.apache.solr.analytics.util.valuesource;
 
+import java.io.IOException;
+
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.analytics.util.AnalyticsParams;
@@ -36,7 +38,7 @@ public class AddDoubleFunction extends MultiDoubleFunction {
   }
 
   @Override
-  protected double func(int doc, FunctionValues[] valsArr) {
+  protected double func(int doc, FunctionValues[] valsArr) throws IOException {
     double sum = 0d;
     for (FunctionValues val : valsArr) {
       sum += val.doubleVal(doc);

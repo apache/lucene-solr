@@ -170,6 +170,11 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
     return "Add documents using XML (with XSLT), CSV, JSON, or javabin";
   }
 
+  @Override
+  public Category getCategory() {
+    return Category.UPDATE;
+  }
+
   public static final String DOC_PATH = "/update/json/docs";
   public static final String JSON_PATH = "/update/json";
   public static final String CSV_PATH = "/update/csv";

@@ -97,6 +97,27 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
   }
 
   /**
+   * Set to true if phrase queries will be automatically generated
+   * when the analyzer returns more than one term from whitespace
+   * delimited text.
+   * NOTE: this behavior may not be suitable for all languages.
+   * <p>
+   * Set to false if phrase queries should only be generated when
+   * surrounded by double quotes.
+   * <p>
+   * The combination splitOnWhitespace=false and autoGeneratePhraseQueries=true
+   * is disallowed.  See <a href="https://issues.apache.org/jira/browse/LUCENE-7533">LUCENE-7533</a>.
+   */
+  @Override
+  public void setAutoGeneratePhraseQueries(boolean value) {
+    if (splitOnWhitespace == false && value == true) {
+      throw new IllegalArgumentException
+          ("setAutoGeneratePhraseQueries(true) is disallowed when getSplitOnWhitespace() == false");
+    }
+    this.autoGeneratePhraseQueries = value;
+  }
+
+  /**
    * @see #setSplitOnWhitespace(boolean)
    */
   public boolean getSplitOnWhitespace() {
@@ -106,8 +127,15 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
   /**
    * Whether query text should be split on whitespace prior to analysis.
    * Default is <code>{@value #DEFAULT_SPLIT_ON_WHITESPACE}</code>.
+   * <p>
+   * The combination splitOnWhitespace=false and autoGeneratePhraseQueries=true
+   * is disallowed.  See <a href="https://issues.apache.org/jira/browse/LUCENE-7533">LUCENE-7533</a>.
    */
   public void setSplitOnWhitespace(boolean splitOnWhitespace) {
+    if (splitOnWhitespace == false && getAutoGeneratePhraseQueries() == true) {
+      throw new IllegalArgumentException
+          ("setSplitOnWhitespace(false) is disallowed when getAutoGeneratePhraseQueries() == true");
+    }
     this.splitOnWhitespace = splitOnWhitespace;
   }
 
@@ -635,6 +663,31 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
     finally { jj_save(2, xla); }
   }
 
+  private boolean jj_3R_3() {
+    if (jj_scan_token(TERM)) return true;
+    jj_lookingAhead = true;
+    jj_semLA = getToken(1).kind == TERM && allowedPostMultiTerm(getToken(2).kind);
+    jj_lookingAhead = false;
+    if (!jj_semLA || jj_3R_6()) return true;
+    Token xsp;
+    if (jj_3R_7()) return true;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3R_7()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
+  private boolean jj_3R_6() {
+    return false;
+  }
+
+  private boolean jj_3R_5() {
+    if (jj_scan_token(STAR)) return true;
+    if (jj_scan_token(COLON)) return true;
+    return false;
+  }
+
   private boolean jj_3R_4() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -663,31 +716,6 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
     jj_scanpos = xsp;
     if (jj_3R_5()) return true;
     }
-    return false;
-  }
-
-  private boolean jj_3R_3() {
-    if (jj_scan_token(TERM)) return true;
-    jj_lookingAhead = true;
-    jj_semLA = getToken(1).kind == TERM && allowedPostMultiTerm(getToken(2).kind);
-    jj_lookingAhead = false;
-    if (!jj_semLA || jj_3R_6()) return true;
-    Token xsp;
-    if (jj_3R_7()) return true;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3R_7()) { jj_scanpos = xsp; break; }
-    }
-    return false;
-  }
-
-  private boolean jj_3R_6() {
-    return false;
-  }
-
-  private boolean jj_3R_5() {
-    if (jj_scan_token(STAR)) return true;
-    if (jj_scan_token(COLON)) return true;
     return false;
   }
 

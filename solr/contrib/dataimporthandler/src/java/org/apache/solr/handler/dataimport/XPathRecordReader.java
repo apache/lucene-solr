@@ -162,12 +162,7 @@ public class XPathRecordReader {
    */
   public List<Map<String, Object>> getAllRecords(Reader r) {
     final List<Map<String, Object>> results = new ArrayList<>();
-    streamRecords(r, new Handler() {
-      @Override
-      public void handle(Map<String, Object> record, String s) {
-        results.add(record);
-      }
-    });
+    streamRecords(r, (record, s) -> results.add(record));
     return results;
   }
 
@@ -182,8 +177,8 @@ public class XPathRecordReader {
   public void streamRecords(Reader r, Handler handler) {
     try {
       XMLStreamReader parser = factory.createXMLStreamReader(r);
-      rootNode.parse(parser, handler, new HashMap<String, Object>(),
-              new Stack<Set<String>>(), false);
+      rootNode.parse(parser, handler, new HashMap<>(),
+          new Stack<>(), false);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -657,7 +652,7 @@ public class XPathRecordReader {
   /**Implement this interface to stream records as and when one is found.
    *
    */
-  public static interface Handler {
+  public interface Handler {
     /**
      * @param record The record map. The key is the field name as provided in 
      * the addField() methods. The value can be a single String (for single 
@@ -666,7 +661,7 @@ public class XPathRecordReader {
      * If there is any change all parsing will be aborted and the Exception
      * is propagated up
      */
-    public void handle(Map<String, Object> record, String xpath);
+    void handle(Map<String, Object> record, String xpath);
   }
 
   private static final Pattern ATTRIB_PRESENT_WITHVAL = Pattern

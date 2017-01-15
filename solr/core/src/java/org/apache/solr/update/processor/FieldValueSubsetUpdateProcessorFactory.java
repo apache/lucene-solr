@@ -16,11 +16,13 @@
  */
 package org.apache.solr.update.processor;
 
+import java.util.Collection;
+
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import java.util.Collection;
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
 
 /**
  * Base class for processors that want to mutate selected fields to only 
@@ -33,17 +35,14 @@ public abstract class FieldValueSubsetUpdateProcessorFactory extends FieldMutati
   public final UpdateRequestProcessor getInstance(SolrQueryRequest req,
                                                   SolrQueryResponse rsp,
                                                   UpdateRequestProcessor next) {
-    return new FieldMutatingUpdateProcessor(getSelector(), next) {
-      @Override
-      protected SolrInputField mutate(final SolrInputField src) {
-        if (src.getValueCount() <= 1) return src;
+    return mutator(getSelector(), next, src -> {
+      if (src.getValueCount() <= 1) return src;
 
-        SolrInputField result = new SolrInputField(src.getName());
-        result.setValue(pickSubset(src.getValues()),
-                        src.getBoost());
-        return result;
-      }
-    };
+      SolrInputField result = new SolrInputField(src.getName());
+      result.setValue(pickSubset(src.getValues()),
+          src.getBoost());
+      return result;
+    });
   }
 
   /**

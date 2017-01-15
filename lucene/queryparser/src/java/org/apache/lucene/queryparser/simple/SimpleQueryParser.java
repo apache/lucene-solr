@@ -145,6 +145,10 @@ public class SimpleQueryParser extends QueryBuilder {
 
   /** Parses the query text and returns parsed query */
   public Query parse(String queryText) {
+    if ("*".equals(queryText.trim())) {
+      return new MatchAllDocsQuery();
+    }
+
     char data[] = queryText.toCharArray();
     char buffer[] = new char[data.length];
 

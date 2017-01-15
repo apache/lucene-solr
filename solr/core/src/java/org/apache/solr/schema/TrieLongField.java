@@ -19,17 +19,17 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueLong;
 
@@ -73,20 +73,34 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
         SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
         
         return new LongDocValues(thisAsSortedSetFieldSource) {
-          @Override
-          public long longVal(int doc) {
-            BytesRef bytes = view.get(doc);
-            if (0 == bytes.length) {
-              // the only way this should be possible is for non existent value
-              assert !exists(doc) : "zero bytes for doc, but exists is true";
-              return 0L;
+          private int lastDocID;
+
+          private boolean setDoc(int docID) throws IOException {
+            if (docID < lastDocID) {
+              throw new IllegalArgumentException("docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
             }
-            return LegacyNumericUtils.prefixCodedToLong(bytes);
+            if (docID > view.docID()) {
+              lastDocID = docID;
+              return docID == view.advance(docID);
+            } else {
+              return docID == view.docID();
+            }
           }
 
           @Override
-          public boolean exists(int doc) {
-            return -1 != view.getOrd(doc);
+          public long longVal(int doc) throws IOException {
+            if (setDoc(doc)) {
+              BytesRef bytes = view.binaryValue();
+              assert bytes.length > 0;
+              return LegacyNumericUtils.prefixCodedToLong(bytes);
+            } else {
+              return 0L;
+            }
+          }
+
+          @Override
+          public boolean exists(int doc) throws IOException {
+            return setDoc(doc);
           }
 
           @Override
@@ -100,14 +114,14 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
               }
               
               @Override
-              public void fillValue(int doc) {
-                // micro optimized (eliminate at least one redundant ord check) 
-                //mval.exists = exists(doc);
-                //mval.value = mval.exists ? longVal(doc) : 0;
-                //
-                BytesRef bytes = view.get(doc);
-                mval.exists = (0 == bytes.length);
-                mval.value = mval.exists ? LegacyNumericUtils.prefixCodedToLong(bytes) : 0L;
+              public void fillValue(int doc) throws IOException {
+                if (setDoc(doc)) {
+                  mval.exists = true;
+                  mval.value = LegacyNumericUtils.prefixCodedToLong(view.binaryValue());
+                } else {
+                  mval.exists = false;
+                  mval.value = 0L;
+                }
               }
             };
           }

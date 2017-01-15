@@ -38,7 +38,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 
 public class TestDocValuesFieldSources extends LuceneTestCase {
@@ -81,7 +81,7 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
           f.setBytesValue(new BytesRef((String) vals[i]));
           break;
         case NUMERIC:
-          final int bitsPerValue = RandomInts.randomIntBetween(random(), 1, 31); // keep it an int
+          final int bitsPerValue = RandomNumbers.randomIntBetween(random(), 1, 31); // keep it an int
           vals[i] = (long) random().nextInt((int) PackedInts.maxValue(bitsPerValue));
           f.setLongValue((Long) vals[i]);
           break;

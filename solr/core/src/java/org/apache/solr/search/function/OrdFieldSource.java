@@ -88,7 +88,7 @@ public class OrdFieldSource extends ValueSource {
         r = SlowCompositeReaderWrapper.wrap(new MultiReader(insaneLeaves));
       } else {
         // reuse ordinalmap
-        r = ((SolrIndexSearcher)o).getLeafReader();
+        r = ((SolrIndexSearcher)o).getSlowAtomicReader();
       }
     } else {
       IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader();
@@ -97,16 +97,33 @@ public class OrdFieldSource extends ValueSource {
     // if it's e.g. tokenized/multivalued, emulate old behavior of single-valued fc
     final SortedDocValues sindex = SortedSetSelector.wrap(DocValues.getSortedSet(r, field), SortedSetSelector.Type.MIN);
     return new IntDocValues(this) {
+
+      private int lastDocID;
+
+      private int getOrdForDoc(int docID) throws IOException {
+        if (docID < lastDocID) {
+          throw new IllegalArgumentException("docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
+        }
+        if (docID > sindex.docID()) {
+          sindex.advance(docID);
+        }
+        if (docID == sindex.docID()) {
+          return sindex.ordValue();
+        } else {
+          return -1;
+        }
+      }
+      
       protected String toTerm(String readableValue) {
         return readableValue;
       }
       @Override
-      public int intVal(int doc) {
-        return sindex.getOrd(doc+off);
+      public int intVal(int doc) throws IOException {
+        return getOrdForDoc(doc+off);
       }
       @Override
-      public int ordVal(int doc) {
-        return sindex.getOrd(doc+off);
+      public int ordVal(int doc) throws IOException {
+        return getOrdForDoc(doc+off);
       }
       @Override
       public int numOrd() {
@@ -114,8 +131,8 @@ public class OrdFieldSource extends ValueSource {
       }
 
       @Override
-      public boolean exists(int doc) {
-        return sindex.getOrd(doc+off) != 0;
+      public boolean exists(int doc) throws IOException {
+        return getOrdForDoc(doc+off) != 0;
       }
 
       @Override
@@ -129,8 +146,8 @@ public class OrdFieldSource extends ValueSource {
           }
 
           @Override
-          public void fillValue(int doc) {
-            mval.value = sindex.getOrd(doc);
+          public void fillValue(int doc) throws IOException {
+            mval.value = getOrdForDoc(doc);
             mval.exists = mval.value!=0;
           }
         };

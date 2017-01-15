@@ -94,6 +94,7 @@ import org.apache.lucene.store.FSLockFactory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -144,6 +145,7 @@ import junit.framework.AssertionFailedError;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
  * Base class for all Lucene unit tests, Junit3 or Junit4 variant.
@@ -455,11 +457,24 @@ public abstract class LuceneTestCase extends Assert {
     LEAVE_TEMPORARY = defaultValue;
   }
 
+  /** Returns true, if MMapDirectory supports unmapping on this platform (required for Windows), or if we are not on Windows. */
+  public static boolean hasWorkingMMapOnWindows() {
+    return !Constants.WINDOWS || MMapDirectory.UNMAP_SUPPORTED;
+  }
+  
+  /** Assumes that the current MMapDirectory implementation supports unmapping, so the test will not fail on Windows.
+   * @see #hasWorkingMMapOnWindows()
+   * */
+  public static void assumeWorkingMMapOnWindows() {
+    assumeTrue(MMapDirectory.UNMAP_NOT_SUPPORTED_REASON, hasWorkingMMapOnWindows());
+  }
+
   /** Filesystem-based {@link Directory} implementations. */
   private static final List<String> FS_DIRECTORIES = Arrays.asList(
     "SimpleFSDirectory",
     "NIOFSDirectory",
-    "MMapDirectory"
+    // SimpleFSDirectory as replacement for MMapDirectory if unmapping is not supported on Windows (to make randomization stable):
+    hasWorkingMMapOnWindows() ? "MMapDirectory" : "SimpleFSDirectory"
   );
 
   /** All {@link Directory} implementations. */
@@ -468,7 +483,7 @@ public abstract class LuceneTestCase extends Assert {
     CORE_DIRECTORIES = new ArrayList<>(FS_DIRECTORIES);
     CORE_DIRECTORIES.add("RAMDirectory");
   }
-
+  
   /** A {@link org.apache.lucene.search.QueryCachingPolicy} that randomly caches. */
   public static final QueryCachingPolicy MAYBE_CACHE_POLICY = new QueryCachingPolicy() {
 
@@ -583,51 +598,55 @@ public abstract class LuceneTestCase extends Assert {
    * other.
    */
   @ClassRule
-  public static TestRule classRules = RuleChain
-    .outerRule(new TestRuleIgnoreTestSuites())
-    .around(ignoreAfterMaxFailures)
-    .around(suiteFailureMarker = new TestRuleMarkFailure())
-    .around(new TestRuleAssertionsRequired())
-    .around(new TestRuleLimitSysouts(suiteFailureMarker))
-    .around(tempFilesCleanupRule = new TestRuleTemporaryFilesCleanup(suiteFailureMarker))
-    .around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
-      @Override
-      protected boolean accept(java.lang.reflect.Field field) {
-        // Don't count known classes that consume memory once.
-        if (STATIC_LEAK_IGNORED_TYPES.contains(field.getType().getName())) {
-          return false;
+  public static TestRule classRules;
+  static {
+    RuleChain r = RuleChain.outerRule(new TestRuleIgnoreTestSuites())
+      .around(ignoreAfterMaxFailures)
+      .around(suiteFailureMarker = new TestRuleMarkFailure())
+      .around(new TestRuleAssertionsRequired())
+      .around(new TestRuleLimitSysouts(suiteFailureMarker))
+      .around(tempFilesCleanupRule = new TestRuleTemporaryFilesCleanup(suiteFailureMarker));
+    // TODO LUCENE-7595: Java 9 does not allow to look into runtime classes, so we have to fix the RAM usage checker!
+    if (!Constants.JRE_IS_MINIMUM_JAVA9) {
+      r = r.around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
+        @Override
+        protected boolean accept(java.lang.reflect.Field field) {
+          // Don't count known classes that consume memory once.
+          if (STATIC_LEAK_IGNORED_TYPES.contains(field.getType().getName())) {
+            return false;
+          }
+          // Don't count references from ourselves, we're top-level.
+          if (field.getDeclaringClass() == LuceneTestCase.class) {
+            return false;
+          }
+          return super.accept(field);
         }
-        // Don't count references from ourselves, we're top-level.
-        if (field.getDeclaringClass() == LuceneTestCase.class) {
-          return false;
+      });
+    }
+    classRules = r.around(new NoClassHooksShadowingRule())
+      .around(new NoInstanceHooksOverridesRule() {
+        @Override
+        protected boolean verify(Method key) {
+          String name = key.getName();
+          return !(name.equals("setUp") || name.equals("tearDown"));
         }
-        return super.accept(field);
-      }
-    })
-    .around(new NoClassHooksShadowingRule())
-    .around(new NoInstanceHooksOverridesRule() {
-      @Override
-      protected boolean verify(Method key) {
-        String name = key.getName();
-        return !(name.equals("setUp") || name.equals("tearDown"));
-      }
-    })
-    .around(classNameRule = new TestRuleStoreClassName())
-    .around(new TestRuleRestoreSystemProperties(
-        // Enlist all properties to which we have write access (security manager);
-        // these should be restored to previous state, no matter what the outcome of the test.
-
-        // We reset the default locale and timezone; these properties change as a side-effect
-        "user.language",
-        "user.timezone",
-        
-        // TODO: these should, ideally, be moved to Solr's base class.
-        "solr.directoryFactory",
-        "solr.solr.home",
-        "solr.data.dir"
-        ))
-    .around(classEnvRule = new TestRuleSetupAndRestoreClassEnv());
-
+      })
+      .around(classNameRule = new TestRuleStoreClassName())
+      .around(new TestRuleRestoreSystemProperties(
+          // Enlist all properties to which we have write access (security manager);
+          // these should be restored to previous state, no matter what the outcome of the test.
+  
+          // We reset the default locale and timezone; these properties change as a side-effect
+          "user.language",
+          "user.timezone",
+          
+          // TODO: these should, ideally, be moved to Solr's base class.
+          "solr.directoryFactory",
+          "solr.solr.home",
+          "solr.data.dir"
+          ))
+      .around(classEnvRule = new TestRuleSetupAndRestoreClassEnv());
+  }
 
   // -----------------------------------------------------------------
   // Test level rules.
@@ -852,7 +871,7 @@ public abstract class LuceneTestCase extends Assert {
   public static void assumeNoException(String msg, Exception e) {
     RandomizedTest.assumeNoException(msg, e);
   }
-
+  
   /**
    * Return <code>args</code> as a {@link Set} instance. The order of elements is not
    * preserved in iterators.
@@ -2440,8 +2459,8 @@ public abstract class LuceneTestCase extends Assert {
         if (leftValues != null && rightValues != null) {
           assertDocValuesEquals(info, leftReader.maxDoc(), leftValues, rightValues);
         } else {
-          assertNull(info, leftValues);
-          assertNull(info, rightValues);
+          assertTrue(info + ": left numeric doc values for field=\"" + field + "\" are not null", leftValues == null || leftValues.nextDoc() == NO_MORE_DOCS);
+          assertTrue(info + ": right numeric doc values for field=\"" + field + "\" are not null", rightValues == null || rightValues.nextDoc() == NO_MORE_DOCS);
         }
       }
 
@@ -2449,14 +2468,17 @@ public abstract class LuceneTestCase extends Assert {
         BinaryDocValues leftValues = MultiDocValues.getBinaryValues(leftReader, field);
         BinaryDocValues rightValues = MultiDocValues.getBinaryValues(rightReader, field);
         if (leftValues != null && rightValues != null) {
-          for(int docID=0;docID<leftReader.maxDoc();docID++) {
-            final BytesRef left = BytesRef.deepCopyOf(leftValues.get(docID));
-            final BytesRef right = rightValues.get(docID);
-            assertEquals(info, left, right);
+          while (true) {
+            int docID = leftValues.nextDoc();
+            assertEquals(docID, rightValues.nextDoc());
+            if (docID == NO_MORE_DOCS) {
+              break;
+            }
+            assertEquals(leftValues.binaryValue(), rightValues.binaryValue());
           }
         } else {
-          assertNull(info, leftValues);
-          assertNull(info, rightValues);
+          assertTrue(info, leftValues == null || leftValues.nextDoc() == NO_MORE_DOCS);
+          assertTrue(info, rightValues == null || rightValues.nextDoc() == NO_MORE_DOCS);
         }
       }
       
@@ -2474,8 +2496,10 @@ public abstract class LuceneTestCase extends Assert {
           }
           // bytes
           for(int docID=0;docID<leftReader.maxDoc();docID++) {
-            final BytesRef left = BytesRef.deepCopyOf(leftValues.get(docID));
-            final BytesRef right = rightValues.get(docID);
+            assertEquals(docID, leftValues.nextDoc());
+            assertEquals(docID, rightValues.nextDoc());
+            final BytesRef left = BytesRef.deepCopyOf(leftValues.binaryValue());
+            final BytesRef right = rightValues.binaryValue();
             assertEquals(info, left, right);
           }
         } else {
@@ -2497,9 +2521,12 @@ public abstract class LuceneTestCase extends Assert {
             assertEquals(info, left, right);
           }
           // ord lists
-          for(int docID=0;docID<leftReader.maxDoc();docID++) {
-            leftValues.setDocument(docID);
-            rightValues.setDocument(docID);
+          while (true) {
+            int docID = leftValues.nextDoc();
+            assertEquals(docID, rightValues.nextDoc());
+            if (docID == NO_MORE_DOCS) {
+              break;
+            }
             long ord;
             while ((ord = leftValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
               assertEquals(info, ord, rightValues.nextOrd());
@@ -2516,35 +2543,20 @@ public abstract class LuceneTestCase extends Assert {
         SortedNumericDocValues leftValues = MultiDocValues.getSortedNumericValues(leftReader, field);
         SortedNumericDocValues rightValues = MultiDocValues.getSortedNumericValues(rightReader, field);
         if (leftValues != null && rightValues != null) {
-          for (int i = 0; i < leftReader.maxDoc(); i++) {
-            leftValues.setDocument(i);
-            long expected[] = new long[leftValues.count()];
-            for (int j = 0; j < expected.length; j++) {
-              expected[j] = leftValues.valueAt(j);
+          while (true) {
+            int docID = leftValues.nextDoc();
+            assertEquals(docID, rightValues.nextDoc());
+            if (docID == NO_MORE_DOCS) {
+              break;
             }
-            rightValues.setDocument(i);
-            for (int j = 0; j < expected.length; j++) {
-              assertEquals(info, expected[j], rightValues.valueAt(j));
+            assertEquals(info, leftValues.docValueCount(), rightValues.docValueCount());
+            for (int j = 0; j < leftValues.docValueCount(); j++) {
+              assertEquals(info, leftValues.nextValue(), rightValues.nextValue());
             }
-            assertEquals(info, expected.length, rightValues.count());
           }
         } else {
           assertNull(info, leftValues);
           assertNull(info, rightValues);
-        }
-      }
-      
-      {
-        Bits leftBits = MultiDocValues.getDocsWithField(leftReader, field);
-        Bits rightBits = MultiDocValues.getDocsWithField(rightReader, field);
-        if (leftBits != null && rightBits != null) {
-          assertEquals(info, leftBits.length(), rightBits.length());
-          for (int i = 0; i < leftBits.length(); i++) {
-            assertEquals(info, leftBits.get(i), rightBits.get(i));
-          }
-        } else {
-          assertNull(info, leftBits);
-          assertNull(info, rightBits);
         }
       }
     }
@@ -2553,9 +2565,14 @@ public abstract class LuceneTestCase extends Assert {
   public void assertDocValuesEquals(String info, int num, NumericDocValues leftDocValues, NumericDocValues rightDocValues) throws IOException {
     assertNotNull(info, leftDocValues);
     assertNotNull(info, rightDocValues);
-    for(int docID=0;docID<num;docID++) {
-      assertEquals(leftDocValues.get(docID),
-                   rightDocValues.get(docID));
+    while (true) {
+      int leftDocID = leftDocValues.nextDoc();
+      int rightDocID = rightDocValues.nextDoc();
+      assertEquals(leftDocID, rightDocID);
+      if (leftDocID == NO_MORE_DOCS) {
+        return;
+      }
+      assertEquals(leftDocValues.longValue(), rightDocValues.longValue());
     }
   }
   
@@ -2602,12 +2619,12 @@ public abstract class LuceneTestCase extends Assert {
     final Map<Integer,Set<BytesRef>> docValues = new HashMap<>();
     for(LeafReaderContext ctx : reader.leaves()) {
 
-      PointValues points = ctx.reader().getPointValues();
+      PointValues points = ctx.reader().getPointValues(fieldName);
       if (points == null) {
         continue;
       }
 
-      points.intersect(fieldName,
+      points.intersect(
                        new PointValues.IntersectVisitor() {
                          @Override
                          public void visit(int docID) {

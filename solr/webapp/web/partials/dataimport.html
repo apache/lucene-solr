@@ -94,7 +94,7 @@ limitations under the License.
 
           <div class="editable" ng-show="isDebugMode">
 
-            <textarea>{{config}}</textarea>
+            <textarea ng-model="config"></textarea>
           
           </div>
 
@@ -115,11 +115,11 @@ limitations under the License.
       </div>
 
       <div class="content" ng-show="showRawDebug">
-          <span ng-show="true">
+          <span ng-hide="rawResponse">
               <em>No Request executed</em>
           </span>
-          <span ng-show="false">
-            <pre class="syntax language-json"><code ng-bind-html="rawResponse | highlight:'xml' | unsafe"></code></pre>
+          <span ng-show="rawResponse">
+            <pre class="syntax language-json"><code ng-bind-html="rawResponse | highlight:'json' | unsafe"></code></pre>
           </span>
       </div>
     

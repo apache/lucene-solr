@@ -48,7 +48,7 @@ public abstract class MultiFunction extends ValueSource {
    * @return true if <em>all</em> of the specified <code>values</code>
    *         {@link FunctionValues#exists} for the specified doc, else false.
    */
-  public static boolean allExists(int doc, FunctionValues[] values) {
+  public static boolean allExists(int doc, FunctionValues[] values) throws IOException {
     for (FunctionValues v : values) {
       if ( ! v.exists(doc) ) {
         return false;
@@ -63,7 +63,7 @@ public abstract class MultiFunction extends ValueSource {
    * @return true if <em>any</em> of the specified <code>values</code>
    *         {@link FunctionValues#exists} for the specified doc, else false.
    */
-  public static boolean anyExists(int doc, FunctionValues[] values) {
+  public static boolean anyExists(int doc, FunctionValues[] values) throws IOException {
     for (FunctionValues v : values) {
       if ( v.exists(doc) ) {
         return true;
@@ -80,7 +80,7 @@ public abstract class MultiFunction extends ValueSource {
    *         {@link FunctionValues#exists} for the specified doc, else false.
    * @see #anyExists(int,FunctionValues[])
    */
-  public static boolean allExists(int doc, FunctionValues values1, FunctionValues values2) {
+  public static boolean allExists(int doc, FunctionValues values1, FunctionValues values2) throws IOException {
     return values1.exists(doc) && values2.exists(doc);
   }
   
@@ -92,7 +92,7 @@ public abstract class MultiFunction extends ValueSource {
    *         {@link FunctionValues#exists} for the specified doc, else false.
    * @see #anyExists(int,FunctionValues[])
    */
-  public static boolean anyExists(int doc, FunctionValues values1, FunctionValues values2) {
+  public static boolean anyExists(int doc, FunctionValues values1, FunctionValues values2) throws IOException {
     return values1.exists(doc) || values2.exists(doc);
   }
   
@@ -129,7 +129,7 @@ public abstract class MultiFunction extends ValueSource {
     }
 
     @Override
-    public String toString(int doc) {
+    public String toString(int doc) throws IOException {
       return MultiFunction.toString(name(), valsArr, doc);
     }
 
@@ -140,8 +140,7 @@ public abstract class MultiFunction extends ValueSource {
     }
   }
 
-
-  public static String toString(String name, FunctionValues[] valsArr, int doc) {
+  public static String toString(String name, FunctionValues[] valsArr, int doc) throws IOException {
     StringBuilder sb = new StringBuilder();
     sb.append(name).append('(');
     boolean firstTime=true;

@@ -133,7 +133,7 @@ public class TestOverriddenPrefixQueryForCustomFieldType extends SolrTestCaseJ4 
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       for (int i = 0; i < inputs.length; i++) {
-        queries[i] = (QParser.getParser(inputs[i], null, req).getQuery());
+        queries[i] = (QParser.getParser(inputs[i], req).getQuery());
       }
     } finally {
       SolrRequestInfo.clearRequestInfo();

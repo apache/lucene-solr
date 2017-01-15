@@ -453,6 +453,63 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
 
   }
 
+  public static class CreateSnapshot extends CoreAdminRequest {
+    private String commitName;
+
+    public CreateSnapshot(String commitName) {
+      super();
+      this.action = CoreAdminAction.CREATESNAPSHOT;
+      if(commitName == null) {
+        throw new NullPointerException("Please specify non null value for commitName parameter.");
+      }
+      this.commitName = commitName;
+    }
+
+    public String getCommitName() {
+      return commitName;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      params.set(CoreAdminParams.COMMIT_NAME, this.commitName);
+      return params;
+    }
+  }
+
+  public static class DeleteSnapshot extends CoreAdminRequest {
+    private String commitName;
+
+    public DeleteSnapshot(String commitName) {
+      super();
+      this.action = CoreAdminAction.DELETESNAPSHOT;
+
+      if(commitName == null) {
+        throw new NullPointerException("Please specify non null value for commitName parameter.");
+      }
+      this.commitName = commitName;
+    }
+
+    public String getCommitName() {
+      return commitName;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      params.set(CoreAdminParams.COMMIT_NAME, this.commitName);
+      return params;
+    }
+  }
+
+  public static class ListSnapshots extends CoreAdminRequest {
+    public ListSnapshots() {
+      super();
+      this.action = CoreAdminAction.LISTSNAPSHOTS;
+    }
+  }
+
+
   public CoreAdminRequest()
   {
     super( METHOD.GET, "/admin/cores" );
@@ -560,6 +617,18 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     req.setOtherCoreName(SolrIdentifierValidator.validateCoreName(newName));
     req.setAction( CoreAdminAction.RENAME );
     return req.process( client );
+  }
+
+  public static CoreStatus getCoreStatus(String coreName, SolrClient client) throws SolrServerException, IOException {
+    return getCoreStatus(coreName, true, client);
+  }
+
+  public static CoreStatus getCoreStatus(String coreName, boolean getIndexInfo, SolrClient client)
+      throws SolrServerException, IOException {
+    CoreAdminRequest req = new CoreAdminRequest();
+    req.setAction(CoreAdminAction.STATUS);
+    req.setIndexInfoNeeded(getIndexInfo);
+    return new CoreStatus(req.process(client).getCoreStatus(coreName));
   }
 
   public static CoreAdminResponse getStatus( String name, SolrClient client ) throws SolrServerException, IOException

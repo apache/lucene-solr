@@ -21,12 +21,12 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.legacy.LegacyFieldType;
+import org.apache.lucene.legacy.LegacyLongField;
+import org.apache.lucene.legacy.LegacyNumericRangeQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -62,20 +62,20 @@ public class TestNumericTerms64 extends LuceneTestCase {
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
         .setMergePolicy(newLogMergePolicy()));
 
-    final FieldType storedLong = new FieldType(LegacyLongField.TYPE_NOT_STORED);
+    final LegacyFieldType storedLong = new LegacyFieldType(LegacyLongField.TYPE_NOT_STORED);
     storedLong.setStored(true);
     storedLong.freeze();
 
-    final FieldType storedLong8 = new FieldType(storedLong);
+    final LegacyFieldType storedLong8 = new LegacyFieldType(storedLong);
     storedLong8.setNumericPrecisionStep(8);
 
-    final FieldType storedLong4 = new FieldType(storedLong);
+    final LegacyFieldType storedLong4 = new LegacyFieldType(storedLong);
     storedLong4.setNumericPrecisionStep(4);
 
-    final FieldType storedLong6 = new FieldType(storedLong);
+    final LegacyFieldType storedLong6 = new LegacyFieldType(storedLong);
     storedLong6.setNumericPrecisionStep(6);
 
-    final FieldType storedLong2 = new FieldType(storedLong);
+    final LegacyFieldType storedLong2 = new LegacyFieldType(storedLong);
     storedLong2.setNumericPrecisionStep(2);
 
     LegacyLongField

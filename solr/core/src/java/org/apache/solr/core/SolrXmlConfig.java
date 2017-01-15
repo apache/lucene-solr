@@ -95,7 +95,8 @@ public class SolrXmlConfig {
     configBuilder.setSolrProperties(loadProperties(config));
     if (cloudConfig != null)
       configBuilder.setCloudConfig(cloudConfig);
-    configBuilder.setBackupRepositoryPlugins((getBackupRepositoryPluginInfos(config)));
+    configBuilder.setBackupRepositoryPlugins(getBackupRepositoryPluginInfos(config));
+    configBuilder.setMetricReporterPlugins(getMetricReporterPluginInfos(config));
     return fillSolrSection(configBuilder, entries);
   }
 
@@ -281,6 +282,7 @@ public class SolrXmlConfig {
     int maxUpdateConnectionsPerHost = UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONSPERHOST;
     int distributedSocketTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
     int distributedConnectionTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATECONNTIMEOUT;
+    String metricNameStrategy = UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY;
 
     Object muc = nl.remove("maxUpdateConnections");
     if (muc != null) {
@@ -306,10 +308,16 @@ public class SolrXmlConfig {
       defined = true;
     }
 
+    Object mns = nl.remove("metricNameStrategy");
+    if (mns != null)  {
+      metricNameStrategy = mns.toString();
+      defined = true;
+    }
+
     if (!defined && !alwaysDefine)
       return null;
 
-    return new UpdateShardHandlerConfig(maxUpdateConnections, maxUpdateConnectionsPerHost, distributedSocketTimeout, distributedConnectionTimeout);
+    return new UpdateShardHandlerConfig(maxUpdateConnections, maxUpdateConnectionsPerHost, distributedSocketTimeout, distributedConnectionTimeout, metricNameStrategy);
 
   }
 
@@ -433,6 +441,17 @@ public class SolrXmlConfig {
     PluginInfo[] configs = new PluginInfo[nodes.getLength()];
     for (int i = 0; i < nodes.getLength(); i++) {
       configs[i] = new PluginInfo(nodes.item(i), "BackupRepositoryFactory", true, true);
+    }
+    return configs;
+  }
+
+  private static PluginInfo[] getMetricReporterPluginInfos(Config config) {
+    NodeList nodes = (NodeList) config.evaluate("solr/metrics/reporter", XPathConstants.NODESET);
+    if (nodes == null || nodes.getLength() == 0)
+      return new PluginInfo[0];
+    PluginInfo[] configs = new PluginInfo[nodes.getLength()];
+    for (int i = 0; i < nodes.getLength(); i++) {
+      configs[i] = new PluginInfo(nodes.item(i), "SolrMetricReporter", true, true);
     }
     return configs;
   }

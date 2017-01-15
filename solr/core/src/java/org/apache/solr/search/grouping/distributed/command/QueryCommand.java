@@ -62,7 +62,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
      * @return this
      */
     public Builder setQuery(String groupQueryString, SolrQueryRequest request) throws SyntaxError {
-      QParser parser = QParser.getParser(groupQueryString, null, request);
+      QParser parser = QParser.getParser(groupQueryString, request);
       this.queryString = groupQueryString;
       return setQuery(parser.getQuery());
     }
@@ -124,7 +124,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
 
   @Override
   public List<Collector> create() throws IOException {
-    if (sort == null || sort == Sort.RELEVANCE) {
+    if (sort == null || sort.equals(Sort.RELEVANCE)) {
       collector = TopScoreDocCollector.create(docsToCollect);
     } else {
       collector = TopFieldCollector.create(sort, docsToCollect, true, needScores, needScores);

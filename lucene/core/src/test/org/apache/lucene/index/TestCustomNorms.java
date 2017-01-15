@@ -72,7 +72,8 @@ public class TestCustomNorms extends LuceneTestCase {
     for (int i = 0; i < open.maxDoc(); i++) {
       Document document = open.document(i);
       float expected = Float.parseFloat(document.get(floatTestField));
-      assertEquals(expected, Float.intBitsToFloat((int)norms.get(i)), 0.0f);
+      assertEquals(i, norms.nextDoc());
+      assertEquals(expected, Float.intBitsToFloat((int)norms.longValue()), 0.0f);
     }
     open.close();
     dir.close();

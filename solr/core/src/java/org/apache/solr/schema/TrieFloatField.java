@@ -19,17 +19,17 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
@@ -75,20 +75,33 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
         SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
         
         return new FloatDocValues(thisAsSortedSetFieldSource) {
+          private int lastDocID;
+
+          private boolean setDoc(int docID) throws IOException {
+            if (docID < lastDocID) {
+              throw new IllegalArgumentException("docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
+            }
+            if (docID > view.docID()) {
+              return docID == view.advance(docID);
+            } else {
+              return docID == view.docID();
+            }
+          }
+          
           @Override
-          public float floatVal(int doc) {
-            BytesRef bytes = view.get(doc);
-            if (0 == bytes.length) {
-              // the only way this should be possible is for non existent value
-              assert !exists(doc) : "zero bytes for doc, but exists is true";
+          public float floatVal(int doc) throws IOException {
+            if (setDoc(doc)) {
+              BytesRef bytes = view.binaryValue();
+              assert bytes.length > 0;
+              return NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(bytes));
+            } else {
               return 0F;
             }
-            return NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(bytes));
           }
 
           @Override
-          public boolean exists(int doc) {
-            return -1 != view.getOrd(doc);
+          public boolean exists(int doc) throws IOException {
+            return setDoc(doc);
           }
 
           @Override
@@ -102,14 +115,14 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
               }
               
               @Override
-              public void fillValue(int doc) {
-                // micro optimized (eliminate at least one redundant ord check) 
-                //mval.exists = exists(doc);
-                //mval.value = mval.exists ? floatVal(doc) : 0.0F;
-                //
-                BytesRef bytes = view.get(doc);
-                mval.exists = (0 == bytes.length);
-                mval.value = mval.exists ? NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(bytes)) : 0F;
+              public void fillValue(int doc) throws IOException {
+                if (setDoc(doc)) {
+                  mval.exists = true;
+                  mval.value = NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(view.binaryValue()));
+                } else {
+                  mval.exists = false;
+                  mval.value = 0F;
+                }
               }
             };
           }

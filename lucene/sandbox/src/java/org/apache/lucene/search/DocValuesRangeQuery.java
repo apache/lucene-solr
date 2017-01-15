@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -143,10 +142,19 @@ public final class DocValuesRangeQuery extends Query {
     if (lowerVal == null && upperVal == null) {
       throw new IllegalStateException("Both min and max values must not be null, call rewrite first");
     }
-    return new RandomAccessWeight(DocValuesRangeQuery.this, boost) {
-      
+
+    return new ConstantScoreWeight(DocValuesRangeQuery.this, boost) {
+
       @Override
-      protected Bits getMatchingDocs(LeafReaderContext context) throws IOException {
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        final TwoPhaseIterator iterator = createTwoPhaseIterator(context);
+        if (iterator == null) {
+          return null;
+        }
+        return new ConstantScoreScorer(this, score(), iterator);
+      }
+
+      private TwoPhaseIterator createTwoPhaseIterator(LeafReaderContext context) throws IOException {
         if (lowerVal instanceof Long || upperVal instanceof Long) {
 
           final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
@@ -179,14 +187,14 @@ public final class DocValuesRangeQuery extends Query {
             return null;
           }
 
-          return new Bits() {
+          return new TwoPhaseIterator(values) {
 
             @Override
-            public boolean get(int doc) {
-              values.setDocument(doc);
-              final int count = values.count();
+            public boolean matches() throws IOException {
+              final int count = values.docValueCount();
+              assert count > 0;
               for (int i = 0; i < count; ++i) {
-                final long value = values.valueAt(i);
+                final long value = values.nextValue();
                 if (value >= min && value <= max) {
                   return true;
                 }
@@ -195,8 +203,8 @@ public final class DocValuesRangeQuery extends Query {
             }
 
             @Override
-            public int length() {
-              return context.reader().maxDoc();
+            public float matchCost() {
+              return 2; // 2 comparisons
             }
 
           };
@@ -237,11 +245,10 @@ public final class DocValuesRangeQuery extends Query {
             return null;
           }
 
-          return new Bits() {
+          return new TwoPhaseIterator(values) {
 
             @Override
-            public boolean get(int doc) {
-              values.setDocument(doc);
+            public boolean matches() throws IOException {
               for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
                 if (ord >= minOrd && ord <= maxOrd) {
                   return true;
@@ -251,10 +258,9 @@ public final class DocValuesRangeQuery extends Query {
             }
 
             @Override
-            public int length() {
-              return context.reader().maxDoc();
+            public float matchCost() {
+              return 2; // 2 comparisons
             }
-
           };
 
         } else {

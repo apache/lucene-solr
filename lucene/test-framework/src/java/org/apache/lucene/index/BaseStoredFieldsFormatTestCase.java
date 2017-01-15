@@ -53,7 +53,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 
@@ -292,7 +292,8 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
         final Document doc = sub.document(docID);
         final Field f = (Field) doc.getField("nf");
         assertTrue("got f=" + f, f instanceof StoredField);
-        assertEquals(answers[(int) ids.get(docID)], f.numericValue());
+        assertEquals(docID, ids.nextDoc());
+        assertEquals(answers[(int) ids.longValue()], f.numericValue());
       }
     }
     r.close();
@@ -319,7 +320,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
   public void testReadSkip() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
-    iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
+    iwConf.setMaxBufferedDocs(RandomNumbers.randomIntBetween(random(), 2, 30));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
     
     FieldType ft = new FieldType();
@@ -372,7 +373,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
   public void testEmptyDocs() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
-    iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
+    iwConf.setMaxBufferedDocs(RandomNumbers.randomIntBetween(random(), 2, 30));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
     
     // make sure that the fact that documents might be empty is not a problem
@@ -397,7 +398,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
   public void testConcurrentReads() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
-    iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
+    iwConf.setMaxBufferedDocs(RandomNumbers.randomIntBetween(random(), 2, 30));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
     
     // make sure the readers are properly cloned
@@ -485,15 +486,15 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     }
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
-    iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
+    iwConf.setMaxBufferedDocs(RandomNumbers.randomIntBetween(random(), 2, 30));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
-    
+
     final int docCount = atLeast(200);
     final byte[][][] data = new byte [docCount][][];
     for (int i = 0; i < docCount; ++i) {
       final int fieldCount = rarely()
-          ? RandomInts.randomIntBetween(random(), 1, 500)
-          : RandomInts.randomIntBetween(random(), 1, 5);
+          ? RandomNumbers.randomIntBetween(random(), 1, 500)
+          : RandomNumbers.randomIntBetween(random(), 1, 5);
       data[i] = new byte[fieldCount][];
       for (int j = 0; j < fieldCount; ++j) {
         final int length = rarely()
@@ -662,13 +663,15 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
 
   @Nightly
   public void testBigDocuments() throws IOException {
+    assumeWorkingMMapOnWindows();
+    
     // "big" as "much bigger than the chunk size"
     // for this test we force a FS dir
     // we can't just use newFSDirectory, because this test doesn't really index anything.
     // so if we get NRTCachingDir+SimpleText, we make massive stored fields and OOM (LUCENE-4484)
     Directory dir = new MockDirectoryWrapper(random(), new MMapDirectory(createTempDir("testBigDocuments")));
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
-    iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
+    iwConf.setMaxBufferedDocs(RandomNumbers.randomIntBetween(random(), 2, 30));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
 
     if (dir instanceof MockDirectoryWrapper) {
@@ -688,12 +691,12 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     onlyStored.setIndexOptions(IndexOptions.NONE);
 
     final Field smallField = new Field("fld", randomByteArray(random().nextInt(10), 256), onlyStored);
-    final int numFields = RandomInts.randomIntBetween(random(), 500000, 1000000);
+    final int numFields = RandomNumbers.randomIntBetween(random(), 500000, 1000000);
     for (int i = 0; i < numFields; ++i) {
       bigDoc1.add(smallField);
     }
 
-    final Field bigField = new Field("fld", randomByteArray(RandomInts.randomIntBetween(random(), 1000000, 5000000), 2), onlyStored);
+    final Field bigField = new Field("fld", randomByteArray(RandomNumbers.randomIntBetween(random(), 1000000, 5000000), 2), onlyStored);
     bigDoc2.add(bigField);
 
     final int numDocs = atLeast(5);

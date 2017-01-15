@@ -29,12 +29,12 @@ public class TestObjectReleaseTracker extends LuceneTestCase {
   public void testObjectReleaseTracker() {
     ObjectReleaseTracker.track(new Object());
     ObjectReleaseTracker.release(new Object());
-    assertNotNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
-    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
+    assertNotNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty(1));
+    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty(1));
     Object obj = new Object();
     ObjectReleaseTracker.track(obj);
     ObjectReleaseTracker.release(obj);
-    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
+    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty(1));
     
     Object obj1 = new Object();
     ObjectReleaseTracker.track(obj1);
@@ -46,7 +46,7 @@ public class TestObjectReleaseTracker extends LuceneTestCase {
     ObjectReleaseTracker.release(obj1);
     ObjectReleaseTracker.release(obj2);
     ObjectReleaseTracker.release(obj3);
-    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
+    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty(1));
     
     ObjectReleaseTracker.track(obj1);
     ObjectReleaseTracker.track(obj2);
@@ -55,7 +55,7 @@ public class TestObjectReleaseTracker extends LuceneTestCase {
     ObjectReleaseTracker.release(obj1);
     ObjectReleaseTracker.release(obj2);
     // ObjectReleaseTracker.release(obj3);
-    assertNotNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
-    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty());
+    assertNotNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty(1));
+    assertNull(ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty(1));
   }
 }

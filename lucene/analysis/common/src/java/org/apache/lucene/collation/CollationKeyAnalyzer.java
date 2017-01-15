@@ -85,7 +85,7 @@ public final class CollationKeyAnalyzer extends Analyzer {
   }
 
   @Override
-  protected AttributeFactory attributeFactory() {
+  protected AttributeFactory attributeFactory(String fieldName) {
     return factory;
   }
 

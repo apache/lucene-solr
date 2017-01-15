@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,10 +36,12 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.DocValuesRewriteMethod;
 import org.apache.lucene.search.MultiTermQuery;
@@ -47,6 +50,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
@@ -56,8 +60,8 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -270,17 +274,16 @@ public abstract class FieldType extends FieldProperties {
     }
     if (val==null) return null;
 
-    org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();
-    newType.setTokenized(field.isTokenized());
-    newType.setStored(field.stored());
-    newType.setOmitNorms(field.omitNorms());
-    newType.setIndexOptions(field.indexed() ? getIndexOptions(field, val) : IndexOptions.NONE);
-    newType.setStoreTermVectors(field.storeTermVector());
-    newType.setStoreTermVectorOffsets(field.storeTermOffsets());
-    newType.setStoreTermVectorPositions(field.storeTermPositions());
-    newType.setStoreTermVectorPayloads(field.storeTermPayloads());
-
-    return createField(field.getName(), val, newType, boost);
+      /*org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();
+      newType.setTokenized(field.isTokenized());
+      newType.setStored(field.stored());
+      newType.setOmitNorms(field.omitNorms());
+      newType.setIndexOptions(field.indexed() ? getIndexOptions(field, val) : IndexOptions.NONE);
+      newType.setStoreTermVectors(field.storeTermVector());
+      newType.setStoreTermVectorOffsets(field.storeTermOffsets());
+      newType.setStoreTermVectorPositions(field.storeTermPositions());
+      newType.setStoreTermVectorPayloads(field.storeTermPayloads());*/
+    return createField(field.getName(), val, field, boost);
   }
 
   /**
@@ -292,7 +295,7 @@ public abstract class FieldType extends FieldProperties {
    * @param boost The boost value
    * @return the {@link org.apache.lucene.index.IndexableField}.
    */
-  protected IndexableField createField(String name, String val, org.apache.lucene.document.FieldType type, float boost){
+  protected IndexableField createField(String name, String val, org.apache.lucene.index.IndexableFieldType type, float boost){
     Field f = new Field(name, val, type);
     f.setBoost(boost);
     return f;
@@ -317,20 +320,6 @@ public abstract class FieldType extends FieldProperties {
       throw new UnsupportedOperationException("This field type does not support doc values: " + this);
     }
     return f==null ? Collections.<IndexableField>emptyList() : Collections.singletonList(f);
-  }
-
-  protected IndexOptions getIndexOptions(SchemaField field, String internalVal) {
-
-    IndexOptions options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-    if (field.omitTermFreqAndPositions()) {
-      options = IndexOptions.DOCS;
-    } else if (field.omitPositions()) {
-      options = IndexOptions.DOCS_AND_FREQS;
-    } else if (field.storeOffsetsWithPositions()) {
-      options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
-    }
-
-    return options;
   }
 
   /**
@@ -621,7 +610,7 @@ public abstract class FieldType extends FieldProperties {
 
   /** Return the numeric type of this field, or null if this field is not a
    *  numeric field. */
-  public org.apache.lucene.document.FieldType.LegacyNumericType getNumericType() {
+  public LegacyNumericType getNumericType() {
     return null;
   }
 
@@ -758,7 +747,27 @@ public abstract class FieldType extends FieldProperties {
       return new TermQuery(new Term(field.getName(), br));
     }
   }
-  
+
+  /** @lucene.experimental  */
+  public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+    if (!field.indexed()) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      for (String externalVal : externalVals) {
+        Query subq = getFieldQuery(parser, field, externalVal);
+        builder.add(subq, BooleanClause.Occur.SHOULD);
+      }
+      return builder.build();
+    }
+
+    List<BytesRef> lst = new ArrayList<>(externalVals.size());
+    BytesRefBuilder br = new BytesRefBuilder();
+    for (String externalVal : externalVals) {
+      readableToIndexed(externalVal, br);
+      lst.add( br.toBytesRef() );
+    }
+    return new TermInSetQuery(field.getName() , lst);
+  }
+
   /**
    * Expert: Returns the rewrite method for multiterm queries such as wildcards.
    * @param parser The {@link org.apache.solr.search.QParser} calling the method
@@ -879,13 +888,19 @@ public abstract class FieldType extends FieldProperties {
       namedPropertyValues.add(SIMILARITY, getSimilarityFactory().getNamedPropertyValues());
     }
     
-    if (isExplicitAnalyzer()) {
-      String analyzerProperty = isExplicitQueryAnalyzer() ? INDEX_ANALYZER : ANALYZER;
-      namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getIndexAnalyzer()));
-    } 
-    if (isExplicitQueryAnalyzer()) {
-      String analyzerProperty = isExplicitAnalyzer() ? QUERY_ANALYZER : ANALYZER;
-      namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getQueryAnalyzer()));
+    if (this instanceof HasImplicitIndexAnalyzer) {
+      if (isExplicitQueryAnalyzer()) {
+        namedPropertyValues.add(QUERY_ANALYZER, getAnalyzerProperties(getQueryAnalyzer()));
+      }
+    } else {
+      if (isExplicitAnalyzer()) {
+        String analyzerProperty = isExplicitQueryAnalyzer() ? INDEX_ANALYZER : ANALYZER;
+        namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getIndexAnalyzer()));
+      }
+      if (isExplicitQueryAnalyzer()) {
+        String analyzerProperty = isExplicitAnalyzer() ? QUERY_ANALYZER : ANALYZER;
+        namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getQueryAnalyzer()));
+      }
     }
     if (this instanceof TextField) {
       if (((TextField)this).isExplicitMultiTermAnalyzer()) {

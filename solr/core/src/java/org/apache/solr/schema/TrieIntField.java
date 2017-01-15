@@ -19,17 +19,17 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
 
@@ -73,20 +73,34 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
         SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
         
         return new IntDocValues(thisAsSortedSetFieldSource) {
+          private int lastDocID;
+
+          private boolean setDoc(int docID) throws IOException {
+            if (docID < lastDocID) {
+              throw new IllegalArgumentException("docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
+            }
+            if (docID > view.docID()) {
+              lastDocID = docID;
+              return docID == view.advance(docID);
+            } else {
+              return docID == view.docID();
+            }
+          }
+          
           @Override
-          public int intVal(int doc) {
-            BytesRef bytes = view.get(doc);
-            if (0 == bytes.length) {
-              // the only way this should be possible is for non existent value
-              assert !exists(doc) : "zero bytes for doc, but exists is true";
+          public int intVal(int doc) throws IOException {
+            if (setDoc(doc)) {
+              BytesRef bytes = view.binaryValue();
+              assert bytes.length > 0;
+              return LegacyNumericUtils.prefixCodedToInt(bytes);
+            } else {
               return 0;
             }
-            return LegacyNumericUtils.prefixCodedToInt(bytes);
           }
 
           @Override
-          public boolean exists(int doc) {
-            return -1 != view.getOrd(doc);
+          public boolean exists(int doc) throws IOException {
+            return setDoc(doc);
           }
 
           @Override
@@ -100,14 +114,14 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
               }
               
               @Override
-              public void fillValue(int doc) {
-                // micro optimized (eliminate at least one redundant ord check) 
-                //mval.exists = exists(doc);
-                //mval.value = mval.exists ? intVal(doc) : 0;
-                //
-                BytesRef bytes = view.get(doc);
-                mval.exists = (0 == bytes.length);
-                mval.value = mval.exists ? LegacyNumericUtils.prefixCodedToInt(bytes) : 0;
+              public void fillValue(int doc) throws IOException {
+                if (setDoc(doc)) {
+                  mval.exists = true;
+                  mval.value = LegacyNumericUtils.prefixCodedToInt(view.binaryValue());
+                } else {
+                  mval.exists = false;
+                  mval.value = 0;
+                }
               }
             };
           }

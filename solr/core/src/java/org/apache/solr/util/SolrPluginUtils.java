@@ -84,6 +84,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
+import static java.util.Collections.singletonList;
 import static org.apache.solr.core.PluginInfo.APPENDS;
 import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.PluginInfo.INVARIANTS;
@@ -182,8 +183,10 @@ public class SolrPluginUtils {
   private static SolrParams applyParamSet(RequestParams requestParams,
                                           SolrParams defaults, String paramSets, String type) {
     if (paramSets == null) return defaults;
-    for (String name : StrUtils.splitSmart(paramSets, ',')) {
+    List<String> paramSetList = paramSets.indexOf(',') == -1 ? singletonList(paramSets) : StrUtils.splitSmart(paramSets, ',');
+    for (String name : paramSetList) {
       RequestParams.VersionedParams params = requestParams.getParams(name, type);
+      if (params == null) return defaults;
       if (type.equals(DEFAULTS)) {
         defaults = SolrParams.wrapDefaults(params, defaults);
       } else if (type.equals(INVARIANTS)) {
@@ -486,7 +489,7 @@ public class SolrPluginUtils {
 
     String qs = commands.size() >= 1 ? commands.get(0) : "";
     try {
-    Query query = QParser.getParser(qs, null, req).getQuery();
+    Query query = QParser.getParser(qs, req).getQuery();
 
     // If the first non-query, non-filter command is a simple sort on an indexed field, then
     // we can use the Lucene sort ability.
@@ -904,7 +907,7 @@ public class SolrPluginUtils {
      * aliases should work)
      */
     @Override
-    protected Query getFieldQuery(String field, String queryText, boolean quoted)
+    protected Query getFieldQuery(String field, String queryText, boolean quoted, boolean raw)
         throws SyntaxError {
 
       if (aliases.containsKey(field)) {
@@ -914,7 +917,7 @@ public class SolrPluginUtils {
         List<Query> disjuncts = new ArrayList<>();
         for (String f : a.fields.keySet()) {
 
-          Query sub = getFieldQuery(f,queryText,quoted);
+          Query sub = getFieldQuery(f,queryText,quoted, false);
           if (null != sub) {
             if (null != a.fields.get(f)) {
               sub = new BoostQuery(sub, a.fields.get(f));
@@ -928,7 +931,7 @@ public class SolrPluginUtils {
 
       } else {
         try {
-          return super.getFieldQuery(field, queryText, quoted);
+          return super.getFieldQuery(field, queryText, quoted, raw);
         } catch (Exception e) {
           return null;
         }
@@ -978,7 +981,7 @@ public class SolrPluginUtils {
     List<Query> out = new ArrayList<>(queries.length);
     for (String q : queries) {
       if (null != q && 0 != q.trim().length()) {
-        out.add(QParser.getParser(q, null, req).getQuery());
+        out.add(QParser.getParser(q, req).getQuery());
       }
     }
     return out;

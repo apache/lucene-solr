@@ -19,6 +19,7 @@ package org.apache.solr.handler.dataimport;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,12 +55,12 @@ public class TemplateTransformer extends Transformer {
   @SuppressWarnings("unchecked")
   public Object transformRow(Map<String, Object> row, Context context) {
 
-    VariableResolver resolver = (VariableResolver) context
-            .getVariableResolver();
+
+    VariableResolver resolver = context.getVariableResolver();
     // Add current row to the copy of resolver map
-//    for (Map.Entry<String, Object> entry : row.entrySet())
 
     for (Map<String, String> map : context.getAllEntityFields()) {
+      map.entrySet();
       String expr = map.get(TEMPLATE);
       if (expr == null)
         continue;
@@ -84,15 +85,30 @@ public class TemplateTransformer extends Transformer {
       if (!resolvable)
         continue;
       if(variables.size() == 1 && expr.startsWith("${") && expr.endsWith("}")){
-        row.put(column, resolver.resolve(variables.get(0)));
+        addToRow(column, row, resolver.resolve(variables.get(0)));
       } else {
-        row.put(column, resolver.replaceTokens(expr));
+        addToRow(column, row, resolver.replaceTokens(expr));
       }
-
     }
-
 
     return row;
   }
+
+  private void addToRow(String key, Map<String, Object> row, Object value) {
+    Object prevVal = row.get(key);
+    if (prevVal != null) {
+      if (prevVal instanceof List) {
+        ((List) prevVal).add(value);
+      } else {
+        ArrayList<Object> valList = new ArrayList<Object>();
+        valList.add(prevVal);
+        valList.add(value);
+        row.put(key, valList);
+      }
+    } else {
+      row.put(key, value);
+    }
+  }
+    
   public static final String TEMPLATE = "template";
 }

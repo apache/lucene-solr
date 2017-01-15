@@ -213,6 +213,8 @@
       <filterchain>
         <!--  private static Codec defaultCodec   =   LOADER    .   lookup    (   "LuceneXXX"                 )   ; -->
         <containsregex pattern="^.*defaultCodec\s*=\s*LOADER\s*\.\s*lookup\s*\(\s*&quot;([^&quot;]+)&quot;\s*\)\s*;.*$" replace="\1"/>
+        <fixcrlf eol="unix" eof="remove" />
+        <deletecharacters chars="\n"/>
       </filterchain>
     </loadfile>
 
@@ -355,12 +357,13 @@
     
     <build-changes changes.src.file="${local.src.export.dir}/CHANGES.txt"
                    changes.target.dir="${local.src.export.dir}/docs/changes"
-                   changes.product="LUCENE"/>
+                   changes.product="lucene"/>
     <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset prefix="lucene-${version}" dir="${local.src.export.dir}"/>
     </tar>
     <make-checksums file="${source.package.file}"/>
   </target>
+
 
   <!-- ================================================================== -->
   <!-- Packages the sources from local working copy with tar-gzip     -->
@@ -476,7 +479,7 @@
   </target>
 
   <target name="changes-to-html">
-    <build-changes changes.product="LUCENE"/>
+    <build-changes changes.product="lucene"/>
   </target>
 
   <target name="pitest-modules" depends="compile-test">
@@ -559,7 +562,7 @@
   <target name="get-jenkins-line-docs" unless="enwiki.exists">
     <sequential>
       <!-- TODO: can get .lzma instead (it's ~17% smaller) but there's no builtin ant support...? -->
-      <get src="http://people.apache.org/~mikemccand/enwiki.random.lines.txt.bz2"
+      <get src="http://home.apache.org/~mikemccand/enwiki.random.lines.txt.bz2"
            dest="enwiki.random.lines.txt.bz2"/>
       <bunzip2 src="enwiki.random.lines.txt.bz2" dest="enwiki.random.lines.txt"/>
     </sequential>

@@ -90,6 +90,7 @@ public class HardAutoCommitTest extends AbstractSolrTestCase {
     assertQ("shouldn't find any", req("id:530") ,"//result[@numFound=0]" );
     
     // Delete one document with commitWithin
+    trigger.pause();
     req.setContentStreams( AutoCommitTest.toContentStreams(
       delI("529", "commitWithin", "1000"), null ) );
     trigger.reset();
@@ -97,6 +98,7 @@ public class HardAutoCommitTest extends AbstractSolrTestCase {
       
     // Now make sure we can find it
     assertQ("should find one", req("id:529") ,"//result[@numFound=1]" );
+    trigger.unpause();
     
     // Wait for the commit to happen
     assertTrue("commitWithin failed to commit", trigger.waitForNewSearcher(30000));

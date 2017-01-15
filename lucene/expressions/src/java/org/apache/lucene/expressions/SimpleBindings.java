@@ -20,11 +20,7 @@ package org.apache.lucene.expressions;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
-import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.queries.function.valuesource.IntFieldSource;
-import org.apache.lucene.queries.function.valuesource.LongFieldSource;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.SortField;
 
 /**
@@ -36,7 +32,7 @@ import org.apache.lucene.search.SortField;
  *   SimpleBindings bindings = new SimpleBindings();
  *   // document's text relevance score
  *   bindings.add(new SortField("_score", SortField.Type.SCORE));
- *   // integer NumericDocValues field (or from FieldCache) 
+ *   // integer NumericDocValues field
  *   bindings.add(new SortField("popularity", SortField.Type.INT));
  *   // another expression
  *   bindings.add("recency", myRecencyExpression);
@@ -64,9 +60,9 @@ public final class SimpleBindings extends Bindings {
   }
 
   /**
-   * Bind a {@link ValueSource} directly to the given name.
+   * Bind a {@link DoubleValuesSource} directly to the given name.
    */
-  public void add(String name, ValueSource source) { map.put(name, source); }
+  public void add(String name, DoubleValuesSource source) { map.put(name, source); }
   
   /** 
    * Adds an Expression to the bindings.
@@ -78,27 +74,27 @@ public final class SimpleBindings extends Bindings {
   }
   
   @Override
-  public ValueSource getValueSource(String name) {
+  public DoubleValuesSource getDoubleValuesSource(String name) {
     Object o = map.get(name);
     if (o == null) {
       throw new IllegalArgumentException("Invalid reference '" + name + "'");
     } else if (o instanceof Expression) {
-      return ((Expression)o).getValueSource(this);
-    } else if (o instanceof ValueSource) {
-      return ((ValueSource)o);
+      return ((Expression)o).getDoubleValuesSource(this);
+    } else if (o instanceof DoubleValuesSource) {
+      return ((DoubleValuesSource) o);
     }
     SortField field = (SortField) o;
     switch(field.getType()) {
       case INT:
-        return new IntFieldSource(field.getField());
+        return DoubleValuesSource.fromIntField(field.getField());
       case LONG:
-        return new LongFieldSource(field.getField());
+        return DoubleValuesSource.fromLongField(field.getField());
       case FLOAT:
-        return new FloatFieldSource(field.getField());
+        return DoubleValuesSource.fromFloatField(field.getField());
       case DOUBLE:
-        return new DoubleFieldSource(field.getField());
+        return DoubleValuesSource.fromDoubleField(field.getField());
       case SCORE:
-        return getScoreValueSource();
+        return DoubleValuesSource.SCORES;
       default:
         throw new UnsupportedOperationException(); 
     }
@@ -113,7 +109,7 @@ public final class SimpleBindings extends Bindings {
       if (o instanceof Expression) {
         Expression expr = (Expression) o;
         try {
-          expr.getValueSource(this);
+          expr.getDoubleValuesSource(this);
         } catch (StackOverflowError e) {
           throw new IllegalArgumentException("Recursion Error: Cycle detected originating in (" + expr.sourceText + ")");
         }

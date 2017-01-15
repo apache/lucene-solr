@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.queries.function.docvalues;
 
+import java.io.IOException;
+
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.mutable.MutableValue;
@@ -33,20 +35,20 @@ public abstract class StrDocValues extends FunctionValues {
   }
 
   @Override
-  public abstract String strVal(int doc);
+  public abstract String strVal(int doc) throws IOException;
 
   @Override
-  public Object objectVal(int doc) {
+  public Object objectVal(int doc) throws IOException {
     return exists(doc) ? strVal(doc) : null;
   }
 
   @Override
-  public boolean boolVal(int doc) {
+  public boolean boolVal(int doc) throws IOException {
     return exists(doc);
   }
 
   @Override
-  public String toString(int doc) {
+  public String toString(int doc) throws IOException {
     return vs.description() + "='" + strVal(doc) + "'";
   }
 
@@ -61,7 +63,7 @@ public abstract class StrDocValues extends FunctionValues {
       }
 
       @Override
-      public void fillValue(int doc) {
+      public void fillValue(int doc) throws IOException {
         mval.exists = bytesVal(doc, mval.value);
       }
     };

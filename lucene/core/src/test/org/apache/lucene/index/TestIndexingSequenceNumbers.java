@@ -72,6 +72,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     dir.close();
   }
 
+  @Slow
   public void testStressUpdateSameID() throws Exception {
     int iters = atLeast(100);
     for(int iter=0;iter<iters;iter++) {
@@ -144,6 +145,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     long seqNo;
   }
 
+  @Slow
   public void testStressConcurrentCommit() throws Exception {
     final int opCount = atLeast(10000);
     final int idCount = TestUtil.nextInt(random(), 10, 1000);
@@ -303,6 +305,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     dir.close();
   }
 
+  @Slow
   public void testStressConcurrentDocValuesUpdatesCommit() throws Exception {
     final int opCount = atLeast(10000);
     final int idCount = TestUtil.nextInt(random(), 10, 1000);
@@ -430,16 +433,18 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
 
       DirectoryReader r = DirectoryReader.open(indexCommits.get(i));
       IndexSearcher s = new IndexSearcher(r);
-      NumericDocValues docValues = MultiDocValues.getNumericValues(r, "thread");
 
       for(int id=0;id<idCount;id++) {
         //System.out.println("TEST: check id=" + id + " expectedThreadID=" + expectedThreadIDs[id]);
         TopDocs hits = s.search(new TermQuery(new Term("id", ""+id)), 1);
+        NumericDocValues docValues = MultiDocValues.getNumericValues(r, "thread");
 
         // We pre-add all ids up front:
         assert expectedThreadIDs[id] != -1;
         assertEquals(1, hits.totalHits);
-        int actualThreadID = (int) docValues.get(hits.scoreDocs[0].doc);
+        int hitDoc = hits.scoreDocs[0].doc;
+        assertEquals(hitDoc, docValues.advance(hitDoc));
+        int actualThreadID = (int) docValues.longValue();
         if (expectedThreadIDs[id] != actualThreadID) {
           System.out.println("FAIL: commit=" + i + " (of " + commits.size() + ") id=" + id + " expectedThreadID=" + expectedThreadIDs[id] + " vs actualThreadID=" + actualThreadID + " commitSeqNo=" + commitSeqNo + " numThreads=" + numThreads + " reader=" + r + " commit=" + indexCommits.get(i));
           for(int threadID=0;threadID<threadOps.size();threadID++) {
@@ -459,6 +464,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     dir.close();
   }
 
+  @Slow
   public void testStressConcurrentAddAndDeleteAndCommit() throws Exception {
     final int opCount = atLeast(10000);
     final int idCount = TestUtil.nextInt(random(), 10, 1000);

@@ -771,7 +771,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       }
       ii = new SlowOpeningMockIndexInputWrapper(this, name, delegateInput);
     } else {
-      ii = new MockIndexInputWrapper(this, name, delegateInput);
+      ii = new MockIndexInputWrapper(this, name, delegateInput, null);
     }
     addFileHandle(ii, name, Handle.Input);
     return ii;
@@ -838,7 +838,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         }
         // RuntimeException instead of IOException because
         // super() does not throw IOException currently:
-        throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open files: " + openFiles, cause);
+        throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still " + openFiles.size() + " open files: " + openFiles, cause);
       }
       if (openLocks.size() > 0) {
         Exception cause = null;

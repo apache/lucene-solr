@@ -223,4 +223,20 @@ public class SweetSpotSimilarity extends ClassicSimilarity {
     
   }
 
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("SweetSpotSimilarity")
+        .append("(")
+        .append("ln_min="+ln_min+", ")
+        .append("ln_max=").append(ln_max).append(", ")
+        .append("ln_steep=").append(ln_steep).append(", ")
+        .append("tf_base=").append(tf_base).append(", ")
+        .append("tf_min=").append(tf_min).append(", ")
+        .append("tf_hyper_min=").append(tf_hyper_min).append(", ")
+        .append("tf_hyper_max=").append(tf_hyper_max).append(", ")
+        .append("tf_hyper_base=").append(tf_hyper_base).append(", ")
+        .append("tf_hyper_xoffset=").append(tf_hyper_xoffset)
+        .append(")");
+    return sb.toString();
+  }
 }

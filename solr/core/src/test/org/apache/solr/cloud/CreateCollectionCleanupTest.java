@@ -1,5 +1,3 @@
-package org.apache.solr.cloud;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,7 +15,8 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
+package org.apache.solr.cloud;
+
 import java.util.Properties;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -77,8 +76,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     assertFalse(rsp.isSuccess());
 
     // Confirm using LIST that the collection does not exist
-    CollectionAdminRequest.List list = CollectionAdminRequest.listCollections();
-    rsp = list.process(cloudClient);
-    assertFalse(((ArrayList) rsp.getResponse().get("collections")).contains("foo"));
+    assertFalse(CollectionAdminRequest.listCollections(cloudClient).contains("foo"));
+
   }
 }

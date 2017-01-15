@@ -39,7 +39,7 @@ public interface StatsValues {
 
   /** Accumulate the value associated with <code>docID</code>.
    *  @see #setNextReader(org.apache.lucene.index.LeafReaderContext) */
-  void accumulate(int docID);
+  void accumulate(int docID) throws IOException;
 
   /**
    * Accumulate the values based on the given value

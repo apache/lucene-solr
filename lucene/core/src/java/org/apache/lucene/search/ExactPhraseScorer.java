@@ -101,7 +101,7 @@ final class ExactPhraseScorer extends Scorer {
   }
 
   @Override
-  public float score() {
+  public float score() throws IOException {
     return docScorer.score(docID(), freq);
   }
 

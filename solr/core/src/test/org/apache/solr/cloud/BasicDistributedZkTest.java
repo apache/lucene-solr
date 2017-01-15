@@ -87,7 +87,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String DEFAULT_COLLECTION = "collection1";
-  protected static final boolean DEBUG = false;
   String t1="a_t";
   String i1="a_i1";
   String tlong = "other_tl1";
@@ -366,10 +365,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-implicit");
 
     testStopAndStartCoresInOneInstance();
-    // Thread.sleep(10000000000L);
-    if (DEBUG) {
-      super.printLayout();
-    }
   }
 
   // Insure that total docs found is the expected number.
@@ -759,7 +754,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       QueryRequest req = new QueryRequest(params);
       NamedList<Object> resp = client.request(req);
       NamedList mbeans = (NamedList) resp.get("solr-mbeans");
-      NamedList uhandlerCat = (NamedList) mbeans.get("UPDATEHANDLER");
+      NamedList uhandlerCat = (NamedList) mbeans.get("UPDATE");
       NamedList uhandler = (NamedList) uhandlerCat.get("updateHandler");
       NamedList stats = (NamedList) uhandler.get("stats");
       return (Long) stats.get("commits");

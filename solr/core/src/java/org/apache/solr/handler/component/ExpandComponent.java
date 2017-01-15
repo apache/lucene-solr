@@ -26,6 +26,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.carrotsearch.hppc.IntHashSet;
+import com.carrotsearch.hppc.IntObjectHashMap;
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongObjectHashMap;
+import com.carrotsearch.hppc.LongObjectMap;
+import com.carrotsearch.hppc.cursors.IntObjectCursor;
+import com.carrotsearch.hppc.cursors.LongCursor;
+import com.carrotsearch.hppc.cursors.LongObjectCursor;
+import com.carrotsearch.hppc.cursors.ObjectCursor;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -36,7 +45,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
@@ -46,6 +54,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
@@ -82,16 +91,6 @@ import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
-
-import com.carrotsearch.hppc.IntHashSet;
-import com.carrotsearch.hppc.IntObjectHashMap;
-import com.carrotsearch.hppc.LongHashSet;
-import com.carrotsearch.hppc.LongObjectHashMap;
-import com.carrotsearch.hppc.LongObjectMap;
-import com.carrotsearch.hppc.cursors.IntObjectCursor;
-import com.carrotsearch.hppc.cursors.LongCursor;
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
-import com.carrotsearch.hppc.cursors.ObjectCursor;
 
 /**
  * The ExpandComponent is designed to work with the CollapsingPostFilter.
@@ -176,7 +175,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       query = rb.getQuery();
     } else {
       try {
-        QParser parser = QParser.getParser(qs, null, req);
+        QParser parser = QParser.getParser(qs, req);
         query = parser.getQuery();
       } catch (Exception e) {
         throw new IOException(e);
@@ -198,7 +197,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       try {
         for (String fq : fqs) {
           if (fq != null && fq.trim().length() != 0 && !fq.equals("*:*")) {
-            QParser fqp = QParser.getParser(fq, null, req);
+            QParser fqp = QParser.getParser(fq, req);
             newFilters.add(fqp.getQuery());
           }
         }
@@ -208,7 +207,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     SolrIndexSearcher searcher = req.getSearcher();
-    LeafReader reader = searcher.getLeafReader();
+    LeafReader reader = searcher.getSlowAtomicReader();
 
     FieldType fieldType = searcher.getSchema().getField(field).getType();
 
@@ -220,7 +219,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
         Map<String, UninvertingReader.Type> mapping = new HashMap();
         mapping.put(field, UninvertingReader.Type.SORTED);
-        UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getLeafReader(), field), mapping);
+        UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
         values = DocValues.getSorted(reader, field);
@@ -265,6 +264,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     * This code gathers the group information for the current page.
     */
     List<LeafReaderContext> contexts = searcher.getTopReaderContext().leaves();
+
+    if(contexts.size() == 0) {
+      //When no context is available we can skip the expanding
+      return;
+    }
+
     int currentContext = 0;
     int currentDocBase = contexts.get(currentContext).docBase;
     int nextDocBase = (currentContext+1)<contexts.size() ? contexts.get(currentContext+1).docBase : Integer.MAX_VALUE;
@@ -275,7 +280,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       SortedDocValues[] sortedDocValues = null;
       LongValues segmentOrdinalMap = null;
       SortedDocValues currentValues = null;
-      if(values instanceof  MultiDocValues.MultiSortedDocValues) {
+      if(values instanceof MultiDocValues.MultiSortedDocValues) {
         ordinalMap = ((MultiDocValues.MultiSortedDocValues)values).mapping;
         sortedDocValues = ((MultiDocValues.MultiSortedDocValues)values).values;
         currentValues = sortedDocValues[currentContext];
@@ -299,8 +304,11 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
         int contextDoc = globalDoc - currentDocBase;
         if(ordinalMap != null) {
-          int ord = currentValues.getOrd(contextDoc);
-          if(ord > -1) {
+          if (contextDoc > currentValues.docID()) {
+            currentValues.advance(contextDoc);
+          }
+          if (contextDoc == currentValues.docID()) {
+            int ord = currentValues.ordValue();
             ++count;
             BytesRef ref = currentValues.lookupOrd(ord);
             ord = (int)segmentOrdinalMap.get(ord);
@@ -309,8 +317,11 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
             collapsedSet.add(globalDoc);
           }
         } else {
-          int ord = values.getOrd(globalDoc);
-          if(ord > -1) {
+          if (globalDoc > values.docID()) {
+            values.advance(globalDoc);
+          }
+          if (globalDoc == values.docID()) {
+            int ord = values.ordValue();
             ++count;
             BytesRef ref = values.lookupOrd(ord);
             ordBytes.put(ord, BytesRef.deepCopyOf(ref));
@@ -340,7 +351,16 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
           collapseValues = contexts.get(currentContext).reader().getNumericDocValues(field);
         }
         int contextDoc = globalDoc - currentDocBase;
-        long value = collapseValues.get(contextDoc);
+        int valueDocID = collapseValues.docID();
+        if (valueDocID < contextDoc) {
+          valueDocID = collapseValues.advance(contextDoc);
+        }
+        long value;
+        if (valueDocID == contextDoc) {
+          value = collapseValues.longValue();
+        } else {
+          value = 0;
+        }
         if(value != nullValue) {
           ++count;
           groupSet.add(value);
@@ -361,6 +381,16 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     Collector groupExpandCollector = null;
 
     if(values != null) {
+      //Get The Top Level SortedDocValues again so we can re-iterate:
+      if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
+        Map<String, UninvertingReader.Type> mapping = new HashMap();
+        mapping.put(field, UninvertingReader.Type.SORTED);
+        UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
+        values = uninvertingReader.getSortedDocValues(field);
+      } else {
+        values = DocValues.getSorted(reader, field);
+      }
+      
       groupExpandCollector = new GroupExpandCollector(values, groupBits, collapsedSet, limit, sort);
     } else {
       groupExpandCollector = new NumericGroupExpandCollector(field, nullValue, groupSet, collapsedSet, limit, sort);
@@ -452,7 +482,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     if (!rb.doExpand) {
       return;
     }
-
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       SolrQueryRequest req = rb.req;
       NamedList expanded = (NamedList) req.getContext().get("expanded");
@@ -553,12 +582,23 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
           int globalDoc = docId + docBase;
           int ord = -1;
           if(ordinalMap != null) {
-            ord = segmentValues.getOrd(docId);
-            if(ord > -1) {
-              ord = (int)segmentOrdinalMap.get(ord);
+            if (docId > segmentValues.docID()) {
+              segmentValues.advance(docId);
+            }
+            if (docId == segmentValues.docID()) {
+              ord = (int)segmentOrdinalMap.get(segmentValues.ordValue());
+            } else {
+              ord = -1;
             }
           } else {
-            ord = docValues.getOrd(globalDoc);
+            if (globalDoc > docValues.docID()) {
+              docValues.advance(globalDoc);
+            }
+            if (globalDoc == docValues.docID()) {
+              ord = docValues.ordValue();
+            } else {
+              ord = -1;
+            }
           }
 
           if (ord > -1 && groupBits.get(ord) && !collapsedSet.contains(globalDoc)) {
@@ -624,7 +664,16 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
         @Override
         public void collect(int docId) throws IOException {
-          long value = docValues.get(docId);
+          int valuesDocID = docValues.docID();
+          if (valuesDocID < docId) {
+            valuesDocID = docValues.advance(docId);
+          }
+          long value;
+          if (valuesDocID == docId) {
+            value = docValues.longValue();
+          } else {
+            value = 0;
+          }
           final int index;
           if (value != nullValue && 
               (index = leafCollectors.indexOf(value)) >= 0 && 
@@ -670,7 +719,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       bytesRefs[++index] = term.toBytesRef();
     }
 
-    return new SolrConstantScoreQuery(new QueryWrapperFilter(new TermsQuery(fname, bytesRefs)));
+    return new SolrConstantScoreQuery(new QueryWrapperFilter(new TermInSetQuery(fname, bytesRefs)));
   }
 
   private Query getGroupQuery(String fname,
@@ -683,7 +732,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       IntObjectCursor<BytesRef> cursor = it.next();
       bytesRefs[++index] = cursor.value;
     }
-    return new SolrConstantScoreQuery(new QueryWrapperFilter(new TermsQuery(fname, bytesRefs)));
+    return new SolrConstantScoreQuery(new QueryWrapperFilter(new TermInSetQuery(fname, bytesRefs)));
   }
 
 
@@ -694,6 +743,11 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
   @Override
   public String getDescription() {
     return "Expand Component";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.QUERY;
   }
 
   @Override

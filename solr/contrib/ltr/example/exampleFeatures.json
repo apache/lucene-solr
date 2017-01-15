@@ -1,0 +1,26 @@
+[
+  {
+    "store" : "exampleFeatureStore",
+    "name" : "isInStock",
+    "class" : "org.apache.solr.ltr.feature.FieldValueFeature",
+    "params" : { "field" : "inStock" }
+  },
+  {
+    "store" : "exampleFeatureStore",
+    "name" : "originalScore",
+    "class" : "org.apache.solr.ltr.feature.OriginalScoreFeature",
+    "params" : {}
+  },
+  {
+    "store" : "exampleFeatureStore",
+    "name" : "price",
+    "class" : "org.apache.solr.ltr.feature.FieldValueFeature",
+    "params" : { "field" : "price" }
+  },
+  {
+    "store" : "exampleFeatureStore",
+    "name" : "productNameMatchQuery",
+    "class" : "org.apache.solr.ltr.feature.SolrFeature",
+    "params" : { "q" : "{!field f=name}${user_query}" }
+  }
+]

@@ -27,7 +27,7 @@ print_usage() {
   fi
 
   echo ""
-  echo "Usage: install_solr_service.sh path_to_solr_distribution_archive OPTIONS"
+  echo "Usage: install_solr_service.sh <path_to_solr_distribution_archive> [OPTIONS]"
   echo ""
   echo "  The first argument to the script must be a path to a Solr distribution archive, such as solr-5.0.0.tgz"
   echo "    (only .tgz or .zip are supported formats for the archive)"
@@ -48,26 +48,44 @@ print_usage() {
   echo ""
   echo "    -f     Upgrade Solr. Overwrite symlink and init script of previous installation."
   echo ""
+  echo "    -n     Do not start Solr service after install, and do not abort on missing Java"
+  echo ""
   echo " NOTE: Must be run as the root user"
   echo ""
 } # end print_usage
 
-if [ -f "/proc/version" ]; then
-  proc_version=`cat /proc/version`
-else
-  proc_version=`uname -a`
-fi
+print_error() {
+  echo $1
+  exit 1
+}
 
-if [[ $proc_version == *"Debian"* ]]; then
-  distro=Debian
-elif [[ $proc_version == *"Red Hat"* ]]; then
-  distro=RedHat
-elif [[ $proc_version == *"Ubuntu"* ]]; then
-  distro=Ubuntu
-elif [[ $proc_version == *"SUSE"* ]]; then
-  distro=SUSE
-else
-  echo -e "\nERROR: Your Linux distribution ($proc_version) not supported by this script!\nYou'll need to setup Solr as a service manually using the documentation provided in the Solr Reference Guide.\n" 1>&2
+# Locate *NIX distribution by looking for match from various detection strategies
+# We start with /etc/os-release, as this will also work for Docker containers
+for command in "grep -E \"^NAME=\" /etc/os-release" \
+               "lsb_release -i" \
+               "cat /proc/version" \
+               "uname -a" ; do
+    distro_string=$(eval $command 2>/dev/null)
+    unset distro
+    if [[ ${distro_string,,} == *"debian"* ]]; then
+      distro=Debian
+    elif [[ ${distro_string,,} == *"red hat"* ]]; then
+      distro=RedHat
+    elif [[ ${distro_string,,} == *"centos"* ]]; then
+      distro=CentOS
+    elif [[ ${distro_string,,} == *"ubuntu"* ]]; then
+      distro=Ubuntu
+    elif [[ ${distro_string,,} == *"suse"* ]]; then
+      distro=SUSE
+    elif [[ ${distro_string,,} == *"darwin"* ]]; then
+      echo "Sorry, this script does not support macOS. You'll need to setup Solr as a service manually using the documentation provided in the Solr Reference Guide."
+      echo "You could also try installing via Homebrew (http://brew.sh/), e.g. brew install solr"
+      exit 1
+    fi
+    if [[ $distro ]] ; then break ; fi
+done
+if [[ ! $distro ]] ; then
+  echo -e "\nERROR: Unable to auto-detect your *NIX distribution!\nYou'll need to setup Solr as a service manually using the documentation provided in the Solr Reference Guide.\n" 1>&2
   exit 1
 fi
 
@@ -95,6 +113,7 @@ else
   exit 1
 fi
 
+SOLR_START=true
 if [ $# -gt 1 ]; then
   shift
   while true; do
@@ -143,6 +162,10 @@ if [ $# -gt 1 ]; then
             SOLR_UPGRADE="YES"
             shift 1
         ;;
+        -n)
+            SOLR_START=false
+            shift 1
+        ;;
         -help|-usage)
             print_usage ""
             exit 0
@@ -162,6 +185,19 @@ if [ $# -gt 1 ]; then
     esac
   done
 fi
+
+# Test for availability of needed tools
+if [[ $is_tar ]] ; then
+  tar --version &>/dev/null     || print_error "Script requires the 'tar' command"
+else
+  unzip -hh &>/dev/null         || print_error "Script requires the 'unzip' command"
+fi
+if [[ $SOLR_START == "true" ]] ; then
+  service --version &>/dev/null || print_error "Script requires the 'service' command"
+  java -version &>/dev/null     || print_error "Solr requires java, please install or set JAVA_HOME properly"
+fi
+lsof -h &>/dev/null             || echo "We recommend installing the 'lsof' command for more stable start/stop of Solr"
+
 
 if [ -z "$SOLR_EXTRACT_DIR" ]; then
   SOLR_EXTRACT_DIR=/opt
@@ -214,7 +250,7 @@ fi
 solr_uid="`id -u "$SOLR_USER"`"
 if [ $? -ne 0 ]; then
   echo "Creating new user: $SOLR_USER"
-  if [ "$distro" == "RedHat" ]; then
+  if [ "$distro" == "RedHat" ] || [ "$distro" == "CentOS" ] ; then
     adduser "$SOLR_USER"
   elif [ "$distro" == "SUSE" ]; then
     useradd -m "$SOLR_USER"
@@ -308,23 +344,25 @@ if [ -f "$SOLR_VAR_DIR/log4j.properties" ]; then
   echo -e "\n$SOLR_VAR_DIR/log4j.properties already exists. Skipping install ...\n"
 else
   cp "$SOLR_INSTALL_DIR/server/resources/log4j.properties" "$SOLR_VAR_DIR/log4j.properties"
-  sed_expr="s#solr.log=.*#solr.log=\${solr.solr.home}/../logs#"
-  sed -i -e "$sed_expr" "$SOLR_VAR_DIR/log4j.properties"
 fi
 chown -R "$SOLR_USER:" "$SOLR_VAR_DIR"
 find "$SOLR_VAR_DIR" -type d -print0 | xargs -0 chmod 0750
 find "$SOLR_VAR_DIR" -type f -print0 | xargs -0 chmod 0640
 
 # configure autostart of service
-if [[ "$distro" == "RedHat" || "$distro" == "SUSE" ]]; then
+if [[ "$distro" == "RedHat" || "$distro" == "CentOS" || "$distro" == "SUSE" ]]; then
   chkconfig "$SOLR_SERVICE" on
 else
   update-rc.d "$SOLR_SERVICE" defaults
 fi
+echo "Service $SOLR_SERVICE installed."
+echo "Customize Solr startup configuration in /etc/default/$SOLR_SERVICE.in.sh"
 
 # start service
-service "$SOLR_SERVICE" start
-sleep 5
-service "$SOLR_SERVICE" status
-
-echo "Service $SOLR_SERVICE installed."
+if [[ $SOLR_START == "true" ]] ; then
+  service "$SOLR_SERVICE" start
+  sleep 5
+  service "$SOLR_SERVICE" status
+else
+  echo "Not starting Solr service (option -n given). Start manually with 'service $SOLR_SERVICE start'"
+fi

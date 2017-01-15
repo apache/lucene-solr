@@ -49,7 +49,7 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
   @Override
   public void reconnect(final String serverAddress, final int zkClientTimeout,
       final Watcher watcher, final ZkUpdate updater) throws IOException {
-    log.info("Connection expired - starting a new one...");
+    log.warn("Connection expired - starting a new one...");
     SolrZooKeeper zk = createSolrZooKeeper(serverAddress, zkClientTimeout, watcher);
     boolean success = false;
     try {
@@ -59,7 +59,7 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
       log.info("Reconnected to ZooKeeper");
     } catch (Exception e) {
       SolrException.log(log, "Reconnect to ZooKeeper failed", e);
-      log.info("Reconnect to ZooKeeper failed");
+      log.warn("Reconnect to ZooKeeper failed");
     } finally {
       if (!success) {
         try {

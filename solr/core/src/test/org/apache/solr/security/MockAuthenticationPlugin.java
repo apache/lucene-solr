@@ -20,10 +20,15 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
+
+import org.apache.http.auth.BasicUserPrincipal;
 
 public class MockAuthenticationPlugin extends AuthenticationPlugin {
   static Predicate<ServletRequest> predicate;
@@ -33,7 +38,7 @@ public class MockAuthenticationPlugin extends AuthenticationPlugin {
   }
 
   @Override
-  public void doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
+  public boolean doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
     String user = null;
     if (predicate != null) {
       if (predicate.test(request)) {
@@ -41,9 +46,32 @@ public class MockAuthenticationPlugin extends AuthenticationPlugin {
         request.removeAttribute(Principal.class.getName());
       }
     }
-    forward(user, request, response, filterChain);
+
+    final FilterChain ffc = filterChain;
+    final AtomicBoolean requestContinues = new AtomicBoolean(false);
+    forward(user, request, response, new FilterChain() {
+      @Override
+      public void doFilter(ServletRequest req, ServletResponse res) throws IOException, ServletException {
+        ffc.doFilter(req, res);
+        requestContinues.set(true);
+      }
+    });
+    return requestContinues.get();
   }
 
+  protected void forward(String user, ServletRequest  req, ServletResponse rsp,
+                                    FilterChain chain) throws IOException, ServletException {
+    if(user != null) {
+      final Principal p = new BasicUserPrincipal(user);
+      req = new HttpServletRequestWrapper((HttpServletRequest) req) {
+        @Override
+        public Principal getUserPrincipal() {
+          return p;
+        }
+      };
+    }
+    chain.doFilter(req,rsp);
+  }
 
   @Override
   public void close() throws IOException {

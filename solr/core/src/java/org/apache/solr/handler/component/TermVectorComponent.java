@@ -481,6 +481,11 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   public String getDescription() {
     return "A Component for working with Term Vectors";
   }
+
+  @Override
+  public Category getCategory() {
+    return Category.QUERY;
+  }
 }
 
 class FieldOptions {

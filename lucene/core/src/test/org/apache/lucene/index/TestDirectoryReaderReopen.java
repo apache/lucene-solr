@@ -204,6 +204,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     final Directory dir = newDirectory();
     // NOTE: this also controls the number of threads!
     final int n = TestUtil.nextInt(random(), 20, 40);
+    
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     for (int i = 0; i < n; i++) {
       writer.addDocument(createDocument(i, 3));
@@ -901,9 +902,14 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     
     // sharing same core
     assertSame(latest.leaves().get(0).reader().getCoreCacheKey(), oldest.leaves().get(0).reader().getCoreCacheKey());
-    
-    assertEquals(1, getOnlyLeafReader(oldest).getNumericDocValues("dv").get(0));
-    assertEquals(2, getOnlyLeafReader(latest).getNumericDocValues("dv").get(0));
+
+    NumericDocValues values = getOnlyLeafReader(oldest).getNumericDocValues("dv");
+    assertEquals(0, values.nextDoc());
+    assertEquals(1, values.longValue());
+
+    values = getOnlyLeafReader(latest).getNumericDocValues("dv");
+    assertEquals(0, values.nextDoc());
+    assertEquals(2, values.longValue());
     
     latest.close();
     oldest.close();
@@ -943,9 +949,14 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     
     // sharing same core
     assertSame(latest.leaves().get(0).reader().getCoreCacheKey(), oldest.leaves().get(0).reader().getCoreCacheKey());
-    
-    assertEquals(1, getOnlyLeafReader(oldest).getNumericDocValues("dv").get(0));
-    assertEquals(2, getOnlyLeafReader(latest).getNumericDocValues("dv").get(0));
+
+    NumericDocValues values = getOnlyLeafReader(oldest).getNumericDocValues("dv");
+    assertEquals(0, values.nextDoc());
+    assertEquals(1, values.longValue());
+
+    values = getOnlyLeafReader(latest).getNumericDocValues("dv");
+    assertEquals(0, values.nextDoc());
+    assertEquals(2, values.longValue());
     
     latest.close();
     oldest.close();

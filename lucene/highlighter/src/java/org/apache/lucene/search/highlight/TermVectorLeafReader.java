@@ -129,11 +129,6 @@ public class TermVectorLeafReader extends LeafReader {
   }
 
   @Override
-  public Bits getDocsWithField(String field) throws IOException {
-    return null;
-  }
-
-  @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     return null;//Is this needed?  See MemoryIndex for a way to do it.
   }
@@ -149,7 +144,7 @@ public class TermVectorLeafReader extends LeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
+  public PointValues getPointValues(String fieldName) {
     return null;
   }
 

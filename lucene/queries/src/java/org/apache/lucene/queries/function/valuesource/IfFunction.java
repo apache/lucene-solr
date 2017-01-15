@@ -50,57 +50,57 @@ public class IfFunction extends BoolFunction {
 
     return new FunctionValues() {
       @Override
-      public byte byteVal(int doc) {
+      public byte byteVal(int doc) throws IOException {
         return ifVals.boolVal(doc) ? trueVals.byteVal(doc) : falseVals.byteVal(doc);
       }
 
       @Override
-      public short shortVal(int doc) {
+      public short shortVal(int doc) throws IOException {
         return ifVals.boolVal(doc) ? trueVals.shortVal(doc) : falseVals.shortVal(doc);
       }
 
       @Override
-      public float floatVal(int doc) {
+      public float floatVal(int doc) throws IOException {
         return ifVals.boolVal(doc) ? trueVals.floatVal(doc) : falseVals.floatVal(doc);
       }
 
       @Override
-      public int intVal(int doc) {
+      public int intVal(int doc) throws IOException {
         return ifVals.boolVal(doc) ? trueVals.intVal(doc) : falseVals.intVal(doc);
       }
 
       @Override
-      public long longVal(int doc) {
+      public long longVal(int doc) throws IOException {
         return ifVals.boolVal(doc) ? trueVals.longVal(doc) : falseVals.longVal(doc);
       }
 
       @Override
-      public double doubleVal(int doc) {
+      public double doubleVal(int doc) throws IOException {
         return ifVals.boolVal(doc) ? trueVals.doubleVal(doc) : falseVals.doubleVal(doc);
       }
 
       @Override
-      public String strVal(int doc) {
+      public String strVal(int doc) throws IOException {
         return ifVals.boolVal(doc) ? trueVals.strVal(doc) : falseVals.strVal(doc);
       }
 
       @Override
-      public boolean boolVal(int doc) {
+      public boolean boolVal(int doc) throws IOException {
         return ifVals.boolVal(doc) ? trueVals.boolVal(doc) : falseVals.boolVal(doc);
       }
 
       @Override
-      public boolean bytesVal(int doc, BytesRefBuilder target) {
+      public boolean bytesVal(int doc, BytesRefBuilder target) throws IOException {
         return ifVals.boolVal(doc) ? trueVals.bytesVal(doc, target) : falseVals.bytesVal(doc, target);
       }
 
       @Override
-      public Object objectVal(int doc) {
+      public Object objectVal(int doc) throws IOException {
         return ifVals.boolVal(doc) ? trueVals.objectVal(doc) : falseVals.objectVal(doc);
       }
 
       @Override
-      public boolean exists(int doc) {
+      public boolean exists(int doc) throws IOException {
         return ifVals.boolVal(doc) ? trueVals.exists(doc) : falseVals.exists(doc);
       }
 
@@ -112,7 +112,7 @@ public class IfFunction extends BoolFunction {
       }
 
       @Override
-      public String toString(int doc) {
+      public String toString(int doc) throws IOException {
         return "if(" + ifVals.toString(doc) + ',' + trueVals.toString(doc) + ',' + falseVals.toString(doc) + ')';
       }
     };

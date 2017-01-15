@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.clustering.carrot2;
-import com.google.common.collect.Lists;
 import org.carrot2.core.*;
 import org.carrot2.core.attribute.AttributeNames;
 import org.carrot2.core.attribute.Processing;
 import org.carrot2.util.attribute.*;
 import org.carrot2.util.attribute.constraint.IntRange;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Bindable(prefix = "MockClusteringAlgorithm")
@@ -62,7 +62,7 @@ public class MockClusteringAlgorithm extends ProcessingComponentBase implements
 
   @Override
   public void process() throws ProcessingException {
-    clusters = Lists.newArrayList();
+    clusters = new ArrayList<>();
     if (documents == null) {
       return;
     }

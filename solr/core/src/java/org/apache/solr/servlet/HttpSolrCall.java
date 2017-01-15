@@ -191,7 +191,7 @@ public class HttpSolrCall {
     return queryParams;
   }
   
-  private void init() throws Exception {
+  void init() throws Exception {
     //The states of client that is invalid in this request
     Aliases aliases = null;
     String corename = "";
@@ -271,7 +271,11 @@ public class HttpSolrCall {
 
     if (core == null && cores.isZooKeeperAware()) {
       // we couldn't find the core - lets make sure a collection was not specified instead
-      core = getCoreByCollection(corename);
+      boolean isPreferLeader = false;
+      if (path.endsWith("/update") || path.contains("/update/")) {
+        isPreferLeader = true;
+      }
+      core = getCoreByCollection(corename, isPreferLeader);
       if (core != null) {
         // we found a core, update the path
         path = path.substring(idx);
@@ -558,7 +562,8 @@ public class HttpSolrCall {
         method.removeHeaders(CONTENT_LENGTH_HEADER);
       }
 
-      final HttpResponse response = solrDispatchFilter.httpClient.execute(method, HttpClientUtil.createNewHttpClientRequestContext());
+      final HttpResponse response
+          = solrDispatchFilter.httpClient.execute(method, HttpClientUtil.createNewHttpClientRequestContext());
       int httpStatus = response.getStatusLine().getStatusCode();
       httpEntity = response.getEntity();
 
@@ -752,7 +757,7 @@ public class HttpSolrCall {
     return result;
   }
 
-  private SolrCore getCoreByCollection(String collectionName) {
+  private SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
 
     ClusterState clusterState = zkStateReader.getClusterState();
@@ -760,37 +765,27 @@ public class HttpSolrCall {
     if (collection == null) {
       return null;
     }
-    Map<String, Slice> slices = collection.getActiveSlicesMap();
-    if (slices == null) {
-      return null;
-    }
+
     Set<String> liveNodes = clusterState.getLiveNodes();
-    // look for a core on this node
-    Set<Map.Entry<String, Slice>> entries = slices.entrySet();
-    SolrCore core = null;
 
-    //Hitting the leaders is useful when it's an update request.
-    //For queries it doesn't matter and hence we don't distinguish here.
-    for (Map.Entry<String, Slice> entry : entries) {
-      // first see if we have the leader
-      Replica leaderProps = collection.getLeader(entry.getKey());
-      if (leaderProps != null && liveNodes.contains(leaderProps.getNodeName()) && leaderProps.getState() == Replica.State.ACTIVE) {
-        core = checkProps(leaderProps);
-        if (core != null) {
-          return core;
-        }
-      }
+    if (isPreferLeader) {
+      List<Replica> leaderReplicas = collection.getLeaderReplicas(cores.getZkController().getNodeName());
+      SolrCore core = randomlyGetSolrCore(liveNodes, leaderReplicas);
+      if (core != null) return core;
+    }
 
-      // check everyone then
-      Map<String, Replica> shards = entry.getValue().getReplicasMap();
-      Set<Map.Entry<String, Replica>> shardEntries = shards.entrySet();
-      for (Map.Entry<String, Replica> shardEntry : shardEntries) {
-        Replica zkProps = shardEntry.getValue();
-        if (liveNodes.contains(zkProps.getNodeName()) && zkProps.getState() == Replica.State.ACTIVE) {
-          core = checkProps(zkProps);
-          if (core != null) {
-            return core;
-          }
+    List<Replica> replicas = collection.getReplicas(cores.getZkController().getNodeName());
+    return randomlyGetSolrCore(liveNodes, replicas);
+  }
+
+  private SolrCore randomlyGetSolrCore(Set<String> liveNodes, List<Replica> replicas) {
+    if (replicas != null) {
+      RandomIterator<Replica> it = new RandomIterator<>(random, replicas);
+      while (it.hasNext()) {
+        Replica replica = it.next();
+        if (liveNodes.contains(replica.getNodeName()) && replica.getState() == Replica.State.ACTIVE) {
+          SolrCore core = checkProps(replica);
+          if (core != null) return core;
         }
       }
     }
@@ -1026,4 +1021,35 @@ public class HttpSolrCall {
   static final String CONNECTION_HEADER = "Connection";
   static final String TRANSFER_ENCODING_HEADER = "Transfer-Encoding";
   static final String CONTENT_LENGTH_HEADER = "Content-Length";
+
+  /**
+   * A faster method for randomly picking items when you do not need to
+   * consume all items.
+   */
+  private static class RandomIterator<E> implements Iterator<E> {
+    private Random rand;
+    private ArrayList<E> elements;
+    private int size;
+
+    public RandomIterator(Random rand, Collection<E> elements) {
+      this.rand = rand;
+      this.elements = new ArrayList<>(elements);
+      this.size = elements.size();
+    }
+
+    @Override
+    public boolean hasNext() {
+      return size > 0;
+    }
+
+    @Override
+    public E next() {
+      int idx = rand.nextInt(size);
+      E e1 = elements.get(idx);
+      E e2 = elements.get(size-1);
+      elements.set(idx,e2);
+      size--;
+      return e1;
+    }
+  }
 }

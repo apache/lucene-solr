@@ -20,18 +20,18 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.IndexReader; // javadocs
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.legacy.LegacyNumericUtils;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -45,7 +45,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * @lucene.internal
  */
-interface FieldCache {
+public interface FieldCache {
 
   /**
    * Placeholder indicating creation of this cache is currently in-progress.
@@ -161,8 +161,8 @@ interface FieldCache {
   };
   
   /**
-   * A parser instance for int values encoded by {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
-   * via {@link org.apache.lucene.document.LegacyIntField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
+   * A parser instance for int values encoded by {@link org.apache.lucene.legacy.LegacyNumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.legacy.LegacyIntField}/{@link org.apache.lucene.legacy.LegacyNumericTokenStream}.
    * @deprecated Index with points and use {@link #INT_POINT_PARSER} instead.
    */
   @Deprecated
@@ -184,8 +184,8 @@ interface FieldCache {
   };
 
   /**
-   * A parser instance for float values encoded with {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
-   * via {@link org.apache.lucene.document.LegacyFloatField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
+   * A parser instance for float values encoded with {@link org.apache.lucene.legacy.LegacyNumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.legacy.LegacyFloatField}/{@link org.apache.lucene.legacy.LegacyNumericTokenStream}.
    * @deprecated Index with points and use {@link #FLOAT_POINT_PARSER} instead.
    */
   @Deprecated
@@ -209,8 +209,8 @@ interface FieldCache {
   };
 
   /**
-   * A parser instance for long values encoded by {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
-   * via {@link org.apache.lucene.document.LegacyLongField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
+   * A parser instance for long values encoded by {@link org.apache.lucene.legacy.LegacyNumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.legacy.LegacyLongField}/{@link org.apache.lucene.legacy.LegacyNumericTokenStream}.
    * @deprecated Index with points and use {@link #LONG_POINT_PARSER} instead.
    */
   @Deprecated
@@ -231,8 +231,8 @@ interface FieldCache {
   };
 
   /**
-   * A parser instance for double values encoded with {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
-   * via {@link org.apache.lucene.document.LegacyDoubleField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
+   * A parser instance for double values encoded with {@link org.apache.lucene.legacy.LegacyNumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.legacy.LegacyDoubleField}/{@link org.apache.lucene.legacy.LegacyNumericTokenStream}.
    * @deprecated Index with points and use {@link #DOUBLE_POINT_PARSER} instead.
    */
   @Deprecated
@@ -279,15 +279,12 @@ interface FieldCache {
    * @param parser
    *          Computes long for string values. May be {@code null} if the
    *          requested field was indexed as {@link NumericDocValuesField} or
-   *          {@link org.apache.lucene.document.LegacyLongField}.
-   * @param setDocsWithField
-   *          If true then {@link #getDocsWithField} will also be computed and
-   *          stored in the FieldCache.
+   *          {@link org.apache.lucene.legacy.LegacyLongField}.
    * @return The values in the given field for each document.
    * @throws IOException
    *           If any error occurs.
    */
-  public NumericDocValues getNumerics(LeafReader reader, String field, Parser parser, boolean setDocsWithField) throws IOException;
+  public NumericDocValues getNumerics(LeafReader reader, String field, Parser parser) throws IOException;
   
   /** Checks the internal cache for an appropriate entry, and if none
    * is found, reads the term values in <code>field</code>
@@ -295,19 +292,17 @@ interface FieldCache {
    * method to retrieve the term (as a BytesRef) per document.
    * @param reader  Used to get field values.
    * @param field   Which field contains the strings.
-   * @param setDocsWithField  If true then {@link #getDocsWithField} will
-   *        also be computed and stored in the FieldCache.
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public BinaryDocValues getTerms(LeafReader reader, String field, boolean setDocsWithField) throws IOException;
+  public BinaryDocValues getTerms(LeafReader reader, String field) throws IOException;
 
-  /** Expert: just like {@link #getTerms(org.apache.lucene.index.LeafReader,String,boolean)},
+  /** Expert: just like {@link #getTerms(org.apache.lucene.index.LeafReader,String)},
    *  but you can specify whether more RAM should be consumed in exchange for
    *  faster lookups (default is "true").  Note that the
    *  first call for a given reader and field "wins",
    *  subsequent calls will share the same cache entry. */
-  public BinaryDocValues getTerms(LeafReader reader, String field, boolean setDocsWithField, float acceptableOverheadRatio) throws IOException;
+  public BinaryDocValues getTerms(LeafReader reader, String field, float acceptableOverheadRatio) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none
    * is found, reads the term values in <code>field</code>
@@ -389,7 +384,7 @@ interface FieldCache {
       return custom;
     }
 
-    public Object getValue() {
+    public Accountable getValue() {
       return value;
     }
 
@@ -404,15 +399,11 @@ interface FieldCache {
     
     @Override
     public String toString() {
-      StringBuilder b = new StringBuilder(250);
-      b.append("'").append(getReaderKey()).append("'=>");
-      b.append("'").append(getFieldName()).append("',");
-      b.append(getCacheType()).append(",").append(getCustom());
-      b.append("=>").append(getValue().getClass().getName()).append("#");
-      b.append(System.identityHashCode(getValue()));
-      
+      StringBuilder b = new StringBuilder(100);
+      b.append("segment='").append(getReaderKey().toString()).append("', ");
+      b.append("field='").append(getFieldName()).append("', ");
       String s = getEstimatedSize();
-      b.append(" (size =~ ").append(s).append(')');
+      b.append("size =~ ").append(s);
 
       return b.toString();
     }

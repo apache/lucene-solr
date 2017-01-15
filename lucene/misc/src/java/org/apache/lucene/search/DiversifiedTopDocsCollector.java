@@ -110,7 +110,7 @@ public abstract class DiversifiedTopDocsCollector extends
   }
 
   protected ScoreDocKey insert(ScoreDocKey addition, int docBase,
-      NumericDocValues keys) {
+      NumericDocValues keys) throws IOException {
     if ((globalQueue.size() >= numHits)
         && (globalQueue.lessThan(addition, globalQueue.top()))) {
       // Queue is full and proposed addition is not a globally
@@ -122,7 +122,17 @@ public abstract class DiversifiedTopDocsCollector extends
     // We delay fetching the key until we are certain the score is globally
     // competitive. We need to adjust the ScoreDoc's global doc value to be
     // a leaf reader value when looking up keys
-    addition.key = keys.get(addition.doc - docBase);
+    int leafDocID = addition.doc - docBase;
+    long value;
+    if (keys.docID() < leafDocID) {
+      keys.advance(leafDocID);
+    }
+    if (keys.docID() == leafDocID) {
+      value = keys.longValue();
+    } else {
+      value = 0;
+    }
+    addition.key = value;
 
     // For this to work the choice of key class needs to implement
     // hashcode and equals.
