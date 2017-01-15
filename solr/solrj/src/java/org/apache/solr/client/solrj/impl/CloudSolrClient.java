@@ -1217,7 +1217,6 @@ public class CloudSolrClient extends SolrClient {
     connect();
 
     boolean sendToLeaders = false;
-    List<String> replicas = null;
     
     if (request instanceof IsUpdateRequest) {
       if (request instanceof UpdateRequest) {
@@ -1227,13 +1226,25 @@ public class CloudSolrClient extends SolrClient {
         }
       }
       sendToLeaders = true;
-      replicas = new ArrayList<>();
     }
     
+    List<String> urlList = findRequestUrls(request, collection, clusterState, sendToLeaders);
+
+    return executeHttpRequest(request, urlList);
+  }
+
+  protected List<String> findRequestUrls(SolrRequest request, String collection, ClusterState clusterState,
+        boolean sendToLeaders) throws SolrServerException {
     SolrParams reqParams = request.getParams();
     if (reqParams == null) {
       reqParams = new ModifiableSolrParams();
     }
+    
+    List<String> replicas = null;
+    if (sendToLeaders) {
+        replicas = new ArrayList<>();
+    }
+    
     List<String> theUrlList = new ArrayList<>();
     if (ADMIN_PATHS.contains(request.getPath())) {
       Set<String> liveNodes = stateProvider.liveNodes();
@@ -1283,8 +1294,11 @@ public class CloudSolrClient extends SolrClient {
         for (ZkNodeProps nodeProps : slice.getReplicasMap().values()) {
           ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
           String node = coreNodeProps.getNodeName();
-          if (!liveNodes.contains(coreNodeProps.getNodeName())
-              || Replica.State.getState(coreNodeProps.getState()) != Replica.State.ACTIVE) continue;
+          
+          if (!isNodeAvailable(coreNodeProps, liveNodes, request)) {
+              continue;
+          }
+          
           if (nodes.put(node, nodeProps) == null) {
             if (!sendToLeaders || coreNodeProps.isLeader()) {
               String url;
@@ -1339,7 +1353,11 @@ public class CloudSolrClient extends SolrClient {
             "Could not find a healthy node to handle the request.");
       }
     }
+    return theUrlList;
+  }
 
+  protected NamedList<Object> executeHttpRequest(SolrRequest request, List<String> theUrlList)
+        throws SolrServerException, IOException {
     LBHttpSolrClient.Req req = new LBHttpSolrClient.Req(request, theUrlList);
     LBHttpSolrClient.Rsp rsp = lbClient.request(req);
     return rsp.getResponse();
@@ -1365,6 +1383,11 @@ public class CloudSolrClient extends SolrClient {
       collectionNames.add(collectionName);
     }
     return collectionNames;
+  }
+
+  protected boolean isNodeAvailable(ZkCoreNodeProps coreNodeProps, Set<String> liveNodes, SolrRequest request) {
+    return liveNodes.contains(coreNodeProps.getNodeName())
+          && Replica.State.getState(coreNodeProps.getState()) == Replica.State.ACTIVE;
   }
 
   @Override
