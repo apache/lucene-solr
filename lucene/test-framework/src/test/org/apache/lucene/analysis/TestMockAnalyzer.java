@@ -29,7 +29,7 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
@@ -317,7 +317,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     writer.addDocument(doc);
     final LeafReader reader = getOnlyLeafReader(writer.getReader());
     final Fields fields = reader.getTermVectors(0);
-    final Terms terms = fields.terms("f");
+    final FieldTerms terms = fields.terms("f");
     final TermsEnum te = terms.iterator();
     assertEquals(new BytesRef("a"), te.next());
     final PostingsEnum dpe = te.postings(null, PostingsEnum.ALL);

@@ -32,7 +32,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -121,7 +121,7 @@ public class TestTermQuery extends LuceneTestCase {
     public Fields fields() throws IOException {
       return new FilterFields(super.fields()) {
         @Override
-        public Terms terms(String field) throws IOException {
+        public FieldTerms terms(String field) throws IOException {
           return new FilterTerms(super.terms(field)) {
             @Override
             public TermsEnum iterator() throws IOException {

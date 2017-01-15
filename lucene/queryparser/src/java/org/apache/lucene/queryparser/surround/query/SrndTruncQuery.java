@@ -17,7 +17,7 @@
 package org.apache.lucene.queryparser.surround.query;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.index.IndexReader;
@@ -91,7 +91,7 @@ public class SrndTruncQuery extends SimpleTerm {
     MatchingTermVisitor mtv) throws IOException
   {
     int prefixLength = prefix.length();
-    Terms terms = MultiFields.getTerms(reader, fieldName);
+    FieldTerms terms = MultiFields.getTerms(reader, fieldName);
     if (terms != null) {
       Matcher matcher = pattern.matcher("");
       try {

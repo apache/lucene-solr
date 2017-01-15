@@ -88,7 +88,7 @@ public final class TermContext {
     //if (DEBUG) System.out.println("prts.build term=" + term);
     for (final LeafReaderContext ctx : context.leaves()) {
       //if (DEBUG) System.out.println("  r=" + leaves[i].reader);
-      final Terms terms = ctx.reader().terms(field);
+      final FieldTerms terms = ctx.reader().terms(field);
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator();
         if (termsEnum.seekExact(bytes)) { 

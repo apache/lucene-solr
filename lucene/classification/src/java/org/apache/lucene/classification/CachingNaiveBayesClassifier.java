@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -227,7 +227,7 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     }
 
     // fill the class list
-    Terms terms = MultiFields.getTerms(indexReader, classFieldName);
+    FieldTerms terms = MultiFields.getTerms(indexReader, classFieldName);
     TermsEnum termsEnum = terms.iterator();
     while ((termsEnum.next()) != null) {
       cclasses.add(BytesRef.deepCopyOf(termsEnum.term()));

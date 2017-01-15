@@ -28,7 +28,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
@@ -153,7 +153,7 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
   private void checkBoosts(MultiTermQuery.RewriteMethod method) throws Exception {
     final MultiTermQuery mtq = new MultiTermQuery("data") {
       @Override
-      protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+      protected TermsEnum getTermsEnum(FieldTerms terms, AttributeSource atts) throws IOException {
         return new FilteredTermsEnum(terms.iterator()) {
 
           final BoostAttribute boostAtt =

@@ -28,7 +28,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.DataInput;
@@ -262,7 +262,7 @@ public abstract class TermVectorsWriter implements Closeable {
       assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0: "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
       lastFieldName = fieldName;
 
-      final Terms terms = vectors.terms(fieldName);
+      final FieldTerms terms = vectors.terms(fieldName);
       if (terms == null) {
         // FieldsEnum shouldn't lie...
         continue;
@@ -275,7 +275,7 @@ public abstract class TermVectorsWriter implements Closeable {
       
       int numTerms = (int) terms.size();
       if (numTerms == -1) {
-        // count manually. It is stupid, but needed, as Terms.size() is not a mandatory statistics function
+        // count manually. It is stupid, but needed, as FieldTerms.size() is not a mandatory statistics function
         numTerms = 0;
         termsEnum = terms.iterator();
         while(termsEnum.next() != null) {

@@ -31,7 +31,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
@@ -83,8 +83,8 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
-      Terms terms = in.terms(field);
+    public FieldTerms terms(String field) throws IOException {
+      FieldTerms terms = in.terms(field);
       return terms == null ? null : new AssertingLeafReader.AssertingTerms(terms);
     }
 
@@ -150,7 +150,7 @@ public final class AssertingPostingsFormat extends PostingsFormat {
         assert lastField == null || lastField.compareTo(field) < 0;
         lastField = field;
 
-        Terms terms = fields.terms(field);
+        FieldTerms terms = fields.terms(field);
         if (terms == null) {
           continue;
         }

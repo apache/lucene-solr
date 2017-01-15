@@ -169,7 +169,7 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
+    public FieldTerms terms(String field) throws IOException {
       return hasField(field) ? super.terms(field) : null;
     }
     

@@ -79,7 +79,7 @@ public abstract class FilterLeafReader extends LeafReader {
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
+    public FieldTerms terms(String field) throws IOException {
       return in.terms(field);
     }
 
@@ -89,22 +89,22 @@ public abstract class FilterLeafReader extends LeafReader {
     }
   }
 
-  /** Base class for filtering {@link Terms} implementations.
+  /** Base class for filtering {@link FieldTerms} implementations.
    * <p><b>NOTE</b>: If the order of terms and documents is not changed, and if
    * these terms are going to be intersected with automata, you could consider
    * overriding {@link #intersect} for better performance.
    */
-  public abstract static class FilterTerms extends Terms {
-    /** The underlying Terms instance. */
-    protected final Terms in;
+  public abstract static class FilterTerms extends FieldTerms {
+    /** The underlying FieldTerms instance. */
+    protected final FieldTerms in;
 
     /**
      * Creates a new FilterTerms
-     * @param in the underlying Terms instance.
+     * @param in the underlying FieldTerms instance.
      */
-    public FilterTerms(Terms in) {
+    public FilterTerms(FieldTerms in) {
       if (in == null) {
-        throw new NullPointerException("incoming Terms must not be null");
+        throw new NullPointerException("incoming FieldTerms must not be null");
       }
       this.in = in;
     }

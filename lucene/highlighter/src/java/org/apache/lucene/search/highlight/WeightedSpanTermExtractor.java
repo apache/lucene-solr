@@ -38,7 +38,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.queries.CustomScoreQuery;
@@ -98,7 +98,7 @@ public class WeightedSpanTermExtractor {
    * Fills a <code>Map</code> with {@link WeightedSpanTerm}s using the terms from the supplied <code>Query</code>.
    * 
    * @param query
-   *          Query to extract Terms from
+   *          Query to extract FieldTerms from
    * @param terms
    *          Map to place created WeightedSpanTerms in
    * @throws IOException If there is a low-level I/O error
@@ -263,7 +263,7 @@ public class WeightedSpanTermExtractor {
    * @param terms
    *          Map to place created WeightedSpanTerms in
    * @param spanQuery
-   *          SpanQuery to extract Terms from
+   *          SpanQuery to extract FieldTerms from
    * @throws IOException If there is a low-level I/O error
    */
   protected void extractWeightedSpanTerms(Map<String,WeightedSpanTerm> terms, SpanQuery spanQuery, float boost) throws IOException {
@@ -355,7 +355,7 @@ public class WeightedSpanTermExtractor {
    * @param terms
    *          Map to place created WeightedSpanTerms in
    * @param query
-   *          Query to extract Terms from
+   *          Query to extract FieldTerms from
    * @throws IOException If there is a low-level I/O error
    */
   protected void extractWeightedTerms(Map<String,WeightedSpanTerm> terms, Query query, float boost) throws IOException {
@@ -385,10 +385,10 @@ public class WeightedSpanTermExtractor {
     if (internalReader == null) {
       boolean cacheIt = wrapToCaching && !(tokenStream instanceof CachingTokenFilter);
 
-      // If it's from term vectors, simply wrap the underlying Terms in a reader
+      // If it's from term vectors, simply wrap the underlying FieldTerms in a reader
       if (tokenStream instanceof TokenStreamFromTermVector) {
         cacheIt = false;
-        Terms termVectorTerms = ((TokenStreamFromTermVector) tokenStream).getTermVectorTerms();
+        FieldTerms termVectorTerms = ((TokenStreamFromTermVector) tokenStream).getTermVectorTerms();
         if (termVectorTerms.hasPositions() && termVectorTerms.hasOffsets()) {
           internalReader = new TermVectorLeafReader(DelegatingLeafReader.FIELD_NAME, termVectorTerms);
         }
@@ -439,7 +439,7 @@ public class WeightedSpanTermExtractor {
     public Fields fields() throws IOException {
       return new FilterFields(super.fields()) {
         @Override
-        public Terms terms(String field) throws IOException {
+        public FieldTerms terms(String field) throws IOException {
           return super.terms(DelegatingLeafReader.FIELD_NAME);
         }
 

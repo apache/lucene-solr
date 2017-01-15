@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.automaton.Automaton;
@@ -103,7 +103,7 @@ public class AutomatonQuery extends MultiTermQuery {
   }
 
   @Override
-  protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+  protected TermsEnum getTermsEnum(FieldTerms terms, AttributeSource atts) throws IOException {
     return compiled.getTermsEnum(terms);
   }
 

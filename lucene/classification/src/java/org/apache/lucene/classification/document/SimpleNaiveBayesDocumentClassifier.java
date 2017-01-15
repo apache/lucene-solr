@@ -36,7 +36,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -112,7 +112,7 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
     List<ClassificationResult<BytesRef>> assignedClasses = new ArrayList<>();
     Map<String, List<String[]>> fieldName2tokensArray = new LinkedHashMap<>();
     Map<String, Float> fieldName2boost = new LinkedHashMap<>();
-    Terms classes = MultiFields.getTerms(indexReader, classFieldName);
+    FieldTerms classes = MultiFields.getTerms(indexReader, classFieldName);
     TermsEnum classesEnum = classes.iterator();
     BytesRef c;
 
@@ -225,7 +225,7 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
    */
   private double getTextTermFreqForClass(Term term, String fieldName) throws IOException {
     double avgNumberOfUniqueTerms;
-    Terms terms = MultiFields.getTerms(indexReader, fieldName);
+    FieldTerms terms = MultiFields.getTerms(indexReader, fieldName);
     long numPostings = terms.getSumDocFreq(); // number of term/doc pairs
     avgNumberOfUniqueTerms = numPostings / (double) terms.getDocCount(); // avg # of unique terms per doc
     int docsWithC = indexReader.docFreq(term);

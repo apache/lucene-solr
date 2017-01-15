@@ -48,7 +48,7 @@ class FreqProxFields extends Fields {
   }
 
   @Override
-  public Terms terms(String field) throws IOException {
+  public FieldTerms terms(String field) throws IOException {
     FreqProxTermsWriterPerField perField = fields.get(field);
     return perField == null ? null : new FreqProxTerms(perField);
   }
@@ -59,7 +59,7 @@ class FreqProxFields extends Fields {
     throw new UnsupportedOperationException();
   }
 
-  private static class FreqProxTerms extends Terms {
+  private static class FreqProxTerms extends FieldTerms {
     final FreqProxTermsWriterPerField terms;
 
     public FreqProxTerms(FreqProxTermsWriterPerField terms) {

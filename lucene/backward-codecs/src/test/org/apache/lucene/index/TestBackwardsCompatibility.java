@@ -805,7 +805,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
         Fields tfvFields = reader.getTermVectors(i);
         assertNotNull("i=" + i, tfvFields);
-        Terms tfv = tfvFields.terms("utf8");
+        FieldTerms tfv = tfvFields.terms("utf8");
         assertNotNull("docID=" + i + " index=" + oldName, tfv);
       } else {
         // Only ID 7 is deleted
@@ -1260,7 +1260,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals("wrong number of hits", 34, hits.length);
       
       // check decoding of terms
-      Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "trieInt");
+      FieldTerms terms = MultiFields.getTerms(searcher.getIndexReader(), "trieInt");
       TermsEnum termsEnum = LegacyNumericUtils.filterPrefixCodedInts(terms.iterator());
       while (termsEnum.next() != null) {
         int val = LegacyNumericUtils.prefixCodedToInt(termsEnum.term());

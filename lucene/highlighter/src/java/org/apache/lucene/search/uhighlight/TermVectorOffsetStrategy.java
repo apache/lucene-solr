@@ -22,7 +22,7 @@ import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.search.highlight.TermVectorLeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -45,7 +45,7 @@ public class TermVectorOffsetStrategy extends FieldOffsetStrategy {
 
   @Override
   public List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException {
-    Terms tvTerms = reader.getTermVector(docId, field);
+    FieldTerms tvTerms = reader.getTermVector(docId, field);
     if (tvTerms == null) {
       return Collections.emptyList();
     }

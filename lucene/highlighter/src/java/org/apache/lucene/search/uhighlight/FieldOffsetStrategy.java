@@ -25,7 +25,7 @@ import java.util.Map;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
@@ -65,7 +65,7 @@ public abstract class FieldOffsetStrategy {
   public abstract List<OffsetsEnum> getOffsetsEnums(IndexReader reader, int docId, String content) throws IOException;
 
   protected List<OffsetsEnum> createOffsetsEnumsFromReader(LeafReader leafReader, int doc) throws IOException {
-    final Terms termsIndex = leafReader.terms(field);
+    final FieldTerms termsIndex = leafReader.terms(field);
     if (termsIndex == null) {
       return Collections.emptyList();
     }
@@ -110,7 +110,7 @@ public abstract class FieldOffsetStrategy {
     return offsetsEnums;
   }
 
-  protected List<OffsetsEnum> createAutomataOffsetsFromTerms(Terms termsIndex, int doc) throws IOException {
+  protected List<OffsetsEnum> createAutomataOffsetsFromTerms(FieldTerms termsIndex, int doc) throws IOException {
     List<List<PostingsEnum>> automataPostings = new ArrayList<>(automata.length);
     for (int i = 0; i < automata.length; i++) {
       automataPostings.add(new ArrayList<>());

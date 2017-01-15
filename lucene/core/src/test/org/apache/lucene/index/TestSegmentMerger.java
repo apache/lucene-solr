@@ -126,7 +126,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     //System.out.println("stored size: " + stored.size());
     assertEquals("We do not have 3 fields that were indexed with term vector", 3, tvCount);
 
-    Terms vector = mergedReader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
+    FieldTerms vector = mergedReader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
     assertNotNull(vector);
     assertEquals(3, vector.size());
     TermsEnum termsEnum = vector.iterator();

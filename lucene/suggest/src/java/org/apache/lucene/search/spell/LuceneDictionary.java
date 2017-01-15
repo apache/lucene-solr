@@ -18,7 +18,7 @@ package org.apache.lucene.search.spell;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.suggest.InputIterator;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.MultiFields;
 
 import java.io.*;
@@ -42,7 +42,7 @@ public class LuceneDictionary implements Dictionary {
 
   @Override
   public final InputIterator getEntryIterator() throws IOException {
-    final Terms terms = MultiFields.getTerms(reader, field);
+    final FieldTerms terms = MultiFields.getTerms(reader, field);
     if (terms != null) {
       return new InputIterator.InputIteratorWrapper(terms.iterator());
     } else {

@@ -22,7 +22,7 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
@@ -37,7 +37,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 final class TermVectorFilteredLeafReader extends FilterLeafReader {
   // NOTE: super ("in") is baseLeafReader
 
-  private final Terms filterTerms;
+  private final FieldTerms filterTerms;
 
   /**
    * <p>Construct a FilterLeafReader based on the specified base reader.
@@ -46,7 +46,7 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
    * @param baseLeafReader full/original reader.
    * @param filterTerms set of terms to filter by -- probably from a TermVector or MemoryIndex.
    */
-  TermVectorFilteredLeafReader(LeafReader baseLeafReader, Terms filterTerms) {
+  TermVectorFilteredLeafReader(LeafReader baseLeafReader, FieldTerms filterTerms) {
     super(baseLeafReader);
     this.filterTerms = filterTerms;
   }
@@ -59,15 +59,15 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
   private static final class TermVectorFilteredFields extends FilterLeafReader.FilterFields {
     // NOTE: super ("in") is baseFields
 
-    private final Terms filterTerms;
+    private final FieldTerms filterTerms;
 
-    TermVectorFilteredFields(Fields baseFields, Terms filterTerms) {
+    TermVectorFilteredFields(Fields baseFields, FieldTerms filterTerms) {
       super(baseFields);
       this.filterTerms = filterTerms;
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
+    public FieldTerms terms(String field) throws IOException {
       return new TermsFilteredTerms(in.terms(field), filterTerms);
     }
   }
@@ -75,9 +75,9 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
   private static final class TermsFilteredTerms extends FilterLeafReader.FilterTerms {
     // NOTE: super ("in") is the baseTerms
 
-    private final Terms filterTerms;
+    private final FieldTerms filterTerms;
 
-    TermsFilteredTerms(Terms baseTerms, Terms filterTerms) {
+    TermsFilteredTerms(FieldTerms baseTerms, FieldTerms filterTerms) {
       super(baseTerms);
       this.filterTerms = filterTerms;
     }

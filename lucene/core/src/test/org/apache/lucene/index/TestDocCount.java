@@ -26,7 +26,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Tests the Terms.docCount statistic
+ * Tests the FieldTerms.docCount statistic
  */
 public class TestDocCount extends LuceneTestCase {
   public void testSimple() throws Exception {
@@ -59,7 +59,7 @@ public class TestDocCount extends LuceneTestCase {
   private void verifyCount(IndexReader ir) throws Exception {
     Fields fields = MultiFields.getFields(ir);
     for (String field : fields) {
-      Terms terms = fields.terms(field);
+      FieldTerms terms = fields.terms(field);
       if (terms == null) {
         continue;
       }

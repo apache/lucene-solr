@@ -33,7 +33,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -496,7 +496,7 @@ public class SpellChecker implements java.io.Closeable {
       final IndexReader reader = searcher.getIndexReader();
       if (reader.maxDoc() > 0) {
         for (final LeafReaderContext ctx : reader.leaves()) {
-          Terms terms = ctx.reader().terms(F_WORD);
+          FieldTerms terms = ctx.reader().terms(F_WORD);
           if (terms != null)
             termsEnums.add(terms.iterator());
         }

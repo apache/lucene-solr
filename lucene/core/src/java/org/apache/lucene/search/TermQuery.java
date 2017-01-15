@@ -29,7 +29,7 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
@@ -114,7 +114,7 @@ public class TermQuery extends Query {
         return termsEnum;
       } else {
         // TermQuery used as a filter, so the term states have not been built up front
-        Terms terms = context.reader().terms(term.field());
+        FieldTerms terms = context.reader().terms(term.field());
         if (terms == null) {
           return null;
         }

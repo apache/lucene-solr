@@ -2018,9 +2018,9 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /** 
-   * Terms api equivalency 
+   * FieldTerms api equivalency 
    */
-  public void assertTermsEquals(String info, IndexReader leftReader, Terms leftTerms, Terms rightTerms, boolean deep) throws IOException {
+  public void assertTermsEquals(String info, IndexReader leftReader, FieldTerms leftTerms, FieldTerms rightTerms, boolean deep) throws IOException {
     if (leftTerms == null || rightTerms == null) {
       assertNull(info, leftTerms);
       assertNull(info, rightTerms);
@@ -2053,9 +2053,9 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /** 
-   * checks collection-level statistics on Terms 
+   * checks collection-level statistics on FieldTerms 
    */
-  public void assertTermsStatisticsEquals(String info, Terms leftTerms, Terms rightTerms) throws IOException {
+  public void assertTermsStatisticsEquals(String info, FieldTerms leftTerms, FieldTerms rightTerms) throws IOException {
     if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
       assertEquals(info, leftTerms.getDocCount(), rightTerms.getDocCount());
     }
@@ -2260,7 +2260,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   
-  private void assertTermsSeekingEquals(String info, Terms leftTerms, Terms rightTerms) throws IOException {
+  private void assertTermsSeekingEquals(String info, FieldTerms leftTerms, FieldTerms rightTerms) throws IOException {
 
     // just an upper bound
     int numTests = atLeast(20);

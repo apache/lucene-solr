@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
@@ -72,7 +72,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
   // collected terms are ed=1:
   private int maxEdits;
 
-  final Terms terms;
+  final FieldTerms terms;
   final Term term;
   final int termText[];
   final int realPrefixLength;
@@ -96,7 +96,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * @param prefixLength Length of required common prefix. Default value is 0.
    * @throws IOException if there is a low-level IO error
    */
-  public FuzzyTermsEnum(Terms terms, AttributeSource atts, Term term, 
+  public FuzzyTermsEnum(FieldTerms terms, AttributeSource atts, Term term, 
       final int maxEdits, final int prefixLength, boolean transpositions) throws IOException {
     if (maxEdits < 0 || maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
       throw new IllegalArgumentException("max edits must be 0.." + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + ", inclusive; got: " + maxEdits);

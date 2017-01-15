@@ -64,7 +64,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -1261,7 +1261,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
       final Map<Integer, JoinScore> docToJoinScore = new HashMap<>();
       if (multipleValuesPerDocument) {
-        Terms terms = MultiFields.getTerms(topLevelReader, toField);
+        FieldTerms terms = MultiFields.getTerms(topLevelReader, toField);
         if (terms != null) {
           PostingsEnum postingsEnum = null;
           SortedSet<BytesRef> joinValues = new TreeSet<>();

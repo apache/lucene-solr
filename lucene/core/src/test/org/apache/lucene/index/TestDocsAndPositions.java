@@ -91,7 +91,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
 
   public PostingsEnum getDocsAndPositions(LeafReader reader,
       BytesRef bytes) throws IOException {
-    Terms terms = reader.terms(fieldName);
+    FieldTerms terms = reader.terms(fieldName);
     if (terms != null) {
       TermsEnum te = terms.iterator();
       if (te.seekExact(bytes)) {

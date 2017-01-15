@@ -424,7 +424,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
   private final ThreadLocal<PostingsEnum> docsEnum = new ThreadLocal<>();
   private final ThreadLocal<PostingsEnum> docsAndPositionsEnum = new ThreadLocal<>();
 
-  protected void assertEquals(RandomTokenStream tk, FieldType ft, Terms terms) throws IOException {
+  protected void assertEquals(RandomTokenStream tk, FieldType ft, FieldTerms terms) throws IOException {
     assertEquals(1, terms.getDocCount());
     final int termCount = new HashSet<>(Arrays.asList(tk.terms)).size();
     assertEquals(termCount, terms.size());
@@ -757,7 +757,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
     iw.addDocument(doc);
     DirectoryReader reader = DirectoryReader.open(iw);
     
-    Terms terms = getOnlyLeafReader(reader).getTermVector(0, "foo");
+    FieldTerms terms = getOnlyLeafReader(reader).getTermVector(0, "foo");
     TermsEnum termsEnum = terms.iterator();
     assertNotNull(termsEnum);
     assertEquals(new BytesRef("bar"), termsEnum.next());
@@ -838,7 +838,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
     iw.addDocument(doc);
     DirectoryReader reader = DirectoryReader.open(iw);
     
-    Terms terms = getOnlyLeafReader(reader).getTermVector(0, "foo");
+    FieldTerms terms = getOnlyLeafReader(reader).getTermVector(0, "foo");
     TermsEnum termsEnum = terms.iterator();
     assertNotNull(termsEnum);
     assertEquals(new BytesRef("bar"), termsEnum.next());
@@ -1017,7 +1017,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
     iw.addDocument(doc);
     DirectoryReader reader = DirectoryReader.open(iw);
     
-    Terms terms = getOnlyLeafReader(reader).getTermVector(0, "foo");
+    FieldTerms terms = getOnlyLeafReader(reader).getTermVector(0, "foo");
     TermsEnum termsEnum = terms.iterator();
     assertNotNull(termsEnum);
     assertEquals(new BytesRef("bar"), termsEnum.next());
@@ -1203,7 +1203,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
     iw.addDocument(doc);
     DirectoryReader reader = DirectoryReader.open(iw);
     
-    Terms terms = getOnlyLeafReader(reader).getTermVector(0, "foo");
+    FieldTerms terms = getOnlyLeafReader(reader).getTermVector(0, "foo");
     TermsEnum termsEnum = terms.iterator();
     assertNotNull(termsEnum);
     assertEquals(new BytesRef("bar"), termsEnum.next());
@@ -1389,7 +1389,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
     iw.addDocument(doc);
     DirectoryReader reader = DirectoryReader.open(iw);
     
-    Terms terms = getOnlyLeafReader(reader).getTermVector(0, "foo");
+    FieldTerms terms = getOnlyLeafReader(reader).getTermVector(0, "foo");
     TermsEnum termsEnum = terms.iterator();
     assertNotNull(termsEnum);
     assertEquals(new BytesRef("bar"), termsEnum.next());
@@ -1575,7 +1575,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
     iw.addDocument(doc);
     DirectoryReader reader = DirectoryReader.open(iw);
     
-    Terms terms = getOnlyLeafReader(reader).getTermVector(0, "foo");
+    FieldTerms terms = getOnlyLeafReader(reader).getTermVector(0, "foo");
     TermsEnum termsEnum = terms.iterator();
     assertNotNull(termsEnum);
     assertEquals(new BytesRef("bar"), termsEnum.next());

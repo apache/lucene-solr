@@ -18,7 +18,7 @@ package org.apache.lucene.classification.utils;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 
@@ -39,7 +39,7 @@ public class DocToDoubleVectorUtils {
    * @return a sparse vector of <code>Double</code>s as an array
    * @throws IOException in case accessing the underlying index fails
    */
-  public static Double[] toSparseLocalFreqDoubleArray(Terms docTerms, Terms fieldTerms) throws IOException {
+  public static Double[] toSparseLocalFreqDoubleArray(FieldTerms docTerms, FieldTerms fieldTerms) throws IOException {
     TermsEnum fieldTermsEnum = fieldTerms.iterator();
     Double[] freqVector = null;
     if (docTerms != null && fieldTerms.size() > -1) {
@@ -71,7 +71,7 @@ public class DocToDoubleVectorUtils {
    * @return a dense vector of <code>Double</code>s as an array
    * @throws IOException in case accessing the underlying index fails
    */
-  public static Double[] toDenseLocalFreqDoubleArray(Terms docTerms) throws IOException {
+  public static Double[] toDenseLocalFreqDoubleArray(FieldTerms docTerms) throws IOException {
     Double[] freqVector = null;
     if (docTerms != null) {
       freqVector = new Double[(int) docTerms.size()];

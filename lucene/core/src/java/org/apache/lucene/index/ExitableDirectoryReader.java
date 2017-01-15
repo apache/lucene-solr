@@ -115,8 +115,8 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
-      Terms terms = in.terms(field);
+    public FieldTerms terms(String field) throws IOException {
+      FieldTerms terms = in.terms(field);
       if (terms == null) {
         return null;
       }
@@ -125,14 +125,14 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
   }
 
   /**
-   * Wrapper class for another Terms implementation that is used by ExitableFields.
+   * Wrapper class for another FieldTerms implementation that is used by ExitableFields.
    */
   public static class ExitableTerms extends FilterTerms {
 
     private QueryTimeout queryTimeout;
     
     /** Constructor **/
-    public ExitableTerms(Terms terms, QueryTimeout queryTimeout) {
+    public ExitableTerms(FieldTerms terms, QueryTimeout queryTimeout) {
       super(terms);
       this.queryTimeout = queryTimeout;
     }

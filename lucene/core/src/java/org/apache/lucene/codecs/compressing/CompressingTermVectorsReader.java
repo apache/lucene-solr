@@ -33,7 +33,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -706,7 +706,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
+    public FieldTerms terms(String field) throws IOException {
       final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
       if (fieldInfo == null) {
         return null;
@@ -747,7 +747,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
   }
 
-  private class TVTerms extends Terms {
+  private class TVTerms extends FieldTerms {
 
     private final int numTerms, flags;
     private final int[] prefixLengths, suffixLengths, termFreqs, positionIndex, positions, startOffsets, lengths, payloadIndex;

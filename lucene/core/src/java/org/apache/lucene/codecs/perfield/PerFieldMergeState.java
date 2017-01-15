@@ -30,7 +30,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 
 /**
  * Utility class to update the {@link MergeState} instance to be restricted to a set of fields.
@@ -248,7 +248,7 @@ final class PerFieldMergeState {
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
+    public FieldTerms terms(String field) throws IOException {
       if (!filtered.contains(field)) {
         throw new IllegalArgumentException("The field named '" + field + "' is not accessible in the current " +
             "merge context, available ones are: " + filtered);

@@ -29,7 +29,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
@@ -252,7 +252,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
 
     @Override
-    public Terms terms(String field) throws IOException {
+    public FieldTerms terms(String field) throws IOException {
       return fields.get(field);
     }
 
@@ -262,7 +262,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     }
   }
 
-  private static class SimpleTVTerms extends Terms {
+  private static class SimpleTVTerms extends FieldTerms {
     final SortedMap<BytesRef,SimpleTVPostings> terms;
     final boolean hasOffsets;
     final boolean hasPositions;

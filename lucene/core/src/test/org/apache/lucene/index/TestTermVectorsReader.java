@@ -199,7 +199,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   public void testReader() throws IOException {
     TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
     for (int j = 0; j < 5; j++) {
-      Terms vector = reader.get(j).terms(testFields[0]);
+      FieldTerms vector = reader.get(j).terms(testFields[0]);
       assertNotNull(vector);
       assertEquals(testTerms.length, vector.size());
       TermsEnum termsEnum = vector.iterator();
@@ -218,7 +218,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   public void testDocsEnum() throws IOException {
     TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
     for (int j = 0; j < 5; j++) {
-      Terms vector = reader.get(j).terms(testFields[0]);
+      FieldTerms vector = reader.get(j).terms(testFields[0]);
       assertNotNull(vector);
       assertEquals(testTerms.length, vector.size());
       TermsEnum termsEnum = vector.iterator();
@@ -245,7 +245,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   public void testPositionReader() throws IOException {
     TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
     BytesRef[] terms;
-    Terms vector = reader.get(0).terms(testFields[0]);
+    FieldTerms vector = reader.get(0).terms(testFields[0]);
     assertNotNull(vector);
     assertEquals(testTerms.length, vector.size());
     TermsEnum termsEnum = vector.iterator();
@@ -282,7 +282,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, dpEnum.nextDoc());
     }
 
-    Terms freqVector = reader.get(0).terms(testFields[1]); //no pos, no offset
+    FieldTerms freqVector = reader.get(0).terms(testFields[1]); //no pos, no offset
     assertNotNull(freqVector);
     assertEquals(testTerms.length, freqVector.size());
     termsEnum = freqVector.iterator();
@@ -301,7 +301,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   public void testOffsetReader() throws IOException {
     TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
-    Terms vector = reader.get(0).terms(testFields[0]);
+    FieldTerms vector = reader.get(0).terms(testFields[0]);
     assertNotNull(vector);
     TermsEnum termsEnum = vector.iterator();
     assertNotNull(termsEnum);

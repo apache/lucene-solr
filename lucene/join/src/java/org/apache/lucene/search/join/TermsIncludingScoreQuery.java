@@ -25,7 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -113,7 +113,7 @@ class TermsIncludingScoreQuery extends Query {
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        Terms terms = context.reader().terms(field);
+        FieldTerms terms = context.reader().terms(field);
         if (terms != null) {
           TermsEnum segmentTermsEnum = terms.iterator();
           BytesRef spare = new BytesRef();
@@ -133,7 +133,7 @@ class TermsIncludingScoreQuery extends Query {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
-        Terms terms = context.reader().terms(field);
+        FieldTerms terms = context.reader().terms(field);
         if (terms == null) {
           return null;
         }

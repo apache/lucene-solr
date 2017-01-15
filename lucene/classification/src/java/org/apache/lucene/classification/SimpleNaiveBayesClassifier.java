@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -144,7 +144,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   protected List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = new ArrayList<>();
 
-    Terms classes = MultiFields.getTerms(indexReader, classFieldName);
+    FieldTerms classes = MultiFields.getTerms(indexReader, classFieldName);
     if (classes != null) {
       TermsEnum classesEnum = classes.iterator();
       BytesRef next;
@@ -169,7 +169,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
    * @throws IOException if accessing to term vectors or search fails
    */
   protected int countDocsWithClass() throws IOException {
-    Terms terms = MultiFields.getTerms(this.indexReader, this.classFieldName);
+    FieldTerms terms = MultiFields.getTerms(this.indexReader, this.classFieldName);
     int docCount;
     if (terms == null || terms.getDocCount() == -1) { // in case codec doesn't support getDocCount
       TotalHitCountCollector classQueryCountCollector = new TotalHitCountCollector();
@@ -240,7 +240,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   private double getTextTermFreqForClass(Term term) throws IOException {
     double avgNumberOfUniqueTerms = 0;
     for (String textFieldName : textFieldNames) {
-      Terms terms = MultiFields.getTerms(indexReader, textFieldName);
+      FieldTerms terms = MultiFields.getTerms(indexReader, textFieldName);
       long numPostings = terms.getSumDocFreq(); // number of term/doc pairs
       avgNumberOfUniqueTerms += numPostings / (double) terms.getDocCount(); // avg # of unique terms per doc
     }

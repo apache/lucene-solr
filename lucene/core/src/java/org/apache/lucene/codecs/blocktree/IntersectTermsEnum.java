@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
@@ -35,7 +35,7 @@ import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Outputs;
 
-/** This is used to implement efficient {@link Terms#intersect} for
+/** This is used to implement efficient {@link FieldTerms#intersect} for
  *  block-tree.  Note that it cannot seek, except for the initial term on
  *  init.  It just "nexts" through the intersection of the automaton and
  *  the terms.  It does not use the terms index at all: on init, it

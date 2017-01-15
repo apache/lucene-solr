@@ -34,7 +34,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -199,7 +199,7 @@ public final class OrdsBlockTreeTermsReader extends FieldsProducer {
   }
 
   @Override
-  public Terms terms(String field) throws IOException {
+  public FieldTerms terms(String field) throws IOException {
     assert field != null;
     return fields.get(field);
   }

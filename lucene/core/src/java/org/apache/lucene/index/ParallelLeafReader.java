@@ -171,12 +171,12 @@ public class ParallelLeafReader extends LeafReader {
 
   // Single instance of this, per ParallelReader instance
   private final class ParallelFields extends Fields {
-    final Map<String,Terms> fields = new TreeMap<>();
+    final Map<String,FieldTerms> fields = new TreeMap<>();
     
     ParallelFields() {
     }
     
-    void addField(String fieldName, Terms terms) {
+    void addField(String fieldName, FieldTerms terms) {
       fields.put(fieldName, terms);
     }
     
@@ -186,7 +186,7 @@ public class ParallelLeafReader extends LeafReader {
     }
     
     @Override
-    public Terms terms(String field) {
+    public FieldTerms terms(String field) {
       return fields.get(field);
     }
     
@@ -247,7 +247,7 @@ public class ParallelLeafReader extends LeafReader {
     ParallelFields fields = null;
     for (Map.Entry<String,LeafReader> ent : tvFieldToReader.entrySet()) {
       String fieldName = ent.getKey();
-      Terms vector = ent.getValue().getTermVector(docID, fieldName);
+      FieldTerms vector = ent.getValue().getTermVector(docID, fieldName);
       if (vector != null) {
         if (fields == null) {
           fields = new ParallelFields();

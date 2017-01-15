@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.FilteredTermsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -447,7 +447,7 @@ public final class LegacyNumericUtils {
     }
   }
 
-  private static Terms intTerms(Terms terms) {
+  private static FieldTerms intTerms(FieldTerms terms) {
     return new FilterLeafReader.FilterTerms(terms) {
         @Override
         public TermsEnum iterator() throws IOException {
@@ -456,7 +456,7 @@ public final class LegacyNumericUtils {
       };
   }
 
-  private static Terms longTerms(Terms terms) {
+  private static FieldTerms longTerms(FieldTerms terms) {
     return new FilterLeafReader.FilterTerms(terms) {
         @Override
         public TermsEnum iterator() throws IOException {
@@ -469,7 +469,7 @@ public final class LegacyNumericUtils {
    * Returns the minimum int value indexed into this
    * numeric field or null if no terms exist.
    */
-  public static Integer getMinInt(Terms terms) throws IOException {
+  public static Integer getMinInt(FieldTerms terms) throws IOException {
     // All shift=0 terms are sorted first, so we don't need
     // to filter the incoming terms; we can just get the
     // min:
@@ -481,7 +481,7 @@ public final class LegacyNumericUtils {
    * Returns the maximum int value indexed into this
    * numeric field or null if no terms exist.
    */
-  public static Integer getMaxInt(Terms terms) throws IOException {
+  public static Integer getMaxInt(FieldTerms terms) throws IOException {
     BytesRef max = intTerms(terms).getMax();
     return (max != null) ? LegacyNumericUtils.prefixCodedToInt(max) : null;
   }
@@ -490,7 +490,7 @@ public final class LegacyNumericUtils {
    * Returns the minimum long value indexed into this
    * numeric field or null if no terms exist.
    */
-  public static Long getMinLong(Terms terms) throws IOException {
+  public static Long getMinLong(FieldTerms terms) throws IOException {
     // All shift=0 terms are sorted first, so we don't need
     // to filter the incoming terms; we can just get the
     // min:
@@ -502,7 +502,7 @@ public final class LegacyNumericUtils {
    * Returns the maximum long value indexed into this
    * numeric field or null if no terms exist.
    */
-  public static Long getMaxLong(Terms terms) throws IOException {
+  public static Long getMaxLong(FieldTerms terms) throws IOException {
     BytesRef max = longTerms(terms).getMax();
     return (max != null) ? LegacyNumericUtils.prefixCodedToLong(max) : null;
   }

@@ -30,7 +30,7 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 
@@ -107,7 +107,7 @@ public class SpanTermQuery extends SpanQuery {
         return null;
       }
 
-      final Terms terms = context.reader().terms(term.field());
+      final FieldTerms terms = context.reader().terms(term.field());
       if (terms == null)
         return null;
       if (terms.hasPositions() == false)

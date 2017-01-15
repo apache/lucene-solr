@@ -49,7 +49,7 @@ import org.apache.lucene.util.MergedIterator;
 public final class MultiFields extends Fields {
   private final Fields[] subs;
   private final ReaderSlice[] subSlices;
-  private final Map<String,Terms> terms = new ConcurrentHashMap<>();
+  private final Map<String,FieldTerms> terms = new ConcurrentHashMap<>();
 
   /** Returns a single {@link Fields} instance for this
    *  reader, merging fields/terms/docs/positions on the
@@ -116,7 +116,7 @@ public final class MultiFields extends Fields {
   }
 
   /**  This method may return null if the field does not exist.*/
-  public static Terms getTerms(IndexReader r, String field) throws IOException {
+  public static FieldTerms getTerms(IndexReader r, String field) throws IOException {
     return getFields(r).terms(field);
   }
   
@@ -136,7 +136,7 @@ public final class MultiFields extends Fields {
   public static PostingsEnum getTermDocsEnum(IndexReader r, String field, BytesRef term, int flags) throws IOException {
     assert field != null;
     assert term != null;
-    final Terms terms = getTerms(r, field);
+    final FieldTerms terms = getTerms(r, field);
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator();
       if (termsEnum.seekExact(term)) {
@@ -163,7 +163,7 @@ public final class MultiFields extends Fields {
   public static PostingsEnum getTermPositionsEnum(IndexReader r, String field, BytesRef term, int flags) throws IOException {
     assert field != null;
     assert term != null;
-    final Terms terms = getTerms(r, field);
+    final FieldTerms terms = getTerms(r, field);
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator();
       if (termsEnum.seekExact(term)) {
@@ -194,20 +194,20 @@ public final class MultiFields extends Fields {
   }
 
   @Override
-  public Terms terms(String field) throws IOException {
-    Terms result = terms.get(field);
+  public FieldTerms terms(String field) throws IOException {
+    FieldTerms result = terms.get(field);
     if (result != null)
       return result;
 
 
     // Lazy init: first time this field is requested, we
     // create & add to terms:
-    final List<Terms> subs2 = new ArrayList<>();
+    final List<FieldTerms> subs2 = new ArrayList<>();
     final List<ReaderSlice> slices2 = new ArrayList<>();
 
     // Gather all sub-readers that share this field
     for(int i=0;i<subs.length;i++) {
-      final Terms terms = subs[i].terms(field);
+      final FieldTerms terms = subs[i].terms(field);
       if (terms != null) {
         subs2.add(terms);
         slices2.add(subSlices[i]);
@@ -218,7 +218,7 @@ public final class MultiFields extends Fields {
       // don't cache this case with an unbounded cache, since the number of fields that don't exist
       // is unbounded.
     } else {
-      result = new MultiTerms(subs2.toArray(Terms.EMPTY_ARRAY),
+      result = new MultiTerms(subs2.toArray(FieldTerms.EMPTY_ARRAY),
           slices2.toArray(ReaderSlice.EMPTY_ARRAY));
       terms.put(field, result);
     }

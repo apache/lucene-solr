@@ -33,12 +33,12 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 
 /**
- * Wraps a Terms with a {@link org.apache.lucene.index.LeafReader}, typically from term vectors.
+ * Wraps a FieldTerms with a {@link org.apache.lucene.index.LeafReader}, typically from term vectors.
  *
  * @lucene.experimental
  */
@@ -47,7 +47,7 @@ public class TermVectorLeafReader extends LeafReader {
   private final Fields fields;
   private final FieldInfos fieldInfos;
 
-  public TermVectorLeafReader(String field, Terms terms) {
+  public TermVectorLeafReader(String field, FieldTerms terms) {
     fields = new Fields() {
       @Override
       public Iterator<String> iterator() {
@@ -55,7 +55,7 @@ public class TermVectorLeafReader extends LeafReader {
       }
 
       @Override
-      public Terms terms(String fld) throws IOException {
+      public FieldTerms terms(String fld) throws IOException {
         if (!field.equals(fld)) {
           return null;
         }

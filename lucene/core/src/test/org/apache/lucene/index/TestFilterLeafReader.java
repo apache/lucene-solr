@@ -42,13 +42,13 @@ public class TestFilterLeafReader extends LuceneTestCase {
       }
 
       @Override
-      public Terms terms(String field) throws IOException {
+      public FieldTerms terms(String field) throws IOException {
         return new TestTerms(super.terms(field));
       }
     }
 
     private static class TestTerms extends FilterTerms {
-      TestTerms(Terms in) {
+      TestTerms(FieldTerms in) {
         super(in);
       }
 

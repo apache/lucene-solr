@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.SingleTermsEnum;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -320,11 +320,11 @@ public class CompiledAutomaton {
   }
 
   // TODO: should this take startTerm too?  This way
-  // Terms.intersect could forward to this method if type !=
+  // FieldTerms.intersect could forward to this method if type !=
   // NORMAL:
-  /** Return a {@link TermsEnum} intersecting the provided {@link Terms}
+  /** Return a {@link TermsEnum} intersecting the provided {@link FieldTerms}
    *  with the terms accepted by this automaton. */
-  public TermsEnum getTermsEnum(Terms terms) throws IOException {
+  public TermsEnum getTermsEnum(FieldTerms terms) throws IOException {
     switch(type) {
     case NONE:
       return TermsEnum.EMPTY;

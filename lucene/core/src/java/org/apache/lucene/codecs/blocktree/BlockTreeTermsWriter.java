@@ -31,7 +31,7 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -324,7 +324,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       lastField = field;
 
       //if (DEBUG) System.out.println("\nBTTW.write seg=" + segment + " field=" + field);
-      Terms terms = fields.terms(field);
+      FieldTerms terms = fields.terms(field);
       if (terms == null) {
         continue;
       }
@@ -750,7 +750,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
             // For non-leaf block we borrow 1 bit to record
             // if entry is term or sub-block, and 1 bit to record if
-            // it's a prefix term.  Terms cannot be larger than ~32 KB
+            // it's a prefix term.  FieldTerms cannot be larger than ~32 KB
             // so we won't run out of bits:
 
             suffixWriter.writeVInt(suffix << 1);

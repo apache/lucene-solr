@@ -24,7 +24,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Tests {@link Terms#getSumDocFreq()}
+ * Tests {@link FieldTerms#getSumDocFreq()}
  * @lucene.experimental
  */
 public class TestSumDocFreq extends LuceneTestCase {
@@ -76,7 +76,7 @@ public class TestSumDocFreq extends LuceneTestCase {
     Fields fields = MultiFields.getFields(ir);
 
     for (String f : fields) {
-      Terms terms = fields.terms(f);
+      FieldTerms terms = fields.terms(f);
       long sumDocFreq = terms.getSumDocFreq();
       if (sumDocFreq == -1) {
         if (VERBOSE) {

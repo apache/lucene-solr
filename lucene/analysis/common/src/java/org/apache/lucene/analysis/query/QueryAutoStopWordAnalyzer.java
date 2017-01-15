@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -140,7 +140,7 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
     
     for (String field : fields) {
       Set<String> stopWords = new HashSet<>();
-      Terms terms = MultiFields.getTerms(indexReader, field);
+      FieldTerms terms = MultiFields.getTerms(indexReader, field);
       CharsRefBuilder spare = new CharsRefBuilder();
       if (terms != null) {
         TermsEnum te = terms.iterator();

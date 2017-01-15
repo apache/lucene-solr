@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.miscellaneous.LimitTokenOffsetFilter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 
 /**
  * Convenience methods for obtaining a {@link TokenStream} for use with the {@link Highlighter} - can obtain from
@@ -50,7 +50,7 @@ public class TokenSources {
    *                 be re-used for the same document (e.g. when highlighting multiple fields).
    * @param text the text to analyze, failing term vector un-inversion
    * @param analyzer the analyzer to analyze {@code text} with, failing term vector un-inversion
-   * @param maxStartOffset Terms with a startOffset greater than this aren't returned.  Use -1 for no limit.
+   * @param maxStartOffset FieldTerms with a startOffset greater than this aren't returned.  Use -1 for no limit.
    *                       Suggest using {@link Highlighter#getMaxDocCharsToAnalyze()} - 1.
    *
    * @return a token stream from either term vectors, or from analyzing the text. Never null.
@@ -76,7 +76,7 @@ public class TokenSources {
    * @param field The field to get term vectors from.
    * @param tvFields from {@link IndexReader#getTermVectors(int)}. Possibly null. For performance, this instance should
    *                 be re-used for the same document (e.g. when highlighting multiple fields).
-   * @param maxStartOffset Terms with a startOffset greater than this aren't returned.  Use -1 for no limit.
+   * @param maxStartOffset FieldTerms with a startOffset greater than this aren't returned.  Use -1 for no limit.
    *                       Suggest using {@link Highlighter#getMaxDocCharsToAnalyze()} - 1
    * @return a token stream from term vectors. Null if no term vectors with the right options.
    */
@@ -85,7 +85,7 @@ public class TokenSources {
     if (tvFields == null) {
       return null;
     }
-    final Terms tvTerms = tvFields.terms(field);
+    final FieldTerms tvTerms = tvFields.terms(field);
     if (tvTerms == null || !tvTerms.hasOffsets()) {
       return null;
     }
@@ -118,7 +118,7 @@ public class TokenSources {
 
     Fields vectors = reader.getTermVectors(docId);
     if (vectors != null) {
-      Terms vector = vectors.terms(field);
+      FieldTerms vector = vectors.terms(field);
       if (vector != null) {
         ts = getTokenStream(vector);
       }
@@ -147,7 +147,7 @@ public class TokenSources {
 
     Fields vectors = reader.getTermVectors(docId);
     if (vectors != null) {
-      Terms vector = vectors.terms(field);
+      FieldTerms vector = vectors.terms(field);
       if (vector != null) {
         ts = getTokenStream(vector);
       }
@@ -160,17 +160,17 @@ public class TokenSources {
     return ts;
   }
 
-  /** Simply calls {@link #getTokenStream(org.apache.lucene.index.Terms)} now. */
+  /** Simply calls {@link #getTokenStream(org.apache.lucene.index.FieldTerms)} now. */
   @Deprecated // maintenance reasons LUCENE-6445
-  public static TokenStream getTokenStream(Terms vector,
+  public static TokenStream getTokenStream(FieldTerms vector,
                                            boolean tokenPositionsGuaranteedContiguous) throws IOException {
     return getTokenStream(vector);
   }
 
   /**
-   * Returns a token stream generated from a {@link Terms}. This
+   * Returns a token stream generated from a {@link FieldTerms}. This
    * can be used to feed the highlighter with a pre-parsed token
-   * stream.  The {@link Terms} must have offsets available. If there are no positions available,
+   * stream.  The {@link FieldTerms} must have offsets available. If there are no positions available,
    * all tokens will have position increments reflecting adjacent tokens, or coincident when terms
    * share a start offset. If there are stopwords filtered from the index, you probably want to ensure
    * term vectors have positions so that phrase queries won't match across stopwords.
@@ -178,7 +178,7 @@ public class TokenSources {
    * @throws IllegalArgumentException if no offsets are available
    */
   @Deprecated // maintenance reasons LUCENE-6445
-  public static TokenStream getTokenStream(final Terms tpv) throws IOException {
+  public static TokenStream getTokenStream(final FieldTerms tpv) throws IOException {
 
     if (!tpv.hasOffsets()) {
       throw new IllegalArgumentException("Highlighting requires offsets from the TokenStream.");
@@ -192,7 +192,7 @@ public class TokenSources {
   /**
    * Returns a {@link TokenStream} with positions and offsets constructed from
    * field termvectors.  If the field has no termvectors or offsets
-   * are not included in the termvector, return null.  See {@link #getTokenStream(org.apache.lucene.index.Terms)}
+   * are not included in the termvector, return null.  See {@link #getTokenStream(org.apache.lucene.index.FieldTerms)}
    * for an explanation of what happens when positions aren't present.
    *
    * @param reader the {@link IndexReader} to retrieve term vectors from
@@ -201,7 +201,7 @@ public class TokenSources {
    * @return a {@link TokenStream}, or null if offsets are not available
    * @throws IOException If there is a low-level I/O error
    *
-   * @see #getTokenStream(org.apache.lucene.index.Terms)
+   * @see #getTokenStream(org.apache.lucene.index.FieldTerms)
    */
   @Deprecated // maintenance reasons LUCENE-6445
   public static TokenStream getTokenStreamWithOffsets(IndexReader reader, int docId,
@@ -212,7 +212,7 @@ public class TokenSources {
       return null;
     }
 
-    Terms vector = vectors.terms(field);
+    FieldTerms vector = vectors.terms(field);
     if (vector == null) {
       return null;
     }

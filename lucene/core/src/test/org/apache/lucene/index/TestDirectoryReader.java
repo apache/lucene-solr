@@ -69,7 +69,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     Document newDoc2 = reader.document(1);
     assertTrue(newDoc2 != null);
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
-    Terms vector = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
+    FieldTerms vector = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
     assertNotNull(vector);
 
     reader.close();
@@ -623,14 +623,14 @@ public class TestDirectoryReader extends LuceneTestCase {
     Iterator<String> fenum2 = fields2.iterator();
     for (String field1 : fields1) {
       assertEquals("Different fields", field1, fenum2.next());
-      Terms terms1 = fields1.terms(field1);
+      FieldTerms terms1 = fields1.terms(field1);
       if (terms1 == null) {
         assertNull(fields2.terms(field1));
         continue;
       }
       TermsEnum enum1 = terms1.iterator();
 
-      Terms terms2 = fields2.terms(field1);
+      FieldTerms terms2 = fields2.terms(field1);
       assertNotNull(terms2);
       TermsEnum enum2 = terms2.iterator();
 

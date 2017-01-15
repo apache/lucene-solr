@@ -31,7 +31,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.FieldTerms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -160,7 +160,7 @@ public class FSTTermsWriter extends FieldsConsumer {
   @Override
   public void write(Fields fields) throws IOException {
     for(String field : fields) {
-      Terms terms = fields.terms(field);
+      FieldTerms terms = fields.terms(field);
       if (terms == null) {
         continue;
       }
