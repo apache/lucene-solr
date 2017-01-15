@@ -133,15 +133,6 @@ final class MinShouldMatchSumScorer extends Scorer {
   }
 
   @Override
-  public Collection<ChildScorer> getMatchingChildren() throws IOException {
-    List<ChildScorer> children = new ArrayList<>();
-    for (DisiWrapper s = lead; s != null; s = s.next) {
-      children.add(new ChildScorer(s.scorer, "SHOULD"));
-    }
-    return children;
-  }
-
-  @Override
   public DocIdSetIterator iterator() {
     return new DocIdSetIterator() {
 
