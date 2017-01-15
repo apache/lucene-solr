@@ -63,6 +63,11 @@ Other
 
 ======================= Lucene 6.5.0 =======================
 
+New Features
+
+* LUCENE-7623: Add FunctionScoreQuery and FunctionMatchQuery (Alan Woodward,
+  Adrien Grand, David Smiley)
+
 Bug Fixes
 
 * LUCENE-7630: Fix (Edge)NGramTokenFilter to no longer drop payloads
